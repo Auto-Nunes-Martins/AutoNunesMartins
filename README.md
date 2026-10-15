@@ -10,15 +10,15 @@ Internal admin web app for a Portuguese used-car dealership. Phase 1 — single 
 | Module | What it does |
 | --- | --- |
 | **M0 · Scaffolding + Login + Shell** | Yarn 4 workspaces, Prisma schema on Supabase Postgres, Clerk auth (with auto-provisioning on first sign-in), Tailwind v4 token system, brand DNA primitives, custom Clerk-styled login page, sidebar + topbar app shell |
-| **M1 · Viaturas** | CRUD with filters/pagination/sort, signed photo upload (Supabase Storage, 20×5 MB JPEG/PNG/WEBP), per-vehicle expense tracker with inline edit, **margin-scheme VAT (23/123) profit card**, PDF + CSV export, SOLD-state confirmation flow on expense edits |
+| **M1 · Viaturas** | CRUD with filters/pagination/sort, authenticated backend photo optimization (Supabase Storage; 20 photos, input up to 20 MiB/24 MP, output target about 1.1 MB, maximum 2 MB), per-vehicle expense tracker with inline edit, **margin-scheme VAT (23/123) profit card**, PDF + CSV export, SOLD-state confirmation flow on expense edits |
 | **M2 · Clientes** | CRUD with digit-only NIF + phone, linked-vehicles list via Sale relation, PDF + CSV export |
-| **M3 · Sales** | Transactional create from Vehicle detail (flips status, sets soldDate, computes figures, emits ActivityLog), customer picker with live search, **live margin-VAT preview** during entry, read-only sale detail with delivery management |
-| **M4 · Tarefas** | Kanban (svelte-dnd-action) with optimistic UI, **assignee-only visibility** + "Geral" shared inbox option, recurring task spawning (MONTHLY/ANNUAL with date-fns clamp math), **automatic Sunday wipe of DONE tasks** (opportunistic, throttled), PDF + CSV export |
+| **M3 · Sales** | Transactional create from Vehicle detail (flips status, sets soldDate, computes figures, emits ActivityLog), customer picker with live search, **live margin-VAT preview** during entry, sale detail with delivery, price corrections and cancellation history |
+| **M4 · Tarefas** | Kanban (svelte-dnd-action) with optimistic UI, **assignee-only visibility** + "Geral" shared inbox option, recurring task spawning (MONTHLY/ANNUAL with date-fns clamp math), **Sunday cleanup of older completed tasks** (opportunistic, throttled), PDF + CSV export |
 | **M5 · Dashboard** | Single `/api/dashboard` endpoint runs 7 parallel aggregates: KPIs with deltas + 6-month sparklines, 12-month sales chart (custom SVG), best sellers, stock-aged table with thumbnails, today's tasks, recent activity feed, smart alerts banner. Streamed SSR. |
 | **M6 · Financeiro** | Tabs: Despesas Operacionais (CRUD with inline edit, category + date filters) + Lucro por Viatura (sortable table with totals row). PDF + CSV exports on both. |
 | **M7 · Guia de Fluxo** | Static onboarding page: 4 stage cards (Financiamento / IMT / Registo / Documentação) with red chevrons, mapped to `Vehicle.pendingDocFlags` |
 | **M8 · Definições** | Theme toggle, Clerk `<UserProfile />` (account/password/2FA), admin-editable `AppSetting` form for the stock-aging threshold |
-| **M9 · Polish + deploy** | Branded 404/500 error pages, Docker + Fly.io config, Vercel config, deployment guide (this README) |
+| **M9 · Polish + deploy** | Branded error pages; Node/Docker preparation for Render (see docs/render-single-service.md) |
 
 ## Stack
 
@@ -32,8 +32,8 @@ Internal admin web app for a Portuguese used-car dealership. Phase 1 — single 
 ```
 auto-nunes-martins/
 ├── backend/
-│   ├── Dockerfile           # multi-stage build for Fly.io
-│   ├── fly.toml             # Fly.io deployment config
+│   ├── Dockerfile           # same combined build; use repository-root context
+│   ├── fly.toml             # historical Fly.io configuration (not current target)
 │   ├── prisma/              # schema + migrations + seed
 │   └── src/
 │       ├── lib/data/        # repositories (Prisma)
@@ -42,7 +42,7 @@ auto-nunes-martins/
 │       ├── middleware/      # Clerk JWT + auto-provision
 │       └── routes/          # Express routers
 ├── apps/crm/
-│   ├── vercel.json          # Vercel deployment config
+│   ├── svelte.config.js     # Node adapter configuration
 │   └── src/
 │       ├── lib/components/  # brand/ + common/ + per-feature folders
 │       ├── lib/server/      # api.ts + per-resource typed clients
@@ -109,7 +109,7 @@ yarn dev   # website → :5173, CRM → :5174, backend → :4000
 | `yarn workspace @anm/backend check:env` | Diagnose backend env-var setup |
 | `yarn workspace @anm/backend supabase:bucket` | Create the Storage bucket (idempotent) |
 | `yarn workspace @anm/crm test:e2e` | CRM Playwright command (requires configured tests) |
-| `node --test scripts/deployment-scope.test.mjs` | Independent deployment scope tests |
+| `yarn test:service` | Combined gateway routing and isolation tests |
 
 ---
 
@@ -117,83 +117,11 @@ yarn dev   # website → :5173, CRM → :5174, backend → :4000
 
 The website, CRM and backend deploy independently. Database + storage live on Supabase. See [application deployment guide](docs/application-deployment.md).
 
-### 1. Supabase (production data)
+### One Docker service on Render
 
-1. Create a new project (free tier OK; upgrade to enable daily backups when ready)
-2. **Project Settings → API Keys**: copy
-   - `Project URL` → `SUPABASE_URL`
-   - `secret key` (`sb_secret_...`) → `SUPABASE_SECRET_KEY`
-3. **Settings → Database → Connection string**: copy
-   - Pooled (port 6543) → `DATABASE_URL`
-   - Direct (port 5432) → `DIRECT_URL`
-4. **Storage → New bucket** → `vehicle-photos` → **Private** (or just run the bucket script)
+Website, CRM and backend stay in separate workspaces behind one Node gateway. See [the Render guide](docs/render-single-service.md) for variables, build/start, healthcheck, temporary URL access, Clerk, shutdown and validation limits. The existing Supabase database and private photo bucket stay in use. No automatic migration, DNS changes or email activation are part of startup.
 
-### 2. Backend on Fly.io
-
-```bash
-# from repo root, first time:
-flyctl auth login
-flyctl launch --copy-config --no-deploy --config backend/fly.toml --dockerfile backend/Dockerfile
-
-# set secrets (one per line, repeat for each):
-flyctl secrets set -a auto-nunes-martins-api \
-  DATABASE_URL='postgresql://...' \
-  DIRECT_URL='postgresql://...' \
-  CLERK_PUBLISHABLE_KEY='pk_live_...' \
-  CLERK_SECRET_KEY='sk_live_...' \
-  CLERK_WEBHOOK_SECRET='whsec_...' \
-  SUPABASE_URL='https://....supabase.co' \
-  SUPABASE_SECRET_KEY='sb_secret_...' \
-  SUPABASE_STORAGE_BUCKET='vehicle-photos' \
-  FRONTEND_ORIGIN='https://your-app.vercel.app'
-
-flyctl deploy --config backend/fly.toml --dockerfile backend/Dockerfile
-```
-
-The Dockerfile's `CMD` runs `prisma migrate deploy` before booting so each
-deploy is zero-touch with respect to schema changes.
-
-The `fly.toml` config:
-- Madrid region (`mad`) — closest to Portugal
-- Auto-stops idle machines (`min_machines_running = 0`) — cold-start tolerated for admin tooling
-- `/health` HTTP check every 30s
-- `512mb` / 1 shared CPU — plenty for low-traffic admin app
-
-> **Windows local-build note**: the Vercel-adapted app builds on Windows
-> fails on a symlink the `adapter-vercel` creates (`EPERM: symlink ...catchall.func`).
-> Either enable Windows Developer Mode (Settings → Privacy & security →
-> For developers) or skip the local production build — Vercel's Linux build
-> environment doesn't have this restriction. `yarn dev` is unaffected.
-
-### 3. CRM and website on Vercel
-
-1. Connect the GitHub repo at <https://vercel.com/new>
-2. Create two projects, rooted at **`apps/crm`** and **`apps/website`**. Include files outside each root for workspace dependencies and deployment scripts.
-3. Vercel auto-detects SvelteKit. Each application's `vercel.json` declares:
-   - `cdg1` (Paris) region — closest to Lisbon
-   - Custom install/build that respects Yarn 4 workspaces
-4. Add env vars to the **CRM project** only:
-   - `PUBLIC_CLERK_PUBLISHABLE_KEY` = `pk_live_...`
-   - `CLERK_SECRET_KEY` = `sk_live_...`
-   - `PUBLIC_BACKEND_URL` = `https://auto-nunes-martins-api.fly.dev`
-   - `PUBLIC_WEBSITE_URL` = the public website origin
-5. The **website project** needs only `PUBLIC_BACKEND_URL`. Do not add Clerk keys or storage/database secrets.
-6. Set backend `FRONTEND_ORIGIN` to the CRM origin, and configure Clerk for the CRM domain. Validate both deployment pipelines before publishing; local production builds have not been run for this migration.
-
-### 4. Wire the Clerk webhook
-
-Once both apps are deployed:
-
-1. Clerk dashboard → **Configure → Webhooks → Add endpoint**
-2. URL: `https://auto-nunes-martins-api.fly.dev/webhooks/clerk`
-3. Subscribe to events: `user.created`, `user.updated`
-4. Copy the **Signing secret** (`whsec_...`)
-5. `flyctl secrets set -a auto-nunes-martins-api CLERK_WEBHOOK_SECRET='whsec_...'`
-6. Fly auto-deploys with the new secret
-
-The auth flow still works without the webhook — `requireUser` middleware
-auto-provisions a `User` row on first authenticated request via the Clerk
-API. The webhook just keeps the row in sync if you edit your profile in Clerk.
+Use the root Dockerfile and render.example.yaml. Website is at / and CRM at /crm/ on the temporary Render address. New photos pass backend optimization before storage; existing photos are not reprocessed. Render runtime and memory still need validation. Vercel adapters, deployment configs and generated artifacts were removed; external hosting integrations were not changed.
 
 ---
 

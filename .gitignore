@@ -51,3 +51,9 @@ test-results/
 # misc
 *.tgz
 .cache/
+
+# Generated combined service build metadata
+deployment/build.json
+
+# Local standalone tooling repository; not an application workspace
+/ui-ux-pro-max-skill/

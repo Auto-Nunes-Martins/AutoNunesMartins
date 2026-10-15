@@ -1,0 +1,43 @@
+# Example: one paid, always-on Docker web service. No DNS or database creation.
+services:
+  - type: web
+    name: auto-nunes-martins
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeployTrigger: off
+    envVars:
+      - key: WEBSITE_ORIGIN
+        sync: false
+      - key: PUBLIC_WEBSITE_URL
+        sync: false
+      - key: ADMIN_CLERK_USER_IDS
+        sync: false
+      - key: CRM_ORIGIN
+        sync: false
+      - key: CRM_BASE_PATH
+        value: /crm
+      - key: SITE_NOINDEX
+        value: "true"
+      - key: PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: vehicle-photos
+      - key: CONTACT_ENABLED
+        value: "false"
+      - key: CONTACT_PRIVACY_READY
+        value: "false"
