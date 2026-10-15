@@ -95,7 +95,6 @@
   import './navAddress.css';
   import './homeHeroPhoto.css';
   import './orbitLightTheme.css';
-  import { aboutContent } from './aboutContent';
   let {
     id,
     catalog = false,
@@ -713,11 +712,8 @@
         aria-label="Viaturas em destaque"
         aria-roledescription="carrossel"
       >
-        {#if heroVersion === 3}<HeroStandBackground bind:settings={heroBackground} />{/if}
+        {#if heroVersion === 2}<HeroStandBackground bind:settings={heroBackground} />{/if}
         <div class="orbit-stage" data-hero-stage>
-          {#if heroVersion === 2}<div class="home-stand-backdrop" aria-hidden="true">
-            <img src={aboutContent.heroImage.id} srcset={aboutContent.heroImage.srcset} sizes="(max-width: 700px) 100vw, (max-width: 1050px) 80vw, 100vw" width="1024" height="768" alt="" loading="eager" fetchpriority="high" decoding="async" />
-          </div>{/if}
           <StageBackdrop />
           <div class="orbit-topline">
             <span class="kicker hero-kicker"
@@ -731,7 +727,7 @@
             <img
               class="orbit-hero-signature"
               data-theme-logo={heroVersion === 1 ? '' : undefined}
-              src={isDark || heroVersion === 2 || heroVersion === 3 ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
+              src={isDark || heroVersion === 2 ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
               alt="Auto Nunes Martins"
               width="1881"
               height="836"
@@ -757,7 +753,7 @@
                   class:active={heroIndex === index}
                   src={photo(featured.image, 1800)}
                   srcset={responsivePhoto(featured.image)}
-                  sizes={heroVersion === 2 ? '(max-width: 700px) 92vw, 57vw' : heroImageSizes}
+                  sizes={heroImageSizes}
                   alt={heroIndex === index
                     ? `${featured.brand} ${featured.model}${featured.illustrative ? ' — imagem ilustrativa' : ''}`
                     : ''}
@@ -821,11 +817,11 @@
       </section>
 
       <div class="hero-versions" role="group" aria-label="Escolher composição do hero">
-        {#each [1, 2, 3] as version}
-          <button type="button" aria-label={`Versão ${version} do hero`} aria-pressed={heroVersion === version} title={['Original', 'Fotografia imersiva', 'Original com fotografia panorâmica'][version - 1]} onclick={() => heroVersion = version}>{version}</button>
+        {#each [1, 2] as version}
+          <button type="button" aria-label={`Versão ${version} do hero`} aria-pressed={heroVersion === version} title={['Original', 'Original com fotografia panorâmica'][version - 1]} onclick={() => heroVersion = version}>{version}</button>
         {/each}
       </div>
-      {#if import.meta.env.DEV}<HeroBackgroundTuner bind:settings={heroBackground} active={heroVersion === 3} onchange={(value) => heroBackground = value} />{/if}
+      {#if import.meta.env.DEV}<HeroBackgroundTuner bind:settings={heroBackground} active={heroVersion === 2} onchange={(value) => heroBackground = value} />{/if}
       <OrbitStats />
 
       <section class="showroom" id="selecao">
