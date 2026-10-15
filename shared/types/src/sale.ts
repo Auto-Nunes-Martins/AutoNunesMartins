@@ -5,8 +5,7 @@ import { licensePlatePtSchema } from './vehicle.js';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-const emptyToUndefined = (v: unknown) =>
-  typeof v === 'string' && v.trim() === '' ? undefined : v;
+const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
 
 /**
  * A car the customer hands over as partial payment, recorded inline on the
@@ -28,11 +27,7 @@ export const tradeInCreateSchema = z
       .min(1950, 'Ano mínimo: 1950')
       .max(CURRENT_YEAR + 1, `Ano máximo: ${CURRENT_YEAR + 1}`),
     fuel: FuelEnum,
-    mileage: z.coerce
-      .number()
-      .int()
-      .min(0, 'Quilometragem não pode ser negativa')
-      .max(2_000_000),
+    mileage: z.coerce.number().int().min(0, 'Quilometragem não pode ser negativa').max(2_000_000),
     licensePlate: z.preprocess(emptyToUndefined, licensePlatePtSchema.optional()),
     vin: z.preprocess(
       emptyToUndefined,
@@ -90,6 +85,44 @@ export const saleCreateSchema = z.object({
   tradeIn: tradeInCreateSchema.optional(),
 });
 export type SaleCreate = z.infer<typeof saleCreateSchema>;
+
+export const saleCancellationDecisionSchema = z
+  .object({
+    reason: z.string().trim().min(3, 'Indique o motivo (3 a 500 caracteres).').max(500),
+    tradeInAction: z.enum(['RETURN', 'KEEP']).optional(),
+    independentPurchasePrice: moneySchema
+      .refine(
+        (value) => Number(value) >= 0 && Number(value) <= 9999999999.99,
+        'O valor deve ser entre 0 e 9 999 999 999,99 €.',
+      )
+      .optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.tradeInAction === 'KEEP' && value.independentPurchasePrice === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['independentPurchasePrice'],
+        message: 'Confirme o valor de aquisição independente da retoma.',
+      });
+    }
+    if (value.tradeInAction !== 'KEEP' && value.independentPurchasePrice !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['independentPurchasePrice'],
+        message: 'O valor de aquisição aplica-se apenas à retoma mantida.',
+      });
+    }
+  });
+export const saleCancellationSchema = z
+  .object({
+    decision: saleCancellationDecisionSchema,
+    confirmed: z.literal(true),
+    reviewToken: z.string().min(1),
+  })
+  .strict();
+export type SaleCancellationDecision = z.infer<typeof saleCancellationDecisionSchema>;
+export type SaleCancellation = z.infer<typeof saleCancellationSchema>;
 
 /** Shape returned by the API for an existing trade-in on a sale. */
 export const tradeInSchema = z.object({

@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
 import type { RequestEvent } from '@sveltejs/kit';
 
@@ -31,7 +32,7 @@ export async function apiFetch(
     headers.set('content-type', 'application/json');
   }
 
-  const url = `${PUBLIC_BACKEND_URL}${path}`;
+  const url = `${env.INTERNAL_BACKEND_URL || PUBLIC_BACKEND_URL}${path}`;
   return event.fetch(url, { ...init, headers });
 }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { useClerkContext } from 'svelte-clerk';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import KPICard from '$lib/components/brand/KPICard.svelte';
@@ -18,11 +19,7 @@
   import TodayTasks from '$lib/components/dashboard/TodayTasks.svelte';
   import RecentActivityFeed from '$lib/components/dashboard/RecentActivityFeed.svelte';
   import FeaturedVehicleHero from '$lib/components/dashboard/FeaturedVehicleHero.svelte';
-  import {
-    formatCompactEUR,
-    formatDateLong,
-    formatGreeting,
-  } from '$lib/utils/format';
+  import { formatCompactEUR, formatDateLong, formatGreeting } from '$lib/utils/format';
   import type { PageData } from './$types';
 
   interface Props {
@@ -50,7 +47,6 @@
     if (prismaName && prismaName.includes(' ')) return prismaName.split(' ')[0]!;
     return '';
   });
-
 </script>
 
 <svelte:head>
@@ -64,7 +60,9 @@
       flex space-between with items-end,
       title block on the left, Exportar + Adicionar Viatura buttons on the right.
   -->
-  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6 pt-6 md:pt-[28px] pb-6 md:pb-[32px]">
+  <div
+    class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6 pt-6 md:pt-[28px] pb-6 md:pb-[32px]"
+  >
     <div class="min-w-0">
       <ItalicHero text={`${greeting}, `} accent={firstName ? `${firstName}.` : ''} size="lg" />
       <!--
@@ -91,9 +89,9 @@
       <!-- Menu (sem default) — utilizador escolhe CSV ou PDF. O endpoint
            /dashboard/export gera um snapshot executivo dos KPIs + agregados
            dos últimos 12 meses + best sellers + alertas activos. -->
-      <ExportMenu baseHref="/dashboard/export" />
+      <ExportMenu baseHref={crmPath("/dashboard/export")} />
       <a
-        href="/viaturas/nova"
+        href={crmPath("/viaturas/nova")}
         class="inline-flex items-center gap-2 px-[14px] py-[10px] bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] text-white font-display font-semibold italic uppercase text-[12px] tracking-[0.1em] transition-colors cursor-pointer"
         style="border-radius: var(--radius-btn);"
       >
@@ -147,7 +145,7 @@
       <!-- Featured vehicle hero — awaited in the load function so it ships
            in the initial HTML and doesn't cause a layout shift. -->
       <FeaturedVehicleHero
-        vehicle={data.featuredVehicle}
+        highlights={data.highlights}
         salesThisMonth={d.kpis.vendasMes.count}
         revenueYtd={d.salesChart.ytdRevenue}
       />
@@ -204,9 +202,7 @@
         <KPICard
           icon={BrandGauge}
           label="Margem Média"
-          value={d.kpis.margemMedia.current !== null
-            ? d.kpis.margemMedia.current.toFixed(1)
-            : '—'}
+          value={d.kpis.margemMedia.current !== null ? d.kpis.margemMedia.current.toFixed(1) : '—'}
           suffix={d.kpis.margemMedia.current !== null ? '%' : undefined}
           deltaPct={d.kpis.margemMedia.deltaPct}
           sparkline={d.kpis.sparklines.margem}
@@ -240,7 +236,7 @@
       <!-- Recent activity (full width) — kept below as our own extension;
            the prototype doesn't have this panel but it provides real value
            for an admin tool. -->
-      <RecentActivityFeed items={d.recentActivity} />
+      <RecentActivityFeed dashboard items={d.recentActivity} />
     {/if}
   {/await}
 </section>

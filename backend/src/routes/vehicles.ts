@@ -1,10 +1,9 @@
+import { duplicateVehicleFeedback } from '../lib/domain/vehicleConflict.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { VehicleStateConflict } from '../lib/server/vehicleService.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import {
-  vehicleCreateSchema,
-  vehicleFilterSchema,
-  vehicleUpdateSchema,
-} from '@anm/types';
+import { vehicleCreateSchema, vehicleFilterSchema, vehicleUpdateSchema } from '@anm/types';
 import { prisma } from '../db.js';
 import { listVehicles } from '../lib/data/vehicle.js';
 import { createSignedReadUrls } from '../lib/data/storage.js';
@@ -34,104 +33,137 @@ const listQuerySchema = vehicleFilterSchema.extend({
   sortDir: z.enum(['asc', 'desc']).default('desc'),
 });
 
-router.get('/', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = listQuerySchema.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
-    return;
-  }
-  const result = await listVehicles(prisma, parsed.data);
-
-  // Batch-sign primary photos (index 0) so the list can show thumbnails.
-  // A single Supabase call handles all rows on the current page.
-  const primaryPaths = result.items
-    .map((v) => v.photos[0])
-    .filter((p): p is string => typeof p === 'string' && p.length > 0);
-
-  let signed: Map<string, string> = new Map();
-  if (primaryPaths.length > 0) {
-    try {
-      signed = await createSignedReadUrls(primaryPaths, 3600);
-    } catch (err) {
-      logger.warn({ err }, 'Failed to batch-sign vehicle thumbnails (list still works)');
-    }
-  }
-
-  res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
-  res.json({
-    ...result,
-    items: result.items.map((v) => {
-      const primary = v.photos[0];
-      return {
-        ...v,
-        purchasePrice: v.purchasePrice.toString(),
-        salePrice: v.salePrice?.toString() ?? null,
-        thumbnailUrl: primary ? (signed.get(primary) ?? null) : null,
-      };
-    }),
-  });
-});
-
-router.get('/:id', requireUser, async (req: AuthedRequest, res: Response) => {
-  const result = await getVehicleWithProfit(param(req, 'id'));
-  if (!result) {
-    res.status(404).json({ error: 'Vehicle not found' });
-    return;
-  }
-  res.json(result);
-});
-
-router.post('/', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = vehicleCreateSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  try {
-    const created = await createVehicle(parsed.data, {
-      actorId: req.user.id,
-      actorName: req.user.name,
-    });
-    res.status(201).json({ id: created.id });
-  } catch (err) {
-    if ((err as { code?: string }).code === 'P2002') {
-      res.status(409).json({ error: 'VIN already exists' });
+router.get(
+  '/',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = listQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
       return;
     }
-    throw err;
-  }
-});
+    const result = await listVehicles(prisma, parsed.data);
 
-router.patch('/:id', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = vehicleUpdateSchema
-    .omit({ id: true })
-    .safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  try {
-    await updateVehicle(param(req, 'id'), parsed.data, {
-      actorId: req.user.id,
-      actorName: req.user.name,
+    // Batch-sign primary photos (index 0) so the list can show thumbnails.
+    // A single Supabase call handles all rows on the current page.
+    const primaryPaths = result.items
+      .map((v) => v.photos[0])
+      .filter((p): p is string => typeof p === 'string' && p.length > 0);
+
+    let signed: Map<string, string> = new Map();
+    if (primaryPaths.length > 0) {
+      try {
+        signed = await createSignedReadUrls(primaryPaths, 3600);
+      } catch (err) {
+        logger.warn({ err }, 'Failed to batch-sign vehicle thumbnails (list still works)');
+      }
+    }
+
+    res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
+    res.json({
+      ...result,
+      items: result.items.map((v) => {
+        const primary = v.photos[0];
+        return {
+          ...v,
+          purchasePrice: v.purchasePrice.toString(),
+          salePrice: v.salePrice?.toString() ?? null,
+          thumbnailUrl: primary ? (signed.get(primary) ?? null) : null,
+        };
+      }),
     });
-    res.json({ ok: true });
-  } catch (err) {
-    if (err instanceof VehicleNotFound) {
+  }),
+);
+
+router.get(
+  '/:id',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const result = await getVehicleWithProfit(param(req, 'id'));
+    if (!result) {
       res.status(404).json({ error: 'Vehicle not found' });
       return;
     }
-    throw err;
-  }
-});
+    res.json(result);
+  }),
+);
+
+router.post(
+  '/',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = vehicleCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
+      return;
+    }
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    try {
+      const created = await createVehicle(parsed.data, {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      res.status(201).json({ id: created.id });
+    } catch (err) {
+      if (err instanceof VehicleStateConflict) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      if ((err as { code?: string }).code === 'P2002') {
+        res.status(409).json(duplicateVehicleFeedback(err));
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+router.patch(
+  '/:id',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = vehicleUpdateSchema.omit({ id: true }).safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
+      return;
+    }
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    try {
+      await updateVehicle(param(req, 'id'), parsed.data, {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      if ((err as { code?: string }).code === 'P2002') {
+        res.status(409).json(duplicateVehicleFeedback(err));
+        return;
+      }
+      if ((err as { code?: string }).code === 'P2004') {
+        res.status(409).json({
+          error:
+            'A retoma devolvida está fora do stock. Regularize uma nova aquisição separadamente antes de a disponibilizar.',
+        });
+        return;
+      }
+      if (err instanceof VehicleStateConflict) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      if (err instanceof VehicleNotFound) {
+        res.status(404).json({ error: 'Vehicle not found' });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
 
 const publishSchema = z.object({
   salePrice: moneySchema,
@@ -140,62 +172,77 @@ const publishSchema = z.object({
   description: z.string().trim().min(1, 'Descrição obrigatória').max(2000),
 });
 
-router.post('/:id/publish', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = publishSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  try {
-    await publishVehicle(
-      param(req, 'id'),
-      { salePrice: parsed.data.salePrice, description: parsed.data.description },
-      { actorId: req.user.id, actorName: req.user.name },
-    );
-    res.json({ ok: true });
-  } catch (err) {
-    if (err instanceof VehicleNotFound) {
-      res.status(404).json({ error: 'Vehicle not found' });
+router.post(
+  '/:id/publish',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = publishSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
       return;
     }
-    if (err instanceof VehicleNotDraft) {
-      res.status(409).json({
-        error: `Viatura em estado "${err.currentStatus}" não pode ser publicada (só DRAFT).`,
-      });
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
-    throw err;
-  }
-});
+    try {
+      await publishVehicle(
+        param(req, 'id'),
+        { salePrice: parsed.data.salePrice, description: parsed.data.description },
+        { actorId: req.user.id, actorName: req.user.name },
+      );
+      res.json({ ok: true });
+    } catch (err) {
+      if (err instanceof VehicleNotFound) {
+        res.status(404).json({ error: 'Vehicle not found' });
+        return;
+      }
+      if (err instanceof VehicleNotDraft) {
+        res.status(409).json({
+          error: `Viatura em estado "${err.currentStatus}" não pode ser publicada (só DRAFT).`,
+        });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
 
-router.delete('/:id', requireUser, async (req: AuthedRequest, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  try {
-    await deleteVehicle(param(req, 'id'), {
-      actorId: req.user.id,
-      actorName: req.user.name,
-    });
-    res.json({ ok: true });
-  } catch (err) {
-    if (err instanceof VehicleNotFound) {
-      res.status(404).json({ error: 'Vehicle not found' });
+router.delete(
+  '/:id',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
-    if (err instanceof VehicleHasSale) {
-      res.status(409).json({
-        error: 'Cannot delete vehicle with an existing sale. Delete the sale first.',
+    try {
+      await deleteVehicle(param(req, 'id'), {
+        actorId: req.user.id,
+        actorName: req.user.name,
       });
-      return;
+      res.json({ ok: true });
+    } catch (err) {
+      if (['P2003', 'P2014'].includes((err as { code?: string }).code ?? '')) {
+        res.status(409).json({
+          error: 'Esta viatura tem histórico de vendas ou retoma associado e deve ser preservada.',
+        });
+        return;
+      }
+      if (err instanceof VehicleNotFound) {
+        res.status(404).json({ error: 'Vehicle not found' });
+        return;
+      }
+      if (err instanceof VehicleHasSale) {
+        res.status(409).json({
+          error:
+            'Esta viatura tem uma venda activa. Use o fluxo Anular venda para preservar o histórico.',
+        });
+        return;
+      }
+      throw err;
     }
-    throw err;
-  }
-});
+  }),
+);
 
 export default router;

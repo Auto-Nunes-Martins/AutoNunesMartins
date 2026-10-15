@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { page } from '$app/stores';
   import { AlertOctagon } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -32,6 +33,6 @@
       <AlertOctagon class="h-5 w-5 text-[var(--color-red)] flex-shrink-0 mt-0.5" />
       <p class="text-[14px] leading-relaxed text-[var(--color-text-muted)]">{message}</p>
     </div>
-    <Button variant="primary" href="/">Voltar ao início</Button>
+    <Button variant="primary" href={crmPath("/")}>Voltar ao início</Button>
   </div>
 </main>

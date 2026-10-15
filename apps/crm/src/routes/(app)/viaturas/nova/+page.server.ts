@@ -1,3 +1,4 @@
+import { crmPath } from '$lib/paths';
 import { fail, error, redirect } from '@sveltejs/kit';
 import { vehicleCreateSchema } from '@anm/types';
 import { vehiclesApi } from '$lib/server/vehicles';
@@ -65,11 +66,19 @@ export const actions: Actions = {
 
     try {
       const { id } = await vehiclesApi.create(event, parsed.data);
-      redirect(303, `/viaturas/nova?viatura=${id}`);
+      redirect(303, crmPath(`/viaturas/nova?viatura=${id}`));
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { error?: string } | null;
-        return fail(err.status, { error: body?.error ?? 'Falha ao criar viatura.' });
+        const feedback = err.body as {
+          field?: string;
+          issues?: { path: (string | number)[]; message: string }[];
+        } | null;
+        return fail(err.status, {
+          field: feedback?.field,
+          issues: feedback?.issues,
+          error: body?.error ?? 'Falha ao criar viatura.',
+        });
       }
       throw err;
     }

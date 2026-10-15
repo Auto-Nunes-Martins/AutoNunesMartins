@@ -10,7 +10,9 @@ export interface ListCustomersParams {
   sortDir?: 'asc' | 'desc';
 }
 
-export function buildCustomerWhere(filter: Pick<ListCustomersParams, 'q'>): Prisma.CustomerWhereInput {
+export function buildCustomerWhere(
+  filter: Pick<ListCustomersParams, 'q'>,
+): Prisma.CustomerWhereInput {
   if (!filter.q) return {};
   return {
     OR: [
@@ -35,7 +37,7 @@ export async function listCustomers(tx: TxClient, params: ListCustomersParams) {
       orderBy: { [sortBy]: sortDir },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: { _count: { select: { sales: true } } },
+      include: { _count: { select: { sales: { where: { cancelledAt: null } } } } },
     }),
     tx.customer.count({ where }),
   ]);
@@ -51,7 +53,15 @@ export async function getCustomerById(tx: TxClient, id: string) {
         orderBy: { saleDate: 'desc' },
         include: {
           vehicle: {
-            select: { id: true, brand: true, model: true, year: true, vin: true, licensePlate: true, photos: true },
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+              year: true,
+              vin: true,
+              licensePlate: true,
+              photos: true,
+            },
           },
         },
       },

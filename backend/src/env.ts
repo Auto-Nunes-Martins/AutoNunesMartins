@@ -5,10 +5,16 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   LOG_LEVEL: z.string().default('info'),
   FRONTEND_ORIGIN: z.string().url().default('http://localhost:5174'),
+  CONTACT_ENABLED: z.enum(['true', 'false']).default('false'),
+  CONTACT_RELAY_SECRET: z.string().min(32).optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  CONTACT_FROM_EMAIL: z.string().email().optional(),
+  CONTACT_TO_EMAIL: z.string().email().optional(),
 
   DATABASE_URL: z.string().min(1),
   DIRECT_URL: z.string().min(1).optional(),
 
+  ADMIN_CLERK_USER_IDS: z.string().optional(),
   CLERK_PUBLISHABLE_KEY: z.string().min(1),
   CLERK_SECRET_KEY: z.string().min(1),
   CLERK_WEBHOOK_SECRET: z.string().min(1),

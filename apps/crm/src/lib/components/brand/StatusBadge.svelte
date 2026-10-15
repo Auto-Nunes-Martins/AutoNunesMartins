@@ -17,6 +17,7 @@
     DELIVERED: 'Entregue',
     DOCS_PENDING: 'Docs Pendentes',
     DRAFT: 'Rascunho',
+    RETURNED: 'Devolvida ao cliente',
   };
 
   const PRIORITY_LABELS: Record<Priority, string> = {
@@ -33,20 +34,57 @@
   };
 
   const STYLES: Record<StatusKind, { bg: string; fg: string }> = {
-    AVAILABLE: { bg: 'color-mix(in oklab, var(--color-success) 18%, transparent)', fg: 'var(--color-success)' },
-    RESERVED: { bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)', fg: 'var(--color-warning)' },
-    SOLD: { bg: 'color-mix(in oklab, var(--color-text-muted) 22%, transparent)', fg: 'var(--color-text)' },
-    DELIVERED: { bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)', fg: 'var(--color-info)' },
-    DOCS_PENDING: { bg: 'color-mix(in oklab, var(--color-red) 18%, transparent)', fg: 'var(--color-red)' },
+    AVAILABLE: {
+      bg: 'color-mix(in oklab, var(--color-success) 18%, transparent)',
+      fg: 'var(--color-success)',
+    },
+    RESERVED: {
+      bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)',
+      fg: 'var(--color-warning)',
+    },
+    SOLD: {
+      bg: 'color-mix(in oklab, var(--color-text-muted) 22%, transparent)',
+      fg: 'var(--color-text)',
+    },
+    DELIVERED: {
+      bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)',
+      fg: 'var(--color-info)',
+    },
+    DOCS_PENDING: {
+      bg: 'color-mix(in oklab, var(--color-red) 18%, transparent)',
+      fg: 'var(--color-red)',
+    },
     // DRAFT — laranja (mesma família visual dos chips de retoma).
     // Sinaliza "viatura pendente de preço" sem confundir com docs-em-falta.
     DRAFT: { bg: 'color-mix(in oklab, #f97316 18%, transparent)', fg: '#f97316' },
-    LOW: { bg: 'color-mix(in oklab, var(--color-text-muted) 16%, transparent)', fg: 'var(--color-text-muted)' },
-    MEDIUM: { bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)', fg: 'var(--color-info)' },
-    HIGH: { bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)', fg: 'var(--color-warning)' },
-    URGENT: { bg: 'color-mix(in oklab, var(--color-red) 22%, transparent)', fg: 'var(--color-red)' },
-    PENDING: { bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)', fg: 'var(--color-warning)' },
-    SCHEDULED: { bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)', fg: 'var(--color-info)' },
+    RETURNED: {
+      bg: 'color-mix(in oklab, var(--color-text-muted) 18%, transparent)',
+      fg: 'var(--color-text-muted)',
+    },
+    LOW: {
+      bg: 'color-mix(in oklab, var(--color-text-muted) 16%, transparent)',
+      fg: 'var(--color-text-muted)',
+    },
+    MEDIUM: {
+      bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)',
+      fg: 'var(--color-info)',
+    },
+    HIGH: {
+      bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)',
+      fg: 'var(--color-warning)',
+    },
+    URGENT: {
+      bg: 'color-mix(in oklab, var(--color-red) 22%, transparent)',
+      fg: 'var(--color-red)',
+    },
+    PENDING: {
+      bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)',
+      fg: 'var(--color-warning)',
+    },
+    SCHEDULED: {
+      bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)',
+      fg: 'var(--color-info)',
+    },
   };
 
   function resolveLabel(s: StatusKind): string {

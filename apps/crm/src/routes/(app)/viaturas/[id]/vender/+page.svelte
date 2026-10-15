@@ -1,5 +1,15 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
+  import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
+  import {
+    formFeedback,
+    isFormDirty,
+    markFormSaved,
+    showFormErrors,
+  } from '$lib/forms/formFeedback';
+  import CustomerForm from '$lib/components/customer/CustomerForm.svelte';
+  import type { CustomerListItem } from '$lib/server/customers';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { ArrowRightLeft, Calendar, Search, Tag, User as UserIcon } from 'lucide-svelte';
@@ -18,11 +28,39 @@
   const v = $derived(data.vehicle);
   const today = new Date().toISOString().slice(0, 10);
 
+  let customerDialog: HTMLDialogElement;
+  let customerDialogOpen = $state(false);
+  async function openCustomer() {
+    customerDialogOpen = true;
+    await tick();
+    customerDialog.showModal();
+  }
+  function closeCustomer(event?: Event) {
+    const form = customerDialog.querySelector('form');
+    if (form && isFormDirty(form) && !window.confirm('Descartar os dados deste cliente?')) {
+      event?.preventDefault();
+      return;
+    }
+    customerDialog.close();
+  }
+  let createdCustomers = $state<CustomerListItem[]>([]);
+  const customers = $derived([
+    ...createdCustomers,
+    ...data.customers.filter((c) => !createdCustomers.some((n) => n.id === c.id)),
+  ]);
+  function customerCreated(id: string, customer?: CustomerListItem) {
+    if (customer) createdCustomers = [...createdCustomers, customer];
+    customerId = id;
+    customerSearch = '';
+    customerDialog.close();
+    saleForm?.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  let saleForm: HTMLFormElement;
   let customerSearch = $state('');
   let customerId = $state('');
   // Read initial salePrice from data directly (not via $derived `v`) to avoid
   // Svelte 5's state_referenced_locally warning. We only need a default.
-  let salePriceInput = $state(data.vehicle.salePrice ?? '');
+  let salePriceInput = $state(untrack(() => data.vehicle.salePrice ?? ''));
   // Optional financing-referral commission. Net amount the dealer actually
   // pockets from the credit institution — added on top of the vehicle's
   // net margin in the live preview and persisted on the Sale row.
@@ -39,7 +77,9 @@
   let tradeInBrand = $state('');
   let tradeInModel = $state('');
   let tradeInYear = $state('');
-  let tradeInFuel = $state<'GASOLINE' | 'DIESEL' | 'HYBRID' | 'PLUGIN_HYBRID' | 'ELECTRIC' | 'LPG'>('GASOLINE');
+  let tradeInFuel = $state<'GASOLINE' | 'DIESEL' | 'HYBRID' | 'PLUGIN_HYBRID' | 'ELECTRIC' | 'LPG'>(
+    'GASOLINE',
+  );
   let tradeInMileage = $state('');
   let tradeInPlate = $state('');
   let tradeInVin = $state('');
@@ -58,8 +98,8 @@
 
   const filteredCustomers = $derived.by(() => {
     const q = customerSearch.trim().toLowerCase();
-    if (!q) return data.customers.slice(0, 50);
-    return data.customers
+    if (!q) return customers.slice(0, 50);
+    return customers
       .filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
@@ -70,9 +110,7 @@
       .slice(0, 50);
   });
 
-  const selectedCustomer = $derived(
-    customerId ? data.customers.find((c) => c.id === customerId) : null,
-  );
+  const selectedCustomer = $derived(customerId ? customers.find((c) => c.id === customerId) : null);
 
   // Live margin VAT preview (mirrors backend computation exactly, including
   // the manual commission fold-in so the previewed "Lucro Real" matches the
@@ -84,9 +122,7 @@
     // Commission may be blank, "0", or a positive number. Treat anything
     // not parseable as 0 so the preview never reads NaN.
     const commissionNum = Number(commissionInput);
-    const commission = Number.isFinite(commissionNum) && commissionNum > 0
-      ? commissionNum
-      : 0;
+    const commission = Number.isFinite(commissionNum) && commissionNum > 0 ? commissionNum : 0;
 
     if (!Number.isFinite(price) || price <= 0) {
       return {
@@ -153,7 +189,9 @@
 <section class="pt-8 pb-12 space-y-6">
   <div>
     <ItalicHero text="Registar venda" size="lg" />
-    <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] flex flex-wrap items-center gap-x-2 gap-y-1">
+    <p
+      class="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] flex flex-wrap items-center gap-x-2 gap-y-1"
+    >
       <span class="text-[var(--color-red)]">●</span>
       <span>{v.brand} {v.model}</span>
       <span class="text-[var(--color-text-faint)]">·</span>
@@ -166,7 +204,9 @@
   <form
     method="POST"
     action="?/submit"
-    use:enhance={({ cancel }) => {
+    bind:this={saleForm}
+    use:formFeedback
+    use:enhance={({ cancel, formElement }) => {
       if (!customerId) {
         toast.error('Seleciona um cliente.');
         cancel();
@@ -179,29 +219,30 @@
         return;
       }
       submitting = true;
-      return async ({ result }) => {
-        submitting = false;
-        if (result.type === 'success') {
-          toast.success('Venda registada.');
-          await goto(`/viaturas/${v.id}`);
-        } else if (result.type === 'failure') {
-          // IMPORTANTE: NÃO chamamos `update()` nem `applyAction()` aqui —
-          // o objetivo é PRESERVAR todo o estado do formulário (cliente,
-          // preço, dados da retoma) para o dono do stand não ter de
-          // reintroduzir tudo. Os $state acima sobrevivem porque a página
-          // não é refeita.
-          const data = result.data as
-            | { error?: string; field?: string | null }
-            | undefined;
-          toast.error(data?.error ?? 'Falha ao registar.');
-          // Marca o input com erro inline quando o backend identifica qual
-          // foi o campo que colidiu (VIN ou matrícula duplicada).
-          if (data?.field === 'tradeIn.vin') {
-            tradeInVinError = data.error ?? 'VIN duplicado.';
+      return async ({ result, update }) => {
+        try {
+          if (result.type === 'success') {
+            markFormSaved(formElement);
+            toast.success('Venda registada.');
+            await goto(crmPath(`/viaturas/${v.id}`), { invalidateAll: true });
+            return;
+          } else if (result.type === 'failure') {
+            // Preserve os campos locais ao aplicar a falha sem repor o formulário.
+            const data = result.data as import('$lib/forms/formFeedback').FormFailure | undefined;
+            showFormErrors(formElement, data);
+            toast.error(data?.error ?? 'Falha ao registar.');
+            // Marca o input com erro inline quando o backend identifica qual
+            // foi o campo que colidiu (VIN ou matrícula duplicada).
+            if (data?.field === 'tradeIn.vin') {
+              tradeInVinError = data.error ?? 'VIN duplicado.';
+            }
+            if (data?.field === 'tradeIn.licensePlate') {
+              tradeInPlateError = data.error ?? 'Matrícula duplicada.';
+            }
           }
-          if (data?.field === 'tradeIn.licensePlate') {
-            tradeInPlateError = data.error ?? 'Matrícula duplicada.';
-          }
+          await update({ reset: false, invalidateAll: false });
+        } finally {
+          submitting = false;
         }
       };
     }}
@@ -219,7 +260,11 @@
     <!-- LEFT: customer + sale fields -->
     <div class="lg:col-span-7 space-y-6">
       <Panel>
-        <PanelHeader icon={UserIcon} title="Cliente" />
+        <PanelHeader icon={UserIcon} title="Cliente">
+          {#snippet actions()}<Button variant="outline" size="sm" onclick={openCustomer}
+              >Novo cliente</Button
+            >{/snippet}
+        </PanelHeader>
         <div class="p-5 space-y-3">
           {#if selectedCustomer}
             <div
@@ -231,7 +276,8 @@
                 <div
                   class="mt-0.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]"
                 >
-                  NIF {selectedCustomer.nif} <span class="text-[var(--color-text-faint)]">·</span> {selectedCustomer.phone}
+                  NIF {selectedCustomer.nif} <span class="text-[var(--color-text-faint)]">·</span>
+                  {selectedCustomer.phone}
                 </div>
               </div>
               <button
@@ -250,6 +296,7 @@
               <Search class="h-4 w-4 text-[var(--color-text-faint)]" />
               <input
                 type="search"
+                data-error-field="customerId"
                 placeholder="Pesquisar por nome, NIF ou telefone…"
                 bind:value={customerSearch}
                 class="flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
@@ -264,8 +311,10 @@
                 <div
                   class="p-4 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
                 >
-                  Sem resultados — <a class="text-[var(--color-red)] underline" href="/clientes/novo"
-                    >criar cliente</a
+                  Sem resultados — <button
+                    type="button"
+                    class="text-[var(--color-red)] underline"
+                    onclick={openCustomer}>criar cliente</button
                   >
                 </div>
               {:else}
@@ -432,7 +481,9 @@
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"
             >
               Comissão extra (opcional)
-              <span class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px]">
+              <span
+                class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px]"
+              >
                 · ex: comissão de financiamento paga pelo banco
               </span>
             </span>
@@ -447,7 +498,9 @@
               class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] tabular-nums outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             />
-            <span class="mt-1.5 font-mono text-[10px] text-[var(--color-text-faint)] uppercase tracking-[0.12em] leading-relaxed">
+            <span
+              class="mt-1.5 font-mono text-[10px] text-[var(--color-text-faint)] uppercase tracking-[0.12em] leading-relaxed"
+            >
               Valor líquido que recebes — somado ao Lucro Real.<br />
               <span class="normal-case tracking-normal text-[10.5px]">
                 Isento de IVA (art. 9.º, 27.º, a) CIVA) — entra como rendimento para efeitos de IRC.
@@ -486,7 +539,8 @@
               <span
                 class="block mt-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] normal-case tracking-normal"
               >
-                A retoma é registada como compra separada — não afeta a margem nem o IVA desta venda.
+                A retoma é registada como compra separada — não afeta a margem nem o IVA desta
+                venda.
               </span>
             </span>
           </label>
@@ -645,7 +699,9 @@
                   style="border-radius: var(--radius-btn);"
                 />
                 {#if tradeInPlateError}
-                  <span class="mt-1.5 font-mono text-[10px] text-[var(--color-red)] tracking-[0.06em]">
+                  <span
+                    class="mt-1.5 font-mono text-[10px] text-[var(--color-red)] tracking-[0.06em]"
+                  >
                     {tradeInPlateError}
                   </span>
                 {/if}
@@ -680,7 +736,9 @@
                   style="border-radius: var(--radius-btn);"
                 />
                 {#if tradeInVinError}
-                  <span class="mt-1.5 font-mono text-[10px] text-[var(--color-red)] tracking-[0.06em]">
+                  <span
+                    class="mt-1.5 font-mono text-[10px] text-[var(--color-red)] tracking-[0.06em]"
+                  >
                     {tradeInVinError}
                   </span>
                 {/if}
@@ -846,7 +904,7 @@
     </div>
 
     <div class="lg:col-span-12 flex items-center justify-end gap-3 pt-2">
-      <Button variant="ghost" href={`/viaturas/${v.id}`}>Cancelar</Button>
+      <Button variant="ghost" href={crmPath(`/viaturas/${v.id}`)}>Cancelar</Button>
       <Button
         variant="primary"
         type="submit"
@@ -859,7 +917,43 @@
   </form>
 </section>
 
+<dialog
+  bind:this={customerDialog}
+  class="customer-dialog"
+  aria-labelledby="new-customer-title"
+  oncancel={closeCustomer}
+  onclose={() => (customerDialogOpen = false)}
+>
+  <h2 id="new-customer-title" class="font-display font-bold italic text-[24px]">Novo cliente</h2>
+  <p class="text-[13px] text-[var(--color-text-muted)] mt-2 mb-6">
+    O cliente será selecionado nesta venda. Os valores da venda mantêm-se.
+  </p>
+  {#if customerDialogOpen}<CustomerForm
+      action="?/createCustomer"
+      submitLabel="Criar e selecionar"
+      redirectOnSuccess={false}
+      onsaved={customerCreated}
+      oncancel={closeCustomer}
+    />{/if}
+</dialog>
+
 <style>
+  .customer-dialog {
+    width: min(700px, calc(100vw - 32px));
+    max-height: calc(100svh - 40px);
+    overflow: auto;
+    padding: 24px;
+    margin: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+    box-shadow: 0 20px 60px #0006;
+  }
+  .customer-dialog::backdrop {
+    background: #0008;
+    backdrop-filter: blur(2px);
+  }
   .text-loss {
     color: var(--color-red);
   }

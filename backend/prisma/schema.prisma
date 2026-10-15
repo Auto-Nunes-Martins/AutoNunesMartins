@@ -63,7 +63,8 @@ model Vehicle {
   publicSpecifications Json?
 
   expenses VehicleExpense[]
-  sale     Sale?
+  sale     Sale? @relation("ActiveSale")
+  salesHistory Sale[] @relation("SaleHistory")
   /// Set when this vehicle was added to stock as the resulting car of a
   /// customer trade-in. Lets the detail page surface "Adquirido como retoma
   /// da venda X" so the dealer can follow consolidated profit across both
@@ -116,7 +117,13 @@ model Customer {
 // ─── Sales ───────────────────────────────────────────────────────────────
 model Sale {
   id             String         @id @default(cuid())
-  vehicleId      String         @unique
+  /// Unique link to the active sale; released on cancellation.
+  vehicleId      String?        @unique
+  originalVehicleId String
+  cancelledAt DateTime?
+  cancelledBy String?
+  cancellationReason String? @db.Text
+  cancellationDecision Json?
   customerId     String
   salePrice      Decimal        @db.Decimal(12, 2)
   vatAmount      Decimal        @db.Decimal(12, 2)
@@ -137,12 +144,15 @@ model Sale {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  vehicle  Vehicle  @relation(fields: [vehicleId], references: [id])
+  activeVehicle Vehicle? @relation("ActiveSale", fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicle  Vehicle  @relation("SaleHistory", fields: [originalVehicleId], references: [id])
   customer Customer @relation(fields: [customerId], references: [id])
   tradeIn  TradeIn?
 
   @@index([saleDate])
   @@index([customerId])
+  @@index([originalVehicleId])
+  @@index([cancelledAt, saleDate])
 }
 
 // ─── Trade-ins ───────────────────────────────────────────────────────────
@@ -155,7 +165,7 @@ model Sale {
 model TradeIn {
   id     String @id @default(cuid())
   saleId String @unique
-  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Restrict)
 
   // Minimal vehicle identification — enough for the receipt and to seed a
   // future Vehicle row if the car goes to stock.
@@ -174,7 +184,7 @@ model TradeIn {
 
   disposition        TradeInDisposition
   resultingVehicleId String?            @unique
-  resultingVehicle   Vehicle?           @relation("TradeInToVehicle", fields: [resultingVehicleId], references: [id])
+  resultingVehicle   Vehicle?           @relation("TradeInToVehicle", fields: [resultingVehicleId], references: [id], onDelete: Restrict)
 
   notes     String?  @db.Text
   createdAt DateTime @default(now())
@@ -195,7 +205,7 @@ model Task {
   recurrence         Recurrence @default(NONE)
   recurrenceParentId String?
   /// Set when status transitions to DONE; cleared when status moves away.
-  /// Used to auto-purge completed tasks after AppSetting.doneTaskRetentionDays.
+  /// Weekly cleanup removes DONE tasks completed before the latest Sunday.
   completedAt        DateTime?
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
@@ -263,6 +273,8 @@ enum VehicleStatus {
   /// criado quando entra uma retoma STOCK; sai de DRAFT via publishVehicle()
   /// quando o dono do stand decide o preço final e descrição.
   DRAFT
+  /// Retoma devolvida: ficha histórica fora do stock.
+  RETURNED
 }
 
 enum Fuel {

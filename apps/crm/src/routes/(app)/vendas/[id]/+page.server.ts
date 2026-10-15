@@ -1,6 +1,11 @@
-import { error, fail } from '@sveltejs/kit';
+import { crmPath } from '$lib/paths';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
-import { DeliveryStatusEnum } from '@anm/types';
+import {
+  DeliveryStatusEnum,
+  saleCancellationDecisionSchema,
+  saleCancellationSchema,
+} from '@anm/types';
 import { salesApi } from '$lib/server/sales';
 import { activityApi, type ActivityListResult } from '$lib/server/activity';
 import { ApiError } from '$lib/server/api';
@@ -49,6 +54,63 @@ const deliverySchema = z.object({
 });
 
 export const actions: Actions = {
+  reviewCancellation: async (event) => {
+    const fd = await event.request.formData();
+    const parsed = saleCancellationDecisionSchema.safeParse({
+      reason: fd.get('reason'),
+      tradeInAction: fd.get('tradeInAction') || undefined,
+      independentPurchasePrice: fd.get('independentPurchasePrice') || undefined,
+    });
+    if (!parsed.success)
+      return fail(400, {
+        cancellation: true,
+        error: parsed.error.issues[0]?.message ?? 'Dados inválidos.',
+      });
+    try {
+      return {
+        cancellation: true,
+        review: await salesApi.previewCancellation(event, event.params.id, parsed.data),
+      };
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: string; dependencySaleId?: string } | null;
+        return fail(err.status, {
+          cancellation: true,
+          error: body?.error ?? 'Falha ao rever a anulação.',
+          dependencySaleId: body?.dependencySaleId,
+        });
+      }
+      throw err;
+    }
+  },
+  cancelSale: async (event) => {
+    const fd = await event.request.formData();
+    const parsed = saleCancellationSchema.safeParse({
+      decision: {
+        reason: fd.get('reason'),
+        tradeInAction: fd.get('tradeInAction') || undefined,
+        independentPurchasePrice: fd.get('independentPurchasePrice') || undefined,
+      },
+      reviewToken: fd.get('reviewToken'),
+      confirmed: fd.get('confirmed') === 'yes',
+    });
+    if (!parsed.success)
+      return fail(400, {
+        cancellation: true,
+        error: 'Reveja os efeitos e confirme explicitamente a anulação.',
+      });
+    try {
+      await salesApi.cancel(event, event.params.id, parsed.data);
+    } catch (err) {
+      if (err instanceof ApiError)
+        return fail(err.status, {
+          cancellation: true,
+          error: (err.body as { error?: string } | null)?.error ?? 'Falha ao anular a venda.',
+        });
+      throw err;
+    }
+    redirect(303, crmPath(`/vendas/${event.params.id}`));
+  },
   delivery: async (event) => {
     const fd = await event.request.formData();
     const parsed = deliverySchema.safeParse({

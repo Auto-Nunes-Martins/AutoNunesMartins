@@ -80,12 +80,71 @@ describe('Shared create/edit publication action', () => {
 });
 
 describe('confirmed public specifications', () => {
- it('parses optional form values and forwards only approved details',async()=>{
-  await webPublicationAction(event({operation:'publish',publicPrice:'17141.78',publicDescription:'Confirmed description',confirmWithoutPhoto:'true',specificationsPresent:'true',powerHp:'110',engineCc:'999',seats:'7',doors:'5',category:'Familiar',color:'Cinza',equipment:'Ar condicionado\nBluetooth',privateNotes:'PRIVATE'}),id);
-  expect(vehiclesApi.webPublication).toHaveBeenCalledWith(expect.anything(),id,expect.objectContaining({specifications:{powerHp:110,engineCc:999,seats:7,doors:5,category:'Familiar',color:'Cinza',equipment:['Ar condicionado','Bluetooth']}}));
- });
- it('rejects invalid numeric characteristics without saving',async()=>{
-  const result=await webPublicationAction(event({operation:'publish',publicPrice:'17141.78',publicDescription:'Confirmed',confirmWithoutPhoto:'true',specificationsPresent:'true',powerHp:'-2'}),id);
-  expect(result).toHaveProperty('status',400);expect(vehiclesApi.webPublication).not.toHaveBeenCalled();
- });
+  it('parses optional form values and forwards only approved details', async () => {
+    await webPublicationAction(
+      event({
+        operation: 'publish',
+        publicPrice: '17141.78',
+        publicDescription: 'Confirmed description',
+        confirmWithoutPhoto: 'true',
+        specificationsPresent: 'true',
+        powerHp: '110',
+        engineCc: '999',
+        seats: '7',
+        doors: '5',
+        category: 'Familiar',
+        color: 'Cinza',
+        equipment: 'Ar condicionado\nBluetooth',
+        privateNotes: 'PRIVATE',
+      }),
+      id,
+    );
+    expect(vehiclesApi.webPublication).toHaveBeenCalledWith(
+      expect.anything(),
+      id,
+      expect.objectContaining({
+        specifications: {
+          powerHp: 110,
+          engineCc: 999,
+          seats: 7,
+          doors: 5,
+          category: 'Familiar',
+          color: 'Cinza',
+          equipment: ['Ar condicionado', 'Bluetooth'],
+        },
+      }),
+    );
+  });
+  it('rejects invalid numeric characteristics without saving', async () => {
+    const result = await webPublicationAction(
+      event({
+        operation: 'publish',
+        publicPrice: '17141.78',
+        publicDescription: 'Confirmed',
+        confirmWithoutPhoto: 'true',
+        specificationsPresent: 'true',
+        powerHp: '-2',
+      }),
+      id,
+    );
+    expect(result).toHaveProperty('status', 400);
+    expect(vehiclesApi.webPublication).not.toHaveBeenCalled();
+  });
+});
+
+it('preserves the explicit cover and gallery order in the publication request', async () => {
+  await webPublicationAction(
+    event({
+      operation: 'publish',
+      publicPrice: '18000',
+      publicDescription: 'Confirmado',
+      publicPhotoPaths: ['chosen-cover', 'photo-third', 'photo-second'],
+    }),
+    id,
+  );
+  expect(vehiclesApi.webPublication).toHaveBeenCalledWith(
+    expect.anything(),
+    id,
+    expect.objectContaining({ photoPaths: ['chosen-cover', 'photo-third', 'photo-second'] }),
+  );
 });

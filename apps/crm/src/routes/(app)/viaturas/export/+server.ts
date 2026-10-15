@@ -19,6 +19,7 @@ const STATUS_LABELS: Record<VehicleStatus, string> = {
   DELIVERED: 'Entregue',
   DOCS_PENDING: 'Docs Pendentes',
   DRAFT: 'Rascunho',
+  RETURNED: 'Devolvida ao cliente',
 };
 
 function fmtDate(s: string): string {
@@ -38,6 +39,7 @@ export const GET: RequestHandler = async (event) => {
   const format = sp.get('format') === 'pdf' ? 'pdf' : 'csv';
 
   const params: VehicleListParams = {
+    agedStock: sp.get('agedStock') === 'true' || undefined,
     brand: sp.get('brand') ?? undefined,
     model: sp.get('model') ?? undefined,
     fuel: (sp.get('fuel') as Fuel) ?? undefined,
@@ -64,7 +66,17 @@ export const GET: RequestHandler = async (event) => {
     if (page > 100) break; // safety cap
   }
 
-  const headers = ['Marca', 'Modelo', 'Ano', 'VIN', 'Km', 'Combustível', 'Aquisição', 'PVP', 'Estado'];
+  const headers = [
+    'Marca',
+    'Modelo',
+    'Ano',
+    'VIN',
+    'Km',
+    'Combustível',
+    'Aquisição',
+    'PVP',
+    'Estado',
+  ];
   const rows = items.map((v) => [
     v.brand,
     v.model,

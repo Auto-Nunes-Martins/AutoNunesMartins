@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { ArrowRightLeft, Car, Receipt, Search, X } from 'lucide-svelte';
@@ -76,6 +77,7 @@
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
     <div class="min-w-0">
       <ItalicHero text="Vendas" size="lg" />
+      <a class="text-sm underline" href={crmPath("/vendas/anuladas")}>Consultar vendas anuladas</a>
       <div
         class="mt-2 flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[var(--color-text-muted)]"
       >
@@ -90,7 +92,7 @@
     <!-- Export is desktop-only; preserves the current filter set via the
          existing query string. Menu (sem default) — utilizador escolhe formato. -->
     <div class="hidden md:flex items-center gap-2">
-      <ExportMenu baseHref="/vendas/export" extraQuery={$page.url.search} />
+      <ExportMenu baseHref={crmPath("/vendas/export")} extraQuery={$page.url.search} />
     </div>
   </div>
 
@@ -214,7 +216,7 @@
           {#each list.items as s (s.id)}
             {@const isLoss = Number(s.realProfit) < 0}
             <a
-              href={`/vendas/${s.id}`}
+              href={crmPath(`/vendas/${s.id}`)}
               class="block px-4 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
             >
               <div class="flex items-start justify-between gap-3">
@@ -222,11 +224,16 @@
                   <div
                     class="font-display font-semibold text-[14px] truncate group-hover:text-[var(--color-red)] transition-colors"
                   >
-                    {s.vehicle.brand} {s.vehicle.model}
+                    {s.vehicle.brand}
+                    {s.vehicle.model}
                   </div>
-                  <div class="font-mono text-[10px] tracking-[0.04em] text-[var(--color-text-faint)] truncate mt-0.5 flex items-center gap-2 flex-wrap">
+                  <div
+                    class="font-mono text-[10px] tracking-[0.04em] text-[var(--color-text-faint)] truncate mt-0.5 flex items-center gap-2 flex-wrap"
+                  >
                     {#if s.vehicle.licensePlate}
-                      <span class="tracking-[0.18em] text-[var(--color-text-muted)]">{s.vehicle.licensePlate}</span>
+                      <span class="tracking-[0.18em] text-[var(--color-text-muted)]"
+                        >{s.vehicle.licensePlate}</span
+                      >
                       <span>·</span><span>{s.vehicle.year}</span>
                     {:else}
                       <span>VIN {s.vehicle.vin}</span><span>·</span><span>{s.vehicle.year}</span>
@@ -250,15 +257,29 @@
               </div>
               <div class="mt-3 grid grid-cols-3 gap-2 text-[12px]">
                 <div>
-                  <div class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]">Cliente</div>
+                  <div
+                    class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
+                  >
+                    Cliente
+                  </div>
                   <div class="text-[12px] truncate mt-0.5">{s.customer.name}</div>
                 </div>
                 <div>
-                  <div class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]">Data</div>
-                  <div class="num-value text-[12px] text-[var(--color-text-muted)] mt-0.5">{formatDate(s.saleDate)}</div>
+                  <div
+                    class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
+                  >
+                    Data
+                  </div>
+                  <div class="num-value text-[12px] text-[var(--color-text-muted)] mt-0.5">
+                    {formatDate(s.saleDate)}
+                  </div>
                 </div>
                 <div class="text-right">
-                  <div class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]">Lucro</div>
+                  <div
+                    class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
+                  >
+                    Lucro
+                  </div>
                   <div
                     class="num-value text-[13px] mt-0.5 {isLoss
                       ? 'text-[var(--color-red)]'
@@ -348,7 +369,7 @@
                   class="border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
                 >
                   <td class="px-4 py-3">
-                    <a href={`/vendas/${s.id}`} class="flex items-center gap-3">
+                    <a href={crmPath(`/vendas/${s.id}`)} class="flex items-center gap-3">
                       <div
                         class="h-9 w-9 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
                         style="border-radius: 3px;"
@@ -359,14 +380,21 @@
                         <div
                           class="font-display font-semibold text-[13.5px] truncate group-hover:text-[var(--color-red)] transition-colors"
                         >
-                          {s.vehicle.brand} {s.vehicle.model}
+                          {s.vehicle.brand}
+                          {s.vehicle.model}
                         </div>
-                        <div class="font-mono text-[10px] tracking-[0.04em] text-[var(--color-text-faint)] flex items-center gap-2 flex-wrap mt-0.5">
+                        <div
+                          class="font-mono text-[10px] tracking-[0.04em] text-[var(--color-text-faint)] flex items-center gap-2 flex-wrap mt-0.5"
+                        >
                           {#if s.vehicle.licensePlate}
-                            <span class="tracking-[0.18em] text-[var(--color-text-muted)]">{s.vehicle.licensePlate}</span>
+                            <span class="tracking-[0.18em] text-[var(--color-text-muted)]"
+                              >{s.vehicle.licensePlate}</span
+                            >
                             <span>·</span><span>{s.vehicle.year}</span>
                           {:else}
-                            <span class="truncate">{s.vehicle.vin}</span><span>·</span><span>{s.vehicle.year}</span>
+                            <span class="truncate">{s.vehicle.vin}</span><span>·</span><span
+                              >{s.vehicle.year}</span
+                            >
                           {/if}
                           {#if s.hasTradeIn}
                             <!-- Same pill pattern as "Em destaque" on /viaturas/[id]:
@@ -387,16 +415,20 @@
                   </td>
                   <td class="px-4 py-3">
                     <a
-                      href={`/clientes/${s.customer.id}`}
+                      href={crmPath(`/clientes/${s.customer.id}`)}
                       class="text-[var(--color-text)] hover:text-[var(--color-red)] transition-colors text-[13px] truncate inline-block max-w-[180px]"
                     >
                       {s.customer.name}
                     </a>
-                    <div class="font-mono text-[10px] text-[var(--color-text-faint)] tracking-[0.04em]">
+                    <div
+                      class="font-mono text-[10px] text-[var(--color-text-faint)] tracking-[0.04em]"
+                    >
                       NIF {s.customer.nif}
                     </div>
                   </td>
-                  <td class="px-4 py-3 num-value text-[12px] text-right text-[var(--color-text-muted)]">
+                  <td
+                    class="px-4 py-3 num-value text-[12px] text-right text-[var(--color-text-muted)]"
+                  >
                     {formatDate(s.saleDate)}
                   </td>
                   <td class="px-4 py-3 num-value text-[13px] text-right">
@@ -405,10 +437,14 @@
                   <td class="px-4 py-3 num-value text-[13px] text-right">
                     {formatEUR(s.salePrice)}
                   </td>
-                  <td class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-text-muted)]">
+                  <td
+                    class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-text-muted)]"
+                  >
                     {formatEUR(s.expensesTotal)}
                   </td>
-                  <td class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-warning)]">
+                  <td
+                    class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-warning)]"
+                  >
                     {formatEUR(s.vatAmount)}
                   </td>
                   <td
@@ -449,14 +485,18 @@
                 <td class="px-4 py-3 num-value text-[13px] text-right">
                   {formatEUR(list.totals.revenue)}
                 </td>
-                <td class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-text-muted)]">
+                <td
+                  class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-text-muted)]"
+                >
                   {formatEUR(list.totals.expenses)}
                 </td>
                 <td class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-warning)]">
                   {formatEUR(list.totals.vat)}
                 </td>
                 <td
-                  class="px-4 py-3 num-value text-[13px] text-right {Number(list.totals.commission) > 0
+                  class="px-4 py-3 num-value text-[13px] text-right {Number(
+                    list.totals.commission,
+                  ) > 0
                     ? 'text-[var(--color-success)]'
                     : 'text-[var(--color-text-faint)]'}"
                   title="Total de comissões de financiamento (isentas de IVA — art. 9.º, 27.º, a) CIVA)"

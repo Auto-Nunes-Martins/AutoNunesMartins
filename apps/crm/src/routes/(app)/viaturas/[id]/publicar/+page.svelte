@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
+  import { untrack } from 'svelte';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import { ArrowRightLeft, Check, Tag } from 'lucide-svelte';
@@ -20,7 +22,7 @@
   // — pode vir das notas da retoma) para o vendedor poder editar em vez
   // de partir do zero.
   let salePriceInput = $state('');
-  let descriptionInput = $state(data.vehicle.description ?? '');
+  let descriptionInput = $state(untrack(() => data.vehicle.description ?? ''));
   let submitting = $state(false);
 
   // Margem projetada — mostra ao vendedor o que vai ganhar nesta venda
@@ -95,14 +97,18 @@
         return;
       }
       submitting = true;
-      return async ({ result }) => {
-        submitting = false;
-        if (result.type === 'redirect') {
-          toast.success('Viatura publicada e disponível para venda.');
-        } else if (result.type === 'failure') {
-          toast.error(
-            (result.data as { error?: string } | undefined)?.error ?? 'Falha ao publicar.',
-          );
+      return async ({ result, update }) => {
+        try {
+          if (result.type === 'redirect') {
+            toast.success('Viatura publicada e disponível para venda.');
+          } else if (result.type === 'failure') {
+            toast.error(
+              (result.data as { error?: string } | undefined)?.error ?? 'Falha ao publicar.',
+            );
+          }
+          await update({ reset: false });
+        } finally {
+          submitting = false;
         }
       };
     }}
@@ -217,7 +223,9 @@
                 {formatEUR(projectedMargin.profit.toFixed(2))}
               </div>
               {#if projectedMargin.profit < 0}
-                <div class="mt-1 font-mono text-[10px] text-[var(--color-red)] uppercase tracking-[0.12em]">
+                <div
+                  class="mt-1 font-mono text-[10px] text-[var(--color-red)] uppercase tracking-[0.12em]"
+                >
                   Preço abaixo do custo — vais ter prejuízo.
                 </div>
               {/if}
@@ -228,7 +236,7 @@
     </div>
 
     <div class="lg:col-span-12 flex items-center justify-end gap-3 pt-2">
-      <Button variant="ghost" href={`/viaturas/${v.id}`}>Cancelar</Button>
+      <Button variant="ghost" href={crmPath(`/viaturas/${v.id}`)}>Cancelar</Button>
       <Button
         variant="primary"
         type="submit"

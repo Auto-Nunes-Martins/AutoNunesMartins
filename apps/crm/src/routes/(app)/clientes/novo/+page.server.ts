@@ -29,6 +29,7 @@ export const actions: Actions = {
     if (!parsed.success) {
       return fail(400, {
         error: parsed.error.issues[0]?.message ?? 'Dados inválidos',
+        issues: parsed.error.issues,
       });
     }
     try {
@@ -36,7 +37,13 @@ export const actions: Actions = {
       return { id };
     } catch (err) {
       if (err instanceof ApiError) {
+        const feedback = err.body as {
+          field?: string;
+          issues?: { path: (string | number)[]; message: string }[];
+        } | null;
         return fail(err.status, {
+          field: feedback?.field,
+          issues: feedback?.issues,
           error: (err.body as { error?: string } | null)?.error ?? 'Falha ao criar cliente.',
         });
       }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { ArrowRight, Car, Plus, Tag } from 'lucide-svelte';
   import { page } from '$app/stores';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -51,8 +52,8 @@
     </div>
     <!-- Desktop-only action buttons — mobile has the icon CTA in the topbar. -->
     <div class="hidden md:flex items-center gap-2">
-      <ExportMenu baseHref="/viaturas/export" extraQuery={$page.url.search} />
-      <Button variant="primary" size="md" href="/viaturas/nova">
+      <ExportMenu baseHref={crmPath("/viaturas/export")} extraQuery={$page.url.search} />
+      <Button variant="primary" size="md" href={crmPath("/viaturas/nova")}>
         <Plus class="h-4 w-4" />
         Adicionar Viatura
       </Button>
@@ -75,7 +76,7 @@
   -->
   {#await data.drafts then drafts}
     {#if !drafts._error && drafts.items.length > 0}
-      <Panel class="border-l-4 !border-l-[#f97316]" >
+      <Panel class="border-l-4 !border-l-[#f97316]">
         <PanelHeader
           icon={Tag}
           iconClass="text-[#f97316]"
@@ -85,7 +86,8 @@
         <div
           class="px-5 py-2.5 text-[12px] text-[var(--color-text-muted)] border-b border-[var(--color-border)] bg-[var(--color-bg-2)]"
         >
-          Finaliza a edição destas viaturas e publica-as para aparecerem no stand e no site.
+          Complete a ficha para disponibilizar a viatura em stock. A publicação no site é uma ação
+          separada.
         </div>
         <ul class="divide-y divide-[var(--color-border)]">
           {#each drafts.items as v (v.id)}
@@ -95,7 +97,7 @@
               class="flex items-center gap-4 px-5 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors"
             >
               <a
-                href={`/viaturas/${v.id}`}
+                href={crmPath(`/viaturas/${v.id}`)}
                 class="flex-1 min-w-0 flex items-center gap-3 group/link"
               >
                 <div
@@ -108,8 +110,11 @@
                   <div
                     class="font-display font-semibold text-[14px] truncate group-hover/link:text-[var(--color-red)] transition-colors"
                   >
-                    {v.brand} {v.model}
-                    <span class="font-mono font-normal text-[11px] text-[var(--color-text-muted)] ml-1">
+                    {v.brand}
+                    {v.model}
+                    <span
+                      class="font-mono font-normal text-[11px] text-[var(--color-text-muted)] ml-1"
+                    >
                       · {v.year}
                     </span>
                   </div>
@@ -143,7 +148,7 @@
                 </div>
               </a>
               <a
-                href={`/viaturas/${v.id}/publicar`}
+                href={crmPath(`/viaturas/${v.id}/publicar`)}
                 class="inline-flex items-center gap-1.5 px-3 h-9 font-mono uppercase tracking-[0.12em] text-[11px] text-white transition-colors flex-shrink-0"
                 style="background: #f97316; border-radius: var(--radius-btn);"
                 onmouseenter={(e) => (e.currentTarget.style.background = '#ea580c')}
@@ -176,7 +181,7 @@
           description="Ajusta os filtros acima ou adiciona a primeira viatura ao stand."
         >
           {#snippet actions()}
-            <Button variant="primary" size="md" href="/viaturas/nova">
+            <Button variant="primary" size="md" href={crmPath("/viaturas/nova")}>
               <Plus class="h-4 w-4" />
               Adicionar primeira viatura
             </Button>

@@ -23,15 +23,45 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
     description: form.get('publicDescription'),
     photoPaths: form.getAll('publicPhotoPaths'),
     transmission: form.get('publicTransmission') || null,
-    ...(form.has('specificationsPresent') ? { specifications: {
-      ...Object.fromEntries(['powerHp', 'engineCc', 'doors', 'seats'].map(key => [key, form.get(key) ? Number(form.get(key)) : null])),
-      category: form.get('category') || '',
-      color: form.get('color') || '',
-      equipment: String(form.get('equipment') || '').split(/\r?\n/).map(value => value.trim()).filter(Boolean),
-    } } : {}),
+    ...(form.has('specificationsPresent')
+      ? {
+          specifications: {
+            ...Object.fromEntries(
+              ['powerHp', 'engineCc', 'doors', 'seats'].map((key) => [
+                key,
+                form.get(key) ? Number(form.get(key)) : null,
+              ]),
+            ),
+            category: form.get('category') || '',
+            color: form.get('color') || '',
+            equipment: String(form.get('equipment') || '')
+              .split(/\r?\n/)
+              .map((value) => value.trim())
+              .filter(Boolean),
+          },
+        }
+      : {}),
   });
   if (!remove && !parsed.success)
-    return fail(400, { error: parsed.error.issues[0]?.message ?? 'Reveja os dados públicos.' });
+    return fail(400, {
+      error: parsed.error.issues[0]?.message ?? 'Reveja os dados públicos.',
+      issues: parsed.error.issues.map((issue) => ({
+        ...issue,
+        path:
+          issue.path[0] === 'specifications'
+            ? issue.path.slice(1)
+            : [
+                (
+                  {
+                    price: 'publicPrice',
+                    description: 'publicDescription',
+                    transmission: 'publicTransmission',
+                  } as Record<string, string>
+                )[String(issue.path[0])] ?? issue.path[0],
+                ...issue.path.slice(1),
+              ],
+      })),
+    });
   if (
     !remove &&
     parsed.success &&

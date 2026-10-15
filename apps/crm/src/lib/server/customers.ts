@@ -25,6 +25,7 @@ export interface CustomerListResponse {
 }
 
 export interface CustomerDetailSale {
+  cancelledAt: string | null;
   id: string;
   salePrice: string;
   vatAmount: string;

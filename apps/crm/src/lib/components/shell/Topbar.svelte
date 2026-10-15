@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { page } from '$app/stores';
   import { Menu, X } from 'lucide-svelte';
   import BrandPlus from '$lib/components/brand/icons/BrandPlus.svelte';
@@ -19,15 +20,16 @@
   const resolvedCrumbs = $derived.by<string[]>(() => {
     if (crumbs) return crumbs;
     const path = $page.url.pathname;
-    if (path === '/dashboard') return ['Painel', 'Dashboard'];
-    if (path.startsWith('/viaturas')) return ['Painel', 'Viaturas'];
-    if (path.startsWith('/clientes')) return ['Painel', 'Clientes'];
-    if (path.startsWith('/tarefas')) return ['Painel', 'Tarefas'];
-    if (path.startsWith('/vendas')) return ['Painel', 'Vendas'];
-    if (path.startsWith('/financeiro')) return ['Painel', 'Financeiro'];
-    if (path.startsWith('/atividade')) return ['Painel', 'Atividade'];
-    if (path.startsWith('/guia')) return ['Painel', 'Guia de Fluxo'];
-    if (path.startsWith('/definicoes')) return ['Painel', 'Definições'];
+    if (path === crmPath('/dashboard')) return ['Painel', 'Dashboard'];
+    if (path.startsWith(crmPath('/viaturas'))) return ['Painel', 'Viaturas'];
+    if (path.startsWith(crmPath('/clientes'))) return ['Painel', 'Clientes'];
+    if (path.startsWith(crmPath('/tarefas'))) return ['Painel', 'Tarefas'];
+    if (path.startsWith(crmPath('/vendas'))) return ['Painel', 'Vendas'];
+    if (path.startsWith(crmPath('/financeiro'))) return ['Painel', 'Financeiro'];
+    if (path.startsWith(crmPath('/atividade'))) return ['Painel', 'Atividade'];
+    if (path.startsWith(crmPath('/guia'))) return ['Painel', 'Guia de Fluxo'];
+    if (path.startsWith(crmPath('/site'))) return ['Painel', 'Site público', 'Destaques'];
+    if (path.startsWith(crmPath('/definicoes'))) return ['Painel', 'Definições'];
     return ['Painel'];
   });
 
@@ -137,7 +139,7 @@
              icon-only red square so the brand red still anchors the topbar
              without consuming a label's worth of width. -->
         <a
-          href="/viaturas/nova"
+          href={crmPath("/viaturas/nova")}
           class="hidden md:inline-flex items-center gap-2 h-[38px] px-[18px] font-display font-semibold italic uppercase text-[13px] tracking-[0.01em] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
           style="border-radius: var(--radius-btn);"
         >
@@ -145,7 +147,7 @@
           Adicionar Viatura
         </a>
         <a
-          href="/viaturas/nova"
+          href={crmPath("/viaturas/nova")}
           class="inline-flex md:hidden items-center justify-center h-10 w-10 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
           style="border-radius: var(--radius-btn);"
           aria-label="Adicionar viatura"

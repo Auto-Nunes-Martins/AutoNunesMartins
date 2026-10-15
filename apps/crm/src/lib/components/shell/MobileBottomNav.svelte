@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { Plus } from 'lucide-svelte';
   import { page } from '$app/stores';
   import BrandDash from '$lib/components/brand/icons/BrandDash.svelte';
@@ -27,17 +28,17 @@
   }
 
   const items: Item[] = [
-    { href: '/dashboard', label: 'Painel', icon: BrandDash },
-    { href: '/viaturas', label: 'Viaturas', icon: BrandCar, badge: () => vehicleCount },
-    { href: '/clientes', label: 'Clientes', icon: BrandUsers },
+    { href: crmPath('/dashboard'), label: 'Painel', icon: BrandDash },
+    { href: crmPath('/viaturas'), label: 'Viaturas', icon: BrandCar, badge: () => vehicleCount },
+    { href: crmPath('/clientes'), label: 'Clientes', icon: BrandUsers },
     {
-      href: '/tarefas',
+      href: crmPath('/tarefas'),
       label: 'Tarefas',
       icon: BrandDeal,
       badge: () => taskCount,
       badgeTone: 'alert',
     },
-    { href: '/financeiro', label: 'Finanças', icon: BrandChart },
+    { href: crmPath('/financeiro'), label: 'Finanças', icon: BrandChart },
   ];
 
   function isActive(href: string, current: string): boolean {
@@ -58,7 +59,7 @@
     {@const active = isActive(item.href, $page.url.pathname)}
     {@const badge = item.badge?.() ?? null}
     {@const tone = item.badgeTone ?? 'dim'}
-    {@const isTasks = item.href === '/tarefas'}
+    {@const isTasks = item.href === crmPath('/tarefas')}
     <!--
       Tasks cell carries a small "+" affordance in addition to the link:
       tap on the cell navigates as usual; tap on the "+" opens the

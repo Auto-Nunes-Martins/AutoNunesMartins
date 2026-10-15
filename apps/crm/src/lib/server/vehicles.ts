@@ -98,6 +98,11 @@ export interface VehicleDetailResponse {
     sale: {
       id: string;
       saleDate: string;
+      cancelledAt: string | null;
+      cancellationDecision: {
+        tradeInAction?: 'RETURN' | 'KEEP';
+        independentPurchasePrice?: string;
+      } | null;
       customer: { id: string; name: string };
       vehicle: { id: string; brand: string; model: string; year: number };
     };

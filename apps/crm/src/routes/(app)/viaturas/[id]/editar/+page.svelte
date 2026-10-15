@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
+  import { untrack } from 'svelte';
   import { Trash2 } from 'lucide-svelte';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
@@ -6,7 +8,6 @@
   import Panel from '$lib/components/common/Panel.svelte';
   import VehicleForm from '$lib/components/vehicle/VehicleForm.svelte';
   import WebPublicationPanel from '$lib/components/vehicle/WebPublicationPanel.svelte';
-  import PhotoGallery from '$lib/components/vehicle/PhotoGallery.svelte';
   import type { PageData } from './$types';
 
   interface Props {
@@ -15,8 +16,8 @@
 
   let { data }: Props = $props();
 
-  const v = data.vehicle;
-  const initial = {
+  const v = $derived(data.vehicle);
+  const initial = untrack(() => ({
     brand: v.brand,
     model: v.model,
     year: v.year,
@@ -25,12 +26,12 @@
     vin: v.vin,
     licensePlate: v.licensePlate ?? '',
     purchasePrice: v.purchasePrice,
-    salePrice: v.salePrice ?? '',
+    salePrice: v.sale?.salePrice ?? v.salePrice ?? '',
     status: v.status,
     acquisitionDate: v.acquisitionDate.slice(0, 10),
     description: v.description ?? '',
     pendingDocFlags: v.pendingDocFlags,
-  };
+  }));
 
   let deleting = $state(false);
 </script>
@@ -52,7 +53,7 @@
 
   <Panel>
     <div class="p-6">
-      <VehicleForm {initial} submitLabel="Guardar alterações">
+      <VehicleForm {initial} saleRecorded={!!v.sale} submitLabel="Guardar alterações">
         {#snippet extraActions()}
           <form
             method="POST"
@@ -63,12 +64,16 @@
                 return;
               }
               deleting = true;
-              return async ({ result }) => {
-                deleting = false;
-                if (result.type === 'redirect') {
-                  toast.success('Viatura eliminada.');
-                } else if (result.type === 'failure') {
-                  toast.error((result.data as { error?: string } | undefined)?.error ?? 'Falha.');
+              return async ({ result, update }) => {
+                try {
+                  if (result.type === 'redirect') {
+                    toast.success('Viatura eliminada.');
+                  } else if (result.type === 'failure') {
+                    toast.error((result.data as { error?: string } | undefined)?.error ?? 'Falha.');
+                  }
+                  await update({ reset: false });
+                } finally {
+                  deleting = false;
                 }
               };
             }}
@@ -85,8 +90,15 @@
           </form>
         {/snippet}
       </VehicleForm>
+      {#if v.sale}
+        <p class="mt-4 text-[13px] text-[var(--color-text-muted)]">
+          A informação da viatura continua editável após a venda. Para alterar a entrega ou devolver
+          a viatura ao stock, <a class="underline" href={crmPath(`/vendas/${v.sale.id}`)}
+            >abra a venda registada</a
+          >.
+        </p>
+      {/if}
     </div>
   </Panel>
-  <PhotoGallery vehicleId={data.vehicle.id} photos={data.signedPhotos} />
-  <WebPublicationPanel vehicle={data.vehicle} photos={data.signedPhotos} />
+  <WebPublicationPanel managePhotos vehicle={data.vehicle} photos={data.signedPhotos} />
 </section>

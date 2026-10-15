@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { VehicleFilter } from '@anm/types';
+import { appSettings } from './appSettings.js';
 
 type TxClient = PrismaClient | Prisma.TransactionClient;
 
@@ -10,8 +11,17 @@ export interface ListVehiclesParams extends VehicleFilter {
   sortDir?: 'asc' | 'desc';
 }
 
-export function buildVehicleWhere(filter: VehicleFilter): Prisma.VehicleWhereInput {
-  const where: Prisma.VehicleWhereInput = {};
+export function buildVehicleWhere(
+  filter: VehicleFilter,
+  now = new Date(),
+  stockAgingDays = 60,
+): Prisma.VehicleWhereInput {
+  const where: Prisma.VehicleWhereInput = { status: { not: 'RETURNED' } };
+  if (filter.agedStock)
+    where.AND = [
+      { status: 'AVAILABLE' },
+      { acquisitionDate: { lt: new Date(now.getTime() - stockAgingDays * 86_400_000) } },
+    ];
   if (filter.brand) where.brand = { contains: filter.brand, mode: 'insensitive' };
   if (filter.model) where.model = { contains: filter.model, mode: 'insensitive' };
   if (filter.fuel) where.fuel = filter.fuel;
@@ -22,7 +32,7 @@ export function buildVehicleWhere(filter: VehicleFilter): Prisma.VehicleWhereInp
     // típico: a página /viaturas pede notStatus=DRAFT para a tabela
     // principal não duplicar os carros que aparecem na secção destacada
     // de "Rascunhos" no topo.
-    where.status = { not: filter.notStatus };
+    where.status = { notIn: [filter.notStatus, 'RETURNED'] };
   }
   if (filter.yearMin !== undefined || filter.yearMax !== undefined) {
     where.year = {};
@@ -49,9 +59,7 @@ export function buildVehicleWhere(filter: VehicleFilter): Prisma.VehicleWhereInp
       { model: { contains: filter.q, mode: 'insensitive' } },
       { vin: { contains: filter.q, mode: 'insensitive' } },
       { licensePlate: { contains: filter.q, mode: 'insensitive' } },
-      ...(dashed
-        ? [{ licensePlate: { contains: dashed, mode: 'insensitive' as const } }]
-        : []),
+      ...(dashed ? [{ licensePlate: { contains: dashed, mode: 'insensitive' as const } }] : []),
     ];
   }
   return where;
@@ -63,7 +71,11 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
   const sortBy = params.sortBy ?? 'createdAt';
   const sortDir = params.sortDir ?? 'desc';
 
-  const where = buildVehicleWhere(params);
+  const where = buildVehicleWhere(
+    params,
+    new Date(),
+    params.agedStock ? await appSettings.stockAgingDays() : 60,
+  );
   // Bare-minimum select: only what VehicleTable + thumbnail logic actually use.
   // No `_count` subquery, no Sale join — both were unused by the UI.
   const [items, total] = await Promise.all([
@@ -117,6 +129,8 @@ export async function getVehicleById(tx: TxClient, id: string) {
             select: {
               id: true,
               saleDate: true,
+              cancelledAt: true,
+              cancellationDecision: true,
               customer: { select: { id: true, name: true } },
               vehicle: { select: { id: true, brand: true, model: true, year: true } },
             },

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { CalendarClock, Plus, Search, X } from 'lucide-svelte';
   import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
@@ -88,7 +89,7 @@
     };
 
     try {
-      const res = await fetch(`/tarefas/${moved.id}/status`, {
+      const res = await fetch(crmPath(`/tarefas/${moved.id}/status`), {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ status }),
@@ -133,7 +134,7 @@
     const target = pendingCancel;
     cancelling = true;
     try {
-      const res = await fetch(`/tarefas/${target.id}`, { method: 'DELETE' });
+      const res = await fetch(crmPath(`/tarefas/${target.id}`), { method: 'DELETE' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // Drop locally for instant feedback, then revalidate.
       standbyTasks = standbyTasks.filter((t) => t.id !== target.id);
@@ -184,7 +185,9 @@
   const currentScope = $derived<Scope>(data.filters.scope ?? 'all');
   const showScheduledActive = $derived(Boolean(data.filters.showScheduled));
   const hasFilters = $derived(
-    Boolean(data.filters.priority || currentScope !== 'all' || data.filters.q),
+    Boolean(
+      data.filters.attention || data.filters.priority || currentScope !== 'all' || data.filters.q,
+    ),
   );
 
   function clearFilters() {
@@ -192,7 +195,7 @@
   }
 
   function openTask(id: string) {
-    goto(`/tarefas/${id}/editar`);
+    goto(crmPath(`/tarefas/${id}/editar`));
   }
 
   // Mobile: which column is currently shown. The segmented control above
@@ -222,17 +225,17 @@
     <div class="flex items-center gap-2">
       <!-- Menu (sem default) — utilizador escolhe CSV ou PDF. -->
       <div class="hidden md:inline-flex">
-        <ExportMenu baseHref="/tarefas/export" />
+        <ExportMenu baseHref={crmPath("/tarefas/export")} />
       </div>
       <a
-        href="/tarefas/nova"
+        href={crmPath("/tarefas/nova")}
         class="inline-flex md:hidden items-center justify-center h-10 w-10 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
         style="border-radius: var(--radius-btn);"
         aria-label="Nova tarefa"
       >
         <Plus class="h-4 w-4" />
       </a>
-      <Button variant="primary" size="md" href="/tarefas/nova" class="hidden md:inline-flex">
+      <Button variant="primary" size="md" href={crmPath("/tarefas/nova")} class="hidden md:inline-flex">
         <Plus class="h-4 w-4" />
         Nova Tarefa
       </Button>
@@ -268,7 +271,27 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mr-1">
+        <label class="text-[12px] text-[var(--color-text-muted)]"
+          >Mostrar
+          <select
+            class="ml-2 h-9 px-3 border border-[var(--color-border)] bg-[var(--color-bg-1)] text-[var(--color-text)]"
+            value={data.filters.attention ?? ''}
+            onchange={(event) => {
+              const params = new URLSearchParams($page.url.searchParams);
+              if (event.currentTarget.value) params.set('attention', event.currentTarget.value);
+              else params.delete('attention');
+              goto('?' + params.toString(), { keepFocus: true, noScroll: true });
+            }}
+            ><option value="">Todas as tarefas</option><option value="due"
+              >Prazo de hoje ou em atraso</option
+            ><option value="reminders">Lembretes de hoje</option></select
+          >
+        </label>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span
+          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mr-1"
+        >
           Prioridade
         </span>
         {#each PRIORITIES as p (p.value)}
@@ -287,7 +310,9 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mr-1">
+        <span
+          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mr-1"
+        >
           Visibilidade
         </span>
         {#each [{ value: 'all', label: 'Todas' }, { value: 'mine', label: 'Minhas' }, { value: 'general', label: 'Gerais' }] as opt (opt.value)}
@@ -352,7 +377,8 @@
           class="tab-pill {active ? 'is-active' : ''}"
         >
           <span class="flex items-center justify-center gap-1.5">
-            <span class="h-2 w-2 rounded-full flex-shrink-0" style="background: {col.color};"></span>
+            <span class="h-2 w-2 rounded-full flex-shrink-0" style="background: {col.color};"
+            ></span>
             <span class="font-mono text-[10px] uppercase tracking-[0.15em]">{col.label}</span>
           </span>
           <span class="font-mono text-[10px] tabular-nums opacity-70 mt-0.5">
@@ -367,96 +393,94 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     {#each COLUMN_DEFS as col (col.status)}
       <div class={col.status === mobileColumn ? 'block' : 'hidden md:block'}>
-      <Panel>
-        <header
-          class="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--color-border)]"
-        >
-          <div class="flex items-center gap-2.5">
+        <Panel>
+          <header
+            class="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--color-border)]"
+          >
+            <div class="flex items-center gap-2.5">
+              <span class="h-2 w-2 rounded-full flex-shrink-0" style="background: {col.color};"
+              ></span>
+              <div class="h-[18px] w-[1.5px]" style="background: {col.color};"></div>
+              <h3 class="font-display text-[16px] font-bold italic uppercase tracking-[-0.01em]">
+                {col.label}
+              </h3>
+              {#if col.status === 'DONE'}
+                <span
+                  class="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] ml-1"
+                  title="A limpeza semanal elimina tarefas concluídas antes do último Domingo. Tarefas sem data de conclusão são preservadas."
+                >
+                  · limpa Dom
+                </span>
+              {/if}
+            </div>
             <span
-              class="h-2 w-2 rounded-full flex-shrink-0"
-              style="background: {col.color};"
-            ></span>
-            <div class="h-[18px] w-[1.5px]" style="background: {col.color};"></div>
-            <h3 class="font-display text-[16px] font-bold italic uppercase tracking-[-0.01em]">
-              {col.label}
-            </h3>
-            {#if col.status === 'DONE'}
-              <span
-                class="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] ml-1"
-                title="Tarefas concluídas são eliminadas automaticamente todos os Domingos"
+              class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] tabular-nums"
+            >
+              {board[col.status].length}
+            </span>
+          </header>
+
+          <div
+            use:dndzone={{
+              items: board[col.status],
+              flipDurationMs: FLIP_MS,
+              type: 'task',
+              dropTargetStyle: {
+                outline: '2px solid var(--color-red)',
+                outlineOffset: '-2px',
+              },
+            }}
+            onconsider={(e: CustomEvent<DndEvent<TaskDto>>) => {
+              board = { ...board, [col.status]: e.detail.items };
+            }}
+            onfinalize={(e: CustomEvent<DndEvent<TaskDto>>) =>
+              handleDrop(col.status, e.detail.items)}
+            class="p-3 space-y-2.5 min-h-[200px]"
+          >
+            {#each board[col.status] as t (t.id)}
+              <div animate:flip={{ duration: FLIP_MS }}>
+                <TaskCard task={t} onclick={() => openTask(t.id)} />
+              </div>
+            {/each}
+
+            {#if board[col.status].length === 0 && !(col.status === 'TODO' && standbyTasks.length > 0)}
+              <div
+                class="flex items-center justify-center h-32 border-2 border-dashed border-[var(--color-border)] font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+                style="border-radius: var(--radius-btn);"
               >
-                · limpa Dom
-              </span>
+                Sem tarefas
+              </div>
             {/if}
           </div>
-          <span
-            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] tabular-nums"
-          >
-            {board[col.status].length}
-          </span>
-        </header>
 
-        <div
-          use:dndzone={{
-            items: board[col.status],
-            flipDurationMs: FLIP_MS,
-            type: 'task',
-            dropTargetStyle: {
-              outline: '2px solid var(--color-red)',
-              outlineOffset: '-2px',
-            },
-          }}
-          onconsider={(e: CustomEvent<DndEvent<TaskDto>>) => {
-            board = { ...board, [col.status]: e.detail.items };
-          }}
-          onfinalize={(e: CustomEvent<DndEvent<TaskDto>>) =>
-            handleDrop(col.status, e.detail.items)}
-          class="p-3 space-y-2.5 min-h-[200px]"
-        >
-          {#each board[col.status] as t (t.id)}
-            <div animate:flip={{ duration: FLIP_MS }}>
-              <TaskCard task={t} onclick={() => openTask(t.id)} />
-            </div>
-          {/each}
-
-          {#if board[col.status].length === 0 && !(col.status === 'TODO' && standbyTasks.length > 0)}
-            <div
-              class="flex items-center justify-center h-32 border-2 border-dashed border-[var(--color-border)] font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
-              style="border-radius: var(--radius-btn);"
-            >
-              Sem tarefas
-            </div>
-          {/if}
-        </div>
-
-        {#if col.status === 'TODO' && standbyTasks.length > 0}
-          <!--
+          {#if col.status === 'TODO' && standbyTasks.length > 0}
+            <!--
             Standby strip: scheduled recurring tasks that haven't reached
             their dueDate yet. Outside the dndzone above so they cannot be
             dragged. The X on each card cancels the upcoming occurrence.
           -->
-          <div
-            class="px-3 pb-3 pt-1 border-t border-dashed border-[var(--color-border)] space-y-2.5"
-          >
-            <div class="flex items-center gap-1.5 pt-1 pb-0.5">
-              <span class="h-1 w-1 rounded-full bg-[var(--color-text-faint)]"></span>
-              <span
-                class="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
-              >
-                Agendadas · {standbyTasks.length}
-              </span>
+            <div
+              class="px-3 pb-3 pt-1 border-t border-dashed border-[var(--color-border)] space-y-2.5"
+            >
+              <div class="flex items-center gap-1.5 pt-1 pb-0.5">
+                <span class="h-1 w-1 rounded-full bg-[var(--color-text-faint)]"></span>
+                <span
+                  class="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+                >
+                  Agendadas · {standbyTasks.length}
+                </span>
+              </div>
+              {#each standbyTasks as t (t.id)}
+                <TaskCard
+                  task={t}
+                  standby
+                  onclick={() => openTask(t.id)}
+                  ondelete={() => requestCancel(t)}
+                />
+              {/each}
             </div>
-            {#each standbyTasks as t (t.id)}
-              <TaskCard
-                task={t}
-                standby
-                onclick={() => openTask(t.id)}
-                ondelete={() => requestCancel(t)}
-              />
-            {/each}
-          </div>
-        {/if}
-      </Panel>
+          {/if}
+        </Panel>
       </div>
     {/each}
   </div>
@@ -505,7 +529,9 @@
     border: 0;
     border-right: 1px solid var(--color-border);
     cursor: pointer;
-    transition: color 0.12s, background-color 0.12s;
+    transition:
+      color 0.12s,
+      background-color 0.12s;
   }
   .tab-pill:last-child {
     border-right: 0;

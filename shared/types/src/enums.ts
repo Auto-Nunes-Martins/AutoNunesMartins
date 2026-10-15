@@ -12,6 +12,7 @@ export const VehicleStatusEnum = z.enum([
   // "Rascunho" — em inventário mas ainda não comercializável (preço por
   // definir). Tipicamente criado quando entra uma retoma STOCK.
   'DRAFT',
+  'RETURNED',
 ]);
 export type VehicleStatus = z.infer<typeof VehicleStatusEnum>;
 

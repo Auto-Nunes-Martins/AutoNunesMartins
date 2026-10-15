@@ -1,3 +1,4 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
@@ -98,23 +99,27 @@ async function buildTodayTasks(
   }));
 }
 
-router.get('/today-tasks', requireUser, async (req: AuthedRequest, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const parsed = querySchema.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
-    return;
-  }
-  const { scope, assigneeId } = parsed.data;
-  const cacheKey = `dashboardTasks:${req.user.id}:${scope}:${assigneeId ?? ''}`;
-  const items = await cache.wrap(cacheKey, TTL_MS, () =>
-    buildTodayTasks(req.user!.id, scope, assigneeId),
-  );
-  res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
-  res.json({ items });
-});
+router.get(
+  '/today-tasks',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
+      return;
+    }
+    const { scope, assigneeId } = parsed.data;
+    const cacheKey = `dashboardTasks:${req.user.id}:${scope}:${assigneeId ?? ''}`;
+    const items = await cache.wrap(cacheKey, TTL_MS, () =>
+      buildTodayTasks(req.user!.id, scope, assigneeId),
+    );
+    res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
+    res.json({ items });
+  }),
+);
 
 export default router;

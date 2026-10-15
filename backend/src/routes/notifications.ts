@@ -1,3 +1,4 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { prisma } from '../db.js';
 import { appSettings } from '../lib/data/appSettings.js';
@@ -57,10 +58,7 @@ async function buildNotifications(actorId: string): Promise<Payload> {
         OR: [{ assigneeId: null }, { assigneeId: actorId }],
         AND: [
           {
-            OR: [
-              { dueDate: { gte: todayStart, lte: todayEnd } },
-              { dueDate: { lt: todayStart } },
-            ],
+            OR: [{ dueDate: { gte: todayStart, lte: todayEnd } }, { dueDate: { lt: todayStart } }],
           },
         ],
       },
@@ -98,17 +96,21 @@ async function buildNotifications(actorId: string): Promise<Payload> {
   };
 }
 
-router.get('/', requireUser, async (req: AuthedRequest, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const actorId = req.user.id;
-  const payload = await cache.wrap(`notifications:${actorId}`, NOTIFICATIONS_TTL_MS, () =>
-    buildNotifications(actorId),
-  );
-  res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
-  res.json(payload);
-});
+router.get(
+  '/',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const actorId = req.user.id;
+    const payload = await cache.wrap(`notifications:${actorId}`, NOTIFICATIONS_TTL_MS, () =>
+      buildNotifications(actorId),
+    );
+    res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
+    res.json(payload);
+  }),
+);
 
 export default router;

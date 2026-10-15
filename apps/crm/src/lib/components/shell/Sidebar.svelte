@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { page } from '$app/stores';
-  import { Activity, ChevronLeft } from 'lucide-svelte';
+  import { Activity, ChevronLeft, Globe } from 'lucide-svelte';
   import type { IconComponent } from '$lib/types/ui';
   // Hand-drawn icons from the index.html prototype's `I.*` library
   // (same look/feel as the dashboard KPI icons).
@@ -61,15 +62,15 @@
     {
       heading: 'Operação',
       items: [
-        { href: '/dashboard', label: 'Dashboard', icon: BrandDash },
-        { href: '/viaturas', label: 'Viaturas', icon: BrandCar, badge: () => vehicleCount },
+        { href: crmPath('/dashboard'), label: 'Dashboard', icon: BrandDash },
+        { href: crmPath('/viaturas'), label: 'Viaturas', icon: BrandCar, badge: () => vehicleCount },
         // Sits between Viaturas and Clientes to mirror the natural workflow:
         // first the car enters inventory, then it gets sold, then the buyer
         // shows up in the customer registry.
-        { href: '/vendas', label: 'Vendas', icon: BrandReceipt },
-        { href: '/clientes', label: 'Clientes', icon: BrandUsers },
+        { href: crmPath('/vendas'), label: 'Vendas', icon: BrandReceipt },
+        { href: crmPath('/clientes'), label: 'Clientes', icon: BrandUsers },
         {
-          href: '/tarefas',
+          href: crmPath('/tarefas'),
           label: 'Tarefas',
           icon: BrandDeal,
           badge: () => taskCount,
@@ -79,19 +80,20 @@
     },
     {
       heading: 'Finanças',
-      items: [{ href: '/financeiro', label: 'Financeiro', icon: BrandChart }],
+      items: [{ href: crmPath('/financeiro'), label: 'Financeiro', icon: BrandChart }],
     },
     {
       heading: 'Histórico',
       // Keep the lucide Activity icon here — it's the same one used in the
       // activity log feed which the user wants preserved.
-      items: [{ href: '/atividade', label: 'Atividade', icon: Activity }],
+      items: [{ href: crmPath('/atividade'), label: 'Atividade', icon: Activity }],
     },
     {
       heading: 'Recursos',
       items: [
-        { href: '/guia', label: 'Guia de Fluxo', icon: BrandDoc },
-        { href: '/definicoes', label: 'Definições', icon: BrandSet },
+        { href: crmPath('/site/destaques'), label: 'Site público', icon: Globe },
+        { href: crmPath('/guia'), label: 'Guia de Fluxo', icon: BrandDoc },
+        { href: crmPath('/definicoes'), label: 'Definições', icon: BrandSet },
       ],
     },
   ];
@@ -99,10 +101,7 @@
   // Prefer the explicit username; fall back to the user's full name, else
   // first name. (Avoids showing the email-prefix as a name.)
   const userName = $derived(
-    ctx.user?.username
-      ?? ctx.user?.fullName
-      ?? ctx.user?.firstName
-      ?? 'Admin',
+    ctx.user?.username ?? ctx.user?.fullName ?? ctx.user?.firstName ?? 'Admin',
   );
   const initials = $derived.by(() => {
     return userName
@@ -117,9 +116,7 @@
   // no photo is uploaded). `hasImage` is true only when the user actually
   // uploaded a real picture — gate on that so we don't show Clerk's generic
   // colored chip when we'd rather use our branded red gradient + initials.
-  const avatarUrl = $derived(
-    ctx.user?.hasImage ? (ctx.user?.imageUrl ?? null) : null,
-  );
+  const avatarUrl = $derived(ctx.user?.hasImage ? (ctx.user?.imageUrl ?? null) : null);
 
   function isActive(href: string, current: string): boolean {
     return current === href || current.startsWith(href + '/');
@@ -143,7 +140,12 @@
   • Labels fade via opacity; they never change width, never wrap.
 -->
 
-<aside class="sidebar" class:collapsed class:mobile-open={mobileOpen} aria-hidden={!mobileOpen ? undefined : 'false'}>
+<aside
+  class="sidebar"
+  class:collapsed
+  class:mobile-open={mobileOpen}
+  aria-hidden={!mobileOpen ? undefined : 'false'}
+>
   <div class="sidebar-inner">
     <!--
       Brand block:
@@ -156,7 +158,7 @@
     -->
     <div class="brand-block">
       <a
-        href="/dashboard"
+        href={crmPath("/dashboard")}
         class="brand-link"
         aria-label="Ir para o painel"
         title="Ir para o painel"
@@ -171,7 +173,7 @@
         class="sidebar-toggle"
         title={collapsed ? 'Expandir menu' : 'Colapsar menu'}
         aria-label={collapsed ? 'Expandir menu' : 'Colapsar menu'}
-        aria-pressed={collapsed ? 'false' : 'true'}
+        aria-expanded={!collapsed}
       >
         <ChevronLeft class="h-4 w-4 toggle-icon" />
       </button>
@@ -223,7 +225,7 @@
         <div class="user-name">{userName}</div>
         <div class="user-role">Gerente</div>
       </div>
-      <SignOutButton class="sign-out">
+      <SignOutButton class="sign-out" redirectUrl={crmPath('/')}>
         <BrandLogout class="h-4 w-4" />
       </SignOutButton>
     </div>
@@ -409,12 +411,19 @@
     outline: 2px solid var(--color-red);
     outline-offset: 2px;
   }
-  .toggle-icon {
+  .sidebar-toggle :global(.toggle-icon) {
+    transform: rotate(0deg);
+    transform-origin: center;
     transition: transform 0.22s var(--ease-brand);
   }
-  .sidebar.collapsed .toggle-icon {
+  .sidebar.collapsed .sidebar-toggle :global(.toggle-icon) {
     /* Flip the chevron so it points right (= "expand") when collapsed. */
     transform: rotate(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar-toggle :global(.toggle-icon) {
+      transition: none;
+    }
   }
 
   /* ─── Nav ───────────────────────────────────────────────────────────── */
@@ -453,7 +462,9 @@
     color: var(--color-text-muted);
     font-size: 13.5px;
     white-space: nowrap;
-    transition: color 0.12s, background-color 0.12s;
+    transition:
+      color 0.12s,
+      background-color 0.12s;
   }
   .nav-item:hover {
     color: var(--color-text);
@@ -500,7 +511,10 @@
     background: rgba(255, 255, 255, 0.06);
     color: var(--color-text-muted);
     border-radius: 2px;
-    transition: opacity 0.15s ease, color 0.12s, background 0.12s;
+    transition:
+      opacity 0.15s ease,
+      color 0.12s,
+      background 0.12s;
     flex-shrink: 0;
   }
   .nav-item:hover .nav-badge {
@@ -624,7 +638,9 @@
   :global(.sign-out) {
     color: var(--color-text-muted);
     padding: 8px;
-    transition: color 0.12s, opacity 0.15s ease;
+    transition:
+      color 0.12s,
+      opacity 0.15s ease;
     flex-shrink: 0;
   }
   :global(.sign-out:hover) {

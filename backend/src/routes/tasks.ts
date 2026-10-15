@@ -1,17 +1,9 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import {
-  PriorityEnum,
-  TaskStatusEnum,
-  taskCreateSchema,
-  taskUpdateSchema,
-} from '@anm/types';
+import { PriorityEnum, TaskStatusEnum, taskCreateSchema, taskUpdateSchema } from '@anm/types';
 import { prisma } from '../db.js';
-import {
-  getTaskByIdForActor,
-  listAllTasks,
-  type TaskScope,
-} from '../lib/data/task.js';
+import { getTaskByIdForActor, listAllTasks, type TaskScope } from '../lib/data/task.js';
 import {
   TaskNotFound,
   TaskValidationError,
@@ -29,6 +21,7 @@ const router = Router();
 const ScopeEnum = z.enum(['all', 'mine', 'general']);
 
 const listQuerySchema = z.object({
+  attention: z.enum(['due', 'reminders']).optional(),
   status: TaskStatusEnum.optional(),
   priority: PriorityEnum.optional(),
   assigneeId: z.string().optional(),
@@ -59,147 +52,170 @@ async function loadVisibleTask(taskId: string, actorId: string) {
   return getTaskByIdForActor(prisma, taskId, actorId);
 }
 
-router.get('/', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = listQuerySchema.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
-    return;
-  }
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
+router.get(
+  '/',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = listQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
+      return;
+    }
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
 
-  // Weekly Sunday purge of DONE tasks. Fire-and-forget — never blocks the
-  // response. Recurring tasks have already spawned their next occurrence in
-  // TODO before being completed, so deleting the DONE parent is safe.
-  void purgeStaleCompletedTasks();
+    // Weekly cleanup only removes DONE tasks completed before Sunday.
+    // Failures are contained by the service; cleanup never blocks the response.
+    void purgeStaleCompletedTasks();
 
-  const items = await listAllTasks(prisma, {
-    ...parsed.data,
-    scope: (parsed.data.scope as TaskScope | undefined) ?? 'all',
-    actorId: req.user.id,
-  });
-  res.json({ items });
-});
-
-router.get('/:id', requireUser, async (req: AuthedRequest, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const task = await loadVisibleTask(param(req, 'id'), req.user.id);
-  if (!task) {
-    res.status(404).json({ error: 'Task not found' });
-    return;
-  }
-  res.json(task);
-});
-
-router.post('/', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = taskCreateSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const created = await createTask(parsed.data, {
-    actorId: req.user.id,
-    actorName: req.user.name,
-  });
-  res.status(201).json(created);
-});
-
-router.patch('/:id', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = taskUpdateSchema.omit({ id: true }).safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const existing = await loadVisibleTask(param(req, 'id'), req.user.id);
-  if (!existing) {
-    res.status(404).json({ error: 'Task not found' });
-    return;
-  }
-  try {
-    await updateTask(param(req, 'id'), parsed.data, {
+    const items = await listAllTasks(prisma, {
+      ...parsed.data,
+      scope: (parsed.data.scope as TaskScope | undefined) ?? 'all',
       actorId: req.user.id,
-      actorName: req.user.name,
     });
-    res.json({ ok: true });
-  } catch (err) {
-    if (err instanceof TaskNotFound) {
+    res.json({ items });
+  }),
+);
+
+router.get(
+  '/:id',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const task = await loadVisibleTask(param(req, 'id'), req.user.id);
+    if (!task) {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
-    if (err instanceof TaskValidationError) {
-      res.status(400).json({ error: err.message });
+    res.json(task);
+  }),
+);
+
+router.post(
+  '/',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = taskCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
       return;
     }
-    throw err;
-  }
-});
-
-router.patch('/:id/status', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = statusChangeSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const existing = await loadVisibleTask(param(req, 'id'), req.user.id);
-  if (!existing) {
-    res.status(404).json({ error: 'Task not found' });
-    return;
-  }
-  try {
-    const result = await changeTaskStatus(param(req, 'id'), parsed.data.status, {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const created = await createTask(parsed.data, {
       actorId: req.user.id,
       actorName: req.user.name,
     });
-    res.json(result);
-  } catch (err) {
-    if (err instanceof TaskNotFound) {
-      res.status(404).json({ error: 'Task not found' });
-      return;
-    }
-    throw err;
-  }
-});
+    res.status(201).json(created);
+  }),
+);
 
-router.delete('/:id', requireUser, async (req: AuthedRequest, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const existing = await loadVisibleTask(param(req, 'id'), req.user.id);
-  if (!existing) {
-    res.status(404).json({ error: 'Task not found' });
-    return;
-  }
-  try {
-    await deleteTask(param(req, 'id'), {
-      actorId: req.user.id,
-      actorName: req.user.name,
-    });
-    res.json({ ok: true });
-  } catch (err) {
-    if (err instanceof TaskNotFound) {
+router.patch(
+  '/:id',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = taskUpdateSchema.omit({ id: true }).safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
+      return;
+    }
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const existing = await loadVisibleTask(param(req, 'id'), req.user.id);
+    if (!existing) {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
-    throw err;
-  }
-});
+    try {
+      await updateTask(param(req, 'id'), parsed.data, {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      if (err instanceof TaskNotFound) {
+        res.status(404).json({ error: 'Task not found' });
+        return;
+      }
+      if (err instanceof TaskValidationError) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+router.patch(
+  '/:id/status',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = statusChangeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
+      return;
+    }
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const existing = await loadVisibleTask(param(req, 'id'), req.user.id);
+    if (!existing) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+    try {
+      const result = await changeTaskStatus(param(req, 'id'), parsed.data.status, {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      res.json(result);
+    } catch (err) {
+      if (err instanceof TaskNotFound) {
+        res.status(404).json({ error: 'Task not found' });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
+
+router.delete(
+  '/:id',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const existing = await loadVisibleTask(param(req, 'id'), req.user.id);
+    if (!existing) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+    try {
+      await deleteTask(param(req, 'id'), {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      if (err instanceof TaskNotFound) {
+        res.status(404).json({ error: 'Task not found' });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
 
 export default router;

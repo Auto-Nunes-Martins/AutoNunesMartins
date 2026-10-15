@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
+  import { formFeedback, markFormSaved, showFormErrors } from '$lib/forms/formFeedback';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import type { Snippet } from 'svelte';
@@ -101,22 +103,25 @@
 <form
   method="POST"
   action="?/submit"
-  use:enhance={() => {
+  use:formFeedback
+  use:enhance={({ formElement }) => {
     submitting = true;
     return async ({ result, update }) => {
       submitting = false;
       if (result.type === 'success') {
+        markFormSaved(formElement);
         toast.success('Tarefa guardada.');
         if (redirectOnSuccess) {
-          await goto('/tarefas');
+          await goto(crmPath('/tarefas'));
           return;
         }
       } else if (result.type === 'failure') {
-        toast.error(
-          (result.data as { error?: string } | undefined)?.error ?? 'Falha ao guardar.',
-        );
+        showFormErrors(formElement, result.data);
+
+        toast.error((result.data as { error?: string } | undefined)?.error ?? 'Falha ao guardar.');
       }
-      await update({ reset: false });
+      if (result.type === 'redirect') markFormSaved(formElement);
+      await update({ reset: false, invalidateAll: result.type === 'success' });
     };
   }}
   class="space-y-6"
@@ -253,9 +258,11 @@
   </label>
 
   <div class="flex items-center justify-between gap-3 pt-2">
-    <div>{#if extraActions}{@render extraActions()}{/if}</div>
+    <div>
+      {#if extraActions}{@render extraActions()}{/if}
+    </div>
     <div class="flex items-center gap-2">
-      <Button variant="ghost" href="/tarefas">Cancelar</Button>
+      <Button variant="ghost" href={crmPath("/tarefas")}>Cancelar</Button>
       <Button variant="primary" type="submit" loading={submitting} disabled={submitting}>
         {submitLabel}
       </Button>

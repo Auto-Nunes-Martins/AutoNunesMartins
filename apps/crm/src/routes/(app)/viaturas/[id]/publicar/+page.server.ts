@@ -1,3 +1,4 @@
+import { crmPath } from '$lib/paths';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { moneySchema } from '@anm/types';
@@ -12,7 +13,7 @@ export const load: PageServerLoad = async (event) => {
     // bounces back to the detail page (treated as a no-op the user just
     // happened to URL-hack into).
     if (vehicle.status !== 'DRAFT') {
-      throw redirect(302, `/viaturas/${event.params.id}`);
+      throw redirect(302, crmPath(`/viaturas/${event.params.id}`));
     }
     return { vehicle };
   } catch (err) {
@@ -55,6 +56,6 @@ export const actions: Actions = {
       throw err;
     }
     // Volta ao detalhe da viatura — agora já AVAILABLE.
-    throw redirect(303, `/viaturas/${event.params.id}`);
+    throw redirect(303, crmPath(`/viaturas/${event.params.id}`));
   },
 };

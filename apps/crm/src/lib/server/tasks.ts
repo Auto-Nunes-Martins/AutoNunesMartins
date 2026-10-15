@@ -1,10 +1,4 @@
-import type {
-  Priority,
-  Recurrence,
-  TaskCreate,
-  TaskStatus,
-  TaskUpdate,
-} from '@anm/types';
+import type { Priority, Recurrence, TaskCreate, TaskStatus, TaskUpdate } from '@anm/types';
 import type { RequestEvent } from '@sveltejs/kit';
 import { apiJson } from './api.js';
 
@@ -37,6 +31,7 @@ export interface TaskDto {
 export type TaskScope = 'all' | 'mine' | 'general';
 
 export interface TaskListParams {
+  attention?: 'due' | 'reminders';
   status?: TaskStatus;
   priority?: Priority;
   assigneeId?: string;

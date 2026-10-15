@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { crmRoute } from '$lib/paths';
   import { onMount } from 'svelte';
+  import UnsavedChangesGuard from '$lib/components/common/UnsavedChangesGuard.svelte';
+  import { usesFullCrmWidth } from '$lib/layoutWidth';
   import { get } from 'svelte/store';
   import { page } from '$app/stores';
   import CrmBrandHead from '$lib/components/brand/CrmBrandHead.svelte';
@@ -17,6 +20,7 @@
   }
 
   let { children, data }: Props = $props();
+  const comfortableWidth = $derived(!usesFullCrmWidth(crmRoute($page.url.pathname)));
 
   onMount(() => {
     sidebar.hydrate();
@@ -144,7 +148,10 @@
         }
         const progress = (drawerWidth + translateX) / drawerWidth;
         document.documentElement.style.setProperty('--drawer-drag-x', `${translateX}px`);
-        document.documentElement.style.setProperty('--drawer-drag-progress', `${progress.toFixed(3)}`);
+        document.documentElement.style.setProperty(
+          '--drawer-drag-progress',
+          `${progress.toFixed(3)}`,
+        );
       }
     }
 
@@ -228,6 +235,7 @@
 </script>
 
 <CrmBrandHead />
+<UnsavedChangesGuard />
 
 <RedWedge />
 
@@ -254,7 +262,7 @@
   <div class="header-ambient absolute inset-0 pointer-events-none"></div>
   <div class="relative z-10">
     <Topbar />
-    <main class="main-content px-6 pb-12 pr-[24px]">
+    <main class:comfortable-width={comfortableWidth} class="main-content px-6 pb-12 pr-[24px]">
       {@render children?.()}
     </main>
   </div>
@@ -282,6 +290,12 @@
     margin-left: var(--sidebar-w);
     min-height: 100vh;
     transition: margin-left 0.2s var(--ease-brand);
+  }
+  .main-content.comfortable-width {
+    /* Same 1720px content cap as the public site, plus the existing side padding. */
+    max-width: calc(1720px + 48px);
+    width: 100%;
+    margin-inline: auto;
   }
   :global(html[data-sidebar='collapsed']) .main-area {
     margin-left: var(--sidebar-w-collapsed);

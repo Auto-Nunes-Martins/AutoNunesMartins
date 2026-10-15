@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import {
     Calendar,
     Car,
@@ -27,7 +28,7 @@
   const c = $derived(data.customer);
 
   const totalSpent = $derived(
-    c.sales.reduce((sum, s) => sum + Number(s.salePrice), 0),
+    c.sales.reduce((sum, s) => sum + (s.cancelledAt ? 0 : Number(s.salePrice)), 0),
   );
 </script>
 
@@ -39,7 +40,9 @@
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
     <div class="min-w-0">
-      <div class="mb-2 font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]">
+      <div
+        class="mb-2 font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
+      >
         NIF {c.nif}
       </div>
       <ItalicHero text={c.name} size="lg" />
@@ -55,7 +58,7 @@
       </p>
     </div>
     <div class="flex items-center gap-2">
-      <Button variant="outline" href={`/clientes/${c.id}/editar`}>
+      <Button variant="outline" href={crmPath(`/clientes/${c.id}/editar`)}>
         <Pencil class="h-4 w-4" />
         Editar
       </Button>
@@ -80,11 +83,7 @@
       </Panel>
 
       <Panel>
-        <PanelHeader
-          icon={FileText}
-          title="Notas"
-          meta={c.notes ? undefined : 'SEM REGISTOS'}
-        />
+        <PanelHeader icon={FileText} title="Notas" meta={c.notes ? undefined : 'SEM REGISTOS'} />
         <div
           class="p-5 text-[14px] leading-relaxed text-[var(--color-text-muted)] whitespace-pre-wrap"
         >
@@ -97,7 +96,7 @@
       <Panel>
         <PanelHeader
           icon={Car}
-          title="Viaturas adquiridas"
+          title="Histórico de vendas"
           meta={`${c.sales.length} VENDA${c.sales.length === 1 ? '' : 'S'}`}
         />
         {#if c.sales.length === 0}
@@ -110,7 +109,7 @@
           <div class="divide-y divide-[var(--color-border)]">
             {#each c.sales as s (s.id)}
               <a
-                href={`/viaturas/${s.vehicle.id}`}
+                href={crmPath(`/vendas/${s.id}`)}
                 class="flex items-center gap-4 px-5 py-4 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
               >
                 <div
@@ -123,7 +122,12 @@
                   <div
                     class="font-display font-bold italic text-[15px] truncate group-hover:text-[var(--color-red)] transition-colors"
                   >
-                    {s.vehicle.brand} {s.vehicle.model}
+                    {s.vehicle.brand}
+                    {s.vehicle.model}
+                    {#if s.cancelledAt}<span
+                        class="block md:hidden text-[11px] not-italic text-[var(--color-red)]"
+                        >Venda anulada</span
+                      >{/if}
                   </div>
                   <div
                     class="flex items-center gap-2 mt-0.5 font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)]"
@@ -145,7 +149,10 @@
                   </div>
                 </div>
                 <div class="hidden md:block">
-                  <StatusBadge status={s.deliveryStatus as 'PENDING' | 'SCHEDULED' | 'DELIVERED'} />
+                  {#if s.cancelledAt}<span class="text-[var(--color-red)]">Anulada</span
+                    >{:else}<StatusBadge
+                      status={s.deliveryStatus as 'PENDING' | 'SCHEDULED' | 'DELIVERED'}
+                    />{/if}
                 </div>
               </a>
             {/each}

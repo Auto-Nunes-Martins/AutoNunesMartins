@@ -8,40 +8,51 @@ import { logger } from '../../logger.js';
 import type { ActorContext } from './vehicleService.js';
 
 /**
- * Weekly purge: every Sunday, wipe all DONE tasks regardless of recurrence.
+ * Weekly purge: remove DONE tasks completed before the most recent Sunday.
  * When a recurring task is completed, its next occurrence is already spawned
  * as a separate TODO task (see `changeTaskStatus`), so the completed parent
- * is just history — safe to delete on the next Sunday.
+ * is history eligible for deletion on the next Sunday.
  *
  * `lastPurgeAt` is a module-level guard so the delete only fires once per
  * Sunday across all requests in this process. On backend restart the guard
- * resets — that's safe because the delete is idempotent.
+ * resets — the completedAt predicate still protects this week's completions.
+ * Tasks without a completion timestamp are preserved rather than guessed old.
  */
 let lastPurgeAt = 0;
+let purgeInFlight: Promise<number> | undefined;
 
 /**
- * Opportunistic cleanup: wipes every DONE task if we haven't already wiped
+ * Opportunistic cleanup: removes eligible DONE history if we haven't run
  * since the most recent Sunday 00:00. Called from the list endpoint with
  * fire-and-forget semantics. Failures are logged and swallowed.
  */
-export async function purgeStaleCompletedTasks(): Promise<number> {
+export function purgeStaleCompletedTasks(): Promise<number> {
+  if (purgeInFlight) return purgeInFlight;
   const sunday = mostRecentSundayMidnight();
-  if (lastPurgeAt >= sunday.getTime()) return 0;
+  if (lastPurgeAt >= sunday.getTime()) return Promise.resolve(0);
 
-  try {
-    const result = await prisma.task.deleteMany({ where: { status: 'DONE' } });
-    lastPurgeAt = Date.now();
-    if (result.count > 0) {
-      logger.info(
-        { deletedTasks: result.count, runFor: sunday.toISOString() },
-        'Weekly Sunday purge of DONE tasks',
-      );
+  purgeInFlight = (async () => {
+    try {
+      const result = await prisma.task.deleteMany({
+        where: { status: 'DONE', completedAt: { lt: sunday } },
+      });
+      // Record the boundary actually processed, even if this call crossed Sunday.
+      lastPurgeAt = sunday.getTime();
+      if (result.count > 0) {
+        logger.info(
+          { deletedTasks: result.count, runFor: sunday.toISOString() },
+          'Weekly Sunday purge of DONE tasks',
+        );
+      }
+      return result.count;
+    } catch (err) {
+      logger.warn({ err }, 'Failed to purge DONE tasks (will retry next list call)');
+      return 0;
     }
-    return result.count;
-  } catch (err) {
-    logger.warn({ err }, 'Failed to purge DONE tasks (will retry next list call)');
-    return 0;
-  }
+  })().finally(() => {
+    purgeInFlight = undefined;
+  });
+  return purgeInFlight;
 }
 
 export class TaskNotFound extends Error {
@@ -58,16 +69,14 @@ export class TaskValidationError extends Error {
   }
 }
 
-export async function createTask(
-  data: TaskCreate,
-  actor: ActorContext,
-): Promise<{ id: string }> {
+export async function createTask(data: TaskCreate, actor: ActorContext): Promise<{ id: string }> {
   const created = await prisma.$transaction(async (tx) => {
     const task = await tx.task.create({
       data: {
         title: data.title,
         description: data.description ?? null,
         status: data.status ?? 'TODO',
+        completedAt: data.status === 'DONE' ? new Date() : null,
         priority: data.priority ?? 'MEDIUM',
         assigneeId: data.assigneeId ?? null,
         startDate: data.startDate ?? null,
@@ -100,12 +109,9 @@ export async function updateTask(
     // Recurring tasks need a dueDate so we know which day-of-month to
     // resurrect on. Validate the post-update state, not just the patch.
     const resultingRecurrence = data.recurrence ?? existing.recurrence;
-    const resultingDueDate =
-      data.dueDate !== undefined ? data.dueDate : existing.dueDate;
+    const resultingDueDate = data.dueDate !== undefined ? data.dueDate : existing.dueDate;
     if (resultingRecurrence !== 'NONE' && !resultingDueDate) {
-      throw new TaskValidationError(
-        'Tarefas recorrentes precisam de uma data de prazo.',
-      );
+      throw new TaskValidationError('Tarefas recorrentes precisam de uma data de prazo.');
     }
 
     const update: Prisma.TaskUpdateInput = {};
@@ -158,7 +164,7 @@ export async function changeTaskStatus(
     }
 
     // Track when a task became DONE so the auto-purge can find it.
-    // Clear when moving away from DONE so the 7-day clock resets if it
+    // Clear when moving away from DONE so the retention boundary resets if it
     // ever lands back in DONE.
     const completedAt =
       nextStatus === 'DONE' && existing.status !== 'DONE'

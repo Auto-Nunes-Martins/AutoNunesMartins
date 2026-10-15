@@ -1,3 +1,4 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { prisma } from '../db.js';
 import { cache } from '../lib/data/cache.js';
@@ -27,26 +28,30 @@ interface TaskStatsPayload {
 
 const TTL_MS = 60_000;
 
-router.get('/stats', requireUser, async (req: AuthedRequest, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const actorId = req.user.id;
-  const cacheKey = `dashboard:taskStats:${actorId}`;
+router.get(
+  '/stats',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const actorId = req.user.id;
+    const cacheKey = `dashboard:taskStats:${actorId}`;
 
-  const payload = await cache.wrap<TaskStatsPayload>(cacheKey, TTL_MS, async () => {
-    const mineActive = await prisma.task.count({
-      where: {
-        status: { not: 'DONE' },
-        OR: [{ assigneeId: actorId }, { assigneeId: null }],
-      },
+    const payload = await cache.wrap<TaskStatsPayload>(cacheKey, TTL_MS, async () => {
+      const mineActive = await prisma.task.count({
+        where: {
+          status: { not: 'DONE' },
+          OR: [{ assigneeId: actorId }, { assigneeId: null }],
+        },
+      });
+      return { mineActive };
     });
-    return { mineActive };
-  });
 
-  res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
-  res.json(payload);
-});
+    res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+    res.json(payload);
+  }),
+);
 
 export default router;
