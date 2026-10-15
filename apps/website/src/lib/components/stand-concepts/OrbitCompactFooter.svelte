@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowUpRight } from 'lucide-svelte';
   import { standContact } from './standContact';
+  import FooterSocials from './FooterSocials.svelte';
 
   let {
     showContacts = true,
@@ -40,8 +41,11 @@
       <p>© {new Date().getFullYear()} {standContact.name}
         {#if standContact.isDemo}<span id="compact-footer-demo" class:sr-only={compact}>Demonstração · Dados fictícios</span>{/if}
       </p>
-      <a href="/informacao-legal">Informação legal</a>
-      <a href="/politica-de-privacidade">Política de privacidade</a>
+      <div class="legal-links">
+        <a href="/informacao-legal">Informação legal</a>
+        <a href="/politica-de-privacidade">Política de privacidade</a>
+      </div>
+      <div class="footer-socials"><FooterSocials /></div>
     </div>
   </div>
 </footer>
@@ -94,6 +98,8 @@
   p { margin: 0; }
   p span { display: inline-block; margin-left: 16px; }
   .baseline a { display: inline-flex; align-items: center; min-height: 44px; }
+  .legal-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0 20px; }
+  .footer-socials { margin-left: auto; flex-shrink: 0; }
   a:focus-visible { outline: 2px solid #f5f5f1; outline-offset: 5px; }
   @media (hover: hover) { a:hover { color: #fff; text-decoration: underline; text-decoration-color: var(--red); text-underline-offset: 6px; } }
   /* Homepage density is opt-in; other pages keep their existing proportions. */

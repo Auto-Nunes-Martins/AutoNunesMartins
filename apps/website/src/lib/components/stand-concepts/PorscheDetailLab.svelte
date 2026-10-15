@@ -584,7 +584,7 @@
           <h2>Continue a explorar.</h2>
           <div class="related-grid">
             {#each suggestions as item}<a
-                href={publicVehicle ? publicHref(item.id) : `/demo/${item.id}`}
+                href={publicVehicle ? publicHref(item.id) : '/viaturas'}
                 ><div>
                   <img
                     src={photo(item.image, 900)}
@@ -637,7 +637,7 @@
             <a
               class="orbit-main-photo"
               id="orbit-featured"
-              href={`/demo/${heroCar.id}`}
+              href="/viaturas"
               aria-label={`Ver ${heroCar.brand} ${heroCar.model} — destaque ${heroIndex + 1} de ${cars.length}`}
             >
               {#each cars as featured, index (featured.id)}
@@ -930,7 +930,7 @@
 
 {#snippet vehicleCard(vehicle: CatalogCar | PublicCard, index: number)}
   <article class="vehicle-card" use:entrance={(index % 2) * 110}>
-    <a class="card-image" href={'href' in vehicle ? vehicle.href : `/demo/${vehicle.id}`}
+    <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
       ><img
         src={photo(vehicle.image, 1100)}
         srcset={responsivePhoto(vehicle.image, 1600)}
@@ -942,7 +942,7 @@
       ></a
     >
     <div class="card-info">
-      <a href={'href' in vehicle ? vehicle.href : `/demo/${vehicle.id}`}
+      <a href={'href' in vehicle ? vehicle.href : '/viaturas'}
         ><span>{vehicle.brand}</span>
         <h3>{vehicle.model}</h3></a
       ><button
@@ -959,7 +959,7 @@
     </div>
     <div class="card-price">
       <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong><a
-        href={'href' in vehicle ? vehicle.href : `/demo/${vehicle.id}`}
+        href={'href' in vehicle ? vehicle.href : '/viaturas'}
         >Ver viatura <ArrowUpRight size={14} /></a
       >
     </div>
@@ -1056,10 +1056,10 @@
     overflow: clip;
     color-scheme: light;
   }
-  .design.orbit:not(.dark) {
+  :global(:where(html)[data-theme='light']) .design.orbit {
     --bg: #f5f5f1;
   }
-  .design.dark {
+  :global(:where(html)[data-theme='dark']) .design {
     --bg: #0c0c0e;
     --surface: #17171a;
     --text: #f5f5f1;
@@ -3541,7 +3541,7 @@
     width: 53%;
     height: 64%;
     left: 43%;
-    top: calc(17% + 5px);
+    top: calc(17% + 35px);
   }
   .orbit .orbit-title {
     z-index: 2;

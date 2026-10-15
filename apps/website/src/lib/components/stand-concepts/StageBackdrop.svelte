@@ -2,15 +2,15 @@
   import { onMount } from 'svelte';
 
   const accentId = $props.id();
+  const desktopAngle = 28;
   let reveal = $state(0);
   const narrowStart = $derived(0.69 + reveal * 0.12);
-  const portraitStart = $derived(0.365 - reveal * 0.135);
+  const portraitStart = $derived(0.424 - reveal * 0.135);
   let backdrop = $state<HTMLDivElement>();
   onMount(() => {
     let frame = 0;
     const stage = backdrop?.closest<HTMLElement>('.orbit-stage');
     const path = backdrop?.querySelector<SVGPathElement>('.direction-accent');
-    const pathLength = path?.getTotalLength() ?? 0;
     const title = stage?.querySelector<HTMLElement>('.orbit-title');
     const description = stage?.querySelector<HTMLElement>('.orbit-title-note');
     const photo = stage?.querySelector<HTMLElement>('.orbit-main-photo');
@@ -26,11 +26,11 @@
       if (reveal >= 3 && next >= 3) return;
       reveal = next;
       const mobile = window.innerWidth <= 700;
-      const middle = mobile ? 0.755 + reveal * 0.12 : 0.445 - reveal * 0.135;
+      const middle = mobile ? 0.755 + reveal * 0.12 : 0.504 - reveal * 0.135;
       const matrix = path?.getScreenCTM();
       if (!path || !matrix) return;
       const point = path
-        .getPointAtLength(pathLength * unit(middle))
+        .getPointAtLength(path.getTotalLength() * unit(middle))
         .matrixTransform(matrix);
       const fading = unit((2.7 - reveal) / 1.3);
       // Each text box gets its own light coordinates: colour reaches nearby glyphs first.
@@ -70,6 +70,7 @@
 </script>
 
 <div class="stage-backdrop" bind:this={backdrop} aria-hidden="true" style:--accent-reveal={reveal}
+  style:--accent-angle={`${desktopAngle}deg`}
   style:--accent-narrow-paint={`url(#${accentId}-narrow)`}
   style:--accent-portrait-paint={`url(#${accentId}-portrait)`}>
   <div class="stage-atmosphere">
@@ -83,8 +84,8 @@
         {#each [{ name: 'narrow', start: narrowStart, length: 0.13 }, { name: 'portrait', start: portraitStart, length: 0.16 }] as beam}
           <!-- Taper the moving dash itself; its existing shadow then fades beyond both tips. -->
           <linearGradient id={`${accentId}-${beam.name}`} gradientUnits="userSpaceOnUse"
-            x1={-160 + 1670 * beam.start} y1={700 - 482 * beam.start}
-            x2={-160 + 1670 * (beam.start + beam.length)} y2={700 - 482 * (beam.start + beam.length)}>
+            x1={-160 + 1670 * beam.start} y1={beam.name === 'narrow' ? 700 - 482 * beam.start : 472}
+            x2={-160 + 1670 * (beam.start + beam.length)} y2={beam.name === 'narrow' ? 700 - 482 * (beam.start + beam.length) : 472}>
             <stop offset="0" stop-color="var(--red)" stop-opacity="0" />
             <stop offset="0.06" stop-color="var(--red)" stop-opacity="0.25" />
             <stop offset="0.2" stop-color="var(--red)" />
@@ -178,7 +179,7 @@
       drop-shadow(0 0 12px #e3061399)
       drop-shadow(0 0 26px #e3061359);
     stroke-dasharray: 0.16 1;
-    stroke-dashoffset: calc(-0.365px + var(--accent-reveal, 0) * 0.135px);
+    stroke-dashoffset: calc(-0.424px + var(--accent-reveal, 0) * 0.135px);
   }
   .photo-ground {
     position: absolute;
@@ -207,14 +208,32 @@
       transform: translateY(calc(var(--accent-progress, var(--p, 0)) * -12px));
     }
     :global(.motion-on) .direction-accent {
-      /* The photo occludes the right end; scrolling draws the whole segment out to the left. */
-      stroke-dashoffset: calc(-0.365px + var(--accent-reveal) * 0.135px);
+      /* Keep the original left/down travel on the same straight path used by the light. */
+      stroke-dashoffset: calc(-0.424px + var(--accent-reveal) * 0.135px);
       opacity: clamp(0, calc((2.7 - var(--accent-reveal)) * 0.73076924), 0.95);
     }
     :global(.motion-on) .photo-ground {
       transform: translateX(calc(var(--p, 0) * -16px)) rotate(-4deg)
         scaleX(calc(1 + var(--p, 0) * 0.06));
     }
+  }
+  @media (min-width: 701px) {
+    /* Extend only the clipping window; retain the SVG canvas and its approved trajectory. */
+    .accent-track { bottom: calc(-1 * var(--hero-shadow-tail, 0px)); }
+    svg { height: var(--intro-height); }
+    /* A horizontal SVG path rotated after layout gives the final visual angle at every ratio,
+       including the first server-rendered paint. This SVG contains only the accent. */
+    .direction-accent {
+      d: path('M-160 472 1510 472');
+      /* Keep the crisp core; only spread the outer desktop halo slightly further. */
+      filter: drop-shadow(0 0 2.5px rgb(255 51 76 / 90%)) drop-shadow(0 0 5px #e3061366)
+        drop-shadow(0 0 12px #e3061399) drop-shadow(0 0 30px #e3061361);
+    }
+    svg { transform: rotate(calc(-1 * var(--accent-angle))); transform-origin: 50% 65.555556%; }
+  }
+  @media (min-width: 701px) and (prefers-reduced-motion: no-preference) {
+    /* The support stays in the scene; only the dash moves along it. */
+    .accent-track { transform: none; }
   }
   @media (max-width: 700px) {
     .direction-accent {

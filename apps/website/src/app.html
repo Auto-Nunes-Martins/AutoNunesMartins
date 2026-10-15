@@ -4,6 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0A0A0B" />
+    <script id="orbit-theme-boot">
+      (function () {
+        var theme = 'dark';
+        try {
+          var stored = localStorage.getItem('anm-orbit-theme');
+          if (stored === 'light' || stored === 'dark') theme = stored;
+        } catch (_) { /* Use the default when local storage is unavailable. */ }
+        document.documentElement.setAttribute('data-theme', theme);
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'dark' ? '#0a0a0b' : '#f5f5f1');
+      })();
+    </script>
+    <style>
+      html { background: #0a0a0b; color-scheme: dark; }
+      html[data-theme='light'] { background: #f5f5f1; color-scheme: light; }
+    </style>
     <script src="%sveltekit.assets%/orbit-startup.js"></script>
     <style>
       html[data-orbit-restoring] {

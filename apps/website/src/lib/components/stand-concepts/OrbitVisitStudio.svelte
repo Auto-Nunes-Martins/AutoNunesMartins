@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { submitContact } from '$lib/contactRequest';
+  import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
   import { onMount } from 'svelte';
   import { ArrowUpRight, ArrowRight, Phone, Mail, MapPin, Clock3, Check } from 'lucide-svelte';
   import { standContact, type StandContact } from './standContact';
@@ -46,6 +48,8 @@
   let section: HTMLElement;
   let useReferenceTone = $state(true);
   let tested = $state(false);
+  let sending = $state(false);
+  let contactError = $state('');
   let fields = $state({ name: '', email: '', subject: 'Informações gerais', message: '' });
   const subjects = [
     'Informações gerais',
@@ -238,9 +242,14 @@
       aria-labelledby={`${id}-form-heading`}
       aria-describedby={`${id}-form-note`}
       oninput={() => (tested = false)}
-      onsubmit={(event) => {
+      onsubmit={async (event) => {
         event.preventDefault();
-        tested = true;
+        if (sending) return;
+    sending = true; tested = false; contactError = '';
+    const form = event.currentTarget;
+    try { await submitContact(form); tested = true; }
+    catch (error) { contactError = error instanceof Error ? error.message : 'Não foi possível enviar o pedido.'; }
+    finally { sending = false; }
       }}
     >
       <div class="form-heading">
@@ -255,7 +264,7 @@
           <label for={`${id}-name`}
             >Nome<input
               id={`${id}-name`}
-              name="name"
+              name="name" maxlength="120"
               autocomplete="name"
               placeholder="O seu nome"
               bind:value={fields.name}
@@ -265,7 +274,7 @@
           <label for={`${id}-email`}
             >Email<input
               id={`${id}-email`}
-              name="email"
+              name="email" maxlength="254"
               type="email"
               autocomplete="email"
               placeholder="nome@exemplo.pt"
@@ -285,7 +294,7 @@
         <label for={`${id}-message`}
           >Mensagem<textarea
             id={`${id}-message`}
-            name="message"
+            name="message" maxlength="5000"
             rows="4"
             placeholder="Conte-nos o que procura ou como podemos ajudar."
             bind:value={fields.message}
@@ -293,15 +302,17 @@
           ></textarea></label
         >
       </div>
-      <button class="send-button" type="submit"
-        >Experimentar pedido <ArrowRight size={19} aria-hidden="true" /></button
+      <ContactPrivacyNotice />
+      {#if contactError}<p role="alert">{contactError}</p>{/if}
+      <button class="send-button" type="submit" disabled={sending}
+        >{sending ? 'A enviar…' : 'Enviar pedido'} <ArrowRight size={19} aria-hidden="true" /></button
       >
       <p class="form-note" id={`${id}-form-note`}>
-        Formulário de demonstração. Não envia mensagens nem guarda dados.
+        O pedido de visita depende de confirmação do stand.
       </p>
       <div class="form-status" role="status" aria-atomic="true">
         {#if tested}<Check size={15} aria-hidden="true" /><span
-            >Pedido experimentado. Nenhuma mensagem foi enviada.</span
+            >Pedido aceite para envio ao stand. A visita será confirmada após contacto.</span
           >{/if}
       </div>
     </form>

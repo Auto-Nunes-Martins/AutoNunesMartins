@@ -27,17 +27,18 @@ Não copiar referências CASA ou ODR do concorrente. Confirmar entidades e mecan
 
 ## Funcionalidades e dados — revisão operacional
 
-- **Formulários DEMO:** modal e formulário inferior não enviam nem guardam pedidos num serviço. Apenas apresentam confirmação local de teste. Em 2026-10-04, o proprietário pediu a remoção dos avisos visíveis de demonstração na secção de contacto/formulários e do rótulo de pendência no rodapé. Essa alteração visual não confirma dados nem ativa envio real. Não introduzir dados pessoais reais. Escolher envio/receção, prestadores e conservação antes de ativar contacto real; nenhuma integração foi criada nesta preparação.
+- **Formulários de contacto:** em 10 de outubro de 2026 foi implementado o encaminhamento por Resend, sem guardar pedidos no CRM. O envio permanece desativado por falta de configuração e confirmação dos dados de privacidade. As páginas de demonstração mantêm o modal de teste. Consulte `docs/contact-email.md`. Em 2026-10-04, o proprietário pediu a remoção dos avisos visíveis de demonstração na secção de contacto/formulários e do rótulo de pendência no rodapé. Essa alteração visual não confirma dados nem ativa envio real. Não introduzir dados pessoais reais. Escolher envio/receção, prestadores e conservação antes de ativar contacto real; A integração foi acrescentada em 10 de outubro; isto não confirma contactos, serviços finais nem publicação.
 - **Contactos DEMO:** telefone/morada/horário são ilustrativos; email `.example`; WhatsApp fictício `+12025550147`; mapa aponta genericamente para Lisboa. Não basta preencher a página legal: atualizar também `standContact.ts` e verificar todos os links `tel:`, `mailto:`, Maps e WhatsApp, além de eventuais contactos de equipa.
 - **Preferências locais:** preservar a informação já implementada sobre tema, favoritos e comparação. `anm-orbit-theme`, `anm-favorites-v1`, `anm-comparison-v1` e legado `anm-design-saved` usam armazenamento local; listas não têm expiração automática. A seleção permite pedidos à API pública, não é uma funcionalidade sem rede.
 - **Scroll:** `orbit-reload-position` usa armazenamento de sessão com URL completo, coordenadas e hora. Janela de utilização de 60 segundos não equivale a apagar a entrada. A política já descreve esta função.
 - **Alojamento e terceiros:** confirmar cookies, logs/IP, retenção, CDN, email, subcontratantes e transferências no ambiente final. Algumas imagens são pedidas ao Unsplash; fontes locais; Maps e WhatsApp são ligações externas. A auditoria do código não comprova a ausência de cookies ou serviços introduzidos pelo alojamento.
 - **Consentimento:** não foi instalado banner/CMP. Rever a necessidade e configuração com base nos serviços efetivamente ativos, antes de acrescentar analytics, publicidade, embeds ou outros recursos.
+- **Tema — 15 de outubro de 2026:** por escolha explícita do proprietário, a correção do flash no refresh usa apenas o armazenamento local existente, aplicado antes da primeira pintura e da hidratação. A proposta de cookie de tema foi retirada; não existe cookie novo nem envio desta preferência ao servidor. A política descreve a finalidade, ausência de expiração automática e remoção pelo navegador. Isto não encerra a revisão de consentimento: a Lei n.º 41/2004, artigo 5.º, e o Parecer europeu 04/2012 também abrangem tecnologias semelhantes a cookies; a preferência persistente não deve ser presumida isenta apenas por usar localStorage. Mantêm-se as pendências de revisão jurídica e dos serviços efetivos em produção.
 - **Conteúdo:** rever dados fictícios, fotografias ilustrativas, afirmações comerciais, preços/disponibilidade, equipa, contactos e indexação. Preservar `noindex` das demos; aprovar expressamente o estado de indexação das páginas oficiais.
 
 ## Validação técnica — separada da revisão jurídica
 
-- Pendente: build no ambiente de publicação. Um build anterior chegou à fase de adaptação Vercel e encontrou `EPERM` ao criar symlink no Windows. Não atribuir esse erro à informação legal nem afirmar que o build final foi validado.
+- Pendente: build e runtime Node no Render no ambiente de publicação. Como registo histórico, um build anterior chegou à fase de adaptação Vercel e encontrou `EPERM` ao criar symlink no Windows. Não atribuir esse erro à informação legal nem afirmar que o build final foi validado.
 - Pendente: confirmar domínio/origem e canonical/OG/JSON-LD, links, fotografias, formulários escolhidos, segurança operacional e percursos desktop/mobile.
 - Pendente: revisão final de acessibilidade, contraste, navegação por teclado, links legais e adequação da comunicação ao funcionamento efetivo dos contactos e formulários.
 - Testes locais aprovados não equivalem a aprovação de publicação. Não houve commit, push ou deploy nesta preparação.
@@ -65,3 +66,22 @@ Preencher valores confirmados na configuração e substituir placeholders no tex
 - Verificação local de HTML SSR: todas as 14 fichas acessíveis pelos links do catálogo (9 + 5), todas responderam 200 e continham JSON-LD. Paginação e carrossel de semelhantes já expõem links HTML; nenhuma ficha órfã nesta amostra. Sitemap respondeu 200 e incluiu as 14 fichas. Home e Quem Somos sem `noindex`; amostras de demo, favoritos, comparação e filtro combinado preservaram `noindex`.
 - Conteúdo ainda por rever: 13 de 14 fichas sem fotografias, especificações vazias nas 14, descrições resumidas a marca/modelo/ano, entrada `renot clicli`, destaques da home ligados a demos e referências a financiamento em `standTrust.ts`/`catalogEditorial.ts`, incompatíveis com a confirmação acima. Nenhum dado de negócio foi inventado ou corrigido por suposição nesta revisão técnica.
 - Esta validação local não mede ranking nem Core Web Vitals de produção e não encerra qualquer item pendente de publicação.
+
+### Contacto por email — 10 de outubro de 2026
+
+- Implementados endpoint público no backend, relay no servidor SvelteKit, submissão real do modal público e formulários inferiores, aviso de privacidade e mensagens de sucesso/erro dependentes da resposta do serviço.
+- Resend escolhido com configuração privada; nenhuma chave, domínio ou endereço real foi inventado. Envio desativado por omissão e bloqueado enquanto os campos de privacidade estiverem pendentes. Não houve email real enviado.
+- A página de privacidade descreve o fluxo previsto, sem criação de cliente/conta ou gravação do pedido no CRM. Sem consentimento genérico obrigatório nem subscrição de marketing.
+- Mantêm-se pendentes identidade do responsável, contactos oficiais, destinatário/remetente, domínio verificado, credenciais, fundamentos, conservação, contratos, transferências e configuração de alojamento. Nenhum item marcado como verified.
+- Verificação desta implementação: 119 testes backend, 333 testes existentes website e quatro novos testes relay aprovados; TypeScript e Svelte check sem erros, Svelte sem avisos. Build compilou cliente/servidor e voltou a falhar no adapter Vercel com EPERM de symlink no Windows. Lint do DesignEdition conserva 11 erros já presentes no HEAD; restantes ficheiros alterados sem erros. Nenhuma entrega real de email confirmada.
+
+### Previews de partilha — 14 de outubro de 2026
+
+- Completados Open Graph e Twitter Cards no HTML SSR das páginas públicas, incluindo imagem de marca PNG 1200 × 630 para páginas/fichas sem fotografia. Fichas com foto usam apenas o endpoint estável da fotografia pública aprovada; preservadas allowlist, JSON-LD e políticas de indexação/demos.
+- Validação no projeto principal: 337 testes existentes aprovados; Svelte check com 0 erros/avisos; 12 rotas verificadas por HTTP com API pública fictícia e user agents de quatro crawlers. Imagens responderam 200, com MIME/bytes/dimensões corretos e sem autenticação. Esta fixture não confirma fotografias ou acesso externo no domínio real.
+- Build local compilou cliente/servidor e voltou a falhar no adapter Vercel com EPERM ao criar symlink no Windows. Build de publicação permanece pendente.
+- Implementação, teste reproduzível e limites de plataformas/caches documentados em `docs/social-previews.md`. Falta validar domínio final, HTTPS, acesso dos crawlers, imagens reais e previews externas. Nenhum deploy, push ou mensagem real; nenhum item marcado como verified. As pendências legais, de dados, conteúdo e publicação permanecem.
+
+### Destino Node/Render — 15 de outubro de 2026
+
+O proprietário escolheu Render e pediu a remoção do suporte ativo Vercel. O rótulo da verificação de build na configuração pública foi atualizado para refletir esse destino; o estado continua pending. Builds Node locais não confirmam o ambiente Render, memória, dados oficiais ou aprovação de publicação. Consultar docs/render-single-service.md para evidência técnica e limitações.

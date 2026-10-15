@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import type { Snippet } from 'svelte';
   import { tick, onDestroy } from 'svelte';
   import { page, navigating } from '$app/stores';
@@ -163,11 +164,12 @@
 
 <svelte:window onkeydown={closeFilters} />
 
+<SocialMetadata title={`${seo.heading} — Auto Nunes Martins`} description={seo.description} canonical={seo.canonical} />
+
 <svelte:head>
   <title>{seo.heading} — Auto Nunes Martins</title>
   <meta name="description" content={seo.description} />
   <link rel="canonical" href={seo.canonical} />
-  <meta property="og:url" content={seo.canonical} />
   <meta name="robots" content={seo.noindex ? 'noindex, follow' : 'index, follow'} />
 </svelte:head>
 

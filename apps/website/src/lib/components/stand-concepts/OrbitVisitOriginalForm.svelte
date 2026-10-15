@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { submitContact } from '$lib/contactRequest';
+  import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
   import { ArrowUpRight } from 'lucide-svelte';
   import FormSelectField from './FormSelectField.svelte';
 
@@ -6,6 +8,8 @@
   // Keep this isolated so experiments do not restyle the reference section.
   let { id, showDemoNote = true }: { id: string; showDemoNote?: boolean } = $props();
   let tested = $state(false);
+  let sending = $state(false);
+  let contactError = $state('');
 </script>
 
 <form
@@ -13,16 +17,21 @@
   aria-labelledby={`${id}-heading`}
   aria-describedby={`${id}-note`}
   oninput={() => (tested = false)}
-  onsubmit={(event) => {
+  onsubmit={async (event) => {
     event.preventDefault();
-    tested = true;
+    if (sending) return;
+    sending = true; tested = false; contactError = '';
+    const form = event.currentTarget;
+    try { await submitContact(form); tested = true; }
+    catch (error) { contactError = error instanceof Error ? error.message : 'Não foi possível enviar o pedido.'; }
+    finally { sending = false; }
   }}
 >
   <p class="eyebrow">COMECE A CONVERSA</p>
   <h3 id={`${id}-heading`}>O que tem em mente?</h3>
   <div class="form-row">
-    <label for={`${id}-name`}>Nome<input id={`${id}-name`} name="name" autocomplete="name" placeholder="O seu nome" required /></label>
-    <label for={`${id}-email`}>Email<input id={`${id}-email`} name="email" type="email" autocomplete="email" placeholder="nome@exemplo.pt" required /></label>
+    <label for={`${id}-name`}>Nome<input id={`${id}-name`} name="name" maxlength="120" autocomplete="name" placeholder="O seu nome" required /></label>
+    <label for={`${id}-email`}>Email<input id={`${id}-email`} name="email" maxlength="254" type="email" autocomplete="email" placeholder="nome@exemplo.pt" required /></label>
   </div>
   <label for={`${id}-subject`}>Assunto<FormSelectField><select id={`${id}-subject`} name="subject">
     <option>Informações gerais</option>
@@ -30,12 +39,14 @@
     <option>Marcar uma visita</option>
     <option>Falar sobre uma retoma</option>
   </select></FormSelectField></label>
-  <label for={`${id}-message`}>Mensagem<textarea id={`${id}-message`} name="message" rows="3" placeholder="Como podemos ajudar?" required></textarea></label>
+  <label for={`${id}-message`}>Mensagem<textarea id={`${id}-message`} name="message" maxlength="5000" rows="3" placeholder="Como podemos ajudar?" required></textarea></label>
+  <ContactPrivacyNotice />
+  {#if contactError}<p role="alert">{contactError}</p>{/if}
   <div class="form-bottom" class:without-note={!showDemoNote}>
-    <p id={`${id}-note`} class:sr-only={!showDemoNote}>Demonstração. Não envia mensagens nem guarda dados.</p>
-    <button type="submit" class="button primary"><span class="action-text">Experimentar pedido</span> <span class="action-arrow"><ArrowUpRight size={17} aria-hidden="true" /></span></button>
+    <p id={`${id}-note`} class:sr-only={!showDemoNote}>O pedido de visita depende de confirmação do stand.</p>
+    <button type="submit" disabled={sending} class="button primary"><span class="action-text">{sending ? 'A enviar…' : 'Enviar pedido'}</span> <span class="action-arrow"><ArrowUpRight size={17} aria-hidden="true" /></span></button>
   </div>
-  <p class="form-status" role="status" aria-atomic="true">{tested ? 'Pedido experimentado. Nenhuma mensagem foi enviada.' : ''}</p>
+  <p class="form-status" role="status" aria-atomic="true">{tested ? 'Pedido aceite para envio ao stand. A visita será confirmada após contacto.' : ''}</p>
 </form>
 
 <style>
