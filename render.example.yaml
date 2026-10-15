@@ -13,8 +13,6 @@ services:
         sync: false
       - key: PUBLIC_WEBSITE_URL
         sync: false
-      - key: ADMIN_CLERK_USER_IDS
-        sync: false
       - key: CRM_ORIGIN
         sync: false
       - key: CRM_BASE_PATH

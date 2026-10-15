@@ -35,7 +35,6 @@ Usar a URL HTTPS temporária que o Render atribuir, sem barra final:
 | `CLERK_PUBLISHABLE_KEY` | Mesma chave pública, configuração do backend. |
 | `CLERK_SECRET_KEY` | Segredo privado da mesma instância Clerk, runtime. |
 | `CLERK_WEBHOOK_SECRET` | Segredo de assinatura do endpoint webhook que escolher configurar; runtime. |
-| `ADMIN_CLERK_USER_IDS` | IDs Clerk `user_...` dos administradores autorizados, separados por vírgulas. Obrigatório no launcher conjunto; guard CRM e backend verificam antes de consultar/provisionar utilizadores. |
 | `DATABASE_URL` | Ligação ao PostgreSQL Supabase **existente**, runtime. Confirmar modo de ligação/pooler, TLS e conectividade a partir do Render. |
 | `DIRECT_URL` | Só se necessário para ferramentas Prisma/manutenção manual. Não há migração automática. |
 | `SUPABASE_URL` | URL do projeto Supabase Storage existente, runtime. |
@@ -52,9 +51,9 @@ Usar a URL HTTPS temporária que o Render atribuir, sem barra final:
 
 Não é necessário mover a base de dados ou fotografias para o Render. Ter o Supabase online não garante que as credenciais, a rede, o schema e o bucket usados no novo ambiente estejam corretos.
 
-No Clerk, confirmar a instância/ambiente, login no hostname temporário, origens/redirects permitidos e regresso a `/crm/dashboard`; logout regressa a `/crm/`. O launcher fornece o sign-in `/crm/`. As cookies continuam a ser geridas pelo SDK Clerk; no ensaio com uma só origem podem ter path `/`, mas o website não inicializa Clerk, não interpreta sessões e não usa essas cookies para dados públicos. Não restringir manualmente cookies do SDK sem validar o fluxo. Configurações production Clerk que exijam domínio próprio podem impedir este ensaio: validar no painel, ou usar uma instância de desenvolvimento apropriada com os respetivos avisos. Nenhuma configuração externa foi alterada nesta tarefa. A allowlist de IDs no servidor impede que um novo registo Clerk obtenha acesso administrativo automaticamente neste serviço.
+No Clerk, confirmar a instância/ambiente, login no hostname temporário, origens/redirects permitidos e regresso a `/crm/dashboard`; logout regressa a `/crm/`. O launcher fornece o sign-in `/crm/`. As cookies continuam a ser geridas pelo SDK Clerk; no ensaio com uma só origem podem ter path `/`, mas o website não inicializa Clerk, não interpreta sessões e não usa essas cookies para dados públicos. Não restringir manualmente cookies do SDK sem validar o fluxo. Configurações production Clerk que exijam domínio próprio podem impedir este ensaio: validar no painel, ou usar uma instância de desenvolvimento apropriada com os respetivos avisos. Nenhuma configuração externa foi alterada nesta tarefa. O proprietário confirmou que as contas desta instância são criadas apenas por convite/links Clerk. Qualquer conta autenticada nessa instância pode usar o CRM, sem lista de IDs nem configuração adicional de administradores. As sessões e tokens continuam a ser verificados no servidor.
 
-Se utilizar webhook, configurar posteriormente a URL temporária `/webhooks/clerk` e o segredo correspondente; este guia não cria endpoints no Clerk. Validar sessões nos dois administradores e confirmar que uma conta fora da allowlist recebe 403, e que uma sessão anónima não lê endpoints privados.
+Se utilizar webhook, configurar posteriormente a URL temporária `/webhooks/clerk` e o segredo correspondente; este guia não cria endpoints no Clerk. Validar sessões dos utilizadores convidados e confirmar que uma sessão anónima não lê endpoints privados.
 
 No Supabase existente, confirmar ligação/read do catálogo e signed read das fotografias. Testar uma nova fotografia numa viatura de teste apenas quando autorizar escrita real; confirmar ordem/foto pública aprovada. As migrações pendentes devem ser revistas separadamente, com backup e autorização operacional; não foram executadas nesta tarefa. O healthcheck não substitui estes testes. Email real continua desligado.
 
@@ -118,3 +117,12 @@ O suporte ativo Vercel foi removido por pedido do proprietário: adapters, confi
 Na clarificação final, o proprietário confirmou que 1,1 MB é um objetivo aproximado, não um teto obrigatório. A política conserva detalhe com qualidade WebP mínima 82; saídas acima da meta são aceites até ao limite defensivo de 2.000.000 bytes. Ficheiros já adequados e menores não são inflados. Não há reprocessamento de fotografias existentes.
 
 A decisão final é **meta aproximada de 1.100.000 bytes e máximo obrigatório de 2.000.000 bytes por nova foto guardada**. Se não conseguir, devolve 422 antes de escrever no Storage; o endpoint volta a verificar o tamanho final. As entradas podem ter até 20 MiB.
+
+### Acesso por convite Clerk
+
+O acesso segue a instância Clerk existente, configurada pelo proprietário para convites. Foi retirada a restrição adicional por IDs: uma sessão/token válido dessa instância dá acesso ao CRM. Os guards server-side, Bearer da API, CSRF, noindex e cache privada mantêm-se. O papel interno ADMIN existente é preservado, sem nova flag ou lista de utilizadores.
+
+O webhook não decide quem pode entrar: verifica a assinatura dos eventos e sincroniza os dados de utilizador. O primeiro pedido autenticado já cria a linha interna se necessário. O campo de configuração CLERK_WEBHOOK_SECRET continua no contrato atual do backend e deve ser preenchido com o segredo real aplicável quando configurar o webhook; o ficheiro de importação conserva o marcador pendente. Nenhuma configuração de registo/convites foi alterada no painel Clerk.
+
+Verificação desta simplificação: três testes de segurança/prefixo CRM, 21 testes de autenticação/erros backend e dois testes de gateway aprovados; TypeScript backend e build Node CRM aprovados. O launcher foi exercitado com as três builds e credenciais fictícias, sem variável de lista de IDs: login 200, rotas CRM anónimas 303, API privada anónima 401, CSRF 403 e healthcheck 200. Sem consultas à base real ou alterações no painel Clerk.
+

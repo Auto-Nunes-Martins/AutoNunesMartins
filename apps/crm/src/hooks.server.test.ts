@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 vi.mock('$app/paths', () => ({ base: '/crm' }));
-vi.mock('$env/dynamic/private', () => ({ env: { ADMIN_CLERK_USER_IDS: 'user_admin' } }));
 vi.mock('svelte-clerk/server', () => ({
   withClerkHandler:
     () =>
@@ -56,9 +55,10 @@ describe('CRM prefix and server security', () => {
     }
     expect((await invoke('/crm/')).status).toBe(200);
   });
-  it('permits authorized sessions and rejects other Clerk users and cross-origin actions', async () => {
+  it('permits authenticated invited users and rejects cross-origin actions', async () => {
     expect((await invoke('/crm/dashboard', 'user_admin')).status).toBe(200);
-    expect((await invoke('/crm/dashboard', 'user_other')).status).toBe(403);
+    expect((await invoke('/crm/dashboard', 'user_other')).status).toBe(200);
+    expect((await invoke('/crm/api/users', 'user_other')).status).toBe(200);
     expect((await invoke('/crm/api/tasks', 'user_admin', 'POST', 'https://evil.test')).status).toBe(
       403,
     );
