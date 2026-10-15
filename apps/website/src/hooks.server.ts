@@ -12,7 +12,10 @@ export const handle: Handle = async ({ event, resolve }) => {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   // Staging indexation is explicit; the combined gateway also protects Render preview hosts.
-  if (env.SITE_NOINDEX === 'true') {
+  if (response.status >= 400) {
+    response.headers.set('Cache-Control', 'no-store');
+    response.headers.set('X-Robots-Tag', 'noindex, follow');
+  } else if (env.SITE_NOINDEX === 'true') {
     response.headers.set('X-Robots-Tag', 'noindex, follow');
   }
   return response;

@@ -44,7 +44,7 @@
 
 <svelte:head>
   <link rel="canonical" href={new URL('/favoritos', $page.url.origin).href} /><title>Favoritos — Auto Nunes Martins</title><meta name="robots" content="noindex, follow" /><meta name="description" content="Retome as viaturas que guardou e compare as suas opções ao seu ritmo." /></svelte:head>
-<main class="favorites-page">
+<main class="favorites-page" class:empty-selection={!$ready || !$ids.length}>
   <a class="back" href="/viaturas"><ArrowLeft size={15} aria-hidden="true" /> Explorar viaturas</a>
   <div class="intro"><div><p class="eyebrow">AS ESCOLHAS QUE FICAM</p><h1 bind:this={heading} tabindex="-1">Chamaram-lhe<br /><span>a atenção.</span></h1><p class="lead">Guarde o que faz sentido. Volte aos detalhes quando quiser.</p></div><Heart class="intro-heart" size={66} strokeWidth={1} aria-hidden="true" /></div>
   {#if !$ready}<p role="status">A preparar os seus favoritos…</p>
@@ -66,6 +66,7 @@
   <p class="storage-note">As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer momento. <a href="/politica-de-privacidade#escolhas">Política de privacidade</a></p>
 </main>
 <style>
+  .empty-selection { box-sizing: border-box; min-height: calc(100svh + clamp(32px, 6svh, 72px)); }
   .favorites-page { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: 46px 0 104px; color: var(--text); }
   a { color: inherit; text-decoration: none; }
   button { font: inherit; color: inherit; cursor: pointer; }

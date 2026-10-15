@@ -42,7 +42,7 @@
 <div class="tuner" hidden={!active}>
   <button class="toggle" aria-expanded={open} aria-controls="hero-background-settings" onclick={togglePanel}>Ajustar fade {open ? '−' : '+'}</button>
   {#if open}
-    <aside id="hero-background-settings" aria-label="Ajustar fades do fundo da opção 2">
+    <aside id="hero-background-settings" aria-label="Ajustar fades do fundo da opção 1">
       <div class="heading"><strong>Fades do fundo</strong><button aria-label="Fechar ajustes do fade" onclick={togglePanel}>×</button></div>
       <div class="photos" role="group" aria-label="Fotografia para ajustar o fade">{#each standNames as name, index}<button aria-pressed={selected === index} onclick={() => select(index as StandIndex)}>Imagem {index + 1} · {name}</button>{/each}</div>
       <p>Fades da imagem {selected + 1}. Cada fotografia conserva os seus próprios valores.</p>

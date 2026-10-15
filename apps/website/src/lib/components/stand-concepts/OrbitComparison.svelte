@@ -60,7 +60,7 @@
   <meta name="robots" content="noindex, follow" />
 </svelte:head>
 
-<main class="comparison-page">
+<main class="comparison-page" class:empty-selection={!$ready || !$ids.length}>
   <a class="back" href="/viaturas"><ArrowLeft size={16} aria-hidden="true" /> Viaturas</a>
   <header class="page-heading">
     <h1 bind:this={heading} tabindex="-1">Comparar viaturas<span>.</span></h1>
@@ -148,6 +148,7 @@
 </main>
 
 <style>
+  .empty-selection { box-sizing: border-box; min-height: calc(100svh + clamp(32px, 6svh, 72px)); }
   .comparison-page { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: 30px 0 88px; color: var(--text); }
   a { color: inherit; text-decoration: none; }
   button, select { font: inherit; color: inherit; }

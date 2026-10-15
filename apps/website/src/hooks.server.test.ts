@@ -23,3 +23,12 @@ it('expires a discarded theme cookie without using it for rendering', async () =
   expect(cookies.delete).toHaveBeenCalledWith('anm-orbit-theme', { path: '/' });
   expect(resolve).toHaveBeenCalledOnce();
 });
+
+it.each([400, 404, 500, 503])('keeps HTTP %i errors out of indexing and shared caches', async status => {
+  env.SITE_NOINDEX = 'false';
+  const response = await handle({ event: {}, resolve: async () => new Response('safe public error', { status, headers: { 'Retry-After': '120' } }) } as unknown as Parameters<typeof handle>[0]);
+  expect(response.status).toBe(status);
+  expect(response.headers.get('X-Robots-Tag')).toBe('noindex, follow');
+  expect(response.headers.get('Cache-Control')).toBe('no-store');
+  expect(response.headers.get('Retry-After')).toBe('120');
+});
