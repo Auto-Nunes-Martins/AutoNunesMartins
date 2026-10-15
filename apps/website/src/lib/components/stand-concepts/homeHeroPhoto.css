@@ -1,15 +1,15 @@
-/* Version 1 stays original; version 2 is the panoramic stand composition (formerly version 3). */
+/* Version 1 is the panoramic stand composition and default; version 2 keeps the original hero. */
 .design.orbit.orbit-home .hero-versions { position: fixed; z-index: 45; left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); display: flex; gap: 6px; padding: 5px; border: 1px solid var(--line); border-radius: 30px; background: color-mix(in srgb, var(--bg) 94%, transparent); box-shadow: 0 4px 20px #0002; backdrop-filter: blur(8px); }
 .design.orbit.orbit-home .hero-versions button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--bg); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
 .design.orbit.orbit-home .hero-versions button[aria-pressed='true'] { color: white; background: var(--red); border-color: var(--red); }
 .design.orbit.orbit-home .hero-versions button:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 
-/* Keep version 1's stage and original content spacing. The independent photograph
+/* Keep the original stage and content spacing. The independent photograph
    fills the intro, including its top padding, and extends beyond its width. */
-.design.orbit.orbit-home[data-hero-version='2'] .orbit-intro {
+.design.orbit.orbit-home[data-hero-version='1'] .orbit-intro {
   isolation: isolate;
 }
-.design.orbit.orbit-home[data-hero-version='2'] .home-stand-backdrop {
+.design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop {
   position: absolute;
   z-index: -1;
   top: 0;
@@ -22,7 +22,7 @@
   pointer-events: none;
   background: var(--bg);
 }
-.design.orbit.orbit-home[data-hero-version='2'] .home-stand-backdrop img {
+.design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop img {
   display: block;
   position: absolute;
   left: var(--photo-x, 50%);
@@ -44,7 +44,7 @@
       transparent calc(100% - var(--photo-crop-right, 0%)));
   mask-composite: intersect;
 }
-.design.orbit.orbit-home[data-hero-version='2'] .home-stand-backdrop::after {
+.design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -53,8 +53,8 @@
     var(--stand-bottom-fade, linear-gradient(0deg, var(--bg), transparent 28%));
 }
 @media (max-width: 700px) {
-  .design.orbit.orbit-home[data-hero-version='2'] .home-stand-backdrop img { left: var(--photo-x, 54%); top: var(--photo-y, 50%); transform: translate(calc(-1 * var(--photo-x, 54%)), calc(-1 * var(--photo-y, 50%))); }
-  .design.orbit.orbit-home[data-hero-version='2'] .home-stand-backdrop::after {
+  .design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop img { left: var(--photo-x, 54%); top: var(--photo-y, 50%); transform: translate(calc(-1 * var(--photo-x, 54%)), calc(-1 * var(--photo-y, 50%))); }
+  .design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop::after {
     background:
       var(--stand-mobile-vertical-fade, linear-gradient(180deg, color-mix(in srgb, var(--bg) 94%, transparent), color-mix(in srgb, var(--bg) 85%, transparent) 34%, transparent 62%, var(--bg))),
       var(--lateral-fade, linear-gradient(90deg, color-mix(in srgb, var(--bg) 65%, transparent), transparent 20%, transparent 80%, color-mix(in srgb, var(--bg) 65%, transparent)));

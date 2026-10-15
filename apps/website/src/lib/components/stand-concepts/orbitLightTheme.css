@@ -102,7 +102,7 @@
 }
 
 /* Keep the hero canvas and local copy shadow independent. */
-:where(html)[data-theme='light'] .design.orbit.orbit-home[data-hero-version='2'] .orbit-intro {
+:where(html)[data-theme='light'] .design.orbit.orbit-home[data-hero-version='1'] .orbit-intro {
   --hero-base: color-mix(in srgb, var(--orbit-gray-surface) 25%, var(--orbit-page-background));
   --hero-copy-shadow: #0c0c0e;
   /* Keep top and lateral feathering; the photograph stays opaque at its bottom edge. */
@@ -112,25 +112,25 @@
   --bg: var(--hero-base);
   background: var(--hero-base);
 }
-:where(html)[data-theme='light'] .design.orbit.orbit-home[data-hero-version='2'] .orbit-copy {
+:where(html)[data-theme='light'] .design.orbit.orbit-home[data-hero-version='1'] .orbit-copy {
   --bg: var(--hero-copy-shadow);
   --text: #f5f5f1;
   --muted: #96969d;
   color: var(--text);
 }
-.design.orbit.orbit-home[data-hero-version='2'] .orbit-intro {
+.design.orbit.orbit-home[data-hero-version='1'] .orbit-intro {
   --hero-shadow-tail: 0px;
 }
-.design.orbit.orbit-home[data-hero-version='2'] .orbit-copy {
+.design.orbit.orbit-home[data-hero-version='1'] .orbit-copy {
   /* Bound the copy's decorative paint at the intro floor, leaving the tilted photo free. */
   clip-path: inset(-100vmax -100vmax calc(100% + var(--copy-top) - var(--intro-height) - var(--hero-shadow-tail) + 0.5px) -100vmax);
 }
 @media (min-width: 701px) and (prefers-reduced-motion: no-preference) {
-  .design.orbit.orbit-home[data-hero-version='2'] .orbit-intro {
+  .design.orbit.orbit-home[data-hero-version='1'] .orbit-intro {
     --hero-shadow-tail: calc(4svh - clamp(0px, calc((100svh - var(--intro-height)) / 2 - var(--hero-nav-space, 94px)), 3.5svh));
   }
 }
-.design.orbit.orbit-home[data-hero-version='2'] .orbit-copy::before {
+.design.orbit.orbit-home[data-hero-version='1'] .orbit-copy::before {
   /* Keep this decorative edge on the clipping plane so perspective cannot leave a gap. */
   transform: none;
   min-height: calc(var(--intro-height) - var(--copy-top) + 26px + 4svh + 16px);

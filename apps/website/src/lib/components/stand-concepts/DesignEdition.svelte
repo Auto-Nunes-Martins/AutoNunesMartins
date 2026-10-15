@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { publicErrorCopy } from '$lib/publicError';
   import HeroBackgroundTuner from './HeroBackgroundTuner.svelte';
   import { highlightSlides, type PublicHighlights, type HeroSlide } from '$lib/homepageHighlights';
   import HeroStandBackground from './HeroStandBackground.svelte';
@@ -367,7 +368,7 @@
       name="description"
       content="Conheça a Auto Nunes Martins e consulte as viaturas publicadas. Compare preço, ano e quilometragem e contacte-nos para saber mais."
     />{/if}
-  {#if id && !favorites && !compare && !about && !catalog && !privacy && !publicVehicle}<meta
+  {#if id && !favorites && !compare && !about && !catalog && !privacy && !publicVehicle && !errorStatus}<meta
       name="robots"
       content="noindex, follow"
     />{/if}</svelte:head
@@ -477,19 +478,15 @@
   </header>
 
   {#if errorStatus}
+    {@const content = publicErrorCopy(errorStatus, $page.url.pathname)}
     <main class="not-found">
       <p class="kicker">UM DESVIO DE PERCURSO · {errorStatus}</p>
-      <h1>
-        {errorStatus === 404
-          ? 'Esta viatura não está publicada.'
-          : 'Não foi possível abrir esta página.'}
-      </h1>
-      <p>
-        {errorStatus === 404
-          ? 'Consulte a seleção atual de viaturas aprovadas para o website.'
-          : 'Tente novamente mais tarde.'}
-      </p>
-      <a class="pill" href="/viaturas">Voltar às viaturas <ArrowUpRight size={18} /></a>
+      <h1>{content.heading}</h1>
+      <p class="error-description">{content.message}</p>
+      <div class="error-actions">
+        <a class="pill primary" href="/">Voltar ao início <ArrowUpRight size={18} aria-hidden="true" /></a>
+        <a class="pill" href="/viaturas">Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a>
+      </div>
     </main>
   {:else if favorites}
     <OrbitFavorites card={vehicleCard} />
@@ -712,7 +709,7 @@
         aria-label="Viaturas em destaque"
         aria-roledescription="carrossel"
       >
-        {#if heroVersion === 2}<HeroStandBackground bind:settings={heroBackground} />{/if}
+        {#if heroVersion === 1}<HeroStandBackground bind:settings={heroBackground} />{/if}
         <div class="orbit-stage" data-hero-stage>
           <StageBackdrop />
           <div class="orbit-topline">
@@ -726,8 +723,8 @@
           <div class="orbit-copy">
             <img
               class="orbit-hero-signature"
-              data-theme-logo={heroVersion === 1 ? '' : undefined}
-              src={isDark || heroVersion === 2 ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
+              data-theme-logo={heroVersion === 2 ? '' : undefined}
+              src={isDark || heroVersion === 1 ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
               alt="Auto Nunes Martins"
               width="1881"
               height="836"
@@ -818,10 +815,10 @@
 
       <div class="hero-versions" role="group" aria-label="Escolher composição do hero">
         {#each [1, 2] as version}
-          <button type="button" aria-label={`Versão ${version} do hero`} aria-pressed={heroVersion === version} title={['Original', 'Original com fotografia panorâmica'][version - 1]} onclick={() => heroVersion = version}>{version}</button>
+          <button type="button" aria-label={`Versão ${version} do hero`} aria-pressed={heroVersion === version} title={['Original com fotografia panorâmica', 'Original'][version - 1]} onclick={() => heroVersion = version}>{version}</button>
         {/each}
       </div>
-      {#if import.meta.env.DEV}<HeroBackgroundTuner bind:settings={heroBackground} active={heroVersion === 2} onchange={(value) => heroBackground = value} />{/if}
+      {#if import.meta.env.DEV}<HeroBackgroundTuner bind:settings={heroBackground} active={heroVersion === 1} onchange={(value) => heroBackground = value} />{/if}
       <OrbitStats />
 
       <section class="showroom" id="selecao">
@@ -2298,6 +2295,9 @@
     min-height: 65vh;
     padding: 80px 7%;
   }
+  .error-description { max-width: 54ch; font-size: 17px; line-height: 1.7; color: var(--muted); }
+  .error-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .error-actions a:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
   .not-found h1 {
     font-size: clamp(40px, 6vw, 85px);
     margin: 25px 0 40px;
