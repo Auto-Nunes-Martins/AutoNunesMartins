@@ -1,6 +1,5 @@
 import { withClerkHandler } from 'svelte-clerk/server';
 import { sequence } from '@sveltejs/kit/hooks';
-import { env } from '$env/dynamic/private';
 import { base } from '$app/paths';
 import type { Handle } from '@sveltejs/kit';
 
@@ -10,12 +9,6 @@ const security: Handle = async ({ event, resolve }) => {
   if (route !== '/' && !event.locals.auth().userId) {
     return new Response(null, { status: 303, headers: { location: base + '/' } });
   }
-  const allowed = env.ADMIN_CLERK_USER_IDS?.split(',')
-    .map((id) => id.trim())
-    .filter(Boolean);
-  const userId = event.locals.auth().userId;
-  if (userId && allowed?.length && !allowed.includes(userId))
-    return new Response('Sem acesso', { status: 403 });
   if (
     !['GET', 'HEAD', 'OPTIONS'].includes(event.request.method) &&
     event.request.headers.get('origin') !== event.url.origin

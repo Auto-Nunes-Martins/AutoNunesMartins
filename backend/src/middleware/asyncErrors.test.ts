@@ -98,6 +98,51 @@ beforeEach(() => {
 });
 
 describe('Express 4 async failures', () => {
+  it.each(['user_invitedone', 'user_invitedtwo'])(
+    'accepts authenticated invited account %s without an extra ID list',
+    async (userId) => {
+      mocks.auth.mockReturnValue({ userId });
+      mocks.user.findUnique.mockResolvedValue({
+        id: 'internal-user',
+        clerkId: userId,
+        email: 'invited@example.org',
+        name: 'Invited',
+        role: 'ADMIN',
+        imageUrl: 'photo',
+      });
+      const response = await fetch(base + '/me');
+      expect(response.status).toBe(200);
+      expect((await response.json()).user.clerkId).toBe(userId);
+    },
+  );
+  it('blocks anonymous requests before any private database access', async () => {
+    mocks.auth.mockReturnValue({ userId: null });
+    for (const route of ['/me', '/users', '/tasks'])
+      expect((await fetch(base + route)).status).toBe(401);
+    expect(mocks.user.findUnique).not.toHaveBeenCalled();
+    expect(mocks.user.findMany).not.toHaveBeenCalled();
+  });
+  it('can provision an authenticated invited user on first access without a webhook event', async () => {
+    mocks.auth.mockReturnValue({ userId: 'user_invitednew' });
+    mocks.user.findUnique.mockResolvedValue(null);
+    mocks.getUser.mockResolvedValue({
+      emailAddresses: [{ id: 'email', emailAddress: 'invited@example.org' }],
+      firstName: 'Invited',
+    });
+    mocks.user.upsert.mockResolvedValue({
+      id: 'internal-new',
+      clerkId: 'user_invitednew',
+      email: 'invited@example.org',
+      name: 'Invited',
+      role: 'ADMIN',
+    });
+    expect((await fetch(base + '/me')).status).toBe(200);
+    expect(mocks.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ clerkId: 'user_invitednew', role: 'ADMIN' }),
+      }),
+    );
+  });
   it('forwards failed authentication DB lookups, then continues serving requests', async () => {
     mocks.user.findUnique.mockRejectedValueOnce(new Error('PRIVATE DB connection'));
     const response = await fetch(`${base}/me`, { signal: AbortSignal.timeout(3000) });

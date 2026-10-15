@@ -4,10 +4,6 @@ import { config } from './routing.mjs';
 import { createGateway } from './gateway.mjs';
 
 const settings = config(process.env);
-if (
-  !process.env.ADMIN_CLERK_USER_IDS?.split(',').some((id) => /^user_[a-zA-Z0-9]+$/.test(id.trim()))
-)
-  throw new Error('Configure ADMIN_CLERK_USER_IDS for the authorized CRM administrators');
 const manifest = JSON.parse(await readFile(new URL('./build.json', import.meta.url), 'utf8'));
 if (manifest.crmBasePath !== settings.base)
   throw new Error('CRM_BASE_PATH differs from build; rebuild required');

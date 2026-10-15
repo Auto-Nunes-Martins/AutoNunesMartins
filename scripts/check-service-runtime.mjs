@@ -26,7 +26,6 @@ const env = {
   CRM_BASE_PATH: '/crm',
   PORT: '10000',
   SITE_NOINDEX: 'true',
-  ADMIN_CLERK_USER_IDS: 'user_fixture',
   DATABASE_URL: 'postgresql://fixture:fixture@127.0.0.1:9/fixture?connect_timeout=1',
   DIRECT_URL: 'postgresql://fixture:fixture@127.0.0.1:9/fixture',
   SUPABASE_URL: 'http://127.0.0.1:9',

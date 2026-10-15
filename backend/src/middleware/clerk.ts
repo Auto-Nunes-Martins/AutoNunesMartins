@@ -61,12 +61,6 @@ export const requireUser = asyncHandler(
       return;
     }
 
-    const allowed = env.ADMIN_CLERK_USER_IDS?.split(',').map(id => id.trim()).filter(Boolean);
-    if (allowed?.length && !allowed.includes(auth.userId)) {
-      res.status(403).json({ error: 'Forbidden' });
-      return;
-    }
-
     let user = await prisma.user.findUnique({ where: { clerkId: auth.userId } });
 
     if (!user) {
