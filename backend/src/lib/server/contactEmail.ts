@@ -1,0 +1,73 @@
+/** Presentation only. No provider, credentials, tracking or official contact details. */
+export interface ContactEmailData {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  page: string;
+}
+const escapeHtml = (value: string) =>
+  value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      })[char]!,
+  );
+
+export function contactEmailHtml(data: ContactEmailData): string {
+  const name = escapeHtml(data.name);
+  const email = escapeHtml(data.email);
+  const subject = escapeHtml(data.subject);
+  const message = escapeHtml(data.message).replace(/\r\n|\r|\n/g, '<br>');
+  const page = escapeHtml(data.page);
+  const reply = escapeHtml(
+    `mailto:${encodeURIComponent(data.email)}?subject=${encodeURIComponent('Re: Pedido do site: ' + data.subject)}`,
+  );
+  const vehicle = data.page.startsWith('/viaturas/') ? 'Referência da viatura' : 'Página de origem';
+  return `<!doctype html>
+<html lang="pt-PT">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>Nova mensagem — Auto Nunes Martins</title></head>
+<body style="margin:0;padding:0;background-color:#f1f2f4;color:#202124;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+<div style="display:none;font-size:1px;line-height:1px;color:#f1f2f4;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">Novo contacto de ${name}: ${subject}</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f1f2f4;table-layout:fixed;"><tr><td align="center" style="padding:32px 12px;">
+<!--[if mso]><table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;table-layout:fixed;border-collapse:separate;">
+<tr><td style="height:5px;line-height:5px;font-size:1px;background-color:#e30613;border-radius:12px 12px 0 0;">&nbsp;</td></tr>
+<tr><td style="padding:28px 28px 26px;background-color:#111114;">
+<p style="margin:0 0 5px;color:#ffffff;font-size:20px;font-weight:800;font-style:italic;letter-spacing:-0.6px;line-height:26px;">AUTO NUNES MARTINS<span style="color:#e30613;">.</span></p>
+<p style="margin:0;color:#a8a8b0;font-size:10px;font-weight:700;line-height:18px;letter-spacing:2px;text-transform:uppercase;">MENSAGENS DO WEBSITE</p>
+</td></tr>
+<tr><td style="padding:30px 28px 22px;background-color:#ffffff;border-left:1px solid #e5e5e8;border-right:1px solid #e5e5e8;">
+<p style="margin:0 0 10px;color:#e30613;font-size:10px;font-weight:700;line-height:16px;letter-spacing:1.6px;text-transform:uppercase;">NOVO CONTACTO</p>
+<h1 style="margin:0 0 10px;color:#17171b;font-size:27px;line-height:34px;font-weight:700;letter-spacing:-0.7px;overflow-wrap:anywhere;word-break:break-word;">${subject}</h1>
+<p style="margin:0;color:#66666e;font-size:14px;line-height:23px;overflow-wrap:anywhere;word-break:break-word;">${name} enviou uma mensagem através do formulário público.</p>
+</td></tr>
+<tr><td style="padding:0 28px 24px;background-color:#ffffff;border-left:1px solid #e5e5e8;border-right:1px solid #e5e5e8;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="table-layout:fixed;background-color:#f7f7f8;border:1px solid #e9e9ec;border-radius:8px;">
+<tr><td style="padding:18px 20px 12px;overflow-wrap:anywhere;word-break:break-word;"><p style="margin:0 0 5px;color:#777780;font-size:10px;line-height:14px;letter-spacing:1.2px;font-weight:700;">NOME</p><p style="margin:0;color:#202024;font-size:15px;line-height:23px;font-weight:700;">${name}</p></td></tr>
+<tr><td style="padding:0 20px 18px;overflow-wrap:anywhere;word-break:break-word;"><p style="margin:0 0 5px;color:#777780;font-size:10px;line-height:14px;letter-spacing:1.2px;font-weight:700;">EMAIL</p><a href="${reply}" style="color:#a9000a;font-size:14px;line-height:23px;text-decoration:underline;">${email}</a></td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:0 28px 24px;background-color:#ffffff;border-left:1px solid #e5e5e8;border-right:1px solid #e5e5e8;">
+<p style="margin:0 0 12px;color:#777780;font-size:10px;line-height:16px;letter-spacing:1.2px;font-weight:700;">MENSAGEM</p>
+<div style="padding:0 0 0 16px;border-left:3px solid #e30613;color:#303039;font-size:15px;line-height:25px;overflow-wrap:anywhere;word-break:break-word;">${message}</div>
+</td></tr>
+<tr><td style="padding:0 28px 28px;background-color:#ffffff;border-left:1px solid #e5e5e8;border-right:1px solid #e5e5e8;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" bgcolor="#e30613" style="border-radius:6px;mso-padding-alt:14px 22px;"><a href="${reply}" style="display:inline-block;padding:14px 22px;border:1px solid #e30613;border-radius:6px;color:#ffffff;font-size:13px;font-weight:700;line-height:18px;text-decoration:none;">Responder ao contacto&nbsp; &rarr;</a></td></tr></table>
+</td></tr>
+<tr><td style="padding:20px 28px;background-color:#fafafb;border:1px solid #e5e5e8;border-top:1px solid #ededf0;border-radius:0 0 12px 12px;overflow-wrap:anywhere;word-break:break-word;">
+<p style="margin:0 0 5px;color:#777780;font-size:10px;font-weight:700;line-height:16px;letter-spacing:1px;text-transform:uppercase;">${vehicle}</p>
+<p style="margin:0 0 14px;color:#44444d;font-size:12px;line-height:20px;">${page}</p>
+<p style="margin:0;color:#777780;font-size:11px;line-height:19px;">Um pedido de visita não constitui um agendamento confirmado. Responda ao cliente para combinar o horário.</p>
+</td></tr>
+<tr><td align="center" style="padding:20px 12px 0;color:#91919a;font-size:10px;line-height:18px;">Auto Nunes Martins &nbsp;&middot;&nbsp; Notificação interna do website</td></tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr></table>
+</body></html>`;
+}

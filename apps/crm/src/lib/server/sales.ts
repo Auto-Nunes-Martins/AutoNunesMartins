@@ -1,4 +1,12 @@
-import type { BuyerType, DeliveryStatus, Fuel, SaleCreate, TradeInDisposition } from '@anm/types';
+import type {
+  BuyerType,
+  DeliveryStatus,
+  Fuel,
+  SaleCreate,
+  SaleCancellation,
+  SaleCancellationDecision,
+  TradeInDisposition,
+} from '@anm/types';
 import type { RequestEvent } from '@sveltejs/kit';
 import { apiJson } from './api.js';
 
@@ -51,6 +59,7 @@ export interface SaleListResponse {
 }
 
 export interface SaleListParams {
+  state?: 'ACTIVE' | 'CANCELLED';
   q?: string;
   deliveryStatus?: DeliveryStatus;
   dateFrom?: string;
@@ -72,8 +81,15 @@ function toQuery(params: Record<string, unknown>): string {
 }
 
 export interface SaleDetailResponse {
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  cancelledBy: string | null;
+  cancellationDecision: {
+    tradeInAction?: 'RETURN' | 'KEEP';
+    independentPurchasePrice?: string;
+  } | null;
   id: string;
-  vehicleId: string;
+  vehicleId: string | null;
   customerId: string;
   salePrice: string;
   vatAmount: string;
@@ -106,6 +122,7 @@ export interface SaleDetailResponse {
       id: string;
       allowanceValue: string;
       sale: {
+        cancelledAt: string | null;
         id: string;
         saleDate: string;
         realProfit: string;
@@ -149,7 +166,54 @@ export interface CreateSaleResponse {
 
 type Ev = Pick<RequestEvent, 'locals' | 'fetch'>;
 
+export interface CancellationReview {
+  saleId: string;
+  vehicleId: string;
+  decision: SaleCancellationDecision;
+  reviewToken: string;
+  vehicle: { id: string; label: string; licensePlate: string | null };
+  customer: { id: string; name: string };
+  recorded: {
+    salePrice: string;
+    commission: string;
+    vatAmount: string;
+    realProfit: string;
+    deliveryStatus: string;
+    deliveryDate: string | null;
+  };
+  tradeIn: {
+    id: string;
+    label: string;
+    licensePlate: string | null;
+    allowanceValue: string;
+    purchasePrice: string;
+    expensesTotal: string;
+    nextStatus: string;
+  } | null;
+  effects: string[];
+}
+
 export const salesApi = {
+  previewCancellation(
+    event: Ev,
+    id: string,
+    body: SaleCancellationDecision,
+  ): Promise<CancellationReview> {
+    return apiJson(event, `/api/sales/${id}/cancellation/preview`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+  cancel(
+    event: Ev,
+    id: string,
+    body: SaleCancellation,
+  ): Promise<{ vehicleId: string; saleId: string; alreadyCancelled: boolean }> {
+    return apiJson(event, `/api/sales/${id}/cancellation/confirm`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
   list(event: Ev, params: SaleListParams = {}): Promise<SaleListResponse> {
     return apiJson<SaleListResponse>(
       event,

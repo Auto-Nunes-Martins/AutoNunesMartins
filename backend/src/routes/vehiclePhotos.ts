@@ -1,206 +1,191 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import express from 'express';
+import {
+  optimizePhoto,
+  photoAdmission,
+  PhotoUploadError,
+  MAX_UPLOAD_BYTES,
+  MAX_OUTPUT_BYTES,
+} from '../lib/server/photoOptimization.js';
 import { randomUUID } from 'node:crypto';
-import { Router, type Response } from 'express';
+import { Router, type Response, type Request, type NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import {
   createSignedReadUrl,
-  createSignedUploadUrl,
   deleteObjects,
+  getSupabase,
+  getBucketName,
 } from '../lib/data/storage.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 import { param } from '../lib/http.js';
+import {
+  MAX_PHOTOS,
+  mutateVehiclePhotos,
+  PhotoMutationError,
+} from '../lib/server/vehiclePhotoService.js';
 
 const router = Router({ mergeParams: true });
 
-const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'webp']);
-
-function sanitizeExt(filename: string): string {
-  const m = filename.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/);
-  return m?.[1] ?? '';
-}
-
-const uploadUrlSchema = z.object({
-  filename: z.string().min(1).max(180),
-  contentType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
-});
-
-const persistSchema = z.object({
-  path: z.string().min(1),
-});
-
 const reorderSchema = z.object({
-  photos: z.array(z.string().min(1)).min(1).max(20),
+  photos: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(MAX_PHOTOS)
+    .refine((photos) => new Set(photos).size === photos.length, 'Duplicate photos'),
 });
 
-const MAX_PHOTOS = 20;
-
-/** Step 1: request a presigned upload URL. */
-router.post('/upload-url', requireUser, async (req: AuthedRequest, res: Response) => {
-  const vehicleId = param(req, 'vehicleId');
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
-    select: { photos: true },
-  });
-  if (!vehicle) {
-    res.status(404).json({ error: 'Vehicle not found' });
-    return;
-  }
-  if (vehicle.photos.length >= MAX_PHOTOS) {
-    res.status(400).json({ error: `Máximo de ${MAX_PHOTOS} fotos por viatura.` });
-    return;
-  }
-
-  const parsed = uploadUrlSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
-
-  const ext = sanitizeExt(parsed.data.filename);
-  if (!ALLOWED_EXT.has(ext)) {
-    res.status(400).json({ error: 'Apenas ficheiros .jpg/.jpeg/.png/.webp são aceites.' });
-    return;
-  }
-
-  const path = `${vehicleId}/${randomUUID()}.${ext}`;
-  try {
-    const upload = await createSignedUploadUrl(path);
-    res.json({
-      path,
-      uploadUrl: upload.signedUrl,
-      token: upload.token,
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create upload URL', detail: (err as Error).message });
-  }
+/** Signed uploads/path persistence are retired: every NEW photo passes the backend pipeline. */
+router.post('/upload-url', requireUser, (_req, res) => {
+  res.status(410).json({ error: 'Use upload direto para /photos com o ficheiro.' });
 });
-
-/** Step 2: persist the uploaded path on the Vehicle.photos array. */
-router.post('/', requireUser, async (req: AuthedRequest, res: Response) => {
-  const vehicleId = param(req, 'vehicleId');
-  const parsed = persistSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
+router.post('/', requireUser, (req, res, next) => {
+  const release = photoAdmission.acquire();
+  if (!release) {
+    res.setHeader('Retry-After', '3');
+    res.status(429).json({ error: 'Outra fotografia está a ser processada. Tente novamente.' });
     return;
   }
-
-  if (!parsed.data.path.startsWith(`${vehicleId}/`)) {
-    res.status(400).json({ error: 'Path must belong to this vehicle.' });
-    return;
-  }
-
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
-    select: { photos: true },
-  });
-  if (!vehicle) {
-    res.status(404).json({ error: 'Vehicle not found' });
-    return;
-  }
-  if (vehicle.photos.includes(parsed.data.path)) {
-    res.status(200).json({ photos: vehicle.photos });
-    return;
-  }
-  if (vehicle.photos.length >= MAX_PHOTOS) {
-    res.status(400).json({ error: `Máximo de ${MAX_PHOTOS} fotos por viatura.` });
-    return;
-  }
-
-  const updated = await prisma.vehicle.update({
-    where: { id: vehicleId },
-    data: { photos: { set: [...vehicle.photos, parsed.data.path] } },
-    select: { photos: true },
-  });
-
-  res.status(201).json({ photos: updated.photos });
+  // Release only after the work settles, including disconnects during compression/storage.
+  void (async () => {
+    try {
+      const vehicleId = param(req, 'vehicleId');
+      const vehicle = await prisma.vehicle.findUnique({
+        where: { id: vehicleId },
+        select: { photos: true },
+      });
+      if (!vehicle) throw new PhotoMutationError(404, 'Vehicle not found');
+      if (vehicle.photos.length >= MAX_PHOTOS)
+        throw new PhotoMutationError(400, 'Máximo de 20 fotos por viatura.');
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(req.headers['content-type'] || ''))
+        throw new PhotoUploadError(415, 'Formato inválido.');
+      // Admission happens BEFORE reading any body. One buffer globally, queue length zero.
+      await new Promise<void>((resolve, reject) =>
+        express.raw({ type: () => true, limit: MAX_UPLOAD_BYTES, inflate: false })(
+          req,
+          res,
+          (error) => (error ? reject(error) : resolve()),
+        ),
+      );
+      if (!Buffer.isBuffer(req.body)) throw new PhotoUploadError(400, 'Ficheiro inválido.');
+      const photo = await optimizePhoto(req.body as Buffer);
+      if (photo.buffer.length > MAX_OUTPUT_BYTES)
+        throw new PhotoUploadError(422, 'A fotografia otimizada excede o limite de 2 MB.');
+      const path = vehicleId + '/' + randomUUID() + '.' + photo.extension;
+      const { error } = await getSupabase()
+        .storage.from(getBucketName())
+        .upload(path, photo.buffer, { contentType: photo.contentType, upsert: false });
+      if (error) throw new PhotoUploadError(502, 'Não foi possível guardar a fotografia.');
+      try {
+        const result = await mutateVehiclePhotos(prisma, vehicleId, { type: 'append', path });
+        res
+          .status(201)
+          .json({ photos: result.photos, bytes: photo.buffer.length, optimized: photo.optimized });
+      } catch (error) {
+        // Never delete a possibly committed photo after an uncertain database response.
+        try {
+          const current = await prisma.vehicle.findUnique({
+            where: { id: vehicleId },
+            select: { photos: true },
+          });
+          if (!current?.photos.includes(path)) await deleteObjects([path]);
+        } catch {
+          /* orphan cleanup is preferable to deleting a referenced photo */
+        }
+        throw error;
+      }
+    } catch (error) {
+      if (error instanceof PhotoUploadError) {
+        res.status(error.status).json({ error: error.message });
+      } else if (
+        typeof error === 'object' &&
+        error &&
+        'status' in error &&
+        [400, 413, 415].includes(Number(error.status))
+      )
+        res
+          .status(Number(error.status))
+          .json({ error: 'Ficheiro inválido ou acima do limite de 20 MB.' });
+      else next(error);
+    } finally {
+      release();
+    }
+  })();
 });
 
 /** Reorder photos (also used to set primary by putting it at index 0). */
-router.post('/reorder', requireUser, async (req: AuthedRequest, res: Response) => {
-  const vehicleId = param(req, 'vehicleId');
-  const parsed = reorderSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
+router.post(
+  '/reorder',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const vehicleId = param(req, 'vehicleId');
+    const parsed = reorderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
+      return;
+    }
 
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
-    select: { photos: true },
-  });
-  if (!vehicle) {
-    res.status(404).json({ error: 'Vehicle not found' });
-    return;
-  }
-
-  const currentSet = new Set(vehicle.photos);
-  const nextSet = new Set(parsed.data.photos);
-  if (currentSet.size !== nextSet.size || [...currentSet].some((p) => !nextSet.has(p))) {
-    res.status(400).json({ error: 'Reorder list must contain exactly the existing photos.' });
-    return;
-  }
-
-  await prisma.vehicle.update({
-    where: { id: vehicleId },
-    data: { photos: { set: parsed.data.photos } },
-  });
-  res.json({ photos: parsed.data.photos });
-});
+    const result = await mutateVehiclePhotos(prisma, vehicleId, {
+      type: 'reorder',
+      photos: parsed.data.photos,
+    });
+    res.json({ photos: result.photos });
+  }),
+);
 
 /** Delete a photo by storage path. */
-router.delete('/:photoPath(*)', requireUser, async (req: AuthedRequest, res: Response) => {
-  const vehicleId = param(req, 'vehicleId');
-  const photoPath = decodeURIComponent(param(req, 'photoPath'));
+router.delete(
+  '/:photoPath(*)',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const vehicleId = param(req, 'vehicleId');
+    const photoPath = decodeURIComponent(param(req, 'photoPath'));
 
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
-    select: { photos: true },
-  });
-  if (!vehicle) {
-    res.status(404).json({ error: 'Vehicle not found' });
-    return;
-  }
-  if (!vehicle.photos.includes(photoPath)) {
-    res.status(404).json({ error: 'Photo not found' });
-    return;
-  }
+    await mutateVehiclePhotos(prisma, vehicleId, { type: 'remove', path: photoPath });
 
-  await prisma.vehicle.update({
-    where: { id: vehicleId },
-    data: { photos: { set: vehicle.photos.filter((p) => p !== photoPath) } },
-  });
+    try {
+      await deleteObjects([photoPath]);
+    } catch (err) {
+      // Storage delete failed but DB is updated — log and continue. Orphaned objects
+      // are tolerable; we never reference them again.
+      console.warn('Storage delete failed:', (err as Error).message);
+    }
 
-  try {
-    await deleteObjects([photoPath]);
-  } catch (err) {
-    // Storage delete failed but DB is updated — log and continue. Orphaned objects
-    // are tolerable; we never reference them again.
-    // eslint-disable-next-line no-console
-    console.warn('Storage delete failed:', (err as Error).message);
-  }
-
-  res.json({ ok: true });
-});
+    res.json({ ok: true });
+  }),
+);
 
 /** Return signed read URLs for the current photos (1h TTL). */
-router.get('/signed', requireUser, async (req: AuthedRequest, res: Response) => {
-  const vehicleId = param(req, 'vehicleId');
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
-    select: { photos: true },
-  });
-  if (!vehicle) {
-    res.status(404).json({ error: 'Vehicle not found' });
+router.get(
+  '/signed',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const vehicleId = param(req, 'vehicleId');
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+      select: { photos: true },
+    });
+    if (!vehicle) {
+      res.status(404).json({ error: 'Vehicle not found' });
+      return;
+    }
+
+    const signed = await Promise.all(
+      vehicle.photos.map(async (path) => ({
+        path,
+        url: await createSignedReadUrl(path, 3600),
+      })),
+    );
+    res.json({ photos: signed });
+  }),
+);
+
+router.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
+  if (error instanceof PhotoMutationError && !res.headersSent) {
+    res.status(error.status).json({ error: error.message });
     return;
   }
-
-  const signed = await Promise.all(
-    vehicle.photos.map(async (path) => ({
-      path,
-      url: await createSignedReadUrl(path, 3600),
-    })),
-  );
-  res.json({ photos: signed });
+  next(error);
 });
 
 export default router;

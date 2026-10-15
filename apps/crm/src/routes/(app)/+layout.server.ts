@@ -1,3 +1,4 @@
+import { crmPath } from '$lib/paths';
 import { redirect } from '@sveltejs/kit';
 import { apiJson, ApiError } from '$lib/server/api';
 import type { LayoutServerLoad } from './$types';
@@ -24,7 +25,7 @@ interface TaskStatsResponse {
 export const load: LayoutServerLoad = async (event) => {
   const { userId } = event.locals.auth();
   if (!userId) {
-    throw redirect(302, '/');
+    throw redirect(302, crmPath('/'));
   }
 
   // Fetch the Prisma User row that backs this Clerk session — we need User.id

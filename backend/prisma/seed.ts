@@ -463,6 +463,7 @@ async function main() {
     const created = await prisma.sale.create({
       data: {
         vehicleId: v.id,
+        originalVehicleId: v.id,
         customerId: customer.id,
         salePrice,
         vatAmount: figures.vatAmount.toFixed(2),

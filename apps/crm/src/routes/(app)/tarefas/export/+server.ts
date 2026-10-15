@@ -30,7 +30,11 @@ export const GET: RequestHandler = async (event) => {
   const sp = event.url.searchParams;
   const format = sp.get('format') === 'pdf' ? 'pdf' : 'csv';
 
+  const attention = sp.get('attention');
   const params: TaskListParams = {
+    attention: attention === 'due' || attention === 'reminders' ? attention : undefined,
+    scope: sp.get('scope') === 'mine' ? 'mine' : sp.get('scope') === 'general' ? 'general' : 'all',
+    showScheduled: sp.get('showScheduled') === 'true' || undefined,
     status: (sp.get('status') as TaskListParams['status']) ?? undefined,
     priority: (sp.get('priority') as TaskListParams['priority']) ?? undefined,
     assigneeId: sp.get('assigneeId') ?? undefined,

@@ -6,8 +6,8 @@ try {
   const present: Record<string, string> = {};
   for (const [k, v] of Object.entries(env)) {
     if (v === undefined) continue;
-    if (k.includes('SECRET') || k.includes('PASSWORD') || k.includes('SERVICE_ROLE')) {
-      present[k] = `[set, ${String(v).slice(0, 12)}...]`;
+    if (k.includes('SECRET') || k.includes('PASSWORD') || k.includes('SERVICE_ROLE') || k.includes('KEY')) {
+      present[k] = '[configured]';
     } else if (k === 'DATABASE_URL' || k === 'DIRECT_URL') {
       present[k] = `[set, hostname ok]`;
     } else {
@@ -19,7 +19,7 @@ try {
   // eslint-disable-next-line no-console
   console.table(present);
   // eslint-disable-next-line no-console
-  console.log('Supabase server key prefix:', getSupabaseServerKey().slice(0, 12) + '...');
+  console.log('Supabase server key configured:', Boolean(getSupabaseServerKey()));
 } catch (err) {
   // eslint-disable-next-line no-console
   console.error('FAIL:', (err as Error).message);

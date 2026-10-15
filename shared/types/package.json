@@ -6,23 +6,64 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./vehicle": "./src/vehicle.ts",
-    "./customer": "./src/customer.ts",
-    "./sale": "./src/sale.ts",
-    "./task": "./src/task.ts",
-    "./expense": "./src/expense.ts",
-    "./activity": "./src/activity.ts",
-    "./enums": "./src/enums.ts",
-    "./decimal": "./src/decimal.ts",
-    "./nif": "./src/nif.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "anm-runtime": "./dist/index.js",
+      "default": "./src/index.ts"
+    },
+    "./vehicle": {
+      "types": "./src/vehicle.ts",
+      "anm-runtime": "./dist/vehicle.js",
+      "default": "./src/vehicle.ts"
+    },
+    "./customer": {
+      "types": "./src/customer.ts",
+      "anm-runtime": "./dist/customer.js",
+      "default": "./src/customer.ts"
+    },
+    "./sale": {
+      "types": "./src/sale.ts",
+      "anm-runtime": "./dist/sale.js",
+      "default": "./src/sale.ts"
+    },
+    "./task": {
+      "types": "./src/task.ts",
+      "anm-runtime": "./dist/task.js",
+      "default": "./src/task.ts"
+    },
+    "./expense": {
+      "types": "./src/expense.ts",
+      "anm-runtime": "./dist/expense.js",
+      "default": "./src/expense.ts"
+    },
+    "./activity": {
+      "types": "./src/activity.ts",
+      "anm-runtime": "./dist/activity.js",
+      "default": "./src/activity.ts"
+    },
+    "./enums": {
+      "types": "./src/enums.ts",
+      "anm-runtime": "./dist/enums.js",
+      "default": "./src/enums.ts"
+    },
+    "./decimal": {
+      "types": "./src/decimal.ts",
+      "anm-runtime": "./dist/decimal.js",
+      "default": "./src/decimal.ts"
+    },
+    "./nif": {
+      "types": "./src/nif.ts",
+      "anm-runtime": "./dist/nif.js",
+      "default": "./src/nif.ts"
+    }
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "echo 'no lint (shared types only)'",
     "test": "vitest run",
     "build": "echo 'no build (types-only package)'",
-    "dev": "echo 'no dev (types-only package)'"
+    "dev": "echo 'no dev (types-only package)'",
+    "build:runtime": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "zod": "^3.24.1"

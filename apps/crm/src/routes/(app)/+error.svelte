@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { page } from '$app/stores';
   import { AlertOctagon, Home } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -47,7 +48,7 @@
     <div
       class="border-t border-[var(--color-border)] px-6 py-4 flex items-center justify-end gap-2"
     >
-      <Button variant="outline" href="/dashboard">
+      <Button variant="outline" href={crmPath("/dashboard")}>
         <Home class="h-4 w-4" />
         Voltar ao Dashboard
       </Button>

@@ -1,10 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import type { VehicleExpenseCreate, VehicleExpenseUpdate } from '@anm/types';
-import Decimal from 'decimal.js';
-import { prisma } from '../../db.js';
 import { emitActivity } from '../data/activity.js';
-import { sumVehicleExpenses } from '../data/vehicle.js';
-import { computeSaleFigures } from '../domain/sale.js';
+import { lockVehicle, recomputeSaleIfExists, saleMutation } from './saleFinancials.js';
 import type { ActorContext } from './vehicleService.js';
 
 export class SaleExistsConfirmationRequired extends Error {
@@ -23,51 +20,25 @@ export class VehicleExpenseNotFound extends Error {
 
 const SOLD_STATUSES = new Set(['SOLD', 'DELIVERED']);
 
-async function recomputeSaleIfExists(
-  tx: Prisma.TransactionClient,
-  vehicleId: string,
-): Promise<void> {
-  const sale = await tx.sale.findUnique({ where: { vehicleId } });
-  if (!sale) return;
-
-  const vehicle = await tx.vehicle.findUnique({
-    where: { id: vehicleId },
-    select: { purchasePrice: true },
-  });
-  if (!vehicle) return;
-
-  const expensesTotal = await sumVehicleExpenses(tx, vehicleId);
-  const figures = computeSaleFigures({
-    salePrice: sale.salePrice.toString(),
-    purchasePrice: vehicle.purchasePrice.toString(),
-    expensesTotal,
-    // Preserve the manually-entered commission across expense edits — the
-    // commission is independent of the dealer-margin scheme and shouldn't
-    // get wiped just because someone added/removed a vehicle expense.
-    commission: sale.commission.toString(),
-  });
-
-  await tx.sale.update({
-    where: { id: sale.id },
-    data: {
-      vatAmount: new Decimal(figures.vatAmount.toString()),
-      realProfit: new Decimal(figures.realProfit.toString()),
-    },
-  });
-}
-
 export async function createVehicleExpense(
   data: VehicleExpenseCreate,
   actor: ActorContext,
 ): Promise<{ id: string; saleRecomputed: boolean }> {
-  return prisma.$transaction(async (tx) => {
+  return saleMutation(async (tx) => {
+    await lockVehicle(tx, data.vehicleId);
     const vehicle = await tx.vehicle.findUnique({
       where: { id: data.vehicleId },
-      select: { status: true, brand: true, model: true, year: true },
+      select: {
+        status: true,
+        brand: true,
+        model: true,
+        year: true,
+        sale: { select: { id: true } },
+      },
     });
     if (!vehicle) throw new Error('Vehicle not found');
 
-    if (SOLD_STATUSES.has(vehicle.status) && !data.confirmedOnSold) {
+    if ((vehicle.sale || SOLD_STATUSES.has(vehicle.status)) && !data.confirmedOnSold) {
       throw new SaleExistsConfirmationRequired(data.vehicleId);
     }
 
@@ -90,11 +61,7 @@ export async function createVehicleExpense(
       metadata: { vehicleId: data.vehicleId, amount: data.amount },
     });
 
-    let saleRecomputed = false;
-    if (SOLD_STATUSES.has(vehicle.status)) {
-      await recomputeSaleIfExists(tx, data.vehicleId);
-      saleRecomputed = true;
-    }
+    const saleRecomputed = await recomputeSaleIfExists(tx, data.vehicleId);
 
     return { id: created.id, saleRecomputed };
   });
@@ -105,16 +72,27 @@ export async function updateVehicleExpense(
   data: Omit<VehicleExpenseUpdate, 'id'>,
   actor: ActorContext,
 ): Promise<{ saleRecomputed: boolean }> {
-  return prisma.$transaction(async (tx) => {
+  return saleMutation(async (tx) => {
+    const target = await tx.vehicleExpense.findUnique({
+      where: { id },
+      select: { vehicleId: true },
+    });
+    if (!target) throw new VehicleExpenseNotFound(id);
+    await lockVehicle(tx, target.vehicleId);
     const existing = await tx.vehicleExpense.findUnique({
       where: { id },
       include: {
-        vehicle: { select: { status: true, brand: true, model: true } },
+        vehicle: {
+          select: { status: true, brand: true, model: true, sale: { select: { id: true } } },
+        },
       },
     });
     if (!existing) throw new VehicleExpenseNotFound(id);
 
-    if (SOLD_STATUSES.has(existing.vehicle.status) && !data.confirmedOnSold) {
+    if (
+      (existing.vehicle.sale || SOLD_STATUSES.has(existing.vehicle.status)) &&
+      !data.confirmedOnSold
+    ) {
       throw new SaleExistsConfirmationRequired(existing.vehicleId);
     }
 
@@ -135,11 +113,7 @@ export async function updateVehicleExpense(
       metadata: { vehicleId: existing.vehicleId },
     });
 
-    let saleRecomputed = false;
-    if (SOLD_STATUSES.has(existing.vehicle.status)) {
-      await recomputeSaleIfExists(tx, existing.vehicleId);
-      saleRecomputed = true;
-    }
+    const saleRecomputed = await recomputeSaleIfExists(tx, existing.vehicleId);
 
     return { saleRecomputed };
   });
@@ -150,14 +124,20 @@ export async function deleteVehicleExpense(
   confirmedOnSold: boolean,
   actor: ActorContext,
 ): Promise<{ saleRecomputed: boolean }> {
-  return prisma.$transaction(async (tx) => {
+  return saleMutation(async (tx) => {
+    const target = await tx.vehicleExpense.findUnique({
+      where: { id },
+      select: { vehicleId: true },
+    });
+    if (!target) throw new VehicleExpenseNotFound(id);
+    await lockVehicle(tx, target.vehicleId);
     const existing = await tx.vehicleExpense.findUnique({
       where: { id },
-      include: { vehicle: { select: { status: true } } },
+      include: { vehicle: { select: { status: true, sale: { select: { id: true } } } } },
     });
     if (!existing) throw new VehicleExpenseNotFound(id);
 
-    if (SOLD_STATUSES.has(existing.vehicle.status) && !confirmedOnSold) {
+    if ((existing.vehicle.sale || SOLD_STATUSES.has(existing.vehicle.status)) && !confirmedOnSold) {
       throw new SaleExistsConfirmationRequired(existing.vehicleId);
     }
 
@@ -172,11 +152,7 @@ export async function deleteVehicleExpense(
       metadata: { vehicleId: existing.vehicleId, deleted: true },
     });
 
-    let saleRecomputed = false;
-    if (SOLD_STATUSES.has(existing.vehicle.status)) {
-      await recomputeSaleIfExists(tx, existing.vehicleId);
-      saleRecomputed = true;
-    }
+    const saleRecomputed = await recomputeSaleIfExists(tx, existing.vehicleId);
 
     return { saleRecomputed };
   });

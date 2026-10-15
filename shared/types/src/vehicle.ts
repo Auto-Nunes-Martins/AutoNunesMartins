@@ -73,7 +73,7 @@ export const vehicleCreateSchema = z.object({
   ),
   purchasePrice: moneySchema,
   salePrice: moneySchema.optional(),
-  status: VehicleStatusEnum.default('AVAILABLE'),
+  status: VehicleStatusEnum.exclude(['RETURNED']).default('AVAILABLE'),
   acquisitionDate: z.coerce.date(),
   description: z.string().max(2000).optional(),
   pendingDocFlags: pendingDocFlagsSchema.default({
@@ -87,10 +87,15 @@ export type VehicleCreate = z.infer<typeof vehicleCreateSchema>;
 
 export const vehicleUpdateSchema = vehicleCreateSchema.partial().extend({
   id: z.string().min(1),
+  status: VehicleStatusEnum.optional(),
 });
 export type VehicleUpdate = z.infer<typeof vehicleUpdateSchema>;
 
 export const vehicleFilterSchema = z.object({
+  agedStock: z.preprocess(
+    (v) => (v === 'true' ? true : v === 'false' ? false : v),
+    z.boolean().optional(),
+  ),
   brand: z.string().optional(),
   model: z.string().optional(),
   fuel: FuelEnum.optional(),

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Calendar, CheckSquare, ChevronDown, Users, Check } from 'lucide-svelte';
+  import { crmPath } from '$lib/paths';
+  import { Calendar, CheckSquare, Users } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import { formatDate } from '$lib/utils/format';
@@ -23,8 +24,7 @@
   let scope = $state<Scope>({ kind: 'mine' });
   let rows = $state<TodayTaskRow[]>(items);
   let loading = $state(false);
-  let menuOpen = $state(false);
-  let menuEl = $state<HTMLDivElement | null>(null);
+  let loadError = $state('');
 
   // Keep `rows` aligned with new props if the parent re-streams.
   let initialItemsRef = items;
@@ -55,14 +55,6 @@
     },
   };
 
-  // Short Portuguese priority codes (URG / ALT / MED / BX) shown big & red on
-  // the left of each row — matches the prototype's `.sch-row .h` value.
-  const PRIORITY_CODE: Record<string, string> = {
-    URGENT: 'URG',
-    HIGH: 'ALT',
-    MEDIUM: 'MED',
-    LOW: 'BX',
-  };
   const PRIORITY_FULL_LABEL: Record<string, string> = {
     URGENT: 'Urgente',
     HIGH: 'Alta',
@@ -70,17 +62,11 @@
     LOW: 'Baixa',
   };
 
-  function scopeLabel(s: Scope): string {
-    if (s.kind === 'mine') return 'Minhas';
-    if (s.kind === 'general') return 'Geral';
-    if (s.kind === 'all') return 'Todas';
-    return s.name;
-  }
-
   async function refetch(next: Scope) {
+    const previousScope = scope;
     scope = next;
-    menuOpen = false;
     loading = true;
+    loadError = '';
     try {
       const qs = new URLSearchParams();
       if (next.kind === 'byUser') {
@@ -89,43 +75,40 @@
       } else {
         qs.set('scope', next.kind);
       }
-      const res = await fetch(`/api/today-tasks?${qs.toString()}`, {
+      const res = await fetch(crmPath(`/api/today-tasks?${qs.toString()}`), {
         headers: { accept: 'application/json' },
       });
-      if (res.ok) {
-        const data = (await res.json()) as { items?: TodayTaskRow[] };
-        rows = data.items ?? [];
-      }
+      if (!res.ok) throw new Error('Unable to load dashboard tasks');
+      const data = (await res.json()) as { items?: TodayTaskRow[] };
+      rows = data.items ?? [];
+    } catch {
+      scope = previousScope;
+      loadError = 'Não foi possível atualizar as tarefas. Tente selecionar o filtro novamente.';
     } finally {
       loading = false;
     }
   }
 
-  $effect(() => {
-    if (!menuOpen) return;
-    const onDown = (e: MouseEvent) => {
-      if (menuEl && !menuEl.contains(e.target as Node)) menuOpen = false;
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') menuOpen = false;
-    };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  });
-
   // Hide the current user from the per-user list (they have "Minhas")
   // and unassigned rows (the system has no name).
-  const userOptions = $derived(
-    users.filter((u) => u.id !== currentUserId && Boolean(u.name)),
-  );
+  const userOptions = $derived(users.filter((u) => u.id !== currentUserId && Boolean(u.name)));
 
   // Build today's date label in the prototype's "QUI · 30 ABR · N ATIVAS" format.
   const PT_WEEKDAYS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
-  const PT_MONTHS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+  const PT_MONTHS = [
+    'JAN',
+    'FEV',
+    'MAR',
+    'ABR',
+    'MAI',
+    'JUN',
+    'JUL',
+    'AGO',
+    'SET',
+    'OUT',
+    'NOV',
+    'DEZ',
+  ];
   const todayLabel = $derived.by(() => {
     const d = new Date();
     return `${PT_WEEKDAYS[d.getDay()]} · ${d.getDate()} ${PT_MONTHS[d.getMonth()]} · ${rows.length} ATIVAS`;
@@ -133,87 +116,46 @@
 </script>
 
 <Panel>
-  <PanelHeader icon={CheckSquare} title="Tarefas · Hoje" meta={todayLabel}>
+  <PanelHeader
+    variant="dashboard"
+    icon={CheckSquare}
+    iconClass="text-[var(--color-info)]"
+    title="Tarefas · Hoje"
+    meta={todayLabel}
+  >
     {#snippet actions()}
-      <!-- Scope dropdown is desktop-only — on mobile the meta line in the
-           panel header already shows "N ATIVAS", and the panel layout
-           can't fit a 100px+ chip next to a truncated title. -->
-      <div bind:this={menuEl} class="relative hidden md:block">
-        <button
-          type="button"
-          onclick={() => (menuOpen = !menuOpen)}
-          class="inline-flex items-center gap-1.5 px-2.5 h-8 border border-[var(--color-border)] hover:border-[var(--color-border-strong)] font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
-          style="border-radius: var(--radius-btn);"
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
+      <label class="task-scope">
+        <Users class="h-3 w-3" />
+        <span class="sr-only">Filtrar tarefas por responsável</span>
+        <select
+          aria-label="Filtrar tarefas por responsável"
+          disabled={loading}
+          value={scope.kind === 'byUser' ? scope.assigneeId : scope.kind}
+          onchange={(event) => {
+            const value = event.currentTarget.value;
+            const user = userOptions.find((option) => option.id === value);
+            if (user) refetch({ kind: 'byUser', assigneeId: user.id, name: user.name });
+            else if (value === 'mine' || value === 'general' || value === 'all')
+              refetch({ kind: value });
+          }}
         >
-          <Users class="h-3 w-3" />
-          <span>{scopeLabel(scope)}</span>
-          <ChevronDown class="h-3 w-3 opacity-70" />
-        </button>
-
-        {#if menuOpen}
-          <div
-            role="menu"
-            class="absolute right-0 top-full mt-1 z-20 w-56 max-h-[320px] overflow-y-auto bg-[var(--color-bg-1)] border border-[var(--color-border)] shadow-lg"
-            style="border-radius: var(--radius-card);"
-          >
-            <button
-              type="button"
-              role="menuitemradio"
-              aria-checked={scope.kind === 'mine'}
-              onclick={() => refetch({ kind: 'mine' })}
-              class="w-full text-left flex items-center justify-between gap-2 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-text)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] cursor-pointer"
-            >
-              <span>Minhas</span>
-              {#if scope.kind === 'mine'}<Check class="h-3 w-3 text-[var(--color-red)]" />{/if}
-            </button>
-            <button
-              type="button"
-              role="menuitemradio"
-              aria-checked={scope.kind === 'general'}
-              onclick={() => refetch({ kind: 'general' })}
-              class="w-full text-left flex items-center justify-between gap-2 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-text)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] cursor-pointer"
-            >
-              <span>Geral · Sem assignee</span>
-              {#if scope.kind === 'general'}<Check class="h-3 w-3 text-[var(--color-red)]" />{/if}
-            </button>
-            <button
-              type="button"
-              role="menuitemradio"
-              aria-checked={scope.kind === 'all'}
-              onclick={() => refetch({ kind: 'all' })}
-              class="w-full text-left flex items-center justify-between gap-2 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-text)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] cursor-pointer"
-            >
-              <span>Todas</span>
-              {#if scope.kind === 'all'}<Check class="h-3 w-3 text-[var(--color-red)]" />{/if}
-            </button>
-
-            {#if userOptions.length > 0}
-              <div
-                class="px-3 pt-3 pb-1 border-t border-[var(--color-border)] font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--color-text-faint)]"
-              >
-                Por utilizador
-              </div>
-              {#each userOptions as u (u.id)}
-                {@const active = scope.kind === 'byUser' && scope.assigneeId === u.id}
-                <button
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={active}
-                  onclick={() => refetch({ kind: 'byUser', assigneeId: u.id, name: u.name })}
-                  class="w-full text-left flex items-center justify-between gap-2 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-text)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] cursor-pointer"
-                >
-                  <span class="truncate">{u.name}</span>
-                  {#if active}<Check class="h-3 w-3 text-[var(--color-red)]" />{/if}
-                </button>
-              {/each}
-            {/if}
-          </div>
-        {/if}
-      </div>
+          <option value="mine">Minhas</option>
+          <option value="general">Geral · Sem responsável</option>
+          <option value="all">Todas</option>
+          {#if userOptions.length > 0}
+            <optgroup label="Por utilizador">
+              {#each userOptions as user (user.id)}<option value={user.id}>{user.name}</option
+                >{/each}
+            </optgroup>
+          {/if}
+        </select>
+      </label>
     {/snippet}
   </PanelHeader>
+
+  {#if loadError}
+    <p role="status" class="px-5 pt-4 text-[12px] text-[var(--color-red)]">{loadError}</p>
+  {/if}
 
   {#if loading}
     <div
@@ -228,69 +170,180 @@
       Sem tarefas para hoje
     </div>
   {:else}
-    <!-- .sch-row layout: [code+HOJE] · [red sep] · [body] · [colored tag] -->
-    {#each rows as t (t.id)}
-      {@const code = PRIORITY_CODE[t.priority] ?? '—'}
-      {@const tagStyle = PRIORITY_TAG_COLOR[t.priority] ?? {
-        text: 'text-[var(--color-success)]',
-        border: 'border-[color-mix(in_oklab,var(--color-success)_45%,transparent)]',
-      }}
-      <a
-        href={`/tarefas/${t.id}/editar`}
-        class="grid items-center gap-4 px-5 py-3.5 border-b border-[var(--color-border)] last:border-b-0 hover:bg-[color-mix(in_oklab,var(--color-red)_4%,transparent)] transition-colors group"
-        style="grid-template-columns: 64px 1.5px 1fr auto;"
-      >
-        <!-- Big italic red priority code with small HOJE / ATRASO subtitle -->
-        <div class="text-right leading-none">
-          <div
-            class="font-display font-extrabold italic text-[22px] tracking-[-0.01em] text-[var(--color-red)] leading-none"
-          >
-            {code}
-          </div>
-          <div
-            class="font-mono text-[9px] tracking-[0.2em] uppercase text-[var(--color-text-faint)] mt-1"
-          >
-            {t.isOverdue ? 'Atraso' : 'Hoje'}
-          </div>
-        </div>
-
-        <!-- Red vertical separator (1.5px) — brand-DNA pattern -->
-        <span class="block h-[32px] w-[1.5px] bg-[var(--color-red)]"></span>
-
-        <div class="min-w-0">
-          <div
-            class="font-semibold text-[14px] truncate group-hover:text-[var(--color-red)] transition-colors"
-          >
-            {t.title}
-          </div>
-          <div class="text-[12px] text-[var(--color-text-muted)] truncate mt-0.5">
-            {#if t.dueDate}
-              <Calendar class="inline h-2.5 w-2.5 mr-1 -mt-px text-[var(--color-text-faint)]" />
-              <span class="num-value text-[11px] text-[var(--color-text-muted)]">
-                {formatDate(t.dueDate)}
-              </span>
-              <span class="mx-1.5 text-[var(--color-text-faint)]">·</span>
-            {/if}
-            {#if t.assignee}
-              {#if currentUserId && t.assignee.id === currentUserId}
-                <span class="text-[var(--color-red)] font-semibold">{t.assignee.name}</span>
-              {:else}
-                <span>{t.assignee.name}</span>
-              {/if}
-            {:else}
-              <span class="text-[var(--color-text-faint)]">Geral</span>
-            {/if}
-          </div>
-        </div>
-
-        <!-- Colored tag pill, matches prototype `.sch-row .tag` -->
-        <span
-          class="inline-flex items-center font-mono text-[9px] uppercase tracking-[0.18em] font-semibold px-2 py-1 border {tagStyle.text} {tagStyle.border}"
-          style="border-radius: 3px;"
-        >
-          {PRIORITY_FULL_LABEL[t.priority] ?? t.priority}
-        </span>
-      </a>
-    {/each}
+    <ul class="task-list">
+      {#each rows as t (t.id)}
+        {@const tagStyle = PRIORITY_TAG_COLOR[t.priority] ?? {
+          text: 'text-[var(--color-text-muted)]',
+          border: 'border-[var(--color-border)]',
+        }}
+        <li>
+          <a href={crmPath(`/tarefas/${t.id}/editar`)} class="task-row group">
+            <div class="priority-mark" aria-hidden="true">
+              <strong class={tagStyle.text}
+                >{(
+                  { URGENT: 'URG', HIGH: 'ALT', MEDIUM: 'MED', LOW: 'BXA' } as Record<
+                    string,
+                    string
+                  >
+                )[t.priority] ?? '—'}</strong
+              >
+              <span>{t.isOverdue ? 'Atraso' : 'Hoje'}</span>
+            </div>
+            <span class="task-divider" aria-hidden="true"></span>
+            <div class="task-body">
+              <div class="task-heading">
+                <span class="task-title">{t.title}</span>
+                <span class="priority {tagStyle.text} {tagStyle.border}"
+                  >{PRIORITY_FULL_LABEL[t.priority] ?? t.priority}</span
+                >
+              </div>
+              <div class="task-details">
+                {#if t.isOverdue}<span class="overdue">Em atraso</span>{/if}
+                {#if t.dueDate}
+                  <span class="task-date"><Calendar class="h-3 w-3" />{formatDate(t.dueDate)}</span>
+                {:else}<span>Sem prazo</span>{/if}
+                <span class="assignee"
+                  ><Users class="h-3 w-3" />{t.assignee?.name ?? 'Geral · Sem responsável'}</span
+                >
+              </div>
+            </div>
+          </a>
+        </li>
+      {/each}
+    </ul>
   {/if}
 </Panel>
+
+<style>
+  .task-scope {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-muted);
+  }
+  .task-scope select {
+    max-width: 170px;
+    height: 32px;
+    padding: 0 8px;
+    background: var(--color-bg-1);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-btn);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    cursor: pointer;
+  }
+  .task-scope select:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 2px;
+  }
+  .task-scope select:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+  .task-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .task-list li + li {
+    border-top: 1px solid var(--color-border);
+  }
+  .task-row {
+    display: grid;
+    grid-template-columns: 48px 1.5px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    transition: background 0.15s;
+  }
+  .priority-mark {
+    text-align: right;
+  }
+  .priority-mark strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-style: italic;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .priority-mark > span {
+    display: block;
+    margin-top: 5px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .task-divider {
+    height: 34px;
+    background: var(--color-red);
+  }
+  .task-row:hover {
+    background: color-mix(in oklab, var(--color-text) 3%, transparent);
+  }
+  .task-row:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: -3px;
+  }
+  .task-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .task-title {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .priority {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 3px 6px;
+    border: 1px solid;
+    border-radius: 3px;
+    line-height: 1.4;
+  }
+  .task-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 12px;
+    margin-top: 8px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .task-date,
+  .assignee {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .task-date {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .overdue {
+    color: var(--color-red);
+    font-weight: 600;
+  }
+  @media (max-width: 640px) {
+    .task-row {
+      grid-template-columns: 40px 1.5px minmax(0, 1fr);
+      gap: 10px;
+      padding: 16px;
+    }
+    .task-heading {
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+  }
+</style>

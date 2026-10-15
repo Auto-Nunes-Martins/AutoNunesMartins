@@ -1,5 +1,6 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../../db.js';
+import { taskAttentionWhere } from '../data/task.js';
 import { appSettings } from '../data/appSettings.js';
 import { createSignedReadUrls } from '../data/storage.js';
 import { logger } from '../../logger.js';
@@ -83,6 +84,7 @@ export interface RecentActivityRow {
 
 export interface SmartAlerts {
   stockAged: number;
+  stockAgingDays?: number;
   tasksDueOrOverdue: number;
   remindersToday: number;
   /**
@@ -104,7 +106,20 @@ export interface DashboardPayload {
   alerts: SmartAlerts;
 }
 
-const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const MONTHS_PT = [
+  'Jan',
+  'Fev',
+  'Mar',
+  'Abr',
+  'Mai',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Set',
+  'Out',
+  'Nov',
+  'Dez',
+];
 const MS_PER_DAY = 86_400_000;
 
 function startOfToday(): Date {
@@ -154,7 +169,7 @@ async function loadMonthlyBuckets(now: Date): Promise<MonthlyBucket[]> {
       SUM("realProfit")                           AS profit,
       SUM("commission")                           AS commission
     FROM "Sale"
-    WHERE "saleDate" >= ${earliestMonth}
+    WHERE "saleDate" >= ${earliestMonth} AND "cancelledAt" IS NULL
     GROUP BY date_trunc('month', "saleDate")
     ORDER BY month ASC
   `;
@@ -185,8 +200,7 @@ function buildKpis(buckets: MonthlyBucket[]): DashboardKpis {
   const cur = buckets[11] ?? empty;
   const prev = buckets[10] ?? empty;
 
-  const curMargin =
-    cur.revenue > 0 ? (cur.profit / cur.revenue) * 100 : cur.count > 0 ? 0 : null;
+  const curMargin = cur.revenue > 0 ? (cur.profit / cur.revenue) * 100 : cur.count > 0 ? 0 : null;
   const prevMargin =
     prev.revenue > 0 ? (prev.profit / prev.revenue) * 100 : prev.count > 0 ? 0 : null;
 
@@ -264,8 +278,8 @@ async function loadBestSellers(now: Date): Promise<BestSeller[]> {
   const rows = await prisma.$queryRaw<Row[]>`
     SELECT v."brand", v."model", COUNT(*)::bigint AS count
     FROM "Sale" s
-    JOIN "Vehicle" v ON v."id" = s."vehicleId"
-    WHERE s."saleDate" >= ${twelveMonthsAgo}
+    JOIN "Vehicle" v ON v."id" = s."originalVehicleId"
+    WHERE s."saleDate" >= ${twelveMonthsAgo} AND s."cancelledAt" IS NULL
     GROUP BY v."brand", v."model"
     ORDER BY count DESC
     LIMIT 4
@@ -401,8 +415,6 @@ async function loadRecentActivity(): Promise<RecentActivityRow[]> {
 async function loadAlerts(actorId: string, now: Date): Promise<SmartAlerts> {
   const thresholdDays = await appSettings.stockAgingDays();
   const cutoff = new Date(now.getTime() - thresholdDays * MS_PER_DAY);
-  const todayStart = startOfToday();
-  const todayEnd = endOfToday();
   const [stockAged, tasksDueOrOverdue, remindersToday, draftVehicles] = await Promise.all([
     prisma.vehicle.count({
       where: { status: 'AVAILABLE', acquisitionDate: { lt: cutoff } },
@@ -411,26 +423,25 @@ async function loadAlerts(actorId: string, now: Date): Promise<SmartAlerts> {
       where: {
         status: { not: 'DONE' },
         OR: [{ assigneeId: null }, { assigneeId: actorId }],
-        AND: [
-          {
-            OR: [
-              { dueDate: { gte: todayStart, lte: todayEnd } },
-              { dueDate: { lt: todayStart } },
-            ],
-          },
-        ],
+        AND: [taskAttentionWhere('due', now)],
       },
     }),
     prisma.task.count({
       where: {
         status: { not: 'DONE' },
         OR: [{ assigneeId: null }, { assigneeId: actorId }],
-        reminderDate: { gte: todayStart, lte: todayEnd },
+        AND: [taskAttentionWhere('reminders', now)],
       },
     }),
     prisma.vehicle.count({ where: { status: 'DRAFT' } }),
   ]);
-  return { stockAged, tasksDueOrOverdue, remindersToday, draftVehicles };
+  return {
+    stockAged,
+    stockAgingDays: thresholdDays,
+    tasksDueOrOverdue,
+    remindersToday,
+    draftVehicles,
+  };
 }
 
 export async function loadDashboard(actorId: string): Promise<DashboardPayload> {

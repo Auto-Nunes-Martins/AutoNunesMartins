@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import {
@@ -51,7 +52,7 @@
   async function load() {
     loading = true;
     try {
-      const res = await fetch('/api/notifications', { headers: { accept: 'application/json' } });
+      const res = await fetch(crmPath('/api/notifications'), { headers: { accept: 'application/json' } });
       if (res.ok) data = (await res.json()) as NotificationsPayload;
     } finally {
       loading = false;
@@ -93,13 +94,13 @@
   function hrefFor(entityType: string, entityId: string): string | null {
     switch (entityType) {
       case 'vehicle':
-        return `/viaturas/${entityId}`;
+        return crmPath(`/viaturas/${entityId}`);
       case 'sale':
-        return `/vendas/${entityId}`;
+        return crmPath(`/vendas/${entityId}`);
       case 'customer':
-        return `/clientes/${entityId}`;
+        return crmPath(`/clientes/${entityId}`);
       case 'task':
-        return `/tarefas/${entityId}/editar`;
+        return crmPath(`/tarefas/${entityId}/editar`);
       default:
         return null;
     }
@@ -212,7 +213,7 @@
           {#if data.alerts.stockAged > 0}
             <button
               type="button"
-              onclick={() => goAndClose('/viaturas?status=AVAILABLE')}
+              onclick={() => goAndClose(crmPath('/viaturas?status=AVAILABLE'))}
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
@@ -226,7 +227,7 @@
           {#if data.alerts.tasksDueOrOverdue > 0}
             <button
               type="button"
-              onclick={() => goAndClose('/tarefas')}
+              onclick={() => goAndClose(crmPath('/tarefas'))}
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
@@ -242,7 +243,7 @@
           {#if data.alerts.remindersToday > 0}
             <button
               type="button"
-              onclick={() => goAndClose('/tarefas')}
+              onclick={() => goAndClose(crmPath('/tarefas'))}
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
@@ -260,7 +261,7 @@
                  O destaque laranja vive na página destino (/viaturas). -->
             <button
               type="button"
-              onclick={() => goAndClose('/viaturas')}
+              onclick={() => goAndClose(crmPath('/viaturas'))}
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
@@ -339,7 +340,7 @@
         <footer class="border-t border-[var(--color-border)] p-3">
           <button
             type="button"
-            onclick={() => goAndClose('/dashboard')}
+            onclick={() => goAndClose(crmPath('/dashboard'))}
             class="w-full inline-flex items-center justify-center gap-2 h-9 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-colors"
             style="border-radius: var(--radius-btn);"
           >

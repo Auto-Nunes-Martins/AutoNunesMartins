@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Phone, Mail, MoreHorizontal, User as UserIcon } from 'lucide-svelte';
+  import { crmPath } from '$lib/paths';
+  import { Phone, Mail, FileText, User as UserIcon } from 'lucide-svelte';
+  import RowActions from '$lib/components/common/RowActions.svelte';
   import { formatDate } from '$lib/utils/format';
   import type { CustomerListItem } from '$lib/server/customers';
 
@@ -8,7 +10,23 @@
   }
 
   let { items }: Props = $props();
+
+  function actionsFor(customer: CustomerListItem) {
+    return [
+      { label: 'Ver ficha', href: crmPath(`/clientes/${customer.id}`), icon: FileText },
+      ...(customer.phone
+        ? [{ label: 'Ligar', href: `tel:${customer.phone.replace(/\s/g, '')}`, icon: Phone }]
+        : []),
+      ...(customer.email
+        ? [{ label: 'Enviar email', href: `mailto:${customer.email}`, icon: Mail }]
+        : []),
+    ];
+  }
 </script>
+
+{#snippet rowActions(c: CustomerListItem)}
+  <RowActions label={c.name} editHref={crmPath(`/clientes/${c.id}/editar`)} actions={actionsFor(c)} />
+{/snippet}
 
 <!--
   Mobile (< md): stacked card list. Each card shows avatar, name+address,
@@ -17,51 +35,58 @@
 -->
 <div class="md:hidden divide-y divide-[var(--color-border)]">
   {#each items as c (c.id)}
-    <a
-      href={`/clientes/${c.id}`}
-      class="block px-4 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
-    >
-      <div class="flex items-center gap-3">
-        <div
-          class="h-11 w-11 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
-          style="border-radius: var(--radius-btn);"
-        >
-          <UserIcon class="h-5 w-5 text-[var(--color-red)]" />
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center justify-between gap-2">
-            <div
-              class="font-display font-bold italic text-[15px] truncate group-hover:text-[var(--color-red)] transition-colors"
-            >
-              {c.name}
+    <article>
+      <a
+        href={crmPath(`/clientes/${c.id}`)}
+        class="block px-4 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="h-11 w-11 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
+            style="border-radius: var(--radius-btn);"
+          >
+            <UserIcon class="h-5 w-5 text-[var(--color-red)]" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between gap-2">
+              <div
+                class="font-display font-bold italic text-[15px] truncate group-hover:text-[var(--color-red)] transition-colors"
+              >
+                {c.name}
+              </div>
+              <span class="num-value text-[18px] flex-shrink-0">
+                {c._count.sales}
+              </span>
             </div>
-            <span class="num-value text-[18px] flex-shrink-0">
-              {c._count.sales}
-            </span>
-          </div>
-          <div class="font-mono text-[10.5px] text-[var(--color-text-faint)] truncate mt-0.5 tabular-nums">
-            NIF {c.nif}
+            <div
+              class="font-mono text-[10.5px] text-[var(--color-text-faint)] truncate mt-0.5 tabular-nums"
+            >
+              NIF {c.nif}
+            </div>
           </div>
         </div>
-      </div>
-      <div class="mt-2.5 flex flex-col gap-1 text-[12px]">
-        <span class="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-          <Phone class="h-3 w-3 text-[var(--color-text-faint)] flex-shrink-0" />
-          <span class="font-mono truncate">{c.phone}</span>
-        </span>
-        {#if c.email}
+        <div class="mt-2.5 flex flex-col gap-1 text-[12px]">
           <span class="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-            <Mail class="h-3 w-3 text-[var(--color-text-faint)] flex-shrink-0" />
-            <span class="truncate">{c.email}</span>
+            <Phone class="h-3 w-3 text-[var(--color-text-faint)] flex-shrink-0" />
+            <span class="font-mono truncate">{c.phone}</span>
           </span>
-        {/if}
-      </div>
-      {#if c.lastContactDate}
-        <div class="mt-2 font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)]">
-          Último contacto · {formatDate(c.lastContactDate)}
+          {#if c.email}
+            <span class="flex items-center gap-1.5 text-[var(--color-text-muted)]">
+              <Mail class="h-3 w-3 text-[var(--color-text-faint)] flex-shrink-0" />
+              <span class="truncate">{c.email}</span>
+            </span>
+          {/if}
         </div>
-      {/if}
-    </a>
+        {#if c.lastContactDate}
+          <div
+            class="mt-2 font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)]"
+          >
+            Último contacto · {formatDate(c.lastContactDate)}
+          </div>
+        {/if}
+      </a>
+      <div class="px-4 pb-3">{@render rowActions(c)}</div>
+    </article>
   {/each}
 </div>
 
@@ -94,7 +119,10 @@
         >
           Último contacto
         </th>
-        <th class="w-10"></th>
+        <th
+          class="w-36 px-4 py-3 text-right font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+          >Ações</th
+        >
       </tr>
     </thead>
     <tbody>
@@ -103,7 +131,7 @@
           class="border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
         >
           <td class="px-4 py-3">
-            <a href={`/clientes/${c.id}`} class="flex items-center gap-3">
+            <a href={crmPath(`/clientes/${c.id}`)} class="flex items-center gap-3">
               <div
                 class="h-11 w-11 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
                 style="border-radius: var(--radius-btn);"
@@ -117,9 +145,7 @@
                   {c.name}
                 </div>
                 {#if c.address}
-                  <div
-                    class="text-[11px] text-[var(--color-text-faint)] truncate max-w-[280px]"
-                  >
+                  <div class="text-[11px] text-[var(--color-text-faint)] truncate max-w-[280px]">
                     {c.address}
                   </div>
                 {/if}
@@ -134,9 +160,7 @@
                 <span class="font-mono">{c.phone}</span>
               </span>
               {#if c.email}
-                <span
-                  class="flex items-center gap-1.5 text-[12px] text-[var(--color-text-muted)]"
-                >
+                <span class="flex items-center gap-1.5 text-[12px] text-[var(--color-text-muted)]">
                   <Mail class="h-3 w-3 text-[var(--color-text-faint)]" />
                   {c.email}
                 </span>
@@ -152,13 +176,7 @@
             {c.lastContactDate ? formatDate(c.lastContactDate) : '—'}
           </td>
           <td class="px-4 py-3 text-right">
-            <button
-              type="button"
-              class="text-[var(--color-text-faint)] hover:text-[var(--color-text)] p-1"
-              aria-label="Mais opções"
-            >
-              <MoreHorizontal class="h-4 w-4" />
-            </button>
+            {@render rowActions(c)}
           </td>
         </tr>
       {/each}

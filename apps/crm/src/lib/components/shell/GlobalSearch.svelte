@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { goto } from '$app/navigation';
   import { X } from 'lucide-svelte';
   import BrandSearch from '$lib/components/brand/icons/BrandSearch.svelte';
@@ -104,7 +105,7 @@
       }, LOADING_FLASH_DELAY_MS);
     }
 
-    fetch(`/api/search?q=${encodeURIComponent(needle)}&limit=5`, {
+    fetch(crmPath(`/api/search?q=${encodeURIComponent(needle)}&limit=5`), {
       signal: ctrl.signal,
       headers: { accept: 'application/json' },
     })
@@ -144,7 +145,7 @@
     query = '';
     results = null;
     activeIndex = -1;
-    goto(hit.href);
+    goto(crmPath(hit.href));
   }
 
   // ─── Keyboard handling ──────────────────────────────────────────────────
@@ -180,7 +181,7 @@
         return;
       }
       if (query.trim().length > 0) {
-        goto(`/viaturas?q=${encodeURIComponent(query.trim())}`);
+        goto(crmPath(`/viaturas?q=${encodeURIComponent(query.trim())}`));
         open = false;
       }
     }

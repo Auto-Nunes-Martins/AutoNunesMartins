@@ -5,8 +5,11 @@ import { prisma } from '../../db.js';
 import { emitActivity } from '../data/activity.js';
 import { sumVehicleExpenses } from '../data/vehicle.js';
 import { computeSaleFigures } from '../domain/sale.js';
+import { SaleCancellationError } from './saleCancellationService.js';
+import { lockVehicle, saleMutation } from './saleFinancials.js';
 
 export interface ListSalesParams {
+  state?: 'ACTIVE' | 'CANCELLED';
   q?: string;
   deliveryStatus?: DeliveryStatus;
   dateFrom?: string;
@@ -71,7 +74,9 @@ export async function listSales(params: ListSalesParams): Promise<ListSalesResul
   const sortBy = params.sortBy ?? 'saleDate';
   const sortDir = params.sortDir ?? 'desc';
 
-  const where: Prisma.SaleWhereInput = {};
+  const where: Prisma.SaleWhereInput = {
+    cancelledAt: params.state === 'CANCELLED' ? { not: null } : null,
+  };
 
   if (params.deliveryStatus) where.deliveryStatus = params.deliveryStatus;
 
@@ -128,6 +133,8 @@ export async function listSales(params: ListSalesParams): Promise<ListSalesResul
       realProfit: true,
       deliveryStatus: true,
       deliveryDate: true,
+      cancelledAt: true,
+      cancellationDecision: true,
       // Just need to know IF a trade-in exists — no fields needed. Prisma
       // returns `null` when absent, so the row's hasTradeIn is `!!row.tradeIn`.
       tradeIn: { select: { id: true } },
@@ -148,7 +155,13 @@ export async function listSales(params: ListSalesParams): Promise<ListSalesResul
   });
 
   const enriched: SaleListRow[] = allRows.map((r) => {
-    const expensesTotal = r.vehicle.expenses.reduce(
+    const archive = r.cancellationDecision as {
+      snapshot?: { vehicle?: { purchasePrice?: string; expenses?: Array<{ amount: string }> } };
+    } | null;
+    const recordedExpenses = r.cancelledAt
+      ? (archive?.snapshot?.vehicle?.expenses ?? r.vehicle.expenses)
+      : r.vehicle.expenses;
+    const expensesTotal = recordedExpenses.reduce(
       (acc, e) => acc.plus(e.amount.toString()),
       new Decimal(0),
     );
@@ -159,7 +172,9 @@ export async function listSales(params: ListSalesParams): Promise<ListSalesResul
       id: r.id,
       saleDate: r.saleDate.toISOString(),
       salePrice: r.salePrice.toString(),
-      purchasePrice: r.vehicle.purchasePrice.toString(),
+      purchasePrice: r.cancelledAt
+        ? (archive?.snapshot?.vehicle?.purchasePrice ?? r.vehicle.purchasePrice.toString())
+        : r.vehicle.purchasePrice.toString(),
       expensesTotal: expensesTotal.toFixed(2),
       vatAmount: r.vatAmount.toString(),
       commission: r.commission.toString(),
@@ -243,7 +258,10 @@ export async function listSales(params: ListSalesParams): Promise<ListSalesResul
 }
 
 export class VehicleNotSellable extends Error {
-  constructor(public readonly id: string, public readonly status: string) {
+  constructor(
+    public readonly id: string,
+    public readonly status: string,
+  ) {
     super(`Vehicle ${id} is in status ${status} and cannot be sold`);
     this.name = 'VehicleNotSellable';
   }
@@ -293,7 +311,8 @@ export async function createSale(
   id: string;
   figures: { margin: string; vatAmount: string; commission: string; realProfit: string };
 }> {
-  return prisma.$transaction(async (tx) => {
+  return saleMutation(async (tx) => {
+    await lockVehicle(tx, data.vehicleId);
     const vehicle = await tx.vehicle.findUnique({
       where: { id: data.vehicleId },
       include: { sale: { select: { id: true } } },
@@ -328,6 +347,7 @@ export async function createSale(
     const sale = await tx.sale.create({
       data: {
         vehicleId: vehicle.id,
+        originalVehicleId: vehicle.id,
         customerId: customer.id,
         salePrice: new Decimal(data.salePrice as string),
         vatAmount: new Decimal(figures.vatAmount.toString()),
@@ -341,8 +361,7 @@ export async function createSale(
     });
 
     // Flip vehicle to SOLD (or DELIVERED if delivery already done at creation time)
-    const nextVehicleStatus =
-      data.deliveryStatus === 'DELIVERED' ? 'DELIVERED' : 'SOLD';
+    const nextVehicleStatus = data.deliveryStatus === 'DELIVERED' ? 'DELIVERED' : 'SOLD';
     await tx.vehicle.update({
       where: { id: vehicle.id },
       data: {
@@ -451,8 +470,7 @@ export async function createSale(
       // dealer's mental model (the retoma is the *cause*, the new stock
       // vehicle is the *consequence*). All three rows share the same
       // transaction timestamp, so emission order is what the feed uses.
-      const dispositionLabel =
-        ti.disposition === 'STOCK' ? 'entrou no stock' : 'para abate';
+      const dispositionLabel = ti.disposition === 'STOCK' ? 'entrou no stock' : 'para abate';
       await emitActivity(tx, {
         actorId: actor.actorId,
         type: 'TRADE_IN_RECEIVED',
@@ -496,12 +514,23 @@ export async function updateSaleDelivery(
   payload: { deliveryStatus: DeliveryStatus; deliveryDate?: Date | null },
   actor: ActorContext,
 ): Promise<void> {
-  await prisma.$transaction(async (tx) => {
+  await saleMutation(async (tx) => {
+    const target = await tx.sale.findUnique({
+      where: { id: saleId },
+      select: { vehicleId: true, originalVehicleId: true },
+    });
+    if (!target) throw new SaleNotFound(saleId);
+    await lockVehicle(tx, target.originalVehicleId ?? target.vehicleId!);
     const existing = await tx.sale.findUnique({
       where: { id: saleId },
       include: { vehicle: { select: { id: true, brand: true, model: true, status: true } } },
     });
     if (!existing) throw new SaleNotFound(saleId);
+    if (existing.cancelledAt)
+      throw new SaleCancellationError(
+        409,
+        'Não é possível actualizar a entrega de uma venda anulada.',
+      );
 
     const updateData: Prisma.SaleUpdateInput = {
       deliveryStatus: payload.deliveryStatus,
@@ -512,11 +541,11 @@ export async function updateSaleDelivery(
 
     await tx.sale.update({ where: { id: saleId }, data: updateData });
 
-    // Flip the Vehicle status to DELIVERED when the sale gets delivered
-    if (payload.deliveryStatus === 'DELIVERED' && existing.vehicle.status !== 'DELIVERED') {
+    const nextStatus = payload.deliveryStatus === 'DELIVERED' ? 'DELIVERED' : 'SOLD';
+    if (existing.vehicle.status !== nextStatus) {
       await tx.vehicle.update({
         where: { id: existing.vehicle.id },
-        data: { status: 'DELIVERED' },
+        data: { status: nextStatus },
       });
     }
 
@@ -560,6 +589,7 @@ export async function getSaleById(id: string) {
                   id: true,
                   saleDate: true,
                   realProfit: true,
+                  cancelledAt: true,
                   customer: { select: { id: true, name: true } },
                   vehicle: {
                     select: { id: true, brand: true, model: true, year: true },
@@ -579,6 +609,9 @@ export async function getSaleById(id: string) {
     },
   });
   if (!sale) return null;
+  const archive = sale.cancellationDecision as {
+    snapshot?: { vehicle?: { purchasePrice?: string } };
+  } | null;
   return {
     ...sale,
     salePrice: sale.salePrice.toString(),
@@ -587,7 +620,9 @@ export async function getSaleById(id: string) {
     realProfit: sale.realProfit.toString(),
     vehicle: {
       ...sale.vehicle,
-      purchasePrice: sale.vehicle.purchasePrice.toString(),
+      purchasePrice: sale.cancelledAt
+        ? (archive?.snapshot?.vehicle?.purchasePrice ?? sale.vehicle.purchasePrice.toString())
+        : sale.vehicle.purchasePrice.toString(),
       sourceTradeIn: sale.vehicle.sourceTradeIn
         ? {
             id: sale.vehicle.sourceTradeIn.id,
@@ -596,6 +631,7 @@ export async function getSaleById(id: string) {
               id: sale.vehicle.sourceTradeIn.sale.id,
               saleDate: sale.vehicle.sourceTradeIn.sale.saleDate,
               realProfit: sale.vehicle.sourceTradeIn.sale.realProfit.toString(),
+              cancelledAt: sale.vehicle.sourceTradeIn.sale.cancelledAt,
               customer: sale.vehicle.sourceTradeIn.sale.customer,
               vehicle: sale.vehicle.sourceTradeIn.sale.vehicle,
             },

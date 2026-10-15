@@ -1,3 +1,4 @@
+import { crmPath } from '$lib/paths';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { vehicleCreateSchema } from '@anm/types';
 import { vehiclesApi } from '$lib/server/vehicles';
@@ -65,7 +66,13 @@ export const actions: Actions = {
       return { id: event.params.id };
     } catch (err) {
       if (err instanceof ApiError) {
+        const feedback = err.body as {
+          field?: string;
+          issues?: { path: (string | number)[]; message: string }[];
+        } | null;
         return fail(err.status, {
+          field: feedback?.field,
+          issues: feedback?.issues,
           error: (err.body as { error?: string } | null)?.error ?? 'Falha ao actualizar.',
         });
       }
@@ -83,6 +90,6 @@ export const actions: Actions = {
       }
       throw err;
     }
-    throw redirect(302, '/viaturas');
+    throw redirect(302, crmPath('/viaturas'));
   },
 };

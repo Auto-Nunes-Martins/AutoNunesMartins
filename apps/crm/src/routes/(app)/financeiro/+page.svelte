@@ -1,15 +1,9 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
-  import { goto, invalidateAll } from '$app/navigation';
+  import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import {
-    Check,
-    Pencil,
-    Plus,
-    Trash2,
-    Wallet,
-    X,
-  } from 'lucide-svelte';
+  import { Check, Pencil, Plus, Trash2, Wallet, X } from 'lucide-svelte';
   import { toast } from 'svelte-sonner';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
@@ -82,197 +76,220 @@
     </div>
     <!-- Export is desktop-only. Menu (sem default) — utilizador escolhe formato. -->
     <div class="hidden md:flex items-center gap-2">
-      <ExportMenu baseHref="/financeiro/despesas/export" extraQuery={$page.url.search} />
+      <ExportMenu baseHref={crmPath("/financeiro/despesas/export")} extraQuery={$page.url.search} />
     </div>
   </div>
 
   <!-- Per-vehicle profit analysis used to live here as a second tab; it now
        sits inside /vendas (single source of truth). This page is dedicated to
        operational expenses (rent, bills, services). -->
-    <Panel>
-      <PanelHeader icon={Wallet} title="Filtros" />
-      <div class="p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+  <Panel>
+    <PanelHeader icon={Wallet} title="Filtros" />
+    <div class="p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+      <label class="flex flex-col">
+        <span
+          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+        >
+          Pesquisar
+        </span>
+        <input
+          type="search"
+          placeholder="descrição…"
+          value={data.expensesFilters.q ?? ''}
+          oninput={(e) => setParam('q', e.currentTarget.value || undefined)}
+          class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
+          style="border-radius: var(--radius-btn);"
+        />
+      </label>
+      <label class="flex flex-col">
+        <span
+          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+        >
+          Categoria
+        </span>
+        <select
+          value={data.expensesFilters.category ?? ''}
+          onchange={(e) => setParam('category', e.currentTarget.value || undefined)}
+          class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
+          style="border-radius: var(--radius-btn);"
+        >
+          <option value="">— Todas —</option>
+          {#each CATEGORIES as c (c.value)}
+            <option value={c.value}>{c.label}</option>
+          {/each}
+        </select>
+      </label>
+      <label class="flex flex-col">
+        <span
+          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+        >
+          De
+        </span>
+        <input
+          type="date"
+          value={data.expensesFilters.dateFrom ?? ''}
+          onchange={(e) => setParam('dateFrom', e.currentTarget.value || undefined)}
+          class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
+          style="border-radius: var(--radius-btn);"
+        />
+      </label>
+      <label class="flex flex-col">
+        <span
+          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+        >
+          Até
+        </span>
+        <input
+          type="date"
+          value={data.expensesFilters.dateTo ?? ''}
+          onchange={(e) => setParam('dateTo', e.currentTarget.value || undefined)}
+          class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
+          style="border-radius: var(--radius-btn);"
+        />
+      </label>
+      <div class="flex justify-end">
+        <Button variant="primary" size="md" onclick={() => (showAdd = true)}>
+          <Plus class="h-4 w-4" />
+          Nova despesa
+        </Button>
+      </div>
+    </div>
+  </Panel>
+
+  <Panel>
+    <PanelHeader icon={Wallet} title="Despesas operacionais" meta="" />
+
+    {#if showAdd}
+      <form
+        method="POST"
+        action="?/addExpense"
+        use:enhance={() => {
+          submitting = true;
+          return async ({ result, update }) => {
+            try {
+              if (result.type === 'success') {
+                toast.success('Despesa adicionada.');
+                showAdd = false;
+              } else if (result.type === 'failure') {
+                toast.error((result.data as { error?: string } | undefined)?.error ?? 'Falha.');
+              }
+              await update({ reset: false });
+            } finally {
+              submitting = false;
+            }
+          };
+        }}
+        class="border-b border-[var(--color-border)] p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end"
+      >
         <label class="flex flex-col">
-          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
-            Pesquisar
-          </span>
-          <input
-            type="search"
-            placeholder="descrição…"
-            value={data.expensesFilters.q ?? ''}
-            oninput={(e) => setParam('q', e.currentTarget.value || undefined)}
-            class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
-            style="border-radius: var(--radius-btn);"
-          />
-        </label>
-        <label class="flex flex-col">
-          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+          >
             Categoria
           </span>
           <select
-            value={data.expensesFilters.category ?? ''}
-            onchange={(e) => setParam('category', e.currentTarget.value || undefined)}
-            class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
+            name="category"
+            required
+            class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
             style="border-radius: var(--radius-btn);"
           >
-            <option value="">— Todas —</option>
             {#each CATEGORIES as c (c.value)}
               <option value={c.value}>{c.label}</option>
             {/each}
           </select>
         </label>
-        <label class="flex flex-col">
-          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
-            De
-          </span>
-          <input
-            type="date"
-            value={data.expensesFilters.dateFrom ?? ''}
-            onchange={(e) => setParam('dateFrom', e.currentTarget.value || undefined)}
-            class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
-            style="border-radius: var(--radius-btn);"
-          />
-        </label>
-        <label class="flex flex-col">
-          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
-            Até
-          </span>
-          <input
-            type="date"
-            value={data.expensesFilters.dateTo ?? ''}
-            onchange={(e) => setParam('dateTo', e.currentTarget.value || undefined)}
-            class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
-            style="border-radius: var(--radius-btn);"
-          />
-        </label>
-        <div class="flex justify-end">
-          <Button variant="primary" size="md" onclick={() => (showAdd = true)}>
-            <Plus class="h-4 w-4" />
-            Nova despesa
-          </Button>
-        </div>
-      </div>
-    </Panel>
-
-    <Panel>
-      <PanelHeader icon={Wallet} title="Despesas operacionais" meta="" />
-
-      {#if showAdd}
-        <form
-          method="POST"
-          action="?/addExpense"
-          use:enhance={() => {
-            submitting = true;
-            return async ({ result }) => {
-              submitting = false;
-              if (result.type === 'success') {
-                toast.success('Despesa adicionada.');
-                showAdd = false;
-                await invalidateAll();
-              } else if (result.type === 'failure') {
-                toast.error((result.data as { error?: string } | undefined)?.error ?? 'Falha.');
-              }
-            };
-          }}
-          class="border-b border-[var(--color-border)] p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end"
-        >
-          <label class="flex flex-col">
-            <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
-              Categoria
-            </span>
-            <select
-              name="category"
-              required
-              class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
-              style="border-radius: var(--radius-btn);"
-            >
-              {#each CATEGORIES as c (c.value)}
-                <option value={c.value}>{c.label}</option>
-              {/each}
-            </select>
-          </label>
-          <label class="flex flex-col md:col-span-2">
-            <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
-              Descrição
-            </span>
-            <input
-              name="description"
-              type="text"
-              required
-              placeholder="Renda do stand · Abril"
-              class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
-              style="border-radius: var(--radius-btn);"
-            />
-          </label>
-          <label class="flex flex-col">
-            <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
-              Valor (€)
-            </span>
-            <input
-              name="amount"
-              type="number"
-              step="0.01"
-              min="0"
-              required
-              placeholder="650.00"
-              class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)]"
-              style="border-radius: var(--radius-btn);"
-            />
-          </label>
-          <label class="flex flex-col">
-            <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
-              Data
-            </span>
-            <input
-              name="date"
-              type="date"
-              required
-              value={todayISO}
-              class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
-              style="border-radius: var(--radius-btn);"
-            />
-          </label>
-          <div class="md:col-span-5 flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onclick={() => (showAdd = false)}>
-              Cancelar
-            </Button>
-            <Button variant="primary" size="sm" type="submit" loading={submitting}>
-              Adicionar
-            </Button>
-          </div>
-        </form>
-      {/if}
-
-      {#await data.expenses}
-        <div class="p-4 space-y-2">
-          {#each Array(5) as _, i (i)}
-            <Skeleton width="100%" height="34px" />
-          {/each}
-        </div>
-      {:then exp}
-        {#if '_error' in exp && exp._error}
-          <div class="p-4 text-[13px] text-[var(--color-red)]">{exp._error}</div>
-        {:else if exp.items.length === 0}
-          <div
-            class="p-8 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+        <label class="flex flex-col md:col-span-2">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
           >
-            Sem despesas registadas
-          </div>
-        {:else}
-          <div class="overflow-x-auto">
+            Descrição
+          </span>
+          <input
+            name="description"
+            type="text"
+            required
+            placeholder="Renda do stand · Abril"
+            class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
+            style="border-radius: var(--radius-btn);"
+          />
+        </label>
+        <label class="flex flex-col">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+          >
+            Valor (€)
+          </span>
+          <input
+            name="amount"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            placeholder="650.00"
+            class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)]"
+            style="border-radius: var(--radius-btn);"
+          />
+        </label>
+        <label class="flex flex-col">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+          >
+            Data
+          </span>
+          <input
+            name="date"
+            type="date"
+            required
+            value={todayISO}
+            class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
+            style="border-radius: var(--radius-btn);"
+          />
+        </label>
+        <div class="md:col-span-5 flex items-center justify-end gap-2">
+          <Button variant="ghost" size="sm" onclick={() => (showAdd = false)}>Cancelar</Button>
+          <Button variant="primary" size="sm" type="submit" loading={submitting}>Adicionar</Button>
+        </div>
+      </form>
+    {/if}
+
+    {#await data.expenses}
+      <div class="p-4 space-y-2">
+        {#each Array(5) as _, i (i)}
+          <Skeleton width="100%" height="34px" />
+        {/each}
+      </div>
+    {:then exp}
+      {#if '_error' in exp && exp._error}
+        <div class="p-4 text-[13px] text-[var(--color-red)]">{exp._error}</div>
+      {:else if exp.items.length === 0}
+        <div
+          class="p-8 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+        >
+          Sem despesas registadas
+        </div>
+      {:else}
+        <div class="overflow-x-auto">
           <table class="w-full text-[13px] min-w-[640px]">
             <thead>
               <tr class="border-b border-[var(--color-border)]">
-                <th class="text-left px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]">
+                <th
+                  class="text-left px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+                >
                   Categoria
                 </th>
-                <th class="text-left px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]">
+                <th
+                  class="text-left px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+                >
                   Descrição
                 </th>
-                <th class="text-right px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]">
+                <th
+                  class="text-right px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+                >
                   Data
                 </th>
-                <th class="text-right px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]">
+                <th
+                  class="text-right px-4 py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+                >
                   Valor
                 </th>
                 <th class="w-20"></th>
@@ -290,16 +307,20 @@
                         action="?/updateExpense"
                         use:enhance={() => {
                           savingId = e.id;
-                          return async ({ result }) => {
-                            savingId = null;
-                            if (result.type === 'success') {
-                              toast.success('Despesa actualizada.');
-                              editingId = null;
-                              await invalidateAll();
-                            } else if (result.type === 'failure') {
-                              toast.error(
-                                (result.data as { error?: string } | undefined)?.error ?? 'Falha.',
-                              );
+                          return async ({ result, update }) => {
+                            try {
+                              if (result.type === 'success') {
+                                toast.success('Despesa actualizada.');
+                                editingId = null;
+                              } else if (result.type === 'failure') {
+                                toast.error(
+                                  (result.data as { error?: string } | undefined)?.error ??
+                                    'Falha.',
+                                );
+                              }
+                              await update({ reset: false });
+                            } finally {
+                              savingId = null;
                             }
                           };
                         }}
@@ -307,7 +328,9 @@
                       >
                         <input type="hidden" name="expenseId" value={e.id} />
                         <label class="flex flex-col">
-                          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
+                          <span
+                            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+                          >
                             Categoria
                           </span>
                           <select
@@ -323,7 +346,9 @@
                           </select>
                         </label>
                         <label class="flex flex-col md:col-span-2">
-                          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
+                          <span
+                            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+                          >
                             Descrição
                           </span>
                           <input
@@ -336,7 +361,9 @@
                           />
                         </label>
                         <label class="flex flex-col">
-                          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
+                          <span
+                            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+                          >
                             Valor (€)
                           </span>
                           <input
@@ -351,7 +378,9 @@
                           />
                         </label>
                         <label class="flex flex-col">
-                          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1">
+                          <span
+                            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
+                          >
                             Data
                           </span>
                           <input
@@ -381,7 +410,9 @@
                             aria-label="Guardar"
                           >
                             {#if isSaving}
-                              <span class="inline-block h-3 w-3 rounded-full border-2 border-current border-r-transparent animate-spin"></span>
+                              <span
+                                class="inline-block h-3 w-3 rounded-full border-2 border-current border-r-transparent animate-spin"
+                              ></span>
                             {:else}
                               <Check class="h-4 w-4" />
                             {/if}
@@ -398,7 +429,9 @@
                       </span>
                     </td>
                     <td class="px-4 py-2.5">{e.description}</td>
-                    <td class="px-4 py-2.5 font-mono text-[11px] text-right text-[var(--color-text-muted)]">
+                    <td
+                      class="px-4 py-2.5 font-mono text-[11px] text-right text-[var(--color-text-muted)]"
+                    >
                       {formatDate(e.date)}
                     </td>
                     <td class="px-4 py-2.5 num-value text-[13.5px] text-right">
@@ -422,15 +455,16 @@
                               cancel();
                               return;
                             }
-                            return async ({ result }) => {
+                            return async ({ result, update }) => {
                               if (result.type === 'success') {
                                 toast.success('Despesa eliminada.');
-                                await invalidateAll();
                               } else if (result.type === 'failure') {
                                 toast.error(
-                                  (result.data as { error?: string } | undefined)?.error ?? 'Falha.',
+                                  (result.data as { error?: string } | undefined)?.error ??
+                                    'Falha.',
                                 );
                               }
+                              await update({ reset: false });
                             };
                           }}
                         >
@@ -451,7 +485,10 @@
             </tbody>
             <tfoot>
               <tr class="border-t border-[var(--color-border)] bg-[var(--color-bg-2)]">
-                <td colspan="3" class="px-4 py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] text-right">
+                <td
+                  colspan="3"
+                  class="px-4 py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] text-right"
+                >
                   Total ({exp.total} registos)
                 </td>
                 <td class="px-4 py-3 num-value text-[16px] text-right">
@@ -461,8 +498,8 @@
               </tr>
             </tfoot>
           </table>
-          </div>
-        {/if}
-      {/await}
-    </Panel>
+        </div>
+      {/if}
+    {/await}
+  </Panel>
 </section>

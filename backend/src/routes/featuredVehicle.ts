@@ -1,3 +1,4 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
@@ -78,11 +79,15 @@ async function loadFeaturedVehicle(): Promise<FeaturedVehiclePayload | null> {
  * Returns the currently highlighted vehicle (with a signed thumbnail URL), or
  * null if no vehicle has been pinned.
  */
-router.get('/featured-vehicle', requireUser, async (_req: AuthedRequest, res: Response) => {
-  const payload = await cache.wrap(CACHE_KEY, TTL_MS, () => loadFeaturedVehicle());
-  res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
-  res.json({ vehicle: payload });
-});
+router.get(
+  '/featured-vehicle',
+  requireUser,
+  asyncHandler(async (_req: AuthedRequest, res: Response) => {
+    const payload = await cache.wrap(CACHE_KEY, TTL_MS, () => loadFeaturedVehicle());
+    res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
+    res.json({ vehicle: payload });
+  }),
+);
 
 const putSchema = z.object({
   vehicleId: z.string().min(1).nullable(),
@@ -92,63 +97,67 @@ const putSchema = z.object({
  * PUT /api/dashboard/featured-vehicle
  * Body: { vehicleId: string | null } — pass null to clear the highlight.
  */
-router.put('/featured-vehicle', requireUser, async (req: AuthedRequest, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  const parsed = putSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
-    return;
-  }
-  const { vehicleId } = parsed.data;
-
-  if (vehicleId) {
-    // Verify the vehicle exists so we never pin a dangling ID.
-    const exists = await prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      select: { id: true, brand: true, model: true },
-    });
-    if (!exists) {
-      res.status(404).json({ error: 'Viatura não encontrada' });
+router.put(
+  '/featured-vehicle',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
+    const parsed = putSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
+      return;
+    }
+    const { vehicleId } = parsed.data;
 
-    await prisma.$transaction(async (tx) => {
-      await tx.appSetting.upsert({
-        where: { key: SETTING_KEY },
-        update: { value: vehicleId },
-        create: { key: SETTING_KEY, value: vehicleId },
+    if (vehicleId) {
+      // Verify the vehicle exists so we never pin a dangling ID.
+      const exists = await prisma.vehicle.findUnique({
+        where: { id: vehicleId },
+        select: { id: true, brand: true, model: true },
       });
-      await emitActivity(tx, {
-        actorId: req.user!.id,
-        type: 'VEHICLE_UPDATED',
-        entityType: 'vehicle',
-        entityId: vehicleId,
-        message: `Viatura em destaque: ${exists.brand} ${exists.model}`,
-        metadata: { setting: SETTING_KEY, value: vehicleId },
-      });
-    });
-  } else {
-    await prisma.$transaction(async (tx) => {
-      await tx.appSetting.deleteMany({ where: { key: SETTING_KEY } });
-      await emitActivity(tx, {
-        actorId: req.user!.id,
-        type: 'VEHICLE_UPDATED',
-        entityType: 'vehicle',
-        entityId: '-',
-        message: 'Destaque removido do painel',
-        metadata: { setting: SETTING_KEY, value: null },
-      });
-    });
-  }
+      if (!exists) {
+        res.status(404).json({ error: 'Viatura não encontrada' });
+        return;
+      }
 
-  // Bust caches so the dashboard reflects the change on next load.
-  cache.invalidate(CACHE_KEY);
-  cache.clearPrefix('dashboard:');
+      await prisma.$transaction(async (tx) => {
+        await tx.appSetting.upsert({
+          where: { key: SETTING_KEY },
+          update: { value: vehicleId },
+          create: { key: SETTING_KEY, value: vehicleId },
+        });
+        await emitActivity(tx, {
+          actorId: req.user!.id,
+          type: 'VEHICLE_UPDATED',
+          entityType: 'vehicle',
+          entityId: vehicleId,
+          message: `Viatura em destaque: ${exists.brand} ${exists.model}`,
+          metadata: { setting: SETTING_KEY, value: vehicleId },
+        });
+      });
+    } else {
+      await prisma.$transaction(async (tx) => {
+        await tx.appSetting.deleteMany({ where: { key: SETTING_KEY } });
+        await emitActivity(tx, {
+          actorId: req.user!.id,
+          type: 'VEHICLE_UPDATED',
+          entityType: 'vehicle',
+          entityId: '-',
+          message: 'Destaque removido do painel',
+          metadata: { setting: SETTING_KEY, value: null },
+        });
+      });
+    }
 
-  res.json({ ok: true, vehicleId });
-});
+    // Bust caches so the dashboard reflects the change on next load.
+    cache.invalidate(CACHE_KEY);
+    cache.clearPrefix('dashboard:');
+
+    res.json({ ok: true, vehicleId });
+  }),
+);
 
 export default router;

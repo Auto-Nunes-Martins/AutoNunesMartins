@@ -1,6 +1,5 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { Moon, Palette, Settings as SettingsIcon, Sun, User as UserIcon } from 'lucide-svelte';
   import { UserProfile } from 'svelte-clerk';
@@ -126,15 +125,18 @@
               action="?/updateSetting"
               use:enhance={() => {
                 savingKey = setting.key;
-                return async ({ result }) => {
-                  savingKey = null;
-                  if (result.type === 'success') {
-                    toast.success('Definição actualizada.');
-                    await invalidateAll();
-                  } else if (result.type === 'failure') {
-                    toast.error(
-                      (result.data as { error?: string } | undefined)?.error ?? 'Falha.',
-                    );
+                return async ({ result, update }) => {
+                  try {
+                    if (result.type === 'success') {
+                      toast.success('Definição actualizada.');
+                    } else if (result.type === 'failure') {
+                      toast.error(
+                        (result.data as { error?: string } | undefined)?.error ?? 'Falha.',
+                      );
+                    }
+                    await update({ reset: false });
+                  } finally {
+                    savingKey = null;
                   }
                 };
               }}

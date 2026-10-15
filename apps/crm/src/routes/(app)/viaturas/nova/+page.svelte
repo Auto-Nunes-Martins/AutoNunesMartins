@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import VehicleForm from '$lib/components/vehicle/VehicleForm.svelte';
   import WebPublicationPanel from '$lib/components/vehicle/WebPublicationPanel.svelte';
-  import PhotoGallery from '$lib/components/vehicle/PhotoGallery.svelte';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
 </script>
@@ -28,9 +28,8 @@
       Viatura criada: {data.vehicle.brand}
       {data.vehicle.model}. Adicione fotografias e escolha se pretende publicá-la no website.
     </p>
-    <PhotoGallery vehicleId={data.vehicle.id} photos={data.signedPhotos} />
-    <WebPublicationPanel vehicle={data.vehicle} photos={data.signedPhotos} />
-    <a class="inline-flex min-h-11 items-center underline" href={`/viaturas/${data.vehicle.id}`}
+    <WebPublicationPanel managePhotos vehicle={data.vehicle} photos={data.signedPhotos} />
+    <a class="inline-flex min-h-11 items-center underline" href={crmPath(`/viaturas/${data.vehicle.id}`)}
       >Concluir e abrir ficha CRM →</a
     >
   {:else}

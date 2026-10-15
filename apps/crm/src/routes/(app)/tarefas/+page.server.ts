@@ -8,7 +8,9 @@ export const load: PageServerLoad = async (event) => {
   const scope: TaskListParams['scope'] =
     scopeRaw === 'mine' || scopeRaw === 'general' ? scopeRaw : 'all';
 
+  const attention = sp.get('attention');
   const params: TaskListParams = {
+    attention: attention === 'due' || attention === 'reminders' ? attention : undefined,
     priority: (sp.get('priority') as TaskListParams['priority']) ?? undefined,
     q: sp.get('q') ?? undefined,
     scope,

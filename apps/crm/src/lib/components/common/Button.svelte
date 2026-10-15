@@ -5,6 +5,7 @@
     variant?: 'primary' | 'outline' | 'ghost' | 'danger';
     size?: 'sm' | 'md' | 'lg';
     type?: 'button' | 'submit';
+    form?: string;
     href?: string;
     disabled?: boolean;
     loading?: boolean;
@@ -17,6 +18,7 @@
     variant = 'primary',
     size = 'md',
     type = 'button',
+    form,
     href,
     disabled,
     loading,
@@ -59,13 +61,16 @@
 {:else}
   <button
     {type}
+    {form}
     {disabled}
     onclick={(e) => onclick?.(e)}
     class="{baseClass} {variantClass[variant]} {sizeClass[size]} {className}"
     style="border-radius: var(--radius-btn);"
   >
     {#if loading}
-      <span class="inline-block h-3 w-3 rounded-full border-2 border-current border-r-transparent animate-spin"></span>
+      <span
+        class="inline-block h-3 w-3 rounded-full border-2 border-current border-r-transparent animate-spin"
+      ></span>
     {/if}
     {@render children?.()}
   </button>

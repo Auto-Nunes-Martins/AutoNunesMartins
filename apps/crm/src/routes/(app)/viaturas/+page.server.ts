@@ -1,23 +1,27 @@
 import type { PageServerLoad } from './$types';
-import { vehiclesApi, type VehicleListParams, type VehicleListResponse } from '$lib/server/vehicles';
+import {
+  vehiclesApi,
+  type VehicleListParams,
+  type VehicleListResponse,
+} from '$lib/server/vehicles';
 import type { Fuel, VehicleStatus } from '@anm/types';
 
 const FUELS: Fuel[] = ['GASOLINE', 'DIESEL', 'HYBRID', 'PLUGIN_HYBRID', 'ELECTRIC', 'LPG'];
 const STATUSES: VehicleStatus[] = [
+  'DRAFT',
   'AVAILABLE',
   'RESERVED',
   'SOLD',
   'DELIVERED',
   'DOCS_PENDING',
+  'RETURNED',
 ];
 
 function pickFuel(value: string | null): Fuel | undefined {
   return value && (FUELS as string[]).includes(value) ? (value as Fuel) : undefined;
 }
 function pickStatus(value: string | null): VehicleStatus | undefined {
-  return value && (STATUSES as string[]).includes(value)
-    ? (value as VehicleStatus)
-    : undefined;
+  return value && (STATUSES as string[]).includes(value) ? (value as VehicleStatus) : undefined;
 }
 
 export type VehicleListStream =
@@ -34,6 +38,7 @@ export type VehicleListStream =
 export const load: PageServerLoad = (event) => {
   const sp = event.url.searchParams;
   const params: VehicleListParams = {
+    agedStock: sp.get('agedStock') === 'true' || undefined,
     brand: sp.get('brand') ?? undefined,
     model: sp.get('model') ?? undefined,
     fuel: pickFuel(sp.get('fuel')),
@@ -70,24 +75,27 @@ export const load: PageServerLoad = (event) => {
   // pequeno é mais do que suficiente). Mostrados em secção destacada
   // entre os filtros e a tabela principal para o vendedor não esquecer
   // que tem viaturas por publicar.
-  const draftsPromise: Promise<VehicleListStream> = vehiclesApi
-    .list(event, {
-      status: 'DRAFT',
-      page: 1,
-      pageSize: 100,
-      sortBy: 'createdAt',
-      sortDir: 'desc',
-    })
-    .catch(
-      (err): VehicleListStream => ({
-        items: [],
-        total: 0,
-        page: 1,
-        pageSize: 100,
-        totalPages: 0,
-        _error: (err as Error).message,
-      }),
-    );
+  const draftsPromise: Promise<VehicleListStream> =
+    params.status || params.agedStock
+      ? Promise.resolve({ items: [], total: 0, page: 1, pageSize: 100, totalPages: 0 })
+      : vehiclesApi
+          .list(event, {
+            status: 'DRAFT',
+            page: 1,
+            pageSize: 100,
+            sortBy: 'createdAt',
+            sortDir: 'desc',
+          })
+          .catch(
+            (err): VehicleListStream => ({
+              items: [],
+              total: 0,
+              page: 1,
+              pageSize: 100,
+              totalPages: 0,
+              _error: (err as Error).message,
+            }),
+          );
 
   return {
     filters: params,

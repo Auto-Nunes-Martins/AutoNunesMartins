@@ -1,3 +1,4 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { prisma } from '../db.js';
 import { cache } from '../lib/data/cache.js';
@@ -32,31 +33,35 @@ interface VehicleStatsPayload {
 const CACHE_KEY = 'dashboard:vehicleStats';
 const TTL_MS = 60_000;
 
-router.get('/stats', requireUser, async (_req: AuthedRequest, res: Response) => {
-  const payload = await cache.wrap<VehicleStatsPayload>(CACHE_KEY, TTL_MS, async () => {
-    const groups = await prisma.vehicle.groupBy({
-      by: ['status'],
-      _count: { _all: true },
+router.get(
+  '/stats',
+  requireUser,
+  asyncHandler(async (_req: AuthedRequest, res: Response) => {
+    const payload = await cache.wrap<VehicleStatsPayload>(CACHE_KEY, TTL_MS, async () => {
+      const groups = await prisma.vehicle.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      });
+      const map = Object.fromEntries(groups.map((g) => [g.status, g._count._all]));
+      const available = map.AVAILABLE ?? 0;
+      const reserved = map.RESERVED ?? 0;
+      const docsPending = map.DOCS_PENDING ?? 0;
+      const sold = map.SOLD ?? 0;
+      const delivered = map.DELIVERED ?? 0;
+      return {
+        active: available + reserved + docsPending,
+        available,
+        reserved,
+        docsPending,
+        sold,
+        delivered,
+        total: available + reserved + docsPending + sold + delivered,
+      };
     });
-    const map = Object.fromEntries(groups.map((g) => [g.status, g._count._all]));
-    const available = map.AVAILABLE ?? 0;
-    const reserved = map.RESERVED ?? 0;
-    const docsPending = map.DOCS_PENDING ?? 0;
-    const sold = map.SOLD ?? 0;
-    const delivered = map.DELIVERED ?? 0;
-    return {
-      active: available + reserved + docsPending,
-      available,
-      reserved,
-      docsPending,
-      sold,
-      delivered,
-      total: available + reserved + docsPending + sold + delivered,
-    };
-  });
 
-  res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
-  res.json(payload);
-});
+    res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+    res.json(payload);
+  }),
+);
 
 export default router;

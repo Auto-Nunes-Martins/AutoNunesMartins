@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
-  import { toast } from 'svelte-sonner';
+  import { crmPath } from '$lib/paths';
   import {
     ArrowRightLeft,
     Calendar,
@@ -11,7 +10,6 @@
     Gauge,
     Pencil,
     Star,
-    StarOff,
     Tag,
   } from 'lucide-svelte';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
@@ -37,8 +35,6 @@
   const signedPhotos = $derived(data.signedPhotos);
   const isFeatured = $derived(data.isFeatured);
 
-  let featurePending = $state(false);
-
   const FUEL_LABELS: Record<string, string> = {
     GASOLINE: 'Gasolina',
     DIESEL: 'Gasóleo',
@@ -55,9 +51,7 @@
     { key: 'docs', label: 'Documentação' },
   ];
   const pendingCount = $derived(
-    docFlags.filter(
-      (f) => v.pendingDocFlags?.[f.key as keyof typeof v.pendingDocFlags],
-    ).length,
+    docFlags.filter((f) => v.pendingDocFlags?.[f.key as keyof typeof v.pendingDocFlags]).length,
   );
 </script>
 
@@ -80,7 +74,8 @@
           >
             <span
               class="bg-[var(--color-info)] text-white font-bold text-[9px] tracking-[0.12em] px-1.5 py-1"
-            >PT</span>
+              >PT</span
+            >
             <span class="px-2 py-1 tracking-[0.18em] text-[var(--color-text)]">
               {v.licensePlate}
             </span>
@@ -95,7 +90,7 @@
           <span
             class="inline-flex items-center gap-1 px-2 py-0.5 bg-[color-mix(in_oklab,#e6b800_15%,transparent)] border border-[color-mix(in_oklab,#e6b800_45%,transparent)] text-[#e6b800] font-mono text-[9.5px] uppercase tracking-[0.22em]"
             style="border-radius: var(--radius-btn);"
-            title="Esta viatura está em destaque no painel"
+            title="Esta viatura está nos destaques do site e da dashboard"
           >
             <Star class="h-2.5 w-2.5 fill-[#e6b800]" />
             Em destaque
@@ -116,74 +111,15 @@
     </div>
     <div class="flex flex-wrap items-center gap-2">
       {#if !v.sale && ['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(v.status)}
-        <Button variant="primary" href={`/viaturas/${v.id}/vender`}>
+        <Button variant="primary" href={crmPath(`/viaturas/${v.id}/vender`)}>
           <Check class="h-4 w-4" />
           Marcar como Vendida
         </Button>
       {/if}
-      <!-- Toggle the dashboard hero pin. Uses use:enhance so the request runs
-           in the background — no full page refresh. On success we await the
-           framework `update()` which refetches the load function so the badge
-           and button label flip automatically. -->
-      <form
-        method="POST"
-        action="?/toggleFeatured"
-        class="contents"
-        use:enhance={() => {
-          featurePending = true;
-          const wasFeatured = isFeatured;
-          return async ({ result, update }) => {
-            // IMPORTANT: keep `featurePending` true until AFTER `update()`
-            // resolves. The load function reruns inside update() and is what
-            // flips `isFeatured`. If we clear pending first, the button
-            // briefly renders the OLD label ("Marcar como destaque") before
-            // jumping to the new one ("Remover destaque") — a visible flicker.
-            try {
-              if (result.type === 'success' || result.type === 'redirect') {
-                await update({ reset: false });
-                toast.success(
-                  wasFeatured
-                    ? `${v.brand} ${v.model} removido do destaque.`
-                    : `${v.brand} ${v.model} agora em destaque no painel.`,
-                );
-              } else if (result.type === 'failure') {
-                const msg = (result.data as { error?: string } | undefined)?.error ?? 'Falha.';
-                toast.error(msg);
-              } else {
-                toast.error('Falha inesperada.');
-              }
-            } finally {
-              featurePending = false;
-            }
-          };
-        }}
+      <Button variant="outline" href={crmPath("/site/destaques")}
+        ><Star class="h-4 w-4" />Gerir destaques</Button
       >
-        <input type="hidden" name="current" value={isFeatured ? 'true' : 'false'} />
-        {#if isFeatured}
-          <button
-            type="submit"
-            disabled={featurePending}
-            class="inline-flex items-center gap-2 px-3 h-9 border border-[color-mix(in_oklab,#e6b800_45%,transparent)] text-[#e6b800] hover:bg-[color-mix(in_oklab,#e6b800_12%,transparent)] font-mono uppercase tracking-[0.12em] text-[11px] cursor-pointer transition-colors disabled:opacity-50"
-            style="border-radius: var(--radius-btn);"
-            title="Remover esta viatura como destaque no painel"
-          >
-            <StarOff class="h-4 w-4" />
-            {featurePending ? 'A remover…' : 'Remover destaque'}
-          </button>
-        {:else}
-          <button
-            type="submit"
-            disabled={featurePending}
-            class="inline-flex items-center gap-2 px-3 h-9 border border-[var(--color-border)] hover:border-[#e6b800] hover:text-[#e6b800] text-[var(--color-text)] font-mono uppercase tracking-[0.12em] text-[11px] cursor-pointer transition-colors disabled:opacity-50"
-            style="border-radius: var(--radius-btn);"
-            title="Mostrar esta viatura em destaque no painel"
-          >
-            <Star class="h-4 w-4" />
-            {featurePending ? 'A guardar…' : 'Marcar como destaque'}
-          </button>
-        {/if}
-      </form>
-      <Button variant="outline" href={`/viaturas/${v.id}/editar`}>
+      <Button variant="outline" href={crmPath(`/viaturas/${v.id}/editar`)}>
         <Pencil class="h-4 w-4" />
         Editar
       </Button>
@@ -198,7 +134,7 @@
   -->
   {#if v.status === 'DRAFT'}
     <a
-      href={`/viaturas/${v.id}/publicar`}
+      href={crmPath(`/viaturas/${v.id}/publicar`)}
       class="flex items-center gap-3 p-4 pl-5 border bg-[color-mix(in_oklab,#f97316_8%,transparent)] hover:bg-[color-mix(in_oklab,#f97316_14%,transparent)] transition-colors group"
       style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, #f97316 45%, transparent);"
     >
@@ -212,8 +148,11 @@
         <div class="font-display font-semibold text-[14px]" style="color: #f97316;">
           Esta viatura está em rascunho
         </div>
-        <div class="font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mt-0.5 normal-case tracking-normal">
-          Define o preço de venda e a descrição para a publicar. Enquanto estiver em rascunho não pode ser vendida nem aparece como disponível.
+        <div
+          class="font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mt-0.5 normal-case tracking-normal"
+        >
+          Define o preço de venda e a descrição para a publicar. Enquanto estiver em rascunho não
+          pode ser vendida nem aparece como disponível.
         </div>
       </div>
       <span
@@ -234,7 +173,7 @@
   {#if v.sourceTradeIn}
     {@const origin = v.sourceTradeIn}
     <a
-      href={`/vendas/${origin.sale.id}`}
+      href={crmPath(`/vendas/${origin.sale.id}`)}
       class="flex items-center gap-3 p-3 pl-4 border border-[color-mix(in_oklab,#f97316_30%,transparent)] bg-[color-mix(in_oklab,#f97316_6%,transparent)] hover:bg-[color-mix(in_oklab,#f97316_10%,transparent)] transition-colors group"
       style="border-radius: var(--radius-btn);"
     >
@@ -245,11 +184,20 @@
         <ArrowRightLeft class="h-4 w-4" style="color: #f97316;" />
       </span>
       <div class="flex-1 min-w-0 text-[13px]">
-        <span class="font-display font-semibold">Adquirido como retoma</span>
+        <span class="font-display font-semibold"
+          >{origin.sale.cancelledAt
+            ? origin.sale.cancellationDecision?.tradeInAction === 'KEEP'
+              ? 'Retoma mantida · aquisição independente'
+              : 'Retoma devolvida · histórico fora do stock'
+            : 'Adquirido como retoma'}</span
+        >
         <span class="text-[var(--color-text-muted)]">
-          · na venda de {origin.sale.vehicle.brand} {origin.sale.vehicle.model}
+          · na venda de {origin.sale.vehicle.brand}
+          {origin.sale.vehicle.model}
           ({origin.sale.vehicle.year}) a {origin.sale.customer.name} em
           {formatDate(origin.sale.saleDate)}
+          {#if origin.sale.cancelledAt}
+            · venda anulada{/if}
         </span>
       </div>
       <span
@@ -342,7 +290,7 @@
     <Panel>
       <PanelHeader icon={Tag} title="Venda registada" meta={v.sale.deliveryStatus.toUpperCase()}>
         {#snippet actions()}
-          <Button variant="outline" size="sm" href={`/vendas/${saleId}`}>Ver venda</Button>
+          <Button variant="outline" size="sm" href={crmPath(`/vendas/${saleId}`)}>Ver venda</Button>
         {/snippet}
       </PanelHeader>
       <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-5 text-[14px]">
@@ -353,7 +301,7 @@
             Cliente
           </div>
           <a
-            href={`/clientes/${v.sale.customer.id}`}
+            href={crmPath(`/clientes/${v.sale.customer.id}`)}
             class="font-display font-semibold hover:text-[var(--color-red)] transition-colors"
           >
             {v.sale.customer.name}

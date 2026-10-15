@@ -8,6 +8,7 @@ export function getSupabase(): SupabaseClient {
   const env = getEnv();
   cached = createClient(env.SUPABASE_URL, getSupabaseServerKey(), {
     auth: { persistSession: false },
+    global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(30_000) }) },
   });
   return cached;
 }

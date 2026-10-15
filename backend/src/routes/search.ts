@@ -1,3 +1,4 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
@@ -39,112 +40,121 @@ const SEARCH_TTL_MS = 60_000;
  * Postgres `contains, mode: 'insensitive'`. Returns up to `limit` hits per
  * group, sorted by most-recently-updated to surface fresh items first.
  */
-router.get('/', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = querySchema.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
-    return;
-  }
-  const { q, limit } = parsed.data;
-  const needle = q.trim();
-  if (needle.length === 0) {
-    res.json({ q, vehicles: [], customers: [], tasks: [], total: 0 } satisfies SearchPayload);
-    return;
-  }
+router.get(
+  '/',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
+      return;
+    }
+    const { q, limit } = parsed.data;
+    const needle = q.trim();
+    if (needle.length === 0) {
+      res.json({ q, vehicles: [], customers: [], tasks: [], total: 0 } satisfies SearchPayload);
+      return;
+    }
 
-  const cacheKey = `search:${needle.toLowerCase()}:${limit}`;
-  const payload = await cache.wrap<SearchPayload>(cacheKey, SEARCH_TTL_MS, async () => {
-    const [vehicles, customers, tasks] = await Promise.all([
-      prisma.vehicle.findMany({
-        where: {
-          OR: [
-            { brand: { contains: needle, mode: 'insensitive' } },
-            { model: { contains: needle, mode: 'insensitive' } },
-            { vin: { contains: needle, mode: 'insensitive' } },
-            // Match matrícula both as typed and in the canonical dashed
-            // form — see buildVehicleWhere() for the same trick.
-            { licensePlate: { contains: needle, mode: 'insensitive' } },
-            ...(needle.length >= 3 && needle.length <= 6 && /^[\w-]+$/.test(needle)
-              ? [
-                  {
-                    licensePlate: {
-                      contains: needle
-                        .replace(/[\s-]/g, '')
-                        .toUpperCase()
-                        .replace(/(.{2})/g, '$1-')
-                        .replace(/-$/, ''),
-                      mode: 'insensitive' as const,
+    const cacheKey = `search:${needle.toLowerCase()}:${limit}`;
+    const payload = await cache.wrap<SearchPayload>(cacheKey, SEARCH_TTL_MS, async () => {
+      const [vehicles, customers, tasks] = await Promise.all([
+        prisma.vehicle.findMany({
+          where: {
+            OR: [
+              { brand: { contains: needle, mode: 'insensitive' } },
+              { model: { contains: needle, mode: 'insensitive' } },
+              { vin: { contains: needle, mode: 'insensitive' } },
+              // Match matrícula both as typed and in the canonical dashed
+              // form — see buildVehicleWhere() for the same trick.
+              { licensePlate: { contains: needle, mode: 'insensitive' } },
+              ...(needle.length >= 3 && needle.length <= 6 && /^[\w-]+$/.test(needle)
+                ? [
+                    {
+                      licensePlate: {
+                        contains: needle
+                          .replace(/[\s-]/g, '')
+                          .toUpperCase()
+                          .replace(/(.{2})/g, '$1-')
+                          .replace(/-$/, ''),
+                        mode: 'insensitive' as const,
+                      },
                     },
-                  },
-                ]
-              : []),
-          ],
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: limit,
-        select: {
-          id: true, brand: true, model: true, year: true,
-          vin: true, licensePlate: true, status: true,
-        },
-      }),
-      prisma.customer.findMany({
-        where: {
-          OR: [
-            { name: { contains: needle, mode: 'insensitive' } },
-            { nif: { contains: needle } }, // NIF is digits-only — no case mode
-            { phone: { contains: needle } },
-            { email: { contains: needle, mode: 'insensitive' } },
-          ],
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: limit,
-        select: { id: true, name: true, nif: true, phone: true },
-      }),
-      prisma.task.findMany({
-        where: {
-          OR: [
-            { title: { contains: needle, mode: 'insensitive' } },
-            { description: { contains: needle, mode: 'insensitive' } },
-          ],
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: limit,
-        select: { id: true, title: true, status: true, priority: true },
-      }),
-    ]);
+                  ]
+                : []),
+            ],
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: limit,
+          select: {
+            id: true,
+            brand: true,
+            model: true,
+            year: true,
+            vin: true,
+            licensePlate: true,
+            status: true,
+          },
+        }),
+        prisma.customer.findMany({
+          where: {
+            OR: [
+              { name: { contains: needle, mode: 'insensitive' } },
+              { nif: { contains: needle } }, // NIF is digits-only — no case mode
+              { phone: { contains: needle } },
+              { email: { contains: needle, mode: 'insensitive' } },
+            ],
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: limit,
+          select: { id: true, name: true, nif: true, phone: true },
+        }),
+        prisma.task.findMany({
+          where: {
+            OR: [
+              { title: { contains: needle, mode: 'insensitive' } },
+              { description: { contains: needle, mode: 'insensitive' } },
+            ],
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: limit,
+          select: { id: true, title: true, status: true, priority: true },
+        }),
+      ]);
 
-    const vHits: SearchHit[] = vehicles.map((v) => ({
-      id: v.id,
-      primary: `${v.brand} ${v.model}`,
-      // Prefer matrícula when set — it's how staff refer to a car day-to-day.
-      // VIN stays as a secondary fact when no plate is registered yet.
-      secondary: `${v.year} · ${v.licensePlate ? `Matrícula ${v.licensePlate}` : `VIN ${v.vin}`} · ${v.status}`,
-      href: `/viaturas/${v.id}`,
-    }));
-    const cHits: SearchHit[] = customers.map((c) => ({
-      id: c.id,
-      primary: c.name,
-      secondary: `NIF ${c.nif} · ${c.phone}`,
-      href: `/clientes/${c.id}`,
-    }));
-    const tHits: SearchHit[] = tasks.map((t) => ({
-      id: t.id,
-      primary: t.title,
-      secondary: `${t.priority} · ${t.status.replace('_', ' ')}`,
-      href: `/tarefas/${t.id}/editar`,
-    }));
+      const vHits: SearchHit[] = vehicles.map((v) => ({
+        id: v.id,
+        primary: `${v.brand} ${v.model}`,
+        // Prefer matrícula when set — it's how staff refer to a car day-to-day.
+        // VIN stays as a secondary fact when no plate is registered yet.
+        secondary: `${v.year} · ${v.licensePlate ? `Matrícula ${v.licensePlate}` : `VIN ${v.vin}`} · ${v.status}`,
+        href: `/viaturas/${v.id}`,
+      }));
+      const cHits: SearchHit[] = customers.map((c) => ({
+        id: c.id,
+        primary: c.name,
+        secondary: `NIF ${c.nif} · ${c.phone}`,
+        href: `/clientes/${c.id}`,
+      }));
+      const tHits: SearchHit[] = tasks.map((t) => ({
+        id: t.id,
+        primary: t.title,
+        secondary: `${t.priority} · ${t.status.replace('_', ' ')}`,
+        href: `/tarefas/${t.id}/editar`,
+      }));
 
-    return {
-      q: needle,
-      vehicles: vHits,
-      customers: cHits,
-      tasks: tHits,
-      total: vHits.length + cHits.length + tHits.length,
-    };
-  });
+      return {
+        q: needle,
+        vehicles: vHits,
+        customers: cHits,
+        tasks: tHits,
+        total: vHits.length + cHits.length + tHits.length,
+      };
+    });
 
-  res.set('Cache-Control', 'private, max-age=4, stale-while-revalidate=10');
-  res.json(payload);
-});
+    res.set('Cache-Control', 'private, max-age=4, stale-while-revalidate=10');
+    res.json(payload);
+  }),
+);
 
 export default router;

@@ -6,6 +6,7 @@
 
   interface Props {
     filters: {
+      agedStock?: boolean;
       brand?: string;
       model?: string;
       fuel?: Fuel;
@@ -30,11 +31,13 @@
   ];
 
   const STATUSES: { value: VehicleStatus; label: string }[] = [
+    { value: 'DRAFT', label: 'Rascunho' },
     { value: 'AVAILABLE', label: 'Disponível' },
     { value: 'RESERVED', label: 'Reservado' },
     { value: 'SOLD', label: 'Vendido' },
     { value: 'DELIVERED', label: 'Entregue' },
     { value: 'DOCS_PENDING', label: 'Docs Pendentes' },
+    { value: 'RETURNED', label: 'Devolvidas (histórico)' },
   ];
 
   function setFilter(key: string, value: string | undefined) {
@@ -52,15 +55,16 @@
 
   const hasFilters = $derived(
     Boolean(
+      filters.agedStock ||
       filters.brand ||
-        filters.model ||
-        filters.fuel ||
-        filters.status ||
-        filters.yearMin ||
-        filters.yearMax ||
-        filters.mileageMin ||
-        filters.mileageMax ||
-        filters.q,
+      filters.model ||
+      filters.fuel ||
+      filters.status ||
+      filters.yearMin ||
+      filters.yearMax ||
+      filters.mileageMin ||
+      filters.mileageMax ||
+      filters.q,
     ),
   );
 
@@ -99,9 +103,21 @@
     {/if}
   </div>
 
+  {#if filters.agedStock}<div
+      class="flex flex-wrap items-center gap-2 text-[12px] text-[var(--color-text-muted)]"
+    >
+      <span>Filtro do dashboard: stock disponível acima do limite de antiguidade definido.</span
+      ><button
+        type="button"
+        class="text-[var(--color-red)] underline"
+        onclick={() => setFilter('agedStock', undefined)}>Retirar filtro</button
+      >
+    </div>{/if}
   <!-- Status chips -->
   <div class="flex flex-wrap items-center gap-2">
-    <span class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mr-1">
+    <span
+      class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mr-1"
+    >
       Estado
     </span>
     {#each STATUSES as s (s.value)}
@@ -120,7 +136,9 @@
 
   <!-- Fuel chips -->
   <div class="flex flex-wrap items-center gap-2">
-    <span class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mr-1">
+    <span
+      class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mr-1"
+    >
       Combustível
     </span>
     {#each FUELS as f (f.value)}
@@ -140,7 +158,9 @@
   <!-- Range filters -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
     <label class="flex flex-col gap-1">
-      <span class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]">
+      <span
+        class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
+      >
         Ano · Mín.
       </span>
       <input
@@ -154,7 +174,9 @@
       />
     </label>
     <label class="flex flex-col gap-1">
-      <span class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]">
+      <span
+        class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
+      >
         Ano · Máx.
       </span>
       <input
@@ -168,7 +190,9 @@
       />
     </label>
     <label class="flex flex-col gap-1">
-      <span class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]">
+      <span
+        class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
+      >
         Km · Mín.
       </span>
       <input
@@ -182,7 +206,9 @@
       />
     </label>
     <label class="flex flex-col gap-1">
-      <span class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]">
+      <span
+        class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
+      >
         Km · Máx.
       </span>
       <input

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath, crmRoute } from '$lib/paths';
   import { onMount, onDestroy, tick } from 'svelte';
   import { fade, fly, scale, slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -189,7 +190,7 @@
 
   // ─── Visibility rules ──────────────────────────────────────────────────────
   const hiddenOnRoute = $derived.by(() => {
-    const path = $page.url.pathname;
+    const path = crmRoute($page.url.pathname);
     return path === '/tarefas/nova' || /^\/tarefas\/[^/]+\/editar$/.test(path);
   });
   const hiddenForDrawer = $derived($mobileDrawer);
@@ -201,7 +202,7 @@
     loadError = null;
     try {
       const qs = new URLSearchParams({ status: 'TODO', scope: currentScope });
-      const res = await fetch(`/api/tasks?${qs.toString()}`, {
+      const res = await fetch(crmPath(`/api/tasks?${qs.toString()}`), {
         headers: { accept: 'application/json' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -230,7 +231,7 @@
   async function loadUsers() {
     if (usersLoaded) return;
     try {
-      const res = await fetch('/api/users', { headers: { accept: 'application/json' } });
+      const res = await fetch(crmPath('/api/users'), { headers: { accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { items: TaskAssignee[] };
       users = data.items ?? [];
@@ -338,7 +339,7 @@
       const dueISO = resolveDue(dueChoice, customDate);
       if (dueISO) body.dueDate = dueISO;
       if (assigneeChoice) body.assigneeId = assigneeChoice;
-      const res = await fetch('/api/tasks', {
+      const res = await fetch(crmPath('/api/tasks'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
@@ -368,7 +369,7 @@
     const previous = items;
     items = items.filter((t) => t.id !== task.id);
     try {
-      const res = await fetch(`/tarefas/${task.id}/status`, {
+      const res = await fetch(crmPath(`/tarefas/${task.id}/status`), {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ status: 'IN_PROGRESS' }),
@@ -659,12 +660,12 @@
 
       <footer class="qt-footer">
         {#if !isMobile}
-          <a href="/tarefas" onclick={close} class="qt-footer-link">
+          <a href={crmPath("/tarefas")} onclick={close} class="qt-footer-link">
             Ver todas
             <ChevronRight class="h-3 w-3" />
           </a>
         {/if}
-        <a href="/tarefas/nova" onclick={close} class="qt-footer-link qt-footer-secondary">
+        <a href={crmPath("/tarefas/nova")} onclick={close} class="qt-footer-link qt-footer-secondary">
           <Plus class="h-3 w-3" />
           Tarefa completa
         </a>

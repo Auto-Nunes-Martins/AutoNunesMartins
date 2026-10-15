@@ -24,8 +24,8 @@ export const load: PageServerLoad = async (event) => {
     // Whether THIS vehicle is the one currently pinned as Dashboard hero.
     let isFeatured = false;
     try {
-      const { vehicle: featured } = await dashboardApi.featuredVehicle(event);
-      isFeatured = featured?.id === vehicle.id;
+      const { items } = await dashboardApi.highlights(event);
+      isFeatured = items.some((item) => item.id === vehicle.id);
     } catch {
       // Non-blocking: if the featured lookup fails we just hide the badge.
       isFeatured = false;
@@ -41,22 +41,6 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
-  toggleFeatured: async (event) => {
-    // "current=true" → pin this vehicle. "current=false" → unpin (clear).
-    const fd = await event.request.formData();
-    const make = (fd.get('current') ?? '').toString() === 'false';
-    try {
-      await dashboardApi.setFeaturedVehicle(event, make ? event.params.id : null);
-      return { ok: true, featured: make };
-    } catch (err) {
-      if (err instanceof ApiError) {
-        return fail(err.status, {
-          error: (err.body as { error?: string } | null)?.error ?? 'Falha ao atualizar destaque.',
-        });
-      }
-      throw err;
-    }
-  },
   addExpense: async (event) => {
     const fd = await event.request.formData();
     const get = (k: string) => (fd.get(k) ?? '').toString();
@@ -124,8 +108,7 @@ export const actions: Actions = {
       if (err instanceof ApiError && err.status === 409) {
         return fail(409, {
           error:
-            (err.body as { message?: string } | null)?.message ??
-            'Esta viatura já está vendida.',
+            (err.body as { message?: string } | null)?.message ?? 'Esta viatura já está vendida.',
           soldConfirmRequired: true,
           expenseId,
         });
@@ -151,8 +134,7 @@ export const actions: Actions = {
       if (err instanceof ApiError && err.status === 409) {
         return fail(409, {
           error:
-            (err.body as { message?: string } | null)?.message ??
-            'Esta viatura já está vendida.',
+            (err.body as { message?: string } | null)?.message ?? 'Esta viatura já está vendida.',
           soldConfirmRequired: true,
         });
       }

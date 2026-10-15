@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import {
     Activity,
@@ -29,12 +29,15 @@
   import { formatDate, formatDateLong, formatEUR } from '$lib/utils/format';
   import type { IconComponent } from '$lib/types/ui';
   import type { PageData } from './$types';
+  import type { ActionData } from './$types';
+  import CancellationPanel from '$lib/components/sale/CancellationPanel.svelte';
 
   interface Props {
     data: PageData;
+    form?: ActionData;
   }
 
-  let { data }: Props = $props();
+  let { data, form }: Props = $props();
   const s = $derived(data.sale);
   const v = $derived(s.vehicle);
   const c = $derived(s.customer);
@@ -64,24 +67,30 @@
   // human-readable Portuguese label. Anything not in the map falls back to
   // a neutral icon.
   const STYLE_FOR_TYPE: Record<string, { icon: IconComponent; color: string; label: string }> = {
-    VEHICLE_ADDED:          { icon: Car,              color: '#22d3ee', label: 'Viatura adicionada' },
-    VEHICLE_UPDATED:        { icon: PencilLine,       color: '#5eead4', label: 'Viatura editada' },
-    VEHICLE_STATUS_CHANGED: { icon: ArrowRightLeft,   color: '#06b6d4', label: 'Estado de viatura' },
-    VEHICLE_DELETED:        { icon: Trash2,           color: 'var(--color-red)', label: 'Viatura eliminada' },
-    SALE_CREATED:           { icon: Receipt,          color: '#e6b800', label: 'Venda registada' },
-    SALE_UPDATED:           { icon: PencilLine,       color: '#f59e0b', label: 'Venda editada' },
-    TRADE_IN_RECEIVED:      { icon: ArrowRightLeft,   color: '#f97316', label: 'Retoma recebida' },
-    CUSTOMER_ADDED:         { icon: UserPlus,         color: '#a78bfa', label: 'Cliente adicionado' },
-    CUSTOMER_UPDATED:       { icon: UserCog,          color: '#c4b5fd', label: 'Cliente editado' },
-    TASK_CREATED:           { icon: ListPlus,         color: '#5c8def', label: 'Tarefa criada' },
-    TASK_STATUS_CHANGED:    { icon: ArrowRightLeft,   color: '#7dd3fc', label: 'Estado de tarefa' },
-    TASK_COMPLETED:         { icon: CheckCircle2,     color: 'var(--color-success)', label: 'Tarefa concluída' },
-    EXPENSE_ADDED:          { icon: Wallet,           color: '#e0a040', label: 'Despesa registada' },
-    EXPENSE_UPDATED:        { icon: CircleDollarSign, color: '#fbbf24', label: 'Despesa editada' },
+    VEHICLE_ADDED: { icon: Car, color: '#22d3ee', label: 'Viatura adicionada' },
+    VEHICLE_UPDATED: { icon: PencilLine, color: '#5eead4', label: 'Viatura editada' },
+    VEHICLE_STATUS_CHANGED: { icon: ArrowRightLeft, color: '#06b6d4', label: 'Estado de viatura' },
+    VEHICLE_DELETED: { icon: Trash2, color: 'var(--color-red)', label: 'Viatura eliminada' },
+    SALE_CREATED: { icon: Receipt, color: '#e6b800', label: 'Venda registada' },
+    SALE_UPDATED: { icon: PencilLine, color: '#f59e0b', label: 'Venda editada' },
+    TRADE_IN_RECEIVED: { icon: ArrowRightLeft, color: '#f97316', label: 'Retoma recebida' },
+    CUSTOMER_ADDED: { icon: UserPlus, color: '#a78bfa', label: 'Cliente adicionado' },
+    CUSTOMER_UPDATED: { icon: UserCog, color: '#c4b5fd', label: 'Cliente editado' },
+    TASK_CREATED: { icon: ListPlus, color: '#5c8def', label: 'Tarefa criada' },
+    TASK_STATUS_CHANGED: { icon: ArrowRightLeft, color: '#7dd3fc', label: 'Estado de tarefa' },
+    TASK_COMPLETED: {
+      icon: CheckCircle2,
+      color: 'var(--color-success)',
+      label: 'Tarefa concluída',
+    },
+    EXPENSE_ADDED: { icon: Wallet, color: '#e0a040', label: 'Despesa registada' },
+    EXPENSE_UPDATED: { icon: CircleDollarSign, color: '#fbbf24', label: 'Despesa editada' },
   };
 
   function styleFor(type: string): { icon: IconComponent; color: string; label: string } {
-    return STYLE_FOR_TYPE[type] ?? { icon: Activity, color: 'var(--color-text-muted)', label: type };
+    return (
+      STYLE_FOR_TYPE[type] ?? { icon: Activity, color: 'var(--color-text-muted)', label: type }
+    );
   }
 
   function relativeTime(iso: string): string {
@@ -119,7 +128,8 @@
   <div class="flex items-end justify-between gap-6">
     <div>
       <div class="mb-2 flex items-center gap-2">
-        <StatusBadge status={s.deliveryStatus} />
+        {#if s.cancelledAt}<span class="text-[var(--color-red)] font-semibold">Anulada</span
+          >{:else}<StatusBadge status={s.deliveryStatus} />{/if}
         <span
           class="font-mono text-[9.5px] uppercase tracking-[0.14em] px-2 py-0.5 border border-[var(--color-border)] text-[var(--color-text-muted)]"
           style="border-radius: 999px;"
@@ -144,11 +154,13 @@
       </p>
     </div>
     <div class="flex items-center gap-2">
-      <Button variant="outline" href={`/viaturas/${v.id}`}>Ver viatura</Button>
-      <Button variant="outline" href={`/clientes/${c.id}`}>Ver cliente</Button>
+      <Button variant="outline" href={crmPath(`/viaturas/${v.id}`)}>Ver viatura</Button>
+      <Button variant="outline" href={crmPath(`/viaturas/${v.id}/editar`)}>Editar viatura e preços</Button>
+      <Button variant="outline" href={crmPath(`/clientes/${c.id}`)}>Ver cliente</Button>
     </div>
   </div>
 
+  {#if s.cancelledAt}<CancellationPanel sale={s} />{/if}
   <!-- Profit summary. When a financing-referral commission was captured at
        sale time, it gets its own cell between IVA and Lucro Real so the
        breakdown clearly shows what's the vehicle margin and what's the
@@ -161,9 +173,7 @@
       title="Margem · IVA"
       meta={isComerciante ? 'SEM IVA — COMERCIANTE' : 'REGIME MARGEM 23/123'}
     />
-    <div
-      class="p-5 grid grid-cols-2 gap-4 {hasCommission ? 'md:grid-cols-5' : 'md:grid-cols-4'}"
-    >
+    <div class="p-5 grid grid-cols-2 gap-4 {hasCommission ? 'md:grid-cols-5' : 'md:grid-cols-4'}">
       <div>
         <div
           class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
@@ -239,7 +249,7 @@
     = total efetivo do par de negócios. Responde diretamente à pergunta
     "valeu a pena ter aceitado essa retoma?".
   -->
-  {#if v.sourceTradeIn}
+  {#if v.sourceTradeIn && !s.cancelledAt && !v.sourceTradeIn.sale.cancelledAt}
     {@const origin = v.sourceTradeIn}
     {@const originalProfit = Number(origin.sale.realProfit)}
     {@const thisProfit = Number(s.realProfit)}
@@ -253,7 +263,7 @@
       <div class="p-5 space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
           <a
-            href={`/vendas/${origin.sale.id}`}
+            href={crmPath(`/vendas/${origin.sale.id}`)}
             class="group block"
             title="Abrir a venda que originou esta retoma"
           >
@@ -261,7 +271,10 @@
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5 flex items-center gap-1.5"
             >
               Venda original
-              <span class="text-[#f97316] normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              <span
+                class="text-[#f97316] normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity"
+                >→</span
+              >
             </div>
             <div
               class="num-value text-[20px] {originalProfit < 0
@@ -273,7 +286,8 @@
             <div
               class="font-mono text-[10.5px] tracking-[0.04em] text-[var(--color-text-muted)] mt-0.5 truncate"
             >
-              {origin.sale.vehicle.brand} {origin.sale.vehicle.model} → {origin.sale.customer.name}
+              {origin.sale.vehicle.brand}
+              {origin.sale.vehicle.model} → {origin.sale.customer.name}
             </div>
           </a>
           <div>
@@ -358,7 +372,7 @@
       >
         {#snippet actions()}
           {#if t.disposition === 'STOCK' && t.resultingVehicleId}
-            <Button variant="outline" size="sm" href={`/viaturas/${t.resultingVehicleId}`}>
+            <Button variant="outline" size="sm" href={crmPath(`/viaturas/${t.resultingVehicleId}`)}>
               Ver viatura no stock
             </Button>
           {/if}
@@ -373,7 +387,8 @@
               Marca / Modelo
             </div>
             <div class="font-display font-semibold">
-              {t.brand} {t.model}
+              {t.brand}
+              {t.model}
             </div>
             <div
               class="font-mono text-[10.5px] tracking-[0.04em] text-[var(--color-text-muted)] mt-0.5"
@@ -417,7 +432,9 @@
             <div
               class="font-mono text-[10.5px] tracking-[0.04em] text-[var(--color-text-muted)] mt-0.5"
             >
-              {#if t.disposition === 'STOCK'}
+              {#if s.cancelledAt}
+                Valor histórico atribuído à retoma nesta venda.
+              {:else if t.disposition === 'STOCK'}
                 Preço de compra da viatura no stock.
               {:else}
                 Custo da aquisição (não afeta esta venda).
@@ -432,7 +449,9 @@
             >
               Notas
             </div>
-            <div class="text-[13px] leading-relaxed text-[var(--color-text-muted)] whitespace-pre-wrap">
+            <div
+              class="text-[13px] leading-relaxed text-[var(--color-text-muted)] whitespace-pre-wrap"
+            >
               {t.notes}
             </div>
           </div>
@@ -442,66 +461,72 @@
   {/if}
 
   <!-- Delivery management -->
-  <Panel>
-    <PanelHeader icon={Calendar} title="Entrega" />
-    <form
-      method="POST"
-      action="?/delivery"
-      use:enhance={() => {
-        updatingDelivery = true;
-        return async ({ result }) => {
-          updatingDelivery = false;
-          if (result.type === 'success') {
-            toast.success('Entrega actualizada.');
-            await invalidateAll();
-          } else if (result.type === 'failure') {
-            toast.error(
-              (result.data as { error?: string } | undefined)?.error ?? 'Falha.',
-            );
-          }
-        };
-      }}
-      class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-end"
-    >
-      <label class="flex flex-col">
-        <span
-          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
-        >
-          Estado
-        </span>
-        <select
-          name="deliveryStatus"
-          value={s.deliveryStatus}
-          class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)]"
-          style="border-radius: var(--radius-btn);"
-        >
-          <option value="PENDING">Pendente</option>
-          <option value="SCHEDULED">Agendada</option>
-          <option value="DELIVERED">Entregue</option>
-        </select>
-      </label>
-      <label class="flex flex-col">
-        <span
-          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
-        >
-          Data de entrega
-        </span>
-        <input
-          name="deliveryDate"
-          type="date"
-          value={s.deliveryDate ? s.deliveryDate.slice(0, 10) : ''}
-          class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)]"
-          style="border-radius: var(--radius-btn);"
-        />
-      </label>
-      <div class="flex justify-end">
-        <Button variant="primary" type="submit" loading={updatingDelivery}>
-          Actualizar entrega
-        </Button>
-      </div>
-    </form>
-  </Panel>
-
+  {#if !s.cancelledAt}<CancellationPanel
+      sale={s}
+      form={form && 'cancellation' in form ? form : null}
+    />{/if}
+  {#if !s.cancelledAt}
+    <Panel>
+      <PanelHeader icon={Calendar} title="Entrega" />
+      <form
+        method="POST"
+        action="?/delivery"
+        use:enhance={() => {
+          updatingDelivery = true;
+          return async ({ result, update }) => {
+            try {
+              if (result.type === 'success') {
+                toast.success('Entrega actualizada.');
+              } else if (result.type === 'failure') {
+                toast.error((result.data as { error?: string } | undefined)?.error ?? 'Falha.');
+              }
+              await update({ reset: false });
+            } finally {
+              updatingDelivery = false;
+            }
+          };
+        }}
+        class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-end"
+      >
+        <label class="flex flex-col">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
+          >
+            Estado
+          </span>
+          <select
+            name="deliveryStatus"
+            value={s.deliveryStatus}
+            class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)]"
+            style="border-radius: var(--radius-btn);"
+          >
+            <option value="PENDING">Pendente</option>
+            <option value="SCHEDULED">Agendada</option>
+            <option value="DELIVERED">Entregue</option>
+          </select>
+        </label>
+        <label class="flex flex-col">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
+          >
+            Data de entrega
+          </span>
+          <input
+            name="deliveryDate"
+            type="date"
+            value={s.deliveryDate ? s.deliveryDate.slice(0, 10) : ''}
+            class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)]"
+            style="border-radius: var(--radius-btn);"
+          />
+        </label>
+        <div class="flex justify-end">
+          <Button variant="primary" type="submit" loading={updatingDelivery}>
+            Actualizar entrega
+          </Button>
+        </div>
+      </form>
+    </Panel>
+  {/if}
   <!--
     Timeline / Histórico do negócio
     Cronologia da venda + da viatura ligada. Carrega via stream para não
@@ -566,7 +591,7 @@
               {@const tradeInId = isTradeIn ? (t!.licensePlate ?? t!.vin) : null}
               {@const tradeInHref =
                 isTradeIn && t!.disposition === 'STOCK' && t!.resultingVehicleId
-                  ? `/viaturas/${t!.resultingVehicleId}`
+                  ? crmPath(`/viaturas/${t!.resultingVehicleId}`)
                   : null}
               <li
                 class="grid items-center gap-3 md:gap-4 px-5 py-3 grid-cols-[36px_1.5px_1fr_auto] md:grid-cols-[36px_1.5px_1fr_auto_auto] {tradeInHref
@@ -579,9 +604,7 @@
                 >
                   <Icon class="h-4 w-4" style="color: {style.color};" />
                 </span>
-                <span
-                  class="block h-7 w-[1.5px]"
-                  style="background: {style.color}; opacity: 0.55;"
+                <span class="block h-7 w-[1.5px]" style="background: {style.color}; opacity: 0.55;"
                 ></span>
                 <div class="min-w-0">
                   {#if tradeInHref}

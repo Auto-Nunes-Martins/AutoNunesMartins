@@ -1,19 +1,18 @@
 import type { NextFunction, Request, Response } from 'express';
-import {
-  clerkMiddleware as baseClerkMiddleware,
-  createClerkClient,
-  getAuth,
-} from '@clerk/express';
+import { clerkMiddleware as baseClerkMiddleware, createClerkClient, getAuth } from '@clerk/express';
 import { prisma } from '../db.js';
 import { getEnv } from '../env.js';
 import { logger } from '../logger.js';
+import { asyncHandler } from './asyncHandler.js';
 
 const env = getEnv();
 
-export const clerkMiddleware = baseClerkMiddleware({
-  publishableKey: env.CLERK_PUBLISHABLE_KEY,
-  secretKey: env.CLERK_SECRET_KEY,
-});
+export const clerkMiddleware = asyncHandler(
+  baseClerkMiddleware({
+    publishableKey: env.CLERK_PUBLISHABLE_KEY,
+    secretKey: env.CLERK_SECRET_KEY,
+  }),
+);
 
 const clerkClient = createClerkClient({
   secretKey: env.CLERK_SECRET_KEY,
@@ -54,65 +53,72 @@ function pickName(u: ClerkUserShape, fallbackEmail: string): string {
  * Called on every authenticated request — cheap because it's a single indexed lookup
  * (clerkId is UNIQUE) and we only hit the Clerk API when provisioning a brand-new user.
  */
-export async function requireUser(req: AuthedRequest, res: Response, next: NextFunction): Promise<void> {
-  const auth = getAuth(req);
-  if (!auth?.userId) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-
-  let user = await prisma.user.findUnique({ where: { clerkId: auth.userId } });
-
-  if (!user) {
-    try {
-      const clerkUser = (await clerkClient.users.getUser(auth.userId)) as ClerkUserShape;
-      const email = pickEmail(clerkUser);
-      if (!email) {
-        logger.warn({ clerkId: auth.userId }, 'Cannot provision user: no email on Clerk profile');
-        res.status(403).json({ error: 'No email on Clerk profile.' });
-        return;
-      }
-      const name = pickName(clerkUser, email);
-      const imageUrl = clerkUser.hasImage ? (clerkUser.imageUrl ?? null) : null;
-
-      // Upsert in case a concurrent request raced us, or the webhook already fired.
-      user = await prisma.user.upsert({
-        where: { clerkId: auth.userId },
-        update: {},
-        create: { clerkId: auth.userId, email, name, imageUrl, role: 'ADMIN' },
-      });
-      logger.info({ clerkId: auth.userId, userId: user.id }, 'User auto-provisioned from Clerk');
-    } catch (err) {
-      logger.error({ err, clerkId: auth.userId }, 'Failed to auto-provision user');
-      res.status(500).json({ error: 'Failed to provision user.' });
+export const requireUser = asyncHandler(
+  async (req: AuthedRequest, res: Response, next: NextFunction): Promise<void> => {
+    const auth = getAuth(req);
+    if (!auth?.userId) {
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
-  } else if (user.imageUrl === null) {
-    // Backfill imageUrl for users provisioned before this column existed,
-    // or who hadn't uploaded a picture at provisioning time. Fire-and-forget
-    // so it never blocks the request. The webhook will keep it fresh once
-    // populated.
-    void (async () => {
-      try {
-        const clerkUser = (await clerkClient.users.getUser(auth.userId!)) as ClerkUserShape;
-        if (clerkUser.hasImage && clerkUser.imageUrl) {
-          await prisma.user.update({
-            where: { clerkId: auth.userId! },
-            data: { imageUrl: clerkUser.imageUrl },
-          });
-        }
-      } catch (err) {
-        logger.debug({ err, clerkId: auth.userId }, 'imageUrl backfill skipped');
-      }
-    })();
-  }
 
-  req.user = {
-    id: user.id,
-    clerkId: user.clerkId,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-  };
-  next();
-}
+    const allowed = env.ADMIN_CLERK_USER_IDS?.split(',').map(id => id.trim()).filter(Boolean);
+    if (allowed?.length && !allowed.includes(auth.userId)) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    let user = await prisma.user.findUnique({ where: { clerkId: auth.userId } });
+
+    if (!user) {
+      try {
+        const clerkUser = (await clerkClient.users.getUser(auth.userId)) as ClerkUserShape;
+        const email = pickEmail(clerkUser);
+        if (!email) {
+          logger.warn({ clerkId: auth.userId }, 'Cannot provision user: no email on Clerk profile');
+          res.status(403).json({ error: 'No email on Clerk profile.' });
+          return;
+        }
+        const name = pickName(clerkUser, email);
+        const imageUrl = clerkUser.hasImage ? (clerkUser.imageUrl ?? null) : null;
+
+        // Upsert in case a concurrent request raced us, or the webhook already fired.
+        user = await prisma.user.upsert({
+          where: { clerkId: auth.userId },
+          update: {},
+          create: { clerkId: auth.userId, email, name, imageUrl, role: 'ADMIN' },
+        });
+        logger.info({ clerkId: auth.userId, userId: user.id }, 'User auto-provisioned from Clerk');
+      } catch (err) {
+        next(err);
+        return;
+      }
+    } else if (user.imageUrl === null) {
+      // Backfill imageUrl for users provisioned before this column existed,
+      // or who hadn't uploaded a picture at provisioning time. Fire-and-forget
+      // so it never blocks the request. The webhook will keep it fresh once
+      // populated.
+      void (async () => {
+        try {
+          const clerkUser = (await clerkClient.users.getUser(auth.userId!)) as ClerkUserShape;
+          if (clerkUser.hasImage && clerkUser.imageUrl) {
+            await prisma.user.update({
+              where: { clerkId: auth.userId! },
+              data: { imageUrl: clerkUser.imageUrl },
+            });
+          }
+        } catch (err) {
+          logger.debug({ err, clerkId: auth.userId }, 'imageUrl backfill skipped');
+        }
+      })();
+    }
+
+    req.user = {
+      id: user.id,
+      clerkId: user.clerkId,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+    next();
+  },
+);

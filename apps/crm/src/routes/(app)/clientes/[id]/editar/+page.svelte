@@ -54,14 +54,16 @@
                 return;
               }
               deleting = true;
-              return async ({ result }) => {
-                deleting = false;
-                if (result.type === 'redirect') {
-                  toast.success('Cliente eliminado.');
-                } else if (result.type === 'failure') {
-                  toast.error(
-                    (result.data as { error?: string } | undefined)?.error ?? 'Falha.',
-                  );
+              return async ({ result, update }) => {
+                try {
+                  if (result.type === 'redirect') {
+                    toast.success('Cliente eliminado.');
+                  } else if (result.type === 'failure') {
+                    toast.error((result.data as { error?: string } | undefined)?.error ?? 'Falha.');
+                  }
+                  await update({ reset: false });
+                } finally {
+                  deleting = false;
                 }
               };
             }}

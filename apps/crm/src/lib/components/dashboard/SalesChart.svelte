@@ -1,221 +1,369 @@
 <script lang="ts">
-  import { BarChart3 } from 'lucide-svelte';
+  import { ChartNoAxesCombined } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import { formatEUR, formatInt } from '$lib/utils/format';
   import type { SalesChartData } from '$lib/server/dashboard';
+  import { salesChartGeometry } from './salesChartGeometry';
 
-  interface Props {
-    data: SalesChartData;
+  let { data }: { data: SalesChartData } = $props();
+  const chart = $derived(salesChartGeometry(data.sold));
+  const gradientId = $props.id();
+  let selected = $state<number | null>(null);
+  let hovered = $state<number | null>(null);
+  const activeIndex = $derived(
+    hovered !== null && hovered < data.sold.length
+      ? hovered
+      : selected !== null && selected < data.sold.length
+        ? selected
+        : data.sold.length - 1,
+  );
+  const activeMonth = $derived(data.months[activeIndex] ?? `Mês ${activeIndex + 1}`);
+
+  function moveSelection(event: KeyboardEvent, index: number) {
+    let next = index;
+    if (event.key === 'ArrowRight') next = Math.min(data.sold.length - 1, index + 1);
+    else if (event.key === 'ArrowLeft') next = Math.max(0, index - 1);
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = data.sold.length - 1;
+    else return;
+    event.preventDefault();
+    selected = next;
+    const container = (event.currentTarget as HTMLButtonElement).parentElement;
+    container?.querySelectorAll('button')[next]?.focus();
   }
-
-  let { data }: Props = $props();
-
-  // Chart geometry. Wide viewBox so labels stay small on wide monitors,
-  // shorter height than before (300 → 220) so the panel no longer
-  // overshadows neighbouring cards on the dashboard. PAD_T still reserves
-  // room for the current-month callout badge above the data line.
-  const W = 900;
-  const H = 220;
-  const PAD_L = 50;
-  const PAD_R = 44;
-  const PAD_T = 38;
-  const PAD_B = 30;
-  const innerW = W - PAD_L - PAD_R;
-  const innerH = H - PAD_T - PAD_B;
-
-  const path = $derived.by(() => {
-    const sold = data.sold;
-    const n = sold.length;
-    if (n === 0) return { line: '', area: '', points: [] as { x: number; y: number }[] };
-
-    const max = Math.max(1, ...sold);
-    const stepX = innerW / Math.max(n - 1, 1);
-
-    const points = sold.map((v, i) => ({
-      x: PAD_L + i * stepX,
-      y: PAD_T + innerH - (v / max) * innerH,
-    }));
-
-    const line = points
-      .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`)
-      .join(' ');
-    const area = `${line} L${points[points.length - 1]?.x.toFixed(2)},${(PAD_T + innerH).toFixed(2)} L${PAD_L.toFixed(2)},${(PAD_T + innerH).toFixed(2)} Z`;
-
-    return { line, area, points };
-  });
-
-  const yMax = $derived(Math.max(1, ...data.sold));
-
-  const yTicks = $derived.by(() => {
-    const max = yMax;
-    const step = Math.ceil(max / 4) || 1;
-    return [step * 4, step * 3, step * 2, step, 0];
-  });
-
-  // current month index = last in the series
-  const currentIdx = $derived(data.sold.length - 1);
-  const currentPoint = $derived(path.points[currentIdx]);
-  const currentSold = $derived(data.sold[currentIdx] ?? 0);
 </script>
 
 <Panel>
-  <PanelHeader icon={BarChart3} title="Vendas Mensais" meta="ÚLTIMOS 12 MESES" />
+  <PanelHeader
+    variant="dashboard"
+    icon={ChartNoAxesCombined}
+    iconClass="text-[var(--color-red)]"
+    title="Vendas Mensais"
+    meta="ÚLTIMOS 12 MESES"
+  />
 
-  <!--
-    `.chart-totals` from the prototype: a flex row with 28px gap, NUMBER
-    ABOVE LABEL (not below). Mono uppercase faint label under each value.
-    Reduced top/bottom padding to keep the panel compact.
-  -->
-  <div class="px-5 pt-4 pb-1 flex flex-wrap items-start" style="gap: 28px;">
+  <dl class="totals">
     <div>
-      <div class="num-value text-[22px] leading-none">{formatInt(data.ytdSold)}</div>
-      <div
-        class="mt-1.5 font-mono font-normal text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)]"
-      >
-        Vendidos YTD
-      </div>
+      <dt>Vendidos · ano atual</dt>
+      <dd>{formatInt(data.ytdSold)} <span>un.</span></dd>
     </div>
     <div>
-      <div class="num-value text-[22px] leading-none">{formatEUR(data.ytdRevenue)}</div>
-      <div
-        class="mt-1.5 font-mono font-normal text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)]"
-      >
-        Faturação YTD
-      </div>
+      <dt>Faturação · ano atual</dt>
+      <dd>{formatEUR(data.ytdRevenue)}</dd>
     </div>
     <div>
-      <div class="num-value text-[22px] leading-none">
-        {data.ytdAvgMarginPct !== null ? `${data.ytdAvgMarginPct.toFixed(1)}%` : '—'}
+      <dt>Margem média · ano atual</dt>
+      <dd>{data.ytdAvgMarginPct !== null ? `${data.ytdAvgMarginPct.toFixed(1)}%` : '—'}</dd>
+    </div>
+  </dl>
+
+  {#if data.sold.length === 0}
+    <p class="empty">Sem vendas mensais disponíveis</p>
+  {:else}
+    <div class="chart-body">
+      <div class="chart-caption">
+        <span class="legend"><span aria-hidden="true"></span>Viaturas vendidas</span>
+        <span class="selection" aria-live="polite" aria-atomic="true">
+          <span>{activeMonth}</span>
+          <strong>{formatInt(data.sold[activeIndex] ?? 0)} un.</strong>
+          <span class="revenue"
+            >{data.revenue[activeIndex] !== undefined
+              ? formatEUR(String(data.revenue[activeIndex]))
+              : ''}</span
+          >
+        </span>
       </div>
       <div
-        class="mt-1.5 font-mono font-normal text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)]"
+        class="chart-scroll"
+        aria-label="Vendas por mês. Selecione um mês para consultar o total e a faturação."
       >
-        Margem Média
-      </div>
-    </div>
-  </div>
-
-  <!-- Tighter padding than the default panel so the chart panel doesn't
-       overshadow neighbouring cards. -->
-  <div class="px-5 pt-2 pb-4">
-    <svg
-      viewBox="0 0 {W} {H}"
-      class="w-full h-auto"
-      preserveAspectRatio="xMidYMid meet"
-      aria-label="Vendas mensais"
-    >
-      <!-- Gradient fill -->
-      <defs>
-        <linearGradient id="sales-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="var(--color-red)" stop-opacity="0.4" />
-          <stop offset="100%" stop-color="var(--color-red)" stop-opacity="0" />
-        </linearGradient>
-      </defs>
-
-      <!-- Y grid lines + labels -->
-      {#each yTicks as v, i (i)}
-        {@const y = PAD_T + (innerH * i) / 4}
-        <line
-          x1={PAD_L}
-          y1={y}
-          x2={W - PAD_R}
-          y2={y}
-          stroke="var(--color-border)"
-          stroke-width="1"
-          stroke-dasharray={i === 4 ? '0' : '2,3'}
-        />
-        <text
-          x={PAD_L - 8}
-          y={y + 4}
-          text-anchor="end"
-          font-family="JetBrains Mono, monospace"
-          font-size="10"
-          fill="var(--color-text-faint)"
-          class="tabular-nums"
-        >
-          {v}
-        </text>
-      {/each}
-
-      <!-- Area under curve -->
-      {#if path.area}
-        <path d={path.area} fill="url(#sales-fill)" />
-      {/if}
-
-      <!-- Line -->
-      {#if path.line}
-        <path
-          d={path.line}
-          fill="none"
-          stroke="var(--color-red)"
-          stroke-width="2.2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      {/if}
-
-      <!-- Month labels (X axis) -->
-      {#each data.months as month, i (i)}
-        {@const x = PAD_L + (innerW / Math.max(data.sold.length - 1, 1)) * i}
-        <text
-          x={x}
-          y={H - 12}
-          text-anchor="middle"
-          font-family="JetBrains Mono, monospace"
-          font-size="10"
-          fill="var(--color-text-faint)"
-          style="letter-spacing: 0.12em; text-transform: uppercase;"
-        >
-          {month}
-        </text>
-      {/each}
-
-      <!-- Current month dot + callout -->
-      {#if currentPoint}
-        <rect
-          x={currentPoint.x - 5}
-          y={currentPoint.y - 5}
-          width="10"
-          height="10"
-          fill="var(--color-red)"
-          stroke="white"
-          stroke-width="2"
-        />
-        {#if currentSold > 0}
-          {@const calloutW = 92}
-          {@const calloutH = 24}
-          {@const calloutGap = 14}
-          {@const wantedY = currentPoint.y - calloutH - calloutGap}
-          {@const calloutY = wantedY >= 4 ? wantedY : currentPoint.y + calloutGap}
-          {@const calloutX = Math.max(
-            PAD_L,
-            Math.min(W - PAD_R - calloutW, currentPoint.x - calloutW / 2),
-          )}
-          <g>
-            <rect
-              x={calloutX}
-              y={calloutY}
-              width={calloutW}
-              height={calloutH}
-              fill="var(--color-red)"
-              rx="3"
+        <div class="plot" style={`--months: ${data.sold.length};`}>
+          <div class="axis" aria-hidden="true">
+            {#each chart.ticks as tick (tick)}<span>{tick}</span>{/each}
+          </div>
+          <svg
+            class="data-layer"
+            viewBox="0 0 1000 176"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--color-red)" stop-opacity="0.34" />
+                <stop offset="100%" stop-color="var(--color-red)" stop-opacity="0.015" />
+              </linearGradient>
+            </defs>
+            {#each chart.ticks as tick, i (tick)}
+              <line
+                x1="0"
+                x2="1000"
+                y1={i * 44}
+                y2={i * 44}
+                stroke="var(--color-border)"
+                stroke-dasharray={i === 4 ? undefined : '3 5'}
+                vector-effect="non-scaling-stroke"
+              />
+            {/each}
+            {#if chart.area}<path d={chart.area} fill={`url(#${gradientId})`} />{/if}
+            <path
+              d={chart.line}
+              fill="none"
+              stroke="var(--color-red)"
+              stroke-width="2.5"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+              vector-effect="non-scaling-stroke"
             />
-            <text
-              x={calloutX + calloutW / 2}
-              y={calloutY + 16}
-              text-anchor="middle"
-              font-family="JetBrains Mono, monospace"
-              font-size="11"
-              fill="white"
-              class="tabular-nums"
-              style="letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600;"
-            >
-              {currentSold} {currentSold === 1 ? 'carro' : 'carros'}
-            </text>
-          </g>
-        {/if}
+          </svg>
+          <div class="months" role="group" aria-label="Vendas mensais">
+            {#each chart.points as point, i (i)}
+              {@const month = data.months[i] ?? `Mês ${i + 1}`}
+              <button
+                type="button"
+                class="month"
+                class:active={i === activeIndex}
+                aria-pressed={i === (selected ?? data.sold.length - 1)}
+                aria-label={`${month}: ${point.value} ${point.value === 1 ? 'viatura vendida' : 'viaturas vendidas'}${data.revenue[i] !== undefined ? `; faturação ${formatEUR(String(data.revenue[i]))}` : ''}`}
+                title={`${month}: ${point.value} ${point.value === 1 ? 'venda' : 'vendas'}`}
+                onclick={() => {
+                  selected = i;
+                  hovered = null;
+                }}
+                onfocus={() => {
+                  selected = i;
+                  hovered = null;
+                }}
+                onpointerenter={(event) => {
+                  if (event.pointerType === 'mouse') hovered = i;
+                }}
+                onpointerleave={() => (hovered = null)}
+                onkeydown={(event) => moveSelection(event, i)}
+              >
+                <span class="point-track" aria-hidden="true">
+                  {#if i === activeIndex}<span class="crosshair"></span>{/if}
+                  <span class="point" style={`top: ${100 - point.percent}%;`}></span>
+                </span>
+                <span class="month-label" aria-hidden="true">{month}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+      {#if data.sold.every((value) => value === 0)}
+        <p class="zero-note">Sem vendas registadas neste período.</p>
       {/if}
-    </svg>
-  </div>
+    </div>
+  {/if}
 </Panel>
+
+<style>
+  .totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 36px;
+    margin: 0;
+    padding: 20px;
+  }
+  dt {
+    color: var(--color-text-faint);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  dd {
+    margin: 7px 0 0;
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .totals > div:first-child dd {
+    color: var(--color-red);
+  }
+  dd span {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--color-text-faint);
+    letter-spacing: 0;
+  }
+  .chart-body {
+    padding: 0 20px 20px;
+  }
+  .chart-caption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 16px;
+    min-height: 36px;
+    margin-bottom: 16px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--color-text-muted);
+  }
+  .legend,
+  .selection {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .legend > span {
+    width: 16px;
+    height: 2px;
+    background: var(--color-red);
+  }
+  .selection {
+    padding: 8px 10px;
+    color: #fff;
+    background: var(--color-red);
+    border-radius: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .selection > span:first-child {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .selection strong {
+    color: #fff;
+    font-weight: 600;
+  }
+  .revenue {
+    border-left: 1px solid rgba(255, 255, 255, 0.35);
+    padding-left: 8px;
+  }
+  .chart-scroll {
+    overflow-x: auto;
+    padding: 6px 3px 3px;
+    margin: -6px -3px -3px;
+  }
+  .plot {
+    position: relative;
+    height: 194px;
+    min-width: calc(var(--months) * 34px + 32px);
+  }
+  .axis {
+    position: absolute;
+    width: 21px;
+    top: 8px;
+    bottom: 26px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-align: right;
+  }
+  .axis span {
+    line-height: 0;
+  }
+  .data-layer {
+    position: absolute;
+    left: 32px;
+    top: 8px;
+    width: calc(100% - 32px);
+    height: calc(100% - 34px);
+    overflow: visible;
+  }
+  .months {
+    position: absolute;
+    inset: 0 0 0 32px;
+    display: grid;
+    grid-template-columns: repeat(var(--months), minmax(0, 1fr));
+  }
+  .month {
+    position: relative;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 2px;
+    color: var(--color-text-muted);
+  }
+  .month:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 1px;
+  }
+  .point-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 8px;
+    bottom: 26px;
+  }
+  .point {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background: var(--color-bg-1);
+    border: 1.5px solid var(--color-red);
+    border-radius: 50%;
+  }
+  .month.active .point {
+    width: 10px;
+    height: 10px;
+    background: var(--color-red);
+    border: 2px solid var(--color-bg-1);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-red) 25%, transparent);
+  }
+  .crosshair {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    border-left: 1px dashed color-mix(in oklab, var(--color-red) 35%, transparent);
+  }
+  .month-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 18px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .month.active .month-label {
+    color: var(--color-red);
+    font-weight: 600;
+  }
+  .empty {
+    margin: 0;
+    padding: 50px 20px;
+    text-align: center;
+    color: var(--color-text-faint);
+    font-size: 12px;
+  }
+  .zero-note {
+    margin: 14px 0 0;
+    color: var(--color-text-muted);
+    font-size: 11px;
+  }
+  @media (max-width: 640px) {
+    .totals {
+      gap: 16px 24px;
+    }
+    dd {
+      font-size: 21px;
+    }
+    .plot {
+      height: 182px;
+    }
+    .chart-caption {
+      margin-bottom: 16px;
+    }
+  }
+</style>

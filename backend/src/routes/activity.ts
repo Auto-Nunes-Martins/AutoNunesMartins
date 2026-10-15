@@ -1,3 +1,4 @@
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
@@ -82,7 +83,12 @@ interface ListPayload {
 
 function parseTypes(raw: string | undefined): string[] | undefined {
   if (!raw) return undefined;
-  const set = new Set(raw.split(',').map((t) => t.trim()).filter(Boolean));
+  const set = new Set(
+    raw
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean),
+  );
   // Only accept known ActivityType keys; ignore unknowns rather than 400ing.
   const valid = Array.from(set).filter((t): t is (typeof ACTIVITY_TYPES)[number] =>
     (ACTIVITY_TYPES as readonly string[]).includes(t),
@@ -102,11 +108,11 @@ function parseScope(raw: string | undefined): ScopePair[] | undefined {
     if (!Array.isArray(parsed)) return undefined;
     const valid = parsed.filter(
       (p): p is ScopePair =>
-        !!p
-        && typeof p === 'object'
-        && typeof (p as ScopePair).type === 'string'
-        && typeof (p as ScopePair).id === 'string'
-        && (ENTITY_TYPES as readonly string[]).includes((p as ScopePair).type),
+        !!p &&
+        typeof p === 'object' &&
+        typeof (p as ScopePair).type === 'string' &&
+        typeof (p as ScopePair).id === 'string' &&
+        (ENTITY_TYPES as readonly string[]).includes((p as ScopePair).type),
     );
     return valid.length > 0 ? valid : undefined;
   } catch {
@@ -116,7 +122,10 @@ function parseScope(raw: string | undefined): ScopePair[] | undefined {
 
 function parseEntityTypes(raw: string | undefined): string[] | undefined {
   if (!raw) return undefined;
-  const list = raw.split(',').map((t) => t.trim()).filter(Boolean);
+  const list = raw
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
   const valid = list.filter((t) => (ENTITY_TYPES as readonly string[]).includes(t));
   return valid.length > 0 ? valid : undefined;
 }
@@ -127,7 +136,10 @@ function buildWhere(params: ListQuery): Prisma.ActivityLogWhereInput {
   if (params.actorId) where.actorId = params.actorId;
 
   const types = parseTypes(params.type);
-  if (types) where.type = { in: types as Prisma.ActivityLogWhereInput['type'] extends infer T ? T : never } as Prisma.ActivityLogWhereInput['type'];
+  if (types)
+    where.type = {
+      in: types as Prisma.ActivityLogWhereInput['type'] extends infer T ? T : never,
+    } as Prisma.ActivityLogWhereInput['type'];
 
   // Scope precedence: `scope` (multi-entity) > entityType+entityId > entityType.
   const scopePairs = parseScope(params.scope);
@@ -164,61 +176,65 @@ function buildWhere(params: ListQuery): Prisma.ActivityLogWhereInput {
   return where;
 }
 
-router.get('/', requireUser, async (req: AuthedRequest, res: Response) => {
-  const parsed = listQuerySchema.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
-    return;
-  }
-  const params = parsed.data;
-  const where = buildWhere(params);
-  const skip = (params.page - 1) * params.pageSize;
+router.get(
+  '/',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = listQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
+      return;
+    }
+    const params = parsed.data;
+    const where = buildWhere(params);
+    const skip = (params.page - 1) * params.pageSize;
 
-  // Cache key includes every filter dimension so different filter combinations
-  // get independent cache slots. 10s TTL — the feed is read-heavy.
-  const cacheKey = `activity:list:${JSON.stringify({
-    actorId: params.actorId ?? '',
-    type: params.type ?? '',
-    entityType: params.entityType ?? '',
-    entityId: params.entityId ?? '',
-    scope: params.scope ?? '',
-    from: params.from ?? '',
-    to: params.to ?? '',
-    q: params.q ?? '',
-    page: params.page,
-    pageSize: params.pageSize,
-  })}`;
-
-  const payload = await cache.wrap<ListPayload>(cacheKey, 10_000, async () => {
-    const [rows, total] = await Promise.all([
-      prisma.activityLog.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: params.pageSize,
-        include: { actor: { select: { id: true, name: true } } },
-      }),
-      prisma.activityLog.count({ where }),
-    ]);
-    return {
-      items: rows.map((r) => ({
-        id: r.id,
-        type: r.type,
-        entityType: r.entityType,
-        entityId: r.entityId,
-        message: r.message,
-        createdAt: r.createdAt.toISOString(),
-        actor: r.actor ? { id: r.actor.id, name: r.actor.name } : null,
-      })),
-      total,
+    // Cache key includes every filter dimension so different filter combinations
+    // get independent cache slots. 10s TTL — the feed is read-heavy.
+    const cacheKey = `activity:list:${JSON.stringify({
+      actorId: params.actorId ?? '',
+      type: params.type ?? '',
+      entityType: params.entityType ?? '',
+      entityId: params.entityId ?? '',
+      scope: params.scope ?? '',
+      from: params.from ?? '',
+      to: params.to ?? '',
+      q: params.q ?? '',
       page: params.page,
       pageSize: params.pageSize,
-      pageCount: Math.max(1, Math.ceil(total / params.pageSize)),
-    };
-  });
+    })}`;
 
-  res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
-  res.json(payload);
-});
+    const payload = await cache.wrap<ListPayload>(cacheKey, 10_000, async () => {
+      const [rows, total] = await Promise.all([
+        prisma.activityLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: params.pageSize,
+          include: { actor: { select: { id: true, name: true } } },
+        }),
+        prisma.activityLog.count({ where }),
+      ]);
+      return {
+        items: rows.map((r) => ({
+          id: r.id,
+          type: r.type,
+          entityType: r.entityType,
+          entityId: r.entityId,
+          message: r.message,
+          createdAt: r.createdAt.toISOString(),
+          actor: r.actor ? { id: r.actor.id, name: r.actor.name } : null,
+        })),
+        total,
+        page: params.page,
+        pageSize: params.pageSize,
+        pageCount: Math.max(1, Math.ceil(total / params.pageSize)),
+      };
+    });
+
+    res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
+    res.json(payload);
+  }),
+);
 
 export default router;

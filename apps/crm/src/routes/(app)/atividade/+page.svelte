@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import {
@@ -59,13 +60,13 @@
   function hrefFor(row: { entityType: string; entityId: string }): string | null {
     switch (row.entityType) {
       case 'vehicle':
-        return `/viaturas/${row.entityId}`;
+        return crmPath(`/viaturas/${row.entityId}`);
       case 'sale':
-        return `/vendas/${row.entityId}`;
+        return crmPath(`/vendas/${row.entityId}`);
       case 'customer':
-        return `/clientes/${row.entityId}`;
+        return crmPath(`/clientes/${row.entityId}`);
       case 'task':
-        return `/tarefas/${row.entityId}/editar`;
+        return crmPath(`/tarefas/${row.entityId}/editar`);
       default:
         return null;
     }
@@ -114,7 +115,7 @@
     if (to) usp.set('to', to);
     // Reset to page 1 when filters change
     const qs = usp.toString();
-    goto(qs ? `/atividade?${qs}` : '/atividade', { keepFocus: true, noScroll: true });
+    goto(qs ? crmPath(`/atividade?${qs}`) : crmPath('/atividade'), { keepFocus: true, noScroll: true });
   }
 
   function clearFilters() {
@@ -124,7 +125,7 @@
     q = '';
     from = '';
     to = '';
-    goto('/atividade', { keepFocus: true, noScroll: true });
+    goto(crmPath('/atividade'), { keepFocus: true, noScroll: true });
   }
 
   // Group rows by date header (today / yesterday / specific date) for scannability.

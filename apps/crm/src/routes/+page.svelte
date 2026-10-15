@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { SignIn, ClerkLoading } from 'svelte-clerk';
   import { dark } from '@clerk/themes';
   import { theme } from '$lib/stores/theme';
@@ -83,8 +84,8 @@
         <div class="auth-container">
           <ClerkLoading><p class="intro" role="status">A carregar o acesso seguro…</p></ClerkLoading
           ><SignIn
-            forceRedirectUrl="/dashboard"
-            signUpForceRedirectUrl="/dashboard"
+            forceRedirectUrl={crmPath("/dashboard")}
+            signUpForceRedirectUrl={crmPath("/dashboard")}
             appearance={clerkAppearance}
           />
         </div>

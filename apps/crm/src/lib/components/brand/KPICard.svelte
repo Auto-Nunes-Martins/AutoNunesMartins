@@ -50,9 +50,7 @@
        On mobile the value scales 38→28 and the suffix 18→14 so a 2-col
        square tile (~156px) doesn't overflow horizontally. -->
   <div class="flex items-baseline gap-1.5 relative z-[1] my-3">
-    <span
-      class="num-value text-[28px] md:text-[38px] leading-[0.95] text-[var(--color-text)]"
-    >
+    <span class="num-value text-[28px] md:text-[38px] leading-[0.95] text-[var(--color-text)]">
       {value}
     </span>
     {#if suffix}

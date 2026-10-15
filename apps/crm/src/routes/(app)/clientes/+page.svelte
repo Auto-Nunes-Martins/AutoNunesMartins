@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { crmPath } from '$lib/paths';
   import { Plus, Search, Users, X } from 'lucide-svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
@@ -56,19 +57,19 @@
       <!-- Export is desktop-only — rarely the primary action on a phone.
            Menu (sem default) — o utilizador escolhe CSV ou PDF. -->
       <div class="hidden md:inline-flex">
-        <ExportMenu baseHref="/clientes/export" extraQuery={$page.url.search} />
+        <ExportMenu baseHref={crmPath("/clientes/export")} extraQuery={$page.url.search} />
       </div>
       <!-- Mobile: icon-only red square (no in-topbar equivalent for "novo
            cliente"). Desktop: full italic CTA. -->
       <a
-        href="/clientes/novo"
+        href={crmPath("/clientes/novo")}
         class="inline-flex md:hidden items-center justify-center h-10 w-10 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
         style="border-radius: var(--radius-btn);"
         aria-label="Novo cliente"
       >
         <Plus class="h-4 w-4" />
       </a>
-      <Button variant="primary" size="md" href="/clientes/novo" class="hidden md:inline-flex">
+      <Button variant="primary" size="md" href={crmPath("/clientes/novo")} class="hidden md:inline-flex">
         <Plus class="h-4 w-4" />
         Novo Cliente
       </Button>
@@ -121,7 +122,7 @@
           description="Ajusta a pesquisa ou regista o primeiro cliente."
         >
           {#snippet actions()}
-            <Button variant="primary" size="md" href="/clientes/novo">
+            <Button variant="primary" size="md" href={crmPath("/clientes/novo")}>
               <Plus class="h-4 w-4" />
               Registar primeiro cliente
             </Button>

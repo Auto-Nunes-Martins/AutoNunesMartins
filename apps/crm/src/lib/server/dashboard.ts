@@ -72,6 +72,7 @@ export interface RecentActivityRow {
 
 export interface SmartAlerts {
   stockAged: number;
+  stockAgingDays?: number;
   tasksDueOrOverdue: number;
   remindersToday: number;
   /** Viaturas em DRAFT — preço por definir. Vir do backend já contado. */
@@ -105,9 +106,30 @@ export interface FeaturedVehicleDto {
   photoCount: number;
 }
 
+export interface DashboardHighlight {
+  id: string;
+  licensePlate: string | null;
+  vehicle: {
+    slug: string;
+    brand: string;
+    model: string;
+    year: number;
+    fuel: string;
+    mileage: number;
+    price: string | null;
+    description: string | null;
+    availability: string;
+    photos: string[];
+  };
+  photoIndex: number;
+}
+
 type Ev = Pick<RequestEvent, 'locals' | 'fetch'>;
 
 export const dashboardApi = {
+  highlights(event: Ev): Promise<{ configured: boolean; items: DashboardHighlight[] }> {
+    return apiJson(event, '/api/homepage-highlights/showcase');
+  },
   get(event: Ev): Promise<DashboardPayload> {
     return apiJson<DashboardPayload>(event, '/api/dashboard');
   },

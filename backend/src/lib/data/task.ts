@@ -6,6 +6,7 @@ type TxClient = PrismaClient | Prisma.TransactionClient;
 export type TaskScope = 'all' | 'mine' | 'general';
 
 export interface ListTasksParams {
+  attention?: 'due' | 'reminders';
   status?: TaskStatus;
   priority?: Priority;
   assigneeId?: string;
@@ -29,10 +30,23 @@ export interface ListTasksParams {
  *   - they have no assignee (Geral — shared inbox), OR
  *   - they are assigned to that user
  */
-function visibilityFilter(
-  actorId: string,
-  scope: TaskScope = 'all',
+export function taskAttentionWhere(
+  attention: 'due' | 'reminders',
+  now = new Date(),
 ): Prisma.TaskWhereInput {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  return {
+    status: { not: 'DONE' },
+    ...(attention === 'due'
+      ? { dueDate: { lte: end } }
+      : { reminderDate: { gte: start, lte: end } }),
+  };
+}
+
+function visibilityFilter(actorId: string, scope: TaskScope = 'all'): Prisma.TaskWhereInput {
   if (scope === 'mine') return { assigneeId: actorId };
   if (scope === 'general') return { assigneeId: null };
   return { OR: [{ assigneeId: null }, { assigneeId: actorId }] };
@@ -56,17 +70,14 @@ export function buildTaskWhere(filter: ListTasksParams): Prisma.TaskWhereInput {
   }
 
   const clauses: Prisma.TaskWhereInput[] = [where];
+  if (filter.attention) clauses.push(taskAttentionWhere(filter.attention));
 
   // Hide scheduled recurring tasks (spawned in TODO ahead of their dueDate)
   // unless the caller explicitly asked to see them.
-  if (!filter.showScheduled) {
+  if (!filter.showScheduled && !filter.attention) {
     clauses.push({
       NOT: {
-        AND: [
-          { status: 'TODO' },
-          { recurrence: { not: 'NONE' } },
-          { dueDate: { gt: new Date() } },
-        ],
+        AND: [{ status: 'TODO' }, { recurrence: { not: 'NONE' } }, { dueDate: { gt: new Date() } }],
       },
     });
   }

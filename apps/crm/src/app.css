@@ -312,18 +312,14 @@ textarea:not(:disabled) {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(800px 500px at 20% 0%,
-      rgba(227, 6, 19, 0.10), transparent 60%),
-    radial-gradient(700px 400px at 90% 100%,
-      rgba(227, 6, 19, 0.08), transparent 70%);
+    radial-gradient(800px 500px at 20% 0%, rgba(227, 6, 19, 0.1), transparent 60%),
+    radial-gradient(700px 400px at 90% 100%, rgba(227, 6, 19, 0.08), transparent 70%);
 }
 /* Light theme — softer per prototype line 1382-1386. */
 [data-theme='light'] .header-ambient::before {
   background:
-    radial-gradient(800px 500px at 20% 0%,
-      rgba(227, 6, 19, 0.04), transparent 60%),
-    radial-gradient(700px 400px at 90% 100%,
-      rgba(227, 6, 19, 0.03), transparent 70%);
+    radial-gradient(800px 500px at 20% 0%, rgba(227, 6, 19, 0.04), transparent 60%),
+    radial-gradient(700px 400px at 90% 100%, rgba(227, 6, 19, 0.03), transparent 70%);
 }
 
 /* ───────── Brand DNA: red icon | divider | label row ───────── */
@@ -523,4 +519,26 @@ textarea:not(:disabled) {
     .cl-formFieldInputShowPasswordIcon
   ) {
   color: var(--color-text-muted) !important;
+}
+
+/* Shared form feedback follows the CRM palette in both themes. */
+.crm-field-error {
+  display: block;
+  margin-top: 6px;
+  font: 500 12px/1.5 var(--font-body, sans-serif);
+  color: var(--color-red);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.crm-form-error-summary {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid color-mix(in oklab, var(--color-red) 40%, transparent);
+  background: color-mix(in oklab, var(--color-red) 6%, var(--color-bg-1));
+  color: var(--color-text);
+  border-radius: var(--radius-btn);
+  font-size: 13px;
+}
+[aria-invalid='true']:not([type='hidden']) {
+  border-color: var(--color-red) !important;
 }
