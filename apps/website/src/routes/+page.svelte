@@ -4,4 +4,4 @@
   let { data }: { data: PageData } = $props();
 </script>
 
-<DesignEdition brandDirectory={data.brandDirectory} />
+<DesignEdition brandDirectory={data.brandDirectory} homeHighlights={data.highlights} stock={data.stock} />

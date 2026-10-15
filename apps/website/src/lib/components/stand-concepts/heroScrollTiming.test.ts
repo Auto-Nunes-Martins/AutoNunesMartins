@@ -36,8 +36,9 @@ function startupProgress(viewport: number, stageHeight: number, documentTop: num
     innerWidth: width,
     scrollY: scroll,
     document: {
-      querySelector: () => root,
-      documentElement: { setAttribute: () => {}, hasAttribute: () => true, scrollHeight: 10000 },
+      querySelector: (selector: string) => selector.includes('theme-color') ? { setAttribute: () => {} } : root,
+      querySelectorAll: () => [],
+      documentElement: { setAttribute: () => {}, getAttribute: () => 'dark', hasAttribute: () => true, scrollHeight: 10000 },
     },
   });
   return values;

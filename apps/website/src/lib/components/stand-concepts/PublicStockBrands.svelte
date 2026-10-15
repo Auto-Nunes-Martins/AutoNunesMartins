@@ -42,7 +42,7 @@
   li a { display: grid; grid-template-columns: 72px minmax(0, 1fr) 17px; align-items: center; gap: 16px; height: 100%; min-height: 96px; border-bottom: 1px solid var(--line); padding: 20px 4px; box-sizing: border-box; font-size: 16px; }
   .brand-logo { display: block; width: 72px; height: 44px; object-fit: contain; }
   .brand-logo[src$='/audi.svg'], .brand-logo[src$='/dacia.svg'] { transform: scale(1.4); }
-  :global(.dark) .brand-logo { filter: invert(1); }
+  :global(:where(html)[data-theme='dark']) .brand-logo { filter: invert(1); }
   .brand-label { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; min-width: 0; }
   .without-logo .brand-label { grid-column: 1 / 3; }
   .brand-name { position: relative; min-width: 0; overflow-wrap: anywhere; }

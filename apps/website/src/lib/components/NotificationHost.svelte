@@ -112,7 +112,7 @@
 <style>
   .announcements { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .notification-stack { --notice-bg: #fafbf8; --notice-glass: #fafbf8e0; --notice-text: #191c19; --notice-muted: #515850; --notice-line: #ffffffc4; position: fixed; z-index: 80; left: 50%; top: max(var(--notice-top), calc(env(safe-area-inset-top) + 12px)); transform: translateX(-50%); width: min(880px, calc(100% - 24px)); max-height: calc(100dvh - var(--notice-top) - 12px); display: grid; gap: 10px; padding: 6px 16px 36px; pointer-events: none; font-family: 'Orbit Inter', Arial, sans-serif; }
-  :global(body:has(.design.dark)) .notification-stack { --notice-bg: #1b1e1b; --notice-glass: #1b1e1bdc; --notice-text: #f5f6f2; --notice-muted: #c3c8c1; --notice-line: #ffffff26; }
+  :global(:where(html)[data-theme='dark']) .notification-stack { --notice-bg: #1b1e1b; --notice-glass: #1b1e1bdc; --notice-text: #f5f6f2; --notice-muted: #c3c8c1; --notice-line: #ffffff26; }
   .notification { grid-area: 1 / 1; position: relative; z-index: 4; display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 18px; width: 100%; padding: 12px 12px 12px 24px; background: var(--notice-bg); color: var(--notice-text); border: 1px solid var(--notice-line); border-radius: 12px; box-shadow: 0 10px 24px #00000024, 0 2px 6px #00000014; flex-shrink: 0; pointer-events: auto; }
   .notice-slot { grid-column: 1; display: grid; min-width: 0; z-index: 1; }
   .notice-slot[inert] { pointer-events: none; z-index: 2; }

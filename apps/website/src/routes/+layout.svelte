@@ -2,6 +2,7 @@
   import '../app.css';
   import WhatsAppContact from '$lib/components/WhatsAppContact.svelte';
   import { onMount, setContext, tick } from 'svelte';
+  import { browser } from '$app/environment';
   import { afterNavigate, beforeNavigate, goto, pushState } from '$app/navigation';
   import { page } from '$app/stores';
   import { installAnchorNavigation } from '$lib/anchorNavigation';
@@ -11,6 +12,7 @@
   import { comparisonContext, createComparison, COMPARISON_KEY } from '$lib/comparison';
   import { createFavorites, favoritesContext, FAVORITES_KEY } from '$lib/favorites';
   import { createNotifications, notificationContext } from '$lib/notifications';
+  import { createPublicTheme, publicThemeContext } from '$lib/publicTheme';
   import NotificationHost from '$lib/components/NotificationHost.svelte';
   const notifications = createNotifications();
   setContext(notificationContext, notifications);
@@ -18,6 +20,15 @@
   setContext(comparisonContext, comparison);
   const favorites = createFavorites(notifications.push);
   setContext(favoritesContext, favorites);
+  let { children }: { children: import('svelte').Snippet } = $props();
+  const theme = createPublicTheme(browser ? document.documentElement.getAttribute('data-theme') !== 'light' : true, browser ? dark => {
+    const value = dark ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', value);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0a0a0b' : '#f5f5f1');
+  } : undefined);
+  // Restore before child components hydrate, rather than after the first painted frame.
+  if (browser) theme.initialize(() => localStorage);
+  setContext(publicThemeContext, theme);
   const { ids: comparisonIds } = comparison;
   $effect(() => {
     if ($comparisonIds.length < 2) notifications.invalidateActions('comparison', { label: 'Ver seleção', href: '/comparar' });
@@ -35,7 +46,6 @@
     window.addEventListener('storage', sync);
     return () => { anchors?.destroy(); window.removeEventListener('storage', sync); notifications.destroy(); };
   });
-  let { children }: { children: import('svelte').Snippet } = $props();
 </script>
 
 {@render children()}

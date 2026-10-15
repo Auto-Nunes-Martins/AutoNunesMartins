@@ -3,17 +3,20 @@
   let { dark, onchange }: { dark: boolean; onchange: () => void } = $props();
 </script>
 
-<button type="button" role="switch" aria-checked={dark} aria-label="Tema escuro"
-  title={dark ? 'Ativar tema claro' : 'Ativar tema escuro'} onclick={onchange}>
-  {#if dark}<Moon size={17} strokeWidth={1.5} aria-hidden="true" />{:else}<Sun size={17} strokeWidth={1.5} aria-hidden="true" />{/if}
-  <span aria-hidden="true">{dark ? 'Escuro' : 'Claro'}</span>
+<button class="theme-command" data-theme-command type="button"
+  aria-label={dark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+  title={dark ? 'Mudar para tema claro' : 'Mudar para tema escuro'} onclick={onchange}>
+  <span class="theme-sun"><Sun size={19} strokeWidth={1.5} aria-hidden="true" /></span>
+  <span class="theme-moon"><Moon size={19} strokeWidth={1.5} aria-hidden="true" /></span>
 </button>
 
 <style>
-  button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-width: 82px; min-height: 40px; padding: 8px 6px; background: transparent; border: 0; border-radius: 3px; color: var(--text); cursor: pointer; flex-shrink: 0; }
-  span { font: inherit; font-size: 11px; letter-spacing: .015em; }
-  button:hover { background: color-mix(in srgb,var(--text) 5%,transparent); }
-  button:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
-  @media (prefers-reduced-motion: no-preference) { button { transition: background 180ms ease; } }
-  @media (max-width: 700px) { button { min-width: 32px; padding-inline: 6px; } span { display: none; } }
+  .theme-sun { display:inline-flex; }
+  .theme-moon { display:none; }
+  :global(html[data-theme='light']) .theme-sun { display:none; }
+  :global(html[data-theme='light']) .theme-moon { display:inline-flex; }
+  .theme-command { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; background: color-mix(in srgb,var(--text) 5%,transparent); border: 0; border-radius: 50%; color: var(--text); cursor: pointer; flex-shrink: 0; }
+  .theme-command:hover { background: color-mix(in srgb,var(--text) 9%,transparent); }
+  .theme-command:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+  @media (prefers-reduced-motion: no-preference) { .theme-command { transition: background-color 180ms ease; } }
 </style>

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from '$app/stores';
+  import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { onMount, tick } from 'svelte';
   import { ArrowUpRight, ArrowLeft, Plus, X, RotateCcw } from 'lucide-svelte';
   import { useComparison, comparisonRows } from '$lib/comparison';
@@ -49,7 +51,10 @@
   }
 </script>
 
+<SocialMetadata title="Comparar viaturas — Auto Nunes Martins" description="Compare até três viaturas lado a lado: preço, quilometragem e características publicadas." canonical={new URL('/comparar', $page.url.origin).href} />
+
 <svelte:head>
+  <link rel="canonical" href={new URL('/comparar', $page.url.origin).href} />
   <title>Comparar viaturas — Auto Nunes Martins</title>
   <meta name="description" content="Compare até três viaturas lado a lado: preço, quilometragem e características publicadas." />
   <meta name="robots" content="noindex, follow" />

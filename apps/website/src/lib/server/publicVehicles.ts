@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
 import {
   emptyStock,
@@ -9,7 +10,7 @@ import {
 
 // Native server fetch intentionally avoids SvelteKit credential forwarding and CRM auth helpers.
 export async function publicRequest(path: string) {
-  return fetch(new URL(`/api/public/vehicles${path}`, PUBLIC_BACKEND_URL), {
+  return fetch(new URL(`/api/public/vehicles${path}`, env.INTERNAL_BACKEND_URL || PUBLIC_BACKEND_URL), {
     headers: { accept: 'application/json' },
     credentials: 'omit',
     cache: 'no-store',

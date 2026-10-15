@@ -1,10 +1,18 @@
 <script lang="ts">
+  import HeroBackgroundTuner from './HeroBackgroundTuner.svelte';
+  import { highlightSlides, type PublicHighlights, type HeroSlide } from '$lib/homepageHighlights';
+  import HeroStandBackground from './HeroStandBackground.svelte';
+  import { standDefaults } from './heroStandSettings';
+  import SocialMetadata from '$lib/components/SocialMetadata.svelte';
+  import { submitContact } from '$lib/contactRequest';
+  import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
   import orbitFont400 from '@fontsource/inter/files/inter-latin-400-normal.woff2?url';
   import orbitFont500 from '@fontsource/inter/files/inter-latin-500-normal.woff2?url';
   import orbitFont600 from '@fontsource/inter/files/inter-latin-600-normal.woff2?url';
   import orbitTitleFont from '@fontsource/barlow/files/barlow-latin-600-normal.woff2?url';
   import orbitTitleItalic from '@fontsource/barlow/files/barlow-latin-600-italic.woff2?url';
   import { onMount, tick } from 'svelte';
+  import { usePublicTheme } from '$lib/publicTheme';
   import {
     emptyStock,
     publicPrice,
@@ -21,7 +29,7 @@
   import { catalogNavigation } from './catalogNavigation';
   import './catalogNavigation.css';
   import { mobileNavigation } from './mobileNavigation';
-  import { phoneAttention, ringPhone } from './phoneAttention';
+  import { ringPhone } from './phoneAttention';
   import './mobileNavigation.css';
   import ThemeToggle from './ThemeToggle.svelte';
   import { ArrowUpRight, ArrowLeft, ArrowRight, Plus, X, Heart, Menu, Phone, MapPin, Clock3, Mail } from 'lucide-svelte';
@@ -80,12 +88,13 @@
   }
   import { catalogCars, transmissionFor } from './catalogDemo';
   import type { CatalogCar } from './catalog';
-  import { catalogResults, sortOptions } from './catalog';
+  import { sortOptions } from './catalog';
   import './orbitRhythm.css';
   import './orbitInitialLight.css';
   import './orbitDetail.css';
   import './navAddress.css';
   import './homeHeroPhoto.css';
+  import './orbitLightTheme.css';
   import { aboutContent } from './aboutContent';
   let {
     id,
@@ -100,6 +109,7 @@
     publicVehicle,
     relatedVehicles = [],
     errorStatus,
+    homeHighlights,
   }: {
     id?: string;
     catalog?: boolean;
@@ -113,6 +123,7 @@
     publicVehicle?: PublicVehicle;
     relatedVehicles?: PublicVehicle[];
     errorStatus?: number;
+    homeHighlights?: PublicHighlights;
   } = $props();
   const car = $derived(
     publicVehicle
@@ -191,12 +202,15 @@
             .slice(0, 3)
         : [],
   );
-  let isDark = $state(true);
+  const theme = usePublicTheme();
+  const { dark } = theme;
+  let isDark = $derived($dark);
   let homeBrand = $state('');
   let homeYear = $state('');
   let homeOrder = $state('relevancia');
-  const homeBrands = [...new Set(cars.map((item) => item.brand))].sort();
-  const homeYears = [...new Set(cars.map((item) => item.year))].sort((a, b) => b - a);
+  const homeCars = $derived(stock.catalog.items.map(publicCard));
+  const homeBrands = $derived([...new Set(homeCars.map((item) => item.brand))].sort());
+  const homeYears = $derived([...new Set(homeCars.map((item) => item.year))].sort((a, b) => b - a));
   function clearHomeFilters() {
     homeBrand = '';
     homeYear = '';
@@ -209,11 +223,16 @@
   let confirmationHeading = $state<HTMLHeadingElement>();
   let galleryDialog: HTMLDialogElement;
   let sent = $state(false);
+  let sending = $state(false);
+  let contactError = $state('');
   let reason = $state('Gostava de saber mais.');
   let zoom = $state(0);
   let heroIndex = $state(0);
   let heroVersion = $state(1);
-  const heroCar = $derived(cars[heroIndex]!);
+  let heroBackground = $state(standDefaults());
+  const heroSlides: HeroSlide[] = $derived(homeHighlights ? highlightSlides(homeHighlights) : []);
+  const heroCar = $derived(heroSlides[heroIndex] ?? heroSlides[0]);
+  $effect(() => { if (heroIndex >= heroSlides.length) heroIndex = 0; });
   const equipmentItems = [
     {
       question: 'Conforto',
@@ -232,30 +251,24 @@
     },
   ];
   function changeHeroSlide(direction: number) {
-    heroIndex = (heroIndex + direction + cars.length) % cars.length;
+    if (heroSlides.length) heroIndex = (heroIndex + direction + heroSlides.length) % heroSlides.length;
   }
   function heroKeydown(event: KeyboardEvent) {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     if (event.key === 'Home') heroIndex = 0;
-    else if (event.key === 'End') heroIndex = cars.length - 1;
+    else if (event.key === 'End') heroIndex = Math.max(0, heroSlides.length - 1);
     else changeHeroSlide(event.key === 'ArrowRight' ? 1 : -1);
   }
-  const selected = $derived(
-    catalogResults(
-      new URLSearchParams({
-        marca: homeBrand,
-        ano_min: homeYear,
-        ano_max: homeYear,
-        ordem: homeOrder,
-      }),
-      cars,
-    ).items.slice(0, 5),
-  );
+  const selected = $derived.by(() => {
+    const matches = homeCars.filter(car => (!homeBrand || car.brand === homeBrand) && (!homeYear || car.year === Number(homeYear)));
+    matches.sort((a, b) => homeOrder === 'preco_asc' ? (a.price ?? Infinity) - (b.price ?? Infinity)
+      : homeOrder === 'preco_desc' ? (b.price ?? -Infinity) - (a.price ?? -Infinity)
+      : homeOrder === 'ano' ? b.year - a.year : homeOrder === 'km' ? a.km - b.km : 0);
+    return matches.slice(0, 5);
+  });
   onMount(() => {
     try {
-      const theme = localStorage.getItem('anm-orbit-theme');
-      if (theme) isDark = theme === 'dark';
       const stored = JSON.parse(localStorage.getItem('anm-design-saved') || '[]');
       if (Array.isArray(stored)) saved = stored.filter((item) => typeof item === 'string');
     } catch {}
@@ -267,10 +280,7 @@
     zoom = 0;
   });
   function toggleTheme() {
-    isDark = !isDark;
-    try {
-      localStorage.setItem('anm-orbit-theme', isDark ? 'dark' : 'light');
-    } catch {}
+    theme.toggle();
   }
   function toggleSave(value: string) {
     saved = saved.includes(value) ? saved.filter((item) => item !== value) : [...saved, value];
@@ -283,6 +293,7 @@
       message ||
       (car ? `Gostava de conhecer o ${car.brand} ${car.model}.` : 'Gostava de saber mais.');
     sent = false;
+    contactError = '';
     await tick();
     contactDialog.showModal();
     contactName?.focus({ preventScroll: true });
@@ -322,21 +333,28 @@
   }
 </script>
 
+{#if publicVehicle}
+  <SocialMetadata title={vehicleSeo(publicVehicle).title} description={vehicleSeo(publicVehicle).description}
+    canonical={publicVehicleCanonical(publicVehicle, $page.url.origin)}
+    image={publicVehicle.photos.length ? publicPhoto(publicVehicle.slug, 0) : undefined}
+    imageAlt={publicVehicle.photos.length ? `${publicVehicle.brand} ${publicVehicle.model} (${publicVehicle.year}) — fotografia publicada` : undefined}
+    brandImage={!publicVehicle.photos.length} />
+{:else if !favorites && !compare && !about && !catalog && !privacy && !errorStatus}
+  <SocialMetadata title={car ? `${car.brand} ${car.model} — Auto Nunes Martins` : 'Auto Nunes Martins — Automóveis usados'}
+    description="Conheça a Auto Nunes Martins e consulte as viaturas publicadas. Compare preço, ano e quilometragem e contacte-nos para saber mais."
+    canonical={new URL(id ? $page.url.pathname : '/', $page.url.origin).href} />
+{/if}
+
 <svelte:head>
   {#if publicVehicle}
     {@const seo = vehicleSeo(publicVehicle)}
     <title>{seo.title}</title>
     <meta name="description" content={seo.description} />
-    <meta property="og:title" content={seo.title} />
-    <meta property="og:description" content={seo.description} />
-    {#if publicVehicle.photos.length}<meta property="og:image" content={new URL(publicPhoto(publicVehicle.slug, 0), $page.url.origin).href} />{/if}
     <link rel="canonical" href={publicVehicleCanonical(publicVehicle, $page.url.origin)} />
-    <meta property="og:url" content={publicVehicleCanonical(publicVehicle, $page.url.origin)} />
     {@html vehicleJsonLdScript(publicVehicle, $page.url.origin)}
   {/if}
-  {#if !favorites && !compare && !id && !catalog && !privacy && !publicVehicle && !errorStatus}
-    <link rel="canonical" href={new URL(about ? '/quem-somos' : '/', $page.url.origin).href} />
-    <meta property="og:url" content={new URL(about ? '/quem-somos' : '/', $page.url.origin).href} />
+  {#if !favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle && !errorStatus}
+    <link rel="canonical" href={new URL('/', $page.url.origin).href} />
   {/if}
 
   <link rel="preload" href={orbitFont400} as="font" type="font/woff2" crossorigin="anonymous" />
@@ -399,6 +417,7 @@
   >
     <a class="logo" href="/"
       ><img
+        data-theme-logo
         src={isDark ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
         alt="Auto Nunes Martins — início"
         width="180"
@@ -437,10 +456,9 @@
       <div class="desktop-theme"><ThemeToggle dark={isDark} onchange={toggleTheme} /></div>
       <a class="nav-favorites" class:filled={$favoriteIds.length > 0} href="/favoritos"
         aria-current={favorites ? 'page' : undefined} aria-label={`Guardados, ${$favoriteIds.length} viaturas nos favoritos`}
-        onclick={() => (navOpen = false)}><Heart size={19} strokeWidth={1.5} fill={$favoriteIds.length ? 'currentColor' : 'none'} aria-hidden="true" /><span class="favorite-label">Guardados</span><span class="favorite-count" class:empty={!$favoriteIds.length} aria-hidden="true">{$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}</span></a>
+        onclick={() => (navOpen = false)}><span class="favorite-heart" aria-hidden="true"><Heart size={19} strokeWidth={1.5} fill={$favoriteIds.length ? 'currentColor' : 'none'} /><span class="favorite-count" class:empty={!$favoriteIds.length} class:compact={$favoriteIds.length > 99}>{$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}</span></span><span class="favorite-label">Guardados</span></a>
       {#if standContact.phone}<a
           class="nav-phone"
-          use:phoneAttention
           onpointerenter={ringNavPhone}
           onfocus={ringNavPhone}
           href={`tel:${standContact.phone.international}`}
@@ -668,7 +686,7 @@
             {#key publicVehicle.slug}<RelatedCarousel vehicles={relatedVehicles} card={vehicleCard} />{/key}
           {:else}<div class="related-grid">
             {#each suggestions as item}<a
-                href={publicVehicle ? publicHref(item.id) : `/demo/${item.id}`}
+                href={publicVehicle ? publicHref(item.id) : '/viaturas'}
                 ><div class="related-image">
                   <img
                     src={photo(item.image, 900)}
@@ -695,6 +713,7 @@
         aria-label="Viaturas em destaque"
         aria-roledescription="carrossel"
       >
+        {#if heroVersion === 3}<HeroStandBackground bind:settings={heroBackground} />{/if}
         <div class="orbit-stage" data-hero-stage>
           {#if heroVersion === 2}<div class="home-stand-backdrop" aria-hidden="true">
             <img src={aboutContent.heroImage.id} srcset={aboutContent.heroImage.srcset} sizes="(max-width: 700px) 100vw, (max-width: 1050px) 80vw, 100vw" width="1024" height="768" alt="" loading="eager" fetchpriority="high" decoding="async" />
@@ -711,7 +730,8 @@
           <div class="orbit-copy">
             <img
               class="orbit-hero-signature"
-              src={isDark || heroVersion === 2 ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
+              data-theme-logo={heroVersion === 1 ? '' : undefined}
+              src={isDark || heroVersion === 2 || heroVersion === 3 ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
               alt="Auto Nunes Martins"
               width="1881"
               height="836"
@@ -725,20 +745,21 @@
           </div>
           <div class="orbit-object">
             <div class="object-edge"></div>
+            {#if heroCar}
             <a
               class="orbit-main-photo"
               id="orbit-featured"
-              href={`/demo/${heroCar.id}`}
-              aria-label={`Ver ${heroCar.brand} ${heroCar.model} — destaque ${heroIndex + 1} de ${cars.length}`}
+              href={heroCar.href}
+              aria-label={`Ver ${heroCar.brand} ${heroCar.model} — destaque ${heroIndex + 1} de ${heroSlides.length}`}
             >
-              {#each cars as featured, index (featured.id)}
+              {#each heroSlides as featured, index (featured.id)}
                 <img
                   class:active={heroIndex === index}
                   src={photo(featured.image, 1800)}
                   srcset={responsivePhoto(featured.image)}
                   sizes={heroVersion === 2 ? '(max-width: 700px) 92vw, 57vw' : heroImageSizes}
                   alt={heroIndex === index
-                    ? `${featured.brand} ${featured.model} — imagem ilustrativa`
+                    ? `${featured.brand} ${featured.model}${featured.illustrative ? ' — imagem ilustrativa' : ''}`
                     : ''}
                   aria-hidden={heroIndex !== index}
                   loading={index === 0 ? 'eager' : 'lazy'}
@@ -755,16 +776,24 @@
                 <ArrowUpRight size={24} />
               </div></a
             ><span class="object-coordinate coordinate-a" aria-hidden="true">EM DESTAQUE</span>
+            {:else}
+              <a class="orbit-main-photo hero-empty" id="orbit-featured" href="/viaturas">
+                <span>O seu próximo carro começa com uma escolha.</span>
+                <div><span>Conheça as nossas viaturas<small>CONSULTE O CATÁLOGO</small></span><ArrowUpRight size={24} /></div>
+              </a>
+            {/if}
           </div>
+          {#if heroCar}
           <div
             class="orbit-side"
             role="group"
             aria-label="Navegar pelos destaques"
-            style={`--hero-progress:${(heroIndex + 1) / cars.length}`}
+            style={`--hero-progress:${(heroIndex + 1) / heroSlides.length}`}
           >
             <button
               type="button"
               aria-label="Destaque anterior"
+              disabled={heroSlides.length < 2}
               aria-controls="orbit-featured"
               onclick={() => changeHeroSlide(-1)}
               onkeydown={heroKeydown}><ArrowLeft size={18} aria-hidden="true" /></button
@@ -772,28 +801,31 @@
             <div class="hero-slide-index" aria-hidden="true">
               <span>{String(heroIndex + 1).padStart(2, '0')}</span>
               <span class="hero-index-track"></span>
-              <span>{String(cars.length).padStart(2, '0')}</span>
+              <span>{String(heroSlides.length).padStart(2, '0')}</span>
             </div>
             <button
               type="button"
               aria-label="Destaque seguinte"
+              disabled={heroSlides.length < 2}
               aria-controls="orbit-featured"
               onclick={() => changeHeroSlide(1)}
               onkeydown={heroKeydown}><ArrowRight size={18} aria-hidden="true" /></button
             >
             <span class="hero-status" role="status" aria-live="polite" aria-atomic="true">
-              Destaque {heroIndex + 1} de {cars.length}: {heroCar.brand}
+              Destaque {heroIndex + 1} de {heroSlides.length}: {heroCar.brand}
               {heroCar.model}.
             </span>
           </div>
+          {/if}
         </div>
       </section>
 
       <div class="hero-versions" role="group" aria-label="Escolher composição do hero">
-        {#each [1, 2] as version}
-          <button type="button" aria-label={`Versão ${version} do hero`} aria-pressed={heroVersion === version} title={['Original', 'Fotografia imersiva'][version - 1]} onclick={() => heroVersion = version}>{version}</button>
+        {#each [1, 2, 3] as version}
+          <button type="button" aria-label={`Versão ${version} do hero`} aria-pressed={heroVersion === version} title={['Original', 'Fotografia imersiva', 'Original com fotografia panorâmica'][version - 1]} onclick={() => heroVersion = version}>{version}</button>
         {/each}
       </div>
+      {#if import.meta.env.DEV}<HeroBackgroundTuner bind:settings={heroBackground} active={heroVersion === 3} onchange={(value) => heroBackground = value} />{/if}
       <OrbitStats />
 
       <section class="showroom" id="selecao">
@@ -925,7 +957,7 @@
         {
           question: 'Como posso visitar o stand?',
           answer:
-            'Indique a viatura e a sua disponibilidade no formulário. Este protótipo permite experimentar o pedido sem enviar qualquer mensagem.',
+            'Indique a viatura e a sua disponibilidade no formulário. O pedido é enviado ao stand; a visita fica confirmada apenas depois de combinarmos o horário consigo.',
         },
         {
           question: 'Posso guardar uma viatura?',
@@ -964,10 +996,10 @@
     >
     <p class="kicker">VAMOS CONVERSAR</p>
     {#if sent}<h2 id="contact-heading" tabindex="-1" bind:this={confirmationHeading}>
-        Primeiro passo,<br />experimentado.
+        Pedido<br />enviado.
       </h2>
       <p id="contact-description">
-        Esta é uma demonstração. O pedido não foi enviado e os dados não foram guardados.
+        O pedido foi aceite pelo serviço de email para envio ao stand. Responderemos para esclarecer as suas questões ou combinar a visita. O agendamento ainda não está confirmado.
       </p>
       <button class="pill primary" onclick={() => contactDialog.close()}
         >Continuar a descobrir <ArrowUpRight size={18} /></button
@@ -975,16 +1007,23 @@
       <form
         onsubmit={async (event) => {
           event.preventDefault();
-          sent = true;
-          await tick();
-          confirmationHeading?.focus({ preventScroll: true });
+          if (sending) return;
+          sending = true; contactError = '';
+          const form = event.currentTarget;
+          try {
+            await submitContact(form);
+            sent = true;
+            await tick();
+            confirmationHeading?.focus({ preventScroll: true });
+          } catch (error) { contactError = error instanceof Error ? error.message : 'Não foi possível enviar o pedido.'; }
+          finally { sending = false; }
         }}
       >
         <label
           >Nome<input
             bind:this={contactName}
             required
-            name="name"
+            name="name" maxlength="120"
             autocomplete="name"
             placeholder="O seu nome"
           /></label
@@ -992,7 +1031,7 @@
           >Email<input
             required
             type="email"
-            name="email"
+            name="email" maxlength="254"
             autocomplete="email"
             placeholder="nome@exemplo.pt"
           /></label
@@ -1005,9 +1044,11 @@
               <option>Falar sobre uma retoma</option>
             </select></FormSelectField
           ></label
-        ><label>Mensagem<textarea name="message" rows="3" bind:value={reason}></textarea></label
-        ><button class="pill primary" type="submit"
-          >Experimentar pedido <ArrowUpRight size={18} /></button
+        ><label>Mensagem<textarea name="message" required maxlength="5000" rows="3" bind:value={reason}></textarea></label
+        ><ContactPrivacyNotice />
+        {#if contactError}<p role="alert">{contactError}</p>{/if}
+        <button class="pill primary" type="submit" disabled={sending}
+          >{sending ? 'A enviar…' : 'Enviar pedido'} <ArrowUpRight size={18} /></button
         >
       </form>{/if}
   </dialog>
@@ -1028,7 +1069,7 @@
 
 {#snippet vehicleCard(vehicle: CatalogCar | PublicCard, index: number, animate: boolean = true)}
   <article class="vehicle-card" use:conditionalEntrance={animate ? (index % 2) * 110 : false}>
-    <a class="card-image" href={'href' in vehicle ? vehicle.href : `/demo/${vehicle.id}`}
+    <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
       ><img
         src={photo(vehicle.image, 1100)}
         srcset={responsivePhoto(vehicle.image, 1600)}
@@ -1041,7 +1082,7 @@
     >
     <div class="card-body">
     <div class="card-info">
-      <a href={'href' in vehicle ? vehicle.href : `/demo/${vehicle.id}`}
+      <a href={'href' in vehicle ? vehicle.href : '/viaturas'}
         ><span>{vehicle.brand}</span>
         <h3>{vehicle.model}</h3></a
       >{#if 'approved' in vehicle}<FavoriteButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} />{:else}<button
@@ -1058,7 +1099,7 @@
     </div>
     <div class="card-price">
       <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong><a
-        href={'href' in vehicle ? vehicle.href : `/demo/${vehicle.id}`}
+        href={'href' in vehicle ? vehicle.href : '/viaturas'}
         ><span class="card-cta-label">Ver viatura</span> <ArrowUpRight size={14} /></a
       >
     </div>
@@ -1068,19 +1109,21 @@
 {/snippet}
 
 <style>
+  .hero-empty { background: var(--bg); color: var(--text); }
+  .hero-empty > span { display:block; padding:12%; max-width:75%; font-size:clamp(20px,3vw,42px); line-height:1.1; }
   .home-brands { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: var(--orbit-space-section) auto 0; }
   .nav-favorites { position: relative; display: inline-grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; color: var(--text); border-radius: 50%; }
   .nav-favorites.filled { color: var(--red); }
   .nav-favorites[aria-current="page"] { background: color-mix(in srgb, var(--text) 6%, transparent); }
-  .nav-favorites .favorite-count { position: absolute; top: 0; right: 0; width: 24px; min-width: 24px; flex: 0 0 24px; height: 16px; padding: 0 3px; border-radius: 10px; display: grid; place-items: center; background: var(--bg); color: var(--text); font-size: 9px; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .favorite-heart { position: relative; display: inline-flex; flex: 0 0 19px; width: 19px; height: 19px; }
+  .nav-favorites .favorite-count { position: absolute; inset: 0; display: grid; place-items: center; padding-bottom: 2px; color: #fff; font-size: 7px; font-weight: 700; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .nav-favorites .favorite-count.compact { font-size: 5.5px; }
   .nav-favorites .favorite-count.empty { visibility: hidden; }
   .favorite-label { display: none; color: var(--text); }
-  .desktop-theme :global(button) { border: 1px solid var(--line); border-radius: 4px; min-height: 44px; padding-inline: 10px; }
   @media (min-width: 1001px) {
     .design.orbit .header-actions { gap: 12px; }
     .nav-favorites { display: inline-flex; gap: 8px; width: auto; padding-inline: 10px; border-radius: 4px; font-size: 12px; text-decoration: none; }
     .favorite-label { display: inline; }
-    .nav-favorites .favorite-count { position: static; }
     .nav-favorites:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
   }
   .nav-favorites:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
@@ -1089,7 +1132,6 @@
     .desktop-theme { display: none; }
     .mobile-theme { display: block; border-top: 1px solid var(--line); padding-top: 8px; }
     .mobile-theme :global(button) { min-height: 44px; gap: 9px; }
-    .mobile-theme :global(button span) { display: inline; }
     .design.orbit .stand-header .logo { width: 96px; flex-basis: 96px; padding: 0; }
     .design.orbit .stand-header .logo img { width: 100%; }
     .design.orbit > header.stand-header { padding-inline: 16px; gap: 8px; }
@@ -1100,7 +1142,6 @@
   .nav-phone-number { font-size: 10px; letter-spacing: .01em; font-weight: 400; white-space: nowrap; }
   @media (max-width: 1000px) {
     .nav-phone-number { display: none; }
-    .nav-favorites .favorite-count { top: 5px; right: 0; background: transparent; border: 0; font-size: 10px; font-weight: 500; }
   }
   .card-compare { margin-top: 14px; }
   .detail-compare { margin-top: 16px; }
@@ -1198,10 +1239,10 @@
     overflow: clip;
     color-scheme: light;
   }
-  .design.orbit:not(.dark) {
+  :global(:where(html)[data-theme='light']) .design.orbit {
     --bg: #f5f5f1;
   }
-  .design.dark {
+  :global(:where(html)[data-theme='dark']) .design {
     --bg: #0c0c0e;
     --surface: #17171a;
     --text: #f5f5f1;
@@ -3734,10 +3775,10 @@
   }
   /* Orbit's next chapter: a larger photograph, with a separate typographic focal point. */
   .orbit .orbit-object {
-    width: 53%;
+    width: 47%;
     height: 64%;
-    left: 43%;
-    top: calc(17% + 5px);
+    left: 48%;
+    top: calc(17% + 42px);
   }
   .orbit .orbit-title {
     z-index: 2;
@@ -3841,7 +3882,7 @@
       padding-top: clamp(
         0px,
         calc((100svh - var(--intro-height)) / 2 - var(--hero-nav-space)),
-        4svh
+        3.5svh
       );
     }
     .orbit .orbit-stage,
@@ -3864,7 +3905,7 @@
 
   /* Photo stays edge-to-edge; only the information below it receives padding. */
   .design.orbit { --vehicle-card-hover-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent); }
-  .design.orbit.dark { --vehicle-card-hover-shadow: 0 0 22px color-mix(in srgb, var(--text) 12%, transparent); }
+  :global(:where(html)[data-theme='dark']) .design.orbit { --vehicle-card-hover-shadow: 0 0 22px color-mix(in srgb, var(--text) 12%, transparent); }
   .vehicle-card, .related-grid > a {
     background: var(--bg);
   }

@@ -1,0 +1,140 @@
+/* Reference: the homepage's "Não vendemos..." panel, measured as opaque rgb(224,224,221).
+   Change this single gray-surface token to update the public light theme together.
+   Photography, the map, brand colors, local dark contact/footer palettes and dark mode stay independent. */
+:where(html)[data-theme='light'] .design.orbit {
+  --orbit-gray-surface: #e0e0dd;
+  --orbit-review-paper: #fafaf7;
+  --orbit-page-background: #f5f5f1;
+  --bg: var(--orbit-page-background);
+  --surface: var(--orbit-gray-surface);
+  --muted: #555658;
+  --line: #25272a30;
+  --orbit-panel-bg: var(--orbit-gray-surface);
+  /* Navbar-only exception: the approved lighter neutral surface, without reflections. */
+  --orbit-nav-surface: #f2f2ef;
+}
+
+:where(html)[data-theme='light'] .design.orbit :is(
+  .vehicle-card, .related-grid > a, .discover, .trust-services article,
+  .services article, .reviews article, .orbit-perspective, .orbit-faq,
+  .contact-dialog, .favorites-page .empty, .comparison-page .empty,
+  .catalog .empty-state
+) {
+  --bg: var(--orbit-gray-surface);
+  --surface: var(--orbit-gray-surface);
+  --text: #222325;
+  --muted: #4e5052;
+  --line: #22232530;
+  --orbit-panel-bg: var(--orbit-gray-surface);
+  --vehicle-card-hover-shadow: 0 8px 24px #0002;
+  background: var(--orbit-gray-surface);
+  color: var(--text);
+}
+
+/* Match the specificity of the existing home, inner-page and pinned navbar variants. */
+:where(html)[data-theme='light'] .design.orbit:is(.orbit-home, .orbit-inner, .porsche-lab) > header.stand-header {
+  --bg: var(--orbit-nav-surface);
+  background: var(--orbit-nav-surface);
+  box-shadow: 0 1px 0 #25272a12, 0 6px 18px #17171908;
+}
+:where(html)[data-theme='light'] .design.orbit .stand-header #stand-navigation {
+  background: transparent;
+}
+@media (max-width: 1000px) {
+  :where(html)[data-theme='light'] .design.orbit .stand-header #stand-navigation {
+    --bg: var(--orbit-nav-surface);
+    background: var(--orbit-nav-surface);
+    box-shadow: 0 1px 0 #25272a12, 0 12px 24px #1717190d;
+  }
+}
+:where(html)[data-theme='light'] .design.orbit:is(.orbit-home, .orbit-inner, .porsche-lab) > header.stand-header {
+  transition-property: height, min-height, transform;
+}
+:where(html)[data-theme='light'] .design.orbit.orbit-inner > .stand-header.stand-header.stand-header {
+  transition-property: height, min-height, transform;
+}
+:where(html)[data-theme='light'] .design.orbit .trust-services article { transition-property: border-color; }
+:where(html)[data-theme='light'] .design.orbit .about { background: var(--orbit-gray-surface); }
+:where(html)[data-theme='light'] .design.orbit > .services {
+  background: var(--orbit-gray-surface);
+  box-shadow: 0 0 0 100vmax var(--orbit-gray-surface);
+  clip-path: inset(0 -100vmax);
+}
+
+:where(html)[data-theme='light'] .design.orbit :is(.select-trigger:not(.visit-studio *), .select-list:not(.visit-studio *),
+  .catalog-filters input, .pair-picker select, .contact-dialog input,
+  .contact-dialog select, .contact-dialog textarea) {
+  background: var(--orbit-gray-surface);
+  border-color: #999a97;
+}
+:where(html)[data-theme='light'] .design.orbit :is(.comparison-page .summary-row th, .legal aside,
+  .comparison-page .fact-value, .empty-slots span, .second-option,
+  .privacy .publication-note, .company .timeline, .detail-facts, .visit-ticket) {
+  background: var(--orbit-gray-surface);
+}
+:where(html)[data-theme='light'] .design.orbit .comparison-page .empty {
+  padding-inline: clamp(20px, 3vw, 40px);
+  border-radius: 4px;
+}
+
+/* Owner-requested paper-card exception: static light and relief work without hover. */
+:where(html)[data-theme='light'] .design.orbit .reviews article[data-review-card] {
+  --bg: var(--orbit-review-paper);
+  background-color: var(--orbit-review-paper);
+  background-image: linear-gradient(135deg, #fff 0%, var(--orbit-review-paper) 48%, #f1f1ed 100%);
+  border-color: #cececa;
+  border-bottom-color: #bdbdb7;
+  box-shadow: inset 0 1px 2px #ffffff55, 0 2px 0 #bcbcb733, 0 10px 22px #17171914;
+}
+/* Original light quote: historical --muted from DesignEdition, opacity from OrbitReviews. */
+:where(html)[data-theme='light'] .design.orbit .reviews .quote { color: #6b6b70; opacity: .35; }
+:where(html)[data-theme='light'] .design.orbit .reviews .avatar {
+  background: var(--orbit-gray-surface);
+  color: #48494b;
+  box-shadow: inset 0 0 0 1px #bcbcb64d;
+}
+:where(html)[data-theme='light'] .design.orbit .visit-ticket { border-color: #c2c2be; }
+:where(html)[data-theme='light'] .design.orbit .original-tone .call-action,
+:where(html)[data-theme='light'] .design.orbit .original-tone .button.primary {
+  background: var(--orbit-gray-surface);
+  border-color: var(--orbit-gray-surface);
+  color: #17231e;
+}
+
+/* Keep the hero canvas and local copy shadow independent. */
+:where(html)[data-theme='light'] .design.orbit.orbit-home[data-hero-version='3'] .orbit-intro {
+  --hero-base: color-mix(in srgb, var(--orbit-gray-surface) 25%, var(--orbit-page-background));
+  --hero-copy-shadow: #0c0c0e;
+  /* Keep top and lateral feathering; the photograph stays opaque at its bottom edge. */
+  --stand-vertical-mask: linear-gradient(180deg, transparent, #000 4%, #000);
+  --stand-bottom-fade: none;
+  --stand-mobile-vertical-fade: linear-gradient(180deg, color-mix(in srgb, var(--hero-base) 94%, transparent), color-mix(in srgb, var(--hero-base) 85%, transparent) 34%, transparent 62%);
+  --bg: var(--hero-base);
+  background: var(--hero-base);
+}
+:where(html)[data-theme='light'] .design.orbit.orbit-home[data-hero-version='3'] .orbit-copy {
+  --bg: var(--hero-copy-shadow);
+  --text: #f5f5f1;
+  --muted: #96969d;
+  color: var(--text);
+}
+.design.orbit.orbit-home[data-hero-version='3'] .orbit-intro {
+  --hero-shadow-tail: 0px;
+}
+.design.orbit.orbit-home[data-hero-version='3'] .orbit-copy {
+  /* Bound the copy's decorative paint at the intro floor, leaving the tilted photo free. */
+  clip-path: inset(-100vmax -100vmax calc(100% + var(--copy-top) - var(--intro-height) - var(--hero-shadow-tail) + 0.5px) -100vmax);
+}
+@media (min-width: 701px) and (prefers-reduced-motion: no-preference) {
+  .design.orbit.orbit-home[data-hero-version='3'] .orbit-intro {
+    --hero-shadow-tail: calc(4svh - clamp(0px, calc((100svh - var(--intro-height)) / 2 - var(--hero-nav-space, 94px)), 3.5svh));
+  }
+}
+.design.orbit.orbit-home[data-hero-version='3'] .orbit-copy::before {
+  /* Keep this decorative edge on the clipping plane so perspective cannot leave a gap. */
+  transform: none;
+  min-height: calc(var(--intro-height) - var(--copy-top) + 26px + 4svh + 16px);
+}
+:where(html)[data-theme='light'] .design.orbit.orbit-home .orbit-stats {
+  background: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--red) 10%, transparent), transparent 85%);
+}

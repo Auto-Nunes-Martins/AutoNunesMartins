@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from '$app/stores';
+  import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { tick, untrack, type Snippet } from 'svelte';
   import { Heart, ArrowUpRight, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-svelte';
   import { useFavorites } from '$lib/favorites';
@@ -38,7 +40,10 @@
   }
 </script>
 
-<svelte:head><title>Favoritos — Auto Nunes Martins</title><meta name="robots" content="noindex, follow" /><meta name="description" content="Retome as viaturas que guardou e compare as suas opções ao seu ritmo." /></svelte:head>
+<SocialMetadata title="Favoritos — Auto Nunes Martins" description="Retome as viaturas que guardou e compare as suas opções ao seu ritmo." canonical={new URL('/favoritos', $page.url.origin).href} />
+
+<svelte:head>
+  <link rel="canonical" href={new URL('/favoritos', $page.url.origin).href} /><title>Favoritos — Auto Nunes Martins</title><meta name="robots" content="noindex, follow" /><meta name="description" content="Retome as viaturas que guardou e compare as suas opções ao seu ritmo." /></svelte:head>
 <main class="favorites-page">
   <a class="back" href="/viaturas"><ArrowLeft size={15} aria-hidden="true" /> Explorar viaturas</a>
   <div class="intro"><div><p class="eyebrow">AS ESCOLHAS QUE FICAM</p><h1 bind:this={heading} tabindex="-1">Chamaram-lhe<br /><span>a atenção.</span></h1><p class="lead">Guarde o que faz sentido. Volte aos detalhes quando quiser.</p></div><Heart class="intro-heart" size={66} strokeWidth={1} aria-hidden="true" /></div>

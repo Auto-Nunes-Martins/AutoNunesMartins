@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { page } from '$app/stores';
   import readiness from '$lib/publicationReadiness.json';
   import LegalFields from '../LegalFields.svelte';
@@ -14,6 +15,8 @@
   ];
 </script>
 
+<SocialMetadata title="Política de privacidade — Auto Nunes Martins" description="Informação de privacidade em preparação, funcionamento das preferências locais e dados por confirmar antes da publicação." canonical={new URL('/politica-de-privacidade', $page.url.origin).href} />
+
 <svelte:head>
   <title>Política de privacidade — Auto Nunes Martins</title>
   <meta
@@ -22,7 +25,6 @@
   />
   <meta name="robots" content="noindex, follow" />
   <link rel="canonical" href={`${$page.url.origin}/politica-de-privacidade`} />
-  <meta property="og:url" content={`${$page.url.origin}/politica-de-privacidade`} />
 </svelte:head>
 
 <main class="privacy" id="inicio">
@@ -30,7 +32,7 @@
     <p class="eyebrow">INFORMAÇÃO CLARA</p>
     <h1>Política de<br /><em>privacidade.</em></h1>
     <p>O que partilha connosco.<br />E o que precisa de saber.</p>
-    <small>Última atualização: 4 de outubro de 2026</small>
+    <small>Última atualização: 15 de outubro de 2026</small>
   </div>
   <div class="privacy-layout">
     <nav aria-label="Nesta política">
@@ -43,8 +45,9 @@
         <strong>Uma nota sobre esta versão</strong>
         <p>
           Este site é uma montra de viaturas usadas, não uma loja de venda de automóveis online. O
-          formulário atual é demonstrativo: não envia o pedido nem o guarda num serviço. Não
-          introduza dados pessoais reais para o experimentar.
+          serviço de contacto permite encaminhar pedidos por email quando estiver ativado.
+          Enquanto a identificação do responsável e as condições abaixo estiverem por confirmar,
+          o envio permanece indisponível. As páginas de demonstração continuam a não enviar pedidos.
         </p>
         <p>
           Antes da publicação, é necessário confirmar o responsável, os contactos e o funcionamento
@@ -74,16 +77,20 @@
           bancários ou informação sensível.
         </p>
         <p>
-          Nesta demonstração, os campos servem apenas para experimentar a interface. Quando existir
-          envio efetivo, a informação de privacidade terá de refletir o serviço utilizado e o
-          percurso real dos dados.
+          Quando o envio estiver ativo, o formulário transmite o pedido ao servidor do site e ao
+          backend, que o encaminha através do Resend para a caixa de email da empresa. Inclui apenas
+          o caminho da página de origem, sem parâmetros de pesquisa. Esta funcionalidade não cria
+          conta nem ficha de cliente, nem grava o pedido na base de dados do CRM. O backend utiliza
+          temporariamente contadores associados a um identificador derivado do endereço IP para
+          limitar abusos; esses contadores expiram em dez minutos e não contêm a mensagem.
         </p>
       </section>
       <section id="finalidades">
         <h2>03 <span>Para quê e com que fundamento</span></h2>
         <p>
-          Num serviço de contacto ativo, os dados do pedido destinam-se a responder às suas
-          perguntas, combinar uma visita e assegurar o acompanhamento necessário dessa conversa.
+          Os dados do pedido destinam-se a responder às suas perguntas, combinar uma visita e
+          assegurar o acompanhamento dessa conversa. Podemos responder por email e confirmar um
+          horário acordado. O envio do formulário não confirma automaticamente uma visita.
         </p>
         <p>
           Consoante o pedido, o fundamento poderá ser a realização de diligências pré-contratuais
@@ -100,16 +107,22 @@
       <section id="conservacao">
         <h2>04 <span>Conservação, destinatários e segurança</span></h2>
         <p>
-          Se forem recebidos pedidos reais, a conservação deverá limitar-se ao tempo necessário para
+          Os pedidos recebidos na caixa de email devem ser conservados apenas pelo tempo necessário para
           lhes dar resposta e assegurar o acompanhamento justificado, tendo em conta obrigações
-          legais aplicáveis. Não está definido neste protótipo um prazo de conservação para um
-          serviço de contacto ativo.
+          legais aplicáveis. O prazo ou critério operacional da caixa de email e das suas cópias
+          de segurança deve ser confirmado no campo «Conservação» acima antes de ativar o envio.
+          A empresa deve aplicar esse prazo, não bastando publicá-lo nesta página.
         </p>
         <p>
-          Eventuais prestadores de alojamento, email ou suporte que precisem de tratar dados devem
+          O envio utiliza o Resend como prestador de email. Os prestadores de alojamento, caixa
+          de correio e suporte que precisem de tratar dados devem
           ser identificados e limitados ao estritamente necessário. A existência desses
           destinatários, de partilhas ou de transferências internacionais no serviço final está a
-          confirmar; esta página não presume que estejam implementados.
+          confirmar antes da ativação. O Resend disponibiliza um acordo de tratamento de dados e
+          informação sobre subcontratantes e transferências internacionais. Esses documentos e o
+          percurso efetivo devem ser verificados pela empresa antes de utilizar o serviço.
+          Consulte o <a href="https://resend.com/legal/dpa">acordo de tratamento do Resend</a> e
+          a <a href="https://resend.com/legal/subprocessors">lista de subcontratantes</a>.
         </p>
         <p>
           A proteção dos dados exige medidas técnicas e organizativas adequadas ao risco, incluindo
@@ -121,8 +134,14 @@
         <h2>05 <span>Navegação e preferências</span></h2>
         <p>Para repor a posição após recarregar a página, o site guarda no armazenamento de sessão deste separador o endereço completo da página, a posição de scroll e a hora. Só usa esse registo para reposição quando tem menos de um minuto; esse limite de utilização não é um apagamento automático. O registo acompanha a sessão do separador.</p>
         <p>
-          A interface guarda neste navegador a preferência de tema através de armazenamento local.
-          Pode apagar esta preferência nas definições do navegador. O funcionamento dos favoritos
+          Quando escolhe o tema claro ou escuro, a interface guarda essa preferência no armazenamento
+          local deste navegador (<code>localStorage</code>), sem prazo de expiração automático. A escolha
+          é aplicada antes da apresentação da página para evitar uma mudança visível de cores ao recarregar.
+          Esta funcionalidade não cria um cookie de tema, não envia essa preferência ao servidor e não
+          a utiliza para publicidade ou medição de visitas. Pode alterar o tema no botão da navegação
+          ou apagar a preferência nas definições de dados do site no navegador. Se o armazenamento
+          estiver bloqueado, a escolha pode manter-se apenas durante a navegação atual.
+          O funcionamento dos favoritos
           e da comparação é explicado na secção seguinte.
         </p>
         <p>

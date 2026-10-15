@@ -1,6 +1,9 @@
 // Parser-blocking, public-only startup: preserve reload position before first paint.
 // Keep scene formulas aligned with scrollTiming.ts; no auth or private API access.
 
+// app.html sets the document palette inline before loading this file.
+// CSS uses that document state, independently of the SSR component's class.
+
 // Restoring a document is not a user-requested smooth scroll.
 if (location.pathname === '/' || /^\/(viaturas|quem-somos|politica-de-privacidade|demo)(\/|$)/.test(location.pathname)) {
   document.documentElement.setAttribute('data-orbit-restoring', '');
@@ -36,6 +39,18 @@ if (location.pathname === '/' || /^\/(viaturas|quem-somos|politica-de-privacidad
 
 window.initializeOrbitDocument = function () {
   // The full SSR layout exists here, before the first paint and framework hydration.
+  document.querySelectorAll('.design.orbit').forEach(function (root) {
+    var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+    root.classList.toggle('dark', dark);
+    root.querySelectorAll('[data-theme-logo]').forEach(function (logo) {
+      logo.setAttribute('src', dark ? '/logo-transparent-white-v3.png' : '/logo-transparent.png');
+    });
+    root.querySelectorAll('[data-theme-command]').forEach(function (button) {
+      var label = dark ? 'Mudar para tema claro' : 'Mudar para tema escuro';
+      button.setAttribute('aria-label', label);
+      button.setAttribute('title', label);
+    });
+  });
   if (document.documentElement.hasAttribute('data-orbit-restoring')) {
     try {
       var navigation = performance.getEntriesByType('navigation')[0];

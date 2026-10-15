@@ -1,8 +1,11 @@
 <script lang="ts">
+  import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { page } from '$app/stores';
   import readiness from '$lib/publicationReadiness.json';
   import LegalFields from './LegalFields.svelte';
 </script>
+
+<SocialMetadata title="Informação legal — Auto Nunes Martins" description="Identificação do operador e informação legal em preparação. Dados por confirmar antes da publicação." canonical={new URL('/informacao-legal', $page.url.origin).href} />
 
 <svelte:head>
   <title>Informação legal — Auto Nunes Martins</title>

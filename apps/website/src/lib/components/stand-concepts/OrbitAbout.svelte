@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from '$app/stores';
+  import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { ArrowUpRight, ArrowDown } from 'lucide-svelte';
   import { aboutContent as content } from './aboutContent';
   import { photo } from './data';
@@ -8,7 +10,10 @@
   let { onContact }: { onContact: () => void } = $props();
 </script>
 
+<SocialMetadata title="Quem somos — Auto Nunes Martins" description="Conheça a Auto Nunes Martins e encontre os contactos para esclarecer dúvidas sobre a escolha do seu próximo automóvel." canonical={new URL('/quem-somos', $page.url.origin).href} />
+
 <svelte:head>
+  <link rel="canonical" href={new URL('/quem-somos', $page.url.origin).href} />
   <title>Quem somos — Auto Nunes Martins</title>
   <meta
     name="description"

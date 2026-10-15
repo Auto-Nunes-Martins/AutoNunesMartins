@@ -54,3 +54,60 @@
   .design.orbit.orbit-home[data-hero-version='2'] .home-stand-backdrop::after { background: linear-gradient(180deg, #080a0cee, #080a0cba 32%, #080a0c0a 58%, #080a0c99); }
   .design.orbit.orbit-home[data-hero-version='2'] .orbit-copy::before { background: none; }
 }
+
+/* Keep version 1's stage and original content spacing. The independent photograph
+   fills the intro, including its top padding, and extends beyond its width. */
+.design.orbit.orbit-home[data-hero-version='3'] .orbit-intro {
+  isolation: isolate;
+}
+.design.orbit.orbit-home[data-hero-version='3'] .home-stand-backdrop {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 50%;
+  width: var(--photo-width, 100vw);
+  height: var(--photo-height, 100%);
+  transform: translateX(-50%);
+  container-type: size;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg);
+}
+.design.orbit.orbit-home[data-hero-version='3'] .home-stand-backdrop img {
+  display: block;
+  position: absolute;
+  left: var(--photo-x, 50%);
+  top: var(--photo-y, 54%);
+  /* The existing 4:3 photograph is 6% smaller than cover, showing more context. */
+  width: max(var(--photo-zoom, 94cqw), var(--photo-ratio-zoom, 125.333cqh));
+  max-width: none;
+  height: auto;
+  transform: translate(calc(-1 * var(--photo-x, 50%)), calc(-1 * var(--photo-y, 54%)));
+  /* Feather physical or cropped image edges independently of the interior fade.
+     Each crop is at most 45%; the feather bands are at most 5%, so stops stay ordered. */
+  mask-image:
+    var(--lateral-mask, linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent)),
+    var(--stand-vertical-mask, linear-gradient(180deg, transparent, #000 4%, #000 96%, transparent)),
+    linear-gradient(90deg,
+      transparent var(--photo-crop-left, 0%),
+      #000 calc(var(--photo-crop-left, 0%) + min(5%, 56px)),
+      #000 calc(100% - var(--photo-crop-right, 0%) - min(5%, 56px)),
+      transparent calc(100% - var(--photo-crop-right, 0%)));
+  mask-composite: intersect;
+}
+.design.orbit.orbit-home[data-hero-version='3'] .home-stand-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    var(--lateral-fade, linear-gradient(90deg, var(--bg), color-mix(in srgb, var(--bg) 92%, transparent) 22%, transparent 62%, color-mix(in srgb, var(--bg) 55%, transparent) 90%, var(--bg))),
+    var(--stand-bottom-fade, linear-gradient(0deg, var(--bg), transparent 28%));
+}
+@media (max-width: 700px) {
+  .design.orbit.orbit-home[data-hero-version='3'] .home-stand-backdrop img { left: var(--photo-x, 54%); top: var(--photo-y, 50%); transform: translate(calc(-1 * var(--photo-x, 54%)), calc(-1 * var(--photo-y, 50%))); }
+  .design.orbit.orbit-home[data-hero-version='3'] .home-stand-backdrop::after {
+    background:
+      var(--stand-mobile-vertical-fade, linear-gradient(180deg, color-mix(in srgb, var(--bg) 94%, transparent), color-mix(in srgb, var(--bg) 85%, transparent) 34%, transparent 62%, var(--bg))),
+      var(--lateral-fade, linear-gradient(90deg, color-mix(in srgb, var(--bg) 65%, transparent), transparent 20%, transparent 80%, color-mix(in srgb, var(--bg) 65%, transparent)));
+  }
+}

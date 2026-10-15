@@ -28,7 +28,7 @@
     { "id": "forms", "label": "Decidir e validar o funcionamento final dos formulários demonstrativos", "status": "pending" },
     { "id": "hosting", "label": "Verificar alojamento, cookies, armazenamento, logs e serviços externos em produção", "status": "pending" },
     { "id": "legalReview", "label": "Rever informação legal aplicável com os dados e atividade confirmados", "status": "pending" },
-    { "id": "build", "label": "Validar build Vercel no ambiente de publicação; EPERM de symlink observado no Windows", "status": "pending" },
+    { "id": "build", "label": "Validar build e runtime Node no Render no ambiente de publicação", "status": "pending" },
     { "id": "release", "label": "Validar domínio, indexação, conteúdo, acessibilidade e percursos finais antes da publicação", "status": "pending" }
   ]
 }

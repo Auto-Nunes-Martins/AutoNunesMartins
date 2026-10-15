@@ -38,7 +38,19 @@
 .design.orbit .nav-phone { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 12px 18px; border-radius: 4px; background: var(--red); color: #fff; font-size: 13px; white-space: nowrap; text-decoration: none; }
 .design.orbit .nav-phone:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
 .design.orbit .nav-phone { gap: 8px; }
-.design.orbit .nav-phone svg { flex-shrink: 0; }
+/* Increase the glyph while reserving its original horizontal advance inside the CTA. */
+.design.orbit .nav-phone svg { flex-shrink: 0; width: 20px; height: 20px; margin-inline: -2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .design.orbit .nav-phone svg { animation: orbit-phone-attention 5s ease-in-out infinite; }
+  /* 4.48 seconds at rest, then the original 520ms ringing gesture. */
+  @keyframes orbit-phone-attention {
+    0%, 89.6%, 100% { transform: rotate(0); }
+    91.68% { transform: rotate(-16deg); }
+    93.76% { transform: rotate(12deg); }
+    95.84% { transform: rotate(-8deg); }
+    97.92% { transform: rotate(4deg); }
+  }
+}
 .design.orbit .nav-phone { box-shadow: inset 0 0 0 1px #ffffff00, 0 3px 12px #e3061300; }
 .design.orbit .nav-phone:focus-visible { box-shadow: inset 0 0 0 1px #ffffff40, 0 3px 12px #e3061333; }
 @media (hover: hover) {
@@ -54,7 +66,7 @@
   .design.orbit header .header-actions { gap: 8px; }
   .design.orbit .nav-phone { min-height: 40px; padding: 10px; font-size: 11px; }
   .design.orbit .nav-phone { gap: 6px; }
-  .design.orbit .nav-phone svg { width: 14px; height: 14px; }
+  .design.orbit .nav-phone svg { width: 18px; height: 18px; }
 }
 @media (max-width: 380px) {
   .design.orbit .stand-header { padding-inline: 8px; gap: 6px; }
@@ -82,13 +94,13 @@
 }
 .design.orbit.orbit-home.nav-pinned > header[inert] { pointer-events: none; }
 /* Match the perspective surface composited over the page, retaining subtle translucency. */
-.design.orbit:not(.dark) {
+:where(html)[data-theme='light'] .design.orbit {
   --orbit-nav-surface: color-mix(in srgb, var(--text) 2%, var(--bg));
 }
-.design.orbit:not(.dark) > header.stand-header,
-.design.orbit.orbit-home:not(.dark) > header.stand-header,
-.design.orbit.orbit-inner.nav-compact:not(.dark) > header.stand-header,
-.design.orbit.orbit-company:not(.dark) > header.stand-header {
+:where(html)[data-theme='light'] .design.orbit > header.stand-header,
+:where(html)[data-theme='light'] .design.orbit.orbit-home > header.stand-header,
+:where(html)[data-theme='light'] .design.orbit.orbit-inner.nav-compact > header.stand-header,
+:where(html)[data-theme='light'] .design.orbit.orbit-company > header.stand-header {
   background: color-mix(in srgb, var(--orbit-nav-surface) 94%, transparent);
   backdrop-filter: blur(8px);
 }
@@ -106,7 +118,7 @@
   .design.orbit.orbit-home.nav-pinned > header { height: 72px; }
   .design.orbit.orbit-home header nav { top: 100%; max-height: calc(100svh - 82px); overflow-y: auto; }
   .design.orbit.orbit-home.nav-pinned header nav { max-height: calc(100svh - 72px); }
-  .design.orbit:not(.dark) > header.stand-header > nav {
+  :where(html)[data-theme='light'] .design.orbit > header.stand-header > nav {
     background: color-mix(in srgb, var(--orbit-nav-surface) 98%, transparent);
     backdrop-filter: blur(8px);
   }
@@ -420,9 +432,9 @@
      Only the small, moving pool of light can tint individual nearby letters. */
   background-image:
     radial-gradient(
-      ellipse 440px 380px at var(--light-x, -1000px) var(--light-y, -1000px),
+      ellipse 480px 420px at var(--light-x, -1000px) var(--light-y, -1000px),
       rgb(255 48 70 / calc(var(--nearby-light, 0) * 0.98)),
-      rgb(244 42 61 / calc(var(--nearby-light, 0) * 0.58)) 38%,
+      rgb(244 42 61 / calc(var(--nearby-light, 0) * 0.68)) 38%,
       transparent 100%
     ),
     linear-gradient(var(--text), var(--text));

@@ -132,7 +132,7 @@
   .review-content { position: relative; display: flow-root; }
   .review-baseline { position: absolute; inset: 0 0 auto; visibility: hidden; pointer-events: none; }
   .stars { display: block; color: #b8860b; font-size: 15px; letter-spacing: .15em; margin-bottom: 20px; }
-  :global(.dark) .stars { color: #e8b94f; }
+  :global(:where(html)[data-theme='dark']) .stars { color: #e8b94f; }
   .empty { color: inherit; }
   .review-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
   .review-header { display: contents; }
@@ -143,7 +143,7 @@
   .review-person h3 { margin-bottom: 0; }
   .verification { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; color: #637b6d; font-size: 10px; }
   .verification svg { width: 14px; height: 14px; flex-shrink: 0; }
-  :global(.dark) .verification { color: #899e91; }
+  :global(:where(html)[data-theme='dark']) .verification { color: #899e91; }
   h3 { font-size: 16px; letter-spacing: -.02em; font-weight: 500; margin-bottom: 10px; }
   .review-copy { font-size: var(--orbit-type-body); line-height: 1.8; color: var(--muted); }
   .review-ending { white-space: nowrap; }
