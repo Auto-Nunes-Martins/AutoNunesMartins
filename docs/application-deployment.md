@@ -1,3 +1,5 @@
+> Current target (15 October 2026): one Node/Docker service on Render. See [render-single-service.md](render-single-service.md). The Vercel deployment configuration described below is historical and has been removed; separate workspaces and development commands remain.
+
 # Independent applications
 
 Before any public website launch/readiness review, consult [publication-readiness.md](publication-readiness.md). Legal fields and contact/service confirmations remain pending; the manual readiness check is separate from builds and does not certify compliance.

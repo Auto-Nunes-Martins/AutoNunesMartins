@@ -1,0 +1,120 @@
+# Serviço único no Render (ensaio sem DNS)
+
+Preparação em 15 de outubro de 2026. O website, o CRM e o backend continuam em `apps/website`, `apps/crm` e `backend`. Um contentor executa três processos Node internos e um gateway; só o gateway escuta a porta pública `PORT`. Não é um serviço serverless e não adormece por inatividade quando usado um plano pago adequado.
+
+## Endereços do ensaio
+
+Usar a URL HTTPS temporária que o Render atribuir, sem barra final:
+
+- Website: `https://<serviço>.onrender.com/`
+- CRM: `https://<serviço>.onrender.com/crm/` (abrir diretamente; o website não tem ligação para o CRM).
+- API: `/api/...`; apenas a projeção pública existente é anónima. A API privada exige Bearer; os relays CRM obtêm o token Clerk no servidor.
+- Healthcheck: `/healthz`, apenas `{ "ok": true }`; verifica os listeners internos, **não** a disponibilidade do Supabase ou do Clerk.
+
+`/api/contact` pertence ao website; `/api/public/contact` pertence ao backend e mantém a proteção relay existente. `/webhooks/clerk` mantém a validação de assinatura. `/crm/api/...` pertence ao CRM; não cai na API pública nem no website. Os listeners internos são `127.0.0.1:4100` (backend), `4101` (website) e `4102` (CRM). As chamadas SSR usam `INTERNAL_BACKEND_URL`, definido pelo launcher, e não voltam a passar pelo gateway. No browser, os caminhos são relativos; não existe localhost de produção.
+
+## Preparação no painel Render
+
+1. Rever as alterações na pasta principal e disponibilizá-las no repositório ligado ao Render quando decidir avançar. A preparação técnica não executa deploy. Os commits e o push finais foram pedidos separadamente; consultar o registo de alterações acumuladas.
+2. Criar **um Web Service Docker**, contexto na raiz do monorepo e Dockerfile `./Dockerfile`. `backend/Dockerfile` é uma cópia compatível com o mesmo contexto raiz, para eliminar o antigo arranque que aplicava migrações automaticamente. Não definir o contexto só como `backend`.
+3. Escolher um plano pago sempre ligado. `render.example.yaml` é um exemplo para rever, não foi aplicado. Copiar/renomear para `render.yaml` apenas se pretender usar Blueprints. O plano, recursos e preços finais devem ser confirmados no painel; não há garantia de que 512 MB bastem.
+4. Com a URL temporária atribuída, configurar as variáveis abaixo. Se precisar de um primeiro build para obter a URL, configurar os valores finais e fazer **rebuild** depois. O arranque rejeita origens incoerentes.
+5. Definir healthcheck `/healthz`. Não configurar pre-deploy/start com `prisma migrate`, seed ou importação. Os comandos são `yarn build:service` e `yarn start:service`; em Docker o build corre no Dockerfile e o CMD inicia o serviço.
+6. Fazer o deploy manualmente e acompanhar logs/health/memória. Credenciais locais não são transferidas automaticamente. Não colar `.env` no código ou no Dockerfile.
+
+## Variáveis (sem credenciais neste guia)
+
+| Nome | Quando / finalidade |
+| --- | --- |
+| `WEBSITE_ORIGIN` | Runtime. Origem HTTPS exata do Render, sem caminho/barra final. |
+| `PUBLIC_WEBSITE_URL` | Build. Mesma origem do website; usada pelo CRM para abrir a ficha pública. Nunca herda `localhost:5173` no build conjunto. Alterar exige rebuild. |
+| `CRM_ORIGIN` | Runtime. Igual a `WEBSITE_ORIGIN` neste ensaio. |
+| `CRM_BASE_PATH` | Build **e** runtime: `/crm` neste ensaio. Alterar exige rebuild. |
+| `SITE_NOINDEX` | `true` no ensaio. O hostname `.onrender.com` também força noindex. |
+| `PUBLIC_CLERK_PUBLISHABLE_KEY` | Chave pública da mesma instância Clerk, build/runtime CRM. Não é uma chave secreta. |
+| `CLERK_PUBLISHABLE_KEY` | Mesma chave pública, configuração do backend. |
+| `CLERK_SECRET_KEY` | Segredo privado da mesma instância Clerk, runtime. |
+| `CLERK_WEBHOOK_SECRET` | Segredo de assinatura do endpoint webhook que escolher configurar; runtime. |
+| `ADMIN_CLERK_USER_IDS` | IDs Clerk `user_...` dos administradores autorizados, separados por vírgulas. Obrigatório no launcher conjunto; guard CRM e backend verificam antes de consultar/provisionar utilizadores. |
+| `DATABASE_URL` | Ligação ao PostgreSQL Supabase **existente**, runtime. Confirmar modo de ligação/pooler, TLS e conectividade a partir do Render. |
+| `DIRECT_URL` | Só se necessário para ferramentas Prisma/manutenção manual. Não há migração automática. |
+| `SUPABASE_URL` | URL do projeto Supabase Storage existente, runtime. |
+| `SUPABASE_SECRET_KEY` | Chave privada do servidor Supabase; aceita-se `SUPABASE_SERVICE_ROLE_KEY` como alternativa legada. Nunca PUBLIC_. |
+| `SUPABASE_STORAGE_BUCKET` | Nome do bucket privado existente; exemplo `vehicle-photos`, confirmar nome real. |
+| `CONTACT_ENABLED` | Manter `false` enquanto faltarem dados oficiais/configuração de email. |
+| `CONTACT_PRIVACY_READY` | Manter `false`; os bloqueios legais existentes continuam ativos. |
+| `PORT` | Atribuída pelo Render; o gateway usa-a. |
+| `LOG_LEVEL` | Opcional; exemplo `info`. |
+
+`PUBLIC_BACKEND_URL=''`, `INTERNAL_BACKEND_URL`, `ORIGIN`, `HOST` e limites são definidos pelo build/launcher conjunto. Não substituir as portas internas nem usar `PUBLIC_BACKEND_URL=http://localhost:...` no Render. O website é iniciado sem variáveis Clerk, DB ou Supabase privadas. Os ficheiros `.env` de todas as pastas ficam excluídos do contexto Docker, incluindo quando o Dockerfile está em `backend`.
+
+## Clerk e Supabase: o que ainda precisa de validação externa
+
+Não é necessário mover a base de dados ou fotografias para o Render. Ter o Supabase online não garante que as credenciais, a rede, o schema e o bucket usados no novo ambiente estejam corretos.
+
+No Clerk, confirmar a instância/ambiente, login no hostname temporário, origens/redirects permitidos e regresso a `/crm/dashboard`; logout regressa a `/crm/`. O launcher fornece o sign-in `/crm/`. As cookies continuam a ser geridas pelo SDK Clerk; no ensaio com uma só origem podem ter path `/`, mas o website não inicializa Clerk, não interpreta sessões e não usa essas cookies para dados públicos. Não restringir manualmente cookies do SDK sem validar o fluxo. Configurações production Clerk que exijam domínio próprio podem impedir este ensaio: validar no painel, ou usar uma instância de desenvolvimento apropriada com os respetivos avisos. Nenhuma configuração externa foi alterada nesta tarefa. A allowlist de IDs no servidor impede que um novo registo Clerk obtenha acesso administrativo automaticamente neste serviço.
+
+Se utilizar webhook, configurar posteriormente a URL temporária `/webhooks/clerk` e o segredo correspondente; este guia não cria endpoints no Clerk. Validar sessões nos dois administradores e confirmar que uma conta fora da allowlist recebe 403, e que uma sessão anónima não lê endpoints privados.
+
+No Supabase existente, confirmar ligação/read do catálogo e signed read das fotografias. Testar uma nova fotografia numa viatura de teste apenas quando autorizar escrita real; confirmar ordem/foto pública aprovada. As migrações pendentes devem ser revistas separadamente, com backup e autorização operacional; não foram executadas nesta tarefa. O healthcheck não substitui estes testes. Email real continua desligado.
+
+## Novas fotografias
+
+O browser envia cada ficheiro ao relay autenticado CRM, que faz streaming para o backend. O backend autentica/autoriza e reserva uma admissão global **antes de ler o corpo**. Existe um processamento global de cada vez e **zero pedidos à espera**: concorrentes recebem 429 com `Retry-After: 3` e podem tentar novamente. Não se acumulam buffers de vários clientes. Esta limitação aplica-se a este serviço de uma instância; se escalar para várias instâncias, cada processo tem a sua própria admissão.
+
+Aceita JPEG, PNG e WebP estáticos, até **20 MiB** e **24 megapíxeis**; HEIC/HEIF e animações não são aceites. A imagem é detetada/validada pelos bytes. Sharp/libvips usa uma thread, cache desativada e timeout de 15 s por tentativa. Ficheiros válidos até 1.100.000 bytes, lado máximo 2560 e orientação normal mantêm os bytes e o formato. As restantes imagens são orientadas automaticamente, mantêm proporções, não são ampliadas e passam a WebP: lado máximo 2560, qualidades 90/86/82; tentativa de 2200 a qualidade 82. Se ainda exceder 2 MB, reduz o lado máximo por 1920, 1600 e 1280, mantendo qualidade 82, apenas até cumprir esse teto. A meta de 1,1 MB é aproximada, com prioridade ao detalhe visual; aceita resultados até 2.000.000 bytes. Se exceder o limite defensivo ou o orçamento de 45 s, falha explicitamente. Não rejeita uma fotografia válida apenas por ultrapassar a meta aproximada. Não acrescenta bytes a imagens pequenas só para atingir a meta. A reencodificação remove metadados; o caminho que preserva os bytes mantém os metadados originais.
+
+MIME e extensão acompanham o resultado real. O backend grava apenas o resultado otimizado no bucket Supabase existente e depois acrescenta o caminho com compare-and-set, preservando fotos concorrentes, ordem/capa e permissões públicas. As novas fotos continuam privadas até aprovação pela lógica existente. Falha antes de persistir não remove fotos anteriores. Se a gravação na DB falhar, só tenta limpar o seu próprio objeto depois de confirmar que não está referenciado; uma resposta DB ambígua pode deixar um objeto órfão em vez de apagar uma fotografia válida. Não existe alteração em massa, R2 ou remoção de fotografias ao vender.
+
+`POST /photos/upload-url` devolve 410 e `POST /photos` já não aceita `{path}`: não é possível contornar a otimização através da API antiga. URLs assinadas emitidas antes desta alteração podem ainda permitir escrever no Storage até expirarem, mas não permitem associar esse objeto pela API nova. Confirmar que as políticas do bucket não concedem escrita pública direta; não foram alteradas remotamente.
+
+Limites alinhados: CRM/Express aceitam 20 MiB, gateway faz streaming sem ler o corpo; timeout do relay/upstream 180 s, receção de pedidos 120 s e operações Supabase 30 s. Uma foto sem resposta não deve ser reenviada cegamente: atualizar a galeria primeiro, porque a escrita pode ter sido concluída apesar da desconexão.
+
+## Indexação, origens e futuro domínio
+
+O gateway aceita apenas os hosts das origens configuradas e rejeita caminhos ambíguos. Recria os cabeçalhos de proxy a partir da configuração, ignorando os recebidos; as origens canónicas do SvelteKit são explícitas. As ações verificam a origem, mantendo também o CSRF SvelteKit. CRM inteiro, redirects, assets e erros recebem `noindex, nofollow` e `private, no-store`; a API não tem cache partilhada. No preview Render, o website recebe `noindex, follow`. Mantêm-se SSR, canonical/OG/JSON-LD, sitemap/robots e regras existentes de demos/filtros. A whitelist de projeção pública/fotografias aprovadas não é substituída por rotas genéricas.
+
+Futuramente, depois de configurar domínio/DNS por decisão separada, usar `WEBSITE_ORIGIN` para o domínio público, `CRM_ORIGIN` para o subdomínio e `CRM_BASE_PATH=''`. Fazer novo build com o mesmo valor vazio e `PUBLIC_WEBSITE_URL` do website. No domínio público remover `SITE_NOINDEX=true` apenas após aprovação; o noindex próprio do CRM/demos continua. O arranque rejeita basepath ou origem pública diferentes do manifesto de build. Não há nomes reais inventados ou configuração DNS nesta entrega.
+
+## Desenvolvimento e validação
+
+O desenvolvimento separado continua com `yarn dev:website`, `yarn dev:crm` e `yarn workspace @anm/backend dev`; os dois frontends usam sempre adapter-node. O modo Node usa a versão SvelteKit existente, sem upgrade do framework.
+
+Para reproduzir localmente o conjunto: definir variáveis runtime numa sessão privada, `CRM_BASE_PATH=/crm`, `PUBLIC_WEBSITE_URL` e `WEBSITE_ORIGIN` iguais a uma origem localhost com a porta pública, `CRM_ORIGIN` igual; executar `yarn build:service` e `yarn start:service`. Não imprimir variáveis secretas. Para Docker, passar apenas os argumentos públicos `PUBLIC_CLERK_PUBLISHABLE_KEY`, `PUBLIC_WEBSITE_URL` e `CRM_BASE_PATH`. Segredos só em runtime. `docker build --build-arg PUBLIC_WEBSITE_URL=... --build-arg PUBLIC_CLERK_PUBLISHABLE_KEY=... -t anm-service .` Não passar DB/Clerk secret/Supabase secrets como build args. A imagem inclui um smoke test Linux de Sharp e usa Node 22 Debian, OpenSSL e tini, com utilizador sem privilégios.
+
+`yarn test:service` verifica o gateway com listeners HTTP falsos. As suites das apps verificam os guards, CSRF/basepath, projeção pública, SSR/SEO e a lógica de fotografias com mocks/fixtures, sem tocar no Supabase real. SIGTERM fecha a porta pública, termina os três filhos e desconecta Prisma; falha de um filho termina todo o serviço para o Render o reiniciar. Nenhuma política de migração automática é executada.
+
+Estimativa de uso fornecida: 2 administradores × 100 pedidos API/dia × 22 dias = 4.400; 300 visitas × 10 = 3.000; total 7.400 pedidos API/mês. 100 novas fotos/mês à meta de 1,1 MB são aproximadamente 110 MB de novos ficheiros (não inclui originais existentes, respostas, backups ou tráfego de leitura). Estes números não dimensionam os picos de CPU/memória nem validam 512 MB. Medir o conjunto sob SSR, dois utilizadores e upload com os originais reais; subir de plano se necessário.
+
+Documentação primária: [SvelteKit adapter-node](https://svelte.dev/docs/kit/adapter-node), [Docker no Render](https://render.com/docs/docker), [segredos Docker no Render](https://render.com/docs/docker-secrets), [Blueprints](https://render.com/docs/blueprint-spec).
+
+As pendências de `docs/publication-readiness.md` e `apps/website/src/lib/publicationReadiness.json` continuam pendentes. Build/testes não aprovam os dados, informação legal, indexação final nem publicação.
+
+### Evidência desta implementação (15 de outubro de 2026)
+
+- Builds individuais aprovados: backend TypeScript, schemas partilhados JavaScript, website e CRM SvelteKit com adapter Node (framework mantido em 2.60.1). CRM check: 0 erros, 15 avisos existentes; website check registado abaixo após verificação final.
+- Suites completas: website 358 testes; CRM 119; backend 234 antes do teste adicional de fotografia do repositório. Gateway: 2 testes HTTP/configuração. Não usam credenciais nem dados do Supabase real.
+- Ensaio do `deployment/start.mjs` com **as três builds reais**, origem localhost e todas as credenciais fictícias: `/healthz` 200; `/quem-somos` 200 com canonical local e sem Clerk; `/crm` 308 para `/crm/`; login 200; páginas e endpoints CRM anónimos 303 para login; API privada anónima 401; logo e assets do CRM 200; POST cross-origin 403; robots 200. Sitemap 503 com backend/DB fictícios indisponíveis, preservando o comportamento de falha sem sitemap parcial. Fecho do launcher e filhos validado pelo mesmo caminho de shutdown via IPC local; sinais reais em Linux continuam por validar.
+- A fixture sintética 4032 × 3024 em JPEG de 12.180.165 bytes ficou em WebP 2200 × 1650 de 704.936 bytes; erro absoluto médio por canal 2,90/255 contra referência redimensionada. É uma amostra técnica, não uma validação visual de todos os telemóveis nem previsão de tamanho médio.
+- O comando conjunto chegou a `prisma generate` e encontrou `EPERM` ao renomear `query_engine-windows.dll.node`, em utilização por outro processo local. Não parámos esse processo. Os builds individuais usaram o cliente Prisma já gerado; o pipeline completo com instalação limpa fica por validar no Docker/Render.
+- Docker CLI e Docker Desktop não estão disponíveis nesta máquina. A imagem Linux e o smoke test Sharp incluído no Dockerfile **não foram executados**. Sharp foi executado apenas no Windows nesta validação. Memória de pico do contentor no Render e desempenho real continuam por medir.
+- Sem deploy, push, DNS, emails reais, alterações remotas Clerk/Render/Supabase, migrações ou reprocessamento de fotografias existentes. Nenhuma pendência legal/de dados foi resolvida por estes testes.
+
+### Docker local — decisão final
+
+Foi tentada a instalação oficial Docker Desktop 4.95.0 através de winget; o download teve o hash validado, mas o instalador terminou com código 1. A sessão não é administrativa. Não foi confirmado Docker Desktop/CLI instalado nem um daemon funcional.
+
+Verificação do sistema: Windows 11 Pro build 26200, Ryzen 7 5800X, 31,9 GiB de RAM, SLAT disponível, **virtualização firmware desativada**, hypervisor ausente e WSL não instalado. O utilizador decidiu não alterar a BIOS. Não haverá novas instalações, alterações BIOS/boot/WSL, reinício ou deploy nesta tarefa. O teste da imagem Linux passa a ficar pendente no Render quando o proprietário decidir fazer deploy. O ensaio Node local não substitui esse teste.
+
+Verificações finais adicionais: website Svelte check com 0 erros e 0 avisos; teste com JPEG fotográfico do repositório de 298.994 bytes preservou exatamente os bytes; os seis testes de otimização passaram. A suite backend completa anterior tinha 234 testes aprovados e o teste fotográfico adicional passou isoladamente. `yarn test:service:runtime` reproduz o ensaio das três builds com valores fictícios, desde que tenham sido construídas para `/crm` e `PUBLIC_WEBSITE_URL=http://127.0.0.1:10000`; não usa as credenciais reais.
+
+### Push e publicação automática
+
+O suporte ativo Vercel foi removido por pedido do proprietário: adapters, configurações Git/deploy, scripts exclusivos e diretórios gerados. As referências históricas de validações antigas são conservadas. A remoção local não desliga integrações externas: o estado dos projetos Vercel/Render ligados ao GitHub não foi consultado, e um push pode ativar automações existentes. O exemplo Render mantém autoDeployTrigger: off. Nenhum deploy manual, alteração de painel ou DNS foi executado.
+
+
+### Política final de tamanho das novas fotos
+
+Na clarificação final, o proprietário confirmou que 1,1 MB é um objetivo aproximado, não um teto obrigatório. A política conserva detalhe com qualidade WebP mínima 82; saídas acima da meta são aceites até ao limite defensivo de 2.000.000 bytes. Ficheiros já adequados e menores não são inflados. Não há reprocessamento de fotografias existentes.
+
+A decisão final é **meta aproximada de 1.100.000 bytes e máximo obrigatório de 2.000.000 bytes por nova foto guardada**. Se não conseguir, devolve 422 antes de escrever no Storage; o endpoint volta a verificar o tamanho final. As entradas podem ter até 20 MiB.

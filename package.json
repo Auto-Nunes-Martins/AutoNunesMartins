@@ -18,7 +18,11 @@
     "test": "yarn workspaces foreach -A run test",
     "format": "prettier --write \"**/*.{ts,svelte,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,svelte,json,md,css}\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:service": "node scripts/build-service.mjs",
+    "start:service": "node deployment/start.mjs",
+    "test:service": "node --test deployment/*.test.mjs",
+    "test:service:runtime": "node scripts/check-service-runtime.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
