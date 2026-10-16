@@ -35,6 +35,8 @@
       </div>
     </div>
     <figure class="hero-photo">
+      <picture style="display: contents">
+      <source type="image/avif" srcset={content.heroImage.avifSrcset} sizes="(max-width: 760px) 90vw, 78vw" />
       <img
         src={photo(content.heroImage.id, 960)}
         srcset={content.heroImage.srcset}
@@ -45,6 +47,7 @@
         fetchpriority="high"
         decoding="async"
       />
+      </picture>
     </figure>
   </section>
 
@@ -75,6 +78,8 @@
 
   <section class="approach frame" data-scene data-approach aria-labelledby="approach-title">
     <figure class="detail-photo" data-approach-target>
+      <picture style="display: contents">
+      <source type="image/avif" srcset={content.approach.avifSrcset} sizes="(max-width: 760px) 90vw, 46vw" />
       <img
         src={photo(content.approach.image, 960)}
         srcset={content.approach.srcset}
@@ -85,6 +90,7 @@
         loading="lazy"
         decoding="async"
       />
+      </picture>
       <figcaption>O nosso segundo stand</figcaption>
     </figure>
     <div class="approach-copy" use:entrance>

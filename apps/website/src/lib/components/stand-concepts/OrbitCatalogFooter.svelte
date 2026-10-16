@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { logoDark } from '$lib/localAssets';
+  import { logoDark, logoDarkSrcset } from '$lib/localAssets';
   import { ArrowUpRight } from 'lucide-svelte';
   import { standContact } from './standContact';
   let { onContact }: { onContact: () => void } = $props();
@@ -19,7 +19,7 @@
     </div>
   </div>
   <div class="practical">
-    <a class="brand" href="/"><img src={logoDark} alt="Auto Nunes Martins — início" width="180" height="80" /></a>
+    <a class="brand" href="/"><img src={logoDark} srcset={logoDarkSrcset} sizes="150px" alt="Auto Nunes Martins — início" width="180" height="80" /></a>
     <div class="visit"><p class="eyebrow">MORADA</p><address>{standContact.address ?? 'Morada por confirmar.'}</address></div>
     <div class="hours"><p class="eyebrow">HORÁRIO</p><dl>{#each standContact.hours as item}<div><dt>{item.days}</dt><dd>{item.time}</dd></div>{/each}</dl></div>
   </div>

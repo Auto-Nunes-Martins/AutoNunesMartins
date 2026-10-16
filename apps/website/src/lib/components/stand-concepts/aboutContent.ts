@@ -1,7 +1,4 @@
-import facade640 from '$lib/assets/images/about/auto-nunes-martins-fachada-640.jpg?url&no-inline';
-import facade1024 from '$lib/assets/images/about/auto-nunes-martins-fachada-1024.jpg?url&no-inline';
-import facadeV2640 from '$lib/assets/images/about/auto-nunes-martins-fachada-v2-640.jpg?url&no-inline';
-import facadeV21024 from '$lib/assets/images/about/auto-nunes-martins-fachada-v2-1024.jpg?url&no-inline';
+import { facade1, facade2 } from '$lib/localPhotos';
 
 export type TeamMember = {
   name: string;
@@ -17,8 +14,10 @@ export const aboutContent = {
   introduction:
     'Somos um stand independente, em Lisboa. Ajudamos a escolher o próximo carro com informação clara, tempo para decidir e uma equipa por perto.',
   heroImage: {
-    id: facade1024,
-    srcset: `${facade640} 640w, ${facade1024} 1024w`,
+    id: facade1.src,
+    srcset: facade1.srcset,
+    avif: facade1.avif,
+    avifSrcset: facade1.avifSrcset,
     alt: 'Fachada da Auto Nunes Martins com toldos vermelhos e viaturas em exposição no exterior',
   },
   origins: {
@@ -51,8 +50,10 @@ export const aboutContent = {
       'O nosso trabalho começa antes da visita: conhecer cada automóvel, cuidar da apresentação e reunir a informação que ajuda a comparar.',
       'Depois, ouvimos. Falamos sobre o que procura, esclarecemos dúvidas e acompanhamos os próximos passos. Queremos que decida com confiança — e ao seu ritmo.',
     ],
-    image: facadeV21024,
-    srcset: `${facadeV2640} 640w, ${facadeV21024} 1024w`,
+    image: facade2.src,
+    srcset: facade2.srcset,
+    avif: facade2.avif,
+    avifSrcset: facade2.avifSrcset,
     alt: 'Segundo stand da Auto Nunes Martins numa esquina, com fachada envidraçada e viaturas no interior',
   },
   teamIntroduction:

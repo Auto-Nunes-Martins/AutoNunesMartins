@@ -73,13 +73,23 @@ export function createGateway(settings, ports, ready = () => true, buildAssets =
         // Only adapter-confirmed build assets are public. Never infer cacheability
         // from a file extension (private routes can have one too).
         const immutablePrefix = `${route.service === 'crm' ? settings.base : ''}/_app/immutable/`;
+        const pathname = req.url.split('?')[0];
+        // mrmime 2.0.1 (bundled by the adapter) omits ICO. Supply its standard
+        // MIME only for registered build files, never guessed dynamic routes.
+        if (['website', 'crm'].includes(route.service) &&
+          ['GET', 'HEAD'].includes(req.method) && reply.statusCode === 200 &&
+          buildAssets.has(pathname) && pathname.endsWith('.ico') &&
+          (pathname.startsWith(immutablePrefix) || (route.service === 'website' && pathname === '/favicon.ico')) &&
+          !reply.headers['content-type'] && !reply.headers['set-cookie']) {
+          reply.headers['content-type'] = 'image/x-icon';
+        }
         const immutable = ['website', 'crm'].includes(route.service) &&
           ['GET', 'HEAD'].includes(req.method) &&
           req.url.split('?')[0].startsWith(immutablePrefix) &&
           buildAssets.has(req.url.split('?')[0]) &&
           ((reply.statusCode === 200 &&
             reply.headers['cache-control'] === 'public,max-age=31536000,immutable' &&
-            /^(?:text\/css|(?:text|application)\/javascript|image\/(?:png|jpeg|svg\+xml|webp|gif|x-icon)|font\/(?:woff2?|ttf|otf))(?:;|$)/i.test(reply.headers['content-type'] || '')) ||
+            /^(?:text\/css|(?:text|application)\/javascript|image\/(?:png|jpeg|svg\+xml|webp|avif|gif|x-icon|vnd\.microsoft\.icon)|font\/(?:woff2?|ttf|otf))(?:;|$)/i.test(reply.headers['content-type'] || '')) ||
             // sirv's 304 omits asset headers. The build inventory still proves
             // this URL names a non-sensitive file; SSR explicitly sets no-store.
             (reply.statusCode === 304 && req.headers['if-none-match'] && !reply.headers['cache-control'])) &&

@@ -85,6 +85,8 @@ Para reproduzir localmente o conjunto: definir variáveis runtime numa sessão p
 
 ### Recursos locais versionados (16 de outubro de 2026)
 
+Atualização posterior: os componentes passaram a usar novos derivados responsivos WebP/AVIF, mantendo os originais. Política, dimensões, medidas de qualidade e propostas de favicon não ativas estão em [image-optimization/README.md](image-optimization/README.md). O ensaio de cache acompanha os 40 recursos atualmente importados, em vez dos 18 da migração inicial abaixo.
+
 Logótipos, sete SVG de marcas, quatro variantes existentes das fachadas, mapa e placeholder do catálogo passam a imports Vite, com nomes contendo hash em `/_app/immutable/assets/`. O CRM importa os seus logótipos e respeita `/crm`. Não há redimensionamento, recompressão nem alterações de qualidade. As fontes/CSS/JS que já eram geridos pelo build continuam nesse mecanismo. A imagem social mantém o URL público estável; os originais em `static/` são conservados para compatibilidade com URLs/documentos antigos. Os novos usos devem importar as fontes em `src/lib/assets/`; não usar os originais públicos em componentes novos.
 
 O arranque clássico em `apps/website/assets/orbit-startup.js` também recebe hash. O hook SSR insere o URL em `app.html`, mantendo o script bloqueante antes da pintura e da hidratação. A escolha inicial de logótipo lê os URLs importados nos atributos do markup; as fórmulas de animação/restauro mantêm-se. O ficheiro legado público continua disponível para documentos antigos.

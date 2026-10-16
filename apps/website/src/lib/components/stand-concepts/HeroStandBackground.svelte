@@ -17,8 +17,10 @@
   function measure() {
     for (const index of [0, 1] as const) {
       const profile = settings.profiles[index], image = images[index];
-      if (!image?.parentElement) continue;
-      const box = image.parentElement.getBoundingClientRect();
+      if (!image) continue;
+      const layer = image.closest<HTMLElement>('.home-stand-backdrop');
+      if (!layer) continue;
+      const box = layer.getBoundingClientRect();
       const frame = responsiveStandFraming(profile, index, window.innerWidth, box.width, box.height);
       if (JSON.stringify(frames[index]) !== JSON.stringify(frame)) frames[index] = frame;
       const bounds = image.getBoundingClientRect();
@@ -37,7 +39,7 @@
     const frame = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(frame);
   });
-  const photos = [{ src: aboutContent.heroImage.id, srcset: aboutContent.heroImage.srcset }, { src: aboutContent.approach.image, srcset: aboutContent.approach.srcset }];
+  const photos = [{ src: aboutContent.heroImage.id, avif: aboutContent.heroImage.avif }, { src: aboutContent.approach.image, avif: aboutContent.approach.avif }];
   function style(profile: StandProfile) {
     const fade = lateralFade(profile.fade);
     return `--photo-width:${profile.width}vw;--photo-height:${profile.height}%;--photo-zoom:${profile.zoom}cqw;--photo-ratio-zoom:${profile.zoom * 4 / 3}cqh;--photo-crop-left:${profile.cropLeft}%;--photo-crop-right:${profile.cropRight}%;${profile.x === null ? '' : `--photo-x:${profile.x}%;`}${profile.y === null ? '' : `--photo-y:${profile.y}%;`}${fade === null ? '' : `--lateral-fade:${fade};--lateral-mask:linear-gradient(#000,#000);`}`;
@@ -63,7 +65,11 @@
 
 {#each photos as photo, index}
   <div class="home-stand-backdrop stand-layer" class:visible={current === index} data-stand-image={index + 1} data-active={current === index} aria-hidden="true" style={style(settings.profiles[index as StandIndex])}>
-    <img bind:this={images[index]} style={imageStyle(index)} src={photo.src} srcset={photo.srcset} sizes="100vw" width="1024" height="768" alt="" loading="eager" fetchpriority={index === 0 ? 'high' : 'low'} decoding="async" onload={() => { ready[index] = true; measure(); }} />
+    <!-- Full source resolution: this image is enlarged and clipped, even on mobile. -->
+    <picture style="display: contents">
+      <source type="image/avif" srcset={photo.avif} />
+      <img bind:this={images[index]} style={imageStyle(index)} src={photo.src} width="1024" height="768" alt="" loading="eager" fetchpriority={index === 0 ? 'high' : 'low'} decoding="async" onload={() => { ready[index] = true; measure(); }} />
+    </picture>
   </div>
 {/each}
 

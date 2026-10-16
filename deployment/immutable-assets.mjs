@@ -13,5 +13,9 @@ export function immutableAssets(base) {
       urls.add(`${prefix}/_app/immutable/${file.replaceAll('\\', '/')}`);
     }
   }
+  // Conventional browser fallback is a real public build file too, but remains
+  // outside the immutable prefix and never receives the hashed-asset policy.
+  const favicon = new URL('../apps/website/build/client/favicon.ico', import.meta.url);
+  if (fs.existsSync(favicon) && fs.statSync(favicon).isFile()) urls.add('/favicon.ico');
   return urls;
 }

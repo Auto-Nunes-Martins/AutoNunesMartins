@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { logoLight, logoDark } from '$lib/localAssets';
+  import { logoLight, logoDark, logoLightSrcset, logoDarkSrcset } from '$lib/localAssets';
   let {
     size = 'md',
     showCaption = false,
@@ -15,6 +15,8 @@
   <img
     class="light-logo"
     src={logoLight}
+    srcset={logoLightSrcset}
+    sizes={size === 'lg' ? '240px' : size === 'sm' ? '146px' : '190px'}
     alt="Auto Nunes Martins"
     width="1881"
     height="836"
@@ -22,6 +24,8 @@
   <img
     class="dark-logo"
     src={logoDark}
+    srcset={logoDarkSrcset}
+    sizes={size === 'lg' ? '240px' : size === 'sm' ? '146px' : '190px'}
     alt="Auto Nunes Martins"
     width="1881"
     height="836"

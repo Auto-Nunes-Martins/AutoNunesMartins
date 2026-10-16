@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { logoLight, logoDark, catalogPlaceholder } from '$lib/localAssets';
+  import { vehiclePhoto } from '$lib/vehiclePhoto';
+  import { logoLight, logoDark, logoLightSrcset, logoDarkSrcset, catalogPlaceholder } from '$lib/localAssets';
   import { publicErrorCopy } from '$lib/publicError';
   import HeroBackgroundTuner from './HeroBackgroundTuner.svelte';
   import { highlightSlides, type PublicHighlights, type HeroSlide } from '$lib/homepageHighlights';
@@ -418,8 +419,10 @@
   >
     <a class="logo" href="/"
       ><img
-        data-logo-light={logoLight} data-logo-dark={logoDark} data-theme-logo
+        data-logo-light={logoLight} data-logo-dark={logoDark} data-logo-light-srcset={logoLightSrcset} data-logo-dark-srcset={logoDarkSrcset} data-theme-logo
         src={isDark ? logoDark : logoLight}
+        srcset={isDark ? logoDarkSrcset : logoLightSrcset}
+        sizes="(max-width: 700px) 128px, 180px"
         alt="Auto Nunes Martins — início"
         width="180"
         height="80"
@@ -531,7 +534,9 @@
                 ? 'Imagem indisponível'
                 : 'Ampliar fotografia'}
               disabled={!!publicVehicle && !publicVehicle.photos.length}
-              ><img
+              ><img use:vehiclePhoto={{ src: publicVehicle?.photos.length
+                  ? publicPhoto(publicVehicle.slug, zoom)
+                  : photo(car.image, 2000) }}
                 src={publicVehicle?.photos.length
                   ? publicPhoto(publicVehicle.slug, zoom)
                   : photo(car.image, 2000)}
@@ -558,7 +563,7 @@
                       aria-label={'Ver fotografia ' + (i + 1)}
                       aria-pressed={zoom === i}
                       onclick={() => (zoom = i)}
-                      ><img src={publicPhoto(publicVehicle.slug, i)} alt="" loading="lazy" /><span
+                      ><img use:vehiclePhoto={{ src: publicPhoto(publicVehicle.slug, i) }} src={publicPhoto(publicVehicle.slug, i)} alt="" loading="lazy" /><span
                         >{i + 1}</span
                       ></button
                     >{/each}
@@ -576,7 +581,7 @@
                     aria-pressed={zoom === i}
                     onclick={() => (zoom = i)}
                   >
-                    <img
+                    <img use:vehiclePhoto={{ src: photo(car.image, 320) }}
                       src={photo(car.image, 320)}
                       alt=""
                       style:transform={'scale(' + (i === 0 ? 1 : 1.32) + ')'}
@@ -646,7 +651,7 @@
         </section>
         {#if !publicVehicle || publicVehicle.photos.length > 1}
           <section class="detail-band" data-scene>
-            <img
+            <img use:vehiclePhoto={{ src: publicVehicle ? publicPhoto(publicVehicle.slug, 1) : photo(car.image, 1800) }}
               src={publicVehicle ? publicPhoto(publicVehicle.slug, 1) : photo(car.image, 1800)}
               alt=""
               loading="lazy"
@@ -685,7 +690,7 @@
             {#each suggestions as item}<a
                 href={publicVehicle ? publicHref(item.id) : '/viaturas'}
                 ><div class="related-image">
-                  <img
+                  <img use:vehiclePhoto={{ src: photo(item.image, 900) }}
                     src={photo(item.image, 900)}
                     alt={`${item.brand} ${item.model}`}
                     loading="lazy"
@@ -724,8 +729,10 @@
           <div class="orbit-copy">
             <img
               class="orbit-hero-signature"
-              data-logo-light={logoLight} data-logo-dark={logoDark} data-theme-logo={heroVersion === 2 ? '' : undefined}
+              data-logo-light={logoLight} data-logo-dark={logoDark} data-logo-light-srcset={logoLightSrcset} data-logo-dark-srcset={logoDarkSrcset} data-theme-logo={heroVersion === 2 ? '' : undefined}
               src={isDark || heroVersion === 1 ? logoDark : logoLight}
+              srcset={isDark || heroVersion === 1 ? logoDarkSrcset : logoLightSrcset}
+              sizes="(max-width: 700px) 336px, (min-width: 1477px) 572px, (min-width: 973px) 38.7vw, 377px"
               alt="Auto Nunes Martins"
               width="1881"
               height="836"
@@ -747,7 +754,7 @@
               aria-label={`Ver ${heroCar.brand} ${heroCar.model} — destaque ${heroIndex + 1} de ${heroSlides.length}`}
             >
               {#each heroSlides as featured, index (featured.id)}
-                <img
+                <img use:vehiclePhoto={{ src: photo(featured.image, 1800), srcset: responsivePhoto(featured.image) }}
                   class:active={heroIndex === index}
                   src={photo(featured.image, 1800)}
                   srcset={responsivePhoto(featured.image)}
@@ -1051,7 +1058,9 @@
       class="dialog-close icon-button"
       onclick={() => galleryDialog.close()}
       aria-label="Fechar fotografia"><X size={25} /></button
-    >{#if car}<img
+    >{#if car}<img use:vehiclePhoto={{ src: publicVehicle?.photos.length
+          ? publicPhoto(publicVehicle.slug, zoom)
+          : photo(car.image, 2400) }}
         src={publicVehicle?.photos.length
           ? publicPhoto(publicVehicle.slug, zoom)
           : photo(car.image, 2400)}
@@ -1064,7 +1073,7 @@
 {#snippet vehicleCard(vehicle: CatalogCar | PublicCard, index: number, animate: boolean = true)}
   <article class="vehicle-card" use:conditionalEntrance={animate ? (index % 2) * 110 : false}>
     <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
-      ><img
+      ><img use:vehiclePhoto={{ src: photo(vehicle.image, 1100), srcset: responsivePhoto(vehicle.image, 1600) }}
         src={photo(vehicle.image, 1100)}
         srcset={responsivePhoto(vehicle.image, 1600)}
         sizes={cardImageSizes}

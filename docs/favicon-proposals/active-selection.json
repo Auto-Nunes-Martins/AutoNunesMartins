@@ -1,0 +1,63 @@
+{
+  "selectedOption": 31,
+  "background": "#1B1B1D",
+  "application": "public website only",
+  "behavior": "fixed across light/dark themes",
+  "sourceComposition": 25,
+  "midpointBackgroundBetween": [
+    25,
+    23
+  ],
+  "method": "Rounded encoded sRGB channel mean",
+  "rendering": "Use custom native-size PNG/ICO for exact 16/32 rendering; master SVG embeds original raster crops.",
+  "futureArtifacts": [
+    "docs/favicon-proposals/variante-31/favicon-48.png",
+    "docs/favicon-proposals/variante-31/favicon-64.png",
+    "docs/favicon-proposals/variante-31/favicon-128.png",
+    "docs/favicon-proposals/variante-31/favicon-180.png",
+    "docs/favicon-proposals/variante-31/favicon-192.png",
+    "docs/favicon-proposals/variante-31/favicon-256.png",
+    "docs/favicon-proposals/variante-31/favicon-512.png"
+  ],
+  "files": [
+    {
+      "file": "apps/website/src/lib/assets/favicon/anm-31-16.png",
+      "source": "docs/favicon-proposals/variante-31/favicon-16.png",
+      "sha256": "7da2a4d68e6655568a06c32eea2ea318a6443b219d52063980c76378ef687cc6"
+    },
+    {
+      "file": "apps/website/src/lib/assets/favicon/anm-31-32.png",
+      "source": "docs/favicon-proposals/variante-31/favicon-32.png",
+      "sha256": "31e7d99d5c4c38313ee2fad4aaab78b8b1abfefddb65d814034ad2d78458ea0e"
+    },
+    {
+      "file": "apps/website/src/lib/assets/favicon/anm-31-180.png",
+      "source": "docs/favicon-proposals/variante-31/favicon-180.png",
+      "sha256": "1e25c7116848803447087b8600f8c0e848cd45d663c09f4bcee16db3d9d87049"
+    },
+    {
+      "file": "apps/website/src/lib/assets/favicon/anm-31.ico",
+      "source": "docs/favicon-proposals/variante-31/favicon.ico",
+      "sha256": "ef449979def27977bd1edeb960515968579267e63af9c1ba1db3d9e84ebb1f28"
+    },
+    {
+      "file": "apps/website/static/favicon.ico",
+      "source": "docs/favicon-proposals/variante-31/favicon.ico",
+      "sha256": "ef449979def27977bd1edeb960515968579267e63af9c1ba1db3d9e84ebb1f28"
+    }
+  ],
+  "validation": {
+    "websiteTests": 374,
+    "crmTests": 119,
+    "websiteCheck": "0 errors / 0 warnings",
+    "crmCheck": "0 errors / 15 existing warnings",
+    "builds": [
+      "website adapter-node",
+      "CRM adapter-node /crm"
+    ],
+    "builtGatewayAssets": 44,
+    "iconChecks": "SSR icon tags, exact selected bytes, MIME, GET/HEAD/304, stable root ICO, unchanged links across browser theme toggle",
+    "vehicleRegression": "Chrome fixture suite passed",
+    "production": "Push authorized; deployed revision not verified"
+  }
+}

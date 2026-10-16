@@ -11,6 +11,7 @@ describe('theme before the first painted frame', () => {
     let darkClass = true;
     let metadata = '';
     let logoSource = '';
+    let logoSet = '';
     const context = {
       location: { pathname: '/favoritos' },
       window: {},
@@ -29,8 +30,11 @@ describe('theme before the first painted frame', () => {
           {
             classList: { toggle: (_name: string, value: boolean) => (darkClass = value) },
             querySelectorAll: (selector: string) => selector === '[data-theme-logo]' ? [{
-              getAttribute: (name: string) => name === 'data-logo-dark' ? '/_app/immutable/assets/dark.hash.png' : '/_app/immutable/assets/light.hash.png',
-              setAttribute: (_name: string, value: string) => { logoSource = value; },
+              getAttribute: (name: string) => {
+                const tone = name.includes('dark') ? 'dark' : 'light';
+                return name.endsWith('srcset') ? `/_app/immutable/assets/${tone}.hash.webp 360w` : `/_app/immutable/assets/${tone}.hash.webp`;
+              },
+              setAttribute: (name: string, value: string) => { if (name === 'src') logoSource = value; else if (name === 'srcset') logoSet = value; },
             }] : [],
           },
         ],
@@ -42,7 +46,8 @@ describe('theme before the first painted frame', () => {
     // This parser-blocking callback runs after SSR markup, before framework hydration.
     (context.window as { initializeOrbitDocument: () => void }).initializeOrbitDocument();
     expect(darkClass).toBe(theme === 'dark');
-    expect(logoSource).toBe(`/_app/immutable/assets/${theme === 'dark' ? 'dark' : 'light'}.hash.png`);
+    expect(logoSource).toBe(`/_app/immutable/assets/${theme === 'dark' ? 'dark' : 'light'}.hash.webp`);
+    expect(logoSet).toBe(`${logoSource} 360w`);
     expect(metadata).toBe(theme === 'dark' ? '#0a0a0b' : '#f5f5f1');
   });
   it('keeps the default when localStorage is blocked, without reading cookies', () => {

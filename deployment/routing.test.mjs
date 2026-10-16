@@ -57,7 +57,7 @@ test('proxy isolation, forwarded-header injection, POST origin, bearer API and e
       }
       if (req.url.includes('immutable')) {
         res.setHeader('cache-control', 'public,max-age=31536000,immutable');
-        res.setHeader('content-type', req.url.includes('html') ? 'text/html' : 'image/png');
+        res.setHeader('content-type', req.url.includes('html') ? 'text/html' : req.url.endsWith('.ico') ? '' : 'image/png');
         if (req.url.includes('missing')) res.statusCode = 404;
         if (req.url.includes('cookie')) res.setHeader('set-cookie', 'fixture=private');
       }
@@ -77,7 +77,7 @@ test('proxy isolation, forwarded-header injection, POST origin, bearer API and e
     servers.push(server);
     ports[service] = await listen(server);
   }
-  const buildAssets = new Set(['logo.hash.png', 'missing.png', 'cookie.png', 'html.png', 'revalidate.png', 'redirect.png'].map(file => `/crm/_app/immutable/assets/${file}`));
+  const buildAssets = new Set(['logo.hash.png', 'favicon.hash.ico', 'missing.png', 'cookie.png', 'html.png', 'revalidate.png', 'redirect.png'].map(file => `/crm/_app/immutable/assets/${file}`));
   const gateway = createGateway(settings, ports, () => true, buildAssets);
   const port = await listen(gateway);
   const request = (url, options = {}) =>
@@ -117,6 +117,8 @@ test('proxy isolation, forwarded-header injection, POST origin, bearer API and e
     const immutable = await request('/crm/_app/immutable/assets/logo.hash.png');
     assert.equal(immutable.headers.get('cache-control'), 'public,max-age=31536000,immutable');
     assert.equal(immutable.headers.get('x-robots-tag'), 'noindex, nofollow');
+    assert.equal((await request('/crm/_app/immutable/assets/favicon.hash.ico')).headers.get('cache-control'), 'public,max-age=31536000,immutable');
+    assert.equal((await request('/crm/_app/immutable/assets/favicon.hash.ico')).headers.get('content-type'), 'image/x-icon');
     assert.equal((await request('/crm/_app/immutable/assets/revalidate.png', { headers: { 'if-none-match': '"fixture"' } })).headers.get('cache-control'), 'public,max-age=31536000,immutable');
     for (const path of [
       '/crm/_app/immutable/assets/missing.png',
