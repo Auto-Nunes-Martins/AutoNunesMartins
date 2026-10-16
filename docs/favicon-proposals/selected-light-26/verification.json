@@ -1,0 +1,62 @@
+{
+  "selectedOption": 26,
+  "background": "#f6f4ef",
+  "source": "docs/favicon-proposals/serie-21-28/26-alinhado-papel",
+  "behavior": "fixed in both website themes",
+  "files": [
+    {
+      "size": 16,
+      "bytes": 444,
+      "sha256": "caecfa3b23e76768a251b576dd776e81ae82c4bb5a02e255244ad92ea18d32ee",
+      "existingOriginal": true
+    },
+    {
+      "size": 32,
+      "bytes": 1221,
+      "sha256": "3c531e14437ccbfe7383ac418b4bd038006f48cf91fab20570adca77782b6e50",
+      "existingOriginal": true
+    },
+    {
+      "size": 48,
+      "bytes": 2096,
+      "sha256": "08b74dbfa9ab4beaef0bdf2af13a9a73075f4816539cef51ebd85987989f3768",
+      "existingOriginal": true
+    },
+    {
+      "size": 64,
+      "bytes": 3163,
+      "sha256": "483e65af2fe5fa227d8079bd93bdcc486992045d3229ff441263011b5e6fb1f9",
+      "existingOriginal": true
+    },
+    {
+      "size": 128,
+      "bytes": 8253,
+      "sha256": "67c58b1d2f94eb08615de0c5562071cdd0f4e40a4b8e1d605d10c93b26732df9",
+      "existingOriginal": true
+    },
+    {
+      "size": 180,
+      "bytes": 13715,
+      "sha256": "e4a694bd0866771f83140ce8987c11fc0840fc2bd98a643ccf98e7eabcf87a63",
+      "existingOriginal": true
+    },
+    {
+      "size": 192,
+      "bytes": 14778,
+      "sha256": "b26d38518db905892bba541ff925e4b4dbf22e53ada274c5cbc9464c2922b5ef",
+      "existingOriginal": false
+    },
+    {
+      "size": 256,
+      "bytes": 22719,
+      "sha256": "8ce466ea59f386940eb6be37f53a74ea790253514bf5fb3b21019549976dcb87",
+      "existingOriginal": true
+    },
+    {
+      "size": 512,
+      "bytes": 68838,
+      "sha256": "c540f8b83e1208a85a1808308be7af05fddf066da3df9c8d97a8cfc942857e74",
+      "existingOriginal": false
+    }
+  ]
+}

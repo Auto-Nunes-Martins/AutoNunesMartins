@@ -22,6 +22,8 @@ const freePort = async () => {
 const children = [];
 const servers = [];
 const immutable = 'public,max-age=31536000,immutable';
+const iconSelection = JSON.parse(fs.readFileSync('docs/favicon-proposals/active-selection.json', 'utf8'));
+const iconSource = iconSelection.sourceFolder || path.dirname(iconSelection.files[0].source);
 const logs = [];
 try {
   const ports = { website: await freePort(), crm: await freePort() };
@@ -101,12 +103,12 @@ try {
       count++;
     }
   }
-  for (const url of ['/', '/quem-somos', '/viaturas', '/crm/', '/crm/dashboard', '/crm/api/users', '/crm/nonexistent', '/api/users', '/api/public/vehicles', '/robots.txt', '/sitemap.xml', '/logo-transparent.png', '/crm/logo-transparent.png', '/_app/immutable/assets/missing.png', '/crm/_app/immutable/assets/missing.png']) {
+  for (const url of ['/', '/quem-somos', '/viaturas', '/comparar', '/favoritos', '/informacao-legal', '/politica-de-privacidade', '/esta-pagina-nao-existe', '/crm/', '/crm/dashboard', '/crm/api/users', '/crm/nonexistent', '/api/users', '/api/public/vehicles', '/robots.txt', '/sitemap.xml', '/logo-transparent.png', '/crm/logo-transparent.png', '/_app/immutable/assets/missing.png', '/crm/_app/immutable/assets/missing.png']) {
     const response = await call(url);
     assert(!response.headers.get('cache-control')?.includes('immutable'), `fresh/private response: ${url}`);
     if (url.startsWith('/crm') || url.startsWith('/api/')) assert.equal(response.headers.get('cache-control'), 'private, no-store', url);
-    if (['/', '/quem-somos', '/viaturas', '/crm/'].includes(url)) {
-      assert.equal(response.status, url === '/viaturas' ? 503 : 200, url);
+    if (['/', '/quem-somos', '/viaturas', '/comparar', '/favoritos', '/informacao-legal', '/politica-de-privacidade', '/esta-pagina-nao-existe', '/crm/'].includes(url)) {
+      assert.equal(response.status, url === '/viaturas' ? 503 : url === '/esta-pagina-nao-existe' ? 404 : 200, url);
       const html = await response.text();
       assert(!html.includes('%anm.startup%'), 'startup template resolved');
       assert(!/(?:src|href)=["'][^"']*\/(?:logo-transparent(?:-white-v3)?\.png|catalog-placeholder\.svg|orbit-startup\.js)/.test(html), `no fixed UI assets: ${url}`);
@@ -125,11 +127,11 @@ try {
           assert.equal(resource.status, 200);
           assert.equal(resource.headers.get('cache-control'), immutable);
           assert.match(resource.headers.get('content-type'), file.endsWith('.png') ? /image\/png/ : /image\/(?:x-icon|vnd.microsoft.icon)/);
-          assert.deepEqual(Buffer.from(await resource.arrayBuffer()), fs.readFileSync('docs/favicon-proposals/variante-31/' + file), 'Exact selected option31 bytes');
+          assert.deepEqual(Buffer.from(await resource.arrayBuffer()), fs.readFileSync(path.join(iconSource, file)), 'Exact current selected icon bytes');
         }
         const legacyIcon = await call('/favicon.ico');
         assert.equal(legacyIcon.status, 200);
-        assert.deepEqual(Buffer.from(await legacyIcon.arrayBuffer()), fs.readFileSync('docs/favicon-proposals/variante-31/favicon.ico'));
+        assert.deepEqual(Buffer.from(await legacyIcon.arrayBuffer()), fs.readFileSync(path.join(iconSource, 'favicon.ico')));
       }
       for (const match of html.matchAll(/(?:src|href)="([^" ]*\/_app\/immutable\/[^" ]+)"/g)) {
         const asset = new URL(match[1], origin + url).pathname;

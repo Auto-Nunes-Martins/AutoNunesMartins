@@ -1,9 +1,9 @@
 <script lang="ts">
-  // Owner-selected option 31, fixed in both themes. Preserve the prepared pixel-size artwork.
-  import icon16 from '$lib/assets/favicon/anm-31-16.png?url&no-inline';
-  import icon32 from '$lib/assets/favicon/anm-31-32.png?url&no-inline';
-  import iconIco from '$lib/assets/favicon/anm-31.ico?url&no-inline';
-  import touchIcon from '$lib/assets/favicon/anm-31-180.png?url&no-inline';
+  // Owner-selected option 26 (light), fixed in both themes. Preserve the prepared pixel-size artwork.
+  import icon16 from '$lib/assets/favicon/anm-26-16.png?url&no-inline';
+  import icon32 from '$lib/assets/favicon/anm-26-32.png?url&no-inline';
+  import iconIco from '$lib/assets/favicon/anm-26.ico?url&no-inline';
+  import touchIcon from '$lib/assets/favicon/anm-26-180.png?url&no-inline';
 </script>
 
 <svelte:head>
