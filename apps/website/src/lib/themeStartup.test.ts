@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-const startup = readFileSync(new URL('../../static/orbit-startup.js', import.meta.url), 'utf8');
+const startup = readFileSync(new URL('../../assets/orbit-startup.js', import.meta.url), 'utf8');
 const appHtml = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
 const themeBoot = appHtml.match(/<script id="orbit-theme-boot">([\s\S]*?)<\/script>/)![1]!;
 describe('theme before the first painted frame', () => {
@@ -10,6 +10,7 @@ describe('theme before the first painted frame', () => {
     const attributes = new Map([['data-theme', 'dark']]);
     let darkClass = true;
     let metadata = '';
+    let logoSource = '';
     const context = {
       location: { pathname: '/favoritos' },
       window: {},
@@ -27,7 +28,10 @@ describe('theme before the first painted frame', () => {
         querySelectorAll: () => [
           {
             classList: { toggle: (_name: string, value: boolean) => (darkClass = value) },
-            querySelectorAll: () => [],
+            querySelectorAll: (selector: string) => selector === '[data-theme-logo]' ? [{
+              getAttribute: (name: string) => name === 'data-logo-dark' ? '/_app/immutable/assets/dark.hash.png' : '/_app/immutable/assets/light.hash.png',
+              setAttribute: (_name: string, value: string) => { logoSource = value; },
+            }] : [],
           },
         ],
       },
@@ -38,6 +42,7 @@ describe('theme before the first painted frame', () => {
     // This parser-blocking callback runs after SSR markup, before framework hydration.
     (context.window as { initializeOrbitDocument: () => void }).initializeOrbitDocument();
     expect(darkClass).toBe(theme === 'dark');
+    expect(logoSource).toBe(`/_app/immutable/assets/${theme === 'dark' ? 'dark' : 'light'}.hash.png`);
     expect(metadata).toBe(theme === 'dark' ? '#0a0a0b' : '#f5f5f1');
   });
   it('keeps the default when localStorage is blocked, without reading cookies', () => {

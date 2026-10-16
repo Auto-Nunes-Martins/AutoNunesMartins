@@ -1,7 +1,8 @@
 import http from 'node:http';
 import { selectRoute } from './routing.mjs';
+import { immutableAssets } from './immutable-assets.mjs';
 
-export function createGateway(settings, ports, ready = () => true) {
+export function createGateway(settings, ports, ready = () => true, buildAssets = immutableAssets(settings.base)) {
   const server = http.createServer((req, res) => {
     const route = selectRoute(settings, req.headers.host, req.url);
     if (!route) {
@@ -69,8 +70,27 @@ export function createGateway(settings, ports, ready = () => true) {
         headers: forwarded,
       },
       (reply) => {
-        // Enforce isolation even on redirects, static responses and errors.
-        res.writeHead(reply.statusCode, { ...reply.headers, ...headers });
+        // Only adapter-confirmed build assets are public. Never infer cacheability
+        // from a file extension (private routes can have one too).
+        const immutablePrefix = `${route.service === 'crm' ? settings.base : ''}/_app/immutable/`;
+        const immutable = ['website', 'crm'].includes(route.service) &&
+          ['GET', 'HEAD'].includes(req.method) &&
+          req.url.split('?')[0].startsWith(immutablePrefix) &&
+          buildAssets.has(req.url.split('?')[0]) &&
+          ((reply.statusCode === 200 &&
+            reply.headers['cache-control'] === 'public,max-age=31536000,immutable' &&
+            /^(?:text\/css|(?:text|application)\/javascript|image\/(?:png|jpeg|svg\+xml|webp|gif|x-icon)|font\/(?:woff2?|ttf|otf))(?:;|$)/i.test(reply.headers['content-type'] || '')) ||
+            // sirv's 304 omits asset headers. The build inventory still proves
+            // this URL names a non-sensitive file; SSR explicitly sets no-store.
+            (reply.statusCode === 304 && req.headers['if-none-match'] && !reply.headers['cache-control'])) &&
+          !reply.headers['set-cookie'];
+        const responseHeaders = { ...reply.headers, ...headers };
+        if (immutable) responseHeaders['cache-control'] = 'public,max-age=31536000,immutable';
+        else if (req.url.split('?')[0].startsWith(immutablePrefix)) {
+          responseHeaders['cache-control'] = privateResponse ? 'private, no-store' : 'no-store';
+        }
+        // Retain CRM noindex even for public, non-sensitive build resources.
+        res.writeHead(reply.statusCode, responseHeaders);
         reply.pipe(res);
       },
     );

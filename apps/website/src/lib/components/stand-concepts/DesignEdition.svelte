@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { logoLight, logoDark, catalogPlaceholder } from '$lib/localAssets';
   import { publicErrorCopy } from '$lib/publicError';
   import HeroBackgroundTuner from './HeroBackgroundTuner.svelte';
   import { highlightSlides, type PublicHighlights, type HeroSlide } from '$lib/homepageHighlights';
@@ -140,7 +141,7 @@
           price: publicVehicle.price === null ? Number.NaN : Number(publicVehicle.price),
           image: publicVehicle.photos.length
             ? publicPhoto(publicVehicle.slug, 0)
-            : '/catalog-placeholder.svg',
+            : catalogPlaceholder,
         }
       : catalogCars.find((item) => item.id === id),
   );
@@ -182,7 +183,7 @@
           model: item.model,
           year: item.year,
           price: item.price,
-          image: item.photos.length ? publicPhoto(item.slug, 0) : '/catalog-placeholder.svg',
+          image: item.photos.length ? publicPhoto(item.slug, 0) : catalogPlaceholder,
         }))
       : car
         ? cars
@@ -417,8 +418,8 @@
   >
     <a class="logo" href="/"
       ><img
-        data-theme-logo
-        src={isDark ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
+        data-logo-light={logoLight} data-logo-dark={logoDark} data-theme-logo
+        src={isDark ? logoDark : logoLight}
         alt="Auto Nunes Martins — início"
         width="180"
         height="80"
@@ -723,8 +724,8 @@
           <div class="orbit-copy">
             <img
               class="orbit-hero-signature"
-              data-theme-logo={heroVersion === 2 ? '' : undefined}
-              src={isDark || heroVersion === 1 ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
+              data-logo-light={logoLight} data-logo-dark={logoDark} data-theme-logo={heroVersion === 2 ? '' : undefined}
+              src={isDark || heroVersion === 1 ? logoDark : logoLight}
               alt="Auto Nunes Martins"
               width="1881"
               height="836"
@@ -940,7 +941,7 @@
   {:else if favorites || compare || about || catalog || privacy || publicVehicle || errorStatus}
     <!-- The shared contact/footer follows the content without duplicating the homepage FAQ. -->
   {:else if !id}
-    <VisitInvitation onContact={contact} logoSrc={'/logo-transparent.png'} />
+    <VisitInvitation onContact={contact} logoSrc={logoLight} />
     <OrbitFaq />
   {:else}
     <OrbitFaq
@@ -1067,7 +1068,7 @@
         src={photo(vehicle.image, 1100)}
         srcset={responsivePhoto(vehicle.image, 1600)}
         sizes={cardImageSizes}
-        alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === '/catalog-placeholder.svg' ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
+        alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
         loading="lazy"
       />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
         class="card-arrow"><ArrowUpRight size={23} /></span

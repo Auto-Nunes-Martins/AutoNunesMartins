@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { crmPath } from '$lib/paths';
+  import { logoLight, logoDark } from '$lib/localAssets';
   let {
     size = 'md',
     showCaption = false,
@@ -14,14 +14,14 @@
 <div class="wordmark" data-size={size} data-surface={surface}>
   <img
     class="light-logo"
-    src={crmPath("/logo-transparent.png")}
+    src={logoLight}
     alt="Auto Nunes Martins"
     width="1881"
     height="836"
   />
   <img
     class="dark-logo"
-    src={crmPath("/logo-transparent-white-v3.png")}
+    src={logoDark}
     alt="Auto Nunes Martins"
     width="1881"
     height="836"

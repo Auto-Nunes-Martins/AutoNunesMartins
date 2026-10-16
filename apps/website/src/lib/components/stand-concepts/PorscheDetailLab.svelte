@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { logoLight, logoDark, catalogPlaceholder } from '$lib/localAssets';
   import orbitFont400 from '@fontsource/inter/files/inter-latin-400-normal.woff2?url';
   import orbitFont500 from '@fontsource/inter/files/inter-latin-500-normal.woff2?url';
   import orbitFont600 from '@fontsource/inter/files/inter-latin-600-normal.woff2?url';
@@ -82,7 +83,7 @@
           price: publicVehicle.price === null ? Number.NaN : Number(publicVehicle.price),
           image: publicVehicle.photos.length
             ? publicPhoto(publicVehicle.slug, 0)
-            : '/catalog-placeholder.svg',
+            : catalogPlaceholder,
         }
       : cars.find((item) => item.id === id),
   );
@@ -124,7 +125,7 @@
           model: item.model,
           year: item.year,
           price: item.price,
-          image: item.photos.length ? publicPhoto(item.slug, 0) : '/catalog-placeholder.svg',
+          image: item.photos.length ? publicPhoto(item.slug, 0) : catalogPlaceholder,
         }))
       : car
         ? cars
@@ -324,7 +325,7 @@
   >
     <a class="logo" href="/"
       ><img
-        src={isDark ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
+        src={isDark ? logoDark : logoLight}
         alt="Auto Nunes Martins — início"
         width="180"
         height="80"
@@ -620,7 +621,7 @@
           <div class="orbit-copy">
             <img
               class="orbit-hero-signature"
-              src={isDark ? '/logo-transparent-white-v3.png' : '/logo-transparent.png'}
+              src={isDark ? logoDark : logoLight}
               alt="Auto Nunes Martins"
               width="1881"
               height="836"
@@ -817,7 +818,7 @@
   {:else if about || catalog || privacy || publicVehicle || errorStatus}
     <!-- The shared contact/footer follows the content without duplicating the homepage FAQ. -->
   {:else if !id}
-    <VisitInvitation onContact={contact} logoSrc={'/logo-transparent.png'} />
+    <VisitInvitation onContact={contact} logoSrc={logoLight} />
     <OrbitFaq />
   {:else}
     <OrbitFaq
@@ -935,7 +936,7 @@
         src={photo(vehicle.image, 1100)}
         srcset={responsivePhoto(vehicle.image, 1600)}
         sizes={cardImageSizes}
-        alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === '/catalog-placeholder.svg' ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
+        alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
         loading="lazy"
       />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
         class="card-arrow"><ArrowUpRight size={23} /></span

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { logoDark } from '$lib/localAssets';
   import { ArrowUpRight } from 'lucide-svelte';
   import { standContact } from './standContact';
   import FooterSocials from './FooterSocials.svelte';
@@ -23,7 +24,7 @@
     {/if}
     <div class="top">
       <a class="brand" href="/" aria-label="Auto Nunes Martins — início">
-        <img src="/logo-transparent-white-v3.png" alt={standContact.name} width="180" height="80" />
+        <img src={logoDark} alt={standContact.name} width="180" height="80" />
       </a>
       <nav aria-label="Navegação do rodapé">
         <a href="/viaturas">Viaturas</a>

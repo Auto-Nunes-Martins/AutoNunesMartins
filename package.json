@@ -22,7 +22,8 @@
     "build:service": "node scripts/build-service.mjs",
     "start:service": "node deployment/start.mjs",
     "test:service": "node --test deployment/*.test.mjs",
-    "test:service:runtime": "node scripts/check-service-runtime.mjs"
+    "test:service:runtime": "node scripts/check-service-runtime.mjs",
+    "test:assets:built": "node scripts/check-asset-cache.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
