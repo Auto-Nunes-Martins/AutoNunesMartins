@@ -6,7 +6,7 @@
   "scripts": {
     "publication:check": "node ../../scripts/check-publication-readiness.mjs",
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "svelte-kit sync && vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error",
