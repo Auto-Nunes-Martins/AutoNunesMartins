@@ -22,7 +22,7 @@ export function chapterProgress(progress: number, start: number, end: number) {
 
 /** Keep the hero's resting pose, then rotate gently during ordinary document scroll.
  * Unlike pinned scenes, this progress never holds the hero in the viewport.
- * The parser-time equivalent lives in static/orbit-startup.js.
+ * The parser-time equivalent lives in assets/orbit-startup.js.
  */
 export function heroScrollProgress(
   top: number,
@@ -38,7 +38,7 @@ export function heroScrollProgress(
 /** Preserve the approved resting frame in document coordinates.
  * Only the dash travels during scroll; its track must not acquire a second vertical motion.
  * Passing zero scroll retains the original tablet/mobile frame.
- * Keep the parser-time equivalent in static/orbit-startup.js in sync.
+ * Keep the parser-time equivalent in assets/orbit-startup.js in sync.
  */
 export function heroAccentFrame(
   sectionTop: number,

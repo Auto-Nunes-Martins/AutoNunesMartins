@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { logoLight } from '$lib/localAssets';
   import { ArrowUpRight, ArrowRight, Check, CalendarDays } from 'lucide-svelte';
   import './conversationButton.css';
   let {
     onContact,
-    logoSrc = '/logo-transparent.png',
+    logoSrc = logoLight,
     compactComparison = false,
     headingId = 'visit-heading',
   }: {

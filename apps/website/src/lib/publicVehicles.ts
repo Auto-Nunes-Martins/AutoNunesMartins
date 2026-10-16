@@ -1,3 +1,4 @@
+import { catalogPlaceholder } from '$lib/localAssets';
 import { z } from 'zod';
 import { publicSpecificationsSchema } from '@anm/types';
 
@@ -97,7 +98,7 @@ export function publicCard(vehicle: PublicVehicle) {
     km: vehicle.mileage,
     fuel: fuelLabels[vehicle.fuel],
     price: vehicle.price === null ? null : Number(vehicle.price),
-    image: vehicle.photos.length ? publicPhoto(vehicle.slug, 0) : '/catalog-placeholder.svg',
+    image: vehicle.photos.length ? publicPhoto(vehicle.slug, 0) : catalogPlaceholder,
     category: vehicle.availability === 'RESERVED' ? 'Reservada' : '',
     href: publicHref(vehicle.slug),
     approved: true as const,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { catalogPlaceholder } from './localAssets';
 import {
   emptyStock,
   publicVehicleSchema,
@@ -78,7 +79,7 @@ describe('Public website projection', () => {
     const card = publicCard(
       publicVehicleSchema.parse({ ...vehicle, photos: [], availability: 'RESERVED' }),
     );
-    expect(card.image).toBe('/catalog-placeholder.svg');
+    expect(card.image).toBe(catalogPlaceholder);
     expect(card.category).toBe('Reservada');
   });
   it.each(['ready', 'invalid', 'unavailable'] as const)(

@@ -50,6 +50,17 @@ test('proxy isolation, forwarded-header injection, POST origin, bearer API and e
   for (const service of ['website', 'crm', 'backend']) {
     const server = http.createServer((req, res) => {
       res.setHeader('content-type', 'application/json');
+      if (req.url.includes('revalidate')) {
+        res.writeHead(304, { etag: '"fixture"' });
+        res.end();
+        return;
+      }
+      if (req.url.includes('immutable')) {
+        res.setHeader('cache-control', 'public,max-age=31536000,immutable');
+        res.setHeader('content-type', req.url.includes('html') ? 'text/html' : 'image/png');
+        if (req.url.includes('missing')) res.statusCode = 404;
+        if (req.url.includes('cookie')) res.setHeader('set-cookie', 'fixture=private');
+      }
       if (req.url.includes('redirect')) {
         res.statusCode = 303;
         res.setHeader('location', '/crm/dashboard');
@@ -66,7 +77,8 @@ test('proxy isolation, forwarded-header injection, POST origin, bearer API and e
     servers.push(server);
     ports[service] = await listen(server);
   }
-  const gateway = createGateway(settings, ports);
+  const buildAssets = new Set(['logo.hash.png', 'missing.png', 'cookie.png', 'html.png', 'revalidate.png', 'redirect.png'].map(file => `/crm/_app/immutable/assets/${file}`));
+  const gateway = createGateway(settings, ports, () => true, buildAssets);
   const port = await listen(gateway);
   const request = (url, options = {}) =>
     new Promise((resolve, reject) => {
@@ -83,7 +95,7 @@ test('proxy isolation, forwarded-header injection, POST origin, bearer API and e
           res.on('data', (chunk) => chunks.push(chunk));
           res.on('end', () =>
             resolve(
-              new Response(Buffer.concat(chunks), { status: res.statusCode, headers: res.headers }),
+              new Response(res.statusCode === 304 ? null : Buffer.concat(chunks), { status: res.statusCode, headers: res.headers }),
             ),
           );
         },
@@ -102,6 +114,26 @@ test('proxy isolation, forwarded-header injection, POST origin, bearer API and e
     const crm = await request('/crm/_app/a.js');
     assert.equal(crm.headers.get('cache-control'), 'private, no-store');
     assert.equal((await crm.json()).service, 'crm');
+    const immutable = await request('/crm/_app/immutable/assets/logo.hash.png');
+    assert.equal(immutable.headers.get('cache-control'), 'public,max-age=31536000,immutable');
+    assert.equal(immutable.headers.get('x-robots-tag'), 'noindex, nofollow');
+    assert.equal((await request('/crm/_app/immutable/assets/revalidate.png', { headers: { 'if-none-match': '"fixture"' } })).headers.get('cache-control'), 'public,max-age=31536000,immutable');
+    for (const path of [
+      '/crm/_app/immutable/assets/missing.png',
+      '/crm/_app/immutable/assets/cookie.png',
+      '/crm/_app/immutable/assets/html.png',
+      '/crm/_app/immutable/assets/unknown.hash.png',
+      '/crm/_app/immutable/assets/redirect.png',
+      '/crm/_app/immutable/assets/%6cogo.hash.png',
+      '/crm/_app/immutable/assets/logo.hash.png/extra',
+      '/crm/api/immutable.png',
+      '/crm/immutable',
+      '/crm/logo-transparent.png',
+    ]) assert.equal((await request(path)).headers.get('cache-control'), 'private, no-store');
+    assert.equal((await request('/api/public/immutable.png')).headers.get('cache-control'), 'private, no-store');
+    assert.equal((await request('/crm/_app/immutable/assets/logo.hash.png', {
+      method: 'POST', headers: { origin: 'https://trial.onrender.com' },
+    })).headers.get('cache-control'), 'private, no-store');
     const redirect = await request('/crm/redirect');
     assert.equal(redirect.headers.get('location'), '/crm/dashboard');
     assert.equal(redirect.headers.get('x-robots-tag'), 'noindex, nofollow');

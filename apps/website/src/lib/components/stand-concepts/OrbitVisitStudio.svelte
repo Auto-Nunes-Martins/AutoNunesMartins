@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locationMap } from '$lib/localAssets';
   import { submitContact } from '$lib/contactRequest';
   import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
   import { onMount } from 'svelte';
@@ -126,7 +127,7 @@
 
       <div class="location" class:original-map={mapArtwork === 'original'}>
         {#if mapArtwork === 'original'}
-          <img class="location-map" src="/images/orbit-location-map.svg" alt="" width="1728" height="684" loading="lazy" decoding="async" />
+          <img class="location-map" src={locationMap} alt="" width="1728" height="684" loading="lazy" decoding="async" />
         {:else}
         <svg
           class="location-map"

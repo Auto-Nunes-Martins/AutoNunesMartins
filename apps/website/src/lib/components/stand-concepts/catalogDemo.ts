@@ -1,3 +1,4 @@
+import { catalogPlaceholder } from '$lib/localAssets';
 import { cars } from './data';
 
 // PROTOTYPE ONLY. These eleven fictional listings supplement the five existing
@@ -5,7 +6,7 @@ import { cars } from './data';
 // Replace this module with confirmed stock before production. The local placeholder
 // deliberately does not depict a make/model we cannot verify.
 export const catalogIsDemo = true;
-const image = '/catalog-placeholder.svg';
+const image = catalogPlaceholder;
 export const additionalDemoCars = [
   {
     id: 'demo-bmw-serie-1',

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { catalogPlaceholder } from '$lib/localAssets';
   import { page } from '$app/stores';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { onMount, tick } from 'svelte';
@@ -104,8 +105,8 @@
               <td>
                 <div class="vehicle-photo">
                   {#if entry.vehicle}
-                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><img src={entry.vehicle.photos.length ? publicPhoto(entry.id, 0) : '/catalog-placeholder.svg'} alt={entry.vehicle.photos.length ? name(entry) : `Fotografia indisponível: ${name(entry)}`} width="480" height="320" /></a>
-                  {:else}<div class="missing-photo"><img src="/catalog-placeholder.svg" alt="Fotografia indisponível" width="480" height="320" /></div>{/if}
+                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><img src={entry.vehicle.photos.length ? publicPhoto(entry.id, 0) : catalogPlaceholder} alt={entry.vehicle.photos.length ? name(entry) : `Fotografia indisponível: ${name(entry)}`} width="480" height="320" /></a>
+                  {:else}<div class="missing-photo"><img src={catalogPlaceholder} alt="Fotografia indisponível" width="480" height="320" /></div>{/if}
                   <button class="remove" type="button" aria-label={`Remover ${name(entry)} da comparação`} onclick={() => remove(entry)}><X size={18} aria-hidden="true" /></button>
                 </div>
               </td>

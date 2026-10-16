@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { heroScrollProgress, heroAccentFrame } from './scrollTiming';
 import { compactNavProgress } from './hybridNav';
 
-const startup = readFileSync(new URL('../../../../static/orbit-startup.js', import.meta.url), 'utf8');
+const startup = readFileSync(new URL('../../../../assets/orbit-startup.js', import.meta.url), 'utf8');
 
 // Exercise the real parser-time script with geometry only: no browser, network or storage writes.
 function startupProgress(viewport: number, stageHeight: number, documentTop: number, scroll: number, width = 1440) {

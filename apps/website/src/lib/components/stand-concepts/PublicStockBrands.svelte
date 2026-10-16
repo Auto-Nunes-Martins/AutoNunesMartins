@@ -17,7 +17,7 @@
         {#each links as brand (brand.name)}
           {@const logo = brandLogo(brand.name)}
           <li><a href={brand.href} class:without-logo={!logo}>
-            {#if logo}<img class="brand-logo" src={logo} alt="" aria-hidden="true" width="72" height="44" loading="lazy" decoding="async" />{/if}
+            {#if logo}<img class="brand-logo" class:wide-logo={['audi', 'dacia'].includes(brand.name.trim().toLowerCase())} src={logo} alt="" aria-hidden="true" width="72" height="44" loading="lazy" decoding="async" />{/if}
             <span class="brand-label"><span class="brand-name">{brand.name}</span>
             <span class="brand-count">{brand.count} {brand.count === 1 ? 'disponível' : 'disponíveis'}</span></span>
             <ArrowUpRight size={17} aria-hidden="true" />
@@ -41,7 +41,7 @@
   a { color: var(--text); text-decoration: none; }
   li a { display: grid; grid-template-columns: 72px minmax(0, 1fr) 17px; align-items: center; gap: 16px; height: 100%; min-height: 96px; border-bottom: 1px solid var(--line); padding: 20px 4px; box-sizing: border-box; font-size: 16px; }
   .brand-logo { display: block; width: 72px; height: 44px; object-fit: contain; }
-  .brand-logo[src$='/audi.svg'], .brand-logo[src$='/dacia.svg'] { transform: scale(1.4); }
+  .brand-logo.wide-logo { transform: scale(1.4); }
   :global(:where(html)[data-theme='dark']) .brand-logo { filter: invert(1); }
   .brand-label { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; min-width: 0; }
   .without-logo .brand-label { grid-column: 1 / 3; }
