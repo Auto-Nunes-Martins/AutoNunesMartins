@@ -1,4 +1,6 @@
-# Favicons — escolha final 31 e histórico
+# Favicons — escolha atual 26 clara e histórico
+
+**Escolha atual: 26 clara, #F6F4EF, fixa nos dois modos do website.** Substitui a seleção 31 anterior. Os ficheiros exatos 16/32, ICO e touch180 são importados com hash; todos os tamanhos até512 estão em selected-light-26. As notas abaixo são o histórico das decisões anteriores.
 
 **Escolha final do proprietário: variante 31, fundo #1B1B1D.** Aplicada como favicon fixo ao website público em WebsiteIconHead.svelte, com PNG nativos 16/32, ICO 16/32/48/64, touch 180 e fallback /favicon.ico. Resoluções 192 e 512 também preparadas. O CRM não muda para esta composição. active-selection.json regista a escolha e a validação. As notas e séries abaixo conservam o histórico de desenvolvimento; a seleção final prevalece.
 
