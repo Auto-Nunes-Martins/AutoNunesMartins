@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { responsivePhoto } from './images';
+import { photo, responsivePhoto } from './images';
+
+describe('vehicle photo URLs', () => {
+  it('expands only curated Unsplash identifiers', () => {
+    expect(photo('photo-1503376780353-7e6692767b70', 1100)).toBe(
+      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1100&q=85',
+    );
+  });
+  it.each([
+    '/catalog-placeholder.svg',
+    '/_app/immutable/assets/catalog-placeholder.hash.svg',
+    'https://stand.example/_app/immutable/assets/catalog-placeholder.hash.svg',
+    'http://localhost:5173/src/lib/assets/catalog-placeholder.svg?url&no-inline',
+    '../assets/catalog-placeholder.hash.svg',
+    '/viaturas/car-abcdef123456/photos/0',
+  ])('preserves local imports and public photo paths: %s', (url) => {
+    expect(photo(url, 1100)).toBe(url);
+    expect(responsivePhoto(url)).toBeUndefined();
+  });
+});
 
 describe('responsive demo images', () => {
   it('offers real CDN variants with bounded widths', () => {

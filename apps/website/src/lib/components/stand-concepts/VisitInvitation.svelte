@@ -1,15 +1,17 @@
 <script lang="ts">
-  import { logoLight } from '$lib/localAssets';
+  import { logoLight, logoLightSrcset } from '$lib/localAssets';
   import { ArrowUpRight, ArrowRight, Check, CalendarDays } from 'lucide-svelte';
   import './conversationButton.css';
   let {
     onContact,
     logoSrc = logoLight,
+    logoSrcset = logoLightSrcset,
     compactComparison = false,
     headingId = 'visit-heading',
   }: {
     onContact: (message: string) => void;
     logoSrc?: string;
+    logoSrcset?: string;
     compactComparison?: boolean;
     headingId?: string;
   } = $props();
@@ -91,7 +93,7 @@
     </div>
     <div class="visit-ticket">
       <div class="ticket-top">
-        <img src={logoSrc} alt="Auto Nunes Martins" width="145" height="64" /><span
+        <img src={logoSrc} srcset={logoSrcset} sizes="220px" alt="Auto Nunes Martins" width="145" height="64" /><span
           >CONVITE<br />PARA CONVERSAR</span
         >
       </div>

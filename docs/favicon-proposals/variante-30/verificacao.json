@@ -1,0 +1,171 @@
+{
+  "source": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao",
+  "changedOnly": "background",
+  "oldColor": "#101012",
+  "newColor": "#0c0c0e",
+  "evidence": [
+    {
+      "file": "apps/website/src/lib/components/stand-concepts/DesignEdition.svelte",
+      "selector": ":global(:where(html)[data-theme='dark']) .design",
+      "value": "--bg: #0c0c0e; background: var(--bg);"
+    }
+  ],
+  "distinction": "Selected the visible Orbit content background #0c0c0e. The html/body fallback #0a0a0b belongs to variant29 and is not selected here.",
+  "svgOnlyBackgroundChanged": true,
+  "files": [
+    {
+      "size": 16,
+      "sourceSha256": "36af5c93c9c2454e3ef1e4bc6ef765f2ba0dbb219df65a846dccb9ea7b9775e5",
+      "outputSha256": "39ef689706b6a49d72390b6d02d69fd2ec78f412e6e5128c5bf1f522bc632946",
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 1,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 1,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "size": 32,
+      "sourceSha256": "fe5bf255ef3d3dc783e8803fce2a37fbc0bbc9a38b8d496f923c6b18a945b405",
+      "outputSha256": "3a747c8cfd99d2f15ffe993a80b1a6a45f04316a90a69b53b871af007cfb7157",
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 2,
+          "y": 8
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 2,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "size": 48,
+      "sourceSha256": "1cede71bccf27b4a3c4209aa9aa5737c72e7da782bba19709a8c0b92e7a43572",
+      "outputSha256": "d83ab54e50fdf5b589da87edb9d1ea0d8d553e5878231e35a604790d383bc724",
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 36,
+          "height": 9,
+          "x": 2,
+          "y": 12
+        },
+        {
+          "name": "nunes",
+          "width": 44,
+          "height": 9,
+          "x": 2,
+          "y": 26
+        }
+      ]
+    },
+    {
+      "size": 64,
+      "sourceSha256": "a3b932f74f8acde22181231d1b9637317964052ea2338265a8db12a9bbae3c9c",
+      "outputSha256": "2c480e3e496b82c322893b56856cc1f6b9740c5c8e9bc813d00a198dce8c85b8",
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 47,
+          "height": 12,
+          "x": 3,
+          "y": 17
+        },
+        {
+          "name": "nunes",
+          "width": 58,
+          "height": 12,
+          "x": 3,
+          "y": 35
+        }
+      ]
+    },
+    {
+      "size": 128,
+      "sourceSha256": "4c29710d0d5a4ab3388201ecab7cb52ab16ea9ef96dcc1746655503e51935f13",
+      "outputSha256": "031ec5126d55ff2a55a2f8ac2e833d4b683bffed27b8e9ae697028c098c400a0",
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 91,
+          "height": 23,
+          "x": 6,
+          "y": 35
+        },
+        {
+          "name": "nunes",
+          "width": 112,
+          "height": 23,
+          "x": 6,
+          "y": 70
+        }
+      ]
+    },
+    {
+      "size": 180,
+      "sourceSha256": "ef076242a07d4b466259e0e5f96ab28191795a526fb49286a4673dce540854fb",
+      "outputSha256": "4fe9ce4177feec26cb65cff23059ecd905612cbe3b1fcb51950351d2a530ba52",
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 130,
+          "height": 33,
+          "x": 8,
+          "y": 48
+        },
+        {
+          "name": "nunes",
+          "width": 161,
+          "height": 33,
+          "x": 8,
+          "y": 98
+        }
+      ]
+    },
+    {
+      "size": 256,
+      "sourceSha256": "1d632cdb1e54cf3b7b7d919ad3bea843430e05ba4e2ff80b45f8aa796c910bed",
+      "outputSha256": "633081c5526716895ea3fbcdd82046a9bbf394f54d64ff51741700bd397346aa",
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 186,
+          "height": 47,
+          "x": 12,
+          "y": 69
+        },
+        {
+          "name": "nunes",
+          "width": 229,
+          "height": 47,
+          "x": 12,
+          "y": 140
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,428 @@
+{
+  "vectorSource": "No original brand vector or font file found in repository; SVG proposals embed original raster crops and are not claimed as original vectors.",
+  "audit": [
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "sourceSha256": "40836f0ebd44cc96c86a5995de4fee34432877a85163bd73780d8f991b1d3d4d",
+      "tone": "dark",
+      "word": "auto",
+      "region": {
+        "left": 165,
+        "top": 350,
+        "width": 670,
+        "height": 185
+      },
+      "alphaBounds": {
+        "left": 9,
+        "top": 10,
+        "width": 660,
+        "height": 167
+      },
+      "wordSha256": "bc1370dfff19b4d3faedc2a1e73f24697da5d7afd1fceff01f3fe6b74c9ebca5"
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "sourceSha256": "40836f0ebd44cc96c86a5995de4fee34432877a85163bd73780d8f991b1d3d4d",
+      "tone": "dark",
+      "word": "nunes",
+      "region": {
+        "left": 834,
+        "top": 350,
+        "width": 842,
+        "height": 185
+      },
+      "alphaBounds": {
+        "left": 5,
+        "top": 10,
+        "width": 814,
+        "height": 167
+      },
+      "wordSha256": "24607d70fb6f252f745e08d73eda9d9d41d7411a57c339343b6977bcc5f817fc"
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "sourceSha256": "3803a6f135ade9ffef4a6d1a05cdcde04ecd201b157601a3fb4ba709a66cec15",
+      "tone": "light",
+      "word": "auto",
+      "region": {
+        "left": 165,
+        "top": 350,
+        "width": 670,
+        "height": 185
+      },
+      "alphaBounds": {
+        "left": 9,
+        "top": 10,
+        "width": 660,
+        "height": 167
+      },
+      "wordSha256": "bc1370dfff19b4d3faedc2a1e73f24697da5d7afd1fceff01f3fe6b74c9ebca5"
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "sourceSha256": "3803a6f135ade9ffef4a6d1a05cdcde04ecd201b157601a3fb4ba709a66cec15",
+      "tone": "light",
+      "word": "nunes",
+      "region": {
+        "left": 834,
+        "top": 350,
+        "width": 842,
+        "height": 185
+      },
+      "alphaBounds": {
+        "left": 5,
+        "top": 10,
+        "width": 814,
+        "height": 167
+      },
+      "wordSha256": "6631df2795ba6b3a3ce481f584594d4cfc626d5b4c1023875cf5aa7cb3335db2"
+    }
+  ],
+  "options": [
+    {
+      "number": 21,
+      "id": "21-centro-carvao",
+      "label": "Centro · carvão",
+      "tone": "dark",
+      "bg": "#17171a",
+      "maxWidth": 60,
+      "gap": 8,
+      "align": "center",
+      "source": "--surface: #17171a",
+      "native16": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 2,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 0,
+          "y": 9
+        }
+      ],
+      "native32": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 4,
+          "y": 8
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 1,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "id": "22-centro-claro",
+      "label": "Centro · branco suave",
+      "tone": "light",
+      "bg": "#f5f5f1",
+      "maxWidth": 60,
+      "gap": 8,
+      "align": "center",
+      "source": "--bg: #f5f5f1",
+      "native16": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 2,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 0,
+          "y": 9
+        }
+      ],
+      "native32": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 4,
+          "y": 8
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 1,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "id": "23-compacto-grafite",
+      "label": "Compacto · grafite",
+      "tone": "dark",
+      "bg": "#252528",
+      "maxWidth": 60,
+      "gap": 4,
+      "align": "center",
+      "source": "background: #252528",
+      "native16": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 2,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 0,
+          "y": 8
+        }
+      ],
+      "native32": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 4,
+          "y": 9
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 1,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "id": "24-compacto-branco",
+      "label": "Compacto · branco",
+      "tone": "light",
+      "bg": "#ffffff",
+      "maxWidth": 60,
+      "gap": 4,
+      "align": "center",
+      "source": "--surface: #fff;",
+      "native16": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 2,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 0,
+          "y": 8
+        }
+      ],
+      "native32": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 4,
+          "y": 9
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 1,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "id": "25-alinhado-carvao",
+      "label": "Alinhado · carvão",
+      "tone": "dark",
+      "bg": "#101012",
+      "maxWidth": 58,
+      "gap": 6,
+      "align": "left",
+      "source": "background: #101012",
+      "native16": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 1,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 1,
+          "y": 9
+        }
+      ],
+      "native32": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 2,
+          "y": 8
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 2,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "id": "26-alinhado-papel",
+      "label": "Alinhado · papel",
+      "tone": "light",
+      "bg": "#f6f4ef",
+      "maxWidth": 58,
+      "gap": 6,
+      "align": "left",
+      "source": "background: #f6f4ef",
+      "native16": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 1,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 1,
+          "y": 9
+        }
+      ],
+      "native32": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 2,
+          "y": 8
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 2,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "id": "27-respiro-carvao",
+      "label": "Com margem · carvão",
+      "tone": "dark",
+      "bg": "#0c0c0e",
+      "maxWidth": 56,
+      "gap": 8,
+      "align": "center",
+      "source": "--bg: #0c0c0e",
+      "native16": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 2,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 0,
+          "y": 9
+        }
+      ],
+      "native32": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 4,
+          "y": 8
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 1,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "id": "28-respiro-claro",
+      "label": "Com margem · claro",
+      "tone": "light",
+      "bg": "#f3f3ef",
+      "maxWidth": 56,
+      "gap": 8,
+      "align": "center",
+      "source": "--bg: #f3f3ef",
+      "native16": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 2,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 0,
+          "y": 9
+        }
+      ],
+      "native32": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 4,
+          "y": 8
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 1,
+          "y": 18
+        }
+      ]
+    }
+  ],
+  "nativeNote": "PNG/ICO rasterize the actual cropped words independently at matched integer cap heights. Glyph shapes/colors remain sampled from original PNGs; geometry/spacing is a new stacked composition. SVG uses continuous coordinates and may rasterize slightly differently at tiny sizes."
+}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import '../app.css';
+  import WebsiteIconHead from '$lib/components/WebsiteIconHead.svelte';
   import WhatsAppContact from '$lib/components/WhatsAppContact.svelte';
   import { onMount, setContext, tick } from 'svelte';
   import { browser } from '$app/environment';
@@ -48,6 +49,7 @@
   });
 </script>
 
+<WebsiteIconHead />
 {@render children()}
 <WhatsAppContact />
 <NotificationHost />

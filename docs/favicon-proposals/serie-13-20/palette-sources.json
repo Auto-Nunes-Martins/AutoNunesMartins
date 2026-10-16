@@ -1,0 +1,90 @@
+[
+  {
+    "number": 13,
+    "id": "13-carvao-pagina",
+    "label": "Carvão · página",
+    "color": "#0c0c0e",
+    "tone": "dark",
+    "file": "DesignEdition.svelte",
+    "literal": "--bg: #0c0c0e",
+    "artworkSource": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon.svg",
+    "paletteSource": "apps/website/src/lib/components/stand-concepts/DesignEdition.svelte"
+  },
+  {
+    "number": 14,
+    "id": "14-carvao-rodape",
+    "label": "Carvão · rodapé",
+    "color": "#101012",
+    "tone": "dark",
+    "file": "OrbitCompactFooter.svelte",
+    "literal": "background: #101012",
+    "artworkSource": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon.svg",
+    "paletteSource": "apps/website/src/lib/components/stand-concepts/OrbitCompactFooter.svelte"
+  },
+  {
+    "number": 15,
+    "id": "15-carvao-superficie",
+    "label": "Carvão · superfície",
+    "color": "#17171a",
+    "tone": "dark",
+    "file": "DesignEdition.svelte",
+    "literal": "--surface: #17171a",
+    "artworkSource": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon.svg",
+    "paletteSource": "apps/website/src/lib/components/stand-concepts/DesignEdition.svelte"
+  },
+  {
+    "number": 16,
+    "id": "16-grafite",
+    "label": "Grafite · controlo",
+    "color": "#252528",
+    "tone": "dark",
+    "file": "DesignEdition.svelte",
+    "literal": "background: #252528",
+    "artworkSource": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon.svg",
+    "paletteSource": "apps/website/src/lib/components/stand-concepts/DesignEdition.svelte"
+  },
+  {
+    "number": 17,
+    "id": "17-branco",
+    "label": "Branco · superfície",
+    "color": "#ffffff",
+    "tone": "light",
+    "file": "DesignEdition.svelte",
+    "literal": "--surface: #fff;",
+    "artworkSource": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon.svg",
+    "paletteSource": "apps/website/src/lib/components/stand-concepts/DesignEdition.svelte"
+  },
+  {
+    "number": 18,
+    "id": "18-branco-orbit",
+    "label": "Branco suave · Orbit",
+    "color": "#f5f5f1",
+    "tone": "light",
+    "file": "DesignEdition.svelte",
+    "literal": "--bg: #f5f5f1",
+    "artworkSource": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon.svg",
+    "paletteSource": "apps/website/src/lib/components/stand-concepts/DesignEdition.svelte"
+  },
+  {
+    "number": 19,
+    "id": "19-branco-base",
+    "label": "Branco suave · base",
+    "color": "#f3f3ef",
+    "tone": "light",
+    "file": "DesignEdition.svelte",
+    "literal": "--bg: #f3f3ef",
+    "artworkSource": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon.svg",
+    "paletteSource": "apps/website/src/lib/components/stand-concepts/DesignEdition.svelte"
+  },
+  {
+    "number": 20,
+    "id": "20-papel-convite",
+    "label": "Papel · convite",
+    "color": "#f6f4ef",
+    "tone": "light",
+    "file": "VisitInvitation.svelte",
+    "literal": "background: #f6f4ef",
+    "artworkSource": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon.svg",
+    "paletteSource": "apps/website/src/lib/components/stand-concepts/VisitInvitation.svelte"
+  }
+]

@@ -1,0 +1,228 @@
+{
+  "source": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao",
+  "changedOnly": "background",
+  "oldColor": "#101012",
+  "newColor": "#1b1b1d",
+  "referenceColor": "#252528",
+  "midpointMethod": "Arithmetic mean of each encoded sRGB 8-bit channel, rounded to nearest integer (26.5,26.5,29) -> (27,27,29) = #1B1B1D. This is an explicit RGB midpoint, not a claimed perceptual midpoint.",
+  "evidence": [
+    {
+      "option": 25,
+      "background": "#101012"
+    },
+    {
+      "option": 23,
+      "background": "#252528"
+    }
+  ],
+  "svgOnlyBackgroundChanged": true,
+  "files": [
+    {
+      "size": 16,
+      "sourceSha256": "36af5c93c9c2454e3ef1e4bc6ef765f2ba0dbb219df65a846dccb9ea7b9775e5",
+      "outputSha256": "7da2a4d68e6655568a06c32eea2ea318a6443b219d52063980c76378ef687cc6",
+      "originalSizeFileExists": true,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 12,
+          "height": 3,
+          "x": 1,
+          "y": 4
+        },
+        {
+          "name": "nunes",
+          "width": 15,
+          "height": 3,
+          "x": 1,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "size": 32,
+      "sourceSha256": "fe5bf255ef3d3dc783e8803fce2a37fbc0bbc9a38b8d496f923c6b18a945b405",
+      "outputSha256": "31e7d99d5c4c38313ee2fad4aaab78b8b1abfefddb65d814034ad2d78458ea0e",
+      "originalSizeFileExists": true,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 24,
+          "height": 6,
+          "x": 2,
+          "y": 8
+        },
+        {
+          "name": "nunes",
+          "width": 29,
+          "height": 6,
+          "x": 2,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "size": 48,
+      "sourceSha256": "1cede71bccf27b4a3c4209aa9aa5737c72e7da782bba19709a8c0b92e7a43572",
+      "outputSha256": "824fc7c3ae2ac20863922c84d56c535114af9ee14b9a9c4013b73aca1c87852b",
+      "originalSizeFileExists": true,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 36,
+          "height": 9,
+          "x": 2,
+          "y": 12
+        },
+        {
+          "name": "nunes",
+          "width": 44,
+          "height": 9,
+          "x": 2,
+          "y": 26
+        }
+      ]
+    },
+    {
+      "size": 64,
+      "sourceSha256": "a3b932f74f8acde22181231d1b9637317964052ea2338265a8db12a9bbae3c9c",
+      "outputSha256": "4d3992f0bf403d6c2d42e8d51805763becfe5f8d43c79d15a3f5bcaa90782fce",
+      "originalSizeFileExists": true,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 47,
+          "height": 12,
+          "x": 3,
+          "y": 17
+        },
+        {
+          "name": "nunes",
+          "width": 58,
+          "height": 12,
+          "x": 3,
+          "y": 35
+        }
+      ]
+    },
+    {
+      "size": 128,
+      "sourceSha256": "4c29710d0d5a4ab3388201ecab7cb52ab16ea9ef96dcc1746655503e51935f13",
+      "outputSha256": "f635341951168ec620458a473c8e4848867cd0e36eafb7786647a0ec632142cc",
+      "originalSizeFileExists": true,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 91,
+          "height": 23,
+          "x": 6,
+          "y": 35
+        },
+        {
+          "name": "nunes",
+          "width": 112,
+          "height": 23,
+          "x": 6,
+          "y": 70
+        }
+      ]
+    },
+    {
+      "size": 180,
+      "sourceSha256": "ef076242a07d4b466259e0e5f96ab28191795a526fb49286a4673dce540854fb",
+      "outputSha256": "1e25c7116848803447087b8600f8c0e848cd45d663c09f4bcee16db3d9d87049",
+      "originalSizeFileExists": true,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 130,
+          "height": 33,
+          "x": 8,
+          "y": 48
+        },
+        {
+          "name": "nunes",
+          "width": 161,
+          "height": 33,
+          "x": 8,
+          "y": 98
+        }
+      ]
+    },
+    {
+      "size": 192,
+      "sourceSha256": "ce4e1a7e67c1b5af2b9729608bdaa90a82dc640c3ab7655f6afed3edbf3e45c2",
+      "outputSha256": "e9b9ca97e7abafe880caad6413305abe13aca672f5f1949f574aff3650ec8462",
+      "originalSizeFileExists": false,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 138,
+          "height": 35,
+          "x": 9,
+          "y": 52
+        },
+        {
+          "name": "nunes",
+          "width": 171,
+          "height": 35,
+          "x": 9,
+          "y": 105
+        }
+      ]
+    },
+    {
+      "size": 256,
+      "sourceSha256": "1d632cdb1e54cf3b7b7d919ad3bea843430e05ba4e2ff80b45f8aa796c910bed",
+      "outputSha256": "c0d042a995646e67323a704d8f793fefe226aafab6d7f2eb65fa8e3ae6840205",
+      "originalSizeFileExists": true,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 186,
+          "height": 47,
+          "x": 12,
+          "y": 69
+        },
+        {
+          "name": "nunes",
+          "width": 229,
+          "height": 47,
+          "x": 12,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "size": 512,
+      "sourceSha256": "f2fb36bbebd8e5c68d93f322aaa18dbcdc165cf98474ccb47fade433960934b9",
+      "outputSha256": "f83af9f100fd0197574cb0cda9680487064077d901620e177a3897842ca3089d",
+      "originalSizeFileExists": false,
+      "originalPixelMatch": true,
+      "geometry": [
+        {
+          "name": "auto",
+          "width": 375,
+          "height": 95,
+          "x": 24,
+          "y": 137
+        },
+        {
+          "name": "nunes",
+          "width": 463,
+          "height": 95,
+          "x": 24,
+          "y": 280
+        }
+      ]
+    }
+  ]
+}

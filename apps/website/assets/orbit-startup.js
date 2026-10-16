@@ -44,6 +44,8 @@ window.initializeOrbitDocument = function () {
     root.classList.toggle('dark', dark);
     root.querySelectorAll('[data-theme-logo]').forEach(function (logo) {
       var source = logo.getAttribute(dark ? 'data-logo-dark' : 'data-logo-light');
+      var sourceSet = logo.getAttribute(dark ? 'data-logo-dark-srcset' : 'data-logo-light-srcset');
+      if (sourceSet) logo.setAttribute('srcset', sourceSet);
       if (source) logo.setAttribute('src', source);
     });
     root.querySelectorAll('[data-theme-command]').forEach(function (button) {

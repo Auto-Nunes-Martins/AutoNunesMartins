@@ -1,6 +1,13 @@
 /** Responsive variants for curated demo images only. Public API paths stay untouched. */
 export const imageWidths = [320, 480, 640, 960, 1280, 1600, 1920] as const;
 
+// Vite imports are root-relative during SSR but absolute URLs in the browser.
+// Only curated Unsplash identifiers should be expanded into CDN URLs.
+export const photo = (id: string, width = 1400) =>
+  /^photo-[a-zA-Z0-9-]+$/.test(id)
+    ? `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`
+    : id;
+
 export function responsivePhoto(id: string, maximum = 1920): string | undefined {
   if (!/^photo-[a-zA-Z0-9-]+$/.test(id)) return undefined;
   return imageWidths

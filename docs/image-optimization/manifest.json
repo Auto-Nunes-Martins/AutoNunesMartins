@@ -1,0 +1,497 @@
+{
+  "note": "Lanczos3, no crop/upscale. Logos: lossless WebP with original canvas/alpha. Photos: AVIF75 4:4:4, WebP90 fallback. Originals retained.",
+  "assets": [
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-light-180.webp",
+      "originalBytes": 406094,
+      "bytes": 9608,
+      "width": 180,
+      "height": 80,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-light-360.webp",
+      "originalBytes": 406094,
+      "bytes": 26312,
+      "width": 360,
+      "height": 160,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-light-720.webp",
+      "originalBytes": 406094,
+      "bytes": 77832,
+      "width": 720,
+      "height": 320,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-light-1200.webp",
+      "originalBytes": 406094,
+      "bytes": 168204,
+      "width": 1200,
+      "height": 533,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-light-1881.webp",
+      "originalBytes": 406094,
+      "bytes": 269260,
+      "width": 1881,
+      "height": 836,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/crm/src/lib/assets/optimized/logo-light-180.webp",
+      "originalBytes": 406094,
+      "bytes": 9608,
+      "width": 180,
+      "height": 80,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/crm/src/lib/assets/optimized/logo-light-360.webp",
+      "originalBytes": 406094,
+      "bytes": 26312,
+      "width": 360,
+      "height": 160,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/crm/src/lib/assets/optimized/logo-light-720.webp",
+      "originalBytes": 406094,
+      "bytes": 77832,
+      "width": 720,
+      "height": 320,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/crm/src/lib/assets/optimized/current-favicon-light-64.png",
+      "originalBytes": 406094,
+      "bytes": 2113,
+      "width": 64,
+      "height": 28,
+      "alpha": true,
+      "format": "png",
+      "options": {
+        "compressionLevel": 9,
+        "effort": 10
+      },
+      "visibleMeanError": 0.86,
+      "alphaMeanError": 0.213
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-dark-180.webp",
+      "originalBytes": 244158,
+      "bytes": 8080,
+      "width": 180,
+      "height": 80,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-dark-360.webp",
+      "originalBytes": 244158,
+      "bytes": 20334,
+      "width": 360,
+      "height": 160,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-dark-720.webp",
+      "originalBytes": 244158,
+      "bytes": 55028,
+      "width": 720,
+      "height": 320,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-dark-1200.webp",
+      "originalBytes": 244158,
+      "bytes": 111842,
+      "width": 1200,
+      "height": 533,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-dark-1881.webp",
+      "originalBytes": 244158,
+      "bytes": 158400,
+      "width": 1881,
+      "height": 836,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/crm/src/lib/assets/optimized/logo-dark-180.webp",
+      "originalBytes": 244158,
+      "bytes": 8080,
+      "width": 180,
+      "height": 80,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/crm/src/lib/assets/optimized/logo-dark-360.webp",
+      "originalBytes": 244158,
+      "bytes": 20334,
+      "width": 360,
+      "height": 160,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/crm/src/lib/assets/optimized/logo-dark-720.webp",
+      "originalBytes": 244158,
+      "bytes": 55028,
+      "width": 720,
+      "height": 320,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/crm/src/lib/assets/optimized/current-favicon-dark-64.png",
+      "originalBytes": 244158,
+      "bytes": 2110,
+      "width": 64,
+      "height": 28,
+      "alpha": true,
+      "format": "png",
+      "options": {
+        "compressionLevel": 9,
+        "effort": 10
+      },
+      "visibleMeanError": 0.503,
+      "alphaMeanError": 0.181
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-1-480.webp",
+      "originalBytes": 309525,
+      "bytes": 72226,
+      "width": 480,
+      "height": 360,
+      "alpha": false,
+      "format": "webp",
+      "options": {
+        "quality": 90,
+        "effort": 6,
+        "smartSubsample": true
+      },
+      "visibleMeanError": 2.977,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-1-480.avif",
+      "originalBytes": 309525,
+      "bytes": 68359,
+      "width": 480,
+      "height": 360,
+      "alpha": false,
+      "format": "avif",
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "chromaSubsampling": "4:4:4"
+      },
+      "visibleMeanError": 2.141,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-1-640.webp",
+      "originalBytes": 309525,
+      "bytes": 121352,
+      "width": 640,
+      "height": 480,
+      "alpha": false,
+      "format": "webp",
+      "options": {
+        "quality": 90,
+        "effort": 6,
+        "smartSubsample": true
+      },
+      "visibleMeanError": 2.559,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-1-640.avif",
+      "originalBytes": 309525,
+      "bytes": 112048,
+      "width": 640,
+      "height": 480,
+      "alpha": false,
+      "format": "avif",
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "chromaSubsampling": "4:4:4"
+      },
+      "visibleMeanError": 2.024,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-1-1024.webp",
+      "originalBytes": 309525,
+      "bytes": 288778,
+      "width": 1024,
+      "height": 768,
+      "alpha": false,
+      "format": "webp",
+      "options": {
+        "quality": 90,
+        "effort": 6,
+        "smartSubsample": true
+      },
+      "visibleMeanError": 1.869,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-1-1024.avif",
+      "originalBytes": 309525,
+      "bytes": 241249,
+      "width": 1024,
+      "height": 768,
+      "alpha": false,
+      "format": "avif",
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "chromaSubsampling": "4:4:4"
+      },
+      "visibleMeanError": 1.639,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-2-480.webp",
+      "originalBytes": 298994,
+      "bytes": 68052,
+      "width": 480,
+      "height": 360,
+      "alpha": false,
+      "format": "webp",
+      "options": {
+        "quality": 90,
+        "effort": 6,
+        "smartSubsample": true
+      },
+      "visibleMeanError": 2.365,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-2-480.avif",
+      "originalBytes": 298994,
+      "bytes": 59270,
+      "width": 480,
+      "height": 360,
+      "alpha": false,
+      "format": "avif",
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "chromaSubsampling": "4:4:4"
+      },
+      "visibleMeanError": 2.053,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-2-640.webp",
+      "originalBytes": 298994,
+      "bytes": 114806,
+      "width": 640,
+      "height": 480,
+      "alpha": false,
+      "format": "webp",
+      "options": {
+        "quality": 90,
+        "effort": 6,
+        "smartSubsample": true
+      },
+      "visibleMeanError": 2.15,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-2-640.avif",
+      "originalBytes": 298994,
+      "bytes": 99813,
+      "width": 640,
+      "height": 480,
+      "alpha": false,
+      "format": "avif",
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "chromaSubsampling": "4:4:4"
+      },
+      "visibleMeanError": 1.951,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-2-1024.webp",
+      "originalBytes": 298994,
+      "bytes": 283084,
+      "width": 1024,
+      "height": 768,
+      "alpha": false,
+      "format": "webp",
+      "options": {
+        "quality": 90,
+        "effort": 6,
+        "smartSubsample": true
+      },
+      "visibleMeanError": 1.733,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg",
+      "output": "apps/website/src/lib/assets/optimized/facade-2-1024.avif",
+      "originalBytes": 298994,
+      "bytes": 228868,
+      "width": 1024,
+      "height": 768,
+      "alpha": false,
+      "format": "avif",
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "chromaSubsampling": "4:4:4"
+      },
+      "visibleMeanError": 1.618,
+      "alphaMeanError": 0
+    }
+  ]
+}

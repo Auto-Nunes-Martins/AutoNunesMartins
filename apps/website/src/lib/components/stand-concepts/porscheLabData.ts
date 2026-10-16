@@ -65,10 +65,7 @@ export const cars = [
     category: 'Berlina',
   },
 ];
-export const photo = (id: string, width = 1400) =>
-  id.startsWith('/')
-    ? id
-    : `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`;
+export { photo } from './images';
 export const eur = (n: number) =>
   new Intl.NumberFormat('pt-PT', {
     style: 'currency',

@@ -73,12 +73,14 @@ try {
     const prefix = app === 'crm' ? '/crm' : '';
     const sourceRoot = `apps/${app}/src/lib/assets`;
     const outputRoot = `apps/${app}/build/client${prefix}/_app/immutable/assets`;
-    const sources = fs.readdirSync(sourceRoot, { recursive: true }).map(file => path.join(sourceRoot, file)).filter(file => fs.statSync(file).isFile());
+    // Original PNG/JPEG sources are retained but no longer imported by the UI.
+    const sources = fs.readdirSync(sourceRoot, { recursive: true }).map(file => path.join(sourceRoot, file)).filter(file => fs.statSync(file).isFile() && (file.includes(`${path.sep}optimized${path.sep}`) || file.includes(`${path.sep}favicon${path.sep}`) || file.endsWith('.svg')));
     if (app === 'website') sources.push('apps/website/assets/orbit-startup.js');
     const outputs = fs.readdirSync(outputRoot);
     for (const source of sources) {
-      if (source.startsWith(sourceRoot)) {
-        assert.deepEqual(fs.readFileSync(source), fs.readFileSync(path.join(`apps/${app}/static`, path.relative(sourceRoot, source))), `original image unchanged: ${source}`);
+      if (source.endsWith('.svg')) {
+        // Git can check out the two unchanged text copies with different line endings.
+        assert.equal(fs.readFileSync(source, 'utf8').replaceAll('\r\n', '\n'), fs.readFileSync(path.join(`apps/${app}/static`, path.relative(sourceRoot, source)), 'utf8').replaceAll('\r\n', '\n'), `original SVG content unchanged: ${source}`);
       }
       const { name, ext } = path.parse(source);
       const file = outputs.find(file => file.startsWith(name + '.') && file.endsWith(ext));
@@ -86,7 +88,7 @@ try {
       const url = `${prefix}/_app/immutable/assets/${file}`;
       const response = await call(url);
       assert.equal(response.status, 200, url);
-      assert.equal(response.headers.get('cache-control'), immutable, url);
+      assert.equal(response.headers.get('cache-control'), immutable, `${url} MIME=${response.headers.get('content-type')}`);
       assert.equal(response.headers.get('set-cookie'), null, url);
       assert.deepEqual(Buffer.from(await response.arrayBuffer()), fs.readFileSync(source), `unchanged bytes: ${url}`);
       if (app === 'crm') assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow');
@@ -111,6 +113,23 @@ try {
       if (!url.startsWith('/crm')) {
         assert.match(html, /<script src="\/_app\/immutable\/assets\/orbit-startup\.[\w-]+\.js"><\/script>/);
         assert(html.indexOf('orbit-startup.') < html.indexOf('<body'), 'classic startup stays parser blocking in head');
+      }
+      if (!url.startsWith('/crm')) {
+        const icons = [...html.matchAll(/<link\b[^>]*rel="(?:icon|apple-touch-icon)"[^>]*>/g)].map(match => match[0]);
+        assert.equal(icons.length, 4, 'One fixed website icon set in every SSR page');
+        for (const tag of icons) {
+          const href = tag.match(/href="([^"]+)"/)[1];
+          const size = tag.match(/sizes="([^"]+)"/)[1];
+          const file = size === '16x16' ? 'favicon-16.png' : size === '32x32' ? 'favicon-32.png' : size === '180x180' ? 'favicon-180.png' : 'favicon.ico';
+          const resource = await call(new URL(href, origin + url).pathname);
+          assert.equal(resource.status, 200);
+          assert.equal(resource.headers.get('cache-control'), immutable);
+          assert.match(resource.headers.get('content-type'), file.endsWith('.png') ? /image\/png/ : /image\/(?:x-icon|vnd.microsoft.icon)/);
+          assert.deepEqual(Buffer.from(await resource.arrayBuffer()), fs.readFileSync('docs/favicon-proposals/variante-31/' + file), 'Exact selected option31 bytes');
+        }
+        const legacyIcon = await call('/favicon.ico');
+        assert.equal(legacyIcon.status, 200);
+        assert.deepEqual(Buffer.from(await legacyIcon.arrayBuffer()), fs.readFileSync('docs/favicon-proposals/variante-31/favicon.ico'));
       }
       for (const match of html.matchAll(/(?:src|href)="([^" ]*\/_app\/immutable\/[^" ]+)"/g)) {
         const asset = new URL(match[1], origin + url).pathname;
