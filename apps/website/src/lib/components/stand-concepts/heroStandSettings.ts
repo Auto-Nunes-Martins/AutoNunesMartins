@@ -8,10 +8,10 @@ export type StandSettings = { profiles: [StandProfile, StandProfile]; selected: 
 export function standDefaults(): StandSettings {
   const firstFade = originalFade();
   firstFade.symmetric = true;
-  firstFade.common = { intensity: 100, width: 38, softness: 59 };
+  firstFade.common = { intensity: 100, width: 28, softness: 100 };
   const secondFade = originalFade();
   secondFade.symmetric = true;
-  secondFade.common = { intensity: 100, width: 38, softness: 59 };
+  secondFade.common = { intensity: 100, width: 28, softness: 100 };
   return {
     profiles: [
       { width: 104, height: 100, zoom: 65, x: 50, y: 72, cropLeft: 0, cropRight: 0, symmetricCrop: true, cropPossible: true, fade: firstFade },

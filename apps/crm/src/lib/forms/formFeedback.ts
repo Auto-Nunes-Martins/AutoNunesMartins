@@ -1,17 +1,38 @@
 type Issue = { path?: PropertyKey[]; message?: string };
 export type FormFailure = { error?: string; field?: string | null; issues?: Issue[] };
 
-const forms = new Map<HTMLFormElement, { baseline: string; dirty: boolean }>();
+type FeedbackState = { dirty: boolean; valid: boolean };
+type Options = { onstatechange?: (state: FeedbackState) => void };
+const forms = new Map<HTMLFormElement, { baseline: string; lastSnapshot: string; dirty: boolean } & Options>();
 let nextErrorId = 0;
 
 function snapshot(form: HTMLFormElement) {
-  return JSON.stringify(
+  const state = forms.get(form);
+  // Transient fieldset locks must not look like removal of all successful controls.
+  if (state && form.querySelector('fieldset[data-save-lock][disabled]')) return state.lastSnapshot;
+  const value = JSON.stringify(
     [...new FormData(form)].map(([key, value]) => [
       key,
       typeof value === 'string' ? value : [value.name, value.size, value.lastModified],
     ]),
   );
+  if (state) state.lastSnapshot = value;
+  return value;
 }
+
+function notify(form: HTMLFormElement) {
+  const state = forms.get(form);
+  if (!state) return;
+  state.dirty = snapshot(form) !== state.baseline;
+  const valid = [...form.elements].every(field =>
+    !(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)
+      || !field.willValidate || field.validity.valid,
+  );
+  state.onstatechange?.({ dirty: state.dirty, valid });
+}
+
+/** Recheck programmatic changes, including photo inputs associated from outside the form. */
+export function refreshFormFeedback(form: HTMLFormElement) { notify(form); }
 
 export function hasUnsavedForms() {
   return [...forms].some(([form, state]) => form.isConnected && snapshot(form) !== state.baseline);
@@ -29,6 +50,7 @@ export function markFormSaved(form: HTMLFormElement) {
     state.dirty = false;
   }
   clearFormErrors(form);
+  notify(form);
 }
 
 function clearFieldError(field: HTMLElement) {
@@ -97,17 +119,20 @@ export function showFormErrors(form: HTMLFormElement, failure: FormFailure = {})
 }
 
 /** In-memory only: no personal data is copied to browser storage. */
-export function formFeedback(form: HTMLFormElement) {
-  const state = { baseline: snapshot(form), dirty: false };
+export function formFeedback(form: HTMLFormElement, options: Options = {}) {
+  const initial = snapshot(form);
+  const state = { baseline: initial, lastSnapshot: initial, dirty: false, ...options };
   forms.set(form, state);
   queueMicrotask(() => {
     if (!state.dirty) state.baseline = snapshot(form);
+    notify(form);
   });
   const changed = (event: Event) => {
     if (event.target instanceof HTMLElement) clearFieldError(event.target);
     if (!form.querySelector('[data-form-error]'))
       form.querySelector('[data-form-error-summary]')?.remove();
-    state.dirty = snapshot(form) !== state.baseline;
+    // Include Svelte's formatted/bound value after the input handler flushes.
+    queueMicrotask(() => notify(form));
   };
   const invalid = (event: Event) => {
     const field = event.target;

@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { cache } from '../data/cache.js';
 
 export const MAX_PHOTOS = 20;
 const MAX_ATTEMPTS = 3;
@@ -39,7 +40,7 @@ export async function mutateVehiclePhotos(
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const vehicle = await db.vehicle.findUnique({
       where: { id: vehicleId },
-      select: { photos: true, publicPhotoPaths: true },
+      select: { photos: true, publicPhotoPaths: true, webPublished:true },
     });
     if (!vehicle) throw new PhotoMutationError(404, 'Vehicle not found');
     const current = vehicle.photos;
@@ -69,6 +70,7 @@ export async function mutateVehiclePhotos(
         break;
       }
     }
+    if (vehicle.webPublished && next.length && !approved.includes(next[0]!)) throw new PhotoMutationError(409, 'A foto principal não está selecionada para o site. Use o editor para escolher outra principal autorizada ou incluir explicitamente esta fotografia.');
     const result = await db.vehicle.updateMany({
       where: { id: vehicleId, photos: { equals: current }, publicPhotoPaths: { equals: approved } },
       data: {
@@ -82,7 +84,7 @@ export async function mutateVehiclePhotos(
         },
       },
     });
-    if (result.count === 1) return { photos: next, changed: true };
+    if (result.count === 1) { cache.clearPrefix('dashboard:'); return { photos: next, changed: true }; }
     if (mutation.type === 'reorder') throw conflict();
   }
   throw conflict();

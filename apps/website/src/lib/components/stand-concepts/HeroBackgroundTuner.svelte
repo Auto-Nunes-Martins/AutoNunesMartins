@@ -7,7 +7,15 @@
   let open = $state(false);
   let selected = $state<StandIndex>(0), copied = $state(''), showConfig = $state(false);
   const fade = $derived(settings.profiles[selected].fade);
-  const config = $derived(JSON.stringify({ images: settings.profiles.map((profile, index) => ({ image: index + 1, name: standNames[index], lateralFade: profile.fade })) }, null, 2));
+  const profile = $derived(settings.profiles[selected]);
+  const config = $derived(JSON.stringify({ images: settings.profiles.map((profile, index) => ({ image: index + 1, name: standNames[index], width: profile.width, height: profile.height, zoom: profile.zoom, horizontal: profile.x, vertical: profile.y, lateralFade: profile.fade })) }, null, 2));
+
+  function updateGeometry(key: 'width' | 'height' | 'zoom' | 'x' | 'y', event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    if (input.value === '' || !Number.isFinite(Number(input.value))) return;
+    profile[key] = Math.min(Number(input.max), Math.max(Number(input.min), Number(input.value)));
+    emit();
+  }
 
   function emit(pause = true) {
     if (pause) { if (settings.playing) resumeAfterEdit = true; settings.playing = false; }
@@ -28,24 +36,32 @@
     emit();
   }
   function reset() {
-    // Reset only this image's fade; preserve framing, crop, timing and rendering measurements.
-    settings.profiles[selected] = { ...settings.profiles[selected], fade: standDefaults().profiles[selected].fade };
+    const initial = standDefaults().profiles[selected];
+    settings.profiles[selected] = { ...settings.profiles[selected], width: initial.width, height: initial.height, zoom: initial.zoom, x: initial.x, y: initial.y, fade: initial.fade };
     showConfig = false; emit();
   }
   async function copy() {
     showConfig = true;
-    try { await navigator.clipboard.writeText(config); copied = 'Fades copiados.'; }
+    try { await navigator.clipboard.writeText(config); copied = 'Configuração copiada.'; }
     catch { copied = 'Seleccione o texto abaixo para copiar.'; }
   }
 </script>
 
 <div class="tuner" hidden={!active}>
-  <button class="toggle" aria-expanded={open} aria-controls="hero-background-settings" onclick={togglePanel}>Ajustar fade {open ? '−' : '+'}</button>
+  <button class="toggle" aria-expanded={open} aria-controls="hero-background-settings" onclick={togglePanel}>Ajustar fundo {open ? '−' : '+'}</button>
   {#if open}
-    <aside id="hero-background-settings" aria-label="Ajustar fades do fundo da opção 1">
-      <div class="heading"><strong>Fades do fundo</strong><button aria-label="Fechar ajustes do fade" onclick={togglePanel}>×</button></div>
-      <div class="photos" role="group" aria-label="Fotografia para ajustar o fade">{#each standNames as name, index}<button aria-pressed={selected === index} onclick={() => select(index as StandIndex)}>Imagem {index + 1} · {name}</button>{/each}</div>
-      <p>Fades da imagem {selected + 1}. Cada fotografia conserva os seus próprios valores.</p>
+    <aside id="hero-background-settings" aria-label="Ajustar fundo da opção 1">
+      <div class="heading"><strong>Experimentar o fundo</strong><button aria-label="Fechar ajustes do fundo" onclick={togglePanel}>×</button></div>
+      <div class="photos" role="group" aria-label="Fotografia do fundo">{#each standNames as name, index}<button aria-pressed={selected === index} onclick={() => select(index as StandIndex)}>Imagem {index + 1} · {name}</button>{/each}</div>
+      <p>Ajustes da imagem {selected + 1}. Cada fotografia conserva os seus próprios valores.</p>
+      <p>Largura e altura ajustam a área do fundo. Zoom mantém as proporções. As posições conservam os valores da composição 2K; ao estreitar o desktop, o ponto focal mantém a posição relativa e recortam-se as extremidades.</p>
+      <div class="controls">
+        {#each [{ key: 'width', label: 'Largura', min: 50, max: 120 }, { key: 'height', label: 'Altura', min: 60, max: 120 }, { key: 'zoom', label: 'Zoom', min: 50, max: 160 }, { key: 'x', label: 'Posição horizontal', min: 0, max: 100 }, { key: 'y', label: 'Posição vertical', min: 0, max: 100 }] as control}
+          {@const key = control.key as 'width' | 'height' | 'zoom' | 'x' | 'y'}
+          {@const value = profile[key] ?? 50}
+          <label class="control"><span>{control.label}</span><input aria-label={control.label} type="range" min={control.min} max={control.max} step="1" value={value} oninput={(event) => updateGeometry(key, event)} /><input aria-label={`${control.label} em percentagem`} type="number" min={control.min} max={control.max} value={value} oninput={(event) => updateGeometry(key, event)} /><span>%</span></label>
+        {/each}
+      </div>
       <fieldset class="fades">
         <legend>Fades laterais</legend>
         <label class="symmetry"><input type="checkbox" checked={fade.symmetric} onchange={(event) => { fade.symmetric = event.currentTarget.checked; emit(); }} />Fade simétrico</label>
@@ -61,9 +77,9 @@
           </div>
         {/each}
       </fieldset>
-      <p>Os ajustes de fade são apenas experimentais nesta sessão.</p>
-      <div class="actions"><button onclick={reset}>Repor fades iniciais</button><button onclick={copy}>Copiar fades</button></div>
-      {#if showConfig}<label class="configuration">Fades actuais<textarea readonly value={config} rows="5" aria-label="Configuração dos fades"></textarea></label>{/if}
+      <p>Estes ajustes são apenas experimentais nesta sessão.</p>
+      <div class="actions"><button onclick={reset}>Repor ajustes iniciais</button><button onclick={copy}>Copiar configuração</button></div>
+      {#if showConfig}<label class="configuration">Configuração actual<textarea readonly value={config} rows="5" aria-label="Configuração actual"></textarea></label>{/if}
       <span role="status">{copied}</span>
     </aside>
   {/if}

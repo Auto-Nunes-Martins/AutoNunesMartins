@@ -46,22 +46,32 @@
   let isOpen = $state(false);
   let data = $state<NotificationsPayload | null>(null);
   let loading = $state(false);
+  let loadError = $state('');
+  let controller: AbortController | undefined;
+  const uid = $props.id();
+  const panelId = uid + '-alerts';
   let panelEl = $state<HTMLDivElement | null>(null);
   let buttonEl = $state<HTMLButtonElement | null>(null);
 
   async function load() {
+    controller?.abort(); controller = new AbortController(); const signal = controller.signal;
     loading = true;
+    loadError = '';
     try {
-      const res = await fetch(crmPath('/api/notifications'), { headers: { accept: 'application/json' } });
-      if (res.ok) data = (await res.json()) as NotificationsPayload;
+      const res = await fetch(crmPath('/api/notifications'), { signal, headers: { accept: 'application/json' } });
+      if (!res.ok) throw new Error('Não foi possível atualizar os alertas.');
+      const result = await res.json() as NotificationsPayload;
+      if (!signal.aborted) data = result;
+    } catch {
+      if (!signal.aborted) loadError = 'Não foi possível atualizar os alertas.';
     } finally {
-      loading = false;
+      if (!signal.aborted) loading = false;
     }
   }
 
   function toggle() {
     isOpen = !isOpen;
-    if (isOpen && !data) void load();
+    if (isOpen) void load();
   }
 
   function close() {
@@ -76,7 +86,7 @@
   }
 
   function onKey(e: KeyboardEvent) {
-    if (e.key === 'Escape') close();
+    if (isOpen && e.key === 'Escape') { e.preventDefault(); close(); buttonEl?.focus(); }
   }
 
   function relTime(iso: string): string {
@@ -119,6 +129,7 @@
   });
 
   onDestroy(() => {
+    controller?.abort();
     if (typeof document !== 'undefined') {
       document.removeEventListener('click', onDocClick);
       document.removeEventListener('keydown', onKey);
@@ -133,11 +144,12 @@
     bind:this={buttonEl}
     type="button"
     onclick={toggle}
-    class="relative inline-flex items-center justify-center h-[38px] w-[38px] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)] transition-colors"
+    class="relative inline-flex items-center justify-center h-11 w-11 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)] transition-colors"
     style="border-radius: var(--radius-btn);"
     aria-label="Alertas"
     aria-expanded={isOpen}
-    aria-haspopup="true"
+    aria-haspopup="dialog"
+    aria-controls={isOpen ? panelId : undefined}
   >
     <BrandBell class="h-4 w-4" />
     {#if badge > 0}
@@ -162,7 +174,8 @@
     -->
     <div
       bind:this={panelEl}
-      class="fixed left-2 right-2 top-[64px] w-auto max-h-[calc(100vh-80px)] overflow-y-auto md:absolute md:left-auto md:right-0 md:top-[calc(100%+8px)] md:w-[360px] md:max-h-none md:overflow-y-visible border border-[var(--color-border)] shadow-xl z-50 panel-surface"
+      id={panelId}
+      class="fixed left-2 right-2 top-[76px] w-auto max-h-[calc(100vh-88px)] overflow-y-auto md:absolute md:left-auto md:right-0 md:top-[calc(100%+8px)] md:w-[360px] md:max-h-none md:overflow-y-visible border border-[var(--color-border)] shadow-xl z-50 panel-surface"
       style="border-radius: var(--radius-card);"
       role="dialog"
       aria-label="Alertas"
@@ -186,7 +199,10 @@
             {badge} pendente{badge === 1 ? '' : 's'}
           </span>
         {/if}
+        <button type="button" aria-label="Fechar alertas" class="inline-flex min-h-11 min-w-11 items-center justify-center" onclick={() => { close(); buttonEl?.focus(); }}>×</button>
       </header>
+
+      {#if loadError}<div role="status" class="px-4 py-3 text-sm"><p>{loadError}</p><button type="button" class="underline min-h-11" onclick={() => void load()}>Tentar novamente</button></div>{/if}
 
       {#if loading && !data}
         <div

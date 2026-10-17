@@ -1,4 +1,5 @@
 <script lang="ts">
+ import {photoFallback} from "$lib/vehicleImage";
   import { crmPath } from '$lib/paths';
   import { Car, FileText, Check, Tag } from 'lucide-svelte';
   import RowActions from '$lib/components/common/RowActions.svelte';
@@ -52,7 +53,7 @@
           >
             {#if v.thumbnailUrl}
               <img
-                src={v.thumbnailUrl}
+                src={v.thumbnailUrl} use:photoFallback={v.thumbnailOriginalUrl??v.thumbnailUrl}
                 alt={`${v.brand} ${v.model}`}
                 class="h-full w-full object-cover"
                 loading="lazy"
@@ -190,7 +191,7 @@
               >
                 {#if v.thumbnailUrl}
                   <img
-                    src={v.thumbnailUrl}
+                    src={v.thumbnailUrl} use:photoFallback={v.thumbnailOriginalUrl??v.thumbnailUrl}
                     alt={`${v.brand} ${v.model}`}
                     class="h-full w-full object-cover"
                     loading="lazy"

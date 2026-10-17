@@ -1,4 +1,5 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
+import { isPhotoWidth, readPhotoBytes } from '../lib/server/photoVariants.js';
 import { readPublicHighlights } from '../lib/server/homepageHighlights.js';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -6,12 +7,13 @@ import { prisma } from '../db.js';
 import { logger } from '../logger.js';
 import {
   getPublicPhotoPath,
+  getPublicPhotoVersions,
+  publicPhotoVersion,
   getPublicVehicle,
   listPublicVehicles,
   listAvailablePublicBrands,
   relatedPublicVehicles,
 } from '../lib/data/publicVehicle.js';
-import { getBucketName, getSupabase } from '../lib/data/storage.js';
 import { publicSlugSchema, publicVehicleQuerySchema } from '../lib/domain/publicVehicle.js';
 
 const router = Router();
@@ -102,6 +104,12 @@ router.get(
   }),
 );
 
+router.get('/:slug/photos/access',asyncHandler(async(req,res)=>{
+  const slug=publicSlugSchema.safeParse(req.params.slug);
+  if(!slug.success){res.status(404).json({error:'Photos unavailable'});return;}
+  try{const versions=await getPublicPhotoVersions(prisma,slug.data);if(!versions){res.status(404).json({error:'Photos unavailable'});return;}res.json({versions});}
+  catch{logger.error('Public photo authorization unavailable');res.status(503).json({error:'Photos temporarily unavailable'});}
+}));
 router.get(
   '/:slug/photos/:index',
   asyncHandler(async (req, res) => {
@@ -116,27 +124,26 @@ router.get(
       return;
     }
     try {
+      const width=req.query.w===undefined?undefined:Number(req.query.w);
+      if(width!==undefined&&(!isPhotoWidth(width)||String(width)!==req.query.w)){res.status(400).json({error:'Invalid photo size'});return;}
       const path = await getPublicPhotoPath(prisma, slug.data, index.data);
       if (!path) {
         res.status(404).json({ error: 'Photo not found' });
         return;
       }
-      const { data, error } = await getSupabase().storage.from(getBucketName()).download(path);
-      if (
-        error ||
-        !data ||
-        data.size > 10 * 1024 * 1024 ||
-        !['image/jpeg', 'image/png', 'image/webp'].includes(data.type)
-      ) {
+      const photo=await readPhotoBytes(path,width as import('../lib/server/photoVariants.js').PhotoWidth|undefined);
+      if (!photo) {
         res.status(404).json({ error: 'Photo not found' });
         return;
       }
       res.set({
-        'Content-Type': data.type,
+        'Content-Type': photo.contentType,
         'X-Content-Type-Options': 'nosniff',
         'Cross-Origin-Resource-Policy': 'cross-origin',
+        'X-Photo-Version': publicPhotoVersion(path),
       });
-      res.send(Buffer.from(await data.arrayBuffer()));
+      if(width){res.set({'Cache-Control':'private, no-cache, max-age=0, must-revalidate','ETag':photo.etag});if(req.get('if-none-match')===photo.etag){res.status(304).end();return;}}
+      res.send(photo.buffer);
     } catch {
       logger.error('Public vehicle photo unavailable');
       res.status(503).json({ error: 'Photo temporarily unavailable' });

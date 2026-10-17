@@ -111,7 +111,7 @@
             class="background-toggle"
             type="button"
             role="switch"
-            aria-label="Usar tom original do fundo"
+            aria-label={`${useReferenceTone ? 'Tom original' : 'Tom atual'} — usar tom original do fundo`}
             aria-checked={useReferenceTone}
             onclick={() => (useReferenceTone = !useReferenceTone)}
           >
@@ -254,7 +254,7 @@
       }}
     >
       <div class="form-heading">
-        <span class="message-icon" aria-hidden="true"><Mail size={20} strokeWidth={1.5} /></span>
+        <span class="message-icon" aria-hidden="true"><Mail size={20} strokeWidth={1.5} aria-hidden="true" /></span>
         <div>
           <h3 id={`${id}-form-heading`}>{formTitle}</h3>
           <p>{formIntro}</p>

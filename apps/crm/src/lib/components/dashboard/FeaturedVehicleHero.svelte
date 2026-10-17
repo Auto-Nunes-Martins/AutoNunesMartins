@@ -97,7 +97,8 @@
       {#each highlights as entry, slide (entry.id)}
         {@const image = entry.vehicle.photos[entry.photoIndex]}
         {#if image}<img
-            src={`${PUBLIC_BACKEND_URL}${image}`}
+            src={`${PUBLIC_BACKEND_URL}${image}?w=1600`}
+            srcset={[320,800,1600,2560].map(w=>`${PUBLIC_BACKEND_URL}${image}?w=${w} ${w}w`).join(", ")} sizes="(max-width:1050px) 100vw, 800px"
             alt={`${entry.vehicle.brand} ${entry.vehicle.model}`}
             class:is-active={slide === index}
             aria-hidden={slide !== index}

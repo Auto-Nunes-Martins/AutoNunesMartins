@@ -1,9 +1,14 @@
 <script lang="ts">
+ import {photoAttrs,photoFallback,type SignedVariantPhoto} from "$lib/vehicleImage";
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
+  import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
   import { enhance } from '$app/forms';
-  import { tick, untrack } from 'svelte';
+  import { tick, untrack, type Snippet } from 'svelte';
+  import { publicationDraftKey, reconcilePhotoSelection } from './publicationDraft';
+  import VehiclePhotoDraft from './VehiclePhotoDraft.svelte';
+  import type { EditPhoto } from './vehicleEditDraft';
   import PhotoGallery from './PhotoGallery.svelte';
-  import { formFeedback, markFormSaved, showFormErrors } from '$lib/forms/formFeedback';
+  import { formFeedback, markFormSaved, refreshFormFeedback, showFormErrors } from '$lib/forms/formFeedback';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import { formatEUR } from '$lib/utils/format';
   import { toast } from 'svelte-sonner';
@@ -13,10 +18,24 @@
     vehicle,
     photos = [],
     managePhotos = false,
+    vehicleDetails,
+    disabled = false,
+    busy = $bindable(false),
+    unified = false,
+    photoDraft = $bindable<EditPhoto[]>([]),
+    onsaveall,
+    onstatechange,
   }: {
     vehicle: VehicleDetailResponse;
-    photos?: { path: string; url: string }[];
+    photos?: SignedVariantPhoto[];
     managePhotos?: boolean;
+    vehicleDetails?: Snippet;
+    disabled?: boolean;
+    busy?: boolean;
+    unified?: boolean;
+    photoDraft?: EditPhoto[];
+    onsaveall?: () => void;
+    onstatechange?: (state: { dirty: boolean; valid: boolean }) => void;
   } = $props();
   let price = $state('');
   let description = $state('');
@@ -26,6 +45,9 @@
   let photoBusy = $state(false);
   const publicationFormId = $props.id();
   let loadedVehicle = '';
+  let previousSavedPhotos: string[] = [];
+  let formValid = $state(false);
+  let draftPublished = $state(false);
   let specs = $state({
     powerHp: '',
     engineCc: '',
@@ -37,6 +59,7 @@
   });
   const cover = $derived(photos.find((photo) => photo.path === selected[0]));
   let pending = $state(false);
+  $effect(() => { busy = pending || photoBusy || photoDragging; });
   let message = $state('');
   let confirmationDialog: HTMLDialogElement;
   let cancelButton: HTMLButtonElement;
@@ -65,7 +88,7 @@
     publicationForm.requestSubmit();
   }
   const allowedPhotos = $derived(
-    vehicle.photos.filter((path) =>
+    unified ? photoDraft.map(photo => photo.path) : vehicle.photos.filter((path) =>
       new RegExp(`^${vehicle.id}/[a-f0-9-]{36}\\.(jpg|jpeg|png|webp)$`).test(path),
     ),
   );
@@ -75,13 +98,14 @@
   const ready = $derived(
     eligible && (!price || Number(price) > 0) && description.trim().length > 0,
   );
-  function resetPublicationDraft() {
-    price = vehicle.publicSlug ? (vehicle.publicPrice ?? '') : (vehicle.salePrice ?? '');
-    description =
-      vehicle.publicDescription ?? `${vehicle.brand} ${vehicle.model}, de ${vehicle.year}.`;
-    transmission = vehicle.publicTransmission ?? '';
+  function savedPublicationDraft() {
     const details = vehicle.publicSpecifications;
-    specs = {
+    return {
+      price: vehicle.publicSlug ? (vehicle.publicPrice ?? '') : (Number(vehicle.salePrice) > 0 ? vehicle.salePrice! : ''),
+      description: vehicle.publicDescription ?? `${vehicle.brand} ${vehicle.model}, de ${vehicle.year}.`,
+      transmission: vehicle.publicTransmission ?? '',
+      selected: vehicle.publicPhotoPaths.filter(path => vehicle.photos.includes(path)),
+      specs: {
       powerHp: String(details?.powerHp ?? ''),
       engineCc: String(details?.engineCc ?? ''),
       doors: String(details?.doors ?? ''),
@@ -89,22 +113,43 @@
       category: details?.category ?? '',
       color: details?.color ?? '',
       equipment: details?.equipment?.join('\n') ?? '',
+      },
     };
-    selected = vehicle.publicPhotoPaths.filter((path) => vehicle.photos.includes(path));
   }
+  function resetPublicationDraft() {
+    const saved = savedPublicationDraft();
+    price = saved.price; description = saved.description; transmission = saved.transmission;
+    specs = saved.specs; selected = saved.selected;
+    previousSavedPhotos = [...saved.selected];
+    draftPublished = vehicle.webPublished;
+  }
+  const draftKey = $derived(publicationDraftKey({ price, description, transmission, selected, specs }));
+  const publicationDirty = $derived((unified ? draftPublished !== vehicle.webPublished : !vehicle.webPublished) || draftKey !== publicationDraftKey(savedPublicationDraft()));
+  const selectionPending = $derived(selected.length !== vehicle.publicPhotoPaths.length || selected.some(path => !vehicle.publicPhotoPaths.includes(path)));
+  $effect(() => {
+    draftKey;
+    const changed = publicationDirty;
+    const locked = pending || disabled;
+    const photoOrder = unified ? photoDraft.map(photo => photo.path).join('|') : '';
+    draftPublished;
+    void tick().then(() => {
+      if (!publicationForm) return;
+      if (!unified && !changed && !locked) markFormSaved(publicationForm);
+      else refreshFormFeedback(publicationForm);
+    });
+  });
   $effect(() => {
     const id = vehicle.id;
+    const available = allowedPhotos;
+    const saved = vehicle.publicPhotoPaths.filter(path => available.includes(path));
     untrack(() => {
       if (loadedVehicle !== id) {
         resetPublicationDraft();
         loadedVehicle = id;
+      } else {
+        selected = unified ? available.filter(path => selected.includes(path)) : reconcilePhotoSelection(selected, previousSavedPhotos, saved, available);
+        previousSavedPhotos = [...saved];
       }
-    });
-  });
-  $effect(() => {
-    const available = allowedPhotos;
-    untrack(() => {
-      selected = available.filter((path) => selected.includes(path));
     });
   });
   const submit: import('@sveltejs/kit').SubmitFunction = ({
@@ -113,7 +158,8 @@
     submitter,
     formElement,
   }) => {
-    if (photoDragging || photoBusy) {
+    if (unified) { cancel(); onsaveall?.(); return; }
+    if (disabled || pending || photoDragging || photoBusy || (formData.get('operation') === 'publish' && (!ready || !formValid || !publicationDirty))) {
       cancel();
       return;
     }
@@ -136,9 +182,8 @@
         await update({ reset: false, invalidateAll: result.type === 'success' });
         if (result.type === 'success') {
           await tick();
-          resetPublicationDraft();
+          if (formElement === publicationForm) resetPublicationDraft();
           await tick();
-          markFormSaved(formElement);
           message = 'Visibilidade no site atualizada.';
           toast.success(message);
         } else if (result.type === 'failure') {
@@ -151,20 +196,27 @@
         }
       } finally {
         pending = false;
+        await tick();
+        if (result.type === 'success' && formElement === publicationForm) markFormSaved(formElement);
       }
     };
   };
 </script>
 
 {#if managePhotos}
-  <PhotoGallery vehicleId={vehicle.id} {photos} bind:busy={photoBusy}>
+  {#if unified}
+    <VehiclePhotoDraft bind:photos={photoDraft} bind:selected persisted={vehicle.publicPhotoPaths} persistedCoverPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]} published={vehicle.webPublished && eligible} requirePublicPrincipal={draftPublished && eligible} form={publicationFormId} {disabled} />
+  {:else}
+  <PhotoGallery vehicleId={vehicle.id} {photos} disabled={disabled || pending} dragging={photoDragging} bind:busy={photoBusy}>
     {#snippet editor(controls)}
       <PublicPhotoPicker
         bind:selected
         bind:dragging={photoDragging}
         allowed={allowedPhotos}
         {photos}
-        pending={pending || controls.busy}
+        persisted={vehicle.publicPhotoPaths}
+        published={vehicle.webPublished && eligible}
+        pending={disabled || pending || controls.busy}
         form={publicationFormId}
         primaryPath={controls.primaryPath}
         onprimary={controls.setPrimary}
@@ -174,7 +226,11 @@
       />
     {/snippet}
   </PhotoGallery>
+  {/if}
+  <p class="note" role="status">{selectionPending ? `Seleção de fotografias por guardar. Use «${unified ? 'Guardar alterações' : 'Guardar publicação no site'}» para aplicar.` : 'Os indicadores «No site» e «Só no CRM» mostram o estado já guardado.'}</p>
 {/if}
+
+{@render vehicleDetails?.()}
 
 <section class="web-publication" aria-labelledby="web-publication-title">
   <div class="heading">
@@ -190,16 +246,16 @@
           : 'Não publicada · visível apenas no CRM'}
       </p>
     </div>
-    {#if vehicle.webPublished}<form method="POST" action="?/webPublication" use:enhance={submit}>
+    {#if vehicle.webPublished && !unified}<form method="POST" action="?/webPublication" use:enhance={submit}>
         <input type="hidden" name="operation" value="remove" /><button
-          disabled={pending || photoBusy || photoDragging}>Remover do site</button
+          type="submit" disabled={disabled || pending || photoBusy || photoDragging}>Remover do site</button
         >
       </form>{/if}
   </div>
   <p class="note">
     Este controlo é independente da disponibilidade interna. Retirar do site não altera o estado nem
-    a venda. As viaturas reservadas aparecem com a indicação «Reservada». Guarde primeiro quaisquer
-    alterações à ficha interna.
+    a venda. As viaturas reservadas aparecem com a indicação «Reservada».
+    {unified ? 'O botão «Guardar alterações» aplica os dados, as fotografias e a publicação em conjunto.' : 'Guarde primeiro quaisquer alterações à ficha interna.'}
   </p>
   {#if vehicle.webPublished && vehicle.publicSlug && eligible}<a
       href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.publicSlug)}
@@ -208,13 +264,21 @@
     >{/if}
   <form
     id={publicationFormId}
+    data-edit-publication
+    novalidate={unified}
     method="POST"
     action="?/webPublication"
-    use:formFeedback
+    use:formFeedback={{ onstatechange: state => { formValid = state.valid; onstatechange?.(state); } }}
     use:enhance={submit}
     bind:this={publicationForm}
   >
+    <fieldset class="publication-lock" data-save-lock disabled={disabled || pending}>
     <input type="hidden" name="operation" value="publish" />
+    {#if unified}
+      <input type="hidden" name="published" value={String(draftPublished)} />
+      <label class="publish-toggle"><input type="checkbox" data-error-field="published" bind:checked={draftPublished} /> Publicar esta viatura no website</label>
+      <p class="note">Esta escolha só é aplicada ao guardar. Fotografias novas só ficam públicas se forem selecionadas.</p>
+    {/if}
     <div class="fields">
       <label
         >Preço público (€)<input
@@ -239,7 +303,7 @@
         name="publicDescription"
         rows="3"
         maxlength="6000"
-        required
+        required={!unified || draftPublished}
         bind:value={description}
       ></textarea></label
     >
@@ -308,19 +372,23 @@
     </fieldset>
     {#if !managePhotos}<fieldset>
         <legend>Fotografias autorizadas para o site</legend>
-        <p class="note">Esta escolha não altera a capa interna do CRM.</p>
+        <p class="note">A foto principal do anúncio e do CRM é a mesma. Para a alterar, use o editor de fotografias. A autorização para publicar cada fotografia é explícita.</p>
         <PublicPhotoPicker
           bind:selected
           bind:dragging={photoDragging}
           allowed={allowedPhotos}
           {photos}
-          {pending}
+          persisted={vehicle.publicPhotoPaths}
+          published={vehicle.webPublished && eligible}
+          primaryPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
+          requirePublicPrincipal={eligible}
+          pending={disabled || pending || photoBusy}
         />
       </fieldset>{/if}
     <details class="publication-preview">
       <summary>Pré-visualizar o anúncio · {selected.length} fotografias</summary>
       <div class="preview-card">
-        {#if cover}<img src={cover.url} alt="Capa do anúncio" />{:else}<div class="preview-empty">
+        {#if cover}<img {...photoAttrs(cover,800,'(max-width:700px) 80vw, 600px')} use:photoFallback={cover.url} alt="Foto principal do anúncio" />{:else}<div class="preview-empty">
             Imagem indisponível
           </div>{/if}
         <div>
@@ -346,13 +414,15 @@
           indisponível».
         </p>{/if}
     </div>
-    <button class="primary" disabled={pending || photoBusy || photoDragging || !ready}
+    {#if !unified}<p class="note" role="status">{publicationDirty ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos e a seleção de fotografias.' : 'Publicação guardada · sem alterações.'}</p>
+    <button type="submit" class="primary" disabled={disabled || pending || photoBusy || photoDragging || !ready || !formValid || !publicationDirty}
       >{pending
         ? 'A guardar…'
         : vehicle.webPublished
-          ? 'Guardar publicação'
+          ? 'Guardar publicação no site'
           : 'Publicar no site'}</button
-    >
+    >{/if}
+    </fieldset>
   </form>
   <p role="status" aria-live="polite">{message}</p>
 </section>
@@ -382,6 +452,8 @@
 </dialog>
 
 <style>
+  .publish-toggle { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .publication-lock { border: 0; padding: 0; margin: 0; min-width: 0; }
   .publication-dialog {
     width: min(460px, calc(100vw - 32px));
     max-height: calc(100svh - 40px);

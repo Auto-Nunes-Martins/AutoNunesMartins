@@ -42,7 +42,7 @@
 
   const sizeClass = {
     sm: 'h-9 px-3 text-[12px]',
-    md: 'h-[38px] px-[18px] text-[13px]',
+    md: 'h-11 px-[18px] text-[13px]',
     lg: 'h-12 px-5 text-[14px]',
   };
 
@@ -53,7 +53,10 @@
 {#if href}
   <a
     {href}
-    class="{baseClass} {variantClass[variant]} {sizeClass[size]} {className}"
+    aria-disabled={disabled || loading ? 'true' : undefined}
+    tabindex={disabled || loading ? -1 : undefined}
+    onclick={event => { if (disabled || loading) event.preventDefault(); else onclick?.(event); }}
+    class="crm-action {baseClass} {variantClass[variant]} {sizeClass[size]} {className}"
     style="border-radius: var(--radius-btn);"
   >
     {@render children?.()}
@@ -62,9 +65,10 @@
   <button
     {type}
     {form}
-    {disabled}
+    disabled={disabled || loading}
+    aria-busy={loading || undefined}
     onclick={(e) => onclick?.(e)}
-    class="{baseClass} {variantClass[variant]} {sizeClass[size]} {className}"
+    class="crm-action {baseClass} {variantClass[variant]} {sizeClass[size]} {className}"
     style="border-radius: var(--radius-btn);"
   >
     {#if loading}
@@ -75,3 +79,10 @@
     {@render children?.()}
   </button>
 {/if}
+
+<style>
+  .crm-action { white-space: nowrap; }
+  a[aria-disabled='true'] { opacity: .4; cursor: not-allowed; }
+  .crm-action:focus-visible { outline: 2px solid var(--color-red); outline-offset: 3px; }
+  @media (max-width: 767px) { .crm-action { min-height: 44px; } }
+</style>

@@ -47,6 +47,7 @@ export interface StockAgedRow {
   mileage: number;
   salePrice: string | null;
   thumbnailUrl: string | null;
+  thumbnailOriginalUrl?: string | null;
   daysInStock: number;
 }
 

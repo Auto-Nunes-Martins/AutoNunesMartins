@@ -9,6 +9,7 @@
   import RedWedge from '$lib/components/brand/RedWedge.svelte';
   import Sidebar from '$lib/components/shell/Sidebar.svelte';
   import Topbar from '$lib/components/shell/Topbar.svelte';
+  import ContextBack from '$lib/components/shell/ContextBack.svelte';
   import MobileBottomNav from '$lib/components/shell/MobileBottomNav.svelte';
   import QuickTaskBubble from '$lib/components/shell/QuickTaskBubble.svelte';
   import { sidebar, mobileDrawer } from '$lib/stores/sidebar';
@@ -261,8 +262,9 @@
 <div class="main-area relative">
   <div class="header-ambient absolute inset-0 pointer-events-none"></div>
   <div class="relative z-10">
-    <Topbar />
+    <Topbar userKey={data.currentUser?.id ?? data.clerkUserId} />
     <main class:comfortable-width={comfortableWidth} class="main-content px-6 pb-12 pr-[24px]">
+      <ContextBack userKey={data.currentUser?.id ?? data.clerkUserId} />
       {@render children?.()}
     </main>
   </div>

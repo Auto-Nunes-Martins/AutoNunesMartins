@@ -77,6 +77,16 @@
   border-radius: 4px;
 }
 
+/* Give the vehicle facts their own breathing room within the photo column. */
+:where(html)[data-theme='light'] .design.orbit .comparison-page .summary-row th {background:var(--orbit-page-background);}
+:where(html)[data-theme='light'] .design.orbit .comparison-page .fact-value {background:transparent;}
+:where(html)[data-theme='light'] .design.orbit .comparison-page .second-option {background:color-mix(in srgb,var(--orbit-page-background) 70%,var(--orbit-gray-surface));}
+:where(html)[data-theme='light'] .design.orbit.orbit-detail.public-detail .vehicle-layout > .detail-facts {
+  padding-inline: clamp(20px, 3vw, 48px);
+  background: var(--orbit-gray-surface);
+  border-bottom: 1px solid var(--line);
+}
+
 /* Owner-requested paper-card exception: static light and relief work without hover. */
 :where(html)[data-theme='light'] .design.orbit .reviews article[data-review-card] {
   --bg: var(--orbit-review-paper);

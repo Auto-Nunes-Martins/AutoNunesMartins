@@ -1,4 +1,5 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
+import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { emitActivity } from '../data/activity.js';
 import {
   isApprovedPhotoPath,
@@ -11,6 +12,7 @@ export class WebPublicationError extends Error {
   constructor(
     public readonly status: 404 | 409,
     message: string,
+    public readonly field?: string,
   ) {
     super(message);
   }
@@ -31,74 +33,7 @@ export async function setWebPublication(
     if (suffixLength === undefined) break;
     try {
       return await db.$transaction(
-        async (tx) => {
-          const vehicle = await tx.vehicle.findUnique({
-            where: { id },
-            select: {
-              id: true,
-              brand: true,
-              model: true,
-              year: true,
-              status: true,
-              soldDate: true,
-              photos: true,
-              publicSlug: true,
-              sale: { select: { id: true } },
-            },
-          });
-          if (!vehicle) throw new WebPublicationError(404, 'Vehicle not found');
-          if (input.published) {
-            if (!input.description?.trim()) {
-              throw new WebPublicationError(409, 'Uma descrição pública é obrigatória.');
-            }
-            if (
-              !['AVAILABLE', 'RESERVED'].includes(vehicle.status) ||
-              vehicle.soldDate ||
-              vehicle.sale
-            ) {
-              throw new WebPublicationError(
-                409,
-                'Only unsold available or reserved vehicles can be published',
-              );
-            }
-            if (
-              input.photoPaths.some(
-                (path) => !vehicle.photos.includes(path) || !isApprovedPhotoPath(id, path),
-              )
-            ) {
-              throw new WebPublicationError(
-                409,
-                'Photos must be approved images belonging to this vehicle',
-              );
-            }
-          }
-          const slug =
-            vehicle.publicSlug ?? (input.published ? makePublicSlug(vehicle, suffixLength) : null);
-          const updated = await tx.vehicle.update({
-            where: { id },
-            data: input.published
-              ? {
-                  webPublished: true,
-                  publicSlug: slug,
-                  publicPrice: input.price,
-                  publicDescription: input.description,
-                  publicPhotoPaths: input.photoPaths,
-                  publicTransmission: input.transmission,
-                  ...(input.specifications !== undefined ? { publicSpecifications: input.specifications } : {}),
-                }
-              : { webPublished: false },
-            select: { webPublished: true, publicSlug: true },
-          });
-          await emitActivity(tx, {
-            actorId,
-            type: 'VEHICLE_UPDATED',
-            entityType: 'vehicle',
-            entityId: id,
-            message: input.published ? 'Publicação web aprovada' : 'Publicação web desativada',
-            metadata: { webPublished: input.published },
-          });
-          return { published: updated.webPublished, slug: updated.publicSlug };
-        },
+        tx => applyWebPublication(tx, id, input, actorId, suffixLength),
         { isolationLevel: 'Serializable' },
       );
     } catch (error) {
@@ -114,4 +49,79 @@ export async function setWebPublication(
     }
   }
   throw new WebPublicationError(409, 'Publication conflict; retry the request');
+}
+
+/** Apply within an existing vehicle edit transaction. */
+export async function applyWebPublication(
+  tx: Prisma.TransactionClient, id: string, input: WebPublication, actorId: string | null, suffixLength: number = 12,
+) {
+  const vehicle = await tx.vehicle.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      brand: true,
+      model: true,
+      year: true,
+      status: true,
+      soldDate: true,
+      photos: true,
+      publicSlug: true,
+      sale: { select: { id: true } },
+    },
+  });
+  if (!vehicle) throw new WebPublicationError(404, 'Vehicle not found');
+  if (input.published) {
+    if (vehicle.photos.length && !input.photoPaths.includes(vehicle.photos[0]!)) {
+      throw new WebPublicationError(409, 'A foto principal não está selecionada para o site. Escolha outra foto principal entre as selecionadas ou volte a incluir esta fotografia.', 'publication.photoPaths');
+    }
+    if (!input.description?.trim()) {
+      throw new WebPublicationError(409, 'Uma descrição pública é obrigatória.');
+    }
+    if (
+      !['AVAILABLE', 'RESERVED'].includes(vehicle.status) ||
+      vehicle.soldDate ||
+      vehicle.sale
+    ) {
+      throw new WebPublicationError(
+        409,
+        'Only unsold available or reserved vehicles can be published',
+      );
+    }
+    if (
+      input.photoPaths.some(
+        (path) => !vehicle.photos.includes(path) || !isApprovedPhotoPath(id, path),
+      )
+    ) {
+      throw new WebPublicationError(
+        409,
+        'Photos must be approved images belonging to this vehicle',
+      );
+    }
+  }
+  const slug =
+    vehicle.publicSlug ?? (input.published ? makePublicSlug(vehicle, suffixLength) : null);
+  const updated = await tx.vehicle.update({
+    where: { id },
+    data: input.published
+      ? {
+          webPublished: true,
+          publicSlug: slug,
+          publicPrice: input.price,
+          publicDescription: input.description,
+          publicPhotoPaths: orderedPublicPhotos(vehicle.photos, input.photoPaths),
+          publicTransmission: input.transmission,
+          ...(input.specifications !== undefined ? { publicSpecifications: input.specifications } : {}),
+        }
+      : { webPublished: false },
+    select: { webPublished: true, publicSlug: true },
+  });
+  await emitActivity(tx, {
+    actorId,
+    type: 'VEHICLE_UPDATED',
+    entityType: 'vehicle',
+    entityId: id,
+    message: input.published ? 'Publicação web aprovada' : 'Publicação web desativada',
+    metadata: { webPublished: input.published },
+  });
+  return { published: updated.webPublished, slug: updated.publicSlug };
 }

@@ -9,9 +9,9 @@ import {
 } from '../publicVehicles';
 
 // Native server fetch intentionally avoids SvelteKit credential forwarding and CRM auth helpers.
-export async function publicRequest(path: string) {
+export async function publicRequest(path: string, headers: Record<string,string> = {}) {
   return fetch(new URL(`/api/public/vehicles${path}`, env.INTERNAL_BACKEND_URL || PUBLIC_BACKEND_URL), {
-    headers: { accept: 'application/json' },
+    headers: { accept: 'application/json', ...headers },
     credentials: 'omit',
     cache: 'no-store',
     redirect: 'error',

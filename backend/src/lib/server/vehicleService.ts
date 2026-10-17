@@ -13,6 +13,7 @@ export class VehicleStateConflict extends Error {
   constructor(
     message: string,
     public readonly status = 409,
+    public readonly field?: string,
   ) {
     super(message);
     this.name = 'VehicleStateConflict';
@@ -96,118 +97,121 @@ export async function createVehicle(
 }
 
 export async function updateVehicle(
-  id: string,
-  data: Omit<VehicleUpdate, 'id'>,
-  actor: ActorContext,
+  id: string, data: Omit<VehicleUpdate, 'id'>, actor: ActorContext,
+): Promise<void> {
+  await saleMutation(tx => updateVehicleInTransaction(tx, id, data, actor));
+}
+
+/** Shared by the single-save editor; financial corrections stay in the same transaction. */
+export async function updateVehicleInTransaction(
+  tx: Prisma.TransactionClient, id: string, data: Omit<VehicleUpdate, 'id' | 'licensePlate'> & { licensePlate?: string | null }, actor: ActorContext,
 ): Promise<void> {
   validatePrices(data);
-  await saleMutation(async (tx) => {
-    await lockVehicle(tx, id);
-    const existing = await tx.vehicle.findUnique({ where: { id }, include: { sale: true } });
-    if (!existing) throw new VehicleNotFound(id);
+  await lockVehicle(tx, id);
+  const existing = await tx.vehicle.findUnique({ where: { id }, include: { sale: true } });
+  if (!existing) throw new VehicleNotFound(id);
 
-    const statusChanged = data.status !== undefined && data.status !== existing.status;
-    if (statusChanged && existing.status === 'RETURNED') {
-      throw new VehicleStateConflict(
-        'A retoma devolvida está fora do stock. Regularize uma nova aquisição separadamente antes de a disponibilizar.',
-      );
-    }
-    if (statusChanged && (existing.sale || SOLD_STATUSES.has(existing.status))) {
-      throw new VehicleStateConflict(
-        'Use a entrega na venda para alterar o estado, ou «Anular venda» para devolver a viatura ao stock.',
-      );
-    }
-    if (
-      data.status &&
-      SOLD_STATUSES.has(data.status) &&
-      !existing.sale &&
-      !SOLD_STATUSES.has(existing.status)
-    ) {
-      throw new VehicleStateConflict(
-        'Registe uma venda para marcar a viatura como vendida ou entregue.',
-      );
-    }
-    const currentSalePrice = existing.sale?.salePrice ?? existing.salePrice;
-    const pricesChanged =
-      (data.purchasePrice !== undefined &&
-        !new Decimal(data.purchasePrice).eq(existing.purchasePrice.toString())) ||
-      (data.salePrice !== undefined &&
-        (currentSalePrice === null ||
-          !new Decimal(data.salePrice).eq(currentSalePrice.toString())));
-    if (pricesChanged && SOLD_STATUSES.has(existing.status) && !existing.sale) {
-      throw new VehicleStateConflict(
-        'Esta viatura está vendida mas não tem venda registada. Regularize a venda antes de corrigir preços.',
-      );
-    }
+  const statusChanged = data.status !== undefined && data.status !== existing.status;
+  if (statusChanged && existing.status === 'RETURNED') {
+    throw new VehicleStateConflict(
+      'A retoma devolvida está fora do stock. Regularize uma nova aquisição separadamente antes de a disponibilizar.',
+    );
+  }
+  if (statusChanged && (existing.sale || SOLD_STATUSES.has(existing.status))) {
+    throw new VehicleStateConflict(
+      'Use a entrega na venda para alterar o estado, ou «Anular venda» para devolver a viatura ao stock.',
+    );
+  }
+  if (
+    data.status &&
+    SOLD_STATUSES.has(data.status) &&
+    !existing.sale &&
+    !SOLD_STATUSES.has(existing.status)
+  ) {
+    throw new VehicleStateConflict(
+      'Registe uma venda para marcar a viatura como vendida ou entregue.',
+    );
+  }
+  const currentSalePrice = existing.sale?.salePrice ?? existing.salePrice;
+  const pricesChanged =
+    (data.purchasePrice !== undefined &&
+      !new Decimal(data.purchasePrice).eq(existing.purchasePrice.toString())) ||
+    (data.salePrice !== undefined &&
+      (currentSalePrice === null ||
+        !new Decimal(data.salePrice).eq(currentSalePrice.toString())));
+  if (pricesChanged && SOLD_STATUSES.has(existing.status) && !existing.sale) {
+    throw new VehicleStateConflict(
+      'Esta viatura está vendida mas não tem venda registada. Regularize a venda antes de corrigir preços.',
+    );
+  }
 
-    const updateData: Prisma.VehicleUpdateInput = {};
-    if (data.brand !== undefined) updateData.brand = data.brand;
-    if (data.model !== undefined) updateData.model = data.model;
-    if (data.year !== undefined) updateData.year = data.year;
-    if (data.fuel !== undefined) updateData.fuel = data.fuel;
-    if (data.mileage !== undefined) updateData.mileage = data.mileage;
-    if (data.vin !== undefined) updateData.vin = data.vin;
-    // Pass null through explicitly so "clear matrícula" is possible — but
-    // only when the caller submits an explicit empty string. The schema's
-    // preprocess maps "" → undefined, so this branch is reached only with
-    // an actual value (already canonicalized by Zod).
-    if (data.licensePlate !== undefined) updateData.licensePlate = data.licensePlate ?? null;
-    if (data.purchasePrice !== undefined) updateData.purchasePrice = data.purchasePrice;
-    if (data.salePrice !== undefined) updateData.salePrice = data.salePrice;
-    // After sale creation this field mirrors the recorded price, not publicPrice.
-    if (pricesChanged && existing.sale)
-      updateData.salePrice = data.salePrice ?? existing.sale.salePrice;
-    if (data.status !== undefined) updateData.status = data.status;
-    if (data.acquisitionDate !== undefined) updateData.acquisitionDate = data.acquisitionDate;
-    if (data.description !== undefined) updateData.description = data.description ?? null;
-    if (data.pendingDocFlags !== undefined) {
-      updateData.pendingDocFlags = data.pendingDocFlags as unknown as Prisma.InputJsonValue;
-    }
+  const updateData: Prisma.VehicleUpdateInput = {};
+  if (data.brand !== undefined) updateData.brand = data.brand;
+  if (data.model !== undefined) updateData.model = data.model;
+  if (data.year !== undefined) updateData.year = data.year;
+  if (data.fuel !== undefined) updateData.fuel = data.fuel;
+  if (data.mileage !== undefined) updateData.mileage = data.mileage;
+  if (data.vin !== undefined) updateData.vin = data.vin;
+  // Pass null through explicitly so "clear matrícula" is possible — but
+  // only when the caller submits an explicit empty string. The schema's
+  // preprocess maps "" → undefined, so this branch is reached only with
+  // an actual value (already canonicalized by Zod).
+  if (data.licensePlate !== undefined) updateData.licensePlate = data.licensePlate ?? null;
+  if (data.purchasePrice !== undefined) updateData.purchasePrice = data.purchasePrice;
+  if (data.salePrice !== undefined) updateData.salePrice = data.salePrice;
+  // After sale creation this field mirrors the recorded price, not publicPrice.
+  if (pricesChanged && existing.sale)
+    updateData.salePrice = data.salePrice ?? existing.sale.salePrice;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.acquisitionDate !== undefined) updateData.acquisitionDate = data.acquisitionDate;
+  if (data.description !== undefined) updateData.description = data.description ?? null;
+  if (data.pendingDocFlags !== undefined) {
+    updateData.pendingDocFlags = data.pendingDocFlags as unknown as Prisma.InputJsonValue;
+  }
 
-    const updated = await tx.vehicle.update({ where: { id }, data: updateData });
-    if (pricesChanged && existing.sale) {
-      await recomputeSaleIfExists(tx, id, data.salePrice);
-      await emitActivity(tx, {
-        actorId: actor.actorId,
-        type: 'SALE_UPDATED',
-        entityType: 'sale',
-        entityId: existing.sale.id,
-        message: `Preços corrigidos e venda recalculada: ${vehicleLabel(updated.brand, updated.model, updated.year)}`,
-        metadata: {
-          vehicleId: id,
-          action: 'SALE_PRICES_CORRECTED',
-          buyerType: existing.sale.buyerType,
-          purchasePrice: {
-            from: existing.purchasePrice.toString(),
-            to: updated.purchasePrice.toString(),
-          },
-          salePrice: {
-            from: existing.sale.salePrice.toString(),
-            to: data.salePrice ?? existing.sale.salePrice.toString(),
-          },
+  const updated = await tx.vehicle.update({ where: { id }, data: updateData });
+  if (pricesChanged && existing.sale) {
+    await recomputeSaleIfExists(tx, id, data.salePrice);
+    await emitActivity(tx, {
+      actorId: actor.actorId,
+      type: 'SALE_UPDATED',
+      entityType: 'sale',
+      entityId: existing.sale.id,
+      message: `Preços corrigidos e venda recalculada: ${vehicleLabel(updated.brand, updated.model, updated.year)}`,
+      metadata: {
+        vehicleId: id,
+        action: 'SALE_PRICES_CORRECTED',
+        buyerType: existing.sale.buyerType,
+        purchasePrice: {
+          from: existing.purchasePrice.toString(),
+          to: updated.purchasePrice.toString(),
         },
-      });
-    }
+        salePrice: {
+          from: existing.sale.salePrice.toString(),
+          to: data.salePrice ?? existing.sale.salePrice.toString(),
+        },
+      },
+    });
+  }
 
-    if (statusChanged) {
-      await emitActivity(tx, {
-        actorId: actor.actorId,
-        type: 'VEHICLE_STATUS_CHANGED',
-        entityType: 'vehicle',
-        entityId: id,
-        message: `Estado alterado: ${existing.status} → ${updated.status} (${vehicleLabel(updated.brand, updated.model, updated.year)})`,
-        metadata: { from: existing.status, to: updated.status },
-      });
-    } else {
-      await emitActivity(tx, {
-        actorId: actor.actorId,
-        type: 'VEHICLE_UPDATED',
-        entityType: 'vehicle',
-        entityId: id,
-        message: `Viatura editada: ${vehicleLabel(updated.brand, updated.model, updated.year)}`,
-      });
-    }
-  });
+  if (statusChanged) {
+    await emitActivity(tx, {
+      actorId: actor.actorId,
+      type: 'VEHICLE_STATUS_CHANGED',
+      entityType: 'vehicle',
+      entityId: id,
+      message: `Estado alterado: ${existing.status} → ${updated.status} (${vehicleLabel(updated.brand, updated.model, updated.year)})`,
+      metadata: { from: existing.status, to: updated.status },
+    });
+  } else {
+    await emitActivity(tx, {
+      actorId: actor.actorId,
+      type: 'VEHICLE_UPDATED',
+      entityType: 'vehicle',
+      entityId: id,
+      message: `Viatura editada: ${vehicleLabel(updated.brand, updated.model, updated.year)}`,
+    });
+  }
 }
 
 /**

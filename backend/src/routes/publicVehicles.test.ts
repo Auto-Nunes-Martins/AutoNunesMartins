@@ -37,6 +37,7 @@ import {
   publicVehicleOrder,
   publicVehicleSelect,
   publicVehicleWhere,
+  publicPhotoVersion,
 } from '../lib/data/publicVehicle.js';
 import {
   isApprovedPhotoPath,
@@ -386,6 +387,53 @@ describe('public HTTP responses never disclose private inventory', () => {
 });
 
 describe('private photo storage boundary', () => {
+  it('does not extend shared permission while an already-authorized pixel download is still running', async () => {
+    let finish!: (value: { data: Blob; error: null }) => void;
+    const storage = new Promise<{ data: Blob; error: null }>(resolve => { finish = resolve; });
+    mocks.download.mockReturnValue(storage);
+    const first = fetch(`${base}/api/public/vehicles/${slug}/photos/0`);
+    try {
+      await vi.waitFor(() => expect(mocks.download).toHaveBeenCalledTimes(1));
+      mocks.db.vehicle.findFirst.mockResolvedValue(null);
+      const revoked = await fetch(`${base}/api/public/vehicles/${slug}/photos/0`);
+      expect(revoked.status).toBe(404);
+      expect(mocks.db.vehicle.findFirst).toHaveBeenCalledTimes(2);
+      expect(mocks.download).toHaveBeenCalledTimes(1);
+    } finally { finish({ data: new Blob(['image'], { type: 'image/jpeg' }), error: null }); }
+    expect((await first).status).toBe(200);
+  });
+  it('shares overlapping HTTP photo/access authorization, then rechecks reorder and revocation', async () => {
+    const other = `${id}/12345678-1234-1234-1234-123456789abd.jpg`;
+    let resolve!: (value: ReturnType<typeof fixture>) => void;
+    const pending = new Promise<ReturnType<typeof fixture>>(done => { resolve = done; });
+    mocks.db.vehicle.findFirst.mockReturnValue(pending);
+    let arrivals = 0;
+    const observe = (request: import('node:http').IncomingMessage) => {
+      if (request.url?.includes(`/${slug}/photos/`)) arrivals++;
+    };
+    server.on('request', observe);
+    try {
+      const responses = Promise.all(['0', '1', 'access'].map(index => fetch(`${base}/api/public/vehicles/${slug}/photos/${index}`)));
+      await vi.waitFor(() => expect(arrivals).toBe(3));
+      expect(mocks.db.vehicle.findFirst).toHaveBeenCalledTimes(1);
+      expect(mocks.download).not.toHaveBeenCalled();
+      resolve({ ...fixture(), photos: [photo, other], publicPhotoPaths: [photo, other] });
+      const [first, second, access] = await responses;
+      expect(first.status).toBe(200); expect(second.status).toBe(200);
+      expect(first.headers.get('x-photo-version')).toBe(publicPhotoVersion(photo));
+      expect(second.headers.get('x-photo-version')).toBe(publicPhotoVersion(other));
+      expect(await access.json()).toEqual({ versions: [publicPhotoVersion(photo), publicPhotoVersion(other)] });
+      expect(mocks.download).toHaveBeenCalledTimes(2);
+      mocks.db.vehicle.findFirst.mockResolvedValue({ ...fixture(), photos: [other, photo], publicPhotoPaths: [photo, other] });
+      const reordered = await fetch(`${base}/api/public/vehicles/${slug}/photos/0`);
+      expect(reordered.headers.get('x-photo-version')).toBe(publicPhotoVersion(other));
+      mocks.db.vehicle.findFirst.mockResolvedValue({ ...fixture(), photos: [other, photo], publicPhotoPaths: [photo] });
+      expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/1`)).status).toBe(404);
+      mocks.db.vehicle.findFirst.mockResolvedValue(null);
+      expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).status).toBe(404);
+      expect(mocks.db.vehicle.findFirst).toHaveBeenCalledTimes(4);
+    } finally { resolve(fixture()); server.off('request', observe); }
+  });
   it.each([
     `other/${photo.split('/')[1]}`,
     `${id}/../secret.jpg`,
@@ -427,6 +475,32 @@ describe('private photo storage boundary', () => {
       error: null,
     });
     expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0`)).status).toBe(404);
+  });
+  it('revalidates only after live authorization and refuses cached reads after revocation',async()=>{
+    const first=await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`);
+    expect(first.status).toBe(200);expect(first.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
+    const etag=first.headers.get('etag')!;expect(etag).toBeTruthy();
+    const second=await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`,{headers:{'if-none-match':etag}});
+    expect(second.status).toBe(304);
+    mocks.db.vehicle.findFirst.mockResolvedValue(null);
+    const revoked=await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`,{headers:{'if-none-match':etag}});
+    expect(revoked.status).toBe(404);expect(revoked.headers.get('cache-control')).toBe('no-store');
+  });
+  it('rejects arbitrary image dimensions and never exposes private paths',async()=>{
+    for(const size of['1','50000','0320','320&w=800'])expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=${size}`)).status).toBe(400);
+    expect(mocks.download).not.toHaveBeenCalled();
+  });
+  it('checks fresh photo identities in one query, respects order and revocation without reading pixels',async()=>{
+    const other=`${id}/12345678-1234-1234-1234-123456789abd.jpg`;
+    mocks.db.vehicle.findFirst.mockResolvedValue({...fixture(),photos:[other,photo],publicPhotoPaths:[photo,other]});
+    const response=await fetch(`${base}/api/public/vehicles/${slug}/photos/access`);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await response.json()).toEqual({versions:[publicPhotoVersion(other),publicPhotoVersion(photo)]});
+    expect(mocks.db.vehicle.findFirst).toHaveBeenCalledTimes(1);expect(mocks.download).not.toHaveBeenCalled();
+    mocks.db.vehicle.findFirst.mockResolvedValue({...fixture(),photos:[other,photo],publicPhotoPaths:[photo]});
+    expect(await(await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).json()).toEqual({versions:[publicPhotoVersion(photo)]});
+    mocks.db.vehicle.findFirst.mockResolvedValue(null);
+    expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).status).toBe(404);
   });
 });
 

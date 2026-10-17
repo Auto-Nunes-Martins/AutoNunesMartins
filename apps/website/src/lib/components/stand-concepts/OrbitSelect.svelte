@@ -172,7 +172,7 @@
     aria-label={label}
     title={text}
     aria-expanded={open}
-    aria-controls={`${id}-list`}
+    aria-controls={open ? `${id}-list` : undefined}
     aria-haspopup="listbox"
     aria-activedescendant={open ? `${id}-option-${active}` : undefined}
     aria-describedby={describedBy}

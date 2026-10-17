@@ -8,7 +8,9 @@
   const selected = $derived($ids.includes(id));
 </script>
 <button type="button" class:with-text={text} class:selected disabled={!$ready} aria-pressed={selected}
-  aria-label={`${selected ? 'Remover' : 'Guardar'} ${name}${selected ? ' dos favoritos' : ' nos favoritos'}`}
+  aria-label={text
+    ? `${selected ? 'Guardada' : 'Guardar'}: ${name}${selected ? ' — remover dos favoritos' : ' nos favoritos'}`
+    : `${selected ? 'Remover' : 'Guardar'} ${name}${selected ? ' dos favoritos' : ' nos favoritos'}`}
   onclick={async event => {
     event.stopPropagation();
     const button = event.currentTarget;

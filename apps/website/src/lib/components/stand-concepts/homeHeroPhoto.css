@@ -27,7 +27,8 @@
   position: absolute;
   left: var(--photo-x, 50%);
   top: var(--photo-y, 54%);
-  /* The existing 4:3 photograph is 6% smaller than cover, showing more context. */
+  /* The approved profile scales with the layer, without viewport-dependent
+     zoom/x/y interpolation or a post-hydration desktop pixel override. */
   width: max(var(--photo-zoom, 94cqw), var(--photo-ratio-zoom, 125.333cqh));
   max-width: none;
   height: auto;
@@ -52,8 +53,25 @@
     var(--lateral-fade, linear-gradient(90deg, var(--bg), color-mix(in srgb, var(--bg) 92%, transparent) 22%, transparent 62%, color-mix(in srgb, var(--bg) 55%, transparent) 90%, var(--bg))),
     var(--stand-bottom-fade, linear-gradient(0deg, var(--bg), transparent 28%));
 }
+@media (min-width: 1001px) {
+  .design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop img {
+    /* Fit the approved canvas uniformly. When the hero is relatively taller,
+       preserve its vertical composition and let the soft sides crop naturally. */
+    width: max(var(--photo-zoom, 94cqw), var(--photo-reference-zoom, 125.333cqh));
+    left: var(--desktop-photo-x);
+    transform: translate(calc(-1 * var(--desktop-focal-x)), calc(-1 * var(--photo-y, 54%)));
+  }
+}
+@media (max-width: 1000px) {
+  .design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop img {
+    width: var(--responsive-photo-width, max(var(--photo-zoom, 94cqw), var(--photo-ratio-zoom, 125.333cqh)));
+    left: var(--responsive-photo-left, var(--photo-x, 50%));
+    top: var(--responsive-photo-top, var(--photo-y, 54%));
+    transform: var(--responsive-photo-transform, translate(calc(-1 * var(--photo-x, 50%)), calc(-1 * var(--photo-y, 54%))));
+  }
+}
 @media (max-width: 700px) {
-  .design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop img { left: var(--photo-x, 54%); top: var(--photo-y, 50%); transform: translate(calc(-1 * var(--photo-x, 54%)), calc(-1 * var(--photo-y, 50%))); }
+  .design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop img { left: var(--responsive-photo-left, var(--photo-x, 54%)); top: var(--responsive-photo-top, var(--photo-y, 50%)); transform: var(--responsive-photo-transform, translate(calc(-1 * var(--photo-x, 54%)), calc(-1 * var(--photo-y, 50%)))); }
   .design.orbit.orbit-home[data-hero-version='1'] .home-stand-backdrop::after {
     background:
       var(--stand-mobile-vertical-fade, linear-gradient(180deg, color-mix(in srgb, var(--bg) 94%, transparent), color-mix(in srgb, var(--bg) 85%, transparent) 34%, transparent 62%, var(--bg))),

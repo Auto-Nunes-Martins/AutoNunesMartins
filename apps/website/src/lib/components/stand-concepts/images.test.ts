@@ -13,7 +13,6 @@ describe('vehicle photo URLs', () => {
     'https://stand.example/_app/immutable/assets/catalog-placeholder.hash.svg',
     'http://localhost:5173/src/lib/assets/catalog-placeholder.svg?url&no-inline',
     '../assets/catalog-placeholder.hash.svg',
-    '/viaturas/car-abcdef123456/photos/0',
   ])('preserves local imports and public photo paths: %s', (url) => {
     expect(photo(url, 1100)).toBe(url);
     expect(responsivePhoto(url)).toBeUndefined();
@@ -28,11 +27,19 @@ describe('responsive demo images', () => {
     expect(result).not.toContain('1920w');
   });
   it.each([
-    '/api/public/vehicles/car/photos/0',
     '/catalog-placeholder.svg',
     'https://example.com/image.jpg',
     'photo-x?secret=yes',
   ])('does not fabricate variants or forward arbitrary URLs: %s', (path) => {
     expect(responsivePhoto(path)).toBeUndefined();
+  });
+});
+
+describe('authorized public photo variants',()=>{
+  it('uses the bounded shared widths on local public photo endpoints',()=>{
+    const path='/viaturas/car-abcdef123456/photos/0';
+    expect(photo(path,1100)).toBe(path+'?w=1600');
+    expect(responsivePhoto(path)).toBe([320,800,1600,2560].map(w=>`${path}?w=${w} ${w}w`).join(', '));
+    expect(responsivePhoto('https://external.example/viaturas/car/photos/0')).toBeUndefined();
   });
 });

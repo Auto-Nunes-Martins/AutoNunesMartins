@@ -1,0 +1,18 @@
+html:has(dialog.gallery-dialog[open]) { overflow: hidden; }
+.design.orbit .gallery-dialog {
+  position: fixed; inset: auto; left: 50vw; top: 50dvh; transform: translate(-50%, -50%); margin: 0; width: min(1960px, calc(100vw - 64px));
+  height: min(1240px, calc(100dvh - clamp(24px, 4dvh, 64px))); max-width: calc(100vw - 32px); max-height: calc(100dvh - 24px);
+  padding: 8px; border: 0; border-radius: 0; background: transparent; overflow: hidden; box-sizing: border-box;
+}
+.design.orbit .gallery-dialog[open] { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; }
+.design.orbit .gallery-dialog::backdrop { background: rgb(8 8 12 / 62%); backdrop-filter: blur(4px); }
+.design.orbit .gallery-dialog img { display: block; width: 100%; height: 100%; min-height: 0; max-height: 100%; object-fit: contain; margin: auto; }
+.design.orbit .gallery-dialog .viewer-controls { display:grid; grid-template-columns:44px minmax(0, 1fr) 44px 44px; gap:8px; align-items:center; width:min(480px, 100%); margin:0 auto; }
+.design.orbit .gallery-dialog p { grid-column:2; grid-row:1; text-align:center; margin:0; padding:6px; border-radius:6px; background:#111b; color:white; font-size:13px; line-height:1.5; }
+.design.orbit .gallery-dialog :is(.dialog-close, .viewer-step) { display: grid; place-items: center; position: static; transform:none; grid-row:1; width: 44px; height: 44px; min-height: 44px; padding: 0; border: 1px solid #ffffff70; border-radius: 50%; background: #1119; color: white; cursor: pointer; }
+.design.orbit .gallery-dialog .dialog-close { grid-column:4; }
+.design.orbit .gallery-dialog .viewer-previous { grid-column:1; }
+.design.orbit .gallery-dialog .viewer-next { grid-column:3; }
+.design.orbit .gallery-dialog button[aria-disabled='true'] { opacity: .35; cursor: default; }
+.design.orbit .gallery-dialog button:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+@media(max-width:600px) { .design.orbit .gallery-dialog { width:calc(100vw - 48px); } .design.orbit .gallery-dialog p {font-size:12px;} }

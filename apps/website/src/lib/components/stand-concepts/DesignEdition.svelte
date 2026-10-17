@@ -1,5 +1,12 @@
 <script lang="ts">
+  import { sizedPhoto, vehiclePhotoSet } from "$lib/vehiclePhotoSources";
+  let galleryOpen = $state(false);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
+  import { followThumbnail } from '$lib/thumbnailFollow';
+  import {createThumbnailSession,publicThumbnail,thumbnailAttrs} from '$lib/publicThumbnail';
+  import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
+  import { galleryBackdrop } from '../../../../../../shared/ui/galleryBackdrop';
+  import './photoViewer.css';
   import { logoLight, logoDark, logoLightSrcset, logoDarkSrcset, catalogPlaceholder } from '$lib/localAssets';
   import { publicErrorCopy } from '$lib/publicError';
   import HeroBackgroundTuner from './HeroBackgroundTuner.svelte';
@@ -127,6 +134,7 @@
     errorStatus?: number;
     homeHighlights?: PublicHighlights;
   } = $props();
+  const thumbnailSession = $derived(publicVehicle ? createThumbnailSession(publicVehicle.slug) : undefined);
   const car = $derived(
     publicVehicle
       ? {
@@ -229,6 +237,13 @@
   let contactError = $state('');
   let reason = $state('Gostava de saber mais.');
   let zoom = $state(0);
+  const galleryCount = $derived(publicVehicle ? publicVehicle.photos.length : car ? 1 : 0);
+  function galleryKeydown(event: KeyboardEvent) {
+    trapDialogTab(event, galleryDialog);
+    if (!publicVehicle || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault(); zoom = Math.max(0, Math.min(galleryCount - 1, zoom + (event.key === 'ArrowRight' ? 1 : -1)));
+  }
+  $effect(() => { if (publicVehicle && zoom > Math.max(0, galleryCount - 1)) zoom = 0; });
   let heroIndex = $state(0);
   let heroVersion = $state(1);
   let heroBackground = $state(standDefaults());
@@ -398,7 +413,7 @@
       <div class="nav-contact-inner" role="region" tabindex="0" aria-label="Contactos e horário — deslize para ver mais">
       <div class="nav-contact-left">
       {#if standContact.address}<address class="nav-address"><MapPin size={13} strokeWidth={1.6} aria-hidden="true" /><span>{standContact.address.replace(/\n/g, ' · ')}</span></address>{/if}
-      {#if standContact.hours.length}<div class="nav-hours" aria-label="Horário">
+      {#if standContact.hours.length}<div class="nav-hours" role="group" aria-label="Horário">
         <Clock3 size={13} strokeWidth={1.6} aria-hidden="true" />
         {#each standContact.hours.filter(hours => hours.days !== 'Domingo e feriados') as hours}<span><span>{hours.days}</span><span>{hours.time}</span></span>{/each}
       </div>{/if}
@@ -452,15 +467,16 @@
         onclick={() => (navOpen = false)}><span class="nav-label">Quem somos</span></a
       >
       <a href="/comparar" class:has-comparison={$comparisonIds.length > 0} use:comparisonAttention={$comparisonAdditions} aria-current={compare ? 'page' : undefined}
-        aria-label={`Comparar, ${$comparisonIds.length} viaturas selecionadas`}
-        onclick={() => (navOpen = false)}><span class="nav-label">Comparar</span><span class="comparison-count" aria-hidden="true">{$comparisonIds.length}</span></a>
+        aria-describedby="comparison-count-description"
+        onclick={() => (navOpen = false)}><span class="nav-label">Comparar</span>{' '}<span class="comparison-count">{$comparisonIds.length}</span></a>
+      <span id="comparison-count-description" class="hero-status">viaturas selecionadas para comparação</span>
       <div class="mobile-theme"><ThemeToggle dark={isDark} onchange={toggleTheme} /></div>
     </nav>
     <div class="header-actions">
       <div class="desktop-theme"><ThemeToggle dark={isDark} onchange={toggleTheme} /></div>
       <a class="nav-favorites" class:filled={$favoriteIds.length > 0} href="/favoritos"
-        aria-current={favorites ? 'page' : undefined} aria-label={`Guardados, ${$favoriteIds.length} viaturas nos favoritos`}
-        onclick={() => (navOpen = false)}><span class="favorite-heart" aria-hidden="true"><Heart size={19} strokeWidth={1.5} fill={$favoriteIds.length ? 'currentColor' : 'none'} /><span class="favorite-count" class:empty={!$favoriteIds.length} class:compact={$favoriteIds.length > 99}>{$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}</span></span><span class="favorite-label">Guardados</span></a>
+        aria-current={favorites ? 'page' : undefined} aria-label={`Guardados${$favoriteIds.length ? ` ${$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}` : ''}, ${$favoriteIds.length} viaturas nos favoritos`}
+        onclick={() => (navOpen = false)}><span class="favorite-heart" aria-hidden="true"><Heart size={19} strokeWidth={1.5} fill={$favoriteIds.length ? 'currentColor' : 'none'} aria-hidden="true" /><span class="favorite-count" class:empty={!$favoriteIds.length} class:compact={$favoriteIds.length > 99}>{$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}</span></span><span class="favorite-label">Guardados</span></a>
       {#if standContact.phone}<a
           class="nav-phone"
           onpointerenter={ringNavPhone}
@@ -475,7 +491,7 @@
         aria-controls="stand-navigation"
         aria-expanded={navOpen}
         onclick={() => (navOpen = !navOpen)}
-        >{#if navOpen}<X size={21} />{:else}<Menu size={21} />{/if}</button
+        >{#if navOpen}<X size={21} aria-hidden="true" />{:else}<Menu size={21} aria-hidden="true" />{/if}</button
       >
       <span class="edition-label orbit-edition-label">{'seleção'} / 0{'1'}</span>
     </div>
@@ -506,12 +522,12 @@
     <main class="not-found">
       <p class="kicker">DESVIO DE PERCURSO</p>
       <h1>Esta viatura<br />não está por aqui.</h1>
-      <a class="pill" href="/">Voltar à seleção <ArrowUpRight size={18} /></a>
+      <a class="pill" href="/">Voltar à seleção <ArrowUpRight size={18} aria-hidden="true" /></a>
     </main>
   {:else if car}
     <main class="vehicle-page">
       <div class="breadcrumbs">
-        <a href="/viaturas"><ArrowLeft size={14} /> Voltar às viaturas</a><span
+        <a href="/viaturas"><ArrowLeft size={14} aria-hidden="true" /> Voltar às viaturas</a><span
           >{car.brand} / {car.model}</span
         >{#if publicVehicle}<span class="detail-favorite-desktop"><FavoriteButton id={publicVehicle.slug} name={`${publicVehicle.brand} ${publicVehicle.model}`} text /></span>{:else}<button
           onclick={() => toggleSave(car.id)}
@@ -519,28 +535,30 @@
           aria-pressed={saved.includes(car.id)}
           ><Heart
             size={16}
-            fill={saved.includes(car.id) ? 'currentColor' : 'none'}
-          />{saved.includes(car.id) ? 'Guardada' : 'Guardar'}</button
+            fill={saved.includes(car.id) ? 'currentColor' : 'none'} aria-hidden="true" />{saved.includes(car.id) ? 'Guardada' : 'Guardar'}</button
         >{/if}
       </div>
 
       <section class="vehicle-layout" data-scene>
         <div class="vehicle-photography">
           <div class="vehicle-gallery">
+            <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Arrow keys coordinate the gallery's focused buttons; explicit previous/next controls remain available.) -->
+            <div class="vehicle-photo-stage" role="group" aria-label="Galeria de fotografias" onkeydown={galleryKeydown}>
             <button
               class="vehicle-photo"
-              onclick={() => galleryDialog.showModal()}
-              aria-label={publicVehicle && !publicVehicle.photos.length
-                ? 'Imagem indisponível'
-                : 'Ampliar fotografia'}
+              type="button"
+              onclick={() => { galleryOpen = true; galleryDialog.showModal(); }}
               disabled={!!publicVehicle && !publicVehicle.photos.length}
               ><img use:vehiclePhoto={{ src: publicVehicle?.photos.length
-                  ? publicPhoto(publicVehicle.slug, zoom)
-                  : photo(car.image, 2000) }}
+                  ? sizedPhoto(publicPhoto(publicVehicle.slug, zoom),1600)
+                  : photo(car.image, 2000), srcset: publicVehicle?.photos.length ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, zoom)) : undefined }}
                 src={publicVehicle?.photos.length
-                  ? publicPhoto(publicVehicle.slug, zoom)
+                  ? sizedPhoto(publicPhoto(publicVehicle.slug, zoom),1600)
                   : photo(car.image, 2000)}
-                alt={`${car.brand} ${car.model} — ${publicVehicle ? (publicVehicle.photos.length ? 'fotografia ' + (zoom + 1) : 'imagem indisponível') : 'imagem ilustrativa'}`}
+                srcset={publicVehicle?.photos.length ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, zoom)) : undefined}
+                sizes="(max-width: 701px) 100vw, (max-width: 1050px) 60vw, (min-width: 1920px) 1050px, 66vw"
+                fetchpriority="high"
+                alt={`${publicVehicle && !publicVehicle.photos.length ? '' : 'Ampliar fotografia: '}${car.brand} ${car.model} — ${publicVehicle ? (publicVehicle.photos.length ? 'fotografia ' + (zoom + 1) : 'imagem indisponível') : 'imagem ilustrativa'}`}
                 style={publicVehicle
                   ? '--zoom:1;object-position:center'
                   : `--zoom:${zoom === 0 ? 1 : 1.32};object-position:${zoom === 1 ? '25%' : zoom === 2 ? '75%' : '50%'} center`}
@@ -550,11 +568,17 @@
                     ? zoom + 1 + ' / ' + publicVehicle.photos.length
                     : 'SEM FOTOGRAFIA'
                   : '01 / 01'} <span>{publicVehicle ? '' : 'FOTOGRAFIA ILUSTRATIVA'}</span></span
-              ><span class="expand"><Plus size={24} /></span></button
+              ><span class="expand"><Plus size={24} aria-hidden="true" /></span></button
             >
+            {#if publicVehicle && galleryCount > 1}
+              <button type="button" class="photo-step photo-previous" aria-label="Fotografia anterior" aria-disabled={zoom === 0} onclick={() => { if (zoom > 0) zoom -= 1; }}><ArrowLeft size={20} aria-hidden="true" /></button>
+              <button type="button" class="photo-step photo-next" aria-label="Fotografia seguinte" aria-disabled={zoom === galleryCount - 1} onclick={() => { if (zoom < galleryCount - 1) zoom += 1; }}><ArrowRight size={20} aria-hidden="true" /></button>
+            {/if}
+            </div>
             {#if publicVehicle}
-              {#if publicVehicle.photos.length > 1}<div
+              {#if publicVehicle.photos.length > 1}<div class="detail-thumbnails-frame"><div
                   class="detail-thumbnails"
+                  use:followThumbnail={zoom}
                   role="group"
                   aria-label="Fotografias da viatura"
                 >
@@ -563,11 +587,11 @@
                       aria-label={'Ver fotografia ' + (i + 1)}
                       aria-pressed={zoom === i}
                       onclick={() => (zoom = i)}
-                      ><img use:vehiclePhoto={{ src: publicPhoto(publicVehicle.slug, i) }} src={publicPhoto(publicVehicle.slug, i)} alt="" loading="lazy" /><span
+                      ><img {...thumbnailAttrs(thumbnailSession!,sizedPhoto(publicPhoto(publicVehicle.slug,i),320),vehiclePhotoSet(publicPhoto(publicVehicle.slug,i)))} use:publicThumbnail={{session:thumbnailSession!,index:i,src:sizedPhoto(publicPhoto(publicVehicle.slug,i),320),srcset:vehiclePhotoSet(publicPhoto(publicVehicle.slug,i)),sizes:"(max-width:701px) 112px, 128px"}} sizes="(max-width:701px) 112px, 128px" alt="" loading={i < 3 ? "eager" : "lazy"} fetchpriority="low" /><span
                         >{i + 1}</span
                       ></button
                     >{/each}
-                </div>{/if}
+                </div></div>{/if}
             {:else}
               <div
                 class="detail-thumbnails"
@@ -609,9 +633,9 @@
               </div>{/if}
           </div>
         </div>
-        <aside class="purchase" use:entrance>
+        <div class="purchase" role="group" aria-labelledby="vehicle-title" use:entrance>
           <p class="kicker"><OrbitRedDot /> UM NOVO PONTO DE PARTIDA</p>
-          <h1>{car.brand}<br /><span>{car.model}</span></h1>
+          <h1 id="vehicle-title">{car.brand}<br /><span>{car.model}</span></h1>
           {#if car.line}<p class="model-line">{car.line.split(' · ')[0]}</p>{/if}
           <div class="purchase-price">
             <span>{publicVehicle ? 'Preço publicado' : 'Preço de demonstração'}</span><strong
@@ -624,11 +648,11 @@
             ><span>{car.fuel}<small>Combustível</small></span>
           </div>
           <button class="pill primary" onclick={() => contact()}
-            >Quero conhecer <ArrowUpRight size={18} /></button
+            >Quero conhecer <ArrowUpRight size={18} aria-hidden="true" /></button
           ><button
             class="secondary-contact"
             onclick={() => contact('Gostava de apresentar a minha viatura para retoma.')}
-            >Tem uma viatura para retoma? <Plus size={15} /></button
+            >Tem uma viatura para retoma? <Plus size={15} aria-hidden="true" /></button
           >
           {#if publicVehicle}<div class="detail-compare" role="group" aria-label="Guardar e comparar viatura"><CompareButton id={publicVehicle.slug} name={`${publicVehicle.brand} ${publicVehicle.model}`} /><span class="detail-favorite-mobile"><FavoriteButton id={publicVehicle.slug} name={`${publicVehicle.brand} ${publicVehicle.model}`} text /></span></div>{/if}
           <p class="fine-print">
@@ -636,7 +660,7 @@
               ? 'Confirme a disponibilidade, o histórico e as condições com o stand.'
               : 'Fotografia, preço e características ilustrativos. Esta página é uma proposta visual.'}
           </p>
-        </aside>
+        </div>
         <section class="detail-facts" use:entrance>
           <div>
             <p class="kicker">O ESSENCIAL. SEM RUÍDO.</p>
@@ -651,8 +675,9 @@
         </section>
         {#if !publicVehicle || publicVehicle.photos.length > 1}
           <section class="detail-band" data-scene>
-            <img use:vehiclePhoto={{ src: publicVehicle ? publicPhoto(publicVehicle.slug, 1) : photo(car.image, 1800) }}
-              src={publicVehicle ? publicPhoto(publicVehicle.slug, 1) : photo(car.image, 1800)}
+            <img use:vehiclePhoto={{ src: publicVehicle ? sizedPhoto(publicPhoto(publicVehicle.slug, 1),1600) : photo(car.image, 1800), srcset: publicVehicle ? vehiclePhotoSet(publicPhoto(publicVehicle.slug,1)) : undefined }}
+              src={publicVehicle ? sizedPhoto(publicPhoto(publicVehicle.slug, 1),1600) : photo(car.image, 1800)}
+              srcset={publicVehicle ? vehiclePhotoSet(publicPhoto(publicVehicle.slug,1)) : undefined} sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw"
               alt=""
               loading="lazy"
             />
@@ -660,7 +685,7 @@
               <p class="kicker">A ESCOLHA É SUA.</p>
               <h2>O caminho<br />também.</h2>
               <button class="pill" onclick={() => contact()}
-                >Vamos falar <ArrowUpRight size={18} /></button
+                >Vamos falar <ArrowUpRight size={18} aria-hidden="true" /></button
               >
             </div>
             <span class="band-index" aria-hidden="true">↗</span>
@@ -694,7 +719,7 @@
                     src={photo(item.image, 900)}
                     alt={`${item.brand} ${item.model}`}
                     loading="lazy"
-                  /><span><ArrowUpRight size={20} /></span>
+                  /><span><ArrowUpRight size={20} aria-hidden="true" /></span>
                 </div>
                 <div class="related-body">
                   <span class="related-brand">{item.brand}</span>
@@ -751,7 +776,8 @@
               class="orbit-main-photo"
               id="orbit-featured"
               href={heroCar.href}
-              aria-label={`Ver ${heroCar.brand} ${heroCar.model} — destaque ${heroIndex + 1} de ${heroSlides.length}`}
+              aria-labelledby="featured-vehicle-caption"
+              aria-describedby={heroCar.illustrative ? 'featured-image-note' : undefined}
             >
               {#each heroSlides as featured, index (featured.id)}
                 <img use:vehiclePhoto={{ src: photo(featured.image, 1800), srcset: responsivePhoto(featured.image) }}
@@ -759,28 +785,27 @@
                   src={photo(featured.image, 1800)}
                   srcset={responsivePhoto(featured.image)}
                   sizes={heroImageSizes}
-                  alt={heroIndex === index
-                    ? `${featured.brand} ${featured.model}${featured.illustrative ? ' — imagem ilustrativa' : ''}`
-                    : ''}
-                  aria-hidden={heroIndex !== index}
+                  alt=""
+                  aria-hidden="true"
                   loading={index === 0 ? 'eager' : 'lazy'}
                   fetchpriority={index === 0 ? 'high' : 'low'}
                   decoding="async"
                 />
               {/each}
+              <span id="featured-image-note" hidden>{heroCar.illustrative ? 'Fotografia ilustrativa.' : ''}</span>
               <span class="featured-badge" aria-hidden="true">EM DESTAQUE</span>
               <div>
-                <span
+                <span id="featured-vehicle-caption"
                   >{heroCar.brand}
-                  {heroCar.model}<small>{heroCar.year} · {number(heroCar.km)} KM</small></span
+                  {heroCar.model}{' '}<small>{heroCar.year} · {number(heroCar.km)} KM</small></span
                 >
-                <ArrowUpRight size={24} />
+                <ArrowUpRight size={24} aria-hidden="true" />
               </div></a
             ><span class="object-coordinate coordinate-a" aria-hidden="true">EM DESTAQUE</span>
             {:else}
               <a class="orbit-main-photo hero-empty" id="orbit-featured" href="/viaturas">
                 <span>O seu próximo carro começa com uma escolha.</span>
-                <div><span>Conheça as nossas viaturas<small>CONSULTE O CATÁLOGO</small></span><ArrowUpRight size={24} /></div>
+                <div><span>Conheça as nossas viaturas<small>CONSULTE O CATÁLOGO</small></span><ArrowUpRight size={24} aria-hidden="true" /></div>
               </a>
             {/if}
           </div>
@@ -821,12 +846,12 @@
         </div>
       </section>
 
-      <div class="hero-versions" role="group" aria-label="Escolher composição do hero">
+      {#if import.meta.env.DEV}<div class="hero-versions" role="group" aria-label="Escolher composição do hero">
         {#each [1, 2] as version}
           <button type="button" aria-label={`Versão ${version} do hero`} aria-pressed={heroVersion === version} title={['Original com fotografia panorâmica', 'Original'][version - 1]} onclick={() => heroVersion = version}>{version}</button>
         {/each}
       </div>
-      {#if import.meta.env.DEV}<HeroBackgroundTuner bind:settings={heroBackground} active={heroVersion === 1} onchange={(value) => heroBackground = value} />{/if}
+      <HeroBackgroundTuner bind:settings={heroBackground} active={heroVersion === 1} onchange={(value) => heroBackground = value} />{/if}
       <OrbitStats />
 
       <section class="showroom" id="selecao">
@@ -838,7 +863,7 @@
           </div>
         </div>
         <div class="showroom-layout">
-          <aside class="catalog-controls">
+          <div class="catalog-controls" role="group" aria-label="Filtrar viaturas">
             <div class="home-basic-filters">
               <OrbitSelect
                 id="home-brand"
@@ -881,7 +906,7 @@
             <p class="catalog-note">
               O primeiro passo é descobrir.<br />O próximo, conhecer de perto.
             </p>
-          </aside>
+          </div>
           <div class="car-grid" style={`--home-result-rows:${Math.max(1, selected.length)}`}>
             {#each selected as vehicle, index (vehicle.id)}{@render vehicleCard(
                 vehicle,
@@ -891,7 +916,7 @@
                 <button
                   onclick={() => {
                     clearHomeFilters();
-                  }}>Limpar filtros <ArrowUpRight size={17} /></button
+                  }}>Limpar filtros <ArrowUpRight size={17} aria-hidden="true" /></button
                 >
               </div>{/if}
             <DiscoverVehicles />
@@ -914,7 +939,7 @@
             conheça os detalhes e fale connosco sobre aquilo que procura.
           </p>
           <button class="conversation-pill" onclick={() => contact()}
-            >Vamos conhecer-nos <ArrowUpRight size={18} /></button
+            >Vamos conhecer-nos <ArrowUpRight size={18} aria-hidden="true" /></button
           >
           <div class="about-signature">
             <span>AUTO NUNES MARTINS</span><span>COMÉRCIO DE AUTOMÓVEIS</span>
@@ -930,13 +955,13 @@
     </main>
   {/if}
 
-  {#if !favorites && !compare && !about && !catalog && !privacy && !errorStatus}<section class="services">
-      <p class="kicker">O CARRO É SÓ O INÍCIO.</p>
+  {#if !favorites && !compare && !about && !catalog && !privacy && !errorStatus}<section class="services" aria-labelledby="services-title">
+      <p class="kicker" id="services-title">O CARRO É SÓ O INÍCIO.</p>
       <div>
         {#each [['01', 'Dar o próximo passo.', 'Conheça a viatura ao seu ritmo. Combine uma visita e esclareça as suas dúvidas.', 'Quero combinar uma visita.'], ['02', 'Mudar de companhia.', 'Tem uma viatura para retoma? Conte-nos um pouco sobre ela e sobre os seus planos.', 'Gostava de falar sobre uma retoma.'], ['03', 'Saber os detalhes.', 'Equipamento, documentação e condições: reúna a informação antes de decidir.', 'Gostava de esclarecer algumas dúvidas.']] as service, index}<article
             use:conditionalEntrance={car || publicVehicle ? false : index * 90}
           >
-            <span>{service[0]}<ArrowUpRight size={22} /></span>
+            <span>{service[0]}<ArrowUpRight size={22} aria-hidden="true" /></span>
             <h3>{service[1]}</h3>
             <p>{service[2]}</p>
             <button onclick={() => contact(service[3])}><span class="service-cta-label">Vamos conversar</span><ArrowUpRight size={15} aria-hidden="true" /></button>
@@ -993,7 +1018,7 @@
     <button
       class="dialog-close icon-button"
       onclick={() => contactDialog.close()}
-      aria-label="Fechar"><X size={22} /></button
+      aria-label="Fechar"><X size={22} aria-hidden="true" /></button
     >
     <p class="kicker">VAMOS CONVERSAR</p>
     {#if sent}<h2 id="contact-heading" tabindex="-1" bind:this={confirmationHeading}>
@@ -1003,7 +1028,7 @@
         O pedido foi aceite pelo serviço de email para envio ao stand. Responderemos para esclarecer as suas questões ou combinar a visita. O agendamento ainda não está confirmado.
       </p>
       <button class="pill primary" onclick={() => contactDialog.close()}
-        >Continuar a descobrir <ArrowUpRight size={18} /></button
+        >Continuar a descobrir <ArrowUpRight size={18} aria-hidden="true" /></button
       >{:else}<h2 id="contact-heading">O que tem<br />em mente?</h2>
       <form
         onsubmit={async (event) => {
@@ -1049,16 +1074,12 @@
         ><ContactPrivacyNotice />
         {#if contactError}<p role="alert">{contactError}</p>{/if}
         <button class="pill primary" type="submit" disabled={sending}
-          >{sending ? 'A enviar…' : 'Enviar pedido'} <ArrowUpRight size={18} /></button
+          >{sending ? 'A enviar…' : 'Enviar pedido'} <ArrowUpRight size={18} aria-hidden="true" /></button
         >
       </form>{/if}
   </dialog>
-  <dialog bind:this={galleryDialog} class="gallery-dialog">
-    <button
-      class="dialog-close icon-button"
-      onclick={() => galleryDialog.close()}
-      aria-label="Fechar fotografia"><X size={25} /></button
-    >{#if car}<img use:vehiclePhoto={{ src: publicVehicle?.photos.length
+  <dialog bind:this={galleryDialog} use:galleryBackdrop onclose={() => galleryOpen = false} class="gallery-dialog" aria-labelledby="gallery-caption" onkeydown={galleryKeydown}>
+    {#if car && galleryOpen}<img use:vehiclePhoto={{ src: publicVehicle?.photos.length
           ? publicPhoto(publicVehicle.slug, zoom)
           : photo(car.image, 2400) }}
         src={publicVehicle?.photos.length
@@ -1066,7 +1087,14 @@
           : photo(car.image, 2400)}
         alt={`${car.brand} ${car.model}${publicVehicle ? '' : ' — fotografia ilustrativa'}`}
       />
-      <p>{car.brand} {car.model}{publicVehicle ? '' : ' / FOTOGRAFIA ILUSTRATIVA'}</p>{/if}
+      <div class="viewer-controls">
+      <button class="dialog-close icon-button" onclick={() => galleryDialog.close()} aria-label="Fechar fotografia"><X size={25} aria-hidden="true" /></button>
+      <p id="gallery-caption">{car.brand} {car.model}{publicVehicle ? ' · ' + (zoom + 1) + ' / ' + galleryCount : ' / FOTOGRAFIA ILUSTRATIVA'}</p>
+    {#if publicVehicle && galleryCount > 1}
+      <button type="button" class="viewer-step viewer-previous" aria-label="Fotografia anterior" aria-disabled={zoom === 0} onclick={() => { if (zoom > 0) zoom -= 1; }}><ArrowLeft size={22} aria-hidden="true" /></button>
+      <button type="button" class="viewer-step viewer-next" aria-label="Fotografia seguinte" aria-disabled={zoom === galleryCount - 1} onclick={() => { if (zoom < galleryCount - 1) zoom += 1; }}><ArrowRight size={22} aria-hidden="true" /></button>
+    {/if}
+      </div>{/if}
   </dialog>
 </div>
 
@@ -1080,7 +1108,7 @@
         alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
         loading="lazy"
       />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
-        class="card-arrow"><ArrowUpRight size={23} /></span
+        class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
       ></a
     >
     <div class="card-body">
@@ -1094,7 +1122,7 @@
         onclick={() => toggleSave(vehicle.id)}
         aria-label={`${saved.includes(vehicle.id) ? 'Remover' : 'Guardar'} ${vehicle.brand} ${vehicle.model}`}
         aria-pressed={saved.includes(vehicle.id)}
-        ><Heart size={18} fill={saved.includes(vehicle.id) ? 'currentColor' : 'none'} /></button
+        ><Heart size={18} fill={saved.includes(vehicle.id) ? 'currentColor' : 'none'} aria-hidden="true" /></button
       >{/if}
     </div>
     <div class="card-specs">
@@ -1103,7 +1131,7 @@
     <div class="card-price">
       <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong><a
         href={'href' in vehicle ? vehicle.href : '/viaturas'}
-        ><span class="card-cta-label">Ver viatura</span> <ArrowUpRight size={14} /></a
+        ><span class="card-cta-label">Ver viatura</span> <ArrowUpRight size={14} aria-hidden="true" /></a
       >
     </div>
     {#if 'approved' in vehicle}<div class="card-compare"><CompareButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} /></div>{/if}
@@ -1112,6 +1140,13 @@
 {/snippet}
 
 <style>
+  .vehicle-photo-stage { position: relative; }
+  .photo-step { position:absolute; top:50%; transform:translateY(-50%); z-index:2; min-width:44px; min-height:44px; display:grid; place-items:center; border:1px solid #ffffff60; border-radius:50%; background:#111a; color:white; cursor:pointer; }
+  .photo-previous { left:12px; } .photo-next { right:calc(var(--detail-thumb-width, clamp(72px, 8vw, 108px)) + 12px); }
+  .photo-step[aria-disabled='true'] {opacity:.35;cursor:default;}
+  .photo-step:focus-visible {outline:2px solid var(--red);outline-offset:3px;}
+  @media(max-width:700px){.photo-next{right:12px}}
+
   .hero-empty { background: var(--bg); color: var(--text); }
   .hero-empty > span { display:block; padding:12%; max-width:75%; font-size:clamp(20px,3vw,42px); line-height:1.1; }
   .home-brands { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: var(--orbit-space-section) auto 0; }

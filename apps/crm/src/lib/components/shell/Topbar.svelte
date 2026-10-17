@@ -7,15 +7,17 @@
   import ThemeToggle from '$lib/components/brand/ThemeToggle.svelte';
   import NotificationBell from '$lib/components/shell/NotificationBell.svelte';
   import GlobalSearch from '$lib/components/shell/GlobalSearch.svelte';
+  import type { SearchHit } from './searchNavigation';
   import { mobileDrawer } from '$lib/stores/sidebar';
 
   interface Props {
     crumbs?: string[];
     showAddVehicle?: boolean;
     hasAlerts?: boolean;
+    userKey?: string;
   }
 
-  let { crumbs, showAddVehicle = true, hasAlerts = false }: Props = $props();
+  let { crumbs, showAddVehicle = true, hasAlerts = false, userKey = '' }: Props = $props();
 
   const resolvedCrumbs = $derived.by<string[]>(() => {
     if (crumbs) return crumbs;
@@ -41,6 +43,8 @@
   // entire topbar row and the other action buttons are hidden. Tap the X
   // to collapse back to the icon.
   let mobileSearchOpen = $state(false);
+  let recentHits = $state<SearchHit[]>([]);
+  $effect(() => { userKey; recentHits = []; });
 </script>
 
 <header
@@ -93,12 +97,12 @@
        and replaced by a search icon button; tapping the icon flips
        `mobileSearchOpen` and re-shows the search taking over the row. -->
   <div class="hidden md:flex flex-1 min-w-0">
-    <GlobalSearch />
+    <GlobalSearch {userKey} bind:recentHits />
   </div>
 
   {#if mobileSearchOpen}
     <div class="flex md:hidden flex-1 min-w-0">
-      <GlobalSearch />
+      <GlobalSearch {userKey} bind:recentHits autofocus />
     </div>
     <button
       type="button"
@@ -129,7 +133,7 @@
            foi removido — cada secção tem o seu próprio ExportMenu, o do
            topbar nunca chegou a estar ligado a nenhum endpoint. -->
       <div class="hidden md:inline-flex">
-        <ThemeToggle size={38} />
+        <ThemeToggle size={44} />
       </div>
 
       <NotificationBell />
@@ -140,7 +144,7 @@
              without consuming a label's worth of width. -->
         <a
           href={crmPath("/viaturas/nova")}
-          class="hidden md:inline-flex items-center gap-2 h-[38px] px-[18px] font-display font-semibold italic uppercase text-[13px] tracking-[0.01em] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
+          class="hidden md:inline-flex items-center gap-2 h-11 px-[18px] font-display font-semibold italic uppercase text-[13px] tracking-[0.01em] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
           style="border-radius: var(--radius-btn);"
         >
           <BrandPlus class="h-4 w-4" />
@@ -148,7 +152,7 @@
         </a>
         <a
           href={crmPath("/viaturas/nova")}
-          class="inline-flex md:hidden items-center justify-center h-10 w-10 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
+          class="inline-flex md:hidden items-center justify-center h-11 w-11 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
           style="border-radius: var(--radius-btn);"
           aria-label="Adicionar viatura"
         >
@@ -169,15 +173,14 @@
     than a flat utility class, so its `display: inline-flex` would beat
     `md:hidden` and the buttons would leak onto desktop.
 
-    40px tap target — close enough to the Apple HIG ≥ 44 target on touch,
-    and consistent with the topbar's mobile visual rhythm.
+    44px touch target, matching the shared actions and search field.
   */
   .tb-icbtn {
     display: none;
     align-items: center;
     justify-content: center;
-    height: 40px;
-    width: 40px;
+    height: 44px;
+    width: 44px;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text-muted);

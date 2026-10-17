@@ -1,4 +1,5 @@
-/** Responsive variants for curated demo images only. Public API paths stay untouched. */
+/** Curated CDN images and the bounded, authorization-checked local photo endpoints. */
+import {sizedPhoto,vehiclePhotoSet} from '$lib/vehiclePhotoSources';
 export const imageWidths = [320, 480, 640, 960, 1280, 1600, 1920] as const;
 
 // Vite imports are root-relative during SSR but absolute URLs in the browser.
@@ -6,10 +7,10 @@ export const imageWidths = [320, 480, 640, 960, 1280, 1600, 1920] as const;
 export const photo = (id: string, width = 1400) =>
   /^photo-[a-zA-Z0-9-]+$/.test(id)
     ? `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`
-    : id;
+    : sizedPhoto(id,width<=320?320:width<=800?800:width<=1600?1600:2560);
 
 export function responsivePhoto(id: string, maximum = 1920): string | undefined {
-  if (!/^photo-[a-zA-Z0-9-]+$/.test(id)) return undefined;
+  if (!/^photo-[a-zA-Z0-9-]+$/.test(id)) return vehiclePhotoSet(id);
   return imageWidths
     .filter((width) => width <= maximum)
     .map(

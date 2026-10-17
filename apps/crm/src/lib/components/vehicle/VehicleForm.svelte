@@ -2,7 +2,7 @@
   import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
   import { formFeedback, markFormSaved, showFormErrors } from '$lib/forms/formFeedback';
-  import type { Snippet } from 'svelte';
+  import { tick, type Snippet } from 'svelte';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import Button from '$lib/components/common/Button.svelte';
@@ -40,6 +40,12 @@
     redirectOnSuccess?: boolean;
     /** Sale prices remain editable; status changes belong to the sale workflow. */
     saleRecorded?: boolean;
+    requireChanges?: boolean;
+    disabled?: boolean;
+    submitting?: boolean;
+    unified?: boolean;
+    onsaveall?: () => void;
+    onstatechange?: (state: { dirty: boolean; valid: boolean }) => void;
   }
 
   let {
@@ -49,9 +55,16 @@
     action,
     redirectOnSuccess = true,
     saleRecorded = false,
+    requireChanges = false,
+    disabled = false,
+    submitting = $bindable(false),
+    unified = false,
+    onsaveall,
+    onstatechange,
   }: Props = $props();
 
-  let submitting = $state(false);
+  let dirty = $state(false);
+  let valid = $state(false);
   const formId = $props.id();
 
   const FUELS: { value: Fuel; label: string }[] = [
@@ -105,22 +118,30 @@
 <div class="space-y-6">
   <form
     id={formId}
+    data-edit-vehicle
+    novalidate={unified}
     method="POST"
     action={action ?? '?/submit'}
-    use:formFeedback
-    use:enhance={({ formElement }) => {
+    use:formFeedback={{ onstatechange: state => { dirty = state.dirty; valid = state.valid; onstatechange?.(state); } }}
+    use:enhance={({ formElement, cancel }) => {
+      if (unified) { cancel(); onsaveall?.(); return; }
+      if (submitting || disabled || !valid || (requireChanges && !dirty)) { cancel(); return; }
       submitting = true;
       return async ({ result, update }) => {
-        submitting = false;
+        let guardCleared = false;
+        try {
         if (result.type === 'success') {
-          markFormSaved(formElement);
-          toast.success('Viatura guardada.');
+          toast.success('Dados da viatura guardados. A publicação no site é independente.');
           if (redirectOnSuccess) {
             const id =
               result.data && typeof result.data === 'object' && 'id' in result.data
                 ? (result.data as { id: string }).id
                 : undefined;
             if (id) {
+              submitting = false;
+              await tick();
+              markFormSaved(formElement);
+              guardCleared = true;
               await goto(crmPath(`/viaturas/${id}`));
               return;
             }
@@ -131,12 +152,18 @@
           const err = (result.data as { error?: string } | undefined)?.error ?? 'Falha ao guardar.';
           toast.error(err);
         }
-        if (result.type === 'redirect') markFormSaved(formElement);
+        if (result.type === 'redirect') { submitting = false; await tick(); markFormSaved(formElement); guardCleared = true; }
         await update({ reset: false, invalidateAll: result.type === 'success' });
+        } finally {
+          submitting = false;
+          await tick();
+          if (!guardCleared && (result.type === 'success' || result.type === 'redirect')) markFormSaved(formElement);
+        }
       };
     }}
     class="space-y-6"
   >
+    <fieldset class="contents" data-save-lock disabled={submitting || disabled}>
     <div>
       <h2 class="font-display font-semibold text-[18px]">Identificação da viatura</h2>
       <p class="text-[12px] text-[var(--color-text-muted)] mt-1">
@@ -377,6 +404,7 @@
         {/each}
       </div>
     </fieldset>
+    </fieldset>
   </form>
 
   <!-- Actions -->
@@ -386,17 +414,20 @@
         {@render extraActions()}
       {/if}
     </div>
-    <div class="ml-auto flex flex-wrap items-center gap-2">
+    {#if !unified}<div class="ml-auto flex flex-wrap items-center gap-2">
       <Button variant="ghost" href={crmPath("/viaturas")}>Cancelar</Button>
       <Button
         variant="primary"
         type="submit"
         form={formId}
         loading={submitting}
-        disabled={submitting}
+        disabled={submitting || disabled || !valid || (requireChanges && !dirty)}
       >
         {submitLabel}
       </Button>
-    </div>
+    </div>{/if}
   </div>
+  {#if requireChanges && !unified}<p class="text-xs text-[var(--color-text-muted)]" role="status">
+    {dirty ? 'Dados internos por guardar. Este botão não guarda a publicação no site.' : 'Dados internos guardados · sem alterações.'}
+  </p>{/if}
 </div>

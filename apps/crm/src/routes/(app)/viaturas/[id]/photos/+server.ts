@@ -17,6 +17,8 @@ export const POST: RequestHandler = async (event) => {
       headers: {
         'content-type': event.request.headers.get('content-type') || '',
         authorization: 'Bearer ' + token,
+        ...(event.request.headers.has('x-upload-id') ? { 'x-upload-id': event.request.headers.get('x-upload-id')! } : {}),
+        ...(event.request.headers.get('x-edit-stage') === 'true' ? { 'x-edit-stage': 'true' } : {}),
       },
       signal: AbortSignal.timeout(180000),
     } as RequestInit & { duplex: string },

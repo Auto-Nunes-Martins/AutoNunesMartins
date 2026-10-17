@@ -90,7 +90,7 @@
 </script>
 
 <div class="announcements" role="status" aria-live="polite" aria-atomic="true" aria-label="Notificações">{announcement}</div>
-<div class="notification-stack" style={`--notice-top:${offset}px`} aria-label="Avisos do site">
+<div class="notification-stack" style={`--notice-top:${offset}px`}>
   {#each visible as notice, index (notice.id)}
     {@const message = displayMessage(notice.message)}
     <div class="notice-slot" style={`grid-row:${index + 1}`} inert={!visible.some(item => item.id === notice.id)} animate:reposition={{ reduced }} in:enter={{ duration: reduced ? 0 : 240 }} out:leave={{ duration: reduced ? 0 : 280 }}>

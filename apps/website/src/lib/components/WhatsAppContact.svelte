@@ -56,7 +56,7 @@
   </svg>
 {/snippet}
 
-<div class="whatsapp-float" class:before-home-stats={isHome && !pastStats}>
+<aside aria-label="Contacto por WhatsApp" class="whatsapp-float" class:before-home-stats={isHome && !pastStats}>
   {#if href}
     <a {href} target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"
       data-sveltekit-preload-data="off" data-sveltekit-preload-code="off"
@@ -68,7 +68,7 @@
       {@render icon()}
     </button>
   {/if}
-</div>
+</aside>
 
 <style>
   .whatsapp-float { position: fixed; z-index: 40; right: max(30px, env(safe-area-inset-right)); bottom: max(44px, env(safe-area-inset-bottom)); }

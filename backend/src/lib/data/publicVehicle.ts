@@ -1,5 +1,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
+import { createHash } from 'node:crypto';
 import { publicSpecificationsSchema } from '@anm/types';
+import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { isApprovedPhotoPath, type PublicVehicleQuery } from '../domain/publicVehicle.js';
 
 // Never reuse the CRM's Vehicle select, filter builder, or serializer here.
@@ -69,9 +71,9 @@ export function publicVehicleOrder(
   return [orders[order], { id: 'asc' }];
 }
 
-function approvedPaths(row: PublicRow): string[] {
-  return [...new Set(row.publicPhotoPaths)]
-    .filter((path) => row.photos.includes(path) && isApprovedPhotoPath(row.id, path))
+export function approvedPaths(row: PublicRow): string[] {
+  return orderedPublicPhotos(row.photos, row.publicPhotoPaths)
+    .filter((path) => isApprovedPhotoPath(row.id, path))
     .slice(0, 20);
 }
 
@@ -227,10 +229,37 @@ export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
   }, { isolationLevel: 'RepeatableRead' });
 }
 
-export async function getPublicPhotoPath(db: PrismaClient, slug: string, index: number) {
-  const row = await db.vehicle.findFirst({
+const pendingPhotoAuthorizations = new WeakMap<PrismaClient, Map<string, Promise<string[] | null>>>();
+/** Share only a currently running query. Settled permissions are never cached.
+ * Later requests (including another wave from the same gallery) query again.
+ */
+function currentPublicPhotoPaths(db: PrismaClient, slug: string): Promise<string[] | null> {
+  let pending = pendingPhotoAuthorizations.get(db);
+  if (!pending) {
+    pending = new Map();
+    pendingPhotoAuthorizations.set(db, pending);
+  }
+  const existing = pending.get(slug);
+  if (existing) return existing;
+  // Defer invocation so even a synchronous client failure runs cleanup after set().
+  const request = Promise.resolve().then(() => db.vehicle.findFirst({
     where: { ...publicVehicleWhere(), publicSlug: slug },
     select: publicVehicleSelect,
+  })).then(row => row ? approvedPaths(row) : null).finally(() => {
+    pending.delete(slug);
   });
-  return row ? (approvedPaths(row)[index] ?? null) : null;
+  pending.set(slug, request);
+  return request;
+}
+
+export async function getPublicPhotoPath(db: PrismaClient, slug: string, index: number) {
+  const paths = await currentPublicPhotoPaths(db, slug);
+  return paths?.[index] ?? null;
+}
+
+export const publicPhotoVersion = (path:string) => createHash('sha256').update(path).digest('hex');
+/** Fresh permission snapshot for reusing already-downloaded public thumbnails, never Storage URLs. */
+export async function getPublicPhotoVersions(db:PrismaClient,slug:string){
+  const paths=await currentPublicPhotoPaths(db,slug);
+  return paths?paths.map(publicPhotoVersion):null;
 }

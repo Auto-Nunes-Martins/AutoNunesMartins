@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma, type PrismaClient } from '@prisma/client';
 vi.mock('../data/storage.js', () => ({
+  signedPhoto: vi.fn(async(path:string)=>({path,url:'signed:'+path})),
   createSignedReadUrls: vi.fn(
     async (paths: string[]) => new Map(paths.map((path) => [path, 'signed:' + path])),
   ),
@@ -105,9 +106,9 @@ describe('homepage editorial selection', () => {
     mock.vehicle.findMany.mockResolvedValue([{ ...fixture(), publicPhotoPaths: [photo] }]);
     expect((await readPublicHighlights(db)).items).toEqual([]);
   });
-  it('recomputes the public photo index when the approved gallery is reordered', async () => {
+  it('recomputes the independent homepage selection index when vehicle order changes', async () => {
     mock.vehicle.findMany.mockResolvedValue([
-      { ...fixture(), publicPhotoPaths: [otherPhoto, photo] },
+      { ...fixture(), photos:[otherPhoto,photo], publicPhotoPaths: [otherPhoto, photo] },
     ]);
     expect((await readPublicHighlights(db)).items[0]?.photoIndex).toBe(0);
   });
