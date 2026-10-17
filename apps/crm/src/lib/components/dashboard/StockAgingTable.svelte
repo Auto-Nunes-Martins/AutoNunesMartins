@@ -1,4 +1,5 @@
 <script lang="ts">
+ import {photoFallback} from "$lib/vehicleImage";
   import { crmPath } from '$lib/paths';
   import { Car, ChevronRight, Clock } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
@@ -86,7 +87,7 @@
                   >
                     {#if v.thumbnailUrl}
                       <img
-                        src={v.thumbnailUrl}
+                        src={v.thumbnailUrl} use:photoFallback={v.thumbnailOriginalUrl??v.thumbnailUrl}
                         alt={`${v.brand} ${v.model}`}
                         class="h-full w-full object-cover"
                         loading="lazy"

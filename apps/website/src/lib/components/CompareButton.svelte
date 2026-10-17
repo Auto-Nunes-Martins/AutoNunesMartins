@@ -8,7 +8,7 @@
 </script>
 
 <button type="button" class:selected disabled={!$ready} aria-pressed={selected}
-  aria-label={`${selected ? 'Remover' : 'Comparar'} ${name}${selected ? ' da comparação' : ''}`}
+  aria-label={`${selected ? 'Na comparação' : 'Comparar'}: ${name}${selected ? ' — remover da comparação' : ''}`}
   onclick={event => { event.stopPropagation(); comparison.toggle(id, name); }}>
   {selected ? 'Na comparação' : 'Comparar'}
   {#if selected}<Check size={15} strokeWidth={1.6} aria-hidden="true" />{:else}<Plus size={15} strokeWidth={1.6} aria-hidden="true" />{/if}

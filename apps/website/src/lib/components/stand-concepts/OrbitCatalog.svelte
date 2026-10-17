@@ -201,7 +201,7 @@
         aria-controls="catalog-filter-panel"
         onclick={() => (filtersOpen = !filtersOpen)}
       >
-        <SlidersHorizontal size={17} /> Filtros {active.length ? `(${active.length})` : ''}<span
+        <SlidersHorizontal size={17} aria-hidden="true" /> Filtros {active.length ? `(${active.length})` : ''}<span
           >{filtersOpen ? 'Fechar −' : 'Abrir +'}</span
         >
       </button>
@@ -263,7 +263,7 @@
             onChange={(value) => update('combustivel', value)}
           />
           <button class="apply-filters" type="submit" disabled={busy || inputErrors.length > 0}
-            >{busy ? 'A atualizar…' : `Ver ${results.total} ${results.total === 1 ? 'viatura' : 'viaturas'}`}<ArrowRight size={16} /></button
+            >{busy ? 'A atualizar…' : `Ver ${results.total} ${results.total === 1 ? 'viatura' : 'viaturas'}`}<ArrowRight size={16} aria-hidden="true" /></button
           >
         </form>
       </div>
@@ -305,7 +305,7 @@
           />
         </div>
       </div>
-      {#if active.length}<div class="active-filters" aria-label="Filtros selecionados">
+      {#if active.length}<div class="active-filters" role="group" aria-label="Filtros selecionados">
           {#each active as key}<button
               onclick={() => update(key, '')}
               aria-label={`Remover filtro ${filterLabels[key]}: ${filterValue(key)}`}
@@ -338,7 +338,7 @@
                     ? 'Experimente alargar o preço, o ano ou escolher outra marca.'
                     : 'A seleção aparece aqui após aprovação para o website.'}
             </p>
-            <button onclick={clear}>Limpar filtros <ArrowRight size={16} /></button>
+            <button onclick={clear}>Limpar filtros <ArrowRight size={16} aria-hidden="true" /></button>
           </div>{/each}
       </div>
     </section>
@@ -347,9 +347,9 @@
           {#if results.page > 1}<a
               href={catalogUrl(params, 'pagina', String(results.page - 1))}
               aria-label="Página anterior"
-              onclick={changePage}><ArrowLeft size={16} /><span>Anterior</span></a
+              onclick={changePage}><ArrowLeft size={16} aria-hidden="true" /><span>Anterior</span></a
             >{:else}<span class="disabled" aria-disabled="true"
-              ><ArrowLeft size={16} /><span>Anterior</span></span
+              ><ArrowLeft size={16} aria-hidden="true" /><span>Anterior</span></span
             >{/if}
           <div>
             {#each pageNumbers as number}<a
@@ -362,9 +362,9 @@
           {#if results.page < results.pages}<a
               href={catalogUrl(params, 'pagina', String(results.page + 1))}
               aria-label="Página seguinte"
-              onclick={changePage}><span>Seguinte</span><ArrowRight size={16} /></a
+              onclick={changePage}><span>Seguinte</span><ArrowRight size={16} aria-hidden="true" /></a
             >{:else}<span class="disabled" aria-disabled="true"
-              ><span>Seguinte</span><ArrowRight size={16} /></span
+              ><span>Seguinte</span><ArrowRight size={16} aria-hidden="true" /></span
             >{/if}
         </nav>{/if}
     </div>

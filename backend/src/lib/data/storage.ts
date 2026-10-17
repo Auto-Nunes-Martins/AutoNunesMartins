@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getEnv, getSupabaseServerKey } from '../../env.js';
+import { preferredVariantPath, readVariantManifest, variantPath, manifestPath, forgetPhotoVariants } from '../server/photoVariants.js';
 
 let cached: SupabaseClient | null = null;
 
@@ -55,7 +56,8 @@ export function invalidateSignedReadUrl(path: string): void {
   signedUrlCache.delete(path);
 }
 
-export async function createSignedReadUrl(path: string, _expiresInSeconds = 3600): Promise<string> {
+export async function createSignedReadUrl(path: string, _expiresInSeconds = 3600, width?: number): Promise<string> {
+  if(width)path=await preferredVariantPath(path,width);
   const hit = cacheGet(path);
   if (hit) return hit;
   const supabase = getSupabase();
@@ -74,7 +76,14 @@ export async function createSignedReadUrl(path: string, _expiresInSeconds = 3600
 export async function createSignedReadUrls(
   paths: string[],
   _expiresInSeconds = 3600,
+  width?: number,
 ): Promise<Map<string, string>> {
+  if(width){
+    const selected=new Map<string,string>();
+    for(let i=0;i<paths.length;i+=4)await Promise.all(paths.slice(i,i+4).map(async path=>selected.set(path,await preferredVariantPath(path,width))));
+    const signed=await createSignedReadUrls([...new Set(selected.values())]);
+    return new Map(paths.flatMap(path=>signed.has(selected.get(path)!)?[[path,signed.get(selected.get(path)!)!]]:[]));
+  }
   const out = new Map<string, string>();
   if (paths.length === 0) return out;
 
@@ -101,11 +110,20 @@ export async function createSignedReadUrls(
   return out;
 }
 
+export async function signedPhoto(path:string) {
+  const manifest=await readVariantManifest(path);
+  const parts=manifest?.variants??[];
+  const urls=await createSignedReadUrls([path,...parts.map(v=>variantPath(path,v.width))]);
+  return {path,url:urls.get(path)!,width:manifest?.width,height:manifest?.height,variants:parts.map(v=>({width:v.width,height:v.height,url:urls.get(variantPath(path,v.width))!})).filter(v=>v.url)};
+}
+
 export async function deleteObjects(paths: string[]) {
   if (paths.length === 0) return;
   const supabase = getSupabase();
-  const { error } = await supabase.storage.from(getBucketName()).remove(paths);
+  const all=paths.flatMap(path=>{try{return [path,...[320,800,1600,2560].map(w=>variantPath(path,w)),manifestPath(path)];}catch{return [path];}});
+  const { error } = await supabase.storage.from(getBucketName()).remove(all);
   if (error) throw error;
   // Drop cached URLs for deleted objects so we don't serve dead links.
-  for (const p of paths) invalidateSignedReadUrl(p);
+  for (const p of all) invalidateSignedReadUrl(p);
+  for (const p of paths) forgetPhotoVariants(p);
 }

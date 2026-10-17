@@ -25,7 +25,7 @@
         <div class="conversation">
           <p class="description">{person.text}</p>
           {#if person.phone || person.email}
-            <div class="contacts" aria-label={'Contactos de ' + person.name}>
+            <div class="contacts" role="group" aria-label={'Contactos de ' + person.name}>
               {#if person.phone}
                 <a
                   href={'tel:' + person.phone.international}

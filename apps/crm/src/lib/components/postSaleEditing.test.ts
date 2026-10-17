@@ -13,7 +13,7 @@ function component(source: string, imports: Record<string, unknown> = {}) {
     )
     .replace(/^import (\w+) from '[^']+';/gm, 'const $1 = imports.$1;')
     .replace(
-      /^import \{ ([^}]+) \} from '[^']+';/gm,
+      /^import\s*\{\s*([^}]+)\s*\}\s*from '[^']+';/gm,
       (_line, names: string) => `const { ${names.replace(/\bas\b/g, ':')} } = imports;`,
     )
     .replace('export default function', 'return function');
@@ -29,9 +29,10 @@ const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page
   Panel,
   ItalicHero: Empty,
   PhotoGallery: Empty,
-  WebPublicationPanel: Empty,
+  WebPublicationPanel: component('<script>let {vehicleDetails}=$props();</script>{@render vehicleDetails?.()}'),
   Trash2: Empty,
   untrack: (fn: () => unknown) => fn(),
+  onMount: () => {},
 });
 
 describe('post-sale vehicle editing UI', () => {
@@ -40,6 +41,7 @@ describe('post-sale vehicle editing UI', () => {
     (status) => {
       const vehicle = {
         id: 'vehicle',
+        photos: [],
         brand: 'BMW',
         model: 'One',
         year: 2020,

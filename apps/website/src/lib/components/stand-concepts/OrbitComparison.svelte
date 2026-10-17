@@ -1,4 +1,5 @@
 <script lang="ts">
+ import {sizedPhoto,vehiclePhotoSet} from "$lib/vehiclePhotoSources";
   import { vehiclePhoto } from '$lib/vehiclePhoto';
   import { catalogPlaceholder } from '$lib/localAssets';
   import { page } from '$app/stores';
@@ -63,7 +64,7 @@
 </svelte:head>
 
 <main class="comparison-page" class:empty-selection={!$ready || !$ids.length}>
-  <a class="back" href="/viaturas"><ArrowLeft size={16} aria-hidden="true" /> Viaturas</a>
+  <nav class="back-nav" aria-label="Voltar à lista de viaturas"><a class="back" href="/viaturas"><ArrowLeft size={16} aria-hidden="true" /> Viaturas</a></nav>
   <header class="page-heading">
     <h1 bind:this={heading} tabindex="-1">Comparar viaturas<span>.</span></h1>
     {#if $ready && $ids.length}
@@ -97,7 +98,7 @@
         </select>
       </div>
     {/if}
-    <div class="comparison-board" class:single={visible.length === 1}>
+    <div class="comparison-board" class:single={visible.length === 1} class:pair={visible.length === 2} class:triple={visible.length === 3}>
       <table>
         <caption class="sr-only">Comparação de {visible.map(name).join(' e ')}</caption>
         <thead>
@@ -106,7 +107,7 @@
               <td>
                 <div class="vehicle-photo">
                   {#if entry.vehicle}
-                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><img use:vehiclePhoto={{ src: entry.vehicle.photos.length ? publicPhoto(entry.id, 0) : catalogPlaceholder }} src={entry.vehicle.photos.length ? publicPhoto(entry.id, 0) : catalogPlaceholder} alt={entry.vehicle.photos.length ? name(entry) : `Fotografia indisponível: ${name(entry)}`} width="480" height="320" /></a>
+                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><img use:vehiclePhoto={{ src: entry.vehicle.photos.length ? sizedPhoto(publicPhoto(entry.id, 0),800) : catalogPlaceholder, srcset: entry.vehicle.photos.length ? vehiclePhotoSet(publicPhoto(entry.id,0)) : undefined }} src={entry.vehicle.photos.length ? sizedPhoto(publicPhoto(entry.id, 0),800) : catalogPlaceholder} srcset={entry.vehicle.photos.length ? vehiclePhotoSet(publicPhoto(entry.id,0)) : undefined} sizes="(max-width:700px) 90vw, 560px" alt={entry.vehicle.photos.length ? name(entry) : `Fotografia indisponível: ${name(entry)}`} width="480" height="320" /></a>
                   {:else}<div class="missing-photo"><img src={catalogPlaceholder} alt="Fotografia indisponível" width="480" height="320" /></div>{/if}
                   <button class="remove" type="button" aria-label={`Remover ${name(entry)} da comparação`} onclick={() => remove(entry)}><X size={18} aria-hidden="true" /></button>
                 </div>
@@ -131,7 +132,7 @@
         </thead>
         {#each facts as row, index}
           <tbody class="fact-group">
-            <tr><th class="fact-label" id={`fact-${index}`} colspan={visible.length}>{row.label}</th></tr>
+            <tr><th class="fact-label" id={`fact-${index}`} colspan={visible.length}><span>{row.label}</span></th></tr>
             <tr>
               {#each visible as entry (entry.id)}
                 <td class="fact-value" class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'} headers={`vehicle-${entry.id} fact-${index}`}>{entry.vehicle ? row.value(entry.vehicle) : 'Indisponível'}</td>
@@ -157,34 +158,38 @@
   button { cursor: pointer; }
   a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
   h1:focus { outline: none; }
+  .back-nav {display:block;}
   .back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; color: var(--muted); }
-  .page-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin: 20px 0 40px; }
-  h1 { font-size: clamp(36px, 4.3vw, 62px); font-weight: 500; letter-spacing: -.055em; line-height: 1.06; margin: 0; }
+  .page-heading { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 24px; margin: 16px 0 26px; }
+  h1 { font-size: clamp(34px, 3.5vw, 48px); font-weight: 500; letter-spacing: -.055em; line-height: 1.06; margin: 0; }
   h1 > span { color: var(--red); }
   .actions { display: flex; align-items: center; gap: 20px; }
   .add, .primary { display: inline-flex; align-items: center; justify-content: center; gap: 20px; min-height: 46px; padding: 12px 22px; border-radius: 30px; font-size: 14px; background: var(--text); color: var(--bg); }
   .clear { border: 0; background: none; min-height: 44px; padding: 8px; font-size: 14px; color: var(--muted); }
   .clear:hover { color: var(--text); }
-  .comparison-board { position: relative; }
+  .comparison-board { position: relative; max-width:1200px; margin-inline:0; }
   table { width: calc(100% + 32px); margin-inline: -16px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
   td, th { min-width: 0; text-align: left; vertical-align: top; font-weight: 400; }
   .photo-row td, .summary-row th, .fact-value { padding-inline: 16px; }
   .vehicle-photo { position: relative; overflow: hidden; border-radius: 5px; background: var(--surface); }
   .vehicle-photo a { display: block; }
-  .vehicle-photo img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
+  .vehicle-photo img { display: block; width: 100%; height: clamp(150px,12vw,210px); object-fit: cover; }
   .remove { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border: 1px solid var(--line); background: var(--bg); color: var(--text); display: grid; place-items: center; border-radius: 50%; }
-  .summary-row th { padding-block: 22px 28px; position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); }
-  .brand { display: block; color: var(--muted); font-size: 14px; margin-bottom: 7px; }
-  h2 { margin: 0; font-size: clamp(23px, 2.5vw, 36px); line-height: 1.15; font-weight: 500; letter-spacing: -.045em; overflow-wrap: anywhere; }
+  .summary-row th { padding-block: 14px 18px; position: sticky; top:var(--nav-visible-height,80px); z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .brand { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  h2 { margin: 0; font-size: clamp(21px, 2vw, 28px); line-height: 1.15; font-weight: 500; letter-spacing: -.045em; overflow-wrap: anywhere; }
   .summary-row h2 { min-height: 2.3em; }
-  .price { display: block; margin-top: 18px; font-size: clamp(21px, 2vw, 28px); font-weight: 500; letter-spacing: -.035em; }
-  .detail-link { display: inline-flex; align-items: center; gap: 12px; font-size: 14px; min-height: 44px; margin-top: 10px; }
-  .fact-label { padding: 20px 0 8px; color: var(--muted); font-size: 14px; text-align: center; }
-  .fact-value { padding-block: 0 22px; border-bottom: 1px solid var(--line); font-size: 18px; line-height: 1.55; text-align: center; overflow-wrap: anywhere; }
+  .price { display: block; margin-top: 10px; font-size: clamp(20px, 1.7vw, 24px); font-weight: 500; letter-spacing: -.035em; }
+  .detail-link { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; min-height: 44px; margin-top: 4px; }
+  .fact-label { padding: 12px 16px 4px; color: var(--muted); font-size: 12px; text-align: left; }
+  /* Preserve the attribute's middle lane while aligning its text to the lane's start. */
+  .pair .fact-label {padding-left:calc(50% - 64px);}
+  .triple .fact-label {padding-left:calc(100% / 3 + 16px);}
+  .fact-value { padding-block: 0 12px; border-bottom: 1px solid var(--line); font-size: 16px; line-height: 1.45; text-align: left; vertical-align:middle; font-variant-numeric:tabular-nums; overflow-wrap: anywhere; }
   .fact-value + .fact-value { border-left: 1px solid var(--line); }
   .fact-value.missing { color: var(--muted); font-size: 15px; }
   .single { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-  .second-option { align-self: start; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; aspect-ratio: 3 / 2; min-height: 160px; border: 1px dashed var(--line); border-radius: 5px; color: var(--muted); font-size: 16px; }
+  .second-option { align-self: start; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 16px; padding:20px; box-sizing:border-box; height:clamp(150px,12vw,210px); min-height:150px; border: 1px dashed var(--line); border-radius: 5px; color: var(--muted); font-size: 14px; }
   .second-option :global(svg) { color: var(--red); }
   .pair-picker { display: grid; gap: 8px; margin-bottom: 22px; }
   .pair-picker label { color: var(--muted); font-size: 14px; }
@@ -208,27 +213,30 @@
   @media (prefers-reduced-motion: no-preference) { .add, .primary, .remove { transition: background-color 180ms ease, color 180ms ease; } }
   @media (max-width: 700px) {
     .comparison-page { padding: 14px 0 64px; }
-    .page-heading { margin: 14px 0 26px; gap: 20px; }
+    .page-heading { margin: 12px 0 20px; gap: 14px; }
     h1 { font-size: clamp(34px, 8.5vw, 44px); }
-    .actions { width: 100%; justify-content: space-between; gap: 12px; }
+    .actions { width: 100%; justify-content: flex-start; gap: 12px; }
     .add { min-height: 44px; padding: 10px 18px; }
     .photo-row td, .summary-row th, .fact-value { padding-inline: 8px; }
     table { width: calc(100% + 16px); margin-inline: -8px; }
     .vehicle-photo { border-radius: 3px; }
     .remove { top: 5px; right: 5px; width: 36px; height: 36px; }
     .remove::before { content: ''; position: absolute; inset: -4px; }
-    .summary-row th { padding-block: 16px 18px; }
+    .vehicle-photo img {height:clamp(100px,28vw,150px);}
+    .summary-row th { padding-block: 12px 14px; }
     .brand { font-size: 13px; margin-bottom: 6px; }
     h2 { font-size: clamp(18px, 4.8vw, 23px); line-height: 1.15; }
-    .price { font-size: clamp(18px, 4.8vw, 23px); margin-top: 14px; }
+    .price { font-size: clamp(18px, 4.8vw, 23px); margin-top: 8px; }
     .detail-link { gap: 8px; font-size: 13px; margin-top: 4px; }
-    .fact-label { font-size: 14px; padding-top: 18px; }
-    .fact-value { font-size: 16px; padding-bottom: 18px; line-height: 1.5; }
+    .fact-label { font-size: 12px; padding-top: 10px; }
+    .single .fact-label {padding-inline:8px;}
+    .pair .fact-label {padding-left:calc(50% - 48px);}
+    .fact-value { font-size: 15px; padding-bottom: 10px; line-height: 1.45; }
     .fact-value.missing { font-size: 14px; }
     .single { display: flex; flex-direction: column; gap: 24px; }
     .single table { max-width: none; }
     .single .vehicle-photo { max-width: 440px; }
-    .single .second-option { order: -1; flex-direction: row; aspect-ratio: auto; min-height: 60px; width: 100%; font-size: 14px; gap: 12px; }
+    .single .second-option { order: -1; flex-direction: row; align-items:center; justify-content:flex-start; padding:12px 16px; height:auto; min-height: 52px; width: 100%; font-size: 14px; gap: 12px; }
     .empty { padding-block: 24px 36px; }
     .empty h2 { font-size: 28px; }
     .data-note, .storage-note { font-size: 13px; }

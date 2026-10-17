@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../db.js';
+import { vehiclePrincipalPath } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { taskAttentionWhere } from '../data/task.js';
 import { appSettings } from '../data/appSettings.js';
 import { createSignedReadUrls } from '../data/storage.js';
@@ -59,6 +60,7 @@ export interface StockAgedRow {
   mileage: number;
   salePrice: string | null;
   thumbnailUrl: string | null;
+  thumbnailOriginalUrl?: string | null;
   daysInStock: number;
 }
 
@@ -311,19 +313,22 @@ async function loadStockAged(now: Date): Promise<StockAgedRow[]> {
       salePrice: true,
       acquisitionDate: true,
       photos: true,
+      publicPhotoPaths:true,
+      webPublished:true,
     },
   });
 
-  const paths = rows.map((r) => r.photos[0]).filter((p): p is string => Boolean(p));
+  const paths = rows.map(vehiclePrincipalPath).filter((p): p is string => Boolean(p));
   let signed = new Map<string, string>();
   if (paths.length > 0) {
     try {
-      signed = await createSignedReadUrls(paths, 3600);
+      signed = await createSignedReadUrls(paths, 3600, 320);
     } catch (err) {
       logger.warn({ err }, 'Failed to batch-sign stock-aged thumbnails');
     }
   }
 
+  const originalUrls=await createSignedReadUrls(paths).catch(()=>new Map<string,string>());
   return rows.map((r) => ({
     id: r.id,
     brand: r.brand,
@@ -333,7 +338,8 @@ async function loadStockAged(now: Date): Promise<StockAgedRow[]> {
     licensePlate: r.licensePlate,
     mileage: r.mileage,
     salePrice: r.salePrice?.toString() ?? null,
-    thumbnailUrl: r.photos[0] ? (signed.get(r.photos[0]) ?? null) : null,
+    thumbnailUrl: vehiclePrincipalPath(r) ? (signed.get(vehiclePrincipalPath(r)!) ?? null) : null,
+    thumbnailOriginalUrl: vehiclePrincipalPath(r) ? (originalUrls.get(vehiclePrincipalPath(r)!) ?? null) : null,
     daysInStock: Math.floor((now.getTime() - r.acquisitionDate.getTime()) / MS_PER_DAY),
   }));
 }

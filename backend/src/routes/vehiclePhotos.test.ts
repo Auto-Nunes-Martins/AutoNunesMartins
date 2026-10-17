@@ -244,6 +244,16 @@ const remove = (photo: string) =>
   });
 
 describe('photo HTTP contract and storage boundary', () => {
+  it.each([2, 20])('prepares a private edit upload without associating/approving it, even with %i existing photos', async count => {
+    const previous = Array.from({ length: count }, (_, index) => `${id}/existing-${index}.jpg`);
+    rows.set(id, previous);
+    const input = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } }).jpeg().toBuffer();
+    const response = await fetch(base, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-edit-stage': 'true', 'x-upload-id': '12345678-1234-4234-8234-123456789abc' }, body: input });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({ path: `${id}/12345678-1234-4234-8234-123456789abc.jpg`, staged: true });
+    expect(rows.get(id)).toEqual(previous); expect(publicRows.get(id)).toEqual([a, b]);
+    expect(mocks.vehicle.updateMany).not.toHaveBeenCalled();
+  });
   it('rejects legacy path persistence and signed URLs so the pipeline cannot be bypassed', async () => {
     expect((await post({ path: c })).status).toBe(415);
     expect(

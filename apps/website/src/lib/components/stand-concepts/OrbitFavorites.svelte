@@ -53,19 +53,21 @@
   {:else}
     <div class="toolbar"><p>{$ids.length} {$ids.length === 1 ? 'viatura guardada' : 'viaturas guardadas'}</p><button type="button" onclick={() => remove()}>Limpar favoritos</button></div>
     {#if loading}<p role="status" class="loading">A consultar os dados atuais…</p>{/if}
-    {#if entries.some(entry => entry.status === 503)}<div class="retry"><p>Alguns dados estão temporariamente indisponíveis.</p><button type="button" onclick={() => refresh += 1}><RotateCcw size={16} /> Tentar novamente</button></div>{/if}
+    {#if entries.some(entry => entry.status === 503)}<div class="retry"><p>Alguns dados estão temporariamente indisponíveis.</p><button type="button" onclick={() => refresh += 1}><RotateCcw size={16} aria-hidden="true" /> Tentar novamente</button></div>{/if}
+    <h2 class="sr-only">Viaturas guardadas</h2>
     <div class="favorites-grid">
       {#each entries as entry, index (entry.id)}
         {#if entry.vehicle}{@render card(publicCard(entry.vehicle), index)}
         {:else}<article class="unavailable"><Heart size={28} strokeWidth={1.2} aria-hidden="true" /><h2>{entry.status === 404 ? 'Já não está publicada.' : 'Dados por atualizar.'}</h2><p>{entry.status === 404 ? 'Esta viatura deixou de estar disponível no catálogo. Pode removê-la dos favoritos.' : 'O favorito está guardado. Tente consultar os dados novamente.'}</p><button type="button" onclick={() => remove(entry.id)}>Remover dos favoritos</button></article>{/if}
       {/each}
     </div>
-    {#if pages > 1}<nav class="pagination" aria-label="Paginação de favoritos"><button type="button" disabled={currentPage === 1} onclick={() => changePage(currentPage - 1)}><ArrowLeft size={16} /> Anterior</button><span>{currentPage} / {pages}</span><button type="button" disabled={currentPage === pages} onclick={() => changePage(currentPage + 1)}>Seguinte <ArrowRight size={16} /></button></nav>{/if}
+    {#if pages > 1}<nav class="pagination" aria-label="Paginação de favoritos"><button type="button" disabled={currentPage === 1} onclick={() => changePage(currentPage - 1)}><ArrowLeft size={16} aria-hidden="true" /> Anterior</button><span>{currentPage} / {pages}</span><button type="button" disabled={currentPage === pages} onclick={() => changePage(currentPage + 1)}>Seguinte <ArrowRight size={16} aria-hidden="true" /></button></nav>{/if}
     <p class="note">Guardados apenas neste navegador. Limpar os dados do navegador remove a seleção. Os detalhes são consultados no catálogo atual.</p>
   {/if}
   <p class="storage-note">As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer momento. <a href="/politica-de-privacidade#escolhas">Política de privacidade</a></p>
 </main>
 <style>
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
   .empty-selection { box-sizing: border-box; min-height: calc(100svh + clamp(32px, 6svh, 72px)); }
   .favorites-page { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: 46px 0 104px; color: var(--text); }
   a { color: inherit; text-decoration: none; }

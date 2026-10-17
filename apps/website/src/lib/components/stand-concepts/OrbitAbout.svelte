@@ -29,9 +29,9 @@
       <p class="hero-intro">{content.introduction}</p>
       <div class="hero-actions">
         <button class="action primary" onclick={onContact}
-          >Vamos conversar <ArrowUpRight size={18} /></button
+          >Vamos conversar <ArrowUpRight size={18} aria-hidden="true" /></button
         >
-        <a class="text-link" href="#a-nossa-historia">Conheça-nos melhor <ArrowDown size={17} /></a>
+        <a class="text-link" href="#a-nossa-historia">Conheça-nos melhor <ArrowDown size={17} aria-hidden="true" /></a>
       </div>
     </div>
     <figure class="hero-photo">
@@ -100,7 +100,7 @@
         {#each content.approach.paragraphs as paragraph}<p>{paragraph}</p>{/each}
       </div>
       <a class="text-link" href="/viaturas"
-        >Conheça a nossa seleção <ArrowUpRight size={19} /></a
+        >Conheça a nossa seleção <ArrowUpRight size={19} aria-hidden="true" /></a
       >
     </div>
   </section>

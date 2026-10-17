@@ -1,4 +1,5 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
+import { ensurePhotoVariants } from '../lib/server/photoVariants.js';
 import express from 'express';
 import {
   optimizePhoto,
@@ -8,11 +9,12 @@ import {
   MAX_OUTPUT_BYTES,
 } from '../lib/server/photoOptimization.js';
 import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { Router, type Response, type Request, type NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import {
-  createSignedReadUrl,
+  signedPhoto,
   deleteObjects,
   getSupabase,
   getBucketName,
@@ -55,7 +57,18 @@ router.post('/', requireUser, (req, res, next) => {
         select: { photos: true },
       });
       if (!vehicle) throw new PhotoMutationError(404, 'Vehicle not found');
-      if (vehicle.photos.length >= MAX_PHOTOS)
+      const uploadId = req.get('x-upload-id');
+      const staged = req.get('x-edit-stage') === 'true';
+      if (staged && !uploadId) throw new PhotoUploadError(400, 'Identificador de carregamento obrigatório.');
+      if (uploadId && !z.string().uuid().safeParse(uploadId).success)
+        throw new PhotoUploadError(400, 'Identificador de carregamento inválido.');
+      const repeated = uploadId && vehicle.photos.find(path => path.startsWith(`${vehicleId}/${uploadId}.`));
+      if (repeated) {
+        req.resume();
+        res.status(201).json({ photos: vehicle.photos, path: repeated, reused: true });
+        return;
+      }
+      if (!staged && vehicle.photos.length >= MAX_PHOTOS)
         throw new PhotoMutationError(400, 'Máximo de 20 fotos por viatura.');
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(req.headers['content-type'] || ''))
         throw new PhotoUploadError(415, 'Formato inválido.');
@@ -71,16 +84,28 @@ router.post('/', requireUser, (req, res, next) => {
       const photo = await optimizePhoto(req.body as Buffer);
       if (photo.buffer.length > MAX_OUTPUT_BYTES)
         throw new PhotoUploadError(422, 'A fotografia otimizada excede o limite de 2 MB.');
-      const path = vehicleId + '/' + randomUUID() + '.' + photo.extension;
+      const path = vehicleId + '/' + (uploadId ?? randomUUID()) + '.' + photo.extension;
       const { error } = await getSupabase()
         .storage.from(getBucketName())
         .upload(path, photo.buffer, { contentType: photo.contentType, upsert: false });
-      if (error) throw new PhotoUploadError(502, 'Não foi possível guardar a fotografia.');
+      if (error && uploadId) {
+        // A retry can reuse this exact immutable private object, without associating it.
+        const previous = await getSupabase().storage.from(getBucketName()).download(path);
+        if (previous.error || !previous.data || previous.data.size > MAX_OUTPUT_BYTES ||
+          createHash('sha256').update(Buffer.from(await previous.data.arrayBuffer())).digest('hex') !== createHash('sha256').update(photo.buffer).digest('hex'))
+          throw new PhotoUploadError(502, 'Não foi possível preparar a fotografia.');
+      } else if (error) throw new PhotoUploadError(502, 'Não foi possível guardar a fotografia.');
+      try { await ensurePhotoVariants(path,photo.buffer); }
+      catch { throw new PhotoUploadError(502,'Não foi possível preparar os tamanhos da fotografia. Tente guardar novamente.'); }
+      if (staged) {
+        res.status(201).json({ path, staged: true, bytes: photo.buffer.length, optimized: photo.optimized });
+        return;
+      }
       try {
         const result = await mutateVehiclePhotos(prisma, vehicleId, { type: 'append', path });
         res
           .status(201)
-          .json({ photos: result.photos, bytes: photo.buffer.length, optimized: photo.optimized });
+          .json({ photos: result.photos, path, bytes: photo.buffer.length, optimized: photo.optimized });
       } catch (error) {
         // Never delete a possibly committed photo after an uncertain database response.
         try {
@@ -171,10 +196,7 @@ router.get(
     }
 
     const signed = await Promise.all(
-      vehicle.photos.map(async (path) => ({
-        path,
-        url: await createSignedReadUrl(path, 3600),
-      })),
+      vehicle.photos.map(path=>signedPhoto(path)),
     );
     res.json({ photos: signed });
   }),

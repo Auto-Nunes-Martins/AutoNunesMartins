@@ -83,7 +83,7 @@
         <div class="review-content">
         <div class="review-header">
           <div class="review-top">
-            <span class="stars" aria-label={`Avaliação fictícia: ${review.rating} de 5 estrelas`}>{'★'.repeat(review.rating)}<span class="empty">{'☆'.repeat(5 - review.rating)}</span></span>
+            <span class="stars" role="img" aria-label={`Avaliação fictícia: ${review.rating} de 5 estrelas`}>{'★'.repeat(review.rating)}<span class="empty">{'☆'.repeat(5 - review.rating)}</span></span>
             <span class="quote" aria-hidden="true">“</span>
           </div>
           <div class="review-person">

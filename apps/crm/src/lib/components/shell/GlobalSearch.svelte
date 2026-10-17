@@ -1,371 +1,131 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { goto } from '$app/navigation';
+  import { onMount, onDestroy } from 'svelte';
   import { X } from 'lucide-svelte';
   import BrandSearch from '$lib/components/brand/icons/BrandSearch.svelte';
-  import BrandCar from '$lib/components/brand/icons/BrandCar.svelte';
-  import BrandDeal from '$lib/components/brand/icons/BrandDeal.svelte';
-  import BrandUsers from '$lib/components/brand/icons/BrandUsers.svelte';
-
-  interface Hit {
-    id: string;
-    primary: string;
-    secondary: string | null;
-    href: string;
+  import { searchShortcuts, safeSearchHit, rememberSearchHit, type SearchHit } from './searchNavigation';
+  let { userKey = '', autofocus = false, recentHits = $bindable<SearchHit[]>([]) }: { userKey?: string; autofocus?: boolean; recentHits?: SearchHit[] } = $props();
+  type Payload = { vehicles: SearchHit[]; customers: SearchHit[]; tasks: SearchHit[]; total: number };
+  let query = $state(''), open = $state(false), loading = $state(false), error = $state('');
+  let results = $state<Payload | null>(null), activeIndex = $state(-1);
+  let loadedUserKey: string | undefined;
+  let inputEl: HTMLInputElement, containerEl: HTMLDivElement;
+  let listEl = $state<HTMLDivElement>(undefined!);
+  const uid = $props.id(), listId = uid + '-results';
+  const cache = new Map<string, Payload>();
+  let debounce: ReturnType<typeof setTimeout> | undefined, controller: AbortController | undefined, generation = 0;
+  const needle = $derived(query.trim());
+  const groups = $derived(needle ? results ? [
+    { label: 'Viaturas', hits: results.vehicles }, { label: 'Clientes', hits: results.customers }, { label: 'Tarefas', hits: results.tasks },
+  ].filter(group => group.hits.length) : [] : [
+    ...(recentHits.length ? [{ label: 'Recentes nesta sessão', hits: recentHits }] : []), { label: 'Acesso rápido', hits: searchShortcuts },
+  ]);
+  const flat = $derived(groups.flatMap(group => group.hits));
+  function cancelRequest() { clearTimeout(debounce); controller?.abort(); generation += 1; loading = false; }
+  function close() { open = false; cancelRequest(); activeIndex = -1; }
+  function clear() { cancelRequest(); query = ''; results = null; error = ''; activeIndex = -1; open = true; inputEl?.focus(); }
+  async function search(value: string) {
+    const current = ++generation;
+    controller?.abort(); controller = new AbortController(); const signal = controller.signal;
+    const cached = cache.get(value); results = cached ?? null; loading = true; error = '';
+    try {
+      const response = await fetch(crmPath(`/api/search?q=${encodeURIComponent(value)}&limit=5`), { signal, headers: { accept: 'application/json' } });
+      if (!response.ok) throw new Error('Pesquisa indisponível. Tente novamente.');
+      const data = await response.json() as Payload;
+      if (signal.aborted || current !== generation || value !== query.trim()) return;
+      if (![data.vehicles, data.customers, data.tasks].every(Array.isArray)) throw new Error('Resposta de pesquisa inválida.');
+      results = { ...data, vehicles: data.vehicles.filter(safeSearchHit), customers: data.customers.filter(safeSearchHit), tasks: data.tasks.filter(safeSearchHit) };
+      cache.delete(value); cache.set(value, results); if (cache.size > 50) cache.delete(cache.keys().next().value!);
+      activeIndex = -1;
+    } catch (failure) {
+      if (signal.aborted || current !== generation) return;
+      results = null; error = failure instanceof Error ? failure.message : 'Pesquisa indisponível.';
+    } finally { if (current === generation) loading = false; }
   }
-  interface SearchPayload {
-    q: string;
-    vehicles: Hit[];
-    customers: Hit[];
-    tasks: Hit[];
-    total: number;
+  function onInput(event?: Event) {
+    if (event?.currentTarget instanceof HTMLInputElement) query = event.currentTarget.value;
+    cancelRequest(); activeIndex = -1; results = null; error = ''; open = true;
+    const value = query.trim();
+    if (value) { loading = true; debounce = setTimeout(() => { void search(value); }, 180); }
   }
-
-  // ─── Local state ────────────────────────────────────────────────────────
-  let query = $state('');
-  let open = $state(false);
-  let loading = $state(false);
-  let results = $state<SearchPayload | null>(null);
-  let activeIndex = $state(-1);
-
-  let inputEl = $state<HTMLInputElement | null>(null);
-  let containerEl = $state<HTMLDivElement | null>(null);
-
-  // Flat list of hits in display order, used for keyboard navigation.
-  const flat = $derived<Hit[]>(
-    results
-      ? [...results.vehicles, ...results.customers, ...results.tasks]
-      : [],
-  );
-
-  // ─── Client-side LRU cache ──────────────────────────────────────────────
-  // Map<query → SearchPayload>. Insertion order = recency. When we hit the
-  // size limit, drop the oldest. Repeat queries (very common: typing "Da"
-  // → "Dac" → "Dacia" then backspacing back to "Da") render instantly from
-  // cache while a fresh network request runs in the background.
-  const CACHE_MAX = 50;
-  const cache = new Map<string, SearchPayload>();
-  function cacheGet(q: string): SearchPayload | undefined {
-    const hit = cache.get(q);
-    if (hit) {
-      // Touch (reinsert) for LRU ordering
-      cache.delete(q);
-      cache.set(q, hit);
+  async function pick(hit: SearchHit) {
+    if (!safeSearchHit(hit)) return;
+    close();
+    try { await goto(crmPath(hit.href)); const target = new URL(crmPath(hit.href), location.origin); if (location.pathname + location.search === target.pathname + target.search) { if (hit.id !== 'query') recentHits = rememberSearchHit(recentHits, hit); query = ''; results = null; } }
+    catch { /* The unsaved-changes guard can cancel navigation; keep the typed query. */ }
+  }
+  function keydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault(); open = true;
+      activeIndex = event.key === 'ArrowDown' ? Math.min(flat.length - 1, activeIndex + 1) : activeIndex < 0 ? flat.length - 1 : Math.max(0, activeIndex - 1);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (open && flat[activeIndex]) void pick(flat[activeIndex]!);
+      else if (needle) void pick({ id: 'query', primary: needle, secondary: 'Pesquisa no stock', href: `/viaturas?q=${encodeURIComponent(needle)}` });
     }
-    return hit;
   }
-  function cacheSet(q: string, p: SearchPayload) {
-    if (cache.has(q)) cache.delete(q);
-    cache.set(q, p);
-    if (cache.size > CACHE_MAX) {
-      const oldest = cache.keys().next().value;
-      if (oldest) cache.delete(oldest);
-    }
-  }
-
-  // ─── Debounced fetch ────────────────────────────────────────────────────
-  // 50ms is fast enough to feel instant on a keystroke while still
-  // collapsing rapid-fire characters into a single request.
-  const DEBOUNCE_MS = 50;
-  // Don't show the "A pesquisar…" spinner if the request resolves within
-  // this window — avoids a loading-flash for warm/cached responses.
-  const LOADING_FLASH_DELAY_MS = 180;
-
-  let inflight: AbortController | null = null;
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  let loadingTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function fetchResults(q: string) {
-    const needle = q.trim();
-    if (needle.length === 0) {
-      results = null;
-      loading = false;
-      if (loadingTimer) clearTimeout(loadingTimer);
-      return;
-    }
-
-    // Optimistic render from cache — keep showing whatever the user can act
-    // on immediately, even while we revalidate in the background.
-    const cached = cacheGet(needle);
-    if (cached) {
-      results = cached;
-      activeIndex = cached.total > 0 ? 0 : -1;
-    }
-
-    if (inflight) inflight.abort();
-    const ctrl = new AbortController();
-    inflight = ctrl;
-
-    if (loadingTimer) clearTimeout(loadingTimer);
-    if (!cached) {
-      // Only show the spinner if there's nothing else to show. Even then,
-      // delay it slightly so warm responses don't flicker the chrome.
-      loadingTimer = setTimeout(() => {
-        if (!ctrl.signal.aborted) loading = true;
-      }, LOADING_FLASH_DELAY_MS);
-    }
-
-    fetch(crmPath(`/api/search?q=${encodeURIComponent(needle)}&limit=5`), {
-      signal: ctrl.signal,
-      headers: { accept: 'application/json' },
-    })
-      .then((r) => r.json() as Promise<SearchPayload>)
-      .then((data) => {
-        cacheSet(needle, data);
-        results = data;
-        loading = false;
-        if (loadingTimer) clearTimeout(loadingTimer);
-        // Preserve highlight position when possible; otherwise reset to top.
-        if (activeIndex < 0 || activeIndex >= data.total) {
-          activeIndex = data.total > 0 ? 0 : -1;
-        }
-      })
-      .catch((err: unknown) => {
-        if ((err as { name?: string }).name === 'AbortError') return;
-        loading = false;
-        if (loadingTimer) clearTimeout(loadingTimer);
-      });
-  }
-
-  function onInput() {
-    open = true;
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => fetchResults(query), DEBOUNCE_MS);
-  }
-
-  function clear() {
-    query = '';
-    results = null;
-    activeIndex = -1;
-    inputEl?.focus();
-  }
-
-  function pick(hit: Hit) {
-    open = false;
-    query = '';
-    results = null;
-    activeIndex = -1;
-    goto(crmPath(hit.href));
-  }
-
-  // ─── Keyboard handling ──────────────────────────────────────────────────
-  function onKeydown(e: KeyboardEvent) {
-    if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-      open = true;
-      return;
-    }
-    if (e.key === 'Escape') {
-      if (query) {
-        clear();
-      } else {
-        open = false;
-        inputEl?.blur();
+  $effect(() => { const nextUser = userKey; if (loadedUserKey !== undefined && loadedUserKey !== nextUser) recentHits = []; loadedUserKey = nextUser; cancelRequest(); cache.clear(); query = ''; results = null; error = ''; open = false; });
+  $effect(() => { if (activeIndex >= 0) listEl?.querySelector<HTMLElement>(`[data-search-idx="${activeIndex}"]`)?.scrollIntoView({ block: 'nearest' }); });
+  onMount(() => {
+    if (autofocus) inputEl?.focus();
+    const outside = (event: PointerEvent) => { if (!containerEl.contains(event.target as Node)) close(); };
+    const shortcut = (event: KeyboardEvent) => {
+      if (!inputEl?.getClientRects().length) return;
+      const target = document.activeElement;
+      if (((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') || (event.key === '/' && !(target instanceof HTMLElement && target.closest('input,textarea,select,[contenteditable="true"]')))) {
+        event.preventDefault(); inputEl.focus(); inputEl.select(); open = true;
       }
-      return;
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeIndex = Math.min(activeIndex + 1, flat.length - 1);
-      return;
-    }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeIndex = Math.max(activeIndex - 1, 0);
-      return;
-    }
-    if (e.key === 'Enter') {
-      const target = flat[activeIndex];
-      if (activeIndex >= 0 && target) {
-        e.preventDefault();
-        pick(target);
-        return;
-      }
-      if (query.trim().length > 0) {
-        goto(crmPath(`/viaturas?q=${encodeURIComponent(query.trim())}`));
-        open = false;
-      }
-    }
-  }
-
-  // ⌘K / Ctrl+K / "/" to focus from anywhere.
-  $effect(() => {
-    function onGlobalKey(e: KeyboardEvent) {
-      const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
-      const cmd = isMac ? e.metaKey : e.ctrlKey;
-      if (cmd && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        inputEl?.focus();
-        inputEl?.select();
-        open = true;
-      }
-      if (
-        e.key === '/'
-        && document.activeElement?.tagName !== 'INPUT'
-        && document.activeElement?.tagName !== 'TEXTAREA'
-      ) {
-        e.preventDefault();
-        inputEl?.focus();
-        open = true;
-      }
-    }
-    window.addEventListener('keydown', onGlobalKey);
-    return () => window.removeEventListener('keydown', onGlobalKey);
+    };
+    document.addEventListener('pointerdown', outside); window.addEventListener('keydown', shortcut);
+    return () => { document.removeEventListener('pointerdown', outside); window.removeEventListener('keydown', shortcut); };
   });
-
-  // Click-outside dismissal.
-  $effect(() => {
-    if (!open) return;
-    function onDown(e: MouseEvent) {
-      if (containerEl && !containerEl.contains(e.target as Node)) {
-        open = false;
-      }
-    }
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  });
-
-  // Group offsets used to compute the global keyboard-nav index.
-  function groupOffset(group: 'vehicles' | 'customers' | 'tasks'): number {
-    if (!results) return 0;
-    if (group === 'vehicles') return 0;
-    if (group === 'customers') return results.vehicles.length;
-    return results.vehicles.length + results.customers.length;
-  }
-
-  // Per-entity icon used in the dropdown. Colors stay muted — the icon
-  // carries the type signal, no need for chips or rails or accent tints.
-  const GROUP_META = {
-    vehicles: { label: 'Viaturas', icon: BrandCar },
-    customers: { label: 'Clientes', icon: BrandUsers },
-    tasks: { label: 'Tarefas', icon: BrandDeal },
-  } as const;
-
-  // Scroll the active item into view as it moves with arrow keys.
-  let listEl = $state<HTMLDivElement | null>(null);
-  $effect(() => {
-    if (activeIndex < 0 || !listEl) return;
-    const el = listEl.querySelector<HTMLElement>(`[data-search-idx="${activeIndex}"]`);
-    el?.scrollIntoView({ block: 'nearest' });
-  });
+  onDestroy(cancelRequest);
 </script>
-
-<div bind:this={containerEl} class="relative flex-1 max-w-[540px] mx-2">
-  <!-- Input shell -->
-  <div
-    class="gs-input-shell  border rounded-xs  {open ? 'is-open' : ''}"
-  >
+<div bind:this={containerEl} class="relative flex-1 max-w-[540px] mx-2" onfocusout={event => { if (event.relatedTarget instanceof Node && !containerEl.contains(event.relatedTarget)) close(); }}>
+  <div class="gs-input-shell border rounded-xs" class:is-open={open}>
     <BrandSearch class="h-4 w-4 text-[var(--color-text-faint)] flex-shrink-0" />
-    <input
-      bind:this={inputEl}
-      bind:value={query}
-      oninput={onInput}
-      onfocus={() => (open = true)}
-      onkeydown={onKeydown}
-      type="search"
-      placeholder="Pesquisar viaturas, clientes, tarefas…"
-      class="flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-      aria-label="Pesquisar"
-      aria-expanded={open}
-      aria-controls="global-search-results"
-    />
-    {#if loading}
-      <span class="gs-spinner" aria-hidden="true"></span>
-    {/if}
-    {#if query}
-      <button
-        type="button"
-        onclick={clear}
-        class="text-[var(--color-text-faint)] hover:text-[var(--color-text)] p-1 cursor-pointer"
-        aria-label="Limpar pesquisa"
-      >
-        <X class="h-3.5 w-3.5" />
-      </button>
-    {:else}
-      <kbd class="gs-kbd-hint" title="Atalho: Ctrl/⌘ + K">⌘K</kbd>
-    {/if}
+    <input bind:this={inputEl} bind:value={query} oninput={onInput} onclick={() => open = true} onfocus={() => { open = true; if (needle) void search(needle); }} onkeydown={keydown}
+      type="search" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? listId : undefined}
+      aria-activedescendant={open && activeIndex >= 0 && flat[activeIndex] ? `${uid}-option-${activeIndex}` : undefined}
+      placeholder="Pesquisar viaturas, clientes, tarefas…" class="flex-1 min-w-0 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Pesquisar" />
+    {#if loading}<span class="gs-spinner" aria-hidden="true"></span>{/if}
+    {#if query}<button type="button" onclick={clear} class="p-2" aria-label="Limpar pesquisa"><X size={16} aria-hidden="true" /></button>{:else}<kbd class="gs-kbd-hint">⌘K</kbd>{/if}
   </div>
-
-  <!-- Results dropdown -->
-  {#if open && query.trim().length > 0}
-    <div
-      id="global-search-results"
-      role="listbox"
-      class="gs-dropdown"
-      style="border-radius: var(--radius-card);"
-    >
-      <div bind:this={listEl} class="gs-scroll">
-        {#if results && results.total === 0}
-          <div class="gs-empty">
-            <BrandSearch class="h-5 w-5 opacity-40" />
-            <div>
-              <div class="gs-empty-title">Sem resultados</div>
-              <div class="gs-empty-sub">para “{query}”</div>
-            </div>
+  {#if open}
+    <div class="gs-dropdown" style="border-radius:var(--radius-card)">
+      {#if !needle && recentHits.length}<div class="gs-recent-tools"><span>Histórico apenas desta sessão</span><button type="button" onclick={() => { recentHits = []; activeIndex = -1; inputEl.focus(); }}>Limpar recentes</button></div>{/if}
+      <div role="status" class="gs-search-status">{error || (loading ? 'A pesquisar…' : needle && !flat.length ? 'Sem resultados para esta pesquisa.' : !needle ? 'Escolha um acesso rápido ou escreva para pesquisar.' : `${flat.length} resultado(s).`)}</div>
+      <div id={listId} role="listbox" aria-label={needle ? 'Resultados da pesquisa' : 'Recentes e acesso rápido'} bind:this={listEl} class="gs-scroll">
+        {#each groups as group, groupIndex (group.label)}
+          <div class="gs-group" role="group" aria-label={group.label}>
+            <div class="gs-group-header" aria-hidden="true">{group.label}</div>
+            {#each group.hits as hit, localIndex (hit.href)}
+              {@const index = groups.slice(0, groupIndex).reduce((count, item) => count + item.hits.length, 0) + localIndex}
+              <button type="button" role="option" tabindex="-1" id={`${uid}-option-${index}`} data-search-idx={index} aria-selected={index === activeIndex}
+                onmouseenter={() => activeIndex = index} onclick={() => void pick(hit)} class="gs-item" class:is-active={index === activeIndex}>
+                <BrandSearch class="gs-item-icon h-4 w-4" /><span class="gs-item-body"><span class="gs-item-title">{hit.primary}</span>{#if hit.secondary}<span class="gs-item-sub">{hit.secondary}</span>{/if}</span><span aria-hidden="true">↗</span>
+              </button>
+            {/each}
           </div>
-        {:else if !results && loading}
-          <div class="gs-empty">
-            <span class="gs-spinner gs-spinner-lg" aria-hidden="true"></span>
-            <div class="gs-empty-title">A pesquisar…</div>
-          </div>
-        {:else if results}
-          {#each ['vehicles', 'customers', 'tasks'] as const as group (group)}
-            {@const hits = results[group]}
-            {#if hits.length > 0}
-              {@const meta = GROUP_META[group]}
-              {@const ItemIcon = meta.icon}
-              <div class="gs-group">
-                <div class="gs-group-header">{meta.label}</div>
-                {#each hits as hit, i (hit.id)}
-                  {@const idx = groupOffset(group) + i}
-                  <button
-                    type="button"
-                    role="option"
-                    data-search-idx={idx}
-                    aria-selected={activeIndex === idx}
-                    onmouseenter={() => (activeIndex = idx)}
-                    onclick={() => pick(hit)}
-                    class="gs-item {activeIndex === idx ? 'is-active' : ''}"
-                  >
-                    <ItemIcon class="gs-item-icon h-4 w-4" />
-                    <span class="gs-item-body">
-                      <span class="gs-item-title">{hit.primary}</span>
-                      {#if hit.secondary}
-                        <span class="gs-item-sub">{hit.secondary}</span>
-                      {/if}
-                    </span>
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          {/each}
-        {/if}
+        {/each}
       </div>
-
-      {#if results && results.total > 0}
-        <div class="gs-footer">
-          <kbd class="gs-kbd">↑↓</kbd>
-          <span>navegar</span>
-          <kbd class="gs-kbd">↵</kbd>
-          <span>abrir</span>
-          <kbd class="gs-kbd">esc</kbd>
-          <span>fechar</span>
-        </div>
-      {/if}
+      {#if error}<button type="button" class="gs-retry" onclick={() => void search(needle)}>Tentar novamente</button>{/if}
     </div>
   {/if}
 </div>
-
 <style>
+  .gs-search-status,.gs-recent-tools {font-size:12px;padding:10px 14px;color:var(--color-text-muted);}
+  .gs-recent-tools {display:flex;justify-content:space-between;gap:8px;} .gs-recent-tools button,.gs-retry {min-height:36px;text-decoration:underline;text-underline-offset:3px;} .gs-retry {margin:8px 14px;}
+
   /* ─── Input shell ───────────────────────────────────────────────────── */
   .gs-input-shell {
     position: relative;
     display: flex;
     align-items: center;
-    height: 38px;
+    height: 44px;
     padding: 0 12px;
     border: 1px solid var(--color-border);
     background: rgba(255, 255, 255, 0.02);
@@ -384,6 +144,7 @@
     appearance: none;
   }
   .gs-input-shell input {
+    appearance: textfield;
     -moz-appearance: textfield;
   }
 
@@ -395,12 +156,6 @@
     border-radius: 50%;
     animation: gs-spin 0.7s linear infinite;
     margin-right: 6px;
-  }
-  .gs-spinner-lg {
-    width: 18px;
-    height: 18px;
-    border-width: 2px;
-    margin-right: 0;
   }
   @keyframes gs-spin {
     to {
@@ -490,7 +245,7 @@
   .gs-item.is-active {
     background: rgba(255, 255, 255, 0.04);
   }
-  .gs-item-icon {
+  .gs-item :global(.gs-item-icon) {
     flex-shrink: 0;
     color: var(--color-text-muted);
   }
@@ -518,44 +273,6 @@
   }
 
   /* ─── Empty / loading state ─────────────────────────────────────────── */
-  .gs-empty {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 20px 16px;
-    color: var(--color-text-muted);
-  }
-  .gs-empty-title {
-    font-size: 13px;
-    color: var(--color-text);
-  }
-  .gs-empty-sub {
-    font-size: 11.5px;
-    color: var(--color-text-faint);
-    margin-top: 2px;
-  }
 
   /* ─── Footer ────────────────────────────────────────────────────────── */
-  .gs-footer {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 14px;
-    border-top: 1px solid var(--color-border);
-    font-size: 11px;
-    color: var(--color-text-faint);
-  }
-  .gs-kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 4px;
-    border: 1px solid var(--color-border);
-    border-radius: 3px;
-    color: var(--color-text-muted);
-    font-size: 10px;
-    font-family: 'JetBrains Mono', monospace;
-  }
 </style>

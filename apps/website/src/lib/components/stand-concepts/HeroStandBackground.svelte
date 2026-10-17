@@ -3,7 +3,7 @@
   import { aboutContent } from './aboutContent';
   import { lateralFade } from './heroBackgroundFade';
   import { measureGeometricStandCrop } from './geometricStandCrop';
-  import { responsiveStandFraming, type ResponsiveStandFrame } from './responsiveStandFraming';
+  import { desktopStandAnchor, desktopStandRatioZoom, responsiveStandFraming, type ResponsiveStandFrame } from './responsiveStandFraming';
   import { validStandIndex, type StandIndex, type StandProfile, type StandSettings } from './heroStandSettings';
   let { settings = $bindable() }: { settings: StandSettings } = $props();
   let current = $state(0), visible = $state(true);
@@ -12,7 +12,9 @@
   let frames = $state<(ResponsiveStandFrame | null)[]>([null, null]);
   function imageStyle(index: number) {
     const frame = frames[index];
-    return frame ? `width:${frame.width}px;left:${frame.left}px;top:${frame.top}px;transform:none;` : undefined;
+    // CSS applies these measurements only on tablet/mobile. A stale mobile
+    // measurement must never resize a desktop image while ResizeObserver catches up.
+    return frame ? `--responsive-photo-width:${frame.width}px;--responsive-photo-left:${frame.left}px;--responsive-photo-top:${frame.top}px;--responsive-photo-transform:none;` : undefined;
   }
   function measure() {
     for (const index of [0, 1] as const) {
@@ -40,9 +42,10 @@
     return () => cancelAnimationFrame(frame);
   });
   const photos = [{ src: aboutContent.heroImage.id, avif: aboutContent.heroImage.avif }, { src: aboutContent.approach.image, avif: aboutContent.approach.avif }];
-  function style(profile: StandProfile) {
+  function style(profile: StandProfile, index: StandIndex) {
     const fade = lateralFade(profile.fade);
-    return `--photo-width:${profile.width}vw;--photo-height:${profile.height}%;--photo-zoom:${profile.zoom}cqw;--photo-ratio-zoom:${profile.zoom * 4 / 3}cqh;--photo-crop-left:${profile.cropLeft}%;--photo-crop-right:${profile.cropRight}%;${profile.x === null ? '' : `--photo-x:${profile.x}%;`}${profile.y === null ? '' : `--photo-y:${profile.y}%;`}${fade === null ? '' : `--lateral-fade:${fade};--lateral-mask:linear-gradient(#000,#000);`}`;
+    const anchor = desktopStandAnchor(profile,index);
+    return `--desktop-photo-x:${anchor.x}%;--desktop-focal-x:${anchor.focalX}%;--photo-width:${profile.width}vw;--photo-height:${profile.height}%;--photo-zoom:${profile.zoom}cqw;--photo-ratio-zoom:${profile.zoom * 4 / 3}cqh;--photo-reference-zoom:${desktopStandRatioZoom(profile)}cqh;--photo-crop-left:${profile.cropLeft}%;--photo-crop-right:${profile.cropRight}%;${profile.x === null ? '' : `--photo-x:${profile.x}%;`}${profile.y === null ? '' : `--photo-y:${profile.y}%;`}${fade === null ? '' : `--lateral-fade:${fade};--lateral-mask:linear-gradient(#000,#000);`}`;
   }
   $effect(() => { settings.revision; current = validStandIndex(settings.selected); });
   $effect(() => {
@@ -64,7 +67,7 @@
 </script>
 
 {#each photos as photo, index}
-  <div class="home-stand-backdrop stand-layer" class:visible={current === index} data-stand-image={index + 1} data-active={current === index} aria-hidden="true" style={style(settings.profiles[index as StandIndex])}>
+  <div class="home-stand-backdrop stand-layer" class:visible={current === index} data-stand-image={index + 1} data-active={current === index} aria-hidden="true" style={style(settings.profiles[index as StandIndex],index as StandIndex)}>
     <!-- Full source resolution: this image is enlarged and clipped, even on mobile. -->
     <picture style="display: contents">
       <source type="image/avif" srcset={photo.avif} />

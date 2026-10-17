@@ -5,9 +5,10 @@ import {
   publicVehicleDto,
   publicVehicleSelect,
   publicVehicleWhere,
+  approvedPaths,
 } from '../data/publicVehicle.js';
 import { isApprovedPhotoPath } from '../domain/publicVehicle.js';
-import { createSignedReadUrls } from '../data/storage.js';
+import { signedPhoto } from '../data/storage.js';
 import { emitActivity } from '../data/activity.js';
 
 export const highlightsKey = 'homepageHighlights';
@@ -57,17 +58,17 @@ export async function readHighlightsEditor(db: PrismaClient) {
       model: vehicle.model,
       year: vehicle.year,
       slug: vehicle.publicSlug!,
-      photos: [...new Set(vehicle.publicPhotoPaths)]
-        .filter((path) => vehicle.photos.includes(path) && isApprovedPhotoPath(vehicle.id, path))
-        .slice(0, 20),
+      photos: approvedPaths(vehicle),
     }))
     .filter((vehicle) => vehicle.photos.length);
-  const urls = await createSignedReadUrls(candidates.flatMap((vehicle) => vehicle.photos));
+  const sources=new Map<string,Awaited<ReturnType<typeof signedPhoto>>>();
+  const paths=candidates.flatMap(v=>v.photos);
+  for(let i=0;i<paths.length;i+=4)await Promise.all(paths.slice(i,i+4).map(async path=>sources.set(path,await signedPhoto(path))));
   return {
     ...readSetting(setting?.value),
     candidates: candidates.map((vehicle) => ({
       ...vehicle,
-      photos: vehicle.photos.map((path) => ({ path, url: urls.get(path) ?? null })),
+      photos: vehicle.photos.map(path=>sources.get(path)??{path,url:null}),
     })),
   };
 }
@@ -145,9 +146,7 @@ async function readHighlightSelection(db: PrismaClient) {
     items: items.flatMap((item) => {
       const row = vehicles.find((vehicle) => vehicle.id === item.vehicleId);
       if (!row) return [];
-      const approved = [...new Set(row.publicPhotoPaths)]
-        .filter((path) => row.photos.includes(path) && isApprovedPhotoPath(row.id, path))
-        .slice(0, 20);
+      const approved = approvedPaths(row);
       const index = approved.indexOf(item.photoPath);
       if (index < 0) return [];
       return [{ id: row.id, vehicle: publicVehicleDto(row), photoIndex: index }];

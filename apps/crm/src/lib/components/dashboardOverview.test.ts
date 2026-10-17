@@ -27,6 +27,7 @@ function fromSource(source: string, file: string): any {
     else if (specifier === 'lucide-svelte') value = new Proxy({}, { get: () => icon });
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
     else if (specifier === '$lib/utils/format') value = format;
+    else if (specifier === '$lib/vehicleImage') value = {photoFallback:()=>({})};
     else if (specifier.endsWith('.svelte'))
       value = {
         default: load(

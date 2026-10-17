@@ -265,17 +265,29 @@
 }
 .design.orbit.orbit-detail .vehicle-gallery {
   position: relative;
+  isolation:isolate;
+  border-radius:5px;
+  overflow:hidden;
+  background:var(--surface);
+  --detail-thumb-width: calc(clamp(104px, 10vw, 152px) - 4px);
+  --detail-scroll-thumb: color-mix(in srgb, var(--text) 45%, var(--surface));
+  --detail-scroll-track: color-mix(in srgb, var(--text) 6%, var(--surface));
 }
+.design.orbit.orbit-detail .vehicle-gallery::before {
+  content:'';position:absolute;inset:0;z-index:4;pointer-events:none;border:1px solid var(--line);border-radius:inherit;
+}
+.design.orbit.orbit-detail .detail-thumbnails-frame {position:absolute;inset:0 0 0 auto;width:var(--detail-thumb-width);padding-block:6px;background:var(--surface);}
+.design.orbit.orbit-detail .detail-thumbnails-frame .detail-thumbnails {position:relative;inset:auto;width:100%;height:100%;border-radius:0;}
 .design.orbit.orbit-detail .vehicle-gallery .vehicle-photo {
-  padding-right: clamp(72px, 8vw, 108px);
+  padding-right: var(--detail-thumb-width);
 }
 .design.orbit.orbit-detail .vehicle-gallery .expand {
-  right: calc(clamp(72px, 8vw, 108px) + 12px);
+  right: calc(var(--detail-thumb-width) + 12px);
 }
 .design.orbit.orbit-detail .detail-thumbnails {
   position: absolute;
   inset: 0 0 0 auto;
-  width: clamp(72px, 8vw, 108px);
+  width: var(--detail-thumb-width);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -283,7 +295,11 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  background: var(--surface);
+  scrollbar-color: var(--detail-scroll-thumb) var(--detail-scroll-track);
+  scrollbar-gutter: stable;
+  background:var(--surface);
+  border-radius:0 5px 5px 0;
+  box-shadow:inset 1px 0 color-mix(in srgb,var(--line) 65%,transparent);
 }
 .design.orbit.orbit-detail .detail-thumbnails button {
   position: relative;
@@ -294,7 +310,7 @@
   padding: 0;
   overflow: hidden;
   border: 2px solid transparent;
-  border-radius: 3px;
+  border-radius: 5px;
 }
 .design.orbit.orbit-detail .detail-thumbnails button[aria-pressed='true'] {
   border-color: var(--red);
@@ -308,6 +324,10 @@
   height: 100%;
   object-fit: cover;
 }
+.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar {width:8px;height:8px;}
+.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar-track {background:var(--detail-scroll-track);border-radius:8px;}
+.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar-thumb {background:var(--detail-scroll-thumb);border:2px solid var(--detail-scroll-track);border-radius:8px;}
+.design.orbit.orbit-detail .detail-thumbnails:hover {--detail-scroll-thumb:color-mix(in srgb, var(--text) 60%, var(--surface));}
 .design.orbit.orbit-detail .detail-thumbnails span {
   position: absolute;
   inset: auto 0 0;
@@ -334,6 +354,9 @@
 
 /* Below 702px, thumbnails sit under the photo in their own scroll row. */
 @media (max-width: 701px) {
+  .design.orbit.orbit-detail .vehicle-gallery {border-radius:5px;}
+  .design.orbit.orbit-detail .detail-thumbnails-frame {position:relative;inset:auto;width:100%;height:auto;padding:0 6px 6px;}
+  .design.orbit.orbit-detail .detail-thumbnails-frame .detail-thumbnails {height:auto;}
   .design.orbit.orbit-detail .vehicle-gallery .vehicle-photo {
     padding-right: 0;
   }
@@ -347,11 +370,14 @@
     flex-direction: row;
     overflow-x: auto;
     overflow-y: hidden;
-    margin-top: 8px;
+    margin-top:0;
+    scrollbar-gutter:auto;
+    border-radius:0 0 5px 5px;
+    box-shadow:inset 0 1px color-mix(in srgb,var(--line) 65%,transparent);
   }
   .design.orbit.orbit-detail .detail-thumbnails button {
-    flex: 0 0 96px;
-    width: 96px;
+    flex: 0 0 112px;
+    width: 112px;
   }
 }
 

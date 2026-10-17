@@ -4,6 +4,7 @@ import { VehicleStateConflict } from '../lib/server/vehicleService.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { vehicleCreateSchema, vehicleFilterSchema, vehicleUpdateSchema } from '@anm/types';
+import { vehiclePrincipalPath } from '../../../shared/vehiclePhotoPrincipal.mjs';
 import { prisma } from '../db.js';
 import { listVehicles } from '../lib/data/vehicle.js';
 import { createSignedReadUrls } from '../lib/data/storage.js';
@@ -21,8 +22,30 @@ import {
 import { moneySchema } from '@anm/types';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 import { param } from '../lib/http.js';
+import { saveVehicleEdit, vehicleEditSchema } from '../lib/server/vehicleEditService.js';
+import { WebPublicationError } from '../lib/server/webPublicationService.js';
+import { deleteObjects } from '../lib/data/storage.js';
 
 const router = Router();
+
+router.put('/:id/edit', requireUser, asyncHandler(async (req: AuthedRequest, res: Response) => {
+  res.set('Cache-Control', 'no-store');
+  if (!req.user || req.user.role !== 'ADMIN') { res.status(403).json({ error: 'Forbidden' }); return; }
+  const parsed = vehicleEditSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: 'Reveja os dados da viatura e da publicação.', issues: parsed.error.issues }); return; }
+  try {
+    const result = await saveVehicleEdit(param(req, 'id'), parsed.data, { actorId: req.user.id, actorName: req.user.name });
+    // Database references and public approval have already been revoked atomically.
+    if (result.removedPhotos.length) try { await deleteObjects(result.removedPhotos); }
+    catch { logger.error('Unreferenced photo cleanup failed after vehicle edit'); }
+    res.json({ ok: true });
+  } catch (error) {
+    if (error instanceof VehicleNotFound) { res.status(404).json({ error: 'Viatura não encontrada.' }); return; }
+    if (error instanceof VehicleStateConflict || error instanceof WebPublicationError) { res.status(error.status).json({ error: error.message, ...(error.field ? {issues:[{path:error.field.split('.'),message:error.message}]} : {}) }); return; }
+    if ((error as { code?: string }).code === 'P2002') { res.status(409).json(duplicateVehicleFeedback(error)); return; }
+    throw error;
+  }
+}));
 
 const listQuerySchema = vehicleFilterSchema.extend({
   page: z.coerce.number().int().min(1).default(1),
@@ -47,28 +70,30 @@ router.get(
     // Batch-sign primary photos (index 0) so the list can show thumbnails.
     // A single Supabase call handles all rows on the current page.
     const primaryPaths = result.items
-      .map((v) => v.photos[0])
+      .map(vehiclePrincipalPath)
       .filter((p): p is string => typeof p === 'string' && p.length > 0);
 
     let signed: Map<string, string> = new Map();
     if (primaryPaths.length > 0) {
       try {
-        signed = await createSignedReadUrls(primaryPaths, 3600);
+        signed = await createSignedReadUrls(primaryPaths, 3600, 320);
       } catch (err) {
         logger.warn({ err }, 'Failed to batch-sign vehicle thumbnails (list still works)');
       }
     }
 
+    const originalUrls=await createSignedReadUrls(primaryPaths).catch(()=>new Map<string,string>());
     res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
     res.json({
       ...result,
       items: result.items.map((v) => {
-        const primary = v.photos[0];
+        const primary = vehiclePrincipalPath(v);
         return {
           ...v,
           purchasePrice: v.purchasePrice.toString(),
           salePrice: v.salePrice?.toString() ?? null,
           thumbnailUrl: primary ? (signed.get(primary) ?? null) : null,
+          thumbnailOriginalUrl: primary ? (originalUrls.get(primary) ?? null) : null,
         };
       }),
     });

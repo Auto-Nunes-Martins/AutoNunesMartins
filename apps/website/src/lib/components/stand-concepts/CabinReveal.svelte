@@ -48,7 +48,7 @@
     <div class="panorama-caption">
       <span>UM OUTRO PONTO DE VISTA</span><span>INTERIOR / SELEÇÃO AUTOMÓVEL</span>
     </div>
-    <div class="cabin-points" aria-label="Explorar o habitáculo">
+    <div class="cabin-points" role="group" aria-label="Explorar o habitáculo">
       {#each points as point, index}
         <button
           class:active={active === index}
@@ -58,7 +58,7 @@
           onclick={() => (active = index)}
         >
           <span class="point-icon"
-            >{#if active === index}<Minus size={15} />{:else}<Plus size={15} />{/if}</span
+            >{#if active === index}<Minus size={15} aria-hidden="true" />{:else}<Plus size={15} aria-hidden="true" />{/if}</span
           >
           <span class="point-label">{point.label}</span>
         </button>
@@ -66,17 +66,14 @@
     </div>
     <span
       class="cabin-coordinate"
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-      aria-label={`Perspetiva ${active + 1} de ${points.length}: ${current.label}`}
+      aria-hidden="true"
       ><span class="coordinate-active">{String(active + 1).padStart(2, '0')}</span> de {String(
         points.length,
       ).padStart(2, '0')}</span
     >
   </div>
   <div class="cabin-caption">
-    <div class="cabin-tabs" aria-label="Perspetivas do interior">
+    <div class="cabin-tabs" role="group" aria-label="Perspetivas do interior">
       {#each points as point, index}
         <button
           class:active={active === index}
@@ -86,14 +83,14 @@
         >
       {/each}
     </div>
-    <div class="cabin-description" id="cabin-description" aria-live="polite" aria-atomic="true">
+    <div class="cabin-description" id="cabin-description" role="status" aria-atomic="true">
       {#key active}<div class="description-message">
           <h3>{current.title}</h3>
           <p>{current.text}</p>
         </div>{/key}
     </div>
     <a href="#selecao" class="cabin-link"
-      >Encontrar o meu próximo carro <ArrowUpRight size={18} /></a
+      >Encontrar o meu próximo carro <ArrowUpRight size={18} aria-hidden="true" /></a
     >
   </div>
 </section>

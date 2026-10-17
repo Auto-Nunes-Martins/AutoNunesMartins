@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {photoAttrs,photoFallback} from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
   import { untrack } from 'svelte';
   import { enhance } from '$app/forms';
@@ -64,7 +65,7 @@
             <span class="position">{String(index + 1).padStart(2, '0')}</span>
             {#if selectedPhoto?.url}<img
                 class="cover"
-                src={selectedPhoto.url}
+                {...photoAttrs(selectedPhoto,320,'128px')} use:photoFallback={selectedPhoto.url}
                 alt={`${vehicle?.brand} ${vehicle?.model} — fotografia escolhida`}
               />{:else}<div class="cover unavailable"><Image size={20} /></div>{/if}
             <div class="vehicle-info">
@@ -130,7 +131,7 @@
                         : entry,
                     ))}
                 >
-                  {#if photo.url}<img src={photo.url} alt="" loading="lazy" />{:else}<Image
+                  {#if photo.url}<img {...photoAttrs(photo,320,'128px')} use:photoFallback={photo.url} alt="" loading="lazy" />{:else}<Image
                       size={20}
                     />{/if}
                   {#if photo.path === item.photoPath}<span class="photo-check"
@@ -202,7 +203,7 @@
           {@const selected = items.some((item) => item.vehicleId === vehicle.id)}
           <div class="candidate">
             {#if vehicle.photos[0]?.url}<img
-                src={vehicle.photos[0].url}
+                {...photoAttrs(vehicle.photos[0],320,'64px')} use:photoFallback={vehicle.photos[0].url}
                 alt=""
                 loading="lazy"
               />{:else}<div class="candidate-placeholder"><Image size={18} /></div>{/if}

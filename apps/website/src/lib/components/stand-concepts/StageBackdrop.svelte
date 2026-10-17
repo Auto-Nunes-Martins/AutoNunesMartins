@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
 
   const accentId = $props.id();
-  const desktopAngle = 28;
+  const desktopAngle = 25;
   let reveal = $state(0);
   const narrowStart = $derived(0.69 + reveal * 0.12);
   const portraitStart = $derived(0.424 - reveal * 0.135);

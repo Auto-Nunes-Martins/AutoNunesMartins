@@ -1,5 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
   import {
     ArrowRightLeft,
     Calendar,
@@ -211,7 +212,7 @@
   <!-- Top grid: gallery + spec/profit -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <div class="lg:col-span-7 space-y-6">
-      <PhotoGallery vehicleId={v.id} photos={signedPhotos} />
+      <PhotoGallery vehicleId={v.id} photos={signedPhotos} principalPath={vehiclePrincipalPath(v) ?? null} editable={false} publicPaths={v.publicPhotoPaths} published={v.webPublished && ['AVAILABLE', 'RESERVED'].includes(v.status) && !v.sale && !v.soldDate} />
 
       <Panel>
         <PanelHeader icon={FileText} title="Notas" />

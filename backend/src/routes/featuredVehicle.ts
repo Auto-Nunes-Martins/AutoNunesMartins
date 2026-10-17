@@ -6,6 +6,7 @@ import { cache } from '../lib/data/cache.js';
 import { createSignedReadUrl } from '../lib/data/storage.js';
 import { emitActivity } from '../lib/data/activity.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
+import { vehiclePrincipalPath } from '../../../shared/vehiclePhotoPrincipal.mjs';
 
 const router = Router();
 
@@ -49,9 +50,10 @@ async function loadFeaturedVehicle(): Promise<FeaturedVehiclePayload | null> {
   const v = await prisma.vehicle.findUnique({ where: { id } });
   if (!v) return null;
   let photoUrl: string | null = null;
-  if (v.photos[0]) {
+  const principal=vehiclePrincipalPath(v);
+  if (principal) {
     try {
-      photoUrl = await createSignedReadUrl(v.photos[0]);
+      photoUrl = await createSignedReadUrl(principal);
     } catch {
       photoUrl = null;
     }

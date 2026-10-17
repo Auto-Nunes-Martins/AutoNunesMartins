@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { isVehiclePhotoPath } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { publicSpecificationsSchema } from '@anm/types';
 
 const fuelValues = ['GASOLINE', 'DIESEL', 'HYBRID', 'PLUGIN_HYBRID', 'ELECTRIC', 'LPG'] as const;
@@ -79,12 +80,7 @@ export const vehicleIdSchema = z.string().regex(/^c[a-z0-9]{24}$/);
 
 /** No storage URL, traversal, encoded separator, or object in another namespace. */
 export function isApprovedPhotoPath(id: string, path: string): boolean {
-  return (
-    vehicleIdSchema.safeParse(id).success &&
-    new RegExp(
-      `^${id}/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.(?:jpg|jpeg|png|webp)$`,
-    ).test(path)
-  );
+  return isVehiclePhotoPath(id,path);
 }
 
 const publicPrice = z

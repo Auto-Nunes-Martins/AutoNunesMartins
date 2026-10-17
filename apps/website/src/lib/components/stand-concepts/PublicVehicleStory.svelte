@@ -1,4 +1,5 @@
 <script lang="ts">
+ import {sizedPhoto,vehiclePhotoSet} from "$lib/vehiclePhotoSources";
   import { publicPhoto, type PublicVehicle } from '$lib/publicVehicles';
   import { ArrowUpRight } from 'lucide-svelte';
   import OrbitAccordion from './OrbitAccordion.svelte';
@@ -35,7 +36,7 @@
 <div class="public-story">
     <section class="story-section description" aria-labelledby="vehicle-story-title">
       {#if bannerPhoto && failedPhoto !== bannerPhoto}
-        <img class="banner-photo" src={bannerPhoto} alt="" loading="lazy" onerror={() => failedPhoto = bannerPhoto} />
+        <img class="banner-photo" src={sizedPhoto(bannerPhoto,1600)} srcset={vehiclePhotoSet(bannerPhoto)} sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw" alt="" loading="lazy" onerror={() => failedPhoto = bannerPhoto} />
       {/if}
       <span class="banner-arrow" aria-hidden="true">↗</span>
       <div class="banner-content">

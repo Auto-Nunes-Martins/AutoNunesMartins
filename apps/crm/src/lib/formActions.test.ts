@@ -54,12 +54,15 @@ for (const [path, ...states] of fixtures) {
             editingId: 'expense-id',
             message: '',
             formElement: {},
+            publicationForm: {},
+            forms: () => ({}),
             markFormSaved: vi.fn(),
             showFormErrors: vi.fn(),
             tick: vi.fn(async () => {}),
             resetPublicationDraft: vi.fn(),
           };
           if (state) context[state] = true;
+          context.publicationForm = context.formElement;
           const update = vi.fn(async (options) => {
             const guarded = path.includes('WebPublicationPanel') || path.includes('/vender/');
             expect(options).toEqual(
@@ -110,6 +113,9 @@ for (const [path, ...states] of fixtures) {
           const context: Record<string, unknown> = {
             [state]: true,
             toast: { success: vi.fn(), error: vi.fn() },
+            tick: vi.fn(async () => {}),
+            formElement: {},
+            publicationForm: {},
           };
           const callback = runInNewContext(
             ts.transpile(`const callback = ${code}; callback`),
@@ -137,7 +143,7 @@ for (const file of [
     const markFormSaved = vi.fn();
     const callback = runInNewContext(
       ts.transpile('const callback = ' + callbacks('lib/components/' + file)[0] + '; callback'),
-      { formElement: {}, markFormSaved, submitting: true },
+      { formElement: {}, markFormSaved, submitting: true, tick: async () => {} },
     );
     const update = vi.fn(async () => {
       expect(markFormSaved).toHaveBeenCalledOnce();

@@ -17,6 +17,7 @@ function component(source: string, imports: Record<string, unknown> = {}) {
     )
     .replace(/^import \{ enhance \} from '\$app\/forms';/m, '')
     .replace(/^import \{ goto \} from '\$app\/navigation';/m, '')
+    .replace(/^import \{ [^}]+ \} from 'svelte';/m, '')
     .replace(/^import \{ toast \} from 'svelte-sonner';/m, '')
     .replace(
       /^import \{ isValidNIF \} from '@anm\/types';/m,
@@ -103,6 +104,8 @@ describe.each([
         import Form from './Form.svelte';
         import Trash2 from './Trash2.svelte';
         let deleting = false;
+        let saving = false;
+        let needsReload = false;
       </script>
       <Form>
         ${deletionSnippet}

@@ -173,6 +173,26 @@ try {
   await check(page.locator('.vehicle-photo img'), true);
   await page.locator('.vehicle-photo').click();
   await check(page.locator('.gallery-dialog img'), true);
+  const viewer=page.locator('.gallery-dialog');
+  const previous=viewer.getByRole('button',{name:'Fotografia anterior',exact:true});
+  const next=viewer.getByRole('button',{name:'Fotografia seguinte',exact:true});
+  assert(await previous.isDisabled());
+  await previous.click({force:true});assert.match(await viewer.innerText(),/1 \/ 2/);
+  await next.click();await check(viewer.locator('img'),false);assert(await next.isDisabled());
+  await page.keyboard.press('ArrowRight');assert.match(await viewer.innerText(),/2 \/ 2/);
+  assert.equal(await viewer.locator('img').evaluate(img=>getComputedStyle(img).objectFit),'contain');
+  for(let i=0;i<8;i++){await page.keyboard.press('Tab');assert(await viewer.evaluate(el=>el.contains(document.activeElement)));}
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflow),'hidden');
+  for(const [width,height] of [[1440,1000],[390,844]]){
+    await page.setViewportSize({width,height});const bounds=await viewer.boundingBox();
+    assert(Math.abs(bounds.x+bounds.width/2-width/2)<1);assert(Math.abs(bounds.y+bounds.height/2-height/2)<1);
+    assert(bounds.x>=0&&bounds.x+bounds.width<=width+1);
+    await page.screenshot({path:`.cache/crm-save/public-gallery-${width}.png`});
+  }
+  await page.keyboard.press('Escape');assert(await page.locator('.vehicle-photo').evaluate(el=>el===document.activeElement));
+  await page.locator('.photo-next').click({force:true});assert(await page.locator('.photo-next').isDisabled());
+  await page.locator('.photo-previous').click();assert(await page.locator('.photo-previous').isDisabled());
+  console.log('PASS public gallery: bounded navigation, contain, centered desktop/mobile, focus trap/restore and scroll lock');
   console.log('PASS detail/gallery: failure, recovery, failure again');
   await page.goto(origin);
   await check(page.locator('.orbit-main-photo img').first(), true);

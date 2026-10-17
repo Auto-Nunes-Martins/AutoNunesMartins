@@ -64,13 +64,13 @@
           aria-pressed={choice === index}
           onclick={() => (choice = index)}
           ><span class="reason-index">0{index + 1}</span>{reason.label}<span class="reason-check"
-            >{#if choice === index}<Check size={15} />{:else}<ArrowUpRight size={15} />{/if}</span
+            >{#if choice === index}<Check size={15} aria-hidden="true" />{:else}<ArrowUpRight size={15} aria-hidden="true" />{/if}</span
           ></button
         >
       {/each}
     </div>
     <button class="visit-cta conversation-pill" onclick={() => onContact(selected.message)}
-      >Vamos combinar <ArrowUpRight size={18} /></button
+      >Vamos combinar <ArrowUpRight size={18} aria-hidden="true" /></button
     >
   </div>
   <div class="invitation-scene" data-approach-target>
@@ -89,7 +89,7 @@
       </i><span>AO ENCONTRO</span>
     </div>
     <div class="invitation-sleeve" aria-hidden="true">
-      <span>AUTO NUNES MARTINS</span><ArrowRight size={28} />
+      <span>AUTO NUNES MARTINS</span><ArrowRight size={28} aria-hidden="true" />
     </div>
     <div class="visit-ticket">
       <div class="ticket-top">
@@ -122,9 +122,9 @@
         <i></i><span>O PRÓXIMO PASSO É SEU</span><i></i>
       </div>
       <div class="ticket-bottom">
-        <CalendarDays size={23} />
+        <CalendarDays size={23} aria-hidden="true" />
         <div><span>A SUA DISPONIBILIDADE</span><strong>Combinamos consigo.</strong></div>
-        <ArrowUpRight size={25} />
+        <ArrowUpRight size={25} aria-hidden="true" />
       </div>
       <div class="ticket-end"><span>UMA CONVERSA DE CADA VEZ.</span><span>ANM ↗</span></div>
       <div class="ticket-scan-track" aria-hidden="true"><div class="ticket-scan"></div></div>

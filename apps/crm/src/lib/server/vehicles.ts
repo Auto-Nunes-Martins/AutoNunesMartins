@@ -1,3 +1,4 @@
+import type {SignedVariantPhoto} from "$lib/vehicleImage";
 import type { PublicSpecifications } from '@anm/types';
 import type { VehicleCreate, VehicleFilter, VehicleStatus, Fuel } from '@anm/types';
 import type { RequestEvent } from '@sveltejs/kit';
@@ -21,6 +22,7 @@ export interface VehicleListItem {
   photos: string[];
   pendingDocFlags: Record<string, boolean>;
   thumbnailUrl: string | null;
+  thumbnailOriginalUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -189,7 +191,7 @@ export const vehiclesApi = {
       body: JSON.stringify(body),
     });
   },
-  signedPhotos(event: Ev, id: string): Promise<{ photos: { path: string; url: string }[] }> {
+  signedPhotos(event: Ev, id: string): Promise<{ photos: SignedVariantPhoto[] }> {
     return apiJson(event, `/api/vehicles/${id}/photos/signed`);
   },
 };
