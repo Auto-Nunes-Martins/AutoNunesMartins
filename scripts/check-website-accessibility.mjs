@@ -29,7 +29,7 @@ const listen = async server => {
 const api = createServer((req, res) => {
   const path = new URL(req.url, 'http://fixture').pathname.replace('/api/public/vehicles', '');
   if (path.includes('/photos/')) { res.writeHead(200, { 'content-type': 'image/png' }); res.end(png); return; }
-  const data = path === '/brands' ? catalog.facets.brands
+  const data = path === '/selection' ? {items:new URL(req.url,'http://fixture').searchParams.getAll('id').map(id=>({id,status:items.some(v=>v.slug===id)?200:404,vehicle:items.find(v=>v.slug===id)??null}))} : path === '/brands' ? catalog.facets.brands
     : path === '/homepage-highlights' ? { configured: true, items: items.map(vehicle => ({ vehicle, photoIndex: 0 })) }
     : path.endsWith('/related') ? items.filter(v => !path.includes(v.slug)) : items.find(v => path === `/${v.slug}`) ?? catalog;
   res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(data));

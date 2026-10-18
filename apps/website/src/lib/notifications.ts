@@ -14,6 +14,7 @@ export function createNotifications() {
   const notices = writable<Notification[]>([]);
   const running = new Map<number, Running>();
   let nextId = 0;
+  let currentPath = '';
   const publish = () => {
     const items = [...running.values()].reverse();
     // Keep the notice being read or operated in front during a burst.
@@ -36,8 +37,20 @@ export function createNotifications() {
   }
   return {
     notices: { subscribe: notices.subscribe },
+    setCurrentPath(path: string) {
+      currentPath = path.replace(/\/$/, '') || '/';
+      let changed = false;
+      for (const [id, item] of running) {
+        if (currentPath === '/comparar' && item.channel === 'comparison') {
+          clearTimeout(item.timer); running.delete(id); changed = true;
+        } else if (item.action?.href === currentPath) { item.action = undefined; changed = true; }
+      }
+      if (changed) publish();
+    },
     push(input: NotificationInput) {
-      const item: Running = { ...input, id: ++nextId, remaining: NOTIFICATION_DURATION, deadline: 0, pauses: new Set() };
+      const id = ++nextId;
+      if (currentPath === '/comparar' && input.channel === 'comparison') return id;
+      const item: Running = { ...input, action: input.action?.href === currentPath ? undefined : input.action, id, remaining: NOTIFICATION_DURATION, deadline: 0, pauses: new Set() };
       running.set(item.id, item);
       if (running.size > MAX_NOTIFICATIONS) {
         const oldest = [...running.values()].find(candidate => !candidate.pauses.size) ?? item;

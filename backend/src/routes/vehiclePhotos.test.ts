@@ -8,12 +8,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 const mocks = vi.hoisted(() => ({
   vehicle: { findUnique: vi.fn(), updateMany: vi.fn() },
+  $transaction: vi.fn(),
   deleteObjects: vi.fn(),
   createSignedReadUrl: vi.fn(),
   upload: vi.fn(),
   logger: { error: vi.fn() },
 }));
 vi.mock('../db.js', () => ({ prisma: mocks }));
+vi.mock('../lib/server/publicArchive.js', () => ({ revokeArchivePhotos: vi.fn() }));
 vi.mock('../logger.js', () => ({ logger: mocks.logger }));
 vi.mock('../middleware/clerk.js', () => ({
   requireUser: (_req: unknown, _res: unknown, next: () => void) => next(),
@@ -35,7 +37,7 @@ const a = `${id}/a.jpg`,
   d = `${id}/d.jpg`;
 const rows = new Map<string, string[]>();
 const publicRows = new Map<string, string[]>();
-const db = mocks as unknown as Pick<PrismaClient, 'vehicle'>;
+const db = mocks as unknown as Pick<PrismaClient, 'vehicle' | '$transaction'>;
 let server: Server;
 let base: string;
 beforeAll(async () => {
@@ -55,6 +57,7 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.$transaction.mockImplementation(async work => work(mocks));
   rows.clear();
   publicRows.clear();
   rows.set(id, [a, b]);

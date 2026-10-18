@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
+import { publicArchiveSchema } from '../publicArchive';
 import {
   emptyStock,
   publicCatalogSchema,
@@ -35,6 +36,11 @@ export async function loadPublicVehicle(slug: string) {
   if (!slugPattern.test(slug) || slug.length > 180) return { status: 404 as const, vehicle: null };
   try {
     const response = await publicRequest(`/${slug}`);
+    if (response.status === 404) {
+      const body = await response.json().catch(() => null);
+      const parsed = publicArchiveSchema.safeParse(body?.archive);
+      return { status: 404 as const, vehicle: null, ...(parsed.success && parsed.data.slug === slug ? { archive: parsed.data } : {}) };
+    }
     if (!response.ok)
       return { status: response.status === 404 ? (404 as const) : (503 as const), vehicle: null };
     const vehicle = publicVehicleSchema.parse(await response.json());

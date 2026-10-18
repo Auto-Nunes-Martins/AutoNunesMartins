@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocked = vi.hoisted(() => ({ work: vi.fn(), update: vi.fn(), publication: vi.fn(), lock: vi.fn(), download: vi.fn() }));
+vi.mock('../../db.js', () => ({ prisma: {} }));
+vi.mock('./publicArchive.js', () => ({ prepareVehicleArchive: vi.fn(), revokeArchivePhotos: vi.fn(), ArchiveSlugConflict: class extends Error {} }));
 vi.mock('./saleFinancials.js', () => ({ saleMutation: mocked.work, lockVehicle: mocked.lock }));
 vi.mock('./vehicleService.js', () => ({ updateVehicleInTransaction: mocked.update,
   VehicleNotFound: class extends Error {}, VehicleStateConflict: class extends Error { status = 409; },
@@ -7,6 +9,7 @@ vi.mock('./vehicleService.js', () => ({ updateVehicleInTransaction: mocked.updat
 vi.mock('./webPublicationService.js', () => ({ applyWebPublication: mocked.publication, WebPublicationError:class extends Error{constructor(public status:number,message:string,public field?:string){super(message);}} }));
 vi.mock('../data/storage.js', () => ({ getBucketName: () => 'fixture', getSupabase: () => ({ storage: { from: () => ({ download: mocked.download }) } }) }));
 import { saveVehicleEdit, vehicleEditSchema } from './vehicleEditService.js';
+import { revokeArchivePhotos } from './publicArchive.js';
 import sharp from 'sharp';
 const id = 'c' + '1'.repeat(24), a = `${id}/12345678-1234-1234-1234-123456789abc.jpg`, b = `${id}/12345678-1234-1234-1234-123456789abd.webp`;
 let row: { updatedAt: Date; photos: string[]; publicPhotoPaths: string[]; brand: string; webPublished: boolean };
@@ -60,6 +63,7 @@ describe('single vehicle edit transaction', () => {
     row.publicPhotoPaths=[a,b];
     const result = await saveVehicleEdit(id, { ...input(), photos: [b], publication: undefined }, actor);
     expect(result.removedPhotos).toEqual([a]); expect(row.publicPhotoPaths).toEqual([b]);
+    expect(revokeArchivePhotos).toHaveBeenCalledWith(tx, id, [b], [a,b]);
   });
   it('attaches a verified staged private image without authorizing it implicitly', async () => {
     row.webPublished=false;

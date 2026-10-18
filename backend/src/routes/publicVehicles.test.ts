@@ -17,12 +17,14 @@ const mocks = vi.hoisted(() => ({
       update: vi.fn(),
     },
     activityLog: { create: vi.fn() },
+    publicVehicleArchive: { findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
   download: vi.fn(),
   auth: vi.fn(),
 }));
 vi.mock('../db.js', () => ({ prisma: mocks.db }));
+vi.mock('../lib/server/publicArchive.js', async importOriginal => ({ ...await importOriginal<typeof import('../lib/server/publicArchive.js')>(), prepareVehicleArchive: vi.fn(), syncPublishedArchive: vi.fn() }));
 vi.mock('../logger.js', () => ({ logger: { error: vi.fn() } }));
 vi.mock('../lib/data/storage.js', () => ({
   getBucketName: () => 'private-vehicle-photos',
@@ -109,6 +111,7 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.db.publicVehicleArchive.findUnique.mockResolvedValue(null);
   mocks.db.$transaction.mockImplementation(async (fn) => fn(mocks.db));
   mocks.db.vehicle.findMany.mockResolvedValue([fixture()]);
   mocks.db.vehicle.findFirst.mockResolvedValue(fixture());
@@ -387,6 +390,32 @@ describe('public HTTP responses never disclose private inventory', () => {
 });
 
 describe('private photo storage boundary', () => {
+  it('loads a bounded selection in one fresh query with current ordered photo identities', async () => {
+    const otherSlug = 'other-012345abcdef';
+    const response = await fetch(`${base}/api/public/vehicles/selection?id=${otherSlug}&id=${slug}`);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    const body = await response.json();
+    expect(body.items[0]).toEqual({ id: otherSlug, status: 404, vehicle: null });
+    expect(body.items[1]).toMatchObject({ id: slug, status: 200, photoVersions: [publicPhotoVersion(photo)] });
+    expect(JSON.stringify(body)).not.toMatch(/SECRET|PRIVATE|publicPhotoPaths|private-vehicle-photos/);
+    expect(mocks.db.vehicle.findMany).toHaveBeenCalledTimes(1);
+    expect(mocks.db.vehicle.findMany.mock.calls[0][0].where).toEqual({ ...publicVehicleWhere(), publicSlug: { in: [otherSlug, slug] } });
+    const other = `${id}/12345678-1234-1234-1234-123456789abd.jpg`;
+    mocks.db.vehicle.findMany.mockResolvedValue([{ ...fixture(), photos: [other, photo], publicPhotoPaths: [photo, other], publicPrice: new Prisma.Decimal('20000.00'), status: 'RESERVED' }]);
+    const fresh = await (await fetch(`${base}/api/public/vehicles/selection?id=${slug}`)).json();
+    expect(fresh.items[0]).toMatchObject({ vehicle: { price: '20000.00', availability: 'RESERVED' }, photoVersions: [publicPhotoVersion(other), publicPhotoVersion(photo)] });
+    mocks.db.vehicle.findMany.mockResolvedValue([]);
+    expect((await (await fetch(`${base}/api/public/vehicles/selection?id=${slug}`)).json()).items[0].status).toBe(404);
+    expect(mocks.db.vehicle.findMany).toHaveBeenCalledTimes(3);
+  });
+  it('rejects malformed/unbounded selections and keeps batch failures opaque', async () => {
+    for (const query of [`id=${slug}&id=${slug}`, 'id=bad', 'unknown=1', ['a','b','c','d'].map(prefix=>`id=${prefix}-012345abcdef`).join('&')])
+      expect((await fetch(`${base}/api/public/vehicles/selection?${query}`)).status).toBe(400);
+    expect(mocks.db.vehicle.findMany).not.toHaveBeenCalled();
+    mocks.db.vehicle.findMany.mockRejectedValue(new Error('SECRET DATABASE ERROR'));
+    const response = await fetch(`${base}/api/public/vehicles/selection?id=${slug}`);
+    expect(response.status).toBe(503); expect(await response.text()).not.toContain('SECRET');
+  });
   it('does not extend shared permission while an already-authorized pixel download is still running', async () => {
     let finish!: (value: { data: Blob; error: null }) => void;
     const storage = new Promise<{ data: Blob; error: null }>(resolve => { finish = resolve; });

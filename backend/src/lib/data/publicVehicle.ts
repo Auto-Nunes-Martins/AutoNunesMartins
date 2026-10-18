@@ -258,6 +258,16 @@ export async function getPublicPhotoPath(db: PrismaClient, slug: string, index: 
 }
 
 export const publicPhotoVersion = (path:string) => createHash('sha256').update(path).digest('hex');
+/** One fresh, bounded query for a comparison; no retained vehicle/permission snapshot. */
+export async function getPublicSelection(db: PrismaClient, ids: string[]) {
+  if (!ids.length) return [];
+  const rows = await db.vehicle.findMany({ where: { ...publicVehicleWhere(), publicSlug: { in: ids } }, select: publicVehicleSelect });
+  return ids.map(id => {
+    const row = rows.find(row => row.publicSlug === id);
+    return row ? { id, status: 200, vehicle: publicVehicleDto(row), photoVersions: approvedPaths(row).map(publicPhotoVersion) }
+      : { id, status: 404, vehicle: null };
+  });
+}
 /** Fresh permission snapshot for reusing already-downloaded public thumbnails, never Storage URLs. */
 export async function getPublicPhotoVersions(db:PrismaClient,slug:string){
   const paths=await currentPublicPhotoPaths(db,slug);

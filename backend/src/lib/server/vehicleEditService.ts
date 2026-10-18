@@ -7,6 +7,8 @@ import { isApprovedPhotoPath, SLUG_SUFFIX_LENGTHS } from '../domain/publicVehicl
 import { getBucketName, getSupabase } from '../data/storage.js';
 import sharp from 'sharp';
 import { MAX_OUTPUT_BYTES, MAX_UPLOAD_PIXELS } from './photoOptimization.js';
+import { prisma } from '../../db.js';
+import { prepareVehicleArchive, revokeArchivePhotos, ArchiveSlugConflict } from './publicArchive.js';
 
 export const vehicleEditSchema = z.object({
   expectedUpdatedAt: z.string().datetime(),
@@ -35,6 +37,7 @@ export async function saveVehicleEdit(id: string, input: z.infer<typeof vehicleE
     if (!meta.width || !meta.height || (meta.pages ?? 1) !== 1 || !['jpeg', 'png', 'webp'].includes(meta.format ?? ''))
       throw new VehicleStateConflict('Fotografia preparada inválida.',409,'photos');
   }
+  const preparedArchive = await prepareVehicleArchive(prisma, id, input.publication ?? { published: false }, input.photos);
   for (const suffixLength of SLUG_SUFFIX_LENGTHS) {
     try {
       return await saleMutation(async tx => {
@@ -58,7 +61,7 @@ export async function saveVehicleEdit(id: string, input: z.infer<typeof vehicleE
         } });
         if (input.publication) {
           const publication = input.publication;
-          await applyWebPublication(tx, id, publication.published ? { ...publication, published: true } : { published: false }, actor.actorId, suffixLength);
+          await applyWebPublication(tx, id, publication.published ? { ...publication, published: true } : { published: false }, actor.actorId, suffixLength, preparedArchive);
           if (!publication.published) await tx.vehicle.update({ where: { id }, data: {
             publicPrice: publication.price, publicDescription: publication.description,
             publicPhotoPaths: publication.photoPaths, publicTransmission: publication.transmission,
@@ -66,9 +69,11 @@ export async function saveVehicleEdit(id: string, input: z.infer<typeof vehicleE
           } });
         }
         await tx.vehicle.update({ where: { id }, data: { updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)) } });
+        await revokeArchivePhotos(tx, id, input.photos, input.publication?.photoPaths ?? current.publicPhotoPaths);
         return { removedPhotos: current.photos.filter(path => !input.photos.includes(path)) };
       });
     } catch (error) {
+      if (error instanceof ArchiveSlugConflict) continue;
       const conflict = error as { code?: string; meta?: { target?: unknown } };
       if (conflict.code === 'P2002' && JSON.stringify(conflict.meta?.target).includes('publicSlug')) continue;
       throw error;

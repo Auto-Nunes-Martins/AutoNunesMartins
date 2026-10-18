@@ -6,11 +6,13 @@ import { Server } from '../apps/website/.svelte-kit/output/server/index.js';
 import { manifest } from '../apps/website/.svelte-kit/output/server/manifest.js';
 
 const privateMarker = 'PRIVATE_UNEXPECTED_ERROR_FIXTURE_NEVER_RENDER';
+const archiveSlug = 'archived-abcdef123456';
+const archivedVehicle = { slug: archiveSlug, brand: 'BMW', model: 'Série 1', year: 2019, photo: `/viaturas/${archiveSlug}/arquivo/foto` };
 const api = createServer((request, response) => {
   response.writeHead(request.url.includes('unavailable-') ? 503 : 404, {
     'content-type': 'application/json',
   });
-  response.end(JSON.stringify({ error: 'PRIVATE_BACKEND_FIXTURE_NEVER_RENDER' }));
+  response.end(JSON.stringify({ error: 'PRIVATE_BACKEND_FIXTURE_NEVER_RENDER', ...(request.url.endsWith('/' + archiveSlug) ? { archive: { ...archivedVehicle, vin: 'PRIVATE_ARCHIVE_FIELD', price: 'PRIVATE_ARCHIVE_PRICE' } } : {}) }));
 });
 await new Promise((resolve) => api.listen(0, '127.0.0.1', resolve));
 const index = manifest._.nodes.length;
@@ -68,6 +70,12 @@ try {
       'Esta viatura não está publicada.',
     ],
     [
+      `/viaturas/${archiveSlug}`,
+      404,
+      'BMW Série 1 2019 — Já não disponível',
+      'BMW Série 1',
+    ],
+    [
       '/viaturas/unavailable-abcdef123456',
       503,
       'Temporariamente indisponível',
@@ -93,6 +101,12 @@ try {
       'internal error details must stay out of HTML',
     );
     const main = /<main\b[^>]*>([\s\S]*?)<\/main>/.exec(html)?.[1];
+    if (path.includes(archiveSlug)) {
+      assert.ok(main.includes('JÁ NÃO ESTÁ DISPONÍVEL') && main.includes('2019'));
+      assert.equal((main.match(/<img\b/g) || []).length, 1, 'one minimal approved photograph');
+      assert.ok(main.includes(archivedVehicle.photo));
+      assert.ok(!html.includes('PRIVATE_ARCHIVE') && !main.includes('€') && !main.includes('related-carousel'));
+    }
     assert.ok(
       main?.includes('href="/"') && main.includes('href="/viaturas"'),
       'error page recovery links',

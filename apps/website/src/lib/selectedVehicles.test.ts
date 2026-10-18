@@ -4,6 +4,16 @@ const ids = ['audi-012345abcdef', 'bmw-012345abcdef', 'dacia-012345abcdef', 'tes
 const vehicle = { slug: ids[0], brand: 'Audi', model: 'A3', year: 2022, mileage: 12, fuel: 'GASOLINE', price: null, currency: 'EUR', description: null, transmission: null, availability: 'AVAILABLE', photos: [] };
 afterEach(() => vi.unstubAllGlobals());
 describe('Fresh selected vehicle data', () => {
+  it('passes only matching bounded photo identities and never reuses an earlier DTO on a later load', async () => {
+    const version='a'.repeat(64),fresh={...vehicle,photos:[`/api/public/vehicles/${ids[0]}/photos/0`]};
+    const fetcher=vi.fn().mockResolvedValueOnce(Response.json({items:[{id:ids[0],status:200,vehicle:fresh,photoVersions:[version]}]})).mockRejectedValueOnce(new Error('offline'));
+    vi.stubGlobal('fetch',fetcher);
+    expect((await loadSelectedVehicles([ids[0]!],new AbortController().signal))[0]?.photoVersions).toEqual([version]);
+    expect((await loadSelectedVehicles([ids[0]!],new AbortController().signal))[0]).toEqual({id:ids[0],status:503,vehicle:null});
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({items:[{id:ids[0],status:200,vehicle:fresh,photoVersions:['bad']}]})));
+    expect((await loadSelectedVehicles([ids[0]!],new AbortController().signal))[0]?.photoVersions).toBeUndefined();
+  });
   it('loads favorites in bounded batches and retains selection order', async () => {
     const fetcher = vi.fn().mockImplementation(async (url: string) => Response.json({ items: new URL(url, 'http://site.test').searchParams.getAll('id').reverse().map(id => ({ id, status: 404, vehicle: null })) }));
     vi.stubGlobal('fetch', fetcher);

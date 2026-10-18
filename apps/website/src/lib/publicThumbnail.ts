@@ -20,7 +20,7 @@ function remember(slug: string, version: string, width: number, blob: Blob) {
 }
 
 /** One fresh permission snapshot per gallery; requests never reuse approval from an earlier visit. */
-export function createThumbnailSession(slug: string) {
+export function createThumbnailSession(slug: string, freshVersions?: string[]) {
   const reuse = available(slug);
   let promise: Promise<string[]> | undefined, controller = new AbortController(), users = 0;
   return {
@@ -29,6 +29,9 @@ export function createThumbnailSession(slug: string) {
     attach() { if (controller.signal.aborted) { controller = new AbortController(); promise = undefined; } users++; },
     detach() { if (--users <= 0) controller.abort(); },
     access() {
+      // Comparison supplies identities from its just-completed no-store selection query.
+      // Never pass versions retained from an earlier mount/visit here.
+      if (freshVersions) return promise ??= Promise.resolve(freshVersions);
       return promise ??= fetch(`/viaturas/${slug}/photos/access`, { cache: 'no-store', credentials: 'omit', signal: controller.signal }).then(async response => {
         if (!response.ok) throw Error('Photos unavailable');
         const data = await response.json();

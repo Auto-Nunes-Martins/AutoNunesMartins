@@ -8,6 +8,7 @@ import { logger } from '../logger.js';
 import {
   getPublicPhotoPath,
   getPublicPhotoVersions,
+  getPublicSelection,
   publicPhotoVersion,
   getPublicVehicle,
   listPublicVehicles,
@@ -15,6 +16,7 @@ import {
   relatedPublicVehicles,
 } from '../lib/data/publicVehicle.js';
 import { publicSlugSchema, publicVehicleQuerySchema } from '../lib/domain/publicVehicle.js';
+import { readPublicArchive, readPublicArchivePhoto } from '../lib/server/publicArchive.js';
 
 const router = Router();
 router.use((_req, res, next) => {
@@ -55,6 +57,14 @@ router.get(
   }),
 );
 
+router.get('/selection', asyncHandler(async (req, res) => {
+  const raw = req.query.id === undefined ? [] : Array.isArray(req.query.id) ? req.query.id : [req.query.id];
+  const parsed = z.array(publicSlugSchema).max(3).refine(ids => new Set(ids).size === ids.length).safeParse(raw);
+  if (!parsed.success || Object.keys(req.query).some(key => key !== 'id')) { res.status(400).json({ error: 'Invalid selection' }); return; }
+  try { res.json({ items: await getPublicSelection(prisma, parsed.data) }); }
+  catch { logger.error('Public selection unavailable'); res.status(503).json({ error: 'Selection unavailable' }); }
+}));
+
 router.get('/homepage-highlights', asyncHandler(async (_req, res) => {
   try { res.json(await readPublicHighlights(prisma)); }
   catch { logger.error('Public homepage highlights unavailable'); res.status(503).json({ error: 'Destaques temporariamente indisponíveis' }); }
@@ -82,6 +92,17 @@ router.get(
   }),
 );
 
+router.get('/archive/:slug/photo', asyncHandler(async (req, res) => {
+  const slug = publicSlugSchema.safeParse(req.params.slug);
+  if (!slug.success) { res.status(404).end(); return; }
+  try {
+    const bytes = await readPublicArchivePhoto(prisma, slug.data);
+    if (!bytes) { res.status(404).end(); return; }
+    res.set({ 'Content-Type': 'image/webp', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex' });
+    res.send(bytes);
+  } catch { res.status(503).end(); }
+}));
+
 router.get(
   '/:slug',
   asyncHandler(async (req, res) => {
@@ -93,7 +114,8 @@ router.get(
     try {
       const vehicle = await getPublicVehicle(prisma, slug.data);
       if (!vehicle) {
-        res.status(404).json({ error: 'Vehicle not found' });
+        const archive = await readPublicArchive(prisma, slug.data);
+        res.status(404).json({ error: 'Vehicle not found', ...(archive ? { archive } : {}) });
         return;
       }
       res.json(vehicle);

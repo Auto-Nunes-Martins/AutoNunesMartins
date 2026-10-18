@@ -5,10 +5,10 @@
   --nav-compact-row-height: 80px;
   --nav-full-height: var(--nav-row-height);
   --nav-visible-height: var(--nav-full-height);
-  --nav-inline-space: max(2.5%, calc((100vw - 1640px) / 2));
+  --nav-inline-space: max(2.5%, calc((100vw - var(--orbit-frame-max, 1440px)) / 2));
 }
 .design.orbit.has-address:is(.orbit-home, .orbit-catalog, .orbit-privacy, .orbit-detail) {
-  --nav-inline-space: max(24px, 2%, calc((100% - 1720px) / 2));
+  --nav-inline-space: max(24px, 2%, calc((100% - var(--orbit-frame-max, 1440px)) / 2));
 }
 .design.orbit.has-address.orbit-company { --nav-row-height: var(--company-nav-height); }
 .design.orbit.has-address.orbit-home.nav-pinned,

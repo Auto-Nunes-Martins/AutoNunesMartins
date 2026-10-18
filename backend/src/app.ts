@@ -10,6 +10,7 @@ import { clerkMiddleware, requireUser, type AuthedRequest } from './middleware/c
 import clerkWebhookRouter from './routes/webhooks/clerk.js';
 import vehiclesRouter from './routes/vehicles.js';
 import publicVehiclesRouter from './routes/publicVehicles.js';
+import publicArchivesRouter from './routes/publicArchives.js';
 import homepageHighlightsRouter from './routes/homepageHighlights.js';
 import vehicleWebPublicationRouter from './routes/vehicleWebPublication.js';
 import vehicleStatsRouter from './routes/vehicleStats.js';
@@ -73,6 +74,7 @@ app.use((req, res, next) => {
 // Public read-only projection bypasses authenticated CRM auto-provisioning.
 app.use('/api/public/vehicles', publicVehiclesRouter);
 app.use(clerkMiddleware);
+app.use('/api/public-archives', publicArchivesRouter);
 app.get('/api/me', requireUser, (req: AuthedRequest, res: Response) => {
   res.json({ user: req.user });
 });

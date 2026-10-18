@@ -8,9 +8,8 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     if (result.status === 503) setHeaders({ 'retry-after': '120' });
     error(
       result.status === 404 ? 404 : 503,
-      result.status === 404
-        ? 'Esta viatura não está publicada.'
-        : 'A ficha está temporariamente indisponível.',
+      { message: result.status === 404 ? 'Esta viatura já não está disponível.' : 'A ficha está temporariamente indisponível.',
+        ...('archive' in result && result.archive ? { archive: result.archive } : {}) },
     );
   }
   return { vehicle: result.vehicle, relatedVehicles: await loadRelatedVehicles(params.slug) };

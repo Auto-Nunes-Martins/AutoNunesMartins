@@ -9,6 +9,7 @@
   import './photoViewer.css';
   import { logoLight, logoDark, logoLightSrcset, logoDarkSrcset, catalogPlaceholder } from '$lib/localAssets';
   import { publicErrorCopy } from '$lib/publicError';
+  import type { PublicArchive } from '$lib/publicArchive';
   import HeroBackgroundTuner from './HeroBackgroundTuner.svelte';
   import { highlightSlides, type PublicHighlights, type HeroSlide } from '$lib/homepageHighlights';
   import HeroStandBackground from './HeroStandBackground.svelte';
@@ -118,6 +119,7 @@
     publicVehicle,
     relatedVehicles = [],
     errorStatus,
+    archivedVehicle,
     homeHighlights,
   }: {
     id?: string;
@@ -132,6 +134,7 @@
     publicVehicle?: PublicVehicle;
     relatedVehicles?: PublicVehicle[];
     errorStatus?: number;
+    archivedVehicle?: PublicArchive;
     homeHighlights?: PublicHighlights;
   } = $props();
   const thumbnailSession = $derived(publicVehicle ? createThumbnailSession(publicVehicle.slug) : undefined);
@@ -500,12 +503,21 @@
   {#if errorStatus}
     {@const content = publicErrorCopy(errorStatus, $page.url.pathname)}
     <main class="not-found">
-      <p class="kicker">UM DESVIO DE PERCURSO · {errorStatus}</p>
-      <h1>{content.heading}</h1>
-      <p class="error-description">{content.message}</p>
+      {#if errorStatus === 404 && archivedVehicle}
+        <p class="kicker">JÁ NÃO ESTÁ DISPONÍVEL</p>
+        <h1>{archivedVehicle.brand} {archivedVehicle.model}</h1>
+        <p class="error-description">{archivedVehicle.year} · Esta viatura já não está disponível. Explore as viaturas que temos atualmente em catálogo.</p>
+        {#if archivedVehicle.photo}
+          <img class="archive-photo" style="display:block;width:100%;max-width:800px;height:auto;max-height:480px;object-fit:contain;object-position:left;margin:28px 0" src={archivedVehicle.photo} alt={`${archivedVehicle.brand} ${archivedVehicle.model}, ${archivedVehicle.year}`} />
+        {/if}
+      {:else}
+        <p class="kicker">UM DESVIO DE PERCURSO · {errorStatus}</p>
+        <h1>{content.heading}</h1>
+        <p class="error-description">{content.message}</p>
+      {/if}
       <div class="error-actions">
-        <a class="pill primary" href="/">Voltar ao início <ArrowUpRight size={18} aria-hidden="true" /></a>
-        <a class="pill" href="/viaturas">Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a>
+        <a class="pill primary" href="/viaturas">Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a>
+        <a class="pill" href="/">Página inicial <ArrowUpRight size={18} aria-hidden="true" /></a>
       </div>
     </main>
   {:else if favorites}
@@ -522,7 +534,7 @@
     <main class="not-found">
       <p class="kicker">DESVIO DE PERCURSO</p>
       <h1>Esta viatura<br />não está por aqui.</h1>
-      <a class="pill" href="/">Voltar à seleção <ArrowUpRight size={18} aria-hidden="true" /></a>
+      <div class="error-actions"><a class="pill primary" href="/viaturas">Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a><a class="pill" href="/">Página inicial <ArrowUpRight size={18} aria-hidden="true" /></a></div>
     </main>
   {:else if car}
     <main class="vehicle-page">
@@ -1219,7 +1231,6 @@
   .design.orbit-catalog,
   .design.orbit-privacy {
     --orbit-frame: min(96%, calc(100% - 48px));
-    --orbit-frame-max: 1720px;
   }
   .design.orbit.orbit-company {
     --company-nav-height: 94px;
@@ -1245,7 +1256,7 @@
   }
   .design.orbit-catalog header,
   .design.orbit-privacy header {
-    padding-inline: max(24px, 2%, calc((100% - 1720px) / 2));
+    padding-inline: max(24px, 2%, calc((100% - var(--orbit-frame-max)) / 2));
   }
   @media (max-width: 700px) {
     .design.orbit-catalog,
@@ -3988,6 +3999,14 @@
     letter-spacing: -.035em;
   }
   .vehicle-card .card-price > a { min-height: 44px; font-size: 12px; }
+  @media (min-width: 701px) {
+    /* Different title lengths keep prices and actions aligned across a row. */
+    .vehicle-card {display:flex;flex-direction:column;height:100%;}
+    .vehicle-card .card-image {flex-shrink:0;}
+    .vehicle-card .card-body {display:flex;flex:1;flex-direction:column;}
+    .vehicle-card .card-specs {margin-bottom:20px;}
+    .vehicle-card .card-price {margin-top:auto;}
+  }
   .related-grid .related-body p { margin-top: 12px; font-size: 12px; line-height: 1.65; }
   .related-price { display: block; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
   .vehicle-card:focus-within { outline-color: color-mix(in srgb, var(--text) 50%, var(--bg)); }
