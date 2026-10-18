@@ -31,6 +31,7 @@
   if (browser) theme.initialize(() => localStorage);
   setContext(publicThemeContext, theme);
   const { ids: comparisonIds } = comparison;
+  $effect.pre(() => notifications.setCurrentPath($page.url.pathname));
   $effect(() => {
     if ($comparisonIds.length < 2) notifications.invalidateActions('comparison', { label: 'Ver seleção', href: '/comparar' });
   });

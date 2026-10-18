@@ -1,5 +1,5 @@
 import { publicVehicleSchema, type PublicVehicle } from './publicVehicles';
-export type SelectedVehicle = { id: string; status: number; vehicle: PublicVehicle | null };
+export type SelectedVehicle = { id: string; status: number; vehicle: PublicVehicle | null; photoVersions?: string[] };
 
 /** The public BFF bounds each request to three IDs. Favorites request only their visible page. */
 export async function loadSelectedVehicles(ids: string[], signal: AbortSignal): Promise<SelectedVehicle[]> {
@@ -16,7 +16,9 @@ export async function loadSelectedVehicles(ids: string[], signal: AbortSignal): 
         if (item?.status === 404) return { id, status: 404, vehicle: null };
         const parsed = publicVehicleSchema.safeParse(item?.vehicle);
         if (item?.status !== 200 || !parsed.success || parsed.data.slug !== id) return { id, status: 503, vehicle: null };
-        return { id, status: 200, vehicle: parsed.data };
+        const versions = item.photoVersions;
+        const valid = Array.isArray(versions) && versions.length === parsed.data.photos.length && versions.length <= 20 && versions.every((v: unknown) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v));
+        return { id, status: 200, vehicle: parsed.data, ...(valid ? { photoVersions: versions } : {}) };
       });
     } catch {
       return selected.map(id => ({ id, status: 503, vehicle: null }));

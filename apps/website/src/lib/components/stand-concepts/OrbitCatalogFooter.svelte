@@ -30,7 +30,7 @@
 </footer>
 
 <style>
-  .catalog-footer { background: #101012; color: #f5f5f1; padding: clamp(48px, 6vw, 96px) max(24px, 2%, calc((100% - 1720px) / 2)) 28px; }
+  .catalog-footer { background: #101012; color: #f5f5f1; padding: clamp(48px, 6vw, 96px) max(24px, 2%, calc((100% - var(--orbit-frame-max, 1440px)) / 2)) 28px; }
   p { margin: 0; }
   .eyebrow { color: #a5a5aa; font-size: 10px; letter-spacing: .12em; line-height: 1.7; }
   .invitation { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 30px; padding: 42px 0; border: 0; background: none; color: inherit; cursor: pointer; text-align: left; font: inherit; }

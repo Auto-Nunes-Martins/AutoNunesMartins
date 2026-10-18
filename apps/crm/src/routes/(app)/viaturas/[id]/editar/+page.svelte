@@ -130,7 +130,7 @@
             method="POST"
             action="?/delete"
             use:enhance={({ cancel }) => {
-              if (!window.confirm(`Eliminar definitivamente ${v.brand} ${v.model}?`)) {
+              if (!window.confirm(`Eliminar definitivamente ${v.brand} ${v.model}? O arquivo público mínimo autorizado será conservado. Pode retirar a identificação ou fotografia em Site → Arquivo público.`)) {
                 cancel();
                 return;
               }

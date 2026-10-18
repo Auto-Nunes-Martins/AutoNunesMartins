@@ -1,6 +1,7 @@
 <script lang="ts">
  import {photoAttrs,photoFallback,type SignedVariantPhoto} from "$lib/vehicleImage";
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
+  import { crmPath } from '$lib/paths';
   import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
   import { enhance } from '$app/forms';
   import { tick, untrack, type Snippet } from 'svelte';
@@ -236,6 +237,7 @@
   <div class="heading">
     <div>
       <h2 id="web-publication-title">Publicação no website</h2>
+      <p>O arquivo mínimo tem autorização própria. <a href={crmPath('/site/arquivo')}>Gerir identificação e fotografia do arquivo público</a>.</p>
       <p>
         {vehicle.webPublished
           ? eligible

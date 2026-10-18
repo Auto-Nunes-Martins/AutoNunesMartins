@@ -108,6 +108,17 @@ describe('Global notification lifecycle', () => {
     vi.advanceTimersByTime(NOTIFICATION_DURATION); expect(get(host.notices)).toEqual([]);
     unsubscribe();
   });
+  it('silences comparison removal/clear on its own page and clears pending notices on entry', () => {
+    const host=createNotifications(),comparison=createComparison(host.push);
+    const ids=['audi-012345abcdef','bmw-012345abcdef','dacia-012345abcdef'];
+    ids.forEach(id=>comparison.toggle(id,id));expect(get(host.notices)).toHaveLength(3);
+    host.setCurrentPath('/comparar');expect(get(host.notices)).toEqual([]);expect(vi.getTimerCount()).toBe(0);
+    comparison.remove(ids[2]!);comparison.clear();expect(get(host.notices)).toEqual([]);
+    expect(get(comparison.notice)?.text).toContain('Comparação limpa');
+    host.setCurrentPath('/viaturas');comparison.toggle(ids[0]!,ids[0]!);expect(get(host.notices)).toHaveLength(1);
+    host.push({message:'Current destination',action:{label:'Aqui',href:'/viaturas'}});expect(get(host.notices)[0]?.action).toBeUndefined();
+    host.destroy();
+  });
   it('bounds a burst and cancels discarded timers, retaining only the latest messages', () => {
     const host = createNotifications();
     for (let i = 0; i < 1000; i++) host.push({ message: `Event ${i}` });

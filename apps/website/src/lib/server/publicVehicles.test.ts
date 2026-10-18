@@ -5,6 +5,18 @@ import { emptyStock } from '../publicVehicles';
 
 afterEach(() => vi.unstubAllGlobals());
 describe('Public BFF without CRM authentication', () => {
+  it('accepts only the minimal archived identity on a real 404, without stale fallback', async () => {
+    const slug = 'bmw-2019-012345abcdef';
+    const archive = { slug, brand: 'BMW', model: 'Série 1', year: 2019, photo: `/viaturas/${slug}/arquivo/foto` };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(Response.json({ archive: { ...archive, vin: 'PRIVATE', price: 'PRIVATE' } }, { status: 404 })).mockResolvedValueOnce(Response.json({ archive }, { status: 503 })).mockResolvedValueOnce(Response.json({}, { status: 404 })));
+    expect(await loadPublicVehicle(slug)).toEqual({ status: 404, vehicle: null, archive });
+    expect(await loadPublicVehicle(slug)).toEqual({ status: 503, vehicle: null });
+    expect(await loadPublicVehicle(slug)).toEqual({ status: 404, vehicle: null });
+  });
+  it.each(['https://private.test/photo', '/viaturas/another-012345abcdef/arquivo/foto'])('rejects a substituted archive photo address %s', async photo => {
+    const slug = 'bmw-2019-012345abcdef'; vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ archive: { slug, brand: 'BMW', model: 'Série 1', year: 2019, photo } }, { status: 404 })));
+    expect(await loadPublicVehicle(slug)).toEqual({ status: 404, vehicle: null });
+  });
   it.each([0, 1, 3, 5])('accepts %i real related vehicles without filling empty slots', async count => {
     const rows = Array.from({ length: count }, (_, i) => ({ slug: `car-${String(i).padStart(12, 'a')}`, brand: 'Marca', model: 'Modelo', year: 2023, fuel: 'GASOLINE', mileage: 20000, price: '20000.00', currency: 'EUR', description: null, transmission: null, availability: 'AVAILABLE', photos: [] }));
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(rows)));

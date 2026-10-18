@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { emitActivity } from '../data/activity.js';
+import { prepareVehicleArchive, syncPublishedArchive, ArchiveSlugConflict, type PreparedArchivePhoto } from './publicArchive.js';
 import {
   isApprovedPhotoPath,
   makePublicSlug,
@@ -25,6 +26,7 @@ export async function setWebPublication(
   input: WebPublication,
   actorId: string | null,
 ) {
+  const preparedArchive = await prepareVehicleArchive(db, id, input);
   let suffixIndex = 0;
   // A concurrent first publication must re-read a winning persisted slug,
   // never overwrite it using an earlier snapshot of the vehicle's title.
@@ -33,10 +35,11 @@ export async function setWebPublication(
     if (suffixLength === undefined) break;
     try {
       return await db.$transaction(
-        tx => applyWebPublication(tx, id, input, actorId, suffixLength),
+        tx => applyWebPublication(tx, id, input, actorId, suffixLength, preparedArchive),
         { isolationLevel: 'Serializable' },
       );
     } catch (error) {
+      if (error instanceof ArchiveSlugConflict) { suffixIndex++; continue; }
       const dbError = error as { code?: string; meta?: { target?: unknown } };
       if (dbError.code === 'P2034') continue;
       // Unique index enforces the final guarantee. Retry using a longer ID hash.
@@ -53,7 +56,7 @@ export async function setWebPublication(
 
 /** Apply within an existing vehicle edit transaction. */
 export async function applyWebPublication(
-  tx: Prisma.TransactionClient, id: string, input: WebPublication, actorId: string | null, suffixLength: number = 12,
+  tx: Prisma.TransactionClient, id: string, input: WebPublication, actorId: string | null, suffixLength: number = 12, preparedArchive?: PreparedArchivePhoto,
 ) {
   const vehicle = await tx.vehicle.findUnique({
     where: { id },
@@ -115,6 +118,7 @@ export async function applyWebPublication(
       : { webPublished: false },
     select: { webPublished: true, publicSlug: true },
   });
+  if (input.published) await syncPublishedArchive(tx, { id, brand: vehicle.brand, model: vehicle.model, year: vehicle.year, slug: slug!, photos: vehicle.photos, approved: input.photoPaths }, preparedArchive);
   await emitActivity(tx, {
     actorId,
     type: 'VEHICLE_UPDATED',

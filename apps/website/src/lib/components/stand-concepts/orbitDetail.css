@@ -3,13 +3,12 @@
 .detail-favorite-mobile { display: none; }
 .design.orbit.orbit-detail {
   --orbit-frame: min(96%, calc(100% - 48px));
-  --orbit-frame-max: 1720px;
   --detail-space: clamp(56px, 5vw, 88px);
   --detail-gap: clamp(32px, 4vw, 72px);
   --orbit-space-section: var(--detail-space);
 }
 .design.orbit.orbit-detail header {
-  padding-inline: max(24px, 2%, calc((100% - 1720px) / 2));
+  padding-inline: max(24px, 2%, calc((100% - var(--orbit-frame-max)) / 2));
 }
 .design.orbit.orbit-detail .breadcrumbs,
 .design.orbit.orbit-detail .services,
@@ -111,7 +110,7 @@
   font-size: clamp(20px, 1.8vw, 27px);
 }
 .design.orbit.orbit-detail footer {
-  padding-inline: max(24px, 2%, calc((100% - 1720px) / 2));
+  padding-inline: max(24px, 2%, calc((100% - var(--orbit-frame-max)) / 2));
 }
 @media (max-width: 1050px) {
   .design.orbit.orbit-detail .vehicle-layout {

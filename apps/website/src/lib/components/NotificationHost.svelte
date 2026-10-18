@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { afterNavigate } from '$app/navigation';
+  import { page } from '$app/stores';
   import { flip } from 'svelte/animate';
   import { fade } from 'svelte/transition';
   import { cubicInOut, cubicOut } from 'svelte/easing';
@@ -8,6 +9,7 @@
   import { useNotifications } from '$lib/notifications';
   const notifications = useNotifications();
   const { notices } = notifications;
+  const onComparison = $derived($page.url.pathname.replace(/\/$/, '') === '/comparar');
   let reduced = $state(true);
   let offset = $state(110);
   let announcement = $state('');
@@ -90,10 +92,10 @@
 </script>
 
 <div class="announcements" role="status" aria-live="polite" aria-atomic="true" aria-label="Notificações">{announcement}</div>
-<div class="notification-stack" style={`--notice-top:${offset}px`}>
+<div class="notification-stack" class:on-comparison={onComparison} style={`--notice-top:${offset}px`}>
   {#each visible as notice, index (notice.id)}
     {@const message = displayMessage(notice.message)}
-    <div class="notice-slot" style={`grid-row:${index + 1}`} inert={!visible.some(item => item.id === notice.id)} animate:reposition={{ reduced }} in:enter={{ duration: reduced ? 0 : 240 }} out:leave={{ duration: reduced ? 0 : 280 }}>
+    <div class="notice-slot" class:comparison-notice={notice.channel === 'comparison'} style={`grid-row:${index + 1}`} inert={!visible.some(item => item.id === notice.id)} animate:reposition={{ reduced }} in:enter={{ duration: reduced ? 0 : 240 }} out:leave={{ duration: reduced ? 0 : 280 }}>
       {#if index === visible.length - 1 && $notices.length > visibleLimit + 1}<div class="notice-layer layer-back" aria-hidden="true" transition:fade={{ duration: reduced ? 0 : 240 }}></div>{/if}
       {#if index === visible.length - 1 && $notices.length > visibleLimit}<div class="notice-layer layer-middle" aria-hidden="true" transition:fade={{ duration: reduced ? 0 : 240 }}></div>{/if}
     <aside class="notification" class:has-action={!!notice.action} aria-label={notice.channel === 'comparison' ? 'Comparação' : notice.channel === 'favorites' ? 'Favoritos' : 'Notificação'}
@@ -110,6 +112,7 @@
 </div>
 
 <style>
+  .on-comparison .comparison-notice {display:none;}
   .announcements { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .notification-stack { --notice-bg: #fafbf8; --notice-glass: #fafbf8e0; --notice-text: #191c19; --notice-muted: #515850; --notice-line: #ffffffc4; position: fixed; z-index: 80; left: 50%; top: max(var(--notice-top), calc(env(safe-area-inset-top) + 12px)); transform: translateX(-50%); width: min(880px, calc(100% - 24px)); max-height: calc(100dvh - var(--notice-top) - 12px); display: grid; gap: 10px; padding: 6px 16px 36px; pointer-events: none; font-family: 'Orbit Inter', Arial, sans-serif; }
   :global(:where(html)[data-theme='dark']) .notification-stack { --notice-bg: #1b1e1b; --notice-glass: #1b1e1bdc; --notice-text: #f5f6f2; --notice-muted: #c3c8c1; --notice-line: #ffffff26; }

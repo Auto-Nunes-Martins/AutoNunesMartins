@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { loadPublicVehicle } from '$lib/server/publicVehicles';
+import { publicRequest } from '$lib/server/publicVehicles';
+import { publicVehicleSchema } from '$lib/publicVehicles';
 import { slugPattern } from '$lib/publicVehicles';
 import type { RequestHandler } from './$types';
 
@@ -10,6 +11,20 @@ export const GET: RequestHandler = async ({ url }) => {
       new Set(ids).size !== ids.length || ids.some(id => id.length > 180 || !slugPattern.test(id))) {
     return json({ error: 'Seleção inválida.' }, { status: 400, headers });
   }
-  const items = await Promise.all(ids.map(async id => ({ id, ...await loadPublicVehicle(id) })));
-  return json({ items }, { headers });
+  if (!ids.length) return json({ items: [] }, { headers });
+  try {
+    const response = await publicRequest(`/selection?${new URLSearchParams(ids.map(id => ['id', id]))}`);
+    if (!response.ok) throw Error('Unavailable');
+    const data = await response.json();
+    const items = ids.map(id => {
+      const item = Array.isArray(data.items) ? data.items.find((entry: { id?: string } | null) => entry?.id === id) : null;
+      if (item?.status === 404) return { id, status: 404, vehicle: null };
+      const parsed = publicVehicleSchema.safeParse(item?.vehicle);
+      if (item?.status !== 200 || !parsed.success || parsed.data.slug !== id) return { id, status: 503, vehicle: null };
+      const versions = item.photoVersions;
+      const valid = Array.isArray(versions) && versions.length === parsed.data.photos.length && versions.length <= 20 && versions.every((v: unknown) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v));
+      return { id, status: 200, vehicle: parsed.data, ...(valid ? { photoVersions: versions } : {}) };
+    });
+    return json({ items }, { headers });
+  } catch { return json({ items: ids.map(id => ({ id, status: 503, vehicle: null })) }, { headers }); }
 };

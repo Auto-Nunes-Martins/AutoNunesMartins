@@ -4,6 +4,16 @@
  */
 .design .nav-reserve { display: none; }
 
+/* A short inner page occupies the first screen before the shared invitation.
+ * svh avoids toolbar-driven resizing; longer mains retain their natural flow.
+ * The homepage already owns its viewport composition and is not stretched.
+ */
+.design.orbit.orbit-inner > main {
+  box-sizing: border-box;
+  min-block-size: max(0px, calc(100vh - var(--nav-full-height, 94px) - var(--nav-address-height, 0px)));
+  min-block-size: max(0px, calc(100svh - var(--nav-full-height, 94px) - var(--nav-address-height, 0px)));
+}
+
 /* Navigation feedback is neutral; reserve red for the established brand accents. */
 .design.orbit > .stand-header > nav > a {
   position: relative;
@@ -129,7 +139,7 @@
   --orbit-line-glow: drop-shadow(0 0 2.5px rgb(255 51 76 / 90%)) drop-shadow(0 0 5px #e3061366) drop-shadow(0 0 12px #e3061399) drop-shadow(0 0 26px #e3061359);
   --orbit-panel-bg: color-mix(in srgb, var(--text) 2%, transparent);
   --orbit-frame: min(96%, calc(100% - 48px));
-  --orbit-frame-max: 1720px;
+  --orbit-frame-max: 1440px;
   --orbit-space-section: clamp(64px, 6vw, 96px);
   --orbit-space-half: calc(var(--orbit-space-section) / 2);
   --orbit-space-arrival: clamp(96px, 8vw, 128px);

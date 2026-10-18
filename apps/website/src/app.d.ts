@@ -1,4 +1,4 @@
 declare global {
-  namespace App {}
+  namespace App { interface Error { message: string; archive?: import('$lib/publicArchive').PublicArchive } }
 }
 export {};

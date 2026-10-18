@@ -1,10 +1,10 @@
 <script lang="ts">
  import {sizedPhoto,vehiclePhotoSet} from "$lib/vehiclePhotoSources";
-  import { vehiclePhoto } from '$lib/vehiclePhoto';
+  import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from '$lib/publicThumbnail';
   import { catalogPlaceholder } from '$lib/localAssets';
   import { page } from '$app/stores';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { ArrowUpRight, ArrowLeft, Plus, X, RotateCcw } from 'lucide-svelte';
   import { useComparison, comparisonRows } from '$lib/comparison';
   import { publicHref, publicPhoto, publicPrice } from '$lib/publicVehicles';
@@ -16,12 +16,21 @@
   let reload = $state(0);
   let heading: HTMLHeadingElement;
   let compact = $state(false);
+  let announcement = $state('');
+  let loadedReload = -1;
   let pair = $state('0-1');
   const pairs = [[0, 1], [0, 2], [1, 2]] as const;
   const visible = $derived(compact && entries.length === 3
     ? pair.split('-').map(index => entries[Number(index)]!).filter(Boolean)
     : entries);
   const facts = comparisonRows.filter(row => row.label !== 'Preço');
+  const middleLabels = $derived(!compact && visible.length > 1);
+  const sessions = new WeakMap<Entry, ReturnType<typeof createThumbnailSession>>();
+  const imageSessions = $derived(new Map(entries.filter(entry => entry.vehicle).map(entry => {
+    let session = sessions.get(entry);
+    if (!session) { session = createThumbnailSession(entry.id, entry.photoVersions); sessions.set(entry, session); }
+    return [entry.id, session];
+  })));
   onMount(() => {
     const media = matchMedia('(max-width: 700px)');
     const update = () => { compact = media.matches; };
@@ -31,15 +40,20 @@
   const name = (entry: Entry) => entry.vehicle ? `${entry.vehicle.brand} ${entry.vehicle.model}` : 'Viatura indisponível';
   $effect(() => {
     const selected = [...$ids];
-    reload;
+    const requestedReload = reload;
     if (!$ready || !selected.length) { entries = []; loading = false; return; }
     const controller = new AbortController();
+    const current = untrack(() => entries);
+    if (loadedReload === requestedReload && selected.every(id => current.some(entry => entry.id === id))) {
+      entries = current.filter(entry => selected.includes(entry.id));
+      return;
+    }
     entries = [];
     loading = true;
     void (async () => {
       try {
         const fresh = await loadSelectedVehicles(selected, controller.signal);
-        if (!controller.signal.aborted) entries = fresh;
+        if (!controller.signal.aborted) { entries = fresh; loadedReload = requestedReload; }
       } catch {
         if (!controller.signal.aborted) entries = selected.map(id => ({ id, status: 503, vehicle: null }));
       } finally { if (!controller.signal.aborted) loading = false; }
@@ -49,6 +63,7 @@
   async function remove(entry?: Entry) {
     if (entry) comparison.remove(entry.id, name(entry));
     else comparison.clear();
+    announcement = entry ? `${name(entry)} removido da comparação. ${$ids.length} ${$ids.length === 1 ? 'viatura selecionada' : 'viaturas selecionadas'}.` : 'Seleção de comparação limpa.';
     await tick();
     heading?.focus({ preventScroll: true });
   }
@@ -63,15 +78,16 @@
   <meta name="robots" content="noindex, follow" />
 </svelte:head>
 
-<main class="comparison-page" class:empty-selection={!$ready || !$ids.length}>
+<main class="comparison-page">
   <nav class="back-nav" aria-label="Voltar à lista de viaturas"><a class="back" href="/viaturas"><ArrowLeft size={16} aria-hidden="true" /> Viaturas</a></nav>
   <header class="page-heading">
     <h1 bind:this={heading} tabindex="-1">Comparar viaturas<span>.</span></h1>
     {#if $ready && $ids.length}
+      <div class="selection-toolbar"><p class="selection-count">{$ids.length} de 3 viaturas</p>
       <div class="actions">
-        <a class="add" href="/viaturas">{$ids.length < 3 ? 'Adicionar viatura' : 'Ver catálogo'} <Plus size={17} aria-hidden="true" /></a>
-        <button class="clear" type="button" onclick={() => remove()}>Limpar</button>
-      </div>
+        <a class="add" href="/viaturas">{#if $ids.length < 3}<Plus size={17} aria-hidden="true" /> Adicionar viatura{:else}Ver catálogo <ArrowUpRight size={17} aria-hidden="true" />{/if}</a>
+        <button class="clear" type="button" onclick={() => remove()}><RotateCcw size={15} aria-hidden="true" /> Limpar seleção</button>
+      </div></div>
     {/if}
   </header>
 
@@ -101,21 +117,26 @@
     <div class="comparison-board" class:single={visible.length === 1} class:pair={visible.length === 2} class:triple={visible.length === 3}>
       <table>
         <caption class="sr-only">Comparação de {visible.map(name).join(' e ')}</caption>
+        <colgroup>{#each visible as entry, column}<col />{#if middleLabels && column === 0}<col class="attribute-column" />{/if}{/each}</colgroup>
         <thead>
           <tr class="photo-row">
-            {#each visible as entry (entry.id)}
+            {#each visible as entry, column (entry.id)}
               <td>
                 <div class="vehicle-photo">
                   {#if entry.vehicle}
-                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><img use:vehiclePhoto={{ src: entry.vehicle.photos.length ? sizedPhoto(publicPhoto(entry.id, 0),800) : catalogPlaceholder, srcset: entry.vehicle.photos.length ? vehiclePhotoSet(publicPhoto(entry.id,0)) : undefined }} src={entry.vehicle.photos.length ? sizedPhoto(publicPhoto(entry.id, 0),800) : catalogPlaceholder} srcset={entry.vehicle.photos.length ? vehiclePhotoSet(publicPhoto(entry.id,0)) : undefined} sizes="(max-width:700px) 90vw, 560px" alt={entry.vehicle.photos.length ? name(entry) : `Fotografia indisponível: ${name(entry)}`} width="480" height="320" /></a>
+                    {@const session = imageSessions.get(entry.id)!}
+                    {@const src = entry.vehicle.photos.length ? sizedPhoto(publicPhoto(entry.id, 0),800) : catalogPlaceholder}
+                    {@const srcset = entry.vehicle.photos.length ? vehiclePhotoSet(publicPhoto(entry.id,0)) : undefined}
+                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><img {...thumbnailAttrs(session,src,srcset)} use:publicThumbnail={{session,index:0,src,srcset,sizes:'(max-width:700px) 90vw, 560px'}} sizes="(max-width:700px) 90vw, 560px" alt={entry.vehicle.photos.length ? name(entry) : `Fotografia indisponível: ${name(entry)}`} width="480" height="320" /></a>
                   {:else}<div class="missing-photo"><img src={catalogPlaceholder} alt="Fotografia indisponível" width="480" height="320" /></div>{/if}
                   <button class="remove" type="button" aria-label={`Remover ${name(entry)} da comparação`} onclick={() => remove(entry)}><X size={18} aria-hidden="true" /></button>
                 </div>
               </td>
+              {#if middleLabels && column === 0}<td class="attribute-space" aria-hidden="true"></td>{/if}
             {/each}
           </tr>
           <tr class="summary-row">
-            {#each visible as entry (entry.id)}
+            {#each visible as entry, column (entry.id)}
               <th scope="col" id={`vehicle-${entry.id}`}>
                 {#if entry.vehicle}
                   <span class="brand">{entry.vehicle.brand}</span>
@@ -127,17 +148,25 @@
                   <p class="unavailable">{entry.status === 404 ? 'Esta viatura deixou de estar publicada.' : 'Tente novamente dentro de instantes.'}</p>
                 {/if}
               </th>
+              {#if middleLabels && column === 0}<td class="attribute-space" aria-hidden="true"></td>{/if}
             {/each}
           </tr>
         </thead>
         {#each facts as row, index}
           <tbody class="fact-group">
+            {#if middleLabels}
+            <tr class="aligned-fact">{#each visible as entry, column (entry.id)}
+              <td class="fact-value" class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'} headers={`vehicle-${entry.id} fact-${index}`}>{entry.vehicle ? row.value(entry.vehicle) : 'Indisponível'}</td>
+              {#if column === 0}<th class="fact-label" scope="row" id={`fact-${index}`}><span>{row.label}</span></th>{/if}
+            {/each}</tr>
+            {:else}
             <tr><th class="fact-label" id={`fact-${index}`} colspan={visible.length}><span>{row.label}</span></th></tr>
             <tr>
               {#each visible as entry (entry.id)}
                 <td class="fact-value" class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'} headers={`vehicle-${entry.id} fact-${index}`}>{entry.vehicle ? row.value(entry.vehicle) : 'Indisponível'}</td>
               {/each}
             </tr>
+            {/if}
           </tbody>
         {/each}
       </table>
@@ -148,10 +177,10 @@
     <p class="data-note">“Não indicado”: informação não publicada na ficha.</p>
   {/if}
   <p class="storage-note">As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer momento. <a href="/politica-de-privacidade#escolhas">Política de privacidade</a></p>
+  <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
 </main>
 
 <style>
-  .empty-selection { box-sizing: border-box; min-height: calc(100svh + clamp(32px, 6svh, 72px)); }
   .comparison-page { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: 30px 0 88px; color: var(--text); }
   a { color: inherit; text-decoration: none; }
   button, select { font: inherit; color: inherit; }
@@ -160,15 +189,20 @@
   h1:focus { outline: none; }
   .back-nav {display:block;}
   .back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; color: var(--muted); }
-  .page-heading { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 24px; margin: 16px 0 26px; }
+  .page-heading { display:block; margin:16px 0 36px; max-width:1200px; }
+  .selection-toolbar {display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:22px;}
+  .selection-count {margin:0;color:var(--muted);font-size:13px;}
   h1 { font-size: clamp(34px, 3.5vw, 48px); font-weight: 500; letter-spacing: -.055em; line-height: 1.06; margin: 0; }
   h1 > span { color: var(--red); }
-  .actions { display: flex; align-items: center; gap: 20px; }
-  .add, .primary { display: inline-flex; align-items: center; justify-content: center; gap: 20px; min-height: 46px; padding: 12px 22px; border-radius: 30px; font-size: 14px; background: var(--text); color: var(--bg); }
-  .clear { border: 0; background: none; min-height: 44px; padding: 8px; font-size: 14px; color: var(--muted); }
+  .actions { display:flex;align-items:center;gap:16px;flex-wrap:wrap; }
+  .add, .primary { display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:46px;padding:11px 20px;border-radius:30px;font-size:14px; }
+  .add {border:1px solid var(--line);background:transparent;color:var(--text);}
+  .primary {background:var(--text);color:var(--bg);}
+  .clear { display:inline-flex;align-items:center;gap:8px;border:0;background:none;min-height:44px;padding:8px 0;font-size:13px;color:var(--muted); }
   .clear:hover { color: var(--text); }
   .comparison-board { position: relative; max-width:1200px; margin-inline:0; }
   table { width: calc(100% + 32px); margin-inline: -16px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+  .attribute-column {width:144px;}
   td, th { min-width: 0; text-align: left; vertical-align: top; font-weight: 400; }
   .photo-row td, .summary-row th, .fact-value { padding-inline: 16px; }
   .vehicle-photo { position: relative; overflow: hidden; border-radius: 5px; background: var(--surface); }
@@ -176,18 +210,19 @@
   .vehicle-photo img { display: block; width: 100%; height: clamp(150px,12vw,210px); object-fit: cover; }
   .remove { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border: 1px solid var(--line); background: var(--bg); color: var(--text); display: grid; place-items: center; border-radius: 50%; }
   .summary-row th { padding-block: 14px 18px; position: sticky; top:var(--nav-visible-height,80px); z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .summary-row .attribute-space {position:sticky;top:var(--nav-visible-height,80px);z-index:2;background:var(--bg);border-bottom:1px solid var(--line);}
   .brand { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
   h2 { margin: 0; font-size: clamp(21px, 2vw, 28px); line-height: 1.15; font-weight: 500; letter-spacing: -.045em; overflow-wrap: anywhere; }
   .summary-row h2 { min-height: 2.3em; }
   .price { display: block; margin-top: 10px; font-size: clamp(20px, 1.7vw, 24px); font-weight: 500; letter-spacing: -.035em; }
   .detail-link { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; min-height: 44px; margin-top: 4px; }
-  .fact-label { padding: 12px 16px 4px; color: var(--muted); font-size: 12px; text-align: left; }
-  /* Preserve the attribute's middle lane while aligning its text to the lane's start. */
-  .pair .fact-label {padding-left:calc(50% - 64px);}
-  .triple .fact-label {padding-left:calc(100% / 3 + 16px);}
-  .fact-value { padding-block: 0 12px; border-bottom: 1px solid var(--line); font-size: 16px; line-height: 1.45; text-align: left; vertical-align:middle; font-variant-numeric:tabular-nums; overflow-wrap: anywhere; }
+  .fact-label {padding:12px 16px 8px;color:var(--muted);font-size:12px;line-height:1.5;text-align:left;}
+  .aligned-fact .fact-label {padding:14px 12px;vertical-align:middle;border-bottom:1px solid var(--line);}
+  .fact-value { padding-block:14px; border-bottom: 1px solid var(--line); font-size: 16px; line-height: 1.45; text-align: left; vertical-align:middle; font-variant-numeric:tabular-nums; overflow-wrap: anywhere; }
   .fact-value + .fact-value { border-left: 1px solid var(--line); }
   .fact-value.missing { color: var(--muted); font-size: 15px; }
+  :global(html[data-theme='light']) .fact-group .fact-value,
+  :global(html[data-theme='light']) .aligned-fact .fact-label {background:var(--orbit-gray-surface);}
   .single { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
   .second-option { align-self: start; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 16px; padding:20px; box-sizing:border-box; height:clamp(150px,12vw,210px); min-height:150px; border: 1px dashed var(--line); border-radius: 5px; color: var(--muted); font-size: 14px; }
   .second-option :global(svg) { color: var(--red); }
@@ -213,9 +248,10 @@
   @media (prefers-reduced-motion: no-preference) { .add, .primary, .remove { transition: background-color 180ms ease, color 180ms ease; } }
   @media (max-width: 700px) {
     .comparison-page { padding: 14px 0 64px; }
-    .page-heading { margin: 12px 0 20px; gap: 14px; }
+    .page-heading {margin:12px 0 30px;}
+    .selection-toolbar {margin-top:18px;gap:12px;}
     h1 { font-size: clamp(34px, 8.5vw, 44px); }
-    .actions { width: 100%; justify-content: flex-start; gap: 12px; }
+    .actions {width:100%;justify-content:flex-start;gap:18px;}
     .add { min-height: 44px; padding: 10px 18px; }
     .photo-row td, .summary-row th, .fact-value { padding-inline: 8px; }
     table { width: calc(100% + 16px); margin-inline: -8px; }
@@ -228,10 +264,10 @@
     h2 { font-size: clamp(18px, 4.8vw, 23px); line-height: 1.15; }
     .price { font-size: clamp(18px, 4.8vw, 23px); margin-top: 8px; }
     .detail-link { gap: 8px; font-size: 13px; margin-top: 4px; }
-    .fact-label { font-size: 12px; padding-top: 10px; }
+    .fact-label {font-size:12px;padding-block:14px 9px;}
     .single .fact-label {padding-inline:8px;}
-    .pair .fact-label {padding-left:calc(50% - 48px);}
-    .fact-value { font-size: 15px; padding-bottom: 10px; line-height: 1.45; }
+    .pair .fact-label {padding-left:calc(50% - 60px);}
+    .fact-value {font-size:15px;padding-block:12px;line-height:1.45;}
     .fact-value.missing { font-size: 14px; }
     .single { display: flex; flex-direction: column; gap: 24px; }
     .single table { max-width: none; }
