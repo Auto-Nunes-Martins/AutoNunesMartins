@@ -32,6 +32,7 @@ export const GET: RequestHandler = async (event) => {
 
   const attention = sp.get('attention');
   const params: TaskListParams = {
+    order: 'board',
     attention: attention === 'due' || attention === 'reminders' ? attention : undefined,
     scope: sp.get('scope') === 'mine' ? 'mine' : sp.get('scope') === 'general' ? 'general' : 'all',
     showScheduled: sp.get('showScheduled') === 'true' || undefined,

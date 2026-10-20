@@ -123,42 +123,49 @@
       <h2 id={`${id}-heading`}>
         Venha <span class="heading-tail">conhecer-nos<span class="period">.</span></span>
       </h2>
-      <p class="introduction">Os carros, ao vivo. As suas dúvidas, com tempo.</p>
 
       <div class="location" class:original-map={mapArtwork === 'original'}>
         {#if mapArtwork === 'original'}
-          <img class="location-map" src={locationMap} alt="" width="1728" height="684" loading="lazy" decoding="async" />
+          <img
+            class="location-map"
+            src={locationMap}
+            alt=""
+            width="1728"
+            height="684"
+            loading="lazy"
+            decoding="async"
+          />
         {:else}
-        <svg
-          class="location-map"
-          viewBox="0 0 540 220"
-          preserveAspectRatio="xMidYMid slice"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path
-            class="map-block"
-            d="M15 12H104V61H15ZM135 9H210V59H135ZM244 8H324V58H244ZM365 12H469V59H365ZM12 99H96V145H12ZM139 99H213V143H139ZM247 99H321V142H247ZM365 99H444V145H365ZM15 178H99V215H15ZM140 178H212V216H140ZM250 178H322V216H250ZM365 178H470V218H365Z"
-          />
-          <g class="map-street" fill="none" stroke-width="10">
-            <path d="M-20 80H560M-20 160H560M118-20V240M229-20V240M346-20V240M489-20V240" />
-            <path d="M370-30L242 95 103 245" stroke-width="17" />
-          </g>
-          <path
-            d="M370-30L242 95 103 245"
-            fill="none"
-            stroke="currentColor"
-            stroke-opacity=".12"
-            stroke-width="1.5"
-          />
-          <circle cx="328" cy="107" r="36" fill="#e30613" opacity=".07" />
-          <circle cx="328" cy="107" r="22" fill="#e30613" opacity=".09" />
-          <path
-            d="M328 76c-10 0-18 8-18 18 0 14 18 32 18 32s18-18 18-32c0-10-8-18-18-18Z"
-            fill="#e30613"
-          />
-          <circle cx="328" cy="94" r="5.5" fill="white" />
-        </svg>
+          <svg
+            class="location-map"
+            viewBox="0 0 540 220"
+            preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              class="map-block"
+              d="M15 12H104V61H15ZM135 9H210V59H135ZM244 8H324V58H244ZM365 12H469V59H365ZM12 99H96V145H12ZM139 99H213V143H139ZM247 99H321V142H247ZM365 99H444V145H365ZM15 178H99V215H15ZM140 178H212V216H140ZM250 178H322V216H250ZM365 178H470V218H365Z"
+            />
+            <g class="map-street" fill="none" stroke-width="10">
+              <path d="M-20 80H560M-20 160H560M118-20V240M229-20V240M346-20V240M489-20V240" />
+              <path d="M370-30L242 95 103 245" stroke-width="17" />
+            </g>
+            <path
+              d="M370-30L242 95 103 245"
+              fill="none"
+              stroke="currentColor"
+              stroke-opacity=".12"
+              stroke-width="1.5"
+            />
+            <circle cx="328" cy="107" r="36" fill="#e30613" opacity=".07" />
+            <circle cx="328" cy="107" r="22" fill="#e30613" opacity=".09" />
+            <path
+              d="M328 76c-10 0-18 8-18 18 0 14 18 32 18 32s18-18 18-32c0-10-8-18-18-18Z"
+              fill="#e30613"
+            />
+            <circle cx="328" cy="94" r="5.5" fill="white" />
+          </svg>
         {/if}
         <div class="location-copy">
           <h3><MapPin size={15} aria-hidden="true" /> Encontre-nos</h3>
@@ -216,12 +223,21 @@
             class="call-action"
             href={`tel:${contact.phone.international}`}
             aria-describedby={demoId}
-            ><span class="call-label">{#if showCallIcon}<Phone class="call-phone-icon" size={15} strokeWidth={1.7} aria-hidden="true" />{/if}<span class="action-text">Ligar agora</span></span><span class="action-arrow"><ArrowUpRight size={18} aria-hidden="true" /></span></a
+            ><span class="call-label"
+              >{#if showCallIcon}<Phone
+                  class="call-phone-icon"
+                  size={15}
+                  strokeWidth={1.7}
+                  aria-hidden="true"
+                />{/if}<span class="action-text">Ligar agora</span></span
+            ><span class="action-arrow"><ArrowUpRight size={18} aria-hidden="true" /></span></a
           >{/if}
         {#if contact.email}<a
             class="email-action"
             href={`mailto:${contact.email}`}
-            aria-describedby={demoId}><span class="email-label">Enviar email</span> <ArrowUpRight size={16} aria-hidden="true" /></a
+            aria-describedby={demoId}
+            ><span class="email-label">Enviar email</span>
+            <ArrowUpRight size={16} aria-hidden="true" /></a
           >{/if}
       </div>
       {#if contact.isDemo}<p class="demo-note" class:sr-only={!showDemoNote} id={demoId}>
@@ -238,85 +254,98 @@
         <OrbitVisitOriginalForm id={`${id}-form`} {showDemoNote} />
       {/if}
     {:else}
-    <form
-      class="message-card"
-      aria-labelledby={`${id}-form-heading`}
-      aria-describedby={`${id}-form-note`}
-      oninput={() => (tested = false)}
-      onsubmit={async (event) => {
-        event.preventDefault();
-        if (sending) return;
-    sending = true; tested = false; contactError = '';
-    const form = event.currentTarget;
-    try { await submitContact(form); tested = true; }
-    catch (error) { contactError = error instanceof Error ? error.message : 'Não foi possível enviar o pedido.'; }
-    finally { sending = false; }
-      }}
-    >
-      <div class="form-heading">
-        <span class="message-icon" aria-hidden="true"><Mail size={20} strokeWidth={1.5} aria-hidden="true" /></span>
-        <div>
-          <h3 id={`${id}-form-heading`}>{formTitle}</h3>
-          <p>{formIntro}</p>
-        </div>
-      </div>
-      <div class="form-fields">
-        <div class="field-row">
-          <label for={`${id}-name`}
-            >Nome<input
-              id={`${id}-name`}
-              name="name" maxlength="120"
-              autocomplete="name"
-              placeholder="O seu nome"
-              bind:value={fields.name}
-              required
-            /></label
-          >
-          <label for={`${id}-email`}
-            >Email<input
-              id={`${id}-email`}
-              name="email" maxlength="254"
-              type="email"
-              autocomplete="email"
-              placeholder="nome@exemplo.pt"
-              bind:value={fields.email}
-              required
-            /></label
-          >
-        </div>
-        <label for={`${id}-subject`}
-          >Gostava de falar sobre<FormSelectField><select
-            id={`${id}-subject`}
-            name="subject"
-            bind:value={fields.subject}
-            >{#each subjects as subject}<option>{subject}</option>{/each}</select
-          ></FormSelectField></label
-        >
-        <label for={`${id}-message`}
-          >Mensagem<textarea
-            id={`${id}-message`}
-            name="message" maxlength="5000"
-            rows="4"
-            placeholder="Conte-nos o que procura ou como podemos ajudar."
-            bind:value={fields.message}
-            required
-          ></textarea></label
-        >
-      </div>
-      <ContactPrivacyNotice />
-      {#if contactError}<p role="alert">{contactError}</p>{/if}
-      <button class="send-button" type="submit" disabled={sending}
-        >{sending ? 'A enviar…' : 'Enviar pedido'} <ArrowRight size={19} aria-hidden="true" /></button
+      <form
+        class="message-card"
+        aria-labelledby={`${id}-form-heading`}
+        aria-describedby={`${id}-form-note`}
+        oninput={() => (tested = false)}
+        onsubmit={async (event) => {
+          event.preventDefault();
+          if (sending) return;
+          sending = true;
+          tested = false;
+          contactError = '';
+          const form = event.currentTarget;
+          try {
+            await submitContact(form);
+            tested = true;
+          } catch (error) {
+            contactError =
+              error instanceof Error ? error.message : 'Não foi possível enviar o pedido.';
+          } finally {
+            sending = false;
+          }
+        }}
       >
-      <p class="form-note" id={`${id}-form-note`}>
-        O pedido de visita depende de confirmação do stand.
-      </p>
-      <div class="form-status" role="status" aria-atomic="true">
-        {#if tested}<Check size={15} aria-hidden="true" /><span
-            >Pedido aceite para envio ao stand. A visita será confirmada após contacto.</span
-          >{/if}
-      </div>
-    </form>
+        <div class="form-heading">
+          <span class="message-icon" aria-hidden="true"
+            ><Mail size={20} strokeWidth={1.5} aria-hidden="true" /></span
+          >
+          <div>
+            <h3 id={`${id}-form-heading`}>{formTitle}</h3>
+            <p>{formIntro}</p>
+          </div>
+        </div>
+        <div class="form-fields">
+          <div class="field-row">
+            <label for={`${id}-name`}
+              >Nome<input
+                id={`${id}-name`}
+                name="name"
+                maxlength="120"
+                autocomplete="name"
+                placeholder="O seu nome"
+                bind:value={fields.name}
+                required
+              /></label
+            >
+            <label for={`${id}-email`}
+              >Email<input
+                id={`${id}-email`}
+                name="email"
+                maxlength="254"
+                type="email"
+                autocomplete="email"
+                placeholder="nome@exemplo.pt"
+                bind:value={fields.email}
+                required
+              /></label
+            >
+          </div>
+          <label for={`${id}-subject`}
+            >Gostava de falar sobre<FormSelectField
+              ><select id={`${id}-subject`} name="subject" bind:value={fields.subject}
+                >{#each subjects as subject}<option>{subject}</option>{/each}</select
+              ></FormSelectField
+            ></label
+          >
+          <label for={`${id}-message`}
+            >Mensagem<textarea
+              id={`${id}-message`}
+              name="message"
+              maxlength="5000"
+              rows="4"
+              placeholder="Conte-nos o que procura ou como podemos ajudar."
+              bind:value={fields.message}
+              required
+            ></textarea></label
+          >
+        </div>
+        <ContactPrivacyNotice />
+        {#if contactError}<p role="alert">{contactError}</p>{/if}
+        <button class="send-button" type="submit" disabled={sending}
+          >{sending ? 'A enviar…' : 'Enviar pedido'}
+          <ArrowRight size={19} aria-hidden="true" /></button
+        >
+        <p class="form-note" id={`${id}-form-note`}>
+          O pedido de visita depende de confirmação do stand.
+        </p>
+        <div class="form-status" role="status" aria-atomic="true">
+          {#if tested}<Check size={15} aria-hidden="true" /><span
+              >Pedido aceite para envio ao stand. A visita será confirmada após contacto.</span
+            >{/if}
+        </div>
+      </form>
     {/if}
   </div>
 </section>
@@ -498,17 +527,11 @@
   .heading-tail {
     white-space: nowrap;
   }
-  .introduction {
-    font-size: 15px;
-    line-height: 1.7;
-    color: var(--muted);
-    margin-top: 15px;
-  }
   .location {
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    margin-top: 22px;
+    margin-top: 28px;
     min-height: 130px;
     padding: 15px 18px;
     border: 1px solid var(--line);
@@ -634,15 +657,37 @@
     border-radius: 4px;
     background: var(--studio-panel);
   }
-  .call-action { position: relative; isolation: isolate; }
-  .call-action::before { content: ''; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: inherit; border: inherit; border-radius: inherit; box-shadow: 0 3px 10px #00000000; }
-  .action-arrow { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: 0 0 18px; }
+  .call-action {
+    position: relative;
+    isolation: isolate;
+  }
+  .call-action::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    pointer-events: none;
+    background: inherit;
+    border: inherit;
+    border-radius: inherit;
+    box-shadow: 0 3px 10px #00000000;
+  }
+  .action-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
   .call-label {
     display: inline-flex;
     align-items: center;
     gap: 11px;
   }
-  .call-label :global(svg) { flex-shrink: 0; }
+  .call-label :global(svg) {
+    flex-shrink: 0;
+  }
   .email-action {
     gap: 12px;
   }
@@ -651,21 +696,52 @@
     border-color: #fff;
     color: #17231e;
   }
-  .original-tone .call-action :global(svg) { color: #e30613; }
-  .original-tone .call-action :global(svg.call-phone-icon) { color: #111; }
-  .call-action:focus-visible .action-arrow :global(svg) { rotate: 45deg; }
-  .call-action:focus-visible::before { box-shadow: 0 3px 10px #00000026; }
-  .email-action:focus-visible .email-label::after { opacity: 1; transform: scaleX(1); }
-  .email-action:focus-visible > :global(svg) { rotate: 45deg; color: #e30613; }
+  .original-tone .call-action :global(svg) {
+    color: #e30613;
+  }
+  .original-tone .call-action :global(svg.call-phone-icon) {
+    color: #111;
+  }
+  .call-action:focus-visible .action-arrow :global(svg) {
+    rotate: 45deg;
+  }
+  .call-action:focus-visible::before {
+    box-shadow: 0 3px 10px #00000026;
+  }
+  .email-action:focus-visible .email-label::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  .email-action:focus-visible > :global(svg) {
+    rotate: 45deg;
+    color: #e30613;
+  }
   @media (hover: hover) {
-    .call-action:hover .action-arrow :global(svg) { rotate: 45deg; }
-    .call-action:hover::before { box-shadow: 0 3px 10px #00000026; }
-    .email-action:hover .email-label::after { opacity: 1; transform: scaleX(1); }
-    .email-action:hover > :global(svg) { rotate: 45deg; color: #e30613; }
+    .call-action:hover .action-arrow :global(svg) {
+      rotate: 45deg;
+    }
+    .call-action:hover::before {
+      box-shadow: 0 3px 10px #00000026;
+    }
+    .email-action:hover .email-label::after {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+    .email-action:hover > :global(svg) {
+      rotate: 45deg;
+      color: #e30613;
+    }
   }
   @media (prefers-reduced-motion: no-preference) {
-    .call-action .action-arrow :global(svg), .email-action > :global(svg) { transition: rotate 300ms ease, color 300ms ease; }
-    .call-action::before { transition: box-shadow 300ms ease; }
+    .call-action .action-arrow :global(svg),
+    .email-action > :global(svg) {
+      transition:
+        rotate 300ms ease,
+        color 300ms ease;
+    }
+    .call-action::before {
+      transition: box-shadow 300ms ease;
+    }
   }
   .demo-note {
     font-size: 11px;
@@ -958,8 +1034,12 @@
     }
   }
   @media (max-width: 900px) {
-    .map-link { min-height: 44px; }
-    .has-form-divider .studio-inner { --column-gap: 102px; }
+    .map-link {
+      min-height: 44px;
+    }
+    .has-form-divider .studio-inner {
+      --column-gap: 102px;
+    }
     .borderless-panels :global(.inline-contact :is(input, select, textarea)) {
       border-color: transparent;
       box-shadow: none;
@@ -1001,7 +1081,9 @@
     }
   }
   @media (max-width: 700px) {
-    .has-form-divider .studio-inner { --column-gap: 90px; }
+    .has-form-divider .studio-inner {
+      --column-gap: 90px;
+    }
     .refined-form .form-heading {
       padding: 16px;
     }
@@ -1024,13 +1106,9 @@
       max-width: 12ch;
       margin-top: 20px;
     }
-    .introduction {
-      font-size: 15px;
-      margin-top: 17px;
-    }
     .location {
       padding: 20px;
-      margin-top: 23px;
+      margin-top: 24px;
     }
     .location-map {
       width: 90%;
@@ -1112,34 +1190,91 @@
     margin-top: 15px;
     font-size: clamp(30px, 3.1vw, 46px);
     font-weight: 500;
-    letter-spacing: -.045em;
+    letter-spacing: -0.045em;
     line-height: 1.15;
   }
-  .harmonized-type .introduction {
-    margin-top: 12px;
+  .harmonized-type h3 {
     font-size: 14px;
+    font-weight: 500;
+  }
+  .harmonized-type .contact-value,
+  .harmonized-type address {
+    font-size: 16px;
     line-height: 1.6;
+  }
+  .harmonized-type .contact-value.email {
+    font-size: 15px;
+  }
+  .harmonized-type dl {
+    font-size: 15px;
+    line-height: 1.65;
+    gap: 10px;
+  }
+  .harmonized-type dd {
+    font-weight: 500;
+  }
+  .harmonized-type .map-link,
+  .harmonized-type .call-action,
+  .harmonized-type .email-action {
+    font-size: 14px;
+  }
+  .harmonized-type :global(.inline-contact label) {
+    font-size: 14px;
+    line-height: 1.5;
   }
   .harmonized-type :global(.inline-contact h3) {
     font-size: clamp(24px, 2vw, 30px);
-    letter-spacing: -.035em;
+    letter-spacing: -0.035em;
     line-height: 1.2;
   }
   @media (max-width: 700px) {
-    .harmonized-type h2 { font-size: 32px; }
+    .harmonized-type h2 {
+      font-size: 32px;
+    }
   }
   /* Original map artwork and tint, without changing the approved card geometry. */
-  .location.original-map .location-map { width: 100%; opacity: 1; object-fit: cover; object-position: center; }
-  .location.original-map::before { background: linear-gradient(90deg, #101913f2 0%, #101913df 48%, #10191373 100%); }
+  .location.original-map .location-map {
+    width: 100%;
+    opacity: 1;
+    object-fit: cover;
+    object-position: center;
+  }
+  .location.original-map::before {
+    background: linear-gradient(90deg, #101913f2 0%, #101913df 48%, #10191373 100%);
+  }
 
-  .email-action { text-decoration: none; }
-  .email-label { position: relative; }
-  .email-label::after { content: ''; position: absolute; left: 0; bottom: -5px; width: 100%; height: 1px; background: #e30613; opacity: 0; transform: scaleX(0); transform-origin: left; }
+  .email-action {
+    text-decoration: none;
+  }
+  .email-label {
+    position: relative;
+  }
+  .email-label::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    width: 100%;
+    height: 1px;
+    background: #e30613;
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
   @media (prefers-reduced-motion: no-preference) {
-    .email-label::after { transition: transform 300ms ease, opacity 300ms ease; }
+    .email-label::after {
+      transition:
+        transform 300ms ease,
+        opacity 300ms ease;
+    }
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .call-action { transition: background-color 300ms ease, border-color 300ms ease, color 180ms ease; }
+    .call-action {
+      transition:
+        background-color 300ms ease,
+        border-color 300ms ease,
+        color 180ms ease;
+    }
   }
 </style>

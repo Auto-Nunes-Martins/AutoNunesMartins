@@ -34,12 +34,20 @@
   --color-border-strong: rgba(255, 255, 255, 0.22);
   --color-text: #f4f4f2;
   --color-text-muted: #a8a8a4;
-  --color-text-faint: #6e6f73;
+  --color-text-faint: #96979b;
 
   /* ───────── Semantic ───────── */
-  --color-success: #34c480;
-  --color-warning: #e0a040;
-  --color-info: #5c8def;
+  --color-success: #60bf93;
+  --color-warning: #e8b052;
+  --color-info: #79adf4;
+  --color-danger: #f17c87;
+  --color-interaction-hover: rgba(255, 255, 255, 0.09);
+  --color-interaction-active: rgba(255, 255, 255, 0.15);
+  /* Text, rail and label use the same semantic colour in every task view. */
+  --color-priority-low: #a8a8a4;
+  --color-priority-medium: var(--color-info);
+  --color-priority-high: var(--color-warning);
+  --color-priority-urgent: var(--color-danger);
 
   /* ───────── Typography ───────── */
   --font-display: 'Barlow', system-ui, sans-serif;
@@ -57,6 +65,7 @@
 
 /* ───────── Light theme override ───────── */
 [data-theme='light'] {
+  color-scheme: light;
   --color-bg-0: #eeece6;
   --color-bg-1: #faf8f4;
   --color-bg-2: #f3f0e9;
@@ -66,11 +75,15 @@
   --color-border-strong: rgba(15, 15, 17, 0.18);
   --color-text: #0f0f11;
   --color-text-muted: #5a5c61;
-  --color-text-faint: #8a8c92;
+  --color-text-faint: #6c6e73;
 
-  --color-success: #1a7a4f;
-  --color-warning: #b26b00;
-  --color-info: #1e5bc2;
+  --color-success: #176c48;
+  --color-warning: #805000;
+  --color-info: #195ba8;
+  --color-danger: #ac2536;
+  --color-interaction-hover: rgba(15, 15, 17, 0.075);
+  --color-interaction-active: rgba(15, 15, 17, 0.13);
+  --color-priority-low: #5a5c61;
 }
 
 /* ───────── Base reset ───────── */
@@ -87,6 +100,7 @@ body {
 }
 
 html {
+  color-scheme: dark;
   /*
     Programmatic scrolls (anchor links, scrollIntoView, etc.) glide instead
     of snapping. User-respect: clients with prefers-reduced-motion get the
@@ -121,7 +135,7 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
-:global([data-theme='light']) * {
+[data-theme='light'] * {
   scrollbar-color: rgba(0, 0, 0, 0.16) transparent;
 }
 *::-webkit-scrollbar {
@@ -168,10 +182,76 @@ body {
   html {
     scroll-behavior: auto;
   }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-* {
-  border-color: var(--color-border);
+:is(a, button, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 3px;
+}
+
+/* Shared feedback for transparent controls, including inline actions and tabs.
+   An inset overlay preserves each control's own selected/semantic background.
+   Zero specificity lets components with bespoke feedback keep their treatment. */
+@media (hover: hover) {
+  :where(button, summary, [role='tab'], [role='menuitem'], a.crm-action, a.edit-link):where(
+    :not(:disabled):not([aria-disabled='true']):hover
+  ) {
+    box-shadow:
+      inset 0 0 0 1px var(--color-border-strong),
+      inset 0 0 0 100vmax var(--color-interaction-hover);
+  }
+}
+:where(button, summary, [role='tab'], [role='menuitem'], a.crm-action, a.edit-link):where(
+  :not(:disabled):not([aria-disabled='true']):active
+) {
+  box-shadow:
+    inset 0 0 0 1px var(--color-border-strong),
+    inset 0 0 0 100vmax var(--color-interaction-active);
+}
+
+/* Reading frames follow the amount of information in each view. */
+.reading-frame {
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+}
+.list-frame {
+  width: 100%;
+  max-width: 1480px;
+  margin-inline: auto;
+}
+.crm-table {
+  font-variant-numeric: tabular-nums;
+}
+.crm-table :is(th, td) {
+  vertical-align: middle;
+}
+.crm-table thead th {
+  white-space: nowrap;
+}
+.crm-table tbody tr {
+  transition: background-color 120ms;
+}
+.crm-table tbody tr:focus-within {
+  background-color: var(--color-interaction-hover);
+}
+@media (hover: hover) {
+  .crm-table tbody tr:hover {
+    background-color: var(--color-interaction-hover);
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
 }
 
 ::selection {

@@ -73,8 +73,7 @@
             style="border-radius: 3px;"
             title="Matrícula portuguesa"
           >
-            <span
-              class="bg-[var(--color-info)] text-white font-bold text-[9px] tracking-[0.12em] px-1.5 py-1"
+            <span class="bg-[#154e91] text-white font-bold text-[9px] tracking-[0.12em] px-1.5 py-1"
               >PT</span
             >
             <span class="px-2 py-1 tracking-[0.18em] text-[var(--color-text)]">
@@ -117,7 +116,7 @@
           Marcar como Vendida
         </Button>
       {/if}
-      <Button variant="outline" href={crmPath("/site/destaques")}
+      <Button variant="outline" href={crmPath('/site/destaques')}
         ><Star class="h-4 w-4" />Gerir destaques</Button
       >
       <Button variant="outline" href={crmPath(`/viaturas/${v.id}/editar`)}>
@@ -136,17 +135,17 @@
   {#if v.status === 'DRAFT'}
     <a
       href={crmPath(`/viaturas/${v.id}/publicar`)}
-      class="flex items-center gap-3 p-4 pl-5 border bg-[color-mix(in_oklab,#f97316_8%,transparent)] hover:bg-[color-mix(in_oklab,#f97316_14%,transparent)] transition-colors group"
-      style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, #f97316 45%, transparent);"
+      class="flex items-center gap-3 p-4 pl-5 border bg-[color-mix(in_oklab,var(--color-warning)_8%,transparent)] hover:bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] transition-colors group"
+      style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, var(--color-warning) 45%, transparent);"
     >
       <span
         class="inline-flex items-center justify-center h-9 w-9 rounded-full flex-shrink-0"
-        style="background: color-mix(in oklab, #f97316 25%, transparent);"
+        style="background: color-mix(in oklab, var(--color-warning) 25%, transparent);"
       >
-        <Tag class="h-4 w-4" style="color: #f97316;" />
+        <Tag class="h-4 w-4" style="color: var(--color-warning);" />
       </span>
       <div class="flex-1 min-w-0">
-        <div class="font-display font-semibold text-[14px]" style="color: #f97316;">
+        <div class="font-display font-semibold text-[14px]" style="color: var(--color-warning);">
           Esta viatura está em rascunho
         </div>
         <div
@@ -158,7 +157,7 @@
       </div>
       <span
         class="font-mono text-[10px] uppercase tracking-[0.18em] group-hover:translate-x-0.5 transition-transform flex-shrink-0"
-        style="color: #f97316;"
+        style="color: var(--color-warning);"
       >
         Publicar →
       </span>
@@ -175,14 +174,14 @@
     {@const origin = v.sourceTradeIn}
     <a
       href={crmPath(`/vendas/${origin.sale.id}`)}
-      class="flex items-center gap-3 p-3 pl-4 border border-[color-mix(in_oklab,#f97316_30%,transparent)] bg-[color-mix(in_oklab,#f97316_6%,transparent)] hover:bg-[color-mix(in_oklab,#f97316_10%,transparent)] transition-colors group"
+      class="flex items-center gap-3 p-3 pl-4 border border-[color-mix(in_oklab,var(--color-warning)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-warning)_6%,transparent)] hover:bg-[color-mix(in_oklab,var(--color-warning)_10%,transparent)] transition-colors group"
       style="border-radius: var(--radius-btn);"
     >
       <span
         class="inline-flex items-center justify-center h-8 w-8 rounded-full"
-        style="background: color-mix(in oklab, #f97316 18%, transparent);"
+        style="background: color-mix(in oklab, var(--color-warning) 18%, transparent);"
       >
-        <ArrowRightLeft class="h-4 w-4" style="color: #f97316;" />
+        <ArrowRightLeft class="h-4 w-4" style="color: var(--color-warning);" />
       </span>
       <div class="flex-1 min-w-0 text-[13px]">
         <span class="font-display font-semibold"
@@ -202,7 +201,7 @@
         </span>
       </div>
       <span
-        class="font-mono text-[10px] uppercase tracking-[0.12em] text-[#f97316] group-hover:translate-x-0.5 transition-transform"
+        class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-warning)] group-hover:translate-x-0.5 transition-transform"
       >
         Ver venda →
       </span>
@@ -212,7 +211,17 @@
   <!-- Top grid: gallery + spec/profit -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <div class="lg:col-span-7 space-y-6">
-      <PhotoGallery vehicleId={v.id} photos={signedPhotos} principalPath={vehiclePrincipalPath(v) ?? null} editable={false} publicPaths={v.publicPhotoPaths} published={v.webPublished && ['AVAILABLE', 'RESERVED'].includes(v.status) && !v.sale && !v.soldDate} />
+      <PhotoGallery
+        vehicleId={v.id}
+        photos={signedPhotos}
+        principalPath={vehiclePrincipalPath(v) ?? null}
+        editable={false}
+        publicPaths={v.publicPhotoPaths}
+        published={v.webPublished &&
+          ['AVAILABLE', 'RESERVED'].includes(v.status) &&
+          !v.sale &&
+          !v.soldDate}
+      />
 
       <Panel>
         <PanelHeader icon={FileText} title="Notas" />

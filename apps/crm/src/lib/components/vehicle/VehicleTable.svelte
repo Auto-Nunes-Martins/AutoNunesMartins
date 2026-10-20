@@ -1,5 +1,5 @@
 <script lang="ts">
- import {photoFallback} from "$lib/vehicleImage";
+  import { photoFallback } from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
   import { Car, FileText, Check, Tag } from 'lucide-svelte';
   import RowActions from '$lib/components/common/RowActions.svelte';
@@ -17,10 +17,22 @@
     return [
       { label: 'Ver ficha', href: crmPath(`/viaturas/${vehicle.id}`), icon: FileText },
       ...(['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(vehicle.status)
-        ? [{ label: 'Registar venda', href: crmPath(`/viaturas/${vehicle.id}/vender`), icon: Check }]
+        ? [
+            {
+              label: 'Registar venda',
+              href: crmPath(`/viaturas/${vehicle.id}/vender`),
+              icon: Check,
+            },
+          ]
         : []),
       ...(vehicle.status === 'DRAFT'
-        ? [{ label: 'Completar rascunho', href: crmPath(`/viaturas/${vehicle.id}/publicar`), icon: Tag }]
+        ? [
+            {
+              label: 'Completar rascunho',
+              href: crmPath(`/viaturas/${vehicle.id}/publicar`),
+              icon: Tag,
+            },
+          ]
         : []),
     ];
   }
@@ -53,7 +65,8 @@
           >
             {#if v.thumbnailUrl}
               <img
-                src={v.thumbnailUrl} use:photoFallback={v.thumbnailOriginalUrl??v.thumbnailUrl}
+                src={v.thumbnailUrl}
+                use:photoFallback={v.thumbnailOriginalUrl ?? v.thumbnailUrl}
                 alt={`${v.brand} ${v.model}`}
                 class="h-full w-full object-cover"
                 loading="lazy"
@@ -139,7 +152,7 @@
   mobile (saves the layout from horizontal-scrolling its way off-screen).
 -->
 <div class="hidden md:block overflow-x-auto">
-  <table class="w-full text-[13px]">
+  <table class="crm-table w-full text-[13px]">
     <thead>
       <tr class="border-b border-[var(--color-border)]">
         <th
@@ -191,7 +204,8 @@
               >
                 {#if v.thumbnailUrl}
                   <img
-                    src={v.thumbnailUrl} use:photoFallback={v.thumbnailOriginalUrl??v.thumbnailUrl}
+                    src={v.thumbnailUrl}
+                    use:photoFallback={v.thumbnailOriginalUrl ?? v.thumbnailUrl}
                     alt={`${v.brand} ${v.model}`}
                     class="h-full w-full object-cover"
                     loading="lazy"

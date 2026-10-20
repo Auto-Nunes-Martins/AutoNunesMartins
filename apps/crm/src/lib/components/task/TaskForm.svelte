@@ -4,7 +4,7 @@
   import { formFeedback, markFormSaved, showFormErrors } from '$lib/forms/formFeedback';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
-  import type { Snippet } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import Button from '$lib/components/common/Button.svelte';
   import type { Priority, Recurrence, TaskStatus } from '@anm/types';
   import type { TaskAssignee } from '$lib/server/tasks';
@@ -42,15 +42,16 @@
 
   // When editing, use the task's current assignee. When creating fresh, default
   // to the logged-in user so the task lands on their own board.
-  const defaultAssigneeId =
-    initial.assigneeId !== undefined ? (initial.assigneeId ?? '') : (currentUserId ?? '');
+  const defaultAssigneeId = untrack(() =>
+    initial.assigneeId !== undefined ? (initial.assigneeId ?? '') : (currentUserId ?? ''),
+  );
 
   let submitting = $state(false);
 
   // Track recurrence + dueDate locally so the hint below the recurrence
   // select can show the resulting day-of-month in real time.
-  let recurrence = $state<Recurrence>(initial.recurrence ?? 'NONE');
-  let dueDate = $state<string>(initial.dueDate?.slice(0, 10) ?? '');
+  let recurrence = $state<Recurrence>(untrack(() => initial.recurrence ?? 'NONE'));
+  let dueDate = $state<string>(untrack(() => initial.dueDate?.slice(0, 10) ?? ''));
 
   const recurrenceHint = $derived.by(() => {
     if (recurrence === 'NONE') return null;
@@ -257,12 +258,12 @@
     {/if}
   </label>
 
-  <div class="flex items-center justify-between gap-3 pt-2">
+  <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
     <div>
       {#if extraActions}{@render extraActions()}{/if}
     </div>
-    <div class="flex items-center gap-2">
-      <Button variant="ghost" href={crmPath("/tarefas")}>Cancelar</Button>
+    <div class="flex flex-wrap items-center justify-end gap-2 min-w-0">
+      <Button variant="ghost" href={crmPath('/tarefas')}>Cancelar</Button>
       <Button variant="primary" type="submit" loading={submitting} disabled={submitting}>
         {submitLabel}
       </Button>

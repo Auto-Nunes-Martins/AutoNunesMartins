@@ -1,210 +1,298 @@
 <script lang="ts">
-  import { Calendar, CalendarClock, RotateCw, X } from 'lucide-svelte';
+  import { Calendar, CalendarClock, GripVertical, RotateCw, X } from 'lucide-svelte';
+  import { crmPath } from '$lib/paths';
   import { formatDate } from '$lib/utils/format';
+  import { taskPriority, TASK_STATUS_LABELS } from './presentation';
   import type { TaskDto } from '$lib/server/tasks';
-  import type { Priority, Recurrence } from '@anm/types';
+  import type { Recurrence, TaskStatus } from '@anm/types';
 
-  interface Props {
+  let {
+    task,
+    standby = false,
+    pending = false,
+    disabled = false,
+    ondelete,
+    onstatuschange,
+  }: {
     task: TaskDto;
-    /**
-     * Recurring task scheduled ahead of its dueDate. Renders dimmed with a
-     * "Agendada · <date>" badge and (if `ondelete` provided) an X button to
-     * cancel the upcoming occurrence without going through the edit page.
-     */
     standby?: boolean;
-    onclick?: () => void;
+    pending?: boolean;
+    disabled?: boolean;
     ondelete?: () => void;
-  }
+    onstatuschange?: (status: TaskStatus) => void;
+  } = $props();
 
-  let { task, standby = false, onclick, ondelete }: Props = $props();
-
-  const PRIORITY_LABELS: Record<Priority, string> = {
-    LOW: 'Baixa',
-    MEDIUM: 'Média',
-    HIGH: 'Alta',
-    URGENT: 'Urgente',
-  };
-
-  const PRIORITY_COLOR: Record<Priority, string> = {
-    LOW: 'var(--color-text-faint)',
-    MEDIUM: 'var(--color-info)',
-    HIGH: 'var(--color-warning)',
-    URGENT: 'var(--color-red)',
-  };
-
-  const RECURRENCE_LABEL: Record<Recurrence, string> = {
+  const priority = $derived(taskPriority(task.priority));
+  const recurrenceLabels: Record<Recurrence, string> = {
     NONE: '',
-    WEEKLY: 'SEMANAL',
-    MONTHLY: 'MENSAL',
-    ANNUAL: 'ANUAL',
+    WEEKLY: 'Semanal',
+    MONTHLY: 'Mensal',
+    ANNUAL: 'Anual',
   };
-
-  const initials = $derived.by(() => {
-    const name = task.assignee?.name ?? '';
-    return name
+  const initials = $derived(
+    (task.assignee?.name ?? '')
       .split(' ')
       .filter(Boolean)
       .slice(0, 2)
-      .map((p: string) => p[0]?.toUpperCase() ?? '')
-      .join('');
-  });
+      .map((p) => p[0]?.toUpperCase() ?? '')
+      .join(''),
+  );
+  const overdue = $derived(
+    Boolean(
+      task.dueDate &&
+      task.status !== 'DONE' &&
+      new Date(task.dueDate) < new Date(new Date().toISOString().slice(0, 10)),
+    ),
+  );
 
-  const isOverdue = $derived.by(() => {
-    if (!task.dueDate || task.status === 'DONE') return false;
-    return new Date(task.dueDate) < new Date(new Date().toISOString().slice(0, 10));
-  });
+  // Native controls retain their own pointer and keyboard behavior inside the draggable wrapper.
+  function preventDrag(node: HTMLElement) {
+    const stop = (event: Event) => event.stopPropagation();
+    node.addEventListener('mousedown', stop);
+    node.addEventListener('touchstart', stop, { passive: true });
+    node.addEventListener('keydown', stop);
+    return {
+      destroy() {
+        node.removeEventListener('mousedown', stop);
+        node.removeEventListener('touchstart', stop);
+        node.removeEventListener('keydown', stop);
+      },
+    };
+  }
 </script>
 
 <article
-  onclick={onclick}
-  role="button"
-  tabindex="0"
-  onkeydown={(e) => (e.key === 'Enter' || e.key === ' ' ? onclick?.() : null)}
-  class="task-card group relative flex flex-col gap-2.5 p-3.5 border bg-[var(--color-bg-1)] hover:border-[color-mix(in_oklab,var(--color-red)_45%,transparent)] transition-colors {standby
-    ? 'is-standby border-dashed border-[var(--color-border-strong)]'
-    : 'border-[var(--color-border)]'}"
-  style="border-radius: var(--radius-card);"
+  class="task-card"
+  class:is-standby={standby}
+  class:is-pending={pending}
+  aria-busy={pending}
+  style:--priority={priority.color}
+  style:--task-status={task.status === 'DONE'
+    ? 'var(--color-success)'
+    : task.status === 'IN_PROGRESS'
+      ? 'var(--color-info)'
+      : 'var(--color-text-muted)'}
 >
-  {#if standby && ondelete}
-    <button
-      type="button"
-      onclick={(e) => {
-        e.stopPropagation();
-        ondelete?.();
-      }}
-      title="Cancelar próxima ocorrência"
-      aria-label="Cancelar próxima ocorrência"
-      class="cancel-btn absolute -top-2 -right-2 h-6 w-6 inline-flex items-center justify-center border border-[color-mix(in_oklab,var(--color-red)_50%,transparent)] bg-[var(--color-bg-1)] text-[var(--color-red)] hover:bg-[var(--color-red)] hover:text-white transition-colors"
-      style="border-radius: 999px;"
-    >
-      <X class="h-3 w-3" />
-    </button>
-  {/if}
-  <!-- Priority left rail -->
-  <div
-    class="absolute left-0 top-0 bottom-0 w-[3px]"
-    style="background: {PRIORITY_COLOR[task.priority]};"
-  ></div>
-
-  <div class="flex items-start justify-between gap-2">
-    <h4 class="font-display font-semibold italic text-[14.5px] leading-tight tracking-[-0.005em] text-[var(--color-text)] flex-1">
-      {task.title}
-    </h4>
-    {#if task.recurrence !== 'NONE'}
-      <span
-        class="inline-flex items-center gap-1 px-1.5 py-0.5 border border-[color-mix(in_oklab,var(--color-red)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-red)_8%,transparent)] text-[var(--color-red)] font-mono text-[9px] uppercase tracking-[0.12em]"
-        style="border-radius: 3px;"
-        title={`Recorrência: ${RECURRENCE_LABEL[task.recurrence].toLowerCase()}`}
+  <div class="card-heading">
+    <h4><a href={crmPath(`/tarefas/${task.id}/editar`)} use:preventDrag>{task.title}</a></h4>
+    {#if !standby}<GripVertical class="drag-grip" aria-hidden="true" />{/if}
+    {#if standby && ondelete}
+      <button
+        class="cancel-btn"
+        type="button"
+        use:preventDrag
+        onclick={ondelete}
+        {disabled}
+        aria-label={`Cancelar próxima ocorrência: ${task.title}`}
+        title="Cancelar próxima ocorrência"><X size={15} /></button
       >
-        <RotateCw class="h-2.5 w-2.5" />
-        {RECURRENCE_LABEL[task.recurrence]}
+    {/if}
+  </div>
+  {#if task.description}<p class="description">{task.description}</p>{/if}
+  <div class="card-meta">
+    <span class="priority">{priority.label}</span>
+    {#if task.recurrence !== 'NONE'}<span class="recurrence"
+        ><RotateCw size={12} />{recurrenceLabels[task.recurrence]}</span
+      >{/if}
+    {#if task.dueDate}
+      <span class="due" class:overdue>
+        {#if standby}<CalendarClock size={13} />{:else}<Calendar size={13} />{/if}
+        {standby ? 'Agendada · ' : overdue ? 'Em atraso · ' : ''}{formatDate(task.dueDate)}
       </span>
     {/if}
   </div>
-
-  {#if task.description}
-    <p class="text-[12.5px] leading-snug text-[var(--color-text-muted)] line-clamp-2">
-      {task.description}
-    </p>
-  {/if}
-
-  <div class="flex items-center justify-between gap-2 pt-1">
-    <div class="flex items-center gap-1.5">
-      <span
-        class="h-2 w-2 rounded-full flex-shrink-0"
-        style="background: {PRIORITY_COLOR[task.priority]};"
-      ></span>
-      <span
-        class="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]"
-      >
-        {PRIORITY_LABELS[task.priority]}
-      </span>
-    </div>
-
-    <div class="flex items-center gap-2">
-      {#if standby && task.dueDate}
-        <span
-          class="inline-flex items-center gap-1 px-1.5 py-0.5 border border-[color-mix(in_oklab,var(--color-info)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-info)_8%,transparent)] text-[var(--color-info)] font-mono text-[9.5px] uppercase tracking-[0.12em] tabular-nums"
-          style="border-radius: 3px;"
-          title="Tarefa recorrente — aparecerá novamente neste dia"
+  <div class="card-footer">
+    {#if onstatuschange && !standby}
+      <label class="status-control" use:preventDrag>
+        <span class="sr-only">Estado de {task.title}</span>
+        <select
+          value={task.status}
+          disabled={disabled || pending}
+          onchange={(event) => onstatuschange?.(event.currentTarget.value as TaskStatus)}
         >
-          <CalendarClock class="h-2.5 w-2.5" />
-          Agendada · {formatDate(task.dueDate)}
-        </span>
-      {:else if task.dueDate}
-        <span
-          class="inline-flex items-center gap-1 font-mono text-[10px] tabular-nums {isOverdue
-            ? 'text-[var(--color-red)] font-semibold'
-            : 'text-[var(--color-text-faint)]'}"
-        >
-          <Calendar class="h-2.5 w-2.5" />
-          {formatDate(task.dueDate)}
-        </span>
-      {/if}
-
-      {#if task.assignee}
-        {#if task.assignee.imageUrl}
-          <img
-            src={task.assignee.imageUrl}
-            alt={task.assignee.name}
-            title={task.assignee.name}
-            referrerpolicy="no-referrer"
-            class="h-8 w-8 object-cover border border-[var(--color-border)]"
-            style="border-radius: var(--radius-btn);"
-          />
-        {:else}
-          <div
-            class="h-8 w-8 flex items-center justify-center font-display font-black italic text-[12px] text-white"
-            style="background: linear-gradient(135deg, var(--color-red) 0%, var(--color-red-deep) 100%); border-radius: var(--radius-btn);"
-            title={task.assignee.name}
-          >
-            {initials || 'A'}
-          </div>
-        {/if}
-      {:else}
-        <span
-          class="inline-flex items-center px-1.5 py-0.5 border border-[var(--color-border-strong)] bg-[var(--color-bg-2)] font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]"
-          style="border-radius: 3px;"
-          title="Tarefa geral — visível para toda a equipa"
-        >
-          Geral
-        </span>
-      {/if}
-    </div>
+          {#each Object.entries(TASK_STATUS_LABELS) as [value, label]}<option {value}
+              >{label}</option
+            >{/each}
+        </select>
+      </label>
+    {:else}<span class="scheduled-label">Próxima ocorrência</span>{/if}
+    <span class="assignee" title={task.assignee?.name ?? 'Geral · Sem responsável'}>
+      {#if task.assignee?.imageUrl}
+        <img
+          src={task.assignee.imageUrl}
+          alt={task.assignee.name}
+          referrerpolicy="no-referrer"
+          loading="lazy"
+        />
+      {:else if task.assignee}
+        <span class="initials" aria-label={task.assignee.name}>{initials || 'A'}</span>
+      {:else}<span>Geral</span>{/if}
+    </span>
   </div>
 </article>
 
 <style>
   .task-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--priority);
+    border-radius: var(--radius-card);
+    background: var(--color-bg-1);
     cursor: grab;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
   }
-  .task-card:active {
-    cursor: grabbing;
+  .task-card:hover {
+    border-top-color: var(--color-border-strong);
+    border-right-color: var(--color-border-strong);
+    border-bottom-color: var(--color-border-strong);
   }
-  /*
-    Standby cards live outside the dndzone so dragging is impossible at the
-    DOM level. The opacity + non-grab cursor reinforce that visually, and
-    the cancel-btn keeps its own pointer events so the X stays clickable.
-  */
-  .task-card.is-standby {
-    cursor: pointer;
-    opacity: 0.55;
+  .card-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
   }
-  .task-card.is-standby:hover {
-    opacity: 0.85;
+  h4 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
   }
-  .cancel-btn {
-    opacity: 0;
-    transition: opacity 0.15s, background-color 0.15s, color 0.15s;
+  h4 a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
-  .task-card:hover .cancel-btn,
-  .cancel-btn:focus-visible {
-    opacity: 1;
+  :global(.drag-grip) {
+    width: 16px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--color-text-faint);
+    opacity: 0.65;
   }
-  :global(.line-clamp-2) {
+  .description {
+    margin: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    overflow-wrap: anywhere;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+  }
+  .priority {
+    padding: 2px 6px;
+    font-weight: 600;
+    color: var(--priority);
+    border: 1px solid color-mix(in srgb, var(--priority) 45%, transparent);
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--priority) 12%, transparent);
+  }
+  .recurrence,
+  .due {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .due {
+    font-variant-numeric: tabular-nums;
+  }
+  .overdue {
+    color: var(--color-priority-urgent);
+  }
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 10px;
+  }
+  .status-control select {
+    max-width: 100%;
+    min-height: 32px;
+    padding: 4px 22px 4px 7px;
+    font-size: 11px;
+    color: var(--task-status);
+    background: color-mix(in srgb, var(--task-status) 8%, var(--color-bg-1));
+    border: 1px solid color-mix(in srgb, var(--task-status) 35%, transparent);
+    border-radius: var(--radius-btn);
+  }
+  .status-control select:disabled {
+    opacity: 0.65;
+  }
+  .assignee {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+  .assignee img,
+  .initials {
+    height: 28px;
+    width: 28px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-btn);
+    object-fit: cover;
+  }
+  .initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--color-bg-3);
+  }
+  .is-standby {
+    cursor: default;
+    border-style: dashed;
+    background: var(--color-bg-2);
+  }
+  .cancel-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-btn);
+  }
+  .cancel-btn:hover {
+    color: var(--color-priority-urgent);
+    border-color: currentColor;
+  }
+  .scheduled-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+  .is-pending {
+    cursor: wait;
+  }
+  @media (pointer: coarse) {
+    .status-control select,
+    .cancel-btn {
+      min-height: 44px;
+    }
+    .cancel-btn {
+      width: 44px;
+    }
   }
 </style>

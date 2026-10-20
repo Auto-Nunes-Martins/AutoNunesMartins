@@ -2,7 +2,9 @@
  * The contact/footer frame is the common alignment; each chapter owns its trailing
  * space so adjacent component margins cannot silently add another pause.
  */
-.design .nav-reserve { display: none; }
+.design .nav-reserve {
+  display: none;
+}
 
 /* A short inner page occupies the first screen before the shared invitation.
  * svh avoids toolbar-driven resizing; longer mains retain their natural flow.
@@ -10,8 +12,14 @@
  */
 .design.orbit.orbit-inner > main {
   box-sizing: border-box;
-  min-block-size: max(0px, calc(100vh - var(--nav-full-height, 94px) - var(--nav-address-height, 0px)));
-  min-block-size: max(0px, calc(100svh - var(--nav-full-height, 94px) - var(--nav-address-height, 0px)));
+  min-block-size: max(
+    0px,
+    calc(100vh - var(--nav-full-height, 94px) - var(--nav-address-height, 0px))
+  );
+  min-block-size: max(
+    0px,
+    calc(100svh - var(--nav-full-height, 94px) - var(--nav-address-height, 0px))
+  );
 }
 
 /* Navigation feedback is neutral; reserve red for the established brand accents. */
@@ -32,62 +40,179 @@
   background: var(--muted);
   opacity: 0;
 }
-.design.orbit > .stand-header > nav > a:focus-visible { color: var(--text); }
-.design.orbit > .stand-header > nav > a:focus-visible::after { opacity: 1; }
+.design.orbit > .stand-header > nav > a:focus-visible {
+  color: var(--text);
+}
+.design.orbit > .stand-header > nav > a:focus-visible::after {
+  opacity: 1;
+}
 @media (hover: hover) {
-  .design.orbit > .stand-header > nav > a:hover { color: var(--text); }
-  .design.orbit > .stand-header > nav > a:hover::after { opacity: 1; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .design.orbit > .stand-header > nav > a { transition: color 180ms ease-out; }
-  .design.orbit > .stand-header > nav > a::after { transition: opacity 180ms ease-out; }
-}
-/* Animated descendants must not become scroll anchors during a restored visit. */
-.design.orbit-home { overflow-anchor: none; }
-.design.orbit .orbit-edition-label { display: none; }
-.design.orbit .nav-phone { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 12px 18px; border-radius: 4px; background: var(--red); color: #fff; font-size: 13px; white-space: nowrap; text-decoration: none; }
-.design.orbit .nav-phone:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
-.design.orbit .nav-phone { gap: 8px; }
-/* Increase the glyph while reserving its original horizontal advance inside the CTA. */
-.design.orbit .nav-phone svg { flex-shrink: 0; width: 20px; height: 20px; margin-inline: -2px; }
-@media (prefers-reduced-motion: no-preference) {
-  .design.orbit .nav-phone svg { animation: orbit-phone-attention 5s ease-in-out infinite; }
-  /* 4.48 seconds at rest, then the original 520ms ringing gesture. */
-  @keyframes orbit-phone-attention {
-    0%, 89.6%, 100% { transform: rotate(0); }
-    91.68% { transform: rotate(-16deg); }
-    93.76% { transform: rotate(12deg); }
-    95.84% { transform: rotate(-8deg); }
-    97.92% { transform: rotate(4deg); }
+  .design.orbit > .stand-header > nav > a:hover {
+    color: var(--text);
+  }
+  .design.orbit > .stand-header > nav > a:hover::after {
+    opacity: 1;
   }
 }
-.design.orbit .nav-phone { box-shadow: inset 0 0 0 1px #ffffff00, 0 3px 12px #e3061300; }
-.design.orbit .nav-phone:focus-visible { box-shadow: inset 0 0 0 1px #ffffff40, 0 3px 12px #e3061333; }
-@media (hover: hover) {
-  .design.orbit .nav-phone:hover { background: color-mix(in srgb, var(--red) 90%, #000); box-shadow: inset 0 0 0 1px #ffffff40, 0 3px 12px #e3061333; }
+@media (prefers-reduced-motion: no-preference) {
+  .design.orbit > .stand-header > nav > a {
+    transition: color 180ms ease-out;
+  }
+  .design.orbit > .stand-header > nav > a::after {
+    transition: opacity 180ms ease-out;
+  }
+}
+/* Animated descendants must not become scroll anchors during a restored visit. */
+.design.orbit-home {
+  overflow-anchor: none;
+}
+.design.orbit .orbit-edition-label {
+  display: none;
+}
+.design.orbit .nav-phone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 18px;
+  border-radius: 4px;
+  background: var(--red);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.design.orbit .nav-phone:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+.design.orbit .nav-phone {
+  gap: 8px;
+}
+/* Increase the glyph while reserving its original horizontal advance inside the CTA. */
+.design.orbit .nav-phone svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-inline: -2px;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .design.orbit .nav-phone { transition: background-color 300ms ease, box-shadow 300ms ease; }
+  .design.orbit .nav-phone svg {
+    animation: orbit-phone-attention 5s ease-in-out infinite;
+  }
+  /* 4.48 seconds at rest, then the original 520ms ringing gesture. */
+  @keyframes orbit-phone-attention {
+    0%,
+    89.6%,
+    100% {
+      transform: rotate(0);
+    }
+    91.68% {
+      transform: rotate(-16deg);
+    }
+    93.76% {
+      transform: rotate(12deg);
+    }
+    95.84% {
+      transform: rotate(-8deg);
+    }
+    97.92% {
+      transform: rotate(4deg);
+    }
+  }
+}
+.design.orbit .nav-phone {
+  box-shadow:
+    inset 0 0 0 1px #ffffff00,
+    0 3px 12px #e3061300;
+}
+.design.orbit .nav-phone:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px #ffffff40,
+    0 3px 12px #e3061333;
+}
+@media (hover: hover) {
+  .design.orbit .nav-phone:hover {
+    background: color-mix(in srgb, var(--red) 90%, #000);
+    box-shadow:
+      inset 0 0 0 1px #ffffff40,
+      0 3px 12px #e3061333;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .design.orbit .nav-phone {
+    transition:
+      background-color 300ms ease,
+      box-shadow 300ms ease;
+  }
 }
 @media (max-width: 700px) {
-  .design.orbit .stand-header { gap: 12px; }
-  .design.orbit header .logo { width: 120px; min-width: 0; flex: 0 0 120px; }
-  .design.orbit header .logo img { width: 120px; }
-  .design.orbit header .header-actions { gap: 8px; }
-  .design.orbit .nav-phone { min-height: 40px; padding: 10px; font-size: 11px; }
-  .design.orbit .nav-phone { gap: 6px; }
-  .design.orbit .nav-phone svg { width: 18px; height: 18px; }
+  .design.orbit .stand-header {
+    gap: 12px;
+  }
+  .design.orbit header .logo {
+    width: 120px;
+    min-width: 0;
+    flex: 0 0 120px;
+  }
+  .design.orbit header .logo img {
+    width: 120px;
+  }
+  .design.orbit header .header-actions {
+    gap: 8px;
+  }
+  .design.orbit .nav-phone {
+    min-height: 40px;
+    padding: 10px;
+    font-size: 11px;
+  }
+  .design.orbit .nav-phone {
+    gap: 6px;
+  }
+  .design.orbit .nav-phone svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 @media (max-width: 380px) {
-  .design.orbit .stand-header { padding-inline: 8px; gap: 6px; }
-  .design.orbit header .header-actions { gap: 4px; }
-  .design.orbit .nav-phone { padding-inline: 8px; font-size: 10px; }
-  .design.orbit header .mobile-menu { width: 34px; height: 38px; }
+  .design.orbit .stand-header {
+    padding-inline: 8px;
+    gap: 6px;
+  }
+  .design.orbit header .header-actions {
+    gap: 4px;
+  }
+  .design.orbit .nav-phone {
+    padding-inline: 8px;
+    font-size: 10px;
+  }
+  .design.orbit header .mobile-menu {
+    width: 34px;
+    height: 38px;
+  }
 }
-.design.orbit .not-found { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: var(--orbit-space-section) 0; min-height: 60svh; }
-.design.orbit .not-found h1 { font-size: clamp(36px, 4.5vw, 64px); max-width: 22ch; line-height: 1.06; letter-spacing: -.05em; }
-.design.orbit .not-found > p:not(.kicker) { color: var(--muted); line-height: 1.75; margin-block: 24px; }
-.design.orbit-home.nav-pinned .nav-reserve { display: block; height: 94px; }
+.design.orbit .not-found {
+  width: var(--orbit-frame);
+  max-width: var(--orbit-frame-max);
+  margin: auto;
+  padding: var(--orbit-space-section) 0;
+  min-height: 60svh;
+}
+.design.orbit .not-found h1 {
+  font-size: clamp(36px, 4.5vw, 64px);
+  max-width: 22ch;
+  line-height: 1.06;
+  letter-spacing: -0.05em;
+}
+.design.orbit .not-found > p:not(.kicker) {
+  color: var(--muted);
+  line-height: 1.75;
+  margin-block: 24px;
+}
+.design.orbit-home.nav-pinned .nav-reserve {
+  display: block;
+  height: 94px;
+}
 .design.orbit.orbit-home.nav-pinned > header,
 .design.orbit.orbit-inner.nav-compact > header.stand-header {
   position: fixed;
@@ -102,7 +227,9 @@
   transform: translateY(calc(-18px * (1 - var(--nav-progress, 0))));
   transition: none;
 }
-.design.orbit.orbit-home.nav-pinned > header[inert] { pointer-events: none; }
+.design.orbit.orbit-home.nav-pinned > header[inert] {
+  pointer-events: none;
+}
 /* Match the perspective surface composited over the page, retaining subtle translucency. */
 :where(html)[data-theme='light'] .design.orbit {
   --orbit-nav-surface: color-mix(in srgb, var(--text) 2%, var(--bg));
@@ -114,20 +241,38 @@
   background: color-mix(in srgb, var(--orbit-nav-surface) 94%, transparent);
   backdrop-filter: blur(8px);
 }
-.design.orbit-home.nav-pinned header .edition-label { display: none; }
-.design.orbit-home.nav-pinned .catalog-controls { top: 104px; }
-.design.orbit-home :is(section[id], [id='selecao']) { scroll-margin-top: 104px; }
-.design.orbit-home :is(a, button, input, select) { scroll-margin-top: 104px; }
+.design.orbit-home.nav-pinned header .edition-label {
+  display: none;
+}
+.design.orbit-home.nav-pinned .catalog-controls {
+  top: 104px;
+}
+.design.orbit-home :is(section[id], [id='selecao']) {
+  scroll-margin-top: 104px;
+}
+.design.orbit-home :is(a, button, input, select) {
+  scroll-margin-top: 104px;
+}
 @media (prefers-reduced-motion: reduce) {
   .design.orbit.orbit-home.nav-pinned > header {
     transform: none;
   }
 }
 @media (max-width: 700px) {
-  .design.orbit-home.nav-pinned .nav-reserve { height: 82px; }
-  .design.orbit.orbit-home.nav-pinned > header { height: 72px; }
-  .design.orbit.orbit-home header nav { top: 100%; max-height: calc(100svh - 82px); overflow-y: auto; }
-  .design.orbit.orbit-home.nav-pinned header nav { max-height: calc(100svh - 72px); }
+  .design.orbit-home.nav-pinned .nav-reserve {
+    height: 82px;
+  }
+  .design.orbit.orbit-home.nav-pinned > header {
+    height: 72px;
+  }
+  .design.orbit.orbit-home header nav {
+    top: 100%;
+    max-height: calc(100svh - 82px);
+    overflow-y: auto;
+  }
+  .design.orbit.orbit-home.nav-pinned header nav {
+    max-height: calc(100svh - 72px);
+  }
   :where(html)[data-theme='light'] .design.orbit > header.stand-header > nav {
     background: color-mix(in srgb, var(--orbit-nav-surface) 98%, transparent);
     backdrop-filter: blur(8px);
@@ -136,10 +281,11 @@
 
 .design.orbit {
   /* Signature line glow: see docs/orbit-visual-identity.md. */
-  --orbit-line-glow: drop-shadow(0 0 2.5px rgb(255 51 76 / 90%)) drop-shadow(0 0 5px #e3061366) drop-shadow(0 0 12px #e3061399) drop-shadow(0 0 26px #e3061359);
+  --orbit-line-glow: drop-shadow(0 0 2.5px rgb(255 51 76 / 90%)) drop-shadow(0 0 5px #e3061366)
+    drop-shadow(0 0 12px #e3061399) drop-shadow(0 0 26px #e3061359);
   --orbit-panel-bg: color-mix(in srgb, var(--text) 2%, transparent);
   --orbit-frame: min(96%, calc(100% - 48px));
-  --orbit-frame-max: 1440px;
+  --orbit-frame-max: 1320px;
   --orbit-space-section: clamp(64px, 6vw, 96px);
   --orbit-space-half: calc(var(--orbit-space-section) / 2);
   --orbit-space-arrival: clamp(96px, 8vw, 128px);
@@ -521,7 +667,11 @@
   /* Extend only the decorative surface to the stage floor, not the copy or scene. */
   min-height: calc(var(--intro-height) - var(--copy-top) + 26px);
   border-left: 2px solid transparent;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 88%, transparent), transparent 92%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg) 88%, transparent),
+    transparent 92%
+  );
   /* Fade out before the 3D layer's right edge so it cannot seam over the tilted photo. */
   mask-image: linear-gradient(90deg, #000 80%, transparent 96%);
   opacity: 0.92;
@@ -545,8 +695,7 @@
   max-width: 100%;
   height: auto;
   margin: 0 0 24px;
-  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 17%))
-    drop-shadow(0 2px 1px rgb(0 0 0 / 11%))
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 17%)) drop-shadow(0 2px 1px rgb(0 0 0 / 11%))
     drop-shadow(0 8px 10px rgb(0 0 0 / 11%));
   transform: translateZ(18px) rotateY(-1.5deg);
 }
@@ -559,8 +708,7 @@
   font-weight: 600;
   line-height: 0.98;
   letter-spacing: -0.065em;
-  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 24%))
-    drop-shadow(0 2.4px 0 rgb(0 0 0 / 12%))
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 24%)) drop-shadow(0 2.4px 0 rgb(0 0 0 / 12%))
     drop-shadow(0 8px 9px rgb(0 0 0 / 14%));
   transform: translateZ(24px);
 }
@@ -611,11 +759,15 @@
 @media (max-width: 700px) {
   .design.orbit.orbit-home {
     --mobile-stage-reference: max(820px, calc(100svh - 40px));
-    --mobile-copy-height: calc(224px * 836 / 1881 + 18px + clamp(46px, 13vw, 72px) * 1.995 + 18px + 41.6px);
+    --mobile-copy-height: calc(
+      224px * 836 / 1881 + 18px + clamp(46px, 13vw, 72px) * 1.995 + 18px + 41.6px
+    );
     --intro-height: calc(var(--mobile-photo-top) + var(--mobile-photo-height) + 94px);
     --mobile-photo-height: calc(var(--mobile-stage-reference) * 0.35);
     /* Follow the copy rather than keeping the old empty percentage-based slot. */
-    --mobile-photo-top: calc(46px + var(--mobile-copy-height) + clamp(52px, calc(3.6vw + 36px), 62px));
+    --mobile-photo-top: calc(
+      46px + var(--mobile-copy-height) + clamp(52px, calc(3.6vw + 36px), 62px)
+    );
   }
   .design.orbit.orbit-home .car-grid {
     grid-template-rows: repeat(var(--home-result-rows), minmax(0, 1fr)) minmax(0, 0.5fr);
@@ -677,10 +829,48 @@
   }
 }
 /* Dedicated local faces avoid a late external font swap in the public Orbit site. */
-@font-face { font-family: 'Orbit Inter'; font-style: normal; font-weight: 400; font-display: optional; src: url('@fontsource/inter/files/inter-latin-400-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Orbit Inter'; font-style: normal; font-weight: 500; font-display: optional; src: url('@fontsource/inter/files/inter-latin-500-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Orbit Inter'; font-style: normal; font-weight: 600; font-display: optional; src: url('@fontsource/inter/files/inter-latin-600-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Orbit Inter'; font-style: normal; font-weight: 700; font-display: optional; src: url('@fontsource/inter/files/inter-latin-700-normal.woff2') format('woff2'); }
-.design.orbit { font-family: 'Orbit Inter', Arial, sans-serif; }
-@font-face { font-family: 'Orbit Barlow'; font-style: normal; font-weight: 600; font-display: optional; src: url('@fontsource/barlow/files/barlow-latin-600-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Orbit Barlow'; font-style: italic; font-weight: 600; font-display: optional; src: url('@fontsource/barlow/files/barlow-latin-600-italic.woff2') format('woff2'); }
+@font-face {
+  font-family: 'Orbit Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url('@fontsource/inter/files/inter-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Orbit Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: optional;
+  src: url('@fontsource/inter/files/inter-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Orbit Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: optional;
+  src: url('@fontsource/inter/files/inter-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Orbit Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url('@fontsource/inter/files/inter-latin-700-normal.woff2') format('woff2');
+}
+.design.orbit {
+  font-family: 'Orbit Inter', Arial, sans-serif;
+}
+@font-face {
+  font-family: 'Orbit Barlow';
+  font-style: normal;
+  font-weight: 600;
+  font-display: optional;
+  src: url('@fontsource/barlow/files/barlow-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Orbit Barlow';
+  font-style: italic;
+  font-weight: 600;
+  font-display: optional;
+  src: url('@fontsource/barlow/files/barlow-latin-600-italic.woff2') format('woff2');
+}

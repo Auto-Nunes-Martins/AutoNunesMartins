@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { config } from './routing.mjs';
 import { createGateway } from './gateway.mjs';
+import { clientAddressHeader } from './client-address.mjs';
 
 const settings = config(process.env);
 const manifest = JSON.parse(await readFile(new URL('./build.json', import.meta.url), 'utf8'));
@@ -79,6 +80,8 @@ launch('website', 'apps/website/build/index.js', {
   ORIGIN: settings.website.origin,
   SITE_NOINDEX: String(settings.noindex),
   BODY_SIZE_LIMIT: '16384',
+  // Only our gateway can reach this loopback listener; never consume raw XFF.
+  ADDRESS_HEADER: clientAddressHeader,
 });
 launch('crm', 'apps/crm/build/index.js', {
   PORT: String(ports.crm),

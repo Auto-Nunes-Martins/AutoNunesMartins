@@ -26,7 +26,7 @@
     icon={Trophy}
     title="Mais Vendidos · 12M"
     meta={`${items.length} MODELOS`}
-    iconClass="text-[#e6b800]"
+    iconClass="text-[var(--color-warning)]"
   />
 
   {#if items.length === 0}
@@ -82,7 +82,7 @@
     >
       <span>Top {items.length} · últimos 12 meses</span>
       <a
-        href={crmPath("/vendas?sortBy=realProfit&sortDir=desc")}
+        href={crmPath('/vendas?sortBy=realProfit&sortDir=desc')}
         class="inline-flex items-center gap-1.5 text-[var(--color-red)] font-semibold hover:underline"
       >
         Ver detalhes

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { crmPath, crmRoute } from '$lib/paths';
-  import { onMount, onDestroy, tick } from 'svelte';
+  import { onMount, onDestroy, tick, untrack } from 'svelte';
   import { fade, fly, scale, slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import { page } from '$app/stores';
@@ -12,13 +12,8 @@
   import { formatDate } from '$lib/utils/format';
   import type { TaskAssignee, TaskDto } from '$lib/server/tasks';
   import type { Priority } from '@anm/types';
-
-  const PRIORITIES: { value: Priority; label: string; color: string }[] = [
-    { value: 'LOW', label: 'Baixa', color: 'var(--color-text-faint)' },
-    { value: 'MEDIUM', label: 'Média', color: 'var(--color-info)' },
-    { value: 'HIGH', label: 'Alta', color: 'var(--color-warning)' },
-    { value: 'URGENT', label: 'Urgente', color: 'var(--color-red)' },
-  ];
+  import { TASK_PRIORITIES as PRIORITIES, taskPriority } from '$lib/components/task/presentation';
+  import { reducedMotion } from '$lib/stores/reducedMotion';
 
   type DueChoice = 'none' | 'today' | 'tomorrow' | 'week' | 'custom';
   const DUE_PRESETS: { value: Exclude<DueChoice, 'custom'>; label: string }[] = [
@@ -44,10 +39,8 @@
    * "appears already half-way" jump caused by aggressive ease-outs and
    * opacity ramps. Desktop keeps the slight slide-up + fade.
    */
-  function panelTransition(
-    _node: Element,
-    { mobile = false }: { mobile?: boolean } = {},
-  ) {
+  function panelTransition(_node: Element, { mobile = false }: { mobile?: boolean } = {}) {
+    if ($reducedMotion) return { duration: 0 };
     if (mobile) {
       return {
         duration: 380,
@@ -126,6 +119,7 @@
   let loadError = $state<string | null>(null);
   let users = $state<TaskAssignee[]>([]);
   let usersLoaded = $state(false);
+  let loadController: AbortController | undefined;
   let isMobile = $state(false);
 
   // Quick-add form
@@ -151,10 +145,10 @@
   // on the header to dismiss. Snaps to the nearest state on release based on
   // distance dragged. Movements under TAP_THRESHOLD fall through to the
   // regular click handler so quick taps still toggle.
-  const PANEL_PX = 380;        // approximate sheet height — used to map drag → clip %
-  const TAP_THRESHOLD = 6;     // px movement under which it's considered a tap
-  const OPEN_SNAP_PX = 56;     // drag-up distance that snaps to fully open
-  const CLOSE_SNAP_PX = 70;    // drag-down distance that snaps to closed
+  const PANEL_PX = 380; // approximate sheet height — used to map drag → clip %
+  const TAP_THRESHOLD = 6; // px movement under which it's considered a tap
+  const OPEN_SNAP_PX = 56; // drag-up distance that snaps to fully open
+  const CLOSE_SNAP_PX = 70; // drag-down distance that snaps to closed
   let dragDelta = $state(0);
   let isDragging = $state(false);
   let dragOrigin = $state<'bubble' | 'header' | null>(null);
@@ -176,9 +170,10 @@
   });
 
   $effect(() => {
-    if (assigneeChoice === '' && currentUserId) {
-      assigneeChoice = currentUserId;
-    }
+    const id = currentUserId;
+    untrack(() => {
+      assigneeChoice = id;
+    });
   });
 
   // Refetch list when scope changes while panel is open (desktop only)
@@ -198,16 +193,21 @@
 
   // ─── Network ───────────────────────────────────────────────────────────────
   async function load(currentScope: Scope = scope) {
+    loadController?.abort();
+    loadController = new AbortController();
+    const signal = loadController.signal;
     loading = true;
     loadError = null;
     try {
       const qs = new URLSearchParams({ status: 'TODO', scope: currentScope });
       const res = await fetch(crmPath(`/api/tasks?${qs.toString()}`), {
+        signal,
         headers: { accept: 'application/json' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { items: TaskDto[] };
-      const list = data.items ?? [];
+      if (signal.aborted) return;
+      const list = (data.items ?? []).filter((task) => !advancing.has(task.id));
       const PR: Record<Priority, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
       list.sort((a, b) => {
         const ao = isOverdue(a) ? 0 : 1;
@@ -221,10 +221,10 @@
         return da - db;
       });
       items = list;
-    } catch (err) {
-      loadError = (err as Error).message;
+    } catch {
+      if (!signal.aborted) loadError = 'Não foi possível carregar as tarefas. Tente novamente.';
     } finally {
-      loading = false;
+      if (!signal.aborted) loading = false;
     }
   }
 
@@ -253,8 +253,6 @@
       if (!isMobile) {
         void tick().then(() => titleInput?.focus());
       }
-    } else {
-      bubbleEl?.blur();
     }
   });
 
@@ -263,7 +261,11 @@
     if (!isMobile) return;
     // Let form fields and inner buttons handle their own taps.
     const tgt = e.target as HTMLElement;
-    if (tgt.closest('input, select, textarea, .qt-close, .qt-submit, .qt-chip, .qt-advance, .qt-footer-link'))
+    if (
+      tgt.closest(
+        'input, select, textarea, .qt-close, .qt-submit, .qt-chip, .qt-advance, .qt-footer-link',
+      )
+    )
       return;
     dragStartY = e.clientY;
     dragOrigin = origin;
@@ -314,7 +316,9 @@
   }
 
   function close() {
+    const restore = panelEl?.contains(document.activeElement);
     quickTask.close();
+    if (restore) void tick().then(() => bubbleEl?.focus({ preventScroll: true }));
   }
 
   async function handleSubmit(e?: Event) {
@@ -355,7 +359,9 @@
       if (!isMobile) titleInput?.focus();
       // Only refetch the desktop list — mobile has no list to refresh.
       if (!isMobile) await load();
-      void invalidateAll();
+      void invalidateAll().catch(() =>
+        toast.message('Tarefa criada. Atualize o quadro para ver os dados mais recentes.'),
+      );
     } catch (err) {
       toast.error(`Falha ao criar: ${(err as Error).message}`);
     } finally {
@@ -366,20 +372,35 @@
   async function advance(task: TaskDto) {
     if (advancing.has(task.id)) return;
     advancing = new Set(advancing).add(task.id);
-    const previous = items;
+    const previousIndex = items.findIndex((t) => t.id === task.id);
+    const previousScope = scope;
     items = items.filter((t) => t.id !== task.id);
+    let rejected = false;
     try {
       const res = await fetch(crmPath(`/tarefas/${task.id}/status`), {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ status: 'IN_PROGRESS' }),
       });
+      rejected = res.status >= 400 && res.status < 500;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       toast.message('Em curso.');
-      void invalidateAll();
-    } catch (err) {
-      toast.error(`Falha: ${(err as Error).message}`);
-      items = previous;
+      void invalidateAll().catch(() =>
+        toast.message('Estado guardado. Atualize o quadro para ver os dados mais recentes.'),
+      );
+    } catch {
+      // Restore only this row, never undo another task's successful update.
+      if (rejected && scope === previousScope && !items.some((item) => item.id === task.id)) {
+        const next = [...items];
+        next.splice(Math.max(0, previousIndex), 0, task);
+        items = next;
+      }
+      if (rejected) toast.error('A alteração foi recusada. A tarefa mantém o estado anterior.');
+      else {
+        toast.message('Não foi possível confirmar a alteração. A atualizar a lista de tarefas.');
+        advancing = new Set([...advancing].filter((id) => id !== task.id));
+        await load();
+      }
     } finally {
       const next = new Set(advancing);
       next.delete(task.id);
@@ -389,8 +410,10 @@
 
   function onDocClick(e: MouseEvent) {
     if (!isOpen) return;
-    const target = e.target as Node;
-    if (panelEl?.contains(target) || bubbleEl?.contains(target)) return;
+    // An optimistic advance can remove the clicked row before this listener runs.
+    // The original event path still identifies the click as inside the panel.
+    const path = e.composedPath();
+    if ((panelEl && path.includes(panelEl)) || (bubbleEl && path.includes(bubbleEl))) return;
     close();
   }
 
@@ -409,6 +432,7 @@
   });
 
   onDestroy(() => {
+    loadController?.abort();
     if (typeof document !== 'undefined') {
       document.removeEventListener('click', onDocClick);
       document.removeEventListener('keydown', onKey);
@@ -431,7 +455,9 @@
       class="qt-backdrop"
       aria-label="Fechar"
       onclick={close}
-      style="opacity: {((100 - mobileClipPct) / 100) * 0.55}; transition: {isDragging ? 'none' : 'opacity 360ms cubic-bezier(0.32, 0.72, 0, 1)'};"
+      style="opacity: {((100 - mobileClipPct) / 100) * 0.55}; transition: {isDragging
+        ? 'none'
+        : 'opacity 360ms cubic-bezier(0.32, 0.72, 0, 1)'};"
     ></button>
   {/if}
 
@@ -460,164 +486,179 @@
   {/if}
 
   {#snippet panelBody()}
-      <header
-        class="qt-header"
-        role={isMobile ? 'region' : undefined}
-        aria-label={isMobile ? 'Cabeçalho — arraste para baixo para fechar' : undefined}
-        onpointerdown={(e) => startDrag('header', e)}
-        onpointermove={onDragMove}
-        onpointerup={endDrag}
-        onpointercancel={endDrag}
-      >
-        {#if isMobile}
-          <!-- Drag handle hint: a thin grabber centred above the title row. -->
-          <div class="qt-grabber" aria-hidden="true"></div>
-        {/if}
-        <div class="qt-header-title">
-          <ListChecks class="h-[20px] w-[20px] text-[var(--color-text)]" />
-          <div class="qt-header-divider"></div>
-          <h3>{isMobile ? 'Nova tarefa' : 'Tarefas'}</h3>
-        </div>
-        <button type="button" class="qt-close" onclick={close} aria-label="Fechar">
-          <X class="h-4 w-4" />
+    <header
+      class="qt-header"
+      role={isMobile ? 'region' : undefined}
+      aria-label={isMobile ? 'Cabeçalho — arraste para baixo para fechar' : undefined}
+      onpointerdown={(e) => startDrag('header', e)}
+      onpointermove={onDragMove}
+      onpointerup={endDrag}
+      onpointercancel={endDrag}
+    >
+      {#if isMobile}
+        <!-- Drag handle hint: a thin grabber centred above the title row. -->
+        <div class="qt-grabber" aria-hidden="true"></div>
+      {/if}
+      <div class="qt-header-title">
+        <ListChecks class="h-[20px] w-[20px] text-[var(--color-text)]" />
+        <div class="qt-header-divider"></div>
+        <h3>{isMobile ? 'Nova tarefa' : 'Tarefas'}</h3>
+      </div>
+      <button type="button" class="qt-close" onclick={close} aria-label="Fechar">
+        <X class="h-4 w-4" />
+      </button>
+    </header>
+
+    <!-- ─── Quick-add (always shown) ───────────────────────────────────── -->
+    <form class="qt-add" onsubmit={handleSubmit}>
+      <div class="qt-input-wrap">
+        <input
+          bind:this={titleInput}
+          bind:value={title}
+          type="text"
+          aria-label="Título da nova tarefa"
+          maxlength="160"
+          placeholder="O que precisa de ser feito?"
+          class="qt-input"
+          disabled={creating}
+        />
+        <button
+          type="submit"
+          class="qt-submit"
+          disabled={creating || !title.trim()}
+          aria-label="Criar tarefa"
+        >
+          <Plus class="h-4 w-4" />
         </button>
-      </header>
+      </div>
 
-      <!-- ─── Quick-add (always shown) ───────────────────────────────────── -->
-      <form class="qt-add" onsubmit={handleSubmit}>
-        <div class="qt-input-wrap">
-          <input
-            bind:this={titleInput}
-            bind:value={title}
-            type="text"
-            maxlength="160"
-            placeholder="O que precisa de ser feito?"
-            class="qt-input"
-            disabled={creating}
-          />
-          <button
-            type="submit"
-            class="qt-submit"
-            disabled={creating || !title.trim()}
-            aria-label="Criar tarefa"
-          >
-            <Plus class="h-4 w-4" />
-          </button>
-        </div>
-
-        <div class="qt-form-row">
-          <span class="qt-form-label">Prioridade</span>
-          <div class="qt-chips">
-            {#each PRIORITIES as p (p.value)}
-              {@const active = priority === p.value}
-              <button
-                type="button"
-                onclick={() => (priority = p.value)}
-                class="qt-chip {active ? 'is-active' : ''}"
-              >
-                <span class="qt-chip-dot" style="background: {p.color};"></span>
-                {p.label}
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <div class="qt-form-row">
-          <span class="qt-form-label">Prazo</span>
-          <div class="qt-chips">
-            {#each DUE_PRESETS as d (d.value)}
-              {@const active = dueChoice === d.value}
-              <button
-                type="button"
-                onclick={() => {
-                  dueChoice = d.value;
-                  customDate = '';
-                }}
-                class="qt-chip {active ? 'is-active' : ''}"
-              >
-                {d.label}
-              </button>
-            {/each}
-            <label
-              class="qt-chip qt-chip-date {dueChoice === 'custom' ? 'is-active' : ''}"
-              title="Data personalizada"
+      <div class="qt-form-row">
+        <span class="qt-form-label">Prioridade</span>
+        <div class="qt-chips">
+          {#each PRIORITIES as p (p.value)}
+            {@const active = priority === p.value}
+            <button
+              type="button"
+              aria-pressed={active}
+              onclick={() => (priority = p.value)}
+              style={active
+                ? `color: ${p.color}; border-color: ${p.color}; background: color-mix(in srgb, ${p.color} 12%, transparent)`
+                : undefined}
+              class="qt-chip {active ? 'is-active' : ''}"
             >
-              <Calendar class="h-3 w-3" />
-              <input
-                type="date"
-                bind:value={customDate}
-                oninput={() => {
-                  dueChoice = customDate ? 'custom' : 'none';
-                }}
-                class="qt-date-input"
-                aria-label="Data personalizada"
-              />
-            </label>
-          </div>
+              <span class="qt-chip-dot" style="background: {p.color};"></span>
+              {p.label}
+            </button>
+          {/each}
         </div>
+      </div>
 
-        <div class="qt-form-row">
-          <span class="qt-form-label">Para</span>
-          <div class="qt-assignee-wrap">
-            <select bind:value={assigneeChoice} class="qt-assignee" aria-label="Atribuir a">
-              {#if currentUserId}
-                <option value={currentUserId}>Para mim</option>
-              {/if}
-              <option value="">— Geral (todos) —</option>
-              {#each users.filter((u) => u.id !== currentUserId) as u (u.id)}
-                <option value={u.id}>{u.name}</option>
-              {/each}
-            </select>
-          </div>
+      <div class="qt-form-row">
+        <span class="qt-form-label">Prazo</span>
+        <div class="qt-chips">
+          {#each DUE_PRESETS as d (d.value)}
+            {@const active = dueChoice === d.value}
+            <button
+              type="button"
+              aria-pressed={active}
+              onclick={() => {
+                dueChoice = d.value;
+                customDate = '';
+              }}
+              class="qt-chip {active ? 'is-active' : ''}"
+            >
+              {d.label}
+            </button>
+          {/each}
+          <label
+            class="qt-chip qt-chip-date {dueChoice === 'custom' ? 'is-active' : ''}"
+            title="Data personalizada"
+          >
+            <Calendar class="h-3 w-3" />
+            <input
+              type="date"
+              bind:value={customDate}
+              oninput={() => {
+                dueChoice = customDate ? 'custom' : 'none';
+              }}
+              class="qt-date-input"
+              aria-label="Data personalizada"
+            />
+          </label>
         </div>
-      </form>
+      </div>
 
-      <!-- ─── List (DESKTOP ONLY) ──────────────────────────────────────────
+      <div class="qt-form-row">
+        <span class="qt-form-label">Para</span>
+        <div class="qt-assignee-wrap">
+          <select bind:value={assigneeChoice} class="qt-assignee" aria-label="Atribuir a">
+            {#if currentUserId}
+              <option value={currentUserId}>Para mim</option>
+            {/if}
+            <option value="">— Geral (todos) —</option>
+            {#each users.filter((u) => u.id !== currentUserId) as u (u.id)}
+              <option value={u.id}>{u.name}</option>
+            {/each}
+          </select>
+        </div>
+      </div>
+    </form>
+
+    <!-- ─── List (DESKTOP ONLY) ──────────────────────────────────────────
            The header (label + scope filter) lives OUTSIDE the scroll area
            so it never overlays rows when the user scrolls — it's a fixed
            strip above the list, with the rows scrolling under nothing. -->
-      {#if !isMobile}
-        <section class="qt-list-section">
-          <div class="qt-list-header">
-            <span class="qt-section-label">A Fazer</span>
-            <div class="qt-scope">
-              {#each SCOPES as s (s.value)}
-                {@const active = scope === s.value}
-                <button
-                  type="button"
-                  onclick={() => (scope = s.value)}
-                  class="qt-scope-btn {active ? 'is-active' : ''}"
-                >
-                  {s.label}
-                </button>
-              {/each}
-            </div>
+    {#if !isMobile}
+      <section class="qt-list-section">
+        <div class="qt-list-header">
+          <span class="qt-section-label">A Fazer</span>
+          <div class="qt-scope">
+            {#each SCOPES as s (s.value)}
+              {@const active = scope === s.value}
+              <button
+                type="button"
+                aria-pressed={active}
+                onclick={() => (scope = s.value)}
+                class="qt-scope-btn {active ? 'is-active' : ''}"
+              >
+                {s.label}
+              </button>
+            {/each}
           </div>
+        </div>
 
-          <div class="qt-list-scroll">
+        <div class="qt-list-scroll">
           {#if loading && items.length === 0}
-            <div class="qt-empty" in:fade={{ duration: 160 }}>A carregar…</div>
+            <div class="qt-empty" in:fade={{ duration: $reducedMotion ? 0 : 160 }}>A carregar…</div>
           {:else if loadError}
-            <div class="qt-empty qt-empty-err" in:fade={{ duration: 160 }}>
-              Erro: {loadError}
+            <div class="qt-empty qt-empty-err" in:fade={{ duration: $reducedMotion ? 0 : 160 }}>
+              {loadError}
+              <button type="button" onclick={() => load()} class="underline"
+                >Tentar novamente</button
+              >
             </div>
           {:else if items.length === 0}
-            <div class="qt-empty" in:fade={{ duration: 200 }}>Tudo em dia ✓</div>
+            <div class="qt-empty" in:fade={{ duration: $reducedMotion ? 0 : 200 }}>
+              Sem tarefas a fazer neste filtro.
+            </div>
           {:else}
             <ul class="qt-rows">
               {#each items as t, i (t.id)}
-                {@const pColor = PRIORITIES.find((p) => p.value === t.priority)?.color ?? 'var(--color-text-faint)'}
+                {@const pColor =
+                  PRIORITIES.find((p) => p.value === t.priority)?.color ??
+                  'var(--color-text-faint)'}
                 {@const rd = dueRel(t)}
                 {@const isBusy = advancing.has(t.id)}
                 <li
                   class="qt-row {isBusy ? 'is-busy' : ''}"
-                  in:fly={{ y: 6, duration: 220, delay: Math.min(i * 25, 200), easing: cubicOut }}
-                  out:slide={{ duration: 200, easing: cubicOut }}
+                  in:fly={{ y: 6, duration: $reducedMotion ? 0 : 180, delay: 0, easing: cubicOut }}
+                  out:slide={{ duration: $reducedMotion ? 0 : 160, easing: cubicOut }}
                 >
                   <span class="qt-row-rail" style="background: {pColor};"></span>
                   <div class="qt-row-body">
                     <div class="qt-row-title">{t.title}</div>
                     <div class="qt-row-meta">
+                      <span style:color={pColor}>{taskPriority(t.priority).label}</span>
                       <span class="qt-row-due qt-row-due-{rd.tone}">{rd.label}</span>
                       {#if t.assignee}
                         <span class="qt-row-assignee" title={t.assignee.name}>
@@ -646,7 +687,7 @@
                     onclick={() => advance(t)}
                     disabled={isBusy}
                     title="Marcar em curso"
-                    aria-label="Marcar em curso"
+                    aria-label={`Marcar em curso: ${t.title}`}
                   >
                     <Play class="h-3.5 w-3.5" />
                   </button>
@@ -654,22 +695,22 @@
               {/each}
             </ul>
           {/if}
-          </div>
-        </section>
-      {/if}
+        </div>
+      </section>
+    {/if}
 
-      <footer class="qt-footer">
-        {#if !isMobile}
-          <a href={crmPath("/tarefas")} onclick={close} class="qt-footer-link">
-            Ver todas
-            <ChevronRight class="h-3 w-3" />
-          </a>
-        {/if}
-        <a href={crmPath("/tarefas/nova")} onclick={close} class="qt-footer-link qt-footer-secondary">
-          <Plus class="h-3 w-3" />
-          Tarefa completa
+    <footer class="qt-footer">
+      {#if !isMobile}
+        <a href={crmPath('/tarefas')} onclick={close} class="qt-footer-link">
+          Ver todas
+          <ChevronRight class="h-3 w-3" />
         </a>
-      </footer>
+      {/if}
+      <a href={crmPath('/tarefas/nova')} onclick={close} class="qt-footer-link qt-footer-secondary">
+        <Plus class="h-3 w-3" />
+        Tarefa completa
+      </a>
+    </footer>
   {/snippet}
 
   {#if isMobile}
@@ -681,11 +722,16 @@
     -->
     <div
       bind:this={panelEl}
-      class="qt-panel panel-surface is-mobile {mobileClipPct >= 99 && !isDragging ? 'is-fully-closed' : ''}"
+      class="qt-panel panel-surface is-mobile {mobileClipPct >= 99 && !isDragging
+        ? 'is-fully-closed'
+        : ''}"
       role="dialog"
       aria-label="Tarefas rápidas"
       aria-hidden={!isOpen && !isDragging}
-      style="clip-path: inset({mobileClipPct}% 0 0 0); transition: {isDragging ? 'none' : 'clip-path 360ms cubic-bezier(0.32, 0.72, 0, 1)'};"
+      inert={!isOpen}
+      style="clip-path: inset({mobileClipPct}% 0 0 0); transition: {isDragging
+        ? 'none'
+        : 'clip-path 360ms cubic-bezier(0.32, 0.72, 0, 1)'};"
     >
       {@render panelBody()}
     </div>
@@ -1121,12 +1167,17 @@
     outline: none;
     appearance: none;
     -webkit-appearance: none;
-    background-image: linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
       linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
-    background-position: calc(100% - 14px) 15px, calc(100% - 9px) 15px;
+    background-position:
+      calc(100% - 14px) 15px,
+      calc(100% - 9px) 15px;
     background-size: 5px 5px;
     background-repeat: no-repeat;
-    transition: border-color 0.18s var(--ease-brand), background-color 0.18s var(--ease-brand);
+    transition:
+      border-color 0.18s var(--ease-brand),
+      background-color 0.18s var(--ease-brand);
     cursor: pointer;
   }
   .qt-assignee:hover {

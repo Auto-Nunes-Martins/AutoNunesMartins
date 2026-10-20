@@ -1,0 +1,140 @@
+/* One set of rows/forms: cards on phones, the existing table on desktop. */
+.expense-action-label {
+  display: none;
+}
+@media (min-width: 768px) {
+  .expense-table th:first-child {
+    width: 140px;
+  }
+  .expense-table th:nth-last-child(3) {
+    width: 120px;
+  }
+  .expense-table th:nth-last-child(2) {
+    width: 145px;
+  }
+  .expense-table th:last-child {
+    width: 96px;
+  }
+  .expense-table [data-column='amount'] {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .expense-table [data-column='description'] {
+    overflow-wrap: anywhere;
+  }
+  .expense-table [data-column='actions'] button {
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: var(--radius-btn);
+  }
+}
+
+@media (max-width: 767px) {
+  .expense-table-wrap {
+    overflow: visible;
+  }
+  .expense-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .expense-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .expense-table tbody {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+  }
+  .expense-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-bg-1);
+  }
+  .expense-table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+  }
+  .expense-table [data-column='category'] {
+    grid-area: 1 / 1;
+    align-self: center;
+  }
+  .expense-table [data-column='date'] {
+    grid-area: 1 / 2;
+    align-self: center;
+  }
+  .expense-table [data-column='description'] {
+    grid-area: 2 / 1 / auto / -1;
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .expense-table [data-column='amount'] {
+    grid-area: 3 / 1 / auto / -1;
+    text-align: left;
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+  .expense-table [data-column='actions'] {
+    grid-area: 4 / 1 / auto / -1;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+  .expense-table [data-column='actions'] button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-btn);
+    color: var(--color-text-muted);
+    background: var(--color-bg-2);
+  }
+  .expense-table [data-column='actions'] button:hover {
+    color: var(--color-text);
+  }
+  .expense-action-label {
+    display: inline;
+    font-size: 12px;
+  }
+  .expense-table [data-column='edit'] {
+    grid-column: 1 / -1;
+    background: transparent;
+  }
+  .expense-table [data-column='edit'] :is(input, select, button) {
+    min-height: 44px;
+  }
+  .expense-table [data-column='edit'] input[type='checkbox'] {
+    min-height: auto;
+  }
+  .expense-table tfoot {
+    display: block;
+    padding: 0 12px 12px;
+  }
+  .expense-table tfoot tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 20px;
+    padding: 14px;
+    border-radius: var(--radius-card);
+  }
+  .expense-table tfoot td:empty {
+    display: none;
+  }
+}

@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { selectRoute } from './routing.mjs';
 import { immutableAssets } from './immutable-assets.mjs';
+import { clientAddress, clientAddressHeader } from './client-address.mjs';
 
 export function createGateway(settings, ports, ready = () => true, buildAssets = immutableAssets(settings.base)) {
   const server = http.createServer((req, res) => {
@@ -44,6 +45,14 @@ export function createGateway(settings, ports, ready = () => true, buildAssets =
       res.end();
       return;
     }
+    const address = route.service === 'website'
+      ? clientAddress(req, settings.clientAddressSource) : null;
+    if (route.service === 'website' && req.method === 'POST' &&
+        /^\/api\/contact\/?(?:\?|$)/.test(req.url) && !address) {
+      res.writeHead(503, { ...headers, 'cache-control': 'no-store', 'content-type': 'application/json' });
+      res.end(JSON.stringify({ error: 'O envio de pedidos ainda não está disponível.' }));
+      return;
+    }
     // Recreate trusted proxy headers. Never consume incoming forwarded host/proto.
     const forwarded = { ...req.headers, host: new URL(route.origin).host };
     for (const key of Object.keys(forwarded)) {
@@ -56,11 +65,13 @@ export function createGateway(settings, ports, ready = () => true, buildAssets =
           'upgrade',
           'proxy-authorization',
           'proxy-connection',
+          clientAddressHeader,
         ].includes(key)
       )
         delete forwarded[key];
     }
     forwarded['x-forwarded-proto'] = new URL(route.origin).protocol.slice(0, -1);
+    if (route.service === 'website' && address) forwarded[clientAddressHeader] = address;
     const upstream = http.request(
       {
         hostname: '127.0.0.1',

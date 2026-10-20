@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
   import { formFeedback, markFormSaved, showFormErrors } from '$lib/forms/formFeedback';
@@ -41,7 +42,7 @@
 
   let submitting = $state(false);
   const formId = $props.id();
-  let nifValue = $state(initial.nif ?? '');
+  let nifValue = $state(untrack(() => initial.nif ?? ''));
   const nifValid = $derived(nifValue.length === 0 || isValidNIF(nifValue));
 
   function fieldLabel() {
@@ -195,7 +196,7 @@
     <div class="ml-auto flex flex-wrap items-center gap-2">
       {#if oncancel}<Button variant="ghost" onclick={oncancel}>Cancelar</Button>{:else}<Button
           variant="ghost"
-          href={crmPath("/clientes")}>Cancelar</Button
+          href={crmPath('/clientes')}>Cancelar</Button
         >{/if}
       <Button
         variant="primary"

@@ -50,7 +50,15 @@ export const actions: Actions = {
       });
     }
     try {
-      await tasksApi.update(event, event.params.id, parsed.data);
+      // This form is a complete edit, so an empty field explicitly clears it.
+      await tasksApi.update(event, event.params.id, {
+        ...parsed.data,
+        description: parsed.data.description ?? '',
+        assigneeId: parsed.data.assigneeId ?? '',
+        startDate: parsed.data.startDate ?? null,
+        dueDate: parsed.data.dueDate ?? null,
+        reminderDate: parsed.data.reminderDate ?? null,
+      });
       return { id: event.params.id };
     } catch (err) {
       if (err instanceof ApiError) {

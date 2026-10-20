@@ -23,6 +23,8 @@ export interface ListTasksParams {
    * Defaults to false, hiding them from the board until their day arrives.
    */
   showScheduled?: boolean;
+  /** Board pages opt in; dashboards/quick lists retain their urgency ordering. */
+  order?: 'board' | 'priority';
 }
 
 /**
@@ -92,7 +94,10 @@ export function buildTaskWhere(filter: ListTasksParams): Prisma.TaskWhereInput {
 export async function listAllTasks(tx: TxClient, params: ListTasksParams = {}) {
   return tx.task.findMany({
     where: buildTaskWhere(params),
-    orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+    orderBy:
+      params.order === 'board'
+        ? [{ boardPosition: 'asc' }, { id: 'asc' }]
+        : [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
     include: {
       assignee: { select: { id: true, name: true, email: true, imageUrl: true } },
     },

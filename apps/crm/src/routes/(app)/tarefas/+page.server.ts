@@ -20,7 +20,7 @@ export const load: PageServerLoad = async (event) => {
     // Latest task events for the bottom feed — created, status changed,
     // completed. Filters by entityType too so backend can use its index.
     const [tasks, users, activity] = await Promise.all([
-      tasksApi.list(event, params),
+      tasksApi.list(event, { ...params, order: 'board' }),
       usersApi.list(event),
       activityApi.list(event, {
         type: 'TASK_CREATED,TASK_STATUS_CHANGED,TASK_COMPLETED',

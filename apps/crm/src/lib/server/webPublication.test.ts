@@ -88,6 +88,7 @@ describe('confirmed public specifications', () => {
         publicDescription: 'Confirmed description',
         confirmWithoutPhoto: 'true',
         specificationsPresent: 'true',
+        version: '  1.0 TSI Style  ',
         powerHp: '110',
         engineCc: '999',
         seats: '7',
@@ -104,6 +105,7 @@ describe('confirmed public specifications', () => {
       id,
       expect.objectContaining({
         specifications: {
+          version: '1.0 TSI Style',
           powerHp: 110,
           engineCc: 999,
           seats: 7,

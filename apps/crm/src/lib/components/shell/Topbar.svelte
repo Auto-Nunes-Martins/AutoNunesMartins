@@ -30,6 +30,7 @@
     if (path.startsWith(crmPath('/financeiro'))) return ['Painel', 'Financeiro'];
     if (path.startsWith(crmPath('/atividade'))) return ['Painel', 'Atividade'];
     if (path.startsWith(crmPath('/guia'))) return ['Painel', 'Guia de Fluxo'];
+    if (path.startsWith(crmPath('/site/arquivo'))) return ['Painel', 'Site público', 'Arquivo'];
     if (path.startsWith(crmPath('/site'))) return ['Painel', 'Site público', 'Destaques'];
     if (path.startsWith(crmPath('/definicoes'))) return ['Painel', 'Definições'];
     return ['Painel'];
@@ -44,7 +45,10 @@
   // to collapse back to the icon.
   let mobileSearchOpen = $state(false);
   let recentHits = $state<SearchHit[]>([]);
-  $effect(() => { userKey; recentHits = []; });
+  $effect(() => {
+    userKey;
+    recentHits = [];
+  });
 </script>
 
 <header
@@ -143,7 +147,7 @@
              icon-only red square so the brand red still anchors the topbar
              without consuming a label's worth of width. -->
         <a
-          href={crmPath("/viaturas/nova")}
+          href={crmPath('/viaturas/nova')}
           class="hidden md:inline-flex items-center gap-2 h-11 px-[18px] font-display font-semibold italic uppercase text-[13px] tracking-[0.01em] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
           style="border-radius: var(--radius-btn);"
         >
@@ -151,7 +155,7 @@
           Adicionar Viatura
         </a>
         <a
-          href={crmPath("/viaturas/nova")}
+          href={crmPath('/viaturas/nova')}
           class="inline-flex md:hidden items-center justify-center h-11 w-11 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
           style="border-radius: var(--radius-btn);"
           aria-label="Adicionar viatura"
@@ -186,7 +190,10 @@
     color: var(--color-text-muted);
     border-radius: var(--radius-btn);
     flex-shrink: 0;
-    transition: color 0.12s, border-color 0.12s, background 0.12s;
+    transition:
+      color 0.12s,
+      border-color 0.12s,
+      background 0.12s;
   }
   @media (max-width: 767px) {
     .tb-icbtn {

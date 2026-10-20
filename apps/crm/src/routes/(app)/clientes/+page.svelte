@@ -1,7 +1,7 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { Plus, Search, Users, X } from 'lucide-svelte';
-  import { goto } from '$app/navigation';
+  import { filterNavigation } from '$lib/filterNavigation';
   import { page } from '$app/stores';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
@@ -19,15 +19,11 @@
   }
 
   let { data }: Props = $props();
+  const navigation = filterNavigation(() => $page.url);
   const today = new Date();
 
   function setQ(value: string) {
-    const usp = new URLSearchParams($page.url.searchParams);
-    if (value) usp.set('q', value);
-    else usp.delete('q');
-    usp.delete('page');
-    const qs = usp.toString();
-    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+    navigation.set('q', value, true);
   }
 
   const hasFilters = $derived(Boolean(data.filters.q));
@@ -37,7 +33,7 @@
   <title>Clientes · Auto Nunes Martins</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="list-frame pt-8 pb-12 space-y-6">
   <!-- Page header -->
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
     <div class="min-w-0">
@@ -57,22 +53,24 @@
       <!-- Export is desktop-only — rarely the primary action on a phone.
            Menu (sem default) — o utilizador escolhe CSV ou PDF. -->
       <div class="hidden md:inline-flex">
-        <ExportMenu baseHref={crmPath("/clientes/export")} extraQuery={$page.url.search} />
+        <ExportMenu baseHref={crmPath('/clientes/export')} extraQuery={$page.url.search} />
       </div>
       <!-- Mobile: icon-only red square (no in-topbar equivalent for "novo
            cliente"). Desktop: full italic CTA. -->
       <a
-        href={crmPath("/clientes/novo")}
-        class="inline-flex md:hidden items-center justify-center h-10 w-10 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
+        href={crmPath('/clientes/novo')}
+        class="inline-flex md:hidden items-center justify-center h-11 w-11 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
         style="border-radius: var(--radius-btn);"
         aria-label="Novo cliente"
       >
         <Plus class="h-4 w-4" />
       </a>
-      <Button variant="primary" size="md" href={crmPath("/clientes/novo")} class="hidden md:inline-flex">
-        <Plus class="h-4 w-4" />
-        Novo Cliente
-      </Button>
+      <div class="hidden md:inline-flex">
+        <Button variant="primary" size="md" href={crmPath('/clientes/novo')}>
+          <Plus class="h-4 w-4" />
+          Novo Cliente
+        </Button>
+      </div>
     </div>
   </div>
 
@@ -86,10 +84,14 @@
         <Search class="h-4 w-4 text-[var(--color-text-faint)]" />
         <input
           type="search"
+          aria-label="Pesquisar clientes por nome, NIF, telefone ou email"
           placeholder="Pesquisar por nome, NIF, telefone ou email…"
           value={data.filters.q ?? ''}
           oninput={(e) => setQ(e.currentTarget.value)}
-          class="flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
+          onkeydown={(e) => {
+            if (e.key === 'Enter') navigation.flush();
+          }}
+          class="min-w-0 flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
         />
       </div>
       {#if hasFilters}
@@ -119,13 +121,17 @@
         <EmptyState
           icon={Users}
           title="Nenhum cliente encontrado"
-          description="Ajusta a pesquisa ou regista o primeiro cliente."
+          description={hasFilters
+            ? 'Experimente outro nome, NIF, telefone ou email.'
+            : 'Registe o primeiro cliente para começar.'}
         >
           {#snippet actions()}
-            <Button variant="primary" size="md" href={crmPath("/clientes/novo")}>
-              <Plus class="h-4 w-4" />
-              Registar primeiro cliente
-            </Button>
+            {#if hasFilters}<Button variant="outline" size="md" onclick={() => navigation.clear()}
+                >Limpar pesquisa</Button
+              >{:else}<Button variant="primary" size="md" href={crmPath('/clientes/novo')}>
+                <Plus class="h-4 w-4" />
+                Registar primeiro cliente
+              </Button>{/if}
           {/snippet}
         </EmptyState>
       {:else}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { goto } from '$app/navigation';
+  import { filterNavigation } from '$lib/filterNavigation';
   import { page } from '$app/stores';
   import { ArrowRightLeft, Car, Receipt, Search, X } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -20,6 +21,7 @@
   }
 
   let { data }: Props = $props();
+  const navigation = filterNavigation(() => $page.url);
   const today = new Date();
 
   const DELIVERY_OPTIONS: { value: DeliveryStatus; label: string }[] = [
@@ -29,14 +31,7 @@
   ];
 
   function setParam(name: string, value: string | undefined) {
-    const usp = new URLSearchParams($page.url.searchParams);
-    if (value === undefined || value === '') usp.delete(name);
-    else usp.set(name, value);
-    // Any filter change resets pagination — otherwise you can land on a page
-    // number the new filter set no longer has.
-    usp.delete('page');
-    const qs = usp.toString();
-    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+    navigation.set(name, value, name === 'q');
   }
 
   const hasFilters = $derived(
@@ -46,7 +41,7 @@
   );
 
   function clearFilters() {
-    goto('?', { keepFocus: true, noScroll: true });
+    navigation.clear();
   }
 
   type SortBy = NonNullable<SaleListParams['sortBy']>;
@@ -72,12 +67,12 @@
   <title>Vendas · Auto Nunes Martins</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="list-frame pt-8 pb-12 space-y-6">
   <!-- Page header -->
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
     <div class="min-w-0">
       <ItalicHero text="Vendas" size="lg" />
-      <a class="text-sm underline" href={crmPath("/vendas/anuladas")}>Consultar vendas anuladas</a>
+      <a class="text-sm underline" href={crmPath('/vendas/anuladas')}>Consultar vendas anuladas</a>
       <div
         class="mt-2 flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[var(--color-text-muted)]"
       >
@@ -92,7 +87,7 @@
     <!-- Export is desktop-only; preserves the current filter set via the
          existing query string. Menu (sem default) — utilizador escolhe formato. -->
     <div class="hidden md:flex items-center gap-2">
-      <ExportMenu baseHref={crmPath("/vendas/export")} extraQuery={$page.url.search} />
+      <ExportMenu baseHref={crmPath('/vendas/export')} extraQuery={$page.url.search} />
     </div>
   </div>
 
@@ -114,9 +109,13 @@
           <Search class="h-4 w-4 text-[var(--color-text-faint)]" />
           <input
             type="search"
+            aria-label="Pesquisar vendas"
             placeholder="viatura, VIN, matrícula, cliente, NIF…"
             value={data.filters.q ?? ''}
             oninput={(e) => setParam('q', e.currentTarget.value || undefined)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') navigation.flush();
+            }}
             class="flex-1 bg-transparent px-2 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
           />
         </div>
@@ -244,8 +243,8 @@
                            when scanning the list without screaming. -->
                       <span
                         title="Esta venda envolveu uma retoma"
-                        class="inline-flex items-center gap-1 px-1.5 py-0.5 border text-[#f97316] font-mono text-[9px] uppercase tracking-[0.18em]"
-                        style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, #f97316 45%, transparent); background: color-mix(in oklab, #f97316 12%, transparent);"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.5 border text-[var(--color-warning)] font-mono text-[9px] uppercase tracking-[0.18em]"
+                        style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, var(--color-warning) 45%, transparent); background: color-mix(in oklab, var(--color-warning) 12%, transparent);"
                       >
                         <ArrowRightLeft class="h-2.5 w-2.5" />
                         Retoma
@@ -282,7 +281,7 @@
                   </div>
                   <div
                     class="num-value text-[13px] mt-0.5 {isLoss
-                      ? 'text-[var(--color-red)]'
+                      ? 'text-[var(--color-danger)]'
                       : 'text-[var(--color-success)]'}"
                   >
                     {formatEUR(s.realProfit)}
@@ -296,8 +295,14 @@
         <!-- Desktop: full table with margin breakdown columns. Mirrors the
              layout the financeiro/Lucro tab used to show, so margin analysis
              happens here on the same screen as the rest of the sale data. -->
-        <div class="hidden md:block overflow-x-auto">
-          <table class="w-full text-[13px] min-w-[1100px]">
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard access to native horizontal scrolling.) -->
+        <div
+          class="hidden md:block overflow-x-auto"
+          tabindex="0"
+          role="region"
+          aria-label="Vendas — tabela com deslocamento horizontal"
+        >
+          <table class="crm-table w-full text-[13px] min-w-[1100px]">
             <thead>
               <tr class="border-b border-[var(--color-border)]">
                 <th
@@ -312,9 +317,17 @@
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] cursor-pointer hover:text-[var(--color-text)]"
-                  onclick={() => setSort('saleDate')}
+                  aria-sort={data.filters.sortBy === 'saleDate'
+                    ? data.filters.sortDir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : undefined}
                 >
-                  Data {sortIndicator('saleDate')}
+                  <button
+                    type="button"
+                    onclick={() => setSort('saleDate')}
+                    aria-label="Ordenar vendas por data">Data {sortIndicator('saleDate')}</button
+                  >
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
@@ -323,9 +336,17 @@
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] cursor-pointer hover:text-[var(--color-text)]"
-                  onclick={() => setSort('salePrice')}
+                  aria-sort={data.filters.sortBy === 'salePrice'
+                    ? data.filters.sortDir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : undefined}
                 >
-                  Venda {sortIndicator('salePrice')}
+                  <button
+                    type="button"
+                    onclick={() => setSort('salePrice')}
+                    aria-label="Ordenar vendas por valor">Venda {sortIndicator('salePrice')}</button
+                  >
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
@@ -345,15 +366,33 @@
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] cursor-pointer hover:text-[var(--color-text)]"
-                  onclick={() => setSort('realProfit')}
+                  aria-sort={data.filters.sortBy === 'realProfit'
+                    ? data.filters.sortDir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : undefined}
                 >
-                  Lucro {sortIndicator('realProfit')}
+                  <button
+                    type="button"
+                    onclick={() => setSort('realProfit')}
+                    aria-label="Ordenar vendas por lucro"
+                    >Lucro {sortIndicator('realProfit')}</button
+                  >
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] cursor-pointer hover:text-[var(--color-text)]"
-                  onclick={() => setSort('marginPct')}
+                  aria-sort={data.filters.sortBy === 'marginPct'
+                    ? data.filters.sortDir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : undefined}
                 >
-                  Margem {sortIndicator('marginPct')}
+                  <button
+                    type="button"
+                    onclick={() => setSort('marginPct')}
+                    aria-label="Ordenar vendas por margem"
+                    >Margem {sortIndicator('marginPct')}</button
+                  >
                 </th>
                 <th
                   class="text-left px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
@@ -402,8 +441,8 @@
                                  on a scan without crowding the brand/model line. -->
                             <span
                               title="Esta venda envolveu uma retoma"
-                              class="inline-flex items-center gap-1 px-1.5 py-0.5 border text-[#f97316] font-mono text-[9px] uppercase tracking-[0.18em]"
-                              style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, #f97316 45%, transparent); background: color-mix(in oklab, #f97316 12%, transparent);"
+                              class="inline-flex items-center gap-1 px-1.5 py-0.5 border text-[var(--color-warning)] font-mono text-[9px] uppercase tracking-[0.18em]"
+                              style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, var(--color-warning) 45%, transparent); background: color-mix(in oklab, var(--color-warning) 12%, transparent);"
                             >
                               <ArrowRightLeft class="h-2.5 w-2.5" />
                               Retoma
@@ -456,7 +495,7 @@
                   </td>
                   <td
                     class="px-4 py-3 num-value text-[13.5px] text-right {isLoss
-                      ? 'text-[var(--color-red)]'
+                      ? 'text-[var(--color-danger)]'
                       : 'text-[var(--color-success)]'}"
                   >
                     {formatEUR(s.realProfit)}

@@ -26,7 +26,9 @@
   }: Props = $props();
 
   const positive = $derived(deltaPct !== null && deltaPct >= 0);
-  const deltaColor = $derived(positive ? 'text-[var(--color-success)]' : 'text-[var(--color-red)]');
+  const deltaColor = $derived(
+    positive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]',
+  );
 </script>
 
 <article

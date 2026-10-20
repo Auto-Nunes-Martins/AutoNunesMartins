@@ -40,6 +40,45 @@
       "title": "Volkswagen",
       "hex": "151F5D",
       "source": "https://www.vw.com"
+    },
+    {
+      "title": "Porsche",
+      "hex": "B12B28",
+      "source": "https://www.porsche.com"
+    },
+    {
+      "title": "Citroën",
+      "hex": "DA291C",
+      "source": "https://www.stellantis.com/en/brands/citroen"
+    },
+    {
+      "title": "Fiat",
+      "hex": "941711",
+      "source": "https://www.fcaci.com/x/FIATv15"
+    },
+    {
+      "title": "Kia",
+      "hex": "05141F",
+      "source": "https://www.kia.com"
+    },
+    {
+      "title": "Opel",
+      "hex": "F7FF14",
+      "source": "https://www.stellantis.com/en/brands/opel"
+    },
+    {
+      "title": "Toyota",
+      "hex": "EB0A1E",
+      "source": "https://www.toyota.com/brandguidelines/logo/",
+      "guidelines": "https://www.toyota.com/brandguidelines/"
+    },
+    {
+      "title": "Mercedes-Benz",
+      "source": "https://www.mercedes-benz.com/logos/mb-star-white.svg",
+      "collection": "Mercedes-Benz official website",
+      "license": "Brand trademark; official site asset, not part of the CC0 collection",
+      "modified": true,
+      "modifications": "White fill normalized to black; original geometry retained for light/dark CSS inversion"
     }
   ]
 }

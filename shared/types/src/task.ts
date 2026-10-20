@@ -36,15 +36,13 @@ const taskBaseShape = z.object({
   status: TaskStatusEnum.optional(),
   priority: PriorityEnum.optional(),
   assigneeId: z.string().optional(),
-  startDate: z.coerce.date().optional(),
-  dueDate: z.coerce.date().optional(),
-  reminderDate: z.coerce.date().optional(),
+  startDate: z.coerce.date().nullable().optional(),
+  dueDate: z.coerce.date().nullable().optional(),
+  reminderDate: z.coerce.date().nullable().optional(),
   recurrence: RecurrenceEnum.optional(),
 });
 
-export const taskUpdateSchema = taskBaseShape
-  .partial()
-  .extend({ id: z.string().min(1) });
+export const taskUpdateSchema = taskBaseShape.partial().extend({ id: z.string().min(1) });
 export type TaskUpdate = z.infer<typeof taskUpdateSchema>;
 
 export const taskStatusChangeSchema = z.object({
@@ -52,3 +50,23 @@ export const taskStatusChangeSchema = z.object({
   status: TaskStatusEnum,
 });
 export type TaskStatusChange = z.infer<typeof taskStatusChangeSchema>;
+
+const taskMoveAnchorSchema = z.object({
+  id: z.string().min(1).max(100),
+  version: z.number().int().nonnegative(),
+});
+
+/** Neighbours are from the visible projection, never an entire client-supplied board. */
+export const taskMoveSchema = z
+  .object({
+    status: TaskStatusEnum,
+    expectedVersion: z.number().int().nonnegative(),
+    before: taskMoveAnchorSchema.nullable(),
+    after: taskMoveAnchorSchema.nullable(),
+  })
+  .strict()
+  .refine(
+    (move) => !move.before || !move.after || move.before.id !== move.after.id,
+    'Os vizinhos da tarefa têm de ser distintos.',
+  );
+export type TaskMove = z.infer<typeof taskMoveSchema>;

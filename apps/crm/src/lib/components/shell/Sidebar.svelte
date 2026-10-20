@@ -63,7 +63,12 @@
       heading: 'Operação',
       items: [
         { href: crmPath('/dashboard'), label: 'Dashboard', icon: BrandDash },
-        { href: crmPath('/viaturas'), label: 'Viaturas', icon: BrandCar, badge: () => vehicleCount },
+        {
+          href: crmPath('/viaturas'),
+          label: 'Viaturas',
+          icon: BrandCar,
+          badge: () => vehicleCount,
+        },
         // Sits between Viaturas and Clientes to mirror the natural workflow:
         // first the car enters inventory, then it gets sold, then the buyer
         // shows up in the customer registry.
@@ -159,7 +164,7 @@
     -->
     <div class="brand-block">
       <a
-        href={crmPath("/dashboard")}
+        href={crmPath('/dashboard')}
         class="brand-link"
         aria-label="Ir para o painel"
         title="Ir para o painel"
@@ -469,7 +474,7 @@
   }
   .nav-item:hover {
     color: var(--color-text);
-    background: rgba(255, 255, 255, 0.025);
+    background: var(--color-interaction-hover);
   }
   .nav-item-active {
     color: var(--color-text);

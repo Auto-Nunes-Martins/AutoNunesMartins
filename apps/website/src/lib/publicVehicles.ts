@@ -94,6 +94,7 @@ export function publicCard(vehicle: PublicVehicle) {
     id: vehicle.slug,
     brand: vehicle.brand,
     model: vehicle.model,
+    version: vehicle.specifications?.version ?? '',
     year: vehicle.year,
     km: vehicle.mileage,
     fuel: fuelLabels[vehicle.fuel],
@@ -114,7 +115,8 @@ export function publicCatalogSeo(params: URLSearchParams, origin: string, stock:
   const model =
     stock.catalog.facets.models.find(
       (v) =>
-        !!brand && v.brand === brand &&
+        !!brand &&
+        v.brand === brand &&
         v.value.toLowerCase() === params.get('modelo')?.toLowerCase(),
     )?.value ?? '';
   const label = [brand, model].filter(Boolean).join(' ');
@@ -149,11 +151,12 @@ export function publicCatalogSeo(params: URLSearchParams, origin: string, stock:
     label,
     heading,
     canonical: canonical.href,
-    description: stock.status !== 'ready'
-      ? 'Consulte o catálogo de viaturas usadas da Auto Nunes Martins ou contacte-nos para esclarecer a sua pesquisa.'
-      : stock.catalog.total === 0
-        ? 'Não há viaturas para esta pesquisa. Ajuste os filtros ou explore o catálogo de usados da Auto Nunes Martins.'
-        : `${heading}. ${stock.catalog.total} ${stock.catalog.total === 1 ? 'resultado publicado' : 'resultados publicados'}. Compare preço, ano e quilometragem na Auto Nunes Martins.`,
+    description:
+      stock.status !== 'ready'
+        ? 'Consulte o catálogo de viaturas usadas da Auto Nunes Martins ou contacte-nos para esclarecer a sua pesquisa.'
+        : stock.catalog.total === 0
+          ? 'Não há viaturas para esta pesquisa. Ajuste os filtros ou explore o catálogo de usados da Auto Nunes Martins.'
+          : `${heading}. Compare preço, ano e quilometragem na Auto Nunes Martins e conheça os detalhes de cada viatura.`,
     contextual: label
       ? `Explore ${label} nesta seleção de viaturas publicadas. Compare os dados de cada ficha e confirme connosco o histórico e as condições antes de decidir.`
       : '',
@@ -162,7 +165,12 @@ export function publicCatalogSeo(params: URLSearchParams, origin: string, stock:
       !stock.catalog.items.length ||
       // Only the established catalogue/brand/model pages remain candidates for indexing.
       // Search, sort and arbitrary facet combinations are useful UI, not new landing pages.
-      [...params].some(([key, value]) => !!value && !['marca', 'modelo', 'pagina'].includes(key) && !(key === 'ordem' && value === 'relevancia')) ||
+      [...params].some(
+        ([key, value]) =>
+          !!value &&
+          !['marca', 'modelo', 'pagina'].includes(key) &&
+          !(key === 'ordem' && value === 'relevancia'),
+      ) ||
       !!params.get('q') ||
       (!!params.get('marca') && !brand) ||
       (!!params.get('modelo') && !model),

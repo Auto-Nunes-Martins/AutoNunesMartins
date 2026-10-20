@@ -1,21 +1,90 @@
 import { describe, expect, it } from 'vitest';
-import { publicVehicleCanonical, vehicleJsonLdScript, vehicleStructuredData } from './vehicleStructuredData';
+import {
+  publicVehicleCanonical,
+  vehicleJsonLdScript,
+  vehicleStructuredData,
+  vehicleBreadcrumbItems,
+  vehicleBreadcrumbJsonLdScript,
+} from './vehicleStructuredData';
 
 const origin = 'https://stand.example';
 const minimal = { slug: 'dacia-jogger-2023-012345abcdef', brand: 'Dacia', model: 'Jogger' };
-const complete = { ...minimal, year: 2023, mileage: 83491, fuel: 'GASOLINE', transmission: 'MANUAL',
-  price: '17141.78', currency: 'EUR', availability: 'AVAILABLE', description: 'Descrição aprovada',
+const complete = {
+  ...minimal,
+  year: 2023,
+  mileage: 83491,
+  fuel: 'GASOLINE',
+  transmission: 'MANUAL',
+  price: '17141.78',
+  currency: 'EUR',
+  availability: 'AVAILABLE',
+  description: 'Descrição aprovada',
   photos: [`/api/public/vehicles/${minimal.slug}/photos/0`],
-  specifications: { doors: 5, seats: 7, color: 'Branco', category: 'Monovolume', powerHp: 110, engineCc: 999, equipment: ['Ar condicionado'] },
+  specifications: {
+    doors: 5,
+    seats: 7,
+    color: 'Branco',
+    category: 'Monovolume',
+    powerHp: 110,
+    engineCc: 999,
+    equipment: ['Ar condicionado'],
+  },
 };
 
 describe('Public vehicle JSON-LD', () => {
+  it('uses the same navigable hierarchy in visible breadcrumbs and absolute JSON-LD', () => {
+    const vehicle = { ...minimal, brand: 'Mercedes-Benz', model: 'Classe C' };
+    const items = vehicleBreadcrumbItems(vehicle);
+    const html = vehicleBreadcrumbJsonLdScript(vehicle, origin);
+    const data = JSON.parse(
+      html.replace(/^<script type="application\/ld\+json">|<\/script>$/g, ''),
+    );
+    expect(items.map((item) => item.name)).toEqual([
+      'Início',
+      'Viaturas',
+      'Mercedes-Benz',
+      'Classe C',
+    ]);
+    expect(data['@type']).toBe('BreadcrumbList');
+    expect(data.itemListElement).toEqual(
+      items.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        item: new URL(item.href, origin).href,
+      })),
+    );
+    expect(new URL(items[2]!.href, origin).searchParams.get('marca')).toBe('Mercedes-Benz');
+    expect(data.itemListElement.at(-1).item).toBe(publicVehicleCanonical(vehicle, origin));
+  });
+  it('keeps breadcrumb names inert and omits invalid identities or origins', () => {
+    const html = vehicleBreadcrumbJsonLdScript(
+      { ...minimal, model: '</script><script>alert(1)</script>' },
+      origin,
+    );
+    expect(html.match(/<script/g)).toHaveLength(1);
+    expect(html.match(/<\/script>/g)).toHaveLength(1);
+    expect(vehicleBreadcrumbJsonLdScript(minimal, 'javascript:alert(1)')).toBe('');
+    expect(vehicleBreadcrumbItems({ ...minimal, slug: '../private' })).toEqual([]);
+    expect(vehicleBreadcrumbJsonLdScript(null, origin)).toBe('');
+  });
   it('maps published facts, EUR offer, kilometer units and approved public image URLs', () => {
     const result = vehicleStructuredData(complete, origin)!;
-    expect(result).toMatchObject({ '@type': ['Product', 'Car'], url: publicVehicleCanonical(minimal, origin),
-      mileageFromOdometer: { value: 83491, unitCode: 'KMT' }, fuelType: 'Gasolina', vehicleTransmission: 'Manual',
-      numberOfDoors: 5, seatingCapacity: 7, color: 'Branco', category: 'Monovolume',
-      offers: { price: '17141.78', priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+    expect(result).toMatchObject({
+      '@type': ['Product', 'Car'],
+      url: publicVehicleCanonical(minimal, origin),
+      mileageFromOdometer: { value: 83491, unitCode: 'KMT' },
+      fuelType: 'Gasolina',
+      vehicleTransmission: 'Manual',
+      numberOfDoors: 5,
+      seatingCapacity: 7,
+      color: 'Branco',
+      category: 'Monovolume',
+      offers: {
+        price: '17141.78',
+        priceCurrency: 'EUR',
+        availability: 'https://schema.org/InStock',
+      },
       image: [`${origin}/viaturas/${minimal.slug}/photos/0`],
     });
     expect(result.additionalProperty).toEqual([
@@ -26,42 +95,109 @@ describe('Public vehicle JSON-LD', () => {
     ]);
   });
   it('marks a reservation as unavailable, never as sold or preorder', () => {
-    expect(vehicleStructuredData({ ...complete, availability: 'RESERVED' }, origin)?.offers?.availability).toBe('https://schema.org/OutOfStock');
+    expect(
+      vehicleStructuredData({ ...complete, availability: 'RESERVED' }, origin)?.offers
+        ?.availability,
+    ).toBe('https://schema.org/OutOfStock');
   });
   it('keeps a minimal description without inventing optional facts or a zero-priced offer', () => {
     const result = vehicleStructuredData(minimal, origin)!;
-    expect(Object.keys(result).sort()).toEqual(['@context', '@type', '@id', 'url', 'name', 'brand', 'model'].sort());
-    expect(vehicleStructuredData({ ...minimal, mileage: 0 }, origin)?.mileageFromOdometer?.value).toBe(0);
+    expect(Object.keys(result).sort()).toEqual(
+      ['@context', '@type', '@id', 'url', 'name', 'brand', 'model'].sort(),
+    );
+    expect(
+      vehicleStructuredData({ ...minimal, mileage: 0 }, origin)?.mileageFromOdometer?.value,
+    ).toBe(0);
   });
-  it.each([null, undefined, '', '  ', '0.00', '-1.00', '1,20', 'NaN', Infinity, NaN, 100, '20 EUR'])('omits invalid/missing price %s', price => {
+  it.each([
+    null,
+    undefined,
+    '',
+    '  ',
+    '0.00',
+    '-1.00',
+    '1,20',
+    'NaN',
+    Infinity,
+    NaN,
+    100,
+    '20 EUR',
+  ])('omits invalid/missing price %s', (price) => {
     expect(vehicleStructuredData({ ...complete, price }, origin)).not.toHaveProperty('offers');
   });
-  it.each([null, undefined, '', -1, Infinity, NaN, '100', '100 km', 1.5])('omits invalid/missing mileage %s', mileage => {
-    expect(vehicleStructuredData({ ...complete, mileage }, origin)).not.toHaveProperty('mileageFromOdometer');
-  });
+  it.each([null, undefined, '', -1, Infinity, NaN, '100', '100 km', 1.5])(
+    'omits invalid/missing mileage %s',
+    (mileage) => {
+      expect(vehicleStructuredData({ ...complete, mileage }, origin)).not.toHaveProperty(
+        'mileageFromOdometer',
+      );
+    },
+  );
   it('omits invalid optional values independently while retaining valid facts', () => {
-    const result = vehicleStructuredData({ ...minimal, year: '2023-99-99', description: ' ', fuel: 'toString', transmission: 'UNKNOWN',
-      photos: ['/catalog-placeholder.svg', 'https://private.example/photo'],
-      specifications: { powerHp: Infinity, engineCc: '999 cm3', doors: 0, seats: 999, color: [], equipment: [' ', null, 'ABS', 'ABS'], category: {} },
-    }, origin)!;
-    expect(result.additionalProperty).toEqual([{ '@type': 'PropertyValue', name: 'Equipamento', value: 'ABS' }]);
-    for (const key of ['image', 'description', 'fuelType', 'vehicleTransmission', 'numberOfDoors', 'seatingCapacity', 'color', 'category']) expect(result).not.toHaveProperty(key);
+    const result = vehicleStructuredData(
+      {
+        ...minimal,
+        year: '2023-99-99',
+        description: ' ',
+        fuel: 'toString',
+        transmission: 'UNKNOWN',
+        photos: ['/catalog-placeholder.svg', 'https://private.example/photo'],
+        specifications: {
+          powerHp: Infinity,
+          engineCc: '999 cm3',
+          doors: 0,
+          seats: 999,
+          color: [],
+          equipment: [' ', null, 'ABS', 'ABS'],
+          category: {},
+        },
+      },
+      origin,
+    )!;
+    expect(result.additionalProperty).toEqual([
+      { '@type': 'PropertyValue', name: 'Equipamento', value: 'ABS' },
+    ]);
+    for (const key of [
+      'image',
+      'description',
+      'fuelType',
+      'vehicleTransmission',
+      'numberOfDoors',
+      'seatingCapacity',
+      'color',
+      'category',
+    ])
+      expect(result).not.toHaveProperty(key);
   });
-  it.each([null, '', [], {}])('handles malformed optional containers %s', value => {
-    expect(() => vehicleJsonLdScript({ ...minimal, specifications: value, photos: value }, origin)).not.toThrow();
+  it.each([null, '', [], {}])('handles malformed optional containers %s', (value) => {
+    expect(() =>
+      vehicleJsonLdScript({ ...minimal, specifications: value, photos: value }, origin),
+    ).not.toThrow();
   });
-  it.each([{ currency: 'USD' }, { availability: 'SOLD' }, { availability: null }])('omits offers with unsupported terms %s', patch => {
-    expect(vehicleStructuredData({ ...complete, ...patch }, origin)).not.toHaveProperty('offers');
-  });
-  it.each([undefined, null, {}, { ...minimal, brand: '' }, { ...minimal, slug: '../private' }])('omits the script when identity is insufficient %s', value => {
-    expect(vehicleJsonLdScript(value, origin)).toBe('');
-  });
-  it.each(['invalid', 'javascript:alert(1)', 'https://user:password@example.com'])('omits markup for invalid origins %s', base => {
-    expect(vehicleJsonLdScript(complete, base)).toBe('');
-  });
+  it.each([{ currency: 'USD' }, { availability: 'SOLD' }, { availability: null }])(
+    'omits offers with unsupported terms %s',
+    (patch) => {
+      expect(vehicleStructuredData({ ...complete, ...patch }, origin)).not.toHaveProperty('offers');
+    },
+  );
+  it.each([undefined, null, {}, { ...minimal, brand: '' }, { ...minimal, slug: '../private' }])(
+    'omits the script when identity is insufficient %s',
+    (value) => {
+      expect(vehicleJsonLdScript(value, origin)).toBe('');
+    },
+  );
+  it.each(['invalid', 'javascript:alert(1)', 'https://user:password@example.com'])(
+    'omits markup for invalid origins %s',
+    (base) => {
+      expect(vehicleJsonLdScript(complete, base)).toBe('');
+    },
+  );
   it('serializes hostile text as inert valid JSON without leaking unrelated fields', () => {
     const attack = '</script><script>alert("x")</script><!-- & \u2028\u2029';
-    const html = vehicleJsonLdScript({ ...complete, description: attack, vin: 'PRIVATE', seller: { name: 'DEMO' } }, origin);
+    const html = vehicleJsonLdScript(
+      { ...complete, description: attack, vin: 'PRIVATE', seller: { name: 'DEMO' } },
+      origin,
+    );
     expect(html.match(/<script/g)).toHaveLength(1);
     expect(html.match(/<\/script>/g)).toHaveLength(1);
     const json = html.replace(/^<script type="application\/ld\+json">|<\/script>$/g, '');

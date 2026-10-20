@@ -112,7 +112,7 @@ export function catalogSeo(params: URLSearchParams, origin: string) {
     : validBrand
       ? `Viaturas ${validBrand} usadas`
       : 'Viaturas usadas disponíveis';
-  const description = `${heading}. ${results.total} ${results.total === 1 ? 'resultado' : 'resultados'} nesta seleção de demonstração. Compare preço, ano e quilometragem e explore cada ficha ao seu ritmo.`;
+  const description = `${heading}. Compare preço, ano e quilometragem nesta seleção de demonstração e explore cada ficha ao seu ritmo.`;
   const canonical = new URL('/viaturas', origin);
   for (const key of Object.keys(filterLabels)) {
     const value = params.get(key)?.trim();
