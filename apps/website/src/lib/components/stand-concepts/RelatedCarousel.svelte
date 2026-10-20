@@ -31,6 +31,7 @@
   let movementEasing = $state('cubic-bezier(.22,.61,.36,1)');
   // Keep rapid navigation sequential, with at most three pending movements.
   const pending: number[] = [];
+  let requestedPosition: number | undefined;
   let generation = 0;
   let pointer = $state<
     | {
@@ -137,8 +138,54 @@
     } finally {
       if (version === generation) {
         busy = false;
-        const next = pending.shift();
-        if (next !== undefined) void move(next);
+        if (requestedPosition !== undefined) {
+          const target = requestedPosition;
+          requestedPosition = undefined;
+          pending.length = 0;
+          void selectPosition(target);
+        } else {
+          const next = pending.shift();
+          if (next !== undefined) void move(next);
+        }
+      }
+    }
+  }
+  async function selectPosition(index: number) {
+    if (!loops || !step) return;
+    if (busy) {
+      requestedPosition = index;
+      return;
+    }
+    if (index === indicated) return;
+    busy = true;
+    pending.length = 0;
+    movementDuration = 240;
+    movementEasing = 'cubic-bezier(.22,.61,.36,1)';
+    first = index;
+    indicated = index;
+    const version = ++generation;
+    await tick();
+    if (version !== generation) return;
+    reset();
+    animation = track.animate([{ opacity: 0.45 }, { opacity: 1 }], {
+      duration: reduced ? 0 : movementDuration,
+      easing: movementEasing,
+    });
+    try {
+      await animation.finished;
+      if (version === generation) announcement = `Viatura ${index + 1} de ${items.length}`;
+    } catch {
+      /* Resize or unmount cancels the transition. */
+    } finally {
+      if (version === generation) {
+        busy = false;
+        const target = requestedPosition;
+        requestedPosition = undefined;
+        if (target !== undefined) void selectPosition(target);
+        else {
+          const next = pending.shift();
+          if (next !== undefined) void move(next);
+        }
       }
     }
   }
@@ -342,9 +389,14 @@
           >
         </div>{/if}
     </div>
-    {#if loops}<div class="position-indicators" aria-hidden="true">
-        {#each items as item, index (item.slug)}<span class:active={indicated === index}
-          ></span>{/each}
+    {#if loops}<div class="position-indicators" role="group" aria-label="Escolher viatura">
+        {#each items as item, index (item.slug)}<button
+            type="button"
+            class:active={indicated === index}
+            aria-label={`Mostrar viatura ${index + 1}: ${item.brand} ${item.model}`}
+            aria-current={indicated === index ? 'true' : undefined}
+            onclick={() => selectPosition(index)}><span></span></button
+          >{/each}
       </div>{/if}
     <span class="sr-only" aria-live="polite" aria-atomic="true">{announcement}</span>
   </div>
@@ -365,21 +417,39 @@
     min-height: 24px;
     margin: 8px auto 0;
   }
-  .position-indicators span {
-    display: block;
+  .position-indicators button {
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
     width: 38px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .position-indicators button > span {
+    display: block;
+    width: 100%;
     height: 2px;
     border-radius: 2px;
     background: color-mix(in srgb, var(--text) 22%, transparent);
   }
-  .position-indicators span.active {
+  .position-indicators button.active {
     width: 68px;
+  }
+  .position-indicators button.active > span {
     height: 4px;
     background: var(--red);
   }
+  .position-indicators button:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
   @media (prefers-reduced-motion: no-preference) {
-    .position-indicators span {
+    .position-indicators button,
+    .position-indicators button > span {
       transition:
         width var(--movement-duration) var(--movement-easing),
         height var(--movement-duration) var(--movement-easing),
