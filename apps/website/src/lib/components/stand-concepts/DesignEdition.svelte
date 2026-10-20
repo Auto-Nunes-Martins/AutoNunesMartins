@@ -590,9 +590,11 @@
         aria-current={compare ? 'page' : undefined}
         aria-label={`Comparar${$comparisonIds.length ? `, ${$comparisonIds.length} viaturas selecionadas` : ''}`}
         onclick={() => (navOpen = false)}
-        ><span class="nav-label">Comparar</span>{#if $comparisonIds.length > 0}{' '}<span
-            class="comparison-count">{$comparisonIds.length}</span
-          >{/if}</a
+        ><span class="comparison-nav-content"
+          ><span class="nav-label">Comparar</span>{#if $comparisonIds.length > 0}<span
+              class="comparison-count">{$comparisonIds.length}</span
+            >{/if}</span
+        ></a
       >
       <div class="mobile-theme"><ThemeToggle dark={isDark} onchange={toggleTheme} /></div>
     </nav>
@@ -1649,12 +1651,22 @@
       gap: 8px;
     }
   }
+  .comparison-nav-content {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding-right: 29px;
+  }
   .comparison-count {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin-block: auto;
     display: inline-grid;
     place-items: center;
     min-width: 20px;
     height: 20px;
-    margin-left: 7px;
     border: 1px solid var(--line);
     border-radius: 50%;
     font-size: 10px;
