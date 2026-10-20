@@ -996,7 +996,11 @@
           </div>
           <dl>
             {#each detailSpecs as spec}<div>
-                <dt><VehicleSpecIcon label={String(spec[0])} /><span>{spec[0]}</span></dt>
+                <dt>
+                  <VehicleSpecIcon label={String(spec[0])} value={String(spec[1])} /><span
+                    >{spec[0]}</span
+                  >
+                </dt>
                 <dd>{spec[1]}</dd>
               </div>{/each}
           </dl>
