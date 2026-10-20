@@ -195,7 +195,8 @@
     }
     if (!pointer.dragging) return;
     event.preventDefault();
-    pointer.delta = Math.max(-step, Math.min(step, dx));
+    const limit = (items.length - 1) * step;
+    pointer.delta = Math.max(-limit, Math.min(limit, dx));
     const outgoing = track.querySelector<HTMLElement>('.slide:not(.ghost)');
     if (outgoing)
       outgoing.style.opacity =
@@ -213,10 +214,10 @@
       viewport.releasePointerCapture(event.pointerId);
     if (!gesture.dragging) return;
     const velocity = performance.now() - gesture.lastTime < 80 ? gesture.velocity : 0;
+    const limit = items.length - 1;
     const projected = gesture.delta + Math.max(-90, Math.min(90, velocity * 110));
-    if (Math.abs(projected) >= Math.min(45, step * 0.15))
-      void move(projected < 0 ? 1 : -1, base() + gesture.delta, velocity);
-    else void move(0, base() + gesture.delta);
+    const nearest = Math.max(-limit, Math.min(limit, Math.round(-projected / step)));
+    void move(nearest, base() + gesture.delta, velocity);
   }
   function cancel() {
     pointer = undefined;
