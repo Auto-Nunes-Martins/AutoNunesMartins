@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CarFront, CalendarDays, Gauge, Fuel, Car, Droplet } from 'lucide-svelte';
+  import { CarFront, CalendarDays, Gauge, Fuel, Car, SprayCan } from 'lucide-svelte';
   import { brandLogo } from '$lib/brandLogos';
   let { label, value = '' }: { label: string; value?: string } = $props();
   const logo = $derived(label === 'Marca' ? brandLogo(value) : undefined);
@@ -9,7 +9,7 @@
     Potência: Gauge,
     Combustível: Fuel,
     Categoria: Car,
-    Cor: Droplet,
+    Cor: SprayCan,
   };
   const Icon = $derived(icons[label as keyof typeof icons] ?? CarFront);
 </script>
