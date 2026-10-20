@@ -961,11 +961,13 @@
             >Quero conhecer <ArrowUpRight size={18} aria-hidden="true" /></button
           >
           {#if standContact.phone}<div class="purchase-phone-alternative">
-              <span>Prefere falar connosco?</span><a
+              <a
                 class="purchase-call"
                 href={`tel:${standContact.phone.international}`}
                 aria-label={`Ligar para o stand: ${standContact.phone.display}`}
-                ><Phone size={15} strokeWidth={1.7} aria-hidden="true" /><span>Ligar agora</span></a
+                ><Phone size={15} strokeWidth={1.7} aria-hidden="true" /><span
+                  >Ligar para o stand</span
+                ></a
               >
             </div>{/if}
           <div class="purchase-followup">
