@@ -37,11 +37,7 @@
     {:else if label === 'Caixa'}
       <path d="M5 5v14m7-14v14m7-14v7H5M3 5h4m3 0h4m3 0h4M3 19h4m3 0h4" />
     {:else if label === 'Cilindrada'}
-      <g transform="rotate(-35 12 12)">
-        <rect x="6.5" y="3" width="11" height="8" rx="1.2" />
-        <path d="M6.5 5.5h11m-11 3h11M10.5 11v5m3-5v5" />
-        <circle cx="12" cy="19" r="3" />
-      </g>
+      <path d="M8 7h7l3 3h3v8h-3l-2 2H8l-3-3v-7l3-3ZM9 4h5m-2.5 0v3M2 11v6m0-3h3m13-4v8" />
     {:else if label === 'Portas'}
       <path d="m5 10 5-6h9v16H5V10Z M8 10l3-4h5v4H8Zm7 4h2" />
     {:else}
