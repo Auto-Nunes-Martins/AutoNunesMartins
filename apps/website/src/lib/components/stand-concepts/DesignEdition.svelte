@@ -983,7 +983,7 @@
               </div>{/if}
             <p class="fine-print">
               {publicVehicle
-                ? 'Confirme a disponibilidade, o histórico e as condições com o stand.'
+                ? 'Confirme stock, histórico e condições no stand.'
                 : 'Fotografia, preço e características ilustrativos. Esta página é uma proposta visual.'}
             </p>
           </div>
