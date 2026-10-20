@@ -150,44 +150,17 @@
       }
     }
   }
-  async function selectPosition(index: number) {
+  function selectPosition(index: number) {
     if (!loops || !step) return;
     if (busy) {
       requestedPosition = index;
       return;
     }
-    if (index === indicated) return;
-    busy = true;
+    if (index === first) return;
     pending.length = 0;
-    movementDuration = 240;
-    movementEasing = 'cubic-bezier(.22,.61,.36,1)';
-    first = index;
-    indicated = index;
-    const version = ++generation;
-    await tick();
-    if (version !== generation) return;
-    reset();
-    animation = track.animate([{ opacity: 0.45 }, { opacity: 1 }], {
-      duration: reduced ? 0 : movementDuration,
-      easing: movementEasing,
-    });
-    try {
-      await animation.finished;
-      if (version === generation) announcement = `Viatura ${index + 1} de ${items.length}`;
-    } catch {
-      /* Resize or unmount cancels the transition. */
-    } finally {
-      if (version === generation) {
-        busy = false;
-        const target = requestedPosition;
-        requestedPosition = undefined;
-        if (target !== undefined) void selectPosition(target);
-        else {
-          const next = pending.shift();
-          if (next !== undefined) void move(next);
-        }
-      }
-    }
+    requestedPosition = index;
+    const forward = (index - first + items.length) % items.length;
+    void move(forward <= items.length / 2 ? 1 : -1);
   }
   function down(event: PointerEvent) {
     if (!loops || busy || event.button !== 0) return;
@@ -289,6 +262,7 @@
       animation?.cancel();
       clearCardFades();
       pending.length = 0;
+      requestedPosition = undefined;
       busy = false;
       pointer = undefined;
       capacity = innerWidth <= 700 ? 1 : innerWidth <= 1000 ? 2 : 3;
@@ -315,6 +289,7 @@
       refresh = undefined;
       ++generation;
       pending.length = 0;
+      requestedPosition = undefined;
       animation?.cancel();
       clearCardFades();
       observer.disconnect();
@@ -425,6 +400,7 @@
     min-height: 44px;
     padding: 0;
     border: 0;
+    border-radius: 0;
     background: transparent;
     cursor: pointer;
   }
@@ -447,6 +423,11 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+  @media (hover: hover) {
+    .position-indicators button:hover > span {
+      transform: scale(1.08);
+    }
+  }
   @media (prefers-reduced-motion: no-preference) {
     .position-indicators button,
     .position-indicators button > span {
@@ -454,6 +435,9 @@
         width var(--movement-duration) var(--movement-easing),
         height var(--movement-duration) var(--movement-easing),
         background-color var(--movement-duration) var(--movement-easing);
+    }
+    .position-indicators button > span {
+      transition-property: width, height, background-color, transform;
     }
   }
   .carousel-stage {
@@ -489,7 +473,7 @@
   .integrated-controls button:last-child {
     right: 8px;
   }
-  button {
+  .integrated-controls button {
     display: grid;
     place-items: center;
     width: 44px;
@@ -500,21 +484,21 @@
     background: var(--surface);
     cursor: pointer;
   }
-  button:last-child {
+  .integrated-controls button:last-child {
     background: var(--text);
     color: var(--bg);
     border-color: var(--text);
   }
-  button:hover {
+  .integrated-controls button:hover {
     border-color: var(--text);
     background: color-mix(in srgb, var(--text) 12%, var(--surface));
   }
-  button:last-child:hover {
+  .integrated-controls button:last-child:hover {
     background: var(--red);
     border-color: var(--red);
     color: #fff;
   }
-  button:focus-visible,
+  .integrated-controls button:focus-visible,
   .viewport:focus-visible {
     outline: 2px solid var(--text);
     outline-offset: 3px;
