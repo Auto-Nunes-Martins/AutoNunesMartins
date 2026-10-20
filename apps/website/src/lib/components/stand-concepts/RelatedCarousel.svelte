@@ -56,7 +56,7 @@
     void refresh?.();
   });
 
-  const base = () => (loops ? -step : 0);
+  const base = () => (loops ? -items.length * step : 0);
   const reset = () => {
     if (track) track.style.transform = `translateX(${base()}px)`;
   };
@@ -72,7 +72,7 @@
     movementDuration =
       velocity && direction
         ? Math.max(240, Math.min(460, (remaining / Math.max(Math.abs(velocity), 0.45)) * 1.25))
-        : 360;
+        : Math.min(560, 300 + Math.abs(direction) * 60);
     const tangent = Math.max(
       0.25,
       Math.min(0.85, ((Math.abs(velocity) * movementDuration) / Math.max(1, remaining)) * 0.22),
@@ -158,9 +158,9 @@
     }
     if (index === first) return;
     pending.length = 0;
-    requestedPosition = index;
+    requestedPosition = undefined;
     const forward = (index - first + items.length) % items.length;
-    void move(forward <= items.length / 2 ? 1 : -1);
+    void move(forward <= items.length / 2 ? forward : forward - items.length);
   }
   function down(event: PointerEvent) {
     if (!loops || busy || event.button !== 0) return;
@@ -330,9 +330,13 @@
           class:moving={busy || pointer?.dragging}
           bind:this={track}
         >
-          {#if loops}<div class="slide ghost" inert aria-hidden="true">
-              {@render card(publicCard(ordered[ordered.length - 1]!), 0, false)}
-            </div>{/if}
+          {#if loops}{#each ordered as vehicle, index (vehicle.slug)}<div
+                class="slide ghost"
+                inert
+                aria-hidden="true"
+              >
+                {@render card(publicCard(vehicle), index, false)}
+              </div>{/each}{/if}
           {#each ordered as vehicle, index (vehicle.slug)}<div
               class="slide"
               data-vehicle={vehicle.slug}
@@ -342,9 +346,13 @@
             >
               {@render card(publicCard(vehicle), index, false)}
             </div>{/each}
-          {#if loops}<div class="slide ghost" inert aria-hidden="true">
-              {@render card(publicCard(ordered[0]!), 0, false)}
-            </div>{/if}
+          {#if loops}{#each ordered as vehicle, index (vehicle.slug)}<div
+                class="slide ghost"
+                inert
+                aria-hidden="true"
+              >
+                {@render card(publicCard(vehicle), index, false)}
+              </div>{/each}{/if}
         </div>
       </div>
       {#if loops}<div
