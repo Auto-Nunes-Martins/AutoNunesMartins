@@ -20,6 +20,20 @@
   }
 
   let { data }: Props = $props();
+  const filtered = $derived(
+    Boolean(
+      data.filters.q ||
+      data.filters.status ||
+      data.filters.fuel ||
+      data.filters.brand ||
+      data.filters.model ||
+      data.filters.agedStock ||
+      data.filters.yearMin ||
+      data.filters.yearMax ||
+      data.filters.mileageMin ||
+      data.filters.mileageMax,
+    ),
+  );
   const today = new Date();
 
   // Conta dias desde a aquisição (para o utilizador ver há quanto tempo
@@ -34,7 +48,7 @@
   <title>Viaturas · Auto Nunes Martins</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="list-frame pt-8 pb-12 space-y-6">
   <!-- Page header -->
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
     <div class="min-w-0">
@@ -52,8 +66,8 @@
     </div>
     <!-- Desktop-only action buttons — mobile has the icon CTA in the topbar. -->
     <div class="hidden md:flex items-center gap-2">
-      <ExportMenu baseHref={crmPath("/viaturas/export")} extraQuery={$page.url.search} />
-      <Button variant="primary" size="md" href={crmPath("/viaturas/nova")}>
+      <ExportMenu baseHref={crmPath('/viaturas/export')} extraQuery={$page.url.search} />
+      <Button variant="primary" size="md" href={crmPath('/viaturas/nova')}>
         <Plus class="h-4 w-4" />
         Adicionar Viatura
       </Button>
@@ -76,12 +90,12 @@
   -->
   {#await data.drafts then drafts}
     {#if !drafts._error && drafts.items.length > 0}
-      <Panel class="border-l-4 !border-l-[#f97316]">
+      <Panel class="border-l-4 !border-l-[var(--color-warning)]">
         <PanelHeader
           icon={Tag}
-          iconClass="text-[#f97316]"
+          iconClass="text-[var(--color-warning)]"
           title="Rascunhos"
-          meta={`${drafts.items.length} POR PUBLICAR`}
+          meta={`${drafts.items.length} POR COMPLETAR`}
         />
         <div
           class="px-5 py-2.5 text-[12px] text-[var(--color-text-muted)] border-b border-[var(--color-border)] bg-[var(--color-bg-2)]"
@@ -134,7 +148,7 @@
                          tempo". Caso contrário fica neutro como o resto. -->
                     <span
                       title={`Adicionada em ${formatDate(v.acquisitionDate)}`}
-                      class={isUrgent ? 'text-[#f97316] font-semibold' : ''}
+                      class={isUrgent ? 'text-[var(--color-warning)] font-semibold' : ''}
                     >
                       {#if age === 0}
                         hoje
@@ -149,12 +163,10 @@
               </a>
               <a
                 href={crmPath(`/viaturas/${v.id}/publicar`)}
-                class="inline-flex items-center gap-1.5 px-3 h-9 font-mono uppercase tracking-[0.12em] text-[11px] text-white transition-colors flex-shrink-0"
-                style="background: #f97316; border-radius: var(--radius-btn);"
-                onmouseenter={(e) => (e.currentTarget.style.background = '#ea580c')}
-                onmouseleave={(e) => (e.currentTarget.style.background = '#f97316')}
+                class="crm-action inline-flex items-center gap-1.5 px-3 h-9 border font-mono uppercase tracking-[0.12em] text-[11px] text-[var(--color-warning)] transition-colors flex-shrink-0"
+                style="background: color-mix(in srgb, var(--color-warning) 10%, transparent); border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); border-radius: var(--radius-btn);"
               >
-                Publicar
+                Completar ficha
                 <ArrowRight class="h-3.5 w-3.5" />
               </a>
             </li>
@@ -178,13 +190,17 @@
         <EmptyState
           icon={Car}
           title="Nenhuma viatura encontrada"
-          description="Ajusta os filtros acima ou adiciona a primeira viatura ao stand."
+          description={filtered
+            ? 'Ajuste os filtros para encontrar a viatura.'
+            : 'Adicione uma viatura para começar a organizar o stock.'}
         >
           {#snippet actions()}
-            <Button variant="primary" size="md" href={crmPath("/viaturas/nova")}>
-              <Plus class="h-4 w-4" />
-              Adicionar primeira viatura
-            </Button>
+            {#if filtered}<Button variant="outline" size="md" href={crmPath('/viaturas')}
+                >Limpar filtros</Button
+              >{:else}<Button variant="primary" size="md" href={crmPath('/viaturas/nova')}>
+                <Plus class="h-4 w-4" />
+                Adicionar primeira viatura
+              </Button>{/if}
           {/snippet}
         </EmptyState>
       {:else}

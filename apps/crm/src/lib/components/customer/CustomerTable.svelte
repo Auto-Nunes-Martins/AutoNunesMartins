@@ -25,7 +25,11 @@
 </script>
 
 {#snippet rowActions(c: CustomerListItem)}
-  <RowActions label={c.name} editHref={crmPath(`/clientes/${c.id}/editar`)} actions={actionsFor(c)} />
+  <RowActions
+    label={c.name}
+    editHref={crmPath(`/clientes/${c.id}/editar`)}
+    actions={actionsFor(c)}
+  />
 {/snippet}
 
 <!--
@@ -91,7 +95,7 @@
 </div>
 
 <div class="hidden md:block overflow-x-auto">
-  <table class="w-full text-[13px]">
+  <table class="crm-table w-full text-[13px]">
     <thead>
       <tr class="border-b border-[var(--color-border)]">
         <th

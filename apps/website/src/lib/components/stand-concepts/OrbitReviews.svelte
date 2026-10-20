@@ -17,8 +17,14 @@
   function revealCard(card: HTMLElement) {
     const bounds = viewport.getBoundingClientRect();
     const selected = card.getBoundingClientRect();
-    const inset = Math.max(20, Math.min(52, innerWidth * .05));
-    const shift = reviewRevealOffset(selected.left, selected.right, bounds.left, bounds.right, inset);
+    const inset = Math.max(20, Math.min(52, innerWidth * 0.05));
+    const shift = reviewRevealOffset(
+      selected.left,
+      selected.right,
+      bounds.left,
+      bounds.right,
+      inset,
+    );
     const current = parseFloat(getComputedStyle(track).translate) || 0;
     track.style.translate = `${current + shift}px`;
   }
@@ -26,14 +32,20 @@
   async function toggleReview(index: number, duplicate: boolean, event: MouseEvent) {
     const card = (event.currentTarget as HTMLElement).closest('article')!;
     const opening = !expandedReviews.includes(index);
-    activeCopies = duplicate ? [...activeCopies.filter(value => value !== index), index] : activeCopies.filter(value => value !== index);
+    activeCopies = duplicate
+      ? [...activeCopies.filter((value) => value !== index), index]
+      : activeCopies.filter((value) => value !== index);
     expandedReviews = expandedReviews.includes(index)
-      ? expandedReviews.filter(value => value !== index)
+      ? expandedReviews.filter((value) => value !== index)
       : [...expandedReviews, index];
     const version = ++interaction;
     await tick();
     if (version !== interaction || !matchMedia('(max-width: 1100px)').matches) return;
-    if (!expandedReviews.length) { readingCard = null; track.style.translate = '0px'; return; }
+    if (!expandedReviews.length) {
+      readingCard = null;
+      track.style.translate = '0px';
+      return;
+    }
     if (!opening) return;
     readingCard = card;
     revealCard(card);
@@ -44,13 +56,18 @@
       visible = entry?.isIntersecting ?? false;
     });
     observer.observe(section);
-    const updateVisibility = () => { pageVisible = !document.hidden; };
+    const updateVisibility = () => {
+      pageVisible = !document.hidden;
+    };
     updateVisibility();
     document.addEventListener('visibilitychange', updateVisibility);
     const resize = () => {
       ++interaction;
-      if (innerWidth > 1100) { track.style.translate = '0px'; activeCopies = []; readingCard = null; }
-      else if (readingCard && expandedReviews.length) revealCard(readingCard);
+      if (innerWidth > 1100) {
+        track.style.translate = '0px';
+        activeCopies = [];
+        readingCard = null;
+      } else if (readingCard && expandedReviews.length) revealCard(readingCard);
       else track.style.translate = '0px';
     };
     window.addEventListener('resize', resize);
@@ -62,157 +79,455 @@
   });
 
   const examples = [
-    { name: 'Marta Silva', text: 'Explicaram tudo com calma e tive tempo para escolher. Gostei da atenção desde a primeira conversa. Antes de visitar o stand, tinha dúvidas sobre qual seria o carro mais adequado para o meu dia a dia e para as viagens em família. Durante a visita consegui comparar várias opções, conhecer os detalhes de cada uma e experimentar a que mais me interessava. Também me explicaram os passos seguintes de forma simples, sem me apressarem a tomar uma decisão. Voltei com algumas perguntas e encontrei a mesma disponibilidade para esclarecer tudo. O que mais valorizei foi poder fazer a escolha ao meu ritmo, com informação clara e atenção aos pormenores que, para mim, faziam a diferença.', rating: 5 },
-    { name: 'Pedro Costa', text: 'Pude ver o carro ao detalhe e esclarecer as minhas dúvidas. Um processo simples, sem pressas.', rating: 5 },
-    { name: 'Ana Martins', text: 'A visita ajudou-me a perceber o que procurava. Atendimento próximo e informação fácil de entender.', rating: 4 },
+    {
+      name: 'Marta Silva',
+      text: 'Explicaram tudo com calma e tive tempo para escolher. Gostei da atenção desde a primeira conversa. Antes de visitar o stand, tinha dúvidas sobre qual seria o carro mais adequado para o meu dia a dia e para as viagens em família. Durante a visita consegui comparar várias opções, conhecer os detalhes de cada uma e experimentar a que mais me interessava. Também me explicaram os passos seguintes de forma simples, sem me apressarem a tomar uma decisão. Voltei com algumas perguntas e encontrei a mesma disponibilidade para esclarecer tudo. O que mais valorizei foi poder fazer a escolha ao meu ritmo, com informação clara e atenção aos pormenores que, para mim, faziam a diferença.',
+      rating: 5,
+    },
+    {
+      name: 'Pedro Costa',
+      text: 'Pude ver o carro ao detalhe e esclarecer as minhas dúvidas. Um processo simples, sem pressas.',
+      rating: 5,
+    },
+    {
+      name: 'Ana Martins',
+      text: 'A visita ajudou-me a perceber o que procurava. Atendimento próximo e informação fácil de entender.',
+      rating: 4,
+    },
   ];
 </script>
+
 <section class="reviews" bind:this={section} aria-labelledby="reviews-heading">
   <div class="heading"><h2 id="reviews-heading">Quem veio, conta.</h2></div>
   <div class="review-viewport" bind:this={viewport}>
-  <div id="reviews-track" class="review-track" bind:this={track} use:reviewExpansion class:paused={!visible || !pageVisible || expandedReviews.length > 0}>
-  {#each [false, true] as duplicate}
-  <div class="review-grid" class:duplicate>
-    {#each examples as review, index}
-      {@const preview = reviewExcerpt(review.text)}
-      {@const expanded = expandedReviews.includes(index)}
-      {@const text = expanded ? review.text : preview.text}
-      {@const lastSpace = text.lastIndexOf(' ')}
-      {@const previewSpace = preview.text.lastIndexOf(' ')}
-      <article data-review-card aria-hidden={duplicate !== activeCopies.includes(index) ? 'true' : undefined}>
-        <div class="review-content">
-        <div class="review-header">
-          <div class="review-top">
-            <span class="stars" role="img" aria-label={`Avaliação fictícia: ${review.rating} de 5 estrelas`}>{'★'.repeat(review.rating)}<span class="empty">{'☆'.repeat(5 - review.rating)}</span></span>
-            <span class="quote" aria-hidden="true">“</span>
-          </div>
-          <div class="review-person">
-            <span class="avatar" aria-hidden="true">{review.name.split(' ').map(part => part[0]).join('')}</span>
-            <div class="person-meta">
-              <h3>{review.name}</h3>
-              <span class="verification" title="Selo ilustrativo numa avaliação fictícia; sem verificação real.">
-                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m10 2 6 3v5c0 4-6 7-6 7s-6-3-6-7V5l6-3Z" stroke="currentColor"/><path d="m7 9 2 2 4-4" stroke="currentColor"/></svg>Verificado
-              </span>
-            </div>
-          </div>
+    <div
+      id="reviews-track"
+      class="review-track"
+      bind:this={track}
+      use:reviewExpansion
+      class:paused={!visible || !pageVisible || expandedReviews.length > 0}
+    >
+      {#each [false, true] as duplicate}
+        <div class="review-grid" class:duplicate>
+          {#each examples as review, index}
+            {@const preview = reviewExcerpt(review.text)}
+            {@const expanded = expandedReviews.includes(index)}
+            {@const text = expanded ? review.text : preview.text}
+            {@const lastSpace = text.lastIndexOf(' ')}
+            {@const previewSpace = preview.text.lastIndexOf(' ')}
+            <article
+              data-review-card
+              aria-hidden={duplicate !== activeCopies.includes(index) ? 'true' : undefined}
+            >
+              <div class="review-content">
+                <div class="review-header">
+                  <div class="review-top">
+                    <span
+                      class="stars"
+                      role="img"
+                      aria-label={`Avaliação fictícia: ${review.rating} de 5 estrelas`}
+                      >{'★'.repeat(review.rating)}<span class="empty"
+                        >{'☆'.repeat(5 - review.rating)}</span
+                      ></span
+                    >
+                    <span class="quote" aria-hidden="true">“</span>
+                  </div>
+                  <div class="review-person">
+                    <span class="avatar" aria-hidden="true"
+                      >{review.name
+                        .split(' ')
+                        .map((part) => part[0])
+                        .join('')}</span
+                    >
+                    <div class="person-meta">
+                      <h3>{review.name}</h3>
+                      <span
+                        class="verification"
+                        title="Selo ilustrativo numa avaliação fictícia; sem verificação real."
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          aria-hidden="true"
+                          ><path
+                            d="m10 2 6 3v5c0 4-6 7-6 7s-6-3-6-7V5l6-3Z"
+                            stroke="currentColor"
+                          /><path d="m7 9 2 2 4-4" stroke="currentColor" /></svg
+                        >Verificado
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="review-copy"
+                  id={`review-text-${duplicate ? 'copy' : 'original'}-${index}`}
+                >
+                  <p>
+                    {#if preview.truncated}{text.slice(0, lastSpace + 1)}<span class="review-ending"
+                        >{text.slice(lastSpace + 1)}{' '}
+                        <button
+                          type="button"
+                          class="review-more"
+                          aria-expanded={expanded}
+                          aria-controls={`review-text-${duplicate ? 'copy' : 'original'}-${index}`}
+                          aria-label={`${expanded ? 'Ver menos' : 'Ver mais'} da avaliação de ${review.name}`}
+                          tabindex={duplicate !== activeCopies.includes(index) ? -1 : 0}
+                          on:click={(event) => toggleReview(index, duplicate, event)}
+                          >{expanded ? 'Ver menos' : 'Ver mais'}</button
+                        >
+                      </span>{:else}{text}{/if}
+                  </p>
+                </div>
+                <div class="review-copy review-baseline" aria-hidden="true">
+                  <p>
+                    {#if preview.truncated}{preview.text.slice(0, previewSpace + 1)}<span
+                        class="review-ending"
+                        >{preview.text.slice(previewSpace + 1)}{' '}<span class="review-more"
+                          >Ver mais</span
+                        ></span
+                      >{:else}{preview.text}{/if}
+                  </p>
+                </div>
+              </div>
+            </article>
+          {/each}
         </div>
-        <div class="review-copy" id={`review-text-${duplicate ? 'copy' : 'original'}-${index}`}>
-          <p>{#if preview.truncated}{text.slice(0, lastSpace + 1)}<span class="review-ending">{text.slice(lastSpace + 1)}{' '}
-          <button
-            type="button"
-            class="review-more"
-            aria-expanded={expanded}
-            aria-controls={`review-text-${duplicate ? 'copy' : 'original'}-${index}`}
-            aria-label={`${expanded ? 'Ver menos' : 'Ver mais'} da avaliação de ${review.name}`}
-            tabindex={duplicate !== activeCopies.includes(index) ? -1 : 0}
-            on:click={(event) => toggleReview(index, duplicate, event)}
-          >{expanded ? 'Ver menos' : 'Ver mais'}</button>
-          </span>{:else}{text}{/if}</p>
-        </div>
-        <div class="review-copy review-baseline" aria-hidden="true">
-          <p>{#if preview.truncated}{preview.text.slice(0, previewSpace + 1)}<span class="review-ending">{preview.text.slice(previewSpace + 1)}{' '}<span class="review-more">Ver mais</span></span>{:else}{preview.text}{/if}</p>
-        </div>
-        </div>
-      </article>
-    {/each}
-  </div>
-  {/each}
-  </div>
+      {/each}
+    </div>
   </div>
 </section>
 
 <style>
-  .reviews { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding-block: var(--orbit-space-section); }
-  .heading { margin-bottom: var(--orbit-space-heading, 36px); }
-  p, h2, h3 { margin: 0; }
-  h2 { max-width: 21ch; font-size: max(32px, calc(var(--orbit-title-section, 48px) * .9)); line-height: 1.12; letter-spacing: -.05em; font-weight: 500; text-wrap: balance; }
-  .review-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; align-items: start; }
-  .duplicate { display: none; }
-  article { min-width: 0; box-sizing: border-box; padding: clamp(24px, 2.5vw, 38px); background: var(--orbit-panel-bg); border: 1px solid var(--line); border-radius: 12px; }
-  .review-content { position: relative; display: flow-root; }
-  .review-baseline { position: absolute; inset: 0 0 auto; visibility: hidden; pointer-events: none; }
-  .stars { display: block; color: #b8860b; font-size: 15px; letter-spacing: .15em; margin-bottom: 20px; }
-  :global(:where(html)[data-theme='dark']) .stars { color: #e8b94f; }
-  .empty { color: inherit; }
-  .review-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-  .review-header { display: contents; }
-  .review-top .stars { margin-bottom: 0; }
-  .quote { color: var(--muted); opacity: .35; font-family: Georgia, serif; font-size: 42px; line-height: .7; }
-  .review-person { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
-  .avatar { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: color-mix(in srgb,var(--text) 6%,transparent); color: var(--muted); font-size: 11px; letter-spacing: .02em; }
-  .review-person h3 { margin-bottom: 0; }
-  .verification { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; color: #637b6d; font-size: 10px; }
-  .verification svg { width: 14px; height: 14px; flex-shrink: 0; }
-  :global(:where(html)[data-theme='dark']) .verification { color: #899e91; }
-  h3 { font-size: 16px; letter-spacing: -.02em; font-weight: 500; margin-bottom: 10px; }
-  .review-copy { font-size: var(--orbit-type-body); line-height: 1.8; color: var(--muted); }
-  .review-ending { white-space: nowrap; }
+  .reviews {
+    width: var(--orbit-frame);
+    max-width: var(--orbit-frame-max);
+    margin: auto;
+    padding-block: var(--orbit-space-section);
+  }
+  .heading {
+    margin-bottom: var(--orbit-space-heading, 36px);
+  }
+  p,
+  h2,
+  h3 {
+    margin: 0;
+  }
+  h2 {
+    max-width: 21ch;
+    font-size: max(32px, calc(var(--orbit-title-section, 48px) * 0.9));
+    line-height: 1.12;
+    letter-spacing: -0.05em;
+    font-weight: 500;
+    text-wrap: balance;
+  }
+  .review-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+  .duplicate {
+    display: none;
+  }
+  article {
+    min-width: 0;
+    box-sizing: border-box;
+    padding: clamp(26px, 2.3vw, 34px) clamp(20px, 1.7vw, 26px);
+    background: var(--orbit-panel-bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  article {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .review-content {
+    position: relative;
+    display: flow-root;
+    flex-shrink: 0;
+    width: 100%;
+  }
+  .review-baseline {
+    position: absolute;
+    inset: 0 0 auto;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .stars {
+    display: block;
+    color: #b8860b;
+    font-size: 15px;
+    letter-spacing: 0.15em;
+    margin-bottom: 20px;
+  }
+  :global(:where(html)[data-theme='dark']) .stars {
+    color: #e8b94f;
+  }
+  .empty {
+    color: inherit;
+  }
+  .review-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .review-header {
+    display: contents;
+  }
+  .review-top .stars {
+    margin-bottom: 0;
+  }
+  .quote {
+    color: var(--muted);
+    opacity: 0.35;
+    font-family: Georgia, serif;
+    font-size: 42px;
+    line-height: 0.7;
+  }
+  .review-person {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 16px;
+  }
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+  .review-person h3 {
+    margin-bottom: 0;
+  }
+  .verification {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    color: #637b6d;
+    font-size: 10px;
+  }
+  .verification svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  :global(:where(html)[data-theme='dark']) .verification {
+    color: #899e91;
+  }
+  h3 {
+    font-size: 16px;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .review-copy {
+    font-size: var(--orbit-type-body);
+    line-height: 1.8;
+    color: var(--muted);
+  }
+  .review-ending {
+    white-space: nowrap;
+  }
   .review-more {
-    display: inline; margin: 0; padding: 0; background: none; border: 0;
-    color: var(--text); font: inherit; font-size: .9em; font-weight: 500;
-    white-space: nowrap; cursor: pointer;
+    display: inline;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9em;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
   }
-  .review-more:hover { text-decoration: underline; text-underline-offset: 4px; }
-  .review-more:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; border-radius: 2px; }
+  .review-more:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .review-more:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    article { --tilt: -1deg; transition: transform 320ms ease, box-shadow 320ms ease, border-color 320ms ease; }
-    article:nth-child(2) { --tilt: .7deg; }
-    article:nth-child(3) { --tilt: -0.5deg; }
-    article:hover { transform: perspective(1000px) translateY(-5px) rotateZ(var(--tilt)) rotateX(1deg); box-shadow: 0 16px 30px #00000012; border-color: color-mix(in srgb, var(--text) 22%, var(--line)); }
-  }
-  @media (max-width: 1200px) {
-    .review-header {
-      position: relative;
-      display: grid;
-      grid-template-columns: 40px minmax(0, 1fr);
-      grid-template-areas: 'avatar name' 'meta meta';
-      gap: 6px 11px;
-      align-items: center;
-      margin-bottom: 16px;
+    article {
+      --tilt: -1deg;
+      transition:
+        transform 320ms ease,
+        box-shadow 320ms ease,
+        border-color 320ms ease;
     }
-    .review-top,
-    .review-person,
-    .person-meta { display: contents; }
-    .avatar { grid-area: avatar; }
-    .review-person h3 { grid-area: name; padding-right: 26px; }
-    .quote { position: absolute; top: 4px; right: 0; }
-    .stars { grid-area: meta; justify-self: end; font-size: 14px; letter-spacing: .1em; }
-    .verification { grid-area: meta; justify-self: start; margin-top: 0; }
+    article:nth-child(2) {
+      --tilt: 0.7deg;
+    }
+    article:nth-child(3) {
+      --tilt: -0.5deg;
+    }
+    article:hover {
+      transform: perspective(1000px) translateY(-5px) rotateZ(var(--tilt)) rotateX(1deg);
+      box-shadow: 0 16px 30px #00000012;
+      border-color: color-mix(in srgb, var(--text) 22%, var(--line));
+    }
+  }
+  .review-header {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-areas: 'avatar person stars';
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .review-top,
+  .review-person {
+    display: contents;
+  }
+  .person-meta {
+    grid-area: person;
+    min-width: 0;
+  }
+  .avatar {
+    grid-area: avatar;
+  }
+  .quote {
+    display: none;
+  }
+  .stars {
+    grid-area: stars;
+    justify-self: end;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  @media (max-width: 700px) {
+    .review-header {
+      grid-template-columns: 36px minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+    }
+    .review-person h3 {
+      font-size: 15px;
+    }
+    .stars {
+      font-size: 12px;
+      letter-spacing: 0;
+    }
   }
   @keyframes reviews-pass {
-    to { transform: translateX(-50%); }
+    to {
+      transform: translateX(-50%);
+    }
   }
   @media (max-width: 1100px) {
-    .reviews { width: 100%; max-width: none; }
-    .heading { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin-inline: auto; }
+    .reviews {
+      width: 100%;
+      max-width: none;
+    }
+    .heading {
+      width: var(--orbit-frame);
+      max-width: var(--orbit-frame-max);
+      margin-inline: auto;
+    }
     .review-viewport {
       --edge-fade: clamp(20px, 5vw, 52px);
       overflow: hidden;
       padding-block: 7px 12px;
-      mask-image: linear-gradient(to right, transparent, #000 var(--edge-fade), #000 calc(100% - var(--edge-fade)), transparent);
-      -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--edge-fade), #000 calc(100% - var(--edge-fade)), transparent);
+      mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 var(--edge-fade),
+        #000 calc(100% - var(--edge-fade)),
+        transparent
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 var(--edge-fade),
+        #000 calc(100% - var(--edge-fade)),
+        transparent
+      );
     }
-    .review-track { display: flex; width: max-content; animation: reviews-pass 42s linear infinite; }
-    .review-track.paused, .review-viewport:active .review-track, .review-viewport:has(:focus-visible) .review-track { animation-play-state: paused; }
-    .review-grid, .duplicate { display: flex; flex: none; gap: 16px; padding-right: 16px; }
-    article { flex: 0 0 auto; width: clamp(270px, 42vw, 360px); box-sizing: border-box; }
+    .review-track {
+      display: flex;
+      width: max-content;
+      animation: reviews-pass 42s linear infinite;
+    }
+    .review-track.paused,
+    .review-viewport:active .review-track,
+    .review-viewport:has(:focus-visible) .review-track {
+      animation-play-state: paused;
+    }
+    .review-grid,
+    .duplicate {
+      display: flex;
+      flex: none;
+      gap: 16px;
+      padding-right: 16px;
+    }
+    article {
+      flex: 0 0 auto;
+      width: clamp(270px, 42vw, 360px);
+      box-sizing: border-box;
+    }
   }
   @media (max-width: 1100px) and (prefers-reduced-motion: no-preference) {
-    .review-track { transition: translate 320ms cubic-bezier(.215, .61, .355, 1); }
+    .review-track {
+      transition: translate 320ms cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
   }
   @media (max-width: 1100px) and (hover: hover) {
-    .review-viewport:hover .review-track { animation-play-state: paused; }
+    .review-viewport:hover .review-track {
+      animation-play-state: paused;
+    }
   }
   @media (max-width: 700px) {
-    article { width: min(82vw, 340px); }
-    .review-ending { white-space: normal; }
-    .review-more { display: block; width: max-content; min-height: 44px; margin-top: 4px; text-align: left; }
+    article {
+      width: min(82vw, 340px);
+    }
+    .review-ending {
+      white-space: normal;
+    }
+    .review-more {
+      display: block;
+      width: max-content;
+      min-height: 44px;
+      margin-top: 4px;
+      text-align: left;
+    }
   }
   @media (max-width: 1100px) and (prefers-reduced-motion: reduce) {
-    .review-track { animation: none; }
-    .duplicate { display: none; }
-    .review-viewport { overflow-x: auto; scroll-snap-type: x mandatory; mask-image: none; -webkit-mask-image: none; }
-    .review-grid { padding-right: 0; }
-    article { scroll-snap-align: start; }
+    .review-track {
+      animation: none;
+    }
+    .duplicate {
+      display: none;
+    }
+    .review-viewport {
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      mask-image: none;
+      -webkit-mask-image: none;
+    }
+    .review-grid {
+      padding-right: 0;
+    }
+    article {
+      scroll-snap-align: start;
+    }
   }
 </style>

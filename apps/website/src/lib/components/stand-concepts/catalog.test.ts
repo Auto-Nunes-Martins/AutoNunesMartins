@@ -80,7 +80,8 @@ describe('Orbit demonstration catalogue', () => {
     );
     const seo = catalogSeo(params('marca=BMW&modelo=Série+1'), 'https://example.test');
     expect(seo.heading).toBe('BMW Série 1 usados');
-    expect(seo.description).toContain('2 resultados');
+    expect(seo.description).not.toMatch(/\d+ resultados?/);
+    expect(seo.description).toContain('Compare preço, ano e quilometragem');
     expect(seo.contextual).toContain('BMW');
     expect(seo.label).toBe('BMW Série 1');
   });

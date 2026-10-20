@@ -37,7 +37,7 @@
     ghost:
       'text-[var(--color-text-muted)] hover:text-[var(--color-text)] font-mono uppercase tracking-[0.12em] text-[11px]',
     danger:
-      'bg-transparent border border-[color-mix(in_oklab,var(--color-red)_40%,transparent)] text-[var(--color-red)] hover:bg-[color-mix(in_oklab,var(--color-red)_10%,transparent)] font-mono uppercase tracking-[0.12em] text-[11px]',
+      'bg-transparent border border-[color-mix(in_srgb,var(--color-danger)_45%,transparent)] text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,transparent)] font-mono uppercase tracking-[0.12em] text-[11px]',
   };
 
   const sizeClass = {
@@ -55,7 +55,10 @@
     {href}
     aria-disabled={disabled || loading ? 'true' : undefined}
     tabindex={disabled || loading ? -1 : undefined}
-    onclick={event => { if (disabled || loading) event.preventDefault(); else onclick?.(event); }}
+    onclick={(event) => {
+      if (disabled || loading) event.preventDefault();
+      else onclick?.(event);
+    }}
     class="crm-action {baseClass} {variantClass[variant]} {sizeClass[size]} {className}"
     style="border-radius: var(--radius-btn);"
   >
@@ -81,8 +84,20 @@
 {/if}
 
 <style>
-  .crm-action { white-space: nowrap; }
-  a[aria-disabled='true'] { opacity: .4; cursor: not-allowed; }
-  .crm-action:focus-visible { outline: 2px solid var(--color-red); outline-offset: 3px; }
-  @media (max-width: 767px) { .crm-action { min-height: 44px; } }
+  .crm-action {
+    white-space: nowrap;
+  }
+  a[aria-disabled='true'] {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .crm-action:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 3px;
+  }
+  @media (max-width: 767px) {
+    .crm-action {
+      min-height: 44px;
+    }
+  }
 </style>

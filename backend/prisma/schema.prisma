@@ -229,6 +229,10 @@ model Task {
   /// Set when status transitions to DONE; cleared when status moves away.
   /// Weekly cleanup removes DONE tasks completed before the latest Sunday.
   completedAt        DateTime?
+  /// Shared board order within status; visibility remains own + unassigned tasks.
+  boardPosition      Decimal    @default(0) @db.Decimal(30, 12)
+  /// Optimistic concurrency for moves; independent of technical rank compaction.
+  boardVersion       Int        @default(0)
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
@@ -240,6 +244,7 @@ model Task {
   @@index([assigneeId])
   @@index([dueDate])
   @@index([status, completedAt]) // fast purge of stale DONE tasks
+  @@index([status, boardPosition])
 }
 
 // ─── Operational Expenses (dealership overhead) ──────────────────────────

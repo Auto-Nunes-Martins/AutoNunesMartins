@@ -24,6 +24,23 @@ export const vehicle = {
   photos: ['/api/public/vehicles/bmw-serie-1-2019-012345abcdef/photos/0'],
 };
 describe('Public website projection', () => {
+  it('keeps explicit version separate without guessing from existing model names', () => {
+    const existing = publicCard(
+      publicVehicleSchema.parse({ ...vehicle, model: 'A3 1.6 TDI S-line' }),
+    );
+    expect(existing.model).toBe('A3 1.6 TDI S-line');
+    expect(existing.version).toBe('');
+    const approved = publicCard(
+      publicVehicleSchema.parse({ ...vehicle, specifications: { version: '  1.6 TDI S-line  ' } }),
+    );
+    expect(approved.version).toBe('1.6 TDI S-line');
+    expect(approved.href).toBe(existing.href);
+    expect(approved.model).toBe(vehicle.model);
+    expect(
+      publicVehicleSchema.safeParse({ ...vehicle, specifications: { version: 'x'.repeat(161) } })
+        .success,
+    ).toBe(false);
+  });
   it('keeps unknown price distinct from zero and supports photo-free reserved listings', () => {
     const parsed = publicVehicleSchema.parse({
       ...vehicle,
@@ -104,7 +121,8 @@ describe('Public website projection', () => {
       stock,
     );
     expect(seo.heading).toBe('BMW Série 1 usados');
-    expect(seo.description).toContain('1 resultado publicado');
+    expect(seo.description).toContain('Compare preço, ano e quilometragem');
+    expect(seo.description).not.toMatch(/\d+ resultado/);
     expect(seo.noindex).toBe(false);
     expect(seo.canonical).toContain('pagina=2');
     expect(

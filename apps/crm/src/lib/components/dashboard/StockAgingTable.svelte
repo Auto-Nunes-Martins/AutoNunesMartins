@@ -1,5 +1,5 @@
 <script lang="ts">
- import {photoFallback} from "$lib/vehicleImage";
+  import { photoFallback } from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
   import { Car, ChevronRight, Clock } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
@@ -26,7 +26,7 @@
       <!-- Desktop-only — on mobile the title + count badge already imply the
            drill-down, and a long action eats the panel header row. -->
       <a
-        href={crmPath("/viaturas?status=AVAILABLE")}
+        href={crmPath('/viaturas?status=AVAILABLE')}
         class="inline-flex items-center gap-1 px-3 h-8 border border-[var(--color-border)] hover:border-[var(--color-border-strong)] font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
         style="border-radius: var(--radius-btn);"
       >
@@ -44,7 +44,7 @@
     </div>
   {:else}
     <div class="overflow-x-auto">
-      <table class="aging-table w-full text-[13px]">
+      <table class="crm-table aging-table w-full text-[13px]">
         <thead class="bg-[color-mix(in_oklab,var(--color-text)_2%,transparent)]">
           <tr class="border-b border-[var(--color-border)]">
             <th
@@ -87,7 +87,8 @@
                   >
                     {#if v.thumbnailUrl}
                       <img
-                        src={v.thumbnailUrl} use:photoFallback={v.thumbnailOriginalUrl??v.thumbnailUrl}
+                        src={v.thumbnailUrl}
+                        use:photoFallback={v.thumbnailOriginalUrl ?? v.thumbnailUrl}
                         alt={`${v.brand} ${v.model}`}
                         class="h-full w-full object-cover"
                         loading="lazy"

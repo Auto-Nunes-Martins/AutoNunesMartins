@@ -2,9 +2,12 @@ type Options = { enabled: boolean; open: boolean; close: () => void };
 
 /** Finish arriving when the hero leaves the viewport. Keep startup JS in sync. */
 export function compactNavProgress(scrollY: number, heroBottom: number, viewportHeight: number) {
-  const distance = Math.max(100, Math.min(180, viewportHeight * .18));
+  const distance = Math.max(100, Math.min(180, viewportHeight * 0.18));
   const start = Math.max(100, heroBottom - distance);
-  return { pinned: scrollY >= start, progress: Math.max(0, Math.min(1, (scrollY - start) / distance)) };
+  return {
+    pinned: scrollY >= start,
+    progress: Math.max(0, Math.min(1, (scrollY - start) / distance)),
+  };
 }
 
 /** One navigation instance and a reserved original slot; no time-based scroll animation. */
@@ -20,8 +23,11 @@ export function hybridNav(header: HTMLElement, initial: Options) {
   };
   const draw = () => {
     frame = 0;
-    const hero = root.querySelector<HTMLElement>('.orbit-intro');
-    if (!options.enabled || !hero) { reset(); return; }
+    const hero = root.querySelector<HTMLElement>('.hero-v1, .orbit-intro');
+    if (!options.enabled || !hero) {
+      reset();
+      return;
+    }
     const y = Math.max(0, window.scrollY);
     const state = compactNavProgress(y, hero.getBoundingClientRect().bottom + y, innerHeight);
     // Never fade a menu or a keyboard target out from under its current user.
@@ -53,11 +59,14 @@ export function hybridNav(header: HTMLElement, initial: Options) {
   header.addEventListener('keydown', keydown);
   const resize = new ResizeObserver(schedule);
   resize.observe(root);
-  const hero = root.querySelector('.orbit-intro');
+  const hero = root.querySelector('.hero-v1, .orbit-intro');
   if (hero) resize.observe(hero);
   draw();
   return {
-    update(next: Options) { options = next; schedule(); },
+    update(next: Options) {
+      options = next;
+      schedule();
+    },
     destroy() {
       cancelAnimationFrame(frame);
       resize.disconnect();

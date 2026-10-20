@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
+  import { filterNavigation } from '$lib/filterNavigation';
   import { Search, X } from 'lucide-svelte';
   import type { Fuel, VehicleStatus } from '@anm/types';
 
@@ -20,6 +20,7 @@
   }
 
   let { filters }: Props = $props();
+  const navigation = filterNavigation(() => $page.url);
 
   const FUELS: { value: Fuel; label: string }[] = [
     { value: 'GASOLINE', label: 'Gasolina' },
@@ -41,12 +42,7 @@
   ];
 
   function setFilter(key: string, value: string | undefined) {
-    const usp = new URLSearchParams($page.url.searchParams);
-    if (value === undefined || value === '') usp.delete(key);
-    else usp.set(key, value);
-    usp.delete('page');
-    const qs = usp.toString();
-    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+    navigation.set(key, value);
   }
 
   function toggleChip(key: string, value: string, currentValue: string | undefined) {
@@ -69,7 +65,7 @@
   );
 
   function clearAll() {
-    goto($page.url.pathname, { keepFocus: false, noScroll: true });
+    navigation.clear();
   }
 </script>
 
@@ -85,10 +81,14 @@
       <Search class="h-4 w-4 text-[var(--color-text-faint)]" />
       <input
         type="search"
+        aria-label="Pesquisar viaturas por marca, modelo, matrícula ou VIN"
         placeholder="Pesquisar por marca, modelo ou VIN…"
         value={filters.q ?? ''}
-        oninput={(e) => setFilter('q', e.currentTarget.value || undefined)}
-        class="flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
+        oninput={(e) => navigation.set('q', e.currentTarget.value, true)}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') navigation.flush();
+        }}
+        class="min-w-0 flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
       />
     </div>
     {#if hasFilters}
@@ -124,6 +124,7 @@
       {@const active = filters.status === s.value}
       <button
         type="button"
+        aria-pressed={active}
         onclick={() => toggleChip('status', s.value, filters.status)}
         class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] border transition-colors {active
           ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
@@ -145,6 +146,7 @@
       {@const active = filters.fuel === f.value}
       <button
         type="button"
+        aria-pressed={active}
         onclick={() => toggleChip('fuel', f.value, filters.fuel)}
         class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] border transition-colors {active
           ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
@@ -168,7 +170,7 @@
         min="1950"
         placeholder="2000"
         value={filters.yearMin ?? ''}
-        oninput={(e) => setFilter('yearMin', e.currentTarget.value || undefined)}
+        oninput={(e) => navigation.set('yearMin', e.currentTarget.value, true)}
         class="h-10 px-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
         style="border-radius: var(--radius-btn);"
       />
@@ -184,7 +186,7 @@
         min="1950"
         placeholder="2026"
         value={filters.yearMax ?? ''}
-        oninput={(e) => setFilter('yearMax', e.currentTarget.value || undefined)}
+        oninput={(e) => navigation.set('yearMax', e.currentTarget.value, true)}
         class="h-10 px-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
         style="border-radius: var(--radius-btn);"
       />
@@ -200,7 +202,7 @@
         min="0"
         placeholder="0"
         value={filters.mileageMin ?? ''}
-        oninput={(e) => setFilter('mileageMin', e.currentTarget.value || undefined)}
+        oninput={(e) => navigation.set('mileageMin', e.currentTarget.value, true)}
         class="h-10 px-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
         style="border-radius: var(--radius-btn);"
       />
@@ -216,7 +218,7 @@
         min="0"
         placeholder="200000"
         value={filters.mileageMax ?? ''}
-        oninput={(e) => setFilter('mileageMax', e.currentTarget.value || undefined)}
+        oninput={(e) => navigation.set('mileageMax', e.currentTarget.value, true)}
         class="h-10 px-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
         style="border-radius: var(--radius-btn);"
       />

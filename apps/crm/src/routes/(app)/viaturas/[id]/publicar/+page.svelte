@@ -41,21 +41,25 @@
 </script>
 
 <svelte:head>
-  <title>Publicar · {v.brand} {v.model}</title>
+  <title>Completar ficha · {v.brand} {v.model}</title>
 </svelte:head>
 
 <section class="pt-8 pb-12 space-y-6">
   <div>
-    <ItalicHero text="Publicar viatura" size="lg" />
+    <ItalicHero text="Completar ficha" size="lg" />
     <p
       class="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] flex flex-wrap items-center gap-x-2 gap-y-1"
     >
-      <span style="color: #f97316;">●</span>
+      <span style="color: var(--color-warning);">●</span>
       <span>Rascunho</span>
       <span class="text-[var(--color-text-faint)]">·</span>
       <span>{v.brand} {v.model}</span>
       <span class="text-[var(--color-text-faint)]">·</span>
       <span>{v.licensePlate ?? v.vin}</span>
+    </p>
+    <p class="mt-3 text-[13px] text-[var(--color-text-muted)]">
+      Disponibilize a viatura no stock. A publicação no site é gerida separadamente na edição da
+      ficha.
     </p>
   </div>
 
@@ -63,14 +67,14 @@
   {#if v.sourceTradeIn}
     {@const o = v.sourceTradeIn}
     <div
-      class="flex items-center gap-3 p-3 pl-4 border bg-[color-mix(in_oklab,#f97316_6%,transparent)]"
-      style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, #f97316 30%, transparent);"
+      class="flex items-center gap-3 p-3 pl-4 border bg-[color-mix(in_oklab,var(--color-warning)_6%,transparent)]"
+      style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, var(--color-warning) 30%, transparent);"
     >
       <span
         class="inline-flex items-center justify-center h-8 w-8 rounded-full"
-        style="background: color-mix(in oklab, #f97316 18%, transparent);"
+        style="background: color-mix(in oklab, var(--color-warning) 18%, transparent);"
       >
-        <ArrowRightLeft class="h-4 w-4" style="color: #f97316;" />
+        <ArrowRightLeft class="h-4 w-4" style="color: var(--color-warning);" />
       </span>
       <div class="flex-1 min-w-0 text-[13px]">
         <span class="font-display font-semibold">Entrada por retoma</span>
@@ -92,7 +96,7 @@
         return;
       }
       if (!descriptionInput.trim()) {
-        toast.error('A descrição é obrigatória ao publicar.');
+        toast.error('A descrição é obrigatória para disponibilizar a viatura.');
         cancel();
         return;
       }
@@ -100,10 +104,11 @@
       return async ({ result, update }) => {
         try {
           if (result.type === 'redirect') {
-            toast.success('Viatura publicada e disponível para venda.');
+            toast.success('Viatura disponível para venda no stock.');
           } else if (result.type === 'failure') {
             toast.error(
-              (result.data as { error?: string } | undefined)?.error ?? 'Falha ao publicar.',
+              (result.data as { error?: string } | undefined)?.error ??
+                'Não foi possível disponibilizar a viatura.',
             );
           }
           await update({ reset: false });
@@ -243,7 +248,7 @@
         loading={submitting}
         disabled={submitting || !salePriceInput || !descriptionInput.trim()}
       >
-        Publicar viatura
+        Disponibilizar no stock
       </Button>
     </div>
   </form>

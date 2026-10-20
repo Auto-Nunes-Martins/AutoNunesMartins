@@ -5,7 +5,10 @@
 // CSS uses that document state, independently of the SSR component's class.
 
 // Restoring a document is not a user-requested smooth scroll.
-if (location.pathname === '/' || /^\/(viaturas|quem-somos|politica-de-privacidade|demo)(\/|$)/.test(location.pathname)) {
+if (
+  location.pathname === '/' ||
+  /^\/(viaturas|quem-somos|politica-de-privacidade|demo)(\/|$)/.test(location.pathname)
+) {
   document.documentElement.setAttribute('data-orbit-restoring', '');
   const cancelRestore = function () {
     document.documentElement.removeAttribute('data-orbit-restore-y');
@@ -84,14 +87,20 @@ window.initializeOrbitDocument = function () {
     var innerNavRoot = document.querySelector('.orbit-inner');
     if (innerNavRoot) {
       var contactStrip = innerNavRoot.querySelector('.nav-contact-strip');
-      innerNavRoot.classList.toggle('nav-compact', scrollY > (contactStrip ? contactStrip.offsetHeight : 0) + 2);
+      innerNavRoot.classList.toggle(
+        'nav-compact',
+        scrollY > (contactStrip ? contactStrip.offsetHeight : 0) + 2,
+      );
     }
     var orbitRoot = document.querySelector('.orbit-home, .orbit-company');
-    var orbitHero = orbitRoot && orbitRoot.querySelector('.orbit-intro');
+    var orbitHero = orbitRoot && orbitRoot.querySelector('.hero-v1, .orbit-intro');
     if (orbitHero && orbitRoot.classList.contains('orbit-home')) {
       // Same distance-based arrival as compactNavProgress; no first-paint flash on reload.
-      var navDistance = Math.max(100, Math.min(180, innerHeight * .18));
-      var navStart = Math.max(100, orbitHero.getBoundingClientRect().bottom + scrollY - navDistance);
+      var navDistance = Math.max(100, Math.min(180, innerHeight * 0.18));
+      var navStart = Math.max(
+        100,
+        orbitHero.getBoundingClientRect().bottom + scrollY - navDistance,
+      );
       var navProgress = Math.max(0, Math.min(1, (scrollY - navStart) / navDistance));
       var navPinned = scrollY >= navStart;
       orbitRoot.classList.toggle('nav-pinned', navPinned);
@@ -135,9 +144,14 @@ window.initializeOrbitDocument = function () {
           var accentPinTop = Math.max(0, (innerHeight - heroHeight) / 2);
           var accentTop = bounds.top + (innerWidth > 1050 ? scrollY : 0);
           var accentTravel = Math.min(accentRange, Math.max(0, accentPinTop - accentTop));
-          scene.style.setProperty('--accent-stage-shift', (bounds.top + accentTravel - heroBounds.top) + 'px');
-          scene.style.setProperty('--accent-progress', accentRange > 1
-            ? clampOrbit((accentPinTop - accentTop) / accentRange) : 0);
+          scene.style.setProperty(
+            '--accent-stage-shift',
+            bounds.top + accentTravel - heroBounds.top + 'px',
+          );
+          scene.style.setProperty(
+            '--accent-progress',
+            accentRange > 1 ? clampOrbit((accentPinTop - accentTop) / accentRange) : 0,
+          );
           var documentTop = bounds.top + scrollY;
           var resting = clampOrbit(
             (Math.max(0, (innerHeight - heroHeight) / 2) - documentTop) /

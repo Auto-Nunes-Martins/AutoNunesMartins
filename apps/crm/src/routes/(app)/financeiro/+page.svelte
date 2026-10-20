@@ -1,7 +1,8 @@
 <script lang="ts">
+  import '$lib/styles/expenseCards.css';
   import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
-  import { goto } from '$app/navigation';
+  import { filterNavigation } from '$lib/filterNavigation';
   import { page } from '$app/stores';
   import { Check, Pencil, Plus, Trash2, Wallet, X } from 'lucide-svelte';
   import { toast } from 'svelte-sonner';
@@ -20,6 +21,7 @@
   }
 
   let { data }: Props = $props();
+  const navigation = filterNavigation(() => $page.url);
   const today = new Date();
 
   let showAdd = $state(false);
@@ -39,11 +41,7 @@
   }
 
   function setParam(name: string, value: string | undefined) {
-    const usp = new URLSearchParams($page.url.searchParams);
-    if (value === undefined || value === '') usp.delete(name);
-    else usp.set(name, value);
-    const qs = usp.toString();
-    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+    navigation.set(name, value, name === 'q');
   }
 
   function startEdit(id: string) {
@@ -62,7 +60,7 @@
   <title>Financeiro · Auto Nunes Martins</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="reading-frame pt-8 pb-12 space-y-6">
   <!-- Page header -->
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6">
     <div class="min-w-0">
@@ -76,7 +74,7 @@
     </div>
     <!-- Export is desktop-only. Menu (sem default) — utilizador escolhe formato. -->
     <div class="hidden md:flex items-center gap-2">
-      <ExportMenu baseHref={crmPath("/financeiro/despesas/export")} extraQuery={$page.url.search} />
+      <ExportMenu baseHref={crmPath('/financeiro/despesas/export')} extraQuery={$page.url.search} />
     </div>
   </div>
 
@@ -97,6 +95,9 @@
           placeholder="descrição…"
           value={data.expensesFilters.q ?? ''}
           oninput={(e) => setParam('q', e.currentTarget.value || undefined)}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') navigation.flush();
+          }}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
           style="border-radius: var(--radius-btn);"
         />
@@ -268,8 +269,15 @@
           Sem despesas registadas
         </div>
       {:else}
-        <div class="overflow-x-auto">
-          <table class="w-full text-[13px] min-w-[640px]">
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard access to native horizontal scrolling.) -->
+        <div
+          class="expense-table-wrap overflow-x-auto"
+          tabindex="0"
+          role="region"
+          aria-label="Despesas operacionais"
+        >
+          <!-- svelte-ignore a11y_no_redundant_roles (Preserve table semantics when mobile rows use CSS grid.) -->
+          <table role="table" class="crm-table expense-table w-full text-[13px] min-w-[640px]">
             <thead>
               <tr class="border-b border-[var(--color-border)]">
                 <th
@@ -301,7 +309,7 @@
                 {@const isSaving = savingId === e.id}
                 <tr class="border-b border-[var(--color-border)] hover:bg-white/[0.02]">
                   {#if isEditing}
-                    <td colspan="5" class="p-3 bg-[var(--color-bg-2)]">
+                    <td data-column="edit" colspan="5" class="p-3 bg-[var(--color-bg-2)]">
                       <form
                         method="POST"
                         action="?/updateExpense"
@@ -421,31 +429,34 @@
                       </form>
                     </td>
                   {:else}
-                    <td class="px-4 py-2.5">
+                    <td data-column="category" class="px-4 py-2.5">
                       <span
                         class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]"
                       >
                         {categoryLabel(e.category as OpExpenseCategory)}
                       </span>
                     </td>
-                    <td class="px-4 py-2.5">{e.description}</td>
+                    <td data-column="description" class="px-4 py-2.5">{e.description}</td>
                     <td
+                      data-column="date"
                       class="px-4 py-2.5 font-mono text-[11px] text-right text-[var(--color-text-muted)]"
                     >
                       {formatDate(e.date)}
                     </td>
-                    <td class="px-4 py-2.5 num-value text-[13.5px] text-right">
+                    <td data-column="amount" class="px-4 py-2.5 num-value text-[13.5px] text-right">
                       {formatEUR(e.amount)}
                     </td>
-                    <td class="px-4 py-2.5">
+                    <td data-column="actions" class="px-4 py-2.5">
                       <div class="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onclick={() => startEdit(e.id)}
                           class="text-[var(--color-text-faint)] hover:text-[var(--color-text)] p-1.5 transition-colors"
-                          aria-label="Editar"
+                          aria-label={`Editar despesa: ${e.description}`}
                         >
-                          <Pencil class="h-3.5 w-3.5" />
+                          <Pencil class="h-3.5 w-3.5" /><span class="expense-action-label"
+                            >Editar</span
+                          >
                         </button>
                         <form
                           method="POST"
@@ -472,9 +483,11 @@
                           <button
                             type="submit"
                             class="text-[var(--color-text-faint)] hover:text-[var(--color-red)] p-1.5 transition-colors"
-                            aria-label="Eliminar"
+                            aria-label={`Eliminar despesa: ${e.description}`}
                           >
-                            <Trash2 class="h-3.5 w-3.5" />
+                            <Trash2 class="h-3.5 w-3.5" /><span class="expense-action-label"
+                              >Eliminar</span
+                            >
                           </button>
                         </form>
                       </div>

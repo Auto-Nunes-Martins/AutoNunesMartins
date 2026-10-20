@@ -25,6 +25,7 @@ export interface TaskDto {
   recurrenceParentId: string | null;
   createdAt: string;
   updatedAt: string;
+  boardVersion: number;
   assignee: TaskAssignee | null;
 }
 
@@ -44,6 +45,7 @@ export interface TaskListParams {
    * next dueDate is still in the future). Defaults to false.
    */
   showScheduled?: boolean;
+  order?: 'board' | 'priority';
 }
 
 function toQuery(params: Record<string, unknown>): string {

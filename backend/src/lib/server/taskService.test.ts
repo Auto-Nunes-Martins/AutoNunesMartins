@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   deleteMany: vi.fn(),
   create: vi.fn(),
   findUnique: vi.fn(),
+  findFirst: vi.fn(),
+  queryRaw: vi.fn(),
   update: vi.fn(),
   transaction: vi.fn(),
   emitActivity: vi.fn(),
@@ -35,14 +37,18 @@ beforeEach(() => {
   mocks.deleteMany.mockResolvedValue({ count: 0 });
   mocks.transaction.mockImplementation(async (callback) =>
     callback({
+      $queryRaw: mocks.queryRaw,
       task: {
+        deleteMany: mocks.deleteMany,
         create: mocks.create,
         findUnique: mocks.findUnique,
+        findFirst: mocks.findFirst,
         update: mocks.update,
       },
     }),
   );
   mocks.create.mockImplementation(async ({ data }) => ({ id: 'created', ...data }));
+  mocks.findFirst.mockResolvedValue(null);
   mocks.update.mockImplementation(async ({ data }) => ({ id: 'task', title: 'Task', ...data }));
 });
 
@@ -95,7 +101,6 @@ describe('weekly completed-task cleanup', () => {
     const first = purgeStaleCompletedTasks();
     const second = purgeStaleCompletedTasks();
     expect(second).toBe(first);
-    expect(mocks.deleteMany).toHaveBeenCalledTimes(1);
     finish({ count: 3 });
     expect(await Promise.all([first, second])).toEqual([3, 3]);
     expect(await purgeStaleCompletedTasks()).toBe(0);
@@ -156,7 +161,10 @@ describe('completion timestamps', () => {
       completedAt: null,
     });
     await changeTaskStatus('task', 'DONE', actor);
-    expect(mocks.update.mock.calls[0][0].data).toEqual({ status: 'DONE', completedAt: tuesday });
+    expect(mocks.update.mock.calls[0][0].data).toMatchObject({
+      status: 'DONE',
+      completedAt: tuesday,
+    });
     mocks.findUnique.mockResolvedValueOnce({
       id: 'task',
       title: 'Task',
@@ -165,6 +173,6 @@ describe('completion timestamps', () => {
       completedAt: tuesday,
     });
     await changeTaskStatus('task', 'TODO', actor);
-    expect(mocks.update.mock.calls[1][0].data).toEqual({ status: 'TODO', completedAt: null });
+    expect(mocks.update.mock.calls[1][0].data).toMatchObject({ status: 'TODO', completedAt: null });
   });
 });

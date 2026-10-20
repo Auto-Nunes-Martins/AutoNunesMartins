@@ -26,6 +26,7 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
     ...(form.has('specificationsPresent')
       ? {
           specifications: {
+            version: String(form.get('version') || '').trim(),
             ...Object.fromEntries(
               ['powerHp', 'engineCc', 'doors', 'seats'].map((key) => [
                 key,

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import {
@@ -26,7 +27,7 @@
   import Pagination from '$lib/components/common/Pagination.svelte';
   import EmptyState from '$lib/components/common/EmptyState.svelte';
   import { formatDate, formatDateLong } from '$lib/utils/format';
-  import type { IconComponent } from '$lib/types/ui';
+  import { activityStyle as styleFor } from '$lib/activityPresentation';
   import type { PageData } from './$types';
 
   interface Props {
@@ -34,28 +35,6 @@
   }
 
   let { data }: Props = $props();
-
-  // ─── Same icon + color map as the dashboard RecentActivityFeed ──────────
-  const STYLE_FOR_TYPE: Record<string, { icon: IconComponent; color: string; label: string }> = {
-    VEHICLE_ADDED:          { icon: Car,              color: '#22d3ee', label: 'Viatura adicionada' },
-    VEHICLE_UPDATED:        { icon: PencilLine,       color: '#5eead4', label: 'Viatura editada' },
-    VEHICLE_STATUS_CHANGED: { icon: ArrowRightLeft,   color: '#06b6d4', label: 'Estado de viatura' },
-    VEHICLE_DELETED:        { icon: Trash2,           color: 'var(--color-red)', label: 'Viatura eliminada' },
-    SALE_CREATED:           { icon: Receipt,          color: '#e6b800', label: 'Venda registada' },
-    SALE_UPDATED:           { icon: PencilLine,       color: '#f59e0b', label: 'Venda editada' },
-    TRADE_IN_RECEIVED:      { icon: ArrowRightLeft,   color: '#f97316', label: 'Retoma recebida' },
-    CUSTOMER_ADDED:         { icon: UserPlus,         color: '#a78bfa', label: 'Cliente adicionado' },
-    CUSTOMER_UPDATED:       { icon: UserCog,          color: '#c4b5fd', label: 'Cliente editado' },
-    TASK_CREATED:           { icon: ListPlus,         color: '#5c8def', label: 'Tarefa criada' },
-    TASK_STATUS_CHANGED:    { icon: ArrowRightLeft,   color: '#7dd3fc', label: 'Estado de tarefa' },
-    TASK_COMPLETED:         { icon: CheckCircle2,     color: 'var(--color-success)', label: 'Tarefa concluída' },
-    EXPENSE_ADDED:          { icon: Wallet,           color: '#e0a040', label: 'Despesa registada' },
-    EXPENSE_UPDATED:        { icon: CircleDollarSign, color: '#fbbf24', label: 'Despesa editada' },
-  };
-
-  function styleFor(type: string): { icon: IconComponent; color: string; label: string } {
-    return STYLE_FOR_TYPE[type] ?? { icon: Activity, color: 'var(--color-text-muted)', label: type };
-  }
 
   function hrefFor(row: { entityType: string; entityId: string }): string | null {
     switch (row.entityType) {
@@ -88,16 +67,23 @@
   // ─── Filter state ──────────────────────────────────────────────────────
   // Initial values come from the URL (so filters are deep-linkable + the
   // back button restores them). Changes are debounced into the URL via goto.
-  const initial = data.params;
+  const initial = untrack(() => data.params);
   let actorId = $state(initial.actorId ?? '');
   let entityType = $state(initial.entityType ?? '');
   // The `type` query param is a comma-separated list; convert to a Set for UI.
-  let selectedTypes = $state<Set<string>>(
-    new Set((initial.type ?? '').split(',').filter(Boolean)),
-  );
+  let selectedTypes = $state<Set<string>>(new Set((initial.type ?? '').split(',').filter(Boolean)));
   let q = $state(initial.q ?? '');
   let from = $state(initial.from ?? '');
   let to = $state(initial.to ?? '');
+  $effect(() => {
+    const params = data.params;
+    actorId = params.actorId ?? '';
+    entityType = params.entityType ?? '';
+    selectedTypes = new Set((params.type ?? '').split(',').filter(Boolean));
+    q = params.q ?? '';
+    from = params.from ?? '';
+    to = params.to ?? '';
+  });
 
   function toggleType(t: string) {
     if (selectedTypes.has(t)) selectedTypes.delete(t);
@@ -115,7 +101,10 @@
     if (to) usp.set('to', to);
     // Reset to page 1 when filters change
     const qs = usp.toString();
-    goto(qs ? crmPath(`/atividade?${qs}`) : crmPath('/atividade'), { keepFocus: true, noScroll: true });
+    goto(qs ? crmPath(`/atividade?${qs}`) : crmPath('/atividade'), {
+      keepFocus: true,
+      noScroll: true,
+    });
   }
 
   function clearFilters() {
@@ -166,14 +155,7 @@
   ];
 
   const hasAnyFilter = $derived(
-    Boolean(
-      actorId
-        || entityType
-        || selectedTypes.size > 0
-        || q.trim()
-        || from
-        || to,
-    ),
+    Boolean(actorId || entityType || selectedTypes.size > 0 || q.trim() || from || to),
   );
 </script>
 
@@ -181,9 +163,11 @@
   <title>Atividade · Auto Nunes Martins</title>
 </svelte:head>
 
-<section class="pb-12 space-y-6">
+<section class="reading-frame pb-12 space-y-6">
   <!-- Page header -->
-  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6 pt-6 md:pt-[28px]">
+  <div
+    class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-6 pt-6 md:pt-[28px]"
+  >
     <div class="min-w-0">
       <ItalicHero text="Atividade" size="lg" />
       <div
@@ -320,13 +304,13 @@
       </div>
 
       <!-- Activity-type chips (grouped per entity) -->
-      <div class="lg:col-span-12">
-        <div
-          class="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-2"
+      <details class="lg:col-span-12" open={selectedTypes.size > 0}>
+        <summary
+          class="w-fit py-2 px-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]"
         >
-          Tipo de ação
-        </div>
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+          Tipo de ação · {selectedTypes.size ? `${selectedTypes.size} selecionados` : 'Todos'}
+        </summary>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2 pt-2">
           {#each TYPE_GROUPS as group (group.label)}
             <div class="flex items-center gap-1.5 flex-wrap">
               <span
@@ -340,6 +324,7 @@
                 {@const active = selectedTypes.has(t)}
                 <button
                   type="button"
+                  aria-pressed={active}
                   onclick={() => {
                     toggleType(t);
                     applyFilters();
@@ -357,7 +342,7 @@
             </div>
           {/each}
         </div>
-      </div>
+      </details>
     </div>
   </Panel>
 
@@ -396,16 +381,27 @@
                   {href}
                   class="grid items-center gap-3 md:gap-4 px-5 py-3 grid-cols-[36px_1.5px_1fr_auto] md:grid-cols-[36px_1.5px_1fr_auto_auto] hover:bg-[color-mix(in_oklab,var(--color-red)_4%,transparent)] transition-colors group"
                 >
-                  <span class="inline-flex items-center justify-center h-9 w-9 rounded-full" style="background: color-mix(in oklab, {s.color} 12%, transparent);">
+                  <span
+                    class="inline-flex items-center justify-center h-9 w-9 rounded-full"
+                    style="background: color-mix(in oklab, {s.color} 12%, transparent);"
+                  >
                     <Icon class="h-4 w-4" style="color: {s.color};" />
                   </span>
-                  <span class="block h-7 w-[1.5px]" style="background: {s.color}; opacity: 0.55;"></span>
+                  <span class="block h-7 w-[1.5px]" style="background: {s.color}; opacity: 0.55;"
+                  ></span>
                   <div class="min-w-0">
-                    <div class="text-[14px] text-[var(--color-text)] truncate group-hover:text-[var(--color-red)] transition-colors">
+                    <div
+                      class="text-[14px] text-[var(--color-text)] break-words group-hover:text-[var(--color-red)] transition-colors"
+                    >
                       {item.message}
                     </div>
-                    <div class="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)] mt-0.5">
+                    <div
+                      class="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)] mt-0.5"
+                    >
                       {s.label}
+                      <span class="block md:hidden mt-1 normal-case tracking-normal"
+                        >Por {actorLabel}</span
+                      >
                     </div>
                   </div>
                   <span
@@ -415,7 +411,9 @@
                     <UserIcon class="h-3 w-3 opacity-70" />
                     {actorLabel}
                   </span>
-                  <span class="num-value text-[11px] text-[var(--color-text-faint)] text-right min-w-[60px]">
+                  <span
+                    class="num-value text-[11px] text-[var(--color-text-faint)] text-right min-w-[60px]"
+                  >
                     {relativeTime(item.createdAt)}
                   </span>
                 </a>
@@ -423,16 +421,25 @@
                 <div
                   class="grid items-center gap-3 md:gap-4 px-5 py-3 grid-cols-[36px_1.5px_1fr_auto] md:grid-cols-[36px_1.5px_1fr_auto_auto]"
                 >
-                  <span class="inline-flex items-center justify-center h-9 w-9 rounded-full" style="background: color-mix(in oklab, {s.color} 12%, transparent);">
+                  <span
+                    class="inline-flex items-center justify-center h-9 w-9 rounded-full"
+                    style="background: color-mix(in oklab, {s.color} 12%, transparent);"
+                  >
                     <Icon class="h-4 w-4" style="color: {s.color};" />
                   </span>
-                  <span class="block h-7 w-[1.5px]" style="background: {s.color}; opacity: 0.55;"></span>
+                  <span class="block h-7 w-[1.5px]" style="background: {s.color}; opacity: 0.55;"
+                  ></span>
                   <div class="min-w-0">
-                    <div class="text-[14px] text-[var(--color-text)] truncate">
+                    <div class="text-[14px] text-[var(--color-text)] break-words">
                       {item.message}
                     </div>
-                    <div class="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)] mt-0.5">
+                    <div
+                      class="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)] mt-0.5"
+                    >
                       {s.label}
+                      <span class="block md:hidden mt-1 normal-case tracking-normal"
+                        >Por {actorLabel}</span
+                      >
                     </div>
                   </div>
                   <span
@@ -442,7 +449,9 @@
                     <UserIcon class="h-3 w-3 opacity-70" />
                     {actorLabel}
                   </span>
-                  <span class="num-value text-[11px] text-[var(--color-text-faint)] text-right min-w-[60px]">
+                  <span
+                    class="num-value text-[11px] text-[var(--color-text-faint)] text-right min-w-[60px]"
+                  >
                     {relativeTime(item.createdAt)}
                   </span>
                 </div>

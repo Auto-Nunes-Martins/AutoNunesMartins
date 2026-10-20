@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { VehicleStatus, Priority, DeliveryStatus } from '@anm/types';
+  import { taskPriority } from '$lib/components/task/presentation';
 
   type StatusKind = VehicleStatus | Priority | DeliveryStatus;
 
@@ -33,56 +34,41 @@
     DELIVERED: 'Entregue',
   };
 
-  const STYLES: Record<StatusKind, { bg: string; fg: string }> = {
+  const STYLES: Record<VehicleStatus | DeliveryStatus, { bg: string; fg: string }> = {
     AVAILABLE: {
-      bg: 'color-mix(in oklab, var(--color-success) 18%, transparent)',
+      bg: 'color-mix(in srgb, var(--color-success) 12%, transparent)',
       fg: 'var(--color-success)',
     },
     RESERVED: {
-      bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)',
+      bg: 'color-mix(in srgb, var(--color-warning) 12%, transparent)',
       fg: 'var(--color-warning)',
     },
     SOLD: {
-      bg: 'color-mix(in oklab, var(--color-text-muted) 22%, transparent)',
+      bg: 'color-mix(in srgb, var(--color-text-muted) 22%, transparent)',
       fg: 'var(--color-text)',
     },
     DELIVERED: {
-      bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)',
+      bg: 'color-mix(in srgb, var(--color-info) 12%, transparent)',
       fg: 'var(--color-info)',
     },
     DOCS_PENDING: {
-      bg: 'color-mix(in oklab, var(--color-red) 18%, transparent)',
-      fg: 'var(--color-red)',
+      bg: 'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+      fg: 'var(--color-danger)',
     },
-    // DRAFT — laranja (mesma família visual dos chips de retoma).
-    // Sinaliza "viatura pendente de preço" sem confundir com docs-em-falta.
-    DRAFT: { bg: 'color-mix(in oklab, #f97316 18%, transparent)', fg: '#f97316' },
+    DRAFT: {
+      bg: 'color-mix(in srgb, var(--color-text-muted) 10%, transparent)',
+      fg: 'var(--color-text-muted)',
+    },
     RETURNED: {
-      bg: 'color-mix(in oklab, var(--color-text-muted) 18%, transparent)',
+      bg: 'color-mix(in srgb, var(--color-text-muted) 12%, transparent)',
       fg: 'var(--color-text-muted)',
-    },
-    LOW: {
-      bg: 'color-mix(in oklab, var(--color-text-muted) 16%, transparent)',
-      fg: 'var(--color-text-muted)',
-    },
-    MEDIUM: {
-      bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)',
-      fg: 'var(--color-info)',
-    },
-    HIGH: {
-      bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)',
-      fg: 'var(--color-warning)',
-    },
-    URGENT: {
-      bg: 'color-mix(in oklab, var(--color-red) 22%, transparent)',
-      fg: 'var(--color-red)',
     },
     PENDING: {
-      bg: 'color-mix(in oklab, var(--color-warning) 18%, transparent)',
+      bg: 'color-mix(in srgb, var(--color-warning) 12%, transparent)',
       fg: 'var(--color-warning)',
     },
     SCHEDULED: {
-      bg: 'color-mix(in oklab, var(--color-info) 18%, transparent)',
+      bg: 'color-mix(in srgb, var(--color-info) 12%, transparent)',
       fg: 'var(--color-info)',
     },
   };
@@ -94,13 +80,21 @@
     return s;
   }
 
-  const style = $derived(STYLES[status]);
+  const priorityStyle = $derived(status in PRIORITY_LABELS ? taskPriority(status) : null);
+  const style = $derived(
+    priorityStyle
+      ? {
+          bg: `color-mix(in srgb, ${priorityStyle.color} 12%, transparent)`,
+          fg: priorityStyle.color,
+        }
+      : STYLES[status as VehicleStatus | DeliveryStatus],
+  );
   const displayLabel = $derived(label ?? resolveLabel(status));
 </script>
 
 <span
   class="inline-flex items-center font-mono text-[10px] font-semibold uppercase tracking-[0.12em] px-2 py-1"
-  style="background: {style.bg}; color: {style.fg};"
+  style="background: {style.bg}; color: {style.fg}; border: 1px solid color-mix(in srgb, {style.fg} 35%, transparent); border-radius: 3px;"
 >
   {displayLabel}
 </span>

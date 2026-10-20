@@ -45,15 +45,16 @@
     {#each items as item, i (i)}
       <a
         href={item.href}
-        class="alert-card group flex items-center gap-3 px-4 py-3.5 border bg-[color-mix(in_oklab,var(--color-red)_6%,var(--color-bg-1))] border-[color-mix(in_oklab,var(--color-red)_30%,var(--color-border))] hover:bg-[color-mix(in_oklab,var(--color-red)_10%,var(--color-bg-1))] transition-colors"
+        class="alert-card group flex items-center gap-3 px-4 py-3.5 border bg-[color-mix(in_oklab,var(--color-warning)_6%,var(--color-bg-1))] border-[color-mix(in_oklab,var(--color-warning)_30%,var(--color-border))] hover:bg-[color-mix(in_oklab,var(--color-warning)_10%,var(--color-bg-1))] transition-colors"
         style="border-radius: var(--radius-card);"
       >
-        <item.icon class="h-5 w-5 text-[var(--color-red)] flex-shrink-0" />
-        <span class="h-5 w-[1.5px] bg-[var(--color-red)] flex-shrink-0" aria-hidden="true"></span>
+        <item.icon class="h-5 w-5 text-[var(--color-warning)] flex-shrink-0" />
+        <span class="h-5 w-[1.5px] bg-[var(--color-warning)] flex-shrink-0" aria-hidden="true"
+        ></span>
         <span class="text-[13px] leading-relaxed text-[var(--color-text)] flex-1">{item.label}</span
         >
         <ChevronRight
-          class="h-3.5 w-3.5 text-[var(--color-text-faint)] group-hover:text-[var(--color-red)] transition-colors flex-shrink-0"
+          class="h-3.5 w-3.5 text-[var(--color-text-faint)] group-hover:text-[var(--color-warning)] transition-colors flex-shrink-0"
         />
       </a>
     {/each}
@@ -62,7 +63,7 @@
 
 <style>
   .alert-card:focus-visible {
-    outline: 2px solid var(--color-red);
+    outline: 2px solid var(--color-warning);
     outline-offset: 3px;
   }
 </style>

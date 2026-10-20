@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { compile, parse } from 'svelte/compiler';
 import { render } from 'svelte/server';
+import * as svelte from 'svelte';
 // The compiler-generated runtime has no public TypeScript declarations.
 // @ts-expect-error Svelte's server compiler imports this internal runtime.
 import * as server from 'svelte/internal/server';
@@ -17,7 +18,7 @@ function component(source: string, imports: Record<string, unknown> = {}) {
     )
     .replace(/^import \{ enhance \} from '\$app\/forms';/m, '')
     .replace(/^import \{ goto \} from '\$app\/navigation';/m, '')
-    .replace(/^import \{ [^}]+ \} from 'svelte';/m, '')
+    .replace(/^import \{ ([^}]+) \} from 'svelte';/m, 'const { $1 } = imports.svelte;')
     .replace(/^import \{ toast \} from 'svelte-sonner';/m, '')
     .replace(
       /^import \{ isValidNIF \} from '@anm\/types';/m,
@@ -27,7 +28,7 @@ function component(source: string, imports: Record<string, unknown> = {}) {
     .replace(/^import \{ [^}]+ \} from '\$lib\/forms\/formFeedback';/m, '')
     .replace(/^import \{ crmPath \} from '\$lib\/paths';/m, 'const crmPath = (path) => path;')
     .replace('export default function', 'return function');
-  return new Function('imports', code)({ server, isValidNIF, ...imports });
+  return new Function('imports', code)({ server, svelte, isValidNIF, ...imports });
 }
 
 const source = (file: string) => readFileSync(new URL(file, import.meta.url), 'utf8');

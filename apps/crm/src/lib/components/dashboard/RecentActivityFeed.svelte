@@ -1,25 +1,11 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
-  import {
-    Activity,
-    ArrowRightLeft,
-    Car,
-    CheckCircle2,
-    CircleDollarSign,
-    ListPlus,
-    PencilLine,
-    Receipt,
-    Trash2,
-    User as UserIcon,
-    UserCog,
-    UserPlus,
-    Wallet,
-  } from 'lucide-svelte';
+  import { Activity, User as UserIcon } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import { formatDate } from '$lib/utils/format';
   import type { RecentActivityRow } from '$lib/server/dashboard';
-  import type { IconComponent } from '$lib/types/ui';
+  import { activityStyle as styleFor } from '$lib/activityPresentation';
 
   interface Props {
     items: RecentActivityRow[];
@@ -30,43 +16,6 @@
   }
 
   let { items, title = 'Atividade Recente', dashboard = false }: Props = $props();
-
-  /**
-   * Distinct color + icon per activity type so each row reads at a glance.
-   * Each entity has its own hue family:
-   *   Vehicles  → cyan (#22d3ee)
-   *   Sales     → gold (#e6b800)
-   *   Customers → violet (#a78bfa)
-   *   Tasks     → blue (#5c8def)
-   *   Expenses  → amber (#e0a040)
-   *   Delete    → red (always — destructive)
-   *   Complete  → green (always — positive end-state)
-   */
-  const STYLE_FOR_TYPE: Record<string, { icon: IconComponent; color: string }> = {
-    // Vehicles — cyan
-    VEHICLE_ADDED: { icon: Car, color: '#22d3ee' },
-    VEHICLE_UPDATED: { icon: PencilLine, color: '#5eead4' },
-    VEHICLE_STATUS_CHANGED: { icon: ArrowRightLeft, color: '#06b6d4' },
-    VEHICLE_DELETED: { icon: Trash2, color: 'var(--color-red)' },
-    // Sales — gold (money won)
-    SALE_CREATED: { icon: Receipt, color: '#e6b800' },
-    SALE_UPDATED: { icon: PencilLine, color: '#f59e0b' },
-    TRADE_IN_RECEIVED: { icon: ArrowRightLeft, color: '#f97316' },
-    // Customers — violet
-    CUSTOMER_ADDED: { icon: UserPlus, color: '#a78bfa' },
-    CUSTOMER_UPDATED: { icon: UserCog, color: '#c4b5fd' },
-    // Tasks — blue family + green completion
-    TASK_CREATED: { icon: ListPlus, color: '#5c8def' },
-    TASK_STATUS_CHANGED: { icon: ArrowRightLeft, color: '#7dd3fc' },
-    TASK_COMPLETED: { icon: CheckCircle2, color: 'var(--color-success)' },
-    // Expenses — amber
-    EXPENSE_ADDED: { icon: Wallet, color: '#e0a040' },
-    EXPENSE_UPDATED: { icon: CircleDollarSign, color: '#fbbf24' },
-  };
-
-  function styleFor(type: string): { icon: IconComponent; color: string } {
-    return STYLE_FOR_TYPE[type] ?? { icon: Activity, color: 'var(--color-text-muted)' };
-  }
 
   function hrefFor(row: RecentActivityRow): string | null {
     switch (row.entityType) {

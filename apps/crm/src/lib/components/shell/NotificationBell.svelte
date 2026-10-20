@@ -18,30 +18,8 @@
     Wallet,
   } from 'lucide-svelte';
   import BrandBell from '$lib/components/brand/icons/BrandBell.svelte';
-  import type { IconComponent } from '$lib/types/ui';
+  import { activityStyle as styleForType } from '$lib/activityPresentation';
   import type { NotificationsPayload } from '$lib/server/notifications';
-
-  // Same map as RecentActivityFeed — keep them in sync so the popover and
-  // dashboard look consistent.
-  const STYLE_FOR_TYPE: Record<string, { icon: IconComponent; color: string }> = {
-    VEHICLE_ADDED:          { icon: PackagePlus,  color: 'var(--color-success)' },
-    VEHICLE_UPDATED:        { icon: FileEdit,     color: 'var(--color-text-muted)' },
-    VEHICLE_STATUS_CHANGED: { icon: Car,          color: 'var(--color-warning)' },
-    VEHICLE_DELETED:        { icon: PackageMinus, color: 'var(--color-red)' },
-    SALE_CREATED:           { icon: Receipt,      color: '#e6b800' },
-    SALE_UPDATED:           { icon: Receipt,      color: 'var(--color-info)' },
-    TRADE_IN_RECEIVED:      { icon: ArrowRightLeft, color: '#f97316' },
-    CUSTOMER_ADDED:         { icon: UserIcon,     color: 'var(--color-success)' },
-    CUSTOMER_UPDATED:       { icon: UserIcon,     color: 'var(--color-text-muted)' },
-    TASK_CREATED:           { icon: FileEdit,     color: 'var(--color-info)' },
-    TASK_STATUS_CHANGED:    { icon: FileEdit,     color: 'var(--color-warning)' },
-    TASK_COMPLETED:         { icon: Check,        color: 'var(--color-success)' },
-    EXPENSE_ADDED:          { icon: Wallet,       color: 'var(--color-warning)' },
-    EXPENSE_UPDATED:        { icon: Wallet,       color: 'var(--color-text-muted)' },
-  };
-  function styleForType(type: string): { icon: IconComponent; color: string } {
-    return STYLE_FOR_TYPE[type] ?? { icon: Activity, color: 'var(--color-text-muted)' };
-  }
 
   let isOpen = $state(false);
   let data = $state<NotificationsPayload | null>(null);
@@ -54,13 +32,18 @@
   let buttonEl = $state<HTMLButtonElement | null>(null);
 
   async function load() {
-    controller?.abort(); controller = new AbortController(); const signal = controller.signal;
+    controller?.abort();
+    controller = new AbortController();
+    const signal = controller.signal;
     loading = true;
     loadError = '';
     try {
-      const res = await fetch(crmPath('/api/notifications'), { signal, headers: { accept: 'application/json' } });
+      const res = await fetch(crmPath('/api/notifications'), {
+        signal,
+        headers: { accept: 'application/json' },
+      });
       if (!res.ok) throw new Error('Não foi possível atualizar os alertas.');
-      const result = await res.json() as NotificationsPayload;
+      const result = (await res.json()) as NotificationsPayload;
       if (!signal.aborted) data = result;
     } catch {
       if (!signal.aborted) loadError = 'Não foi possível atualizar os alertas.';
@@ -86,7 +69,11 @@
   }
 
   function onKey(e: KeyboardEvent) {
-    if (isOpen && e.key === 'Escape') { e.preventDefault(); close(); buttonEl?.focus(); }
+    if (isOpen && e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      buttonEl?.focus();
+    }
   }
 
   function relTime(iso: string): string {
@@ -154,7 +141,7 @@
     <BrandBell class="h-4 w-4" />
     {#if badge > 0}
       <span
-        class="absolute -top-1 -right-1 min-w-[16px] h-[14px] px-[3px] flex items-center justify-center bg-[var(--color-warning)] text-[#1a1410] font-mono text-[9.5px] font-semibold tabular-nums"
+        class="absolute -top-1 -right-1 min-w-[16px] h-[14px] px-[3px] flex items-center justify-center bg-[var(--color-warning)] text-[var(--color-bg-0)] font-mono text-[9.5px] font-semibold tabular-nums"
         style="border-radius: 3px;"
       >
         {badge > 99 ? '99+' : badge}
@@ -199,10 +186,23 @@
             {badge} pendente{badge === 1 ? '' : 's'}
           </span>
         {/if}
-        <button type="button" aria-label="Fechar alertas" class="inline-flex min-h-11 min-w-11 items-center justify-center" onclick={() => { close(); buttonEl?.focus(); }}>×</button>
+        <button
+          type="button"
+          aria-label="Fechar alertas"
+          class="inline-flex min-h-11 min-w-11 items-center justify-center"
+          onclick={() => {
+            close();
+            buttonEl?.focus();
+          }}>×</button
+        >
       </header>
 
-      {#if loadError}<div role="status" class="px-4 py-3 text-sm"><p>{loadError}</p><button type="button" class="underline min-h-11" onclick={() => void load()}>Tentar novamente</button></div>{/if}
+      {#if loadError}<div role="status" class="px-4 py-3 text-sm">
+          <p>{loadError}</p>
+          <button type="button" class="underline min-h-11" onclick={() => void load()}
+            >Tentar novamente</button
+          >
+        </div>{/if}
 
       {#if loading && !data}
         <div
@@ -233,8 +233,8 @@
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
-              <Car class="h-4 w-4 text-[var(--color-red)] flex-shrink-0" />
-              <div class="h-4 w-[1.5px] bg-[var(--color-red)] flex-shrink-0"></div>
+              <Car class="h-4 w-4 text-[var(--color-warning)] flex-shrink-0" />
+              <div class="h-4 w-[1.5px] bg-[var(--color-border-strong)] flex-shrink-0"></div>
               <span class="text-[12.5px] text-[var(--color-text)] flex-1">
                 {data.alerts.stockAged} viatura{data.alerts.stockAged === 1 ? '' : 's'} em stock +60 dias
               </span>
@@ -247,8 +247,8 @@
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
-              <ListChecks class="h-4 w-4 text-[var(--color-red)] flex-shrink-0" />
-              <div class="h-4 w-[1.5px] bg-[var(--color-red)] flex-shrink-0"></div>
+              <ListChecks class="h-4 w-4 text-[var(--color-warning)] flex-shrink-0" />
+              <div class="h-4 w-[1.5px] bg-[var(--color-border-strong)] flex-shrink-0"></div>
               <span class="text-[12.5px] text-[var(--color-text)] flex-1">
                 {data.alerts.tasksDueOrOverdue} tarefa{data.alerts.tasksDueOrOverdue === 1
                   ? ''
@@ -263,8 +263,8 @@
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
-              <Clock class="h-4 w-4 text-[var(--color-red)] flex-shrink-0" />
-              <div class="h-4 w-[1.5px] bg-[var(--color-red)] flex-shrink-0"></div>
+              <Clock class="h-4 w-4 text-[var(--color-info)] flex-shrink-0" />
+              <div class="h-4 w-[1.5px] bg-[var(--color-border-strong)] flex-shrink-0"></div>
               <span class="text-[12.5px] text-[var(--color-text)] flex-1">
                 {data.alerts.remindersToday} lembrete{data.alerts.remindersToday === 1 ? '' : 's'}
                 para hoje
@@ -281,10 +281,11 @@
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
-              <Tag class="h-4 w-4 text-[var(--color-red)] flex-shrink-0" />
-              <div class="h-4 w-[1.5px] bg-[var(--color-red)] flex-shrink-0"></div>
+              <Tag class="h-4 w-4 text-[var(--color-text-muted)] flex-shrink-0" />
+              <div class="h-4 w-[1.5px] bg-[var(--color-border-strong)] flex-shrink-0"></div>
               <span class="text-[12.5px] text-[var(--color-text)] flex-1">
-                {data.alerts.draftVehicles} viatura{data.alerts.draftVehicles === 1 ? '' : 's'} em rascunho — preço por definir
+                {data.alerts.draftVehicles} viatura{data.alerts.draftVehicles === 1 ? '' : 's'} em rascunho
+                — preço por definir
               </span>
             </button>
           {/if}
@@ -316,10 +317,7 @@
                       onclick={() => goAndClose(href)}
                       class="w-full flex items-start gap-2.5 px-4 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors"
                     >
-                      <Icon
-                        class="h-3.5 w-3.5 flex-shrink-0 mt-0.5"
-                        style="color: {s.color};"
-                      />
+                      <Icon class="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style="color: {s.color};" />
                       <span
                         class="font-mono text-[10px] tabular-nums text-[var(--color-text-faint)] w-9 flex-shrink-0 pt-0.5"
                       >
@@ -333,16 +331,15 @@
                     </button>
                   {:else}
                     <div class="flex items-start gap-2.5 px-4 py-2">
-                      <Icon
-                        class="h-3.5 w-3.5 flex-shrink-0 mt-0.5"
-                        style="color: {s.color};"
-                      />
+                      <Icon class="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style="color: {s.color};" />
                       <span
                         class="font-mono text-[10px] tabular-nums text-[var(--color-text-faint)] w-9 flex-shrink-0 pt-0.5"
                       >
                         {relTime(item.createdAt)}
                       </span>
-                      <span class="text-[12.5px] text-[var(--color-text-muted)] flex-1 leading-snug">
+                      <span
+                        class="text-[12.5px] text-[var(--color-text-muted)] flex-1 leading-snug"
+                      >
                         {item.message}
                       </span>
                     </div>

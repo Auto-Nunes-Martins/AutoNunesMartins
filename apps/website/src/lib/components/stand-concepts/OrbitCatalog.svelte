@@ -18,10 +18,22 @@
   import { catalogSticky } from './catalogSticky';
   import { catalogInputErrors } from './catalogFilters';
   import { sortOptions, catalogUrl } from './catalog';
-  import { catalogUiLabels as filterLabels, catalogUiParams, catalogYearOptions } from '$lib/catalogUiFilters';
+  import {
+    catalogUiLabels as filterLabels,
+    catalogUiParams,
+    catalogYearOptions,
+  } from '$lib/catalogUiFilters';
   type FilterKey = keyof typeof filterLabels;
 
-  let { card, stock, brandDirectory = { status: 'unavailable', brands: [] } }: { card: Snippet<[PublicCard, number]>; stock: PublicStock; brandDirectory?: PublicBrandDirectory } = $props();
+  let {
+    card,
+    stock,
+    brandDirectory = { status: 'unavailable', brands: [] },
+  }: {
+    card: Snippet<[PublicCard, number]>;
+    stock: PublicStock;
+    brandDirectory?: PublicBrandDirectory;
+  } = $props();
   const params = $derived($page.url.searchParams);
   let draftQuery = $state<string | null>(null);
   let updating = $state(false);
@@ -47,7 +59,12 @@
     })),
   );
   const brand = $derived(formParams.get('marca') ?? '');
-  const years = $derived(catalogYearOptions($page.data.catalogYearRange ?? stock.catalog.facets.year, formParams.get('ano_min') ?? ''));
+  const years = $derived(
+    catalogYearOptions(
+      $page.data.catalogYearRange ?? stock.catalog.facets.year,
+      formParams.get('ano_min') ?? '',
+    ),
+  );
   const active = $derived(
     (Object.keys(filterLabels) as FilterKey[]).filter((key) => formParams.get(key)),
   );
@@ -75,26 +92,43 @@
     updating = false;
     navigationError = '';
   }
-  beforeNavigate(navigation => {
+  beforeNavigate((navigation) => {
     // Back/forward and actual links win over unfinished typing; never replay a stale timer.
-    if (navigation.type !== 'goto' || navigation.to?.url.pathname !== $page.url.pathname) resetDraft();
+    if (navigation.type !== 'goto' || navigation.to?.url.pathname !== $page.url.pathname)
+      resetDraft();
   });
-  onDestroy(() => { clearTimeout(debounce); pageAnimation?.cancel(); requestVersion += 1; });
+  onDestroy(() => {
+    clearTimeout(debounce);
+    pageAnimation?.cancel();
+    requestVersion += 1;
+  });
   async function applyDraft() {
     clearTimeout(debounce);
-    if (catalogInputErrors(formParams).length) { updating = false; return false; }
+    if (catalogInputErrors(formParams).length) {
+      updating = false;
+      return false;
+    }
     if (draftQuery === null) return true;
     const query = draftQuery;
-    if (catalogInputErrors(new URLSearchParams(query)).length) { updating = false; return false; }
+    if (catalogInputErrors(new URLSearchParams(query)).length) {
+      updating = false;
+      return false;
+    }
     const version = ++requestVersion;
     updating = true;
     try {
       // Push committed searches so browser history can restore a previous selection.
       await goto(`/viaturas${query ? `?${query}` : ''}`, { noScroll: true, keepFocus: true });
-      if (version === requestVersion && draftQuery === query) { draftQuery = null; updating = false; }
+      if (version === requestVersion && draftQuery === query) {
+        draftQuery = null;
+        updating = false;
+      }
       return version === requestVersion;
     } catch {
-      if (version === requestVersion) { updating = false; navigationError = 'Não foi possível atualizar a pesquisa. Tente novamente.'; }
+      if (version === requestVersion) {
+        updating = false;
+        navigationError = 'Não foi possível atualizar a pesquisa. Tente novamente.';
+      }
       return false;
     }
   }
@@ -108,7 +142,10 @@
     draftQuery = next.toString();
     updating = !catalogInputErrors(next).length;
     if (!updating) return;
-    if (delay) debounce = setTimeout(() => { void applyDraft(); }, delay);
+    if (delay)
+      debounce = setTimeout(() => {
+        void applyDraft();
+      }, delay);
     else void applyDraft();
   }
   function clear() {
@@ -141,7 +178,11 @@
     paging = true;
     try {
       if (!reduced) {
-        pageAnimation = resultsGrid.animate([{ opacity: 1 }, { opacity: 0.25 }], { duration: 140, easing: 'ease-out', fill: 'forwards' });
+        pageAnimation = resultsGrid.animate([{ opacity: 1 }, { opacity: 0.25 }], {
+          duration: 140,
+          easing: 'ease-out',
+          fill: 'forwards',
+        });
         await pageAnimation.finished;
       }
       if (version !== requestVersion) return;
@@ -151,20 +192,31 @@
       if (version !== requestVersion) return;
       pageAnimation?.cancel();
       if (!reduced) {
-        pageAnimation = resultsGrid.animate([{ opacity: 0.25 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
+        pageAnimation = resultsGrid.animate([{ opacity: 0.25 }, { opacity: 1 }], {
+          duration: 260,
+          easing: 'ease-out',
+        });
         await pageAnimation.finished;
       }
     } catch {
-      if (version === requestVersion) navigationError = 'Não foi possível mudar de página. Tente novamente.';
+      if (version === requestVersion)
+        navigationError = 'Não foi possível mudar de página. Tente novamente.';
     } finally {
-      if (version === requestVersion) { pageAnimation?.cancel(); paging = false; }
+      if (version === requestVersion) {
+        pageAnimation?.cancel();
+        paging = false;
+      }
     }
   }
 </script>
 
 <svelte:window onkeydown={closeFilters} />
 
-<SocialMetadata title={`${seo.heading} — Auto Nunes Martins`} description={seo.description} canonical={seo.canonical} />
+<SocialMetadata
+  title={`${seo.heading} — Auto Nunes Martins`}
+  description={seo.description}
+  canonical={seo.canonical}
+/>
 
 <svelte:head>
   <title>{seo.heading} — Auto Nunes Martins</title>
@@ -182,8 +234,7 @@
         {#if stock.status === 'unavailable'}Estamos a tentar recuperar a seleção.
         {:else if stock.status === 'invalid'}Ajuste os filtros para explorar a seleção.
         {:else}
-        {results.total}
-        {results.total === 1 ? 'possibilidade para descobrir' : 'possibilidades para descobrir'}.
+          Descubra a seleção e encontre o que procura.
         {/if}
       </p>
     </div>
@@ -194,101 +245,126 @@
   <div class="catalog-layout">
     <aside class="catalog-filters" aria-label="Filtros de viaturas">
       <div class="filter-sticky" use:catalogSticky>
-      <button
-        class="filter-toggle"
-        bind:this={filterToggle}
-        aria-expanded={filtersOpen}
-        aria-controls="catalog-filter-panel"
-        onclick={() => (filtersOpen = !filtersOpen)}
-      >
-        <SlidersHorizontal size={17} aria-hidden="true" /> Filtros {active.length ? `(${active.length})` : ''}<span
-          >{filtersOpen ? 'Fechar −' : 'Abrir +'}</span
+        <button
+          class="filter-toggle"
+          bind:this={filterToggle}
+          aria-expanded={filtersOpen}
+          aria-controls="catalog-filter-panel"
+          onclick={() => (filtersOpen = !filtersOpen)}
         >
-      </button>
-      <div id="catalog-filter-panel" class:expanded={filtersOpen}>
-        <form
-          action="/viaturas"
-          method="GET"
-          onsubmit={async (event) => {
-            event.preventDefault();
-            if (await applyDraft()) await showResults();
-          }}
-        >
-          <div class="filter-heading">
-            <h2>O que procura?</h2>
-            <button
-              type="button"
-              class="clear"
-              onclick={clear}
-              disabled={!active.length && !formParams.size}>Limpar</button
+          <SlidersHorizontal size={17} aria-hidden="true" /> Filtros {active.length
+            ? `(${active.length})`
+            : ''}<span>{filtersOpen ? 'Fechar −' : 'Abrir +'}</span>
+        </button>
+        <div id="catalog-filter-panel" class:expanded={filtersOpen}>
+          <form
+            action="/viaturas"
+            method="GET"
+            onsubmit={async (event) => {
+              event.preventDefault();
+              if (await applyDraft()) await showResults();
+            }}
+          >
+            <div class="filter-heading">
+              <h2>O que procura?</h2>
+              <button
+                type="button"
+                class="clear"
+                onclick={clear}
+                disabled={!active.length && !formParams.size}>Limpar</button
+              >
+            </div>
+            <label
+              >Pesquisar<input
+                name="q"
+                type="search"
+                placeholder="Marca, modelo ou versão"
+                maxlength="120"
+                value={formParams.get('q') ?? ''}
+                oninput={(event) => update('q', event.currentTarget.value, 300)}
+              /></label
             >
-          </div>
-          <label
-            >Pesquisar<input
-              name="q"
-              type="search"
-              placeholder="Marca, modelo ou versão"
-              maxlength="120"
-              value={formParams.get('q') ?? ''}
-              oninput={(event) => update('q', event.currentTarget.value, 300)}
-            /></label
-          >
-          <OrbitSelect
-            id="catalog-brand"
-            label="Marca"
-            name="marca"
-            value={brand}
-            disabled={busy}
-            options={[
-              { value: '', label: brands.length ? 'Todas as marcas' : 'Sem marcas para estes filtros' },
-              ...brands.map((value) => ({ value, label: value })),
-            ]}
-            onChange={(value) => update('marca', value)}
-          />
-          <label>Preço máximo (€)<input name="preco_max" type="number" inputmode="decimal" min="0" max="9999999999.99" step="0.01" placeholder="Sem limite" value={formParams.get('preco_max') ?? ''} aria-describedby={inputErrors.length ? 'catalog-input-errors' : undefined} oninput={(event) => update('preco_max', event.currentTarget.value, 300)} /></label>
-          <OrbitSelect id="catalog-year" label="Ano" name="ano_min" value={formParams.get('ano_min') ?? ''} disabled={busy} options={[{ value: '', label: 'Todos os anos' }, ...years]} onChange={(value) => update('ano_min', value)} />
-          {#if formParams.get('ano_min')}<input type="hidden" name="ano_max" value={formParams.get('ano_min')} />{/if}
-          {#if inputErrors.length}<div id="catalog-input-errors" class="range-note" role="alert">
-              {#each inputErrors as error}<p>{error}</p>{/each}
-              <p>Corrija os campos para atualizar os resultados.</p>
-            </div>{/if}
-          {#if navigationError}<p class="range-note" role="alert">{navigationError}</p>{/if}
-          <OrbitSelect
-            id="catalog-fuel"
-            label="Combustível"
-            name="combustivel"
-            value={formParams.get('combustivel') ?? ''}
-            disabled={busy}
-            options={[{ value: '', label: 'Todos' }, ...fuels]}
-            onChange={(value) => update('combustivel', value)}
-          />
-          <button class="apply-filters" type="submit" disabled={busy || inputErrors.length > 0}
-            >{busy ? 'A atualizar…' : `Ver ${results.total} ${results.total === 1 ? 'viatura' : 'viaturas'}`}<ArrowRight size={16} aria-hidden="true" /></button
-          >
-        </form>
-      </div>
+            <OrbitSelect
+              id="catalog-brand"
+              showBrandLogos
+              label="Marca"
+              name="marca"
+              value={brand}
+              disabled={busy}
+              options={[
+                {
+                  value: '',
+                  label: brands.length ? 'Todas as marcas' : 'Sem marcas para estes filtros',
+                },
+                ...brands.map((value) => ({ value, label: value })),
+              ]}
+              onChange={(value) => update('marca', value)}
+            />
+            <label
+              >Preço máximo (€)<input
+                name="preco_max"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                max="9999999999.99"
+                step="0.01"
+                placeholder="Sem limite"
+                value={formParams.get('preco_max') ?? ''}
+                aria-describedby={inputErrors.length ? 'catalog-input-errors' : undefined}
+                oninput={(event) => update('preco_max', event.currentTarget.value, 300)}
+              /></label
+            >
+            <OrbitSelect
+              id="catalog-year"
+              label="Ano"
+              name="ano_min"
+              value={formParams.get('ano_min') ?? ''}
+              disabled={busy}
+              options={[{ value: '', label: 'Todos os anos' }, ...years]}
+              onChange={(value) => update('ano_min', value)}
+            />
+            {#if formParams.get('ano_min')}<input
+                type="hidden"
+                name="ano_max"
+                value={formParams.get('ano_min')}
+              />{/if}
+            {#if inputErrors.length}<div id="catalog-input-errors" class="range-note" role="alert">
+                {#each inputErrors as error}<p>{error}</p>{/each}
+                <p>Corrija os campos para atualizar os resultados.</p>
+              </div>{/if}
+            {#if navigationError}<p class="range-note" role="alert">{navigationError}</p>{/if}
+            <OrbitSelect
+              id="catalog-fuel"
+              label="Combustível"
+              name="combustivel"
+              value={formParams.get('combustivel') ?? ''}
+              disabled={busy}
+              options={[{ value: '', label: 'Todos' }, ...fuels]}
+              onChange={(value) => update('combustivel', value)}
+            />
+            <button class="apply-filters" type="submit" disabled={busy || inputErrors.length > 0}
+              >{busy ? 'A atualizar…' : 'Ver resultados'}<ArrowRight
+                size={16}
+                aria-hidden="true"
+              /></button
+            >
+          </form>
+        </div>
       </div>
     </aside>
-    <section
-      class="catalog-results"
-      aria-labelledby="catalog-results-heading"
-      aria-busy={busy}
-    >
+    <section class="catalog-results" aria-labelledby="catalog-results-heading" aria-busy={busy}>
       <div class="results-toolbar">
         <div>
           <h2 id="catalog-results-heading" bind:this={resultsHeading} tabindex="-1">
             As suas possibilidades<span>.</span>
           </h2>
           <p role="status" aria-live="polite" aria-atomic="true">
-            {#if busy}A atualizar resultados…{:else if stock.status === 'unavailable'}Não foi possível consultar os resultados.{:else if stock.status === 'invalid'}Os filtros precisam de ser corrigidos.{:else}
-            {results.total}
-            {results.total === 1
-              ? 'viatura encontrada'
-              : 'viaturas encontradas'}{#if results.items.length}
-              {' · '}{(results.page - 1) * results.pageSize + 1}–{Math.min(
-                results.page * results.pageSize,
-                results.total,
-              )} de {results.total}{/if}
+            {#if updating}A atualizar resultados…{:else if stock.status === 'unavailable'}Não foi
+              possível consultar os resultados.{:else if stock.status === 'invalid'}Os filtros
+              precisam de ser corrigidos.{:else}
+              {results.items.length
+                ? 'Seleção atualizada.'
+                : 'Não foram encontradas viaturas para esta seleção.'}
             {/if}
           </p>
         </div>
@@ -338,7 +414,9 @@
                     ? 'Experimente alargar o preço, o ano ou escolher outra marca.'
                     : 'A seleção aparece aqui após aprovação para o website.'}
             </p>
-            <button onclick={clear}>Limpar filtros <ArrowRight size={16} aria-hidden="true" /></button>
+            <button onclick={clear}
+              >Limpar filtros <ArrowRight size={16} aria-hidden="true" /></button
+            >
           </div>{/each}
       </div>
     </section>
@@ -347,7 +425,8 @@
           {#if results.page > 1}<a
               href={catalogUrl(params, 'pagina', String(results.page - 1))}
               aria-label="Página anterior"
-              onclick={changePage}><ArrowLeft size={16} aria-hidden="true" /><span>Anterior</span></a
+              onclick={changePage}
+              ><ArrowLeft size={16} aria-hidden="true" /><span>Anterior</span></a
             >{:else}<span class="disabled" aria-disabled="true"
               ><ArrowLeft size={16} aria-hidden="true" /><span>Anterior</span></span
             >{/if}
@@ -362,7 +441,8 @@
           {#if results.page < results.pages}<a
               href={catalogUrl(params, 'pagina', String(results.page + 1))}
               aria-label="Página seguinte"
-              onclick={changePage}><span>Seguinte</span><ArrowRight size={16} aria-hidden="true" /></a
+              onclick={changePage}
+              ><span>Seguinte</span><ArrowRight size={16} aria-hidden="true" /></a
             >{:else}<span class="disabled" aria-disabled="true"
               ><span>Seguinte</span><ArrowRight size={16} aria-hidden="true" /></span
             >{/if}
@@ -532,7 +612,7 @@
   .catalog :global(.orbit-select.open .select-trigger) {
     outline: none;
     border-color: var(--red);
-    box-shadow: inset 0 0 0 .35px var(--red);
+    box-shadow: inset 0 0 0 0.35px var(--red);
   }
   .range-note {
     color: var(--muted);
@@ -672,7 +752,10 @@
     justify-content: center;
     gap: 8px;
   }
-  .pagination > a, .pagination > span { flex-shrink: 0; }
+  .pagination > a,
+  .pagination > span {
+    flex-shrink: 0;
+  }
   .pagination [aria-current] {
     background: var(--text);
     color: var(--bg);
@@ -702,8 +785,13 @@
     }
   }
   @media (max-width: 800px) {
-    .filter-sticky { transform: none; }
-    .catalog-tail { grid-column: 1; margin-top: -28px; }
+    .filter-sticky {
+      transform: none;
+    }
+    .catalog-tail {
+      grid-column: 1;
+      margin-top: -28px;
+    }
     .catalog {
       padding-top: 32px;
     }

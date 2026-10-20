@@ -9,6 +9,7 @@ import * as runtime from 'svelte/internal/server';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import * as format from '$lib/utils/format';
+import * as taskPresentation from '$lib/components/task/presentation';
 
 // Render the actual overview components. Icons are decorative; panel snippets
 // and all operational text/links are rendered by their real components.
@@ -27,7 +28,13 @@ function fromSource(source: string, file: string): any {
     else if (specifier === 'lucide-svelte') value = new Proxy({}, { get: () => icon });
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
     else if (specifier === '$lib/utils/format') value = format;
-    else if (specifier === '$lib/vehicleImage') value = {photoFallback:()=>({})};
+    else if (specifier === '$lib/components/task/presentation') value = taskPresentation;
+    // This text/navigation test stubs decorative event icons as above.
+    else if (specifier === '$lib/activityPresentation')
+      value = {
+        activityStyle: () => ({ icon, color: 'var(--color-info)', label: 'Evento' }),
+      };
+    else if (specifier === '$lib/vehicleImage') value = { photoFallback: () => ({}) };
     else if (specifier.endsWith('.svelte'))
       value = {
         default: load(

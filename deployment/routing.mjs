@@ -31,7 +31,10 @@ export function config(env) {
   const preview = website.hostname.endsWith('.onrender.com');
   if (env.SITE_NOINDEX && !['true', 'false'].includes(env.SITE_NOINDEX))
     throw new Error('Invalid SITE_NOINDEX');
-  return { website, crm, base, noindex: preview || env.SITE_NOINDEX === 'true' };
+  return { website, crm, base, noindex: preview || env.SITE_NOINDEX === 'true',
+    clientAddressSource: env.RENDER === 'true'
+      ? env.RENDER_SERVICE_TYPE === 'web' ? 'render' : 'unavailable'
+      : 'socket' };
 }
 export function selectRoute(settings, host, rawUrl) {
   if (host !== settings.website.host && host !== settings.crm.host) return null;

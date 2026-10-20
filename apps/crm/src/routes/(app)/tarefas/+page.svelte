@@ -1,9 +1,17 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { tick, untrack } from 'svelte';
   import { CalendarClock, Plus, Search, X } from 'lucide-svelte';
-  import { goto, invalidateAll } from '$app/navigation';
+  import { invalidateAll } from '$app/navigation';
+  import { filterNavigation } from '$lib/filterNavigation';
   import { page } from '$app/stores';
-  import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import {
+    dndzone,
+    SOURCES,
+    TRIGGERS,
+    SHADOW_ITEM_MARKER_PROPERTY_NAME,
+    type DndEvent,
+  } from 'svelte-dnd-action';
   import { flip } from 'svelte/animate';
   import { toast } from 'svelte-sonner';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -13,6 +21,18 @@
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
   import RecentActivityFeed from '$lib/components/dashboard/RecentActivityFeed.svelte';
   import TaskCard from '$lib/components/task/TaskCard.svelte';
+  import {
+    TASK_PRIORITIES as PRIORITIES,
+    TASK_STATUS_LABELS,
+  } from '$lib/components/task/presentation';
+  import {
+    copyBoard,
+    moveTask,
+    taskColumn,
+    taskMovePayload,
+    type TaskBoard,
+  } from '$lib/components/task/board';
+  import { reducedMotion } from '$lib/stores/reducedMotion';
   import { formatDate, formatDateLong } from '$lib/utils/format';
   import type { TaskDto } from '$lib/server/tasks';
   import type { Priority, TaskStatus } from '@anm/types';
@@ -23,19 +43,13 @@
   }
 
   let { data }: Props = $props();
+  const navigation = filterNavigation(() => $page.url);
   const today = new Date();
 
   const COLUMN_DEFS: { status: TaskStatus; label: string; color: string }[] = [
     { status: 'TODO', label: 'A Fazer', color: 'var(--color-text-faint)' },
-    { status: 'IN_PROGRESS', label: 'Em Curso', color: 'var(--color-warning)' },
+    { status: 'IN_PROGRESS', label: 'Em Curso', color: 'var(--color-info)' },
     { status: 'DONE', label: 'Concluído', color: 'var(--color-success)' },
-  ];
-
-  const PRIORITIES: { value: Priority; label: string; color: string }[] = [
-    { value: 'LOW', label: 'Baixa', color: 'var(--color-text-faint)' },
-    { value: 'MEDIUM', label: 'Média', color: 'var(--color-info)' },
-    { value: 'HIGH', label: 'Alta', color: 'var(--color-warning)' },
-    { value: 'URGENT', label: 'Urgente', color: 'var(--color-red)' },
   ];
 
   // Local mutable copy of active (non-standby) tasks so DnD can update
@@ -58,66 +72,184 @@
     return new Date(t.dueDate) > new Date();
   }
 
-  // Keep board + standby in sync with server data whenever it reloads.
-  // Standby tasks are filtered out of the board to keep them outside the
-  // dndzone; they render in a separate non-draggable strip in the TODO column.
-  $effect(() => {
+  let dragStart = $state<TaskBoard | null>(null);
+  let pendingId = $state<string | null>(null);
+  let needsVerification = $state(false);
+  let boardMessage = $state('');
+  let boardElement: HTMLDivElement | undefined;
+  let cancelKeyboardDrag = false;
+  const duration = $derived($reducedMotion ? 0 : 160);
+  const locked = $derived(Boolean(pendingId || needsVerification));
+
+  function syncBoard(tasks: TaskDto[]) {
     const next: Record<TaskStatus, TaskDto[]> = { TODO: [], IN_PROGRESS: [], DONE: [] };
     const standby: TaskDto[] = [];
-    for (const t of data.tasks) {
+    for (const t of tasks) {
       if (isStandby(t)) standby.push(t);
       else next[t.status].push(t);
     }
     board = next;
     standbyTasks = standby;
+  }
+
+  $effect(() => {
+    const tasks = data.tasks;
+    // A background refresh must not replace the shadow item during a drag.
+    untrack(() => {
+      if (!dragStart && !pendingId && !needsVerification) syncBoard(tasks);
+    });
   });
 
-  const FLIP_MS = 180;
+  async function restoreFocus(id: string, statusControl = false) {
+    await tick();
+    const item = [...(boardElement?.querySelectorAll<HTMLElement>('[data-task-id]') ?? [])].find(
+      (node) => node.dataset.taskId === id,
+    );
+    ((statusControl ? item?.querySelector('select') : item) ?? boardElement)?.focus({
+      preventScroll: true,
+    });
+  }
 
-  async function handleDrop(status: TaskStatus, items: TaskDto[]) {
-    const previous = board[status];
-    board = { ...board, [status]: items };
+  async function refreshBoard() {
+    await invalidateAll();
+    if (data.error) throw new Error(data.error);
+    syncBoard(data.tasks);
+  }
 
-    // Find the card whose declared status doesn't match the column it's in now.
-    const moved = items.find((t) => t.status !== status);
-    if (!moved) return;
-
-    // Optimistically mutate the card's status field
-    board = {
-      ...board,
-      [status]: items.map((t) => (t.id === moved.id ? { ...t, status } : t)),
-    };
-
+  async function verifyBoard() {
     try {
-      const res = await fetch(crmPath(`/tarefas/${moved.id}/status`), {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = (await res.json()) as {
-        spawnedTaskId: string | null;
-        nextOccurrenceDate: string | null;
-      };
-
-      if (result.spawnedTaskId && result.nextOccurrenceDate) {
-        toast.success(
-          `Tarefa concluída — próxima ocorrência agendada para ${formatDate(result.nextOccurrenceDate)}.`,
-        );
-      } else if (status === 'DONE') {
-        toast.success('Tarefa concluída.');
-      } else {
-        toast.message(`Estado: ${status}`);
-      }
-      // Reload to pick up the spawned next occurrence (hidden by default).
-      await invalidateAll();
-    } catch (err) {
-      toast.error(`Falha ao mover tarefa: ${(err as Error).message}`);
-      // Revert
-      board = { ...board, [status]: previous };
+      await refreshBoard();
+      needsVerification = false;
+      boardMessage = 'Quadro atualizado com os dados guardados.';
+    } catch {
+      boardMessage =
+        'Estado por confirmar. Verifique a ligação e atualize o quadro antes de voltar a mover tarefas.';
     }
   }
 
+  async function persistMove(
+    task: TaskDto,
+    status: TaskStatus,
+    previous: TaskBoard,
+    statusControl = false,
+  ) {
+    if (locked) return;
+    pendingId = task.id;
+    boardMessage = 'A guardar a posição da tarefa…';
+    board = moveTask(board, task, status);
+    if (statusControl) mobileColumn = status;
+    let rejected = false;
+    let conflict = false;
+    let saved = false;
+    try {
+      const res = await fetch(crmPath(`/tarefas/${task.id}/move`), {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(taskMovePayload(task, status, board)),
+      });
+      // A 4xx is a known rejection. A network/5xx failure can arrive after a commit.
+      rejected = res.status >= 400 && res.status < 500;
+      conflict = res.status === 409 || res.status === 404;
+      if (!res.ok) throw new Error('Não foi possível guardar o estado.');
+      saved = true;
+      const result = (await res.json().catch(() => ({}))) as {
+        spawnedTaskId: string | null;
+        nextOccurrenceDate: string | null;
+        boardVersion: number;
+      };
+      board = {
+        ...board,
+        [status]: board[status].map((item) =>
+          item.id === task.id
+            ? { ...item, boardVersion: result.boardVersion ?? task.boardVersion + 1 }
+            : item,
+        ),
+      };
+      boardMessage =
+        task.status === status
+          ? 'Ordem guardada.'
+          : `Estado e posição guardados: ${TASK_STATUS_LABELS[status].toLowerCase()}.`;
+      if (result.spawnedTaskId && result.nextOccurrenceDate) {
+        boardMessage = `Tarefa concluída. Próxima ocorrência agendada para ${formatDate(result.nextOccurrenceDate)}.`;
+      }
+      toast.success(boardMessage);
+      try {
+        await refreshBoard();
+      } catch {
+        boardMessage = 'Alteração guardada. Não foi possível atualizar o restante quadro.';
+      }
+    } catch {
+      if (rejected) {
+        board = previous;
+        if (statusControl) mobileColumn = task.status;
+        boardMessage = 'A alteração foi recusada. A tarefa voltou ao estado anterior.';
+        toast.error(boardMessage);
+        if (conflict) {
+          needsVerification = true;
+          await verifyBoard();
+          if (!needsVerification)
+            boardMessage = 'O quadro mudou entretanto e foi atualizado. Volte a mover a tarefa.';
+        }
+      } else if (!saved) {
+        needsVerification = true;
+        boardMessage = 'A resposta não chegou. A verificar o estado guardado…';
+        await verifyBoard();
+      }
+    } finally {
+      pendingId = null;
+      await restoreFocus(task.id, statusControl);
+    }
+  }
+
+  function commitDrag(id: string) {
+    const previous = dragStart;
+    dragStart = null;
+    if (!previous) return;
+    const originalColumn = taskColumn(previous, id);
+    const targetColumn = taskColumn(board, id);
+    const task = originalColumn && previous[originalColumn].find((item) => item.id === id);
+    const originalIndex = originalColumn
+      ? previous[originalColumn].findIndex((item) => item.id === id)
+      : -1;
+    const targetIndex = targetColumn ? board[targetColumn].findIndex((item) => item.id === id) : -1;
+    if (task && targetColumn && (targetColumn !== originalColumn || targetIndex !== originalIndex))
+      void persistMove(task, targetColumn, previous);
+    else {
+      boardMessage = 'A tarefa manteve a posição.';
+      void restoreFocus(id);
+    }
+  }
+
+  function consider(status: TaskStatus, event: CustomEvent<DndEvent<TaskDto>>) {
+    const { items, info } = event.detail;
+    if (info.trigger === TRIGGERS.DRAG_STARTED) {
+      cancelKeyboardDrag = false;
+      dragStart = copyBoard(board);
+      boardMessage =
+        'A mover tarefa. Use as setas para ordenar, Tab para mudar de coluna e Espaço para largar.';
+    }
+    board = { ...board, [status]: items };
+    if (info.trigger === TRIGGERS.DRAG_STOPPED) {
+      if (cancelKeyboardDrag && dragStart) {
+        board = dragStart;
+        dragStart = null;
+        boardMessage = 'Movimento cancelado.';
+        void restoreFocus(String(info.id));
+      } else commitDrag(String(info.id));
+    }
+  }
+
+  function finalize(status: TaskStatus, event: CustomEvent<DndEvent<TaskDto>>) {
+    const { items, info } = event.detail;
+    board = { ...board, [status]: items };
+    if (info.source === SOURCES.KEYBOARD || info.trigger === TRIGGERS.DROPPED_INTO_ANOTHER) return;
+    if (info.trigger === TRIGGERS.DROPPED_OUTSIDE_OF_ANY && dragStart) {
+      board = dragStart;
+      dragStart = null;
+      boardMessage = 'Movimento cancelado.';
+      void restoreFocus(String(info.id));
+    } else commitDrag(String(info.id));
+  }
   // Modal state for cancelling a scheduled standby occurrence via the X
   // button on its card. Deleting a standby task means the recurrence chain
   // stops — no new instance will be spawned until the user completes
@@ -151,51 +283,35 @@
   type Scope = 'all' | 'mine' | 'general';
 
   function setPriority(value: Priority | undefined) {
-    const usp = new URLSearchParams($page.url.searchParams);
-    if (value) usp.set('priority', value);
-    else usp.delete('priority');
-    const qs = usp.toString();
-    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+    navigation.set('priority', value);
   }
 
   function setScope(value: Scope) {
-    const usp = new URLSearchParams($page.url.searchParams);
-    if (value === 'all') usp.delete('scope');
-    else usp.set('scope', value);
-    const qs = usp.toString();
-    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+    navigation.set('scope', value === 'all' ? undefined : value);
   }
 
   function setSearch(value: string) {
-    const usp = new URLSearchParams($page.url.searchParams);
-    if (value) usp.set('q', value);
-    else usp.delete('q');
-    const qs = usp.toString();
-    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+    navigation.set('q', value, true);
   }
 
   function toggleShowScheduled() {
-    const usp = new URLSearchParams($page.url.searchParams);
-    if (usp.get('showScheduled') === 'true') usp.delete('showScheduled');
-    else usp.set('showScheduled', 'true');
-    const qs = usp.toString();
-    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+    navigation.set('showScheduled', showScheduledActive ? undefined : 'true');
   }
 
   const currentScope = $derived<Scope>(data.filters.scope ?? 'all');
   const showScheduledActive = $derived(Boolean(data.filters.showScheduled));
   const hasFilters = $derived(
     Boolean(
-      data.filters.attention || data.filters.priority || currentScope !== 'all' || data.filters.q,
+      data.filters.attention ||
+      data.filters.priority ||
+      currentScope !== 'all' ||
+      data.filters.q ||
+      showScheduledActive,
     ),
   );
 
   function clearFilters() {
-    goto($page.url.pathname, { keepFocus: false, noScroll: true });
-  }
-
-  function openTask(id: string) {
-    goto(crmPath(`/tarefas/${id}/editar`));
+    navigation.clear();
   }
 
   // Mobile: which column is currently shown. The segmented control above
@@ -225,26 +341,29 @@
     <div class="flex items-center gap-2">
       <!-- Menu (sem default) — utilizador escolhe CSV ou PDF. -->
       <div class="hidden md:inline-flex">
-        <ExportMenu baseHref={crmPath("/tarefas/export")} />
+        <ExportMenu baseHref={crmPath('/tarefas/export')} extraQuery={$page.url.search} />
       </div>
       <a
-        href={crmPath("/tarefas/nova")}
-        class="inline-flex md:hidden items-center justify-center h-10 w-10 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
+        href={crmPath('/tarefas/nova')}
+        class="inline-flex md:hidden items-center justify-center h-11 w-11 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
         style="border-radius: var(--radius-btn);"
         aria-label="Nova tarefa"
       >
         <Plus class="h-4 w-4" />
       </a>
-      <Button variant="primary" size="md" href={crmPath("/tarefas/nova")} class="hidden md:inline-flex">
-        <Plus class="h-4 w-4" />
-        Nova Tarefa
-      </Button>
+      <div class="hidden md:inline-flex">
+        <Button variant="primary" size="md" href={crmPath('/tarefas/nova')}>
+          <Plus class="h-4 w-4" />
+          Nova Tarefa
+        </Button>
+      </div>
     </div>
   </div>
 
   <!-- Filters -->
   <Panel>
-    <div class="p-4 space-y-3">
+    <fieldset class="p-4 space-y-3" disabled={locked || Boolean(dragStart)}>
+      <legend class="sr-only">Filtrar tarefas</legend>
       <div class="flex items-center gap-3">
         <div
           class="flex-1 relative flex items-center h-11 px-3 border border-[var(--color-border)] bg-[var(--color-bg-1)] focus-within:border-[var(--color-red)] transition-colors"
@@ -253,10 +372,14 @@
           <Search class="h-4 w-4 text-[var(--color-text-faint)]" />
           <input
             type="search"
+            aria-label="Pesquisar tarefas"
             placeholder="Pesquisar tarefas…"
             value={data.filters.q ?? ''}
             oninput={(e) => setSearch(e.currentTarget.value)}
-            class="flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
+            onkeydown={(e) => {
+              if (e.key === 'Enter') navigation.flush();
+            }}
+            class="min-w-0 flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
           />
         </div>
         {#if hasFilters}
@@ -277,10 +400,7 @@
             class="ml-2 h-9 px-3 border border-[var(--color-border)] bg-[var(--color-bg-1)] text-[var(--color-text)]"
             value={data.filters.attention ?? ''}
             onchange={(event) => {
-              const params = new URLSearchParams($page.url.searchParams);
-              if (event.currentTarget.value) params.set('attention', event.currentTarget.value);
-              else params.delete('attention');
-              goto('?' + params.toString(), { keepFocus: true, noScroll: true });
+              navigation.set('attention', event.currentTarget.value);
             }}
             ><option value="">Todas as tarefas</option><option value="due"
               >Prazo de hoje ou em atraso</option
@@ -298,7 +418,11 @@
           {@const active = data.filters.priority === p.value}
           <button
             type="button"
+            aria-pressed={active}
             onclick={() => setPriority(active ? undefined : p.value)}
+            style={active
+              ? `color: ${p.color}; border-color: ${p.color}; background: color-mix(in srgb, ${p.color} 12%, transparent)`
+              : undefined}
             class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors flex items-center gap-1.5 {active
               ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
               : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
@@ -319,6 +443,7 @@
           {@const active = currentScope === opt.value}
           <button
             type="button"
+            aria-pressed={active}
             onclick={() => setScope(opt.value as Scope)}
             class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors {active
               ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
@@ -332,6 +457,7 @@
 
         <button
           type="button"
+          aria-pressed={showScheduledActive}
           onclick={toggleShowScheduled}
           title="Mostrar tarefas recorrentes (semanais, mensais, anuais) já agendadas para um próximo ciclo"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors {showScheduledActive
@@ -342,14 +468,18 @@
           Tarefas agendadas
         </button>
       </div>
-    </div>
+    </fieldset>
   </Panel>
 
   {#if data.error}
     <Panel>
-      <div class="p-4 flex items-center gap-3 text-[var(--color-red)] text-[13px]">
+      <div
+        class="p-4 flex flex-wrap items-center gap-3 text-[var(--color-red)] text-[13px]"
+        role="alert"
+      >
         <strong class="font-mono uppercase tracking-[0.12em] text-[10px]">Erro</strong>
         <span>{data.error}</span>
+        <Button variant="outline" size="sm" onclick={verifyBoard}>Tentar novamente</Button>
       </div>
     </Panel>
   {/if}
@@ -364,15 +494,14 @@
     <div
       class="grid grid-cols-3 border border-[var(--color-border)] overflow-hidden"
       style="border-radius: var(--radius-card); background: var(--color-bg-1);"
-      role="tablist"
+      role="group"
       aria-label="Estado da tarefa"
     >
       {#each COLUMN_DEFS as col (col.status)}
         {@const active = mobileColumn === col.status}
         <button
           type="button"
-          role="tab"
-          aria-selected={active}
+          aria-pressed={active}
           onclick={() => (mobileColumn = col.status)}
           class="tab-pill {active ? 'is-active' : ''}"
         >
@@ -390,7 +519,29 @@
   </div>
 
   <!-- Kanban -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="board-feedback">
+    <p id="board-instructions">
+      A ordem fica guardada; nas tarefas gerais é partilhada. Teclado: Espaço para mover, setas para
+      ordenar, Tab para mudar de coluna, Espaço para largar e Esc para cancelar.
+    </p>
+    <p role="status" aria-live="polite">{boardMessage}</p>
+    {#if needsVerification}<Button
+        variant="outline"
+        size="sm"
+        disabled={Boolean(pendingId)}
+        onclick={verifyBoard}>Verificar estado guardado</Button
+      >{/if}
+  </div>
+  <div
+    class="grid grid-cols-1 md:grid-cols-3 gap-4"
+    bind:this={boardElement}
+    tabindex="-1"
+    role="region"
+    aria-label="Quadro de tarefas"
+    onkeydowncapture={(event) => {
+      if (event.key === 'Escape' && dragStart) cancelKeyboardDrag = true;
+    }}
+  >
     {#each COLUMN_DEFS as col (col.status)}
       <div class={col.status === mobileColumn ? 'block' : 'hidden md:block'}>
         <Panel>
@@ -420,35 +571,55 @@
             </span>
           </header>
 
-          <div
-            use:dndzone={{
-              items: board[col.status],
-              flipDurationMs: FLIP_MS,
-              type: 'task',
-              dropTargetStyle: {
-                outline: '2px solid var(--color-red)',
-                outlineOffset: '-2px',
-              },
-            }}
-            onconsider={(e: CustomEvent<DndEvent<TaskDto>>) => {
-              board = { ...board, [col.status]: e.detail.items };
-            }}
-            onfinalize={(e: CustomEvent<DndEvent<TaskDto>>) =>
-              handleDrop(col.status, e.detail.items)}
-            class="p-3 space-y-2.5 min-h-[200px]"
-          >
-            {#each board[col.status] as t (t.id)}
-              <div animate:flip={{ duration: FLIP_MS }}>
-                <TaskCard task={t} onclick={() => openTask(t.id)} />
-              </div>
-            {/each}
-
+          <div class="board-column">
+            <div
+              aria-label={col.label}
+              aria-describedby="board-instructions"
+              data-task-column={col.status}
+              use:dndzone={{
+                items: board[col.status],
+                flipDurationMs: duration,
+                dropAnimationDisabled: $reducedMotion,
+                dragDisabled: locked,
+                dropFromOthersDisabled: locked,
+                delayTouchStart: 180,
+                type: 'task',
+                dropTargetStyle: {
+                  outline: '2px solid var(--color-text-muted)',
+                  outlineOffset: '-2px',
+                },
+              }}
+              onconsider={(e: CustomEvent<DndEvent<TaskDto>>) => consider(col.status, e)}
+              onfinalize={(e: CustomEvent<DndEvent<TaskDto>>) => finalize(col.status, e)}
+              class="task-zone p-3 min-h-[200px]"
+            >
+              {#each board[col.status] as t (t.id)}
+                <div
+                  animate:flip={{ duration }}
+                  data-task-id={t.id}
+                  aria-label={t.title}
+                  class:drag-shadow={Boolean(
+                    (t as TaskDto & Record<string, unknown>)[SHADOW_ITEM_MARKER_PROPERTY_NAME],
+                  )}
+                >
+                  <TaskCard
+                    task={t}
+                    pending={pendingId === t.id}
+                    disabled={locked || Boolean(dragStart)}
+                    onstatuschange={(status) => persistMove(t, status, copyBoard(board), true)}
+                  />
+                </div>
+              {/each}
+            </div>
             {#if board[col.status].length === 0 && !(col.status === 'TODO' && standbyTasks.length > 0)}
-              <div
-                class="flex items-center justify-center h-32 border-2 border-dashed border-[var(--color-border)] font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
-                style="border-radius: var(--radius-btn);"
-              >
-                Sem tarefas
+              <div class="empty-column" aria-hidden="true">
+                {data.error
+                  ? 'Quadro indisponível'
+                  : dragStart
+                    ? 'Largar aqui'
+                    : hasFilters
+                      ? 'Sem tarefas para estes filtros'
+                      : 'Sem tarefas'}
               </div>
             {/if}
           </div>
@@ -474,7 +645,7 @@
                 <TaskCard
                   task={t}
                   standby
-                  onclick={() => openTask(t.id)}
+                  disabled={locked || cancelling}
                   ondelete={() => requestCancel(t)}
                 />
               {/each}
@@ -491,7 +662,7 @@
     users a quick log of the latest moves. Extra top spacing puts visible
     breathing room between the board and the log.
   -->
-  <div class="mt-36 md:mt-48">
+  <div class="mt-8">
     <RecentActivityFeed items={data.taskActivity} title="Atividade de Tarefas" />
   </div>
 </section>
@@ -511,6 +682,49 @@
 />
 
 <style>
+  .board-feedback {
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+  .board-feedback p {
+    margin: 0;
+  }
+  .board-feedback [role='status'] {
+    min-height: 20px;
+    margin-top: 6px;
+  }
+  .board-column {
+    position: relative;
+  }
+  .task-zone {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .task-zone > div {
+    border-radius: var(--radius-card);
+  }
+  .task-zone > div:focus-visible {
+    outline: 2px solid var(--color-text-muted);
+    outline-offset: 3px;
+  }
+  .empty-column {
+    position: absolute;
+    inset: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-card);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .drag-shadow {
+    opacity: 0.3;
+  }
   /*
     Segmented-control button. Mirrors the brand language: mono uppercase
     label + red top rail when active (matching the sidebar's left-rail
@@ -555,6 +769,5 @@
     right: 14px;
     height: 2px;
     background: var(--color-red);
-    box-shadow: 0 0 10px color-mix(in oklab, var(--color-red) 50%, transparent);
   }
 </style>

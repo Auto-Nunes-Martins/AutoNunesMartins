@@ -1,6 +1,10 @@
 /* Same outer frame as Orbit's homepage; only vehicle-detail pages opt in. */
-.detail-favorite-desktop { display: contents; }
-.detail-favorite-mobile { display: none; }
+.detail-favorite-desktop {
+  display: contents;
+}
+.detail-favorite-mobile {
+  display: none;
+}
 .design.orbit.orbit-detail {
   --orbit-frame: min(96%, calc(100% - 48px));
   --detail-space: clamp(56px, 5vw, 88px);
@@ -10,6 +14,7 @@
 .design.orbit.orbit-detail header {
   padding-inline: max(24px, 2%, calc((100% - var(--orbit-frame-max)) / 2));
 }
+.design.orbit.orbit-detail .detail-top-actions,
 .design.orbit.orbit-detail .breadcrumbs,
 .design.orbit.orbit-detail .services,
 .design.orbit.orbit-detail .vehicle-layout,
@@ -24,6 +29,206 @@
 }
 .design.orbit.orbit-detail .breadcrumbs {
   padding-block: 24px;
+}
+.design.orbit.orbit-detail .detail-top-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 16px;
+}
+.detail-top-actions > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+.detail-top-actions > a:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.detail-top-actions > a:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+.detail-top-actions .vehicle-share {
+  text-align: right;
+  max-width: 50%;
+}
+.detail-top-actions .vehicle-share button {
+  background: transparent;
+  border: 0;
+  padding: 10px 0;
+  color: var(--muted);
+}
+.detail-top-actions .vehicle-share button:hover {
+  color: var(--text);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.design.orbit.orbit-detail .detail-thumbnails {
+  cursor: grab;
+}
+.design.orbit.orbit-detail .detail-thumbnails img {
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.design.orbit.orbit-detail .detail-thumbnails span {
+  pointer-events: none;
+}
+.design.orbit.orbit-detail .detail-thumbnails.is-dragging,
+.design.orbit.orbit-detail .detail-thumbnails.is-dragging button {
+  cursor: grabbing;
+  user-select: none;
+}
+.design.orbit.orbit-detail .thumbnail-step {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: white;
+  box-shadow: none;
+  cursor: pointer;
+}
+.design.orbit.orbit-detail .thumbnail-step svg {
+  filter: drop-shadow(0 1px 2px #000) drop-shadow(0 0 3px #000b);
+  opacity: 0.95;
+}
+.design.orbit.orbit-detail .thumbnail-previous {
+  left: 0;
+  background: transparent;
+}
+.design.orbit.orbit-detail .thumbnail-next {
+  right: 0;
+  background: transparent;
+}
+.design.orbit.orbit-detail .thumbnail-step:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+.design.orbit.orbit-detail .thumbnail-step:hover svg {
+  opacity: 1;
+}
+.design.orbit.orbit-detail .thumbnail-step:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+.main-photo-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.design.orbit.orbit-detail .vehicle-photo.contact-slide {
+  opacity: 1;
+  cursor: default;
+}
+.vehicle-photo.contact-slide .photo-counter {
+  visibility: hidden;
+}
+.design.orbit.orbit-detail .detail-thumbnails .contact-thumbnail img {
+  filter: blur(2px) brightness(0.6);
+  transform: scale(1.06);
+}
+.design.orbit.orbit-detail .detail-thumbnails .contact-thumbnail svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  pointer-events: none;
+}
+.main-photo-loading > span {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    #ffffff20 90deg,
+    #ffffff90 220deg,
+    #fff 330deg,
+    transparent
+  );
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  animation: main-photo-spin 850ms linear infinite;
+}
+@keyframes main-photo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .main-photo-loading > span {
+    animation: none;
+  }
+}
+.design.orbit.orbit-detail .breadcrumb-trail {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.breadcrumb-trail ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.breadcrumb-trail li {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.breadcrumb-trail li:last-child {
+  color: var(--text);
+}
+.design.orbit.orbit-detail .breadcrumb-trail a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.breadcrumb-trail [aria-current='page'] {
+  overflow-wrap: anywhere;
+}
+.breadcrumb-trail svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.breadcrumb-trail a:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+@media (hover: hover) {
+  .design.orbit.orbit-detail .breadcrumb-trail a:hover {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
 }
 .design.orbit.orbit-detail .vehicle-layout {
   display: grid;
@@ -88,7 +293,7 @@
   font-size: 14px;
 }
 .design.orbit.orbit-detail .detail-band {
-  height: clamp(360px, 34vw, 520px);
+  height: clamp(300px, 28vw, 420px);
 }
 .design.orbit.orbit-detail .detail-band > div {
   left: clamp(24px, 4vw, 64px);
@@ -185,7 +390,7 @@
     font-size: clamp(32px, 8.8vw, 44px);
   }
   .design.orbit.orbit-detail .detail-band {
-    height: 360px;
+    height: 300px;
   }
   .design.orbit.orbit-detail .detail-band > div {
     left: 24px;
@@ -240,8 +445,13 @@
     padding-top: 18px;
     border-top: 1px solid var(--line);
   }
-  .design.orbit.orbit-detail.public-detail .purchase .detail-favorite-mobile { display: block; min-width: 0; }
-  .design.orbit.orbit-detail.public-detail .detail-favorite-desktop { display: none; }
+  .design.orbit.orbit-detail.public-detail .purchase .detail-favorite-mobile {
+    display: block;
+    min-width: 0;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-favorite-desktop {
+    display: none;
+  }
   .design.orbit.orbit-detail.public-detail .purchase .detail-compare button {
     width: 100%;
     min-height: 44px;
@@ -264,19 +474,31 @@
 }
 .design.orbit.orbit-detail .vehicle-gallery {
   position: relative;
-  isolation:isolate;
-  border-radius:5px;
-  overflow:hidden;
-  background:var(--surface);
+  isolation: isolate;
+  border-radius: 5px;
+  overflow: hidden;
+  background: transparent;
   --detail-thumb-width: calc(clamp(104px, 10vw, 152px) - 4px);
   --detail-scroll-thumb: color-mix(in srgb, var(--text) 45%, var(--surface));
   --detail-scroll-track: color-mix(in srgb, var(--text) 6%, var(--surface));
 }
 .design.orbit.orbit-detail .vehicle-gallery::before {
-  content:'';position:absolute;inset:0;z-index:4;pointer-events:none;border:1px solid var(--line);border-radius:inherit;
+  content: none;
 }
-.design.orbit.orbit-detail .detail-thumbnails-frame {position:absolute;inset:0 0 0 auto;width:var(--detail-thumb-width);padding-block:6px;background:var(--surface);}
-.design.orbit.orbit-detail .detail-thumbnails-frame .detail-thumbnails {position:relative;inset:auto;width:100%;height:100%;border-radius:0;}
+.design.orbit.orbit-detail .detail-thumbnails-frame {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--detail-thumb-width);
+  padding-block: 6px;
+  background: var(--surface);
+}
+.design.orbit.orbit-detail .detail-thumbnails-frame .detail-thumbnails {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
 .design.orbit.orbit-detail .vehicle-gallery .vehicle-photo {
   padding-right: var(--detail-thumb-width);
 }
@@ -293,12 +515,12 @@
   padding: 6px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   scrollbar-color: var(--detail-scroll-thumb) var(--detail-scroll-track);
   scrollbar-gutter: stable;
-  background:var(--surface);
-  border-radius:0 5px 5px 0;
-  box-shadow:inset 1px 0 color-mix(in srgb,var(--line) 65%,transparent);
+  background: var(--surface);
+  border-radius: 0 5px 5px 0;
+  box-shadow: inset 1px 0 color-mix(in srgb, var(--line) 65%, transparent);
 }
 .design.orbit.orbit-detail .detail-thumbnails button {
   position: relative;
@@ -323,10 +545,23 @@
   height: 100%;
   object-fit: cover;
 }
-.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar {width:8px;height:8px;}
-.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar-track {background:var(--detail-scroll-track);border-radius:8px;}
-.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar-thumb {background:var(--detail-scroll-thumb);border:2px solid var(--detail-scroll-track);border-radius:8px;}
-.design.orbit.orbit-detail .detail-thumbnails:hover {--detail-scroll-thumb:color-mix(in srgb, var(--text) 60%, var(--surface));}
+.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar-track {
+  background: var(--detail-scroll-track);
+  border-radius: 8px;
+}
+.design.orbit.orbit-detail .detail-thumbnails::-webkit-scrollbar-thumb {
+  background: var(--detail-scroll-thumb);
+  border: 2px solid var(--detail-scroll-track);
+  border-radius: 8px;
+}
+.design.orbit.orbit-detail .detail-thumbnails:hover {
+  --detail-scroll-thumb: color-mix(in srgb, var(--text) 60%, var(--surface));
+}
 .design.orbit.orbit-detail .detail-thumbnails span {
   position: absolute;
   inset: auto 0 0;
@@ -351,76 +586,292 @@
   }
 }
 
-/* Below 702px, thumbnails sit under the photo in their own scroll row. */
-@media (max-width: 701px) {
-  .design.orbit.orbit-detail .vehicle-gallery {border-radius:5px;}
-  .design.orbit.orbit-detail .detail-thumbnails-frame {position:relative;inset:auto;width:100%;height:auto;padding:0 6px 6px;}
-  .design.orbit.orbit-detail .detail-thumbnails-frame .detail-thumbnails {height:auto;}
-  .design.orbit.orbit-detail .vehicle-gallery .vehicle-photo {
-    padding-right: 0;
-  }
-  .design.orbit.orbit-detail .vehicle-gallery .expand {
-    right: 20px;
-  }
-  .design.orbit.orbit-detail .detail-thumbnails {
-    position: static;
-    width: 100%;
-    box-sizing: border-box;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    margin-top:0;
-    scrollbar-gutter:auto;
-    border-radius:0 0 5px 5px;
-    box-shadow:inset 0 1px color-mix(in srgb,var(--line) 65%,transparent);
-  }
-  .design.orbit.orbit-detail .detail-thumbnails button {
-    flex: 0 0 112px;
-    width: 112px;
+/* Thumbnails always sit below the photo, in their own horizontal row. */
+.design.orbit.orbit-detail .vehicle-gallery {
+  border-radius: 5px;
+}
+.design.orbit.orbit-detail .detail-thumbnails-frame {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  background: transparent;
+}
+.design.orbit.orbit-detail .detail-thumbnails-frame .detail-thumbnails {
+  height: auto;
+}
+.design.orbit.orbit-detail .vehicle-gallery .vehicle-photo {
+  padding-right: 0;
+}
+.design.orbit.orbit-detail .vehicle-gallery .expand {
+  right: 20px;
+}
+.design.orbit.orbit-detail .detail-thumbnails {
+  position: static;
+  width: 100%;
+  box-sizing: border-box;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-top: 10px;
+  padding: 0;
+  background: transparent;
+  scrollbar-gutter: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+.design.orbit.orbit-detail .detail-thumbnails button {
+  flex: 0 0 112px;
+  width: 112px;
+}
+.design.orbit.orbit-detail .vehicle-gallery:not(:has(.detail-thumbnails)) .vehicle-photo {
+  padding-right: 0;
+}
+.design.orbit.orbit-detail .vehicle-gallery:not(:has(.detail-thumbnails)) .expand {
+  right: 20px;
+}
+.design.orbit.orbit-detail.public-detail .vehicle-gallery .photo-counter {
+  left: auto;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1;
+}
+.design.orbit.orbit-detail .public-description p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.8;
+}
+.design.orbit.orbit-detail .purchase-call {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 0;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  white-space: nowrap;
+  border-radius: 4px;
+}
+.design.orbit.orbit-detail .purchase-call:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+.design.orbit.orbit-detail .purchase-phone-alternative {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.design.orbit.orbit-detail .purchase-phone-alternative .purchase-call {
+  color: var(--text);
+}
+.design.orbit.orbit-detail .purchase-phone-alternative + .purchase-followup {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+@media (hover: hover) {
+  .design.orbit.orbit-detail .purchase-call:hover {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
 }
-
-.design.orbit.orbit-detail .vehicle-gallery:not(:has(.detail-thumbnails)) .vehicle-photo { padding-right: 0; }
-.design.orbit.orbit-detail .vehicle-gallery:not(:has(.detail-thumbnails)) .expand { right: 20px; }
-.design.orbit.orbit-detail .public-description p { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font-size: 16px; line-height: 1.8; }
-.design.orbit.orbit-detail .confirmed-equipment { list-style: none; padding: 0; margin: 0; }
-.design.orbit.orbit-detail .confirmed-equipment li { padding-block: 18px; border-bottom: 1px solid var(--line); font-size: 16px; }
+.design.orbit.orbit-detail.public-detail .purchase .purchase-followup .detail-compare {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 18px;
+  margin: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.design.orbit.orbit-detail.public-detail .purchase .purchase-followup .detail-compare button {
+  width: auto;
+  min-height: 44px;
+  padding: 8px 0;
+  gap: 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: none;
+}
+.design.orbit.orbit-detail.public-detail
+  .purchase
+  .purchase-followup
+  .detail-compare
+  button[aria-pressed='true'] {
+  color: var(--red);
+}
+.design.orbit.orbit-detail.public-detail
+  .purchase
+  .purchase-followup
+  .detail-compare
+  button:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 4px;
+}
+@media (hover: hover) {
+  .design.orbit.orbit-detail.public-detail
+    .purchase
+    .purchase-followup
+    .detail-compare
+    button:hover {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .design.orbit.orbit-detail.public-detail
+    .purchase
+    .purchase-followup
+    .detail-compare
+    button[aria-pressed='true']:hover {
+    color: var(--red);
+  }
+}
+.design.orbit.orbit-detail.public-detail .purchase .purchase-followup .fine-print {
+  margin: 0;
+}
+.design.orbit.orbit-detail .confirmed-equipment {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.design.orbit.orbit-detail .confirmed-equipment li {
+  padding-block: 18px;
+  border-bottom: 1px solid var(--line);
+  font-size: 16px;
+}
 
 /* Reading rhythm belongs only to the real vehicle's information column. */
-.design.orbit.orbit-detail.public-detail .services { padding-bottom: clamp(80px, 7vw, 112px); }
+.design.orbit.orbit-detail.public-detail .services {
+  padding-bottom: clamp(80px, 7vw, 112px);
+}
 .design.orbit.orbit-detail.public-detail .vehicle-layout > .detail-facts {
-  padding-block: clamp(64px, 5vw, 88px);
+  padding-block: clamp(32px, 3vw, 48px) clamp(64px, 5vw, 88px);
   gap: 40px;
 }
-.design.orbit.orbit-detail.public-detail .detail-facts dl { column-gap: 40px; }
-.design.orbit.orbit-detail.public-detail .detail-facts dl > div { gap: 20px; padding-block: 24px; }
-.design.orbit.orbit-detail.public-detail .detail-facts dt { font-size: 14px; line-height: 1.65; }
-.design.orbit.orbit-detail.public-detail .detail-facts dd { font-size: 15px; line-height: 1.65; overflow-wrap: anywhere; }
+.design.orbit.orbit-detail.public-detail .detail-facts dl {
+  column-gap: 40px;
+}
+.design.orbit.orbit-detail.public-detail .detail-facts dl > div {
+  gap: 20px;
+  padding-block: 24px;
+}
+.design.orbit.orbit-detail.public-detail .detail-facts dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.design.orbit.orbit-detail.public-detail .detail-facts dt svg {
+  flex-shrink: 0;
+}
+.design.orbit.orbit-detail.public-detail .detail-facts dd {
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
 
 /* Real vehicle mobile layout only; shared comparison/favorite behavior is untouched. */
 @media (max-width: 700px) {
-  .design.orbit.orbit-detail.public-detail .services { padding-bottom: 64px; }
-  .design.orbit.orbit-detail.public-detail .vehicle-layout > .detail-facts { padding-block: 48px; gap: 32px; }
-  .design.orbit.orbit-detail.public-detail .detail-facts dl > div { padding-block: 22px; }
-  .design.orbit.orbit-detail.public-detail .vehicle-photography { min-width: 0; }
-  .design.orbit.orbit-detail.public-detail .vehicle-gallery { margin-inline: -5.5555556%; }
-  .design.orbit.orbit-detail.public-detail .vehicle-photo { border-radius: 0; }
-  .design.orbit.orbit-detail.public-detail .detail-thumbnails { padding-inline: 5%; }
-  .design.orbit.orbit-detail.public-detail .detail-favorite-desktop { display: none; }
-  .design.orbit.orbit-detail.public-detail .detail-favorite-mobile { display: flex; min-width: 0; }
-  .design.orbit.orbit-detail.public-detail .detail-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 16px 0 20px; }
-  .design.orbit.orbit-detail.public-detail .detail-compare button { width: 100%; min-height: 46px; gap: 6px; padding: 10px 8px; font-size: 12px; white-space: nowrap; }
-  .design.orbit.orbit-detail.public-detail .detail-favorite-mobile button { border: 1px solid var(--line); }
-  .design.orbit.orbit-detail.public-detail .purchase h1 { font-size: clamp(32px, 8.6vw, 40px); line-height: 1.12; margin-block: 18px; overflow-wrap: anywhere; }
-  .design.orbit.orbit-detail.public-detail .purchase-price { margin-top: 24px; }
-  .design.orbit.orbit-detail.public-detail .purchase-price strong { font-size: clamp(28px, 7.7vw, 34px); }
-  .design.orbit.orbit-detail.public-detail .quick-specs { margin-block: 24px; }
-  .design.orbit.orbit-detail.public-detail .quick-specs > span { font-size: 16px; overflow-wrap: anywhere; }
-  .design.orbit.orbit-detail.public-detail .quick-specs small { font-size: 11px; }
-  .design.orbit.orbit-detail.public-detail .fine-print { margin-top: 0; font-size: 12px; line-height: 1.7; }
+  .design.orbit.orbit-detail.public-detail .services {
+    padding-bottom: 64px;
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-layout > .detail-facts {
+    padding-block: 24px 48px;
+    gap: 32px;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-facts dl > div {
+    padding-block: 22px;
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-photography {
+    min-width: 0;
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-gallery {
+    margin-inline: -5.5555556%;
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo {
+    border-radius: 0;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-thumbnails {
+    padding-inline: 5%;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-favorite-desktop {
+    display: none;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-favorite-mobile {
+    display: flex;
+    min-width: 0;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-compare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 16px 0 20px;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-compare button {
+    width: 100%;
+    min-height: 46px;
+    gap: 6px;
+    padding: 10px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-favorite-mobile button {
+    border: 1px solid var(--line);
+  }
+  .design.orbit.orbit-detail.public-detail .purchase h1 {
+    font-size: clamp(32px, 8.6vw, 40px);
+    line-height: 1.12;
+    margin-block: 18px;
+    overflow-wrap: anywhere;
+  }
+  .design.orbit.orbit-detail.public-detail .purchase-price {
+    margin-top: 24px;
+  }
+  .design.orbit.orbit-detail.public-detail .purchase-price strong {
+    font-size: clamp(28px, 7.7vw, 34px);
+  }
+  .design.orbit.orbit-detail.public-detail .quick-specs {
+    margin-block: 24px;
+  }
+  .design.orbit.orbit-detail.public-detail .quick-specs > span {
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+  .design.orbit.orbit-detail.public-detail .quick-specs small {
+    font-size: 11px;
+  }
+  .design.orbit.orbit-detail.public-detail .fine-print {
+    margin-top: 0;
+    font-size: 12px;
+    line-height: 1.7;
+  }
   .design.orbit.orbit-detail.public-detail .detail-facts h2,
   .design.orbit.orbit-detail.public-detail .equipment h2,
-  .design.orbit.orbit-detail.public-detail .related h2 { font-size: clamp(28px, 7.7vw, 34px); line-height: 1.15; }
-  .design.orbit.orbit-detail.public-detail .detail-facts dt { font-size: 13px; }
-  .design.orbit.orbit-detail.public-detail .detail-facts dd { font-size: 15px; overflow-wrap: anywhere; }
+  .design.orbit.orbit-detail.public-detail .related h2 {
+    font-size: clamp(28px, 7.7vw, 34px);
+    line-height: 1.15;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-facts dt {
+    font-size: 13px;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-facts dd {
+    font-size: 15px;
+    overflow-wrap: anywhere;
+  }
 }

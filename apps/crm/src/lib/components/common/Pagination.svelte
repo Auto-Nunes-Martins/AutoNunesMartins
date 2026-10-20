@@ -33,7 +33,9 @@
 
   <div class="flex items-center gap-1">
     <a
-      href={currentPage > 1 ? buildHref(currentPage - 1) : '#'}
+      href={currentPage > 1 ? buildHref(currentPage - 1) : undefined}
+      aria-label="Página anterior"
+      tabindex={currentPage <= 1 ? -1 : undefined}
       aria-disabled={currentPage <= 1}
       class="inline-flex items-center justify-center h-8 w-8 border border-[var(--color-border)] transition-colors {currentPage <=
       1
@@ -47,7 +49,9 @@
       {currentPage} / {Math.max(1, totalPages)}
     </span>
     <a
-      href={currentPage < totalPages ? buildHref(currentPage + 1) : '#'}
+      href={currentPage < totalPages ? buildHref(currentPage + 1) : undefined}
+      aria-label="Página seguinte"
+      tabindex={currentPage >= totalPages ? -1 : undefined}
       aria-disabled={currentPage >= totalPages}
       class="inline-flex items-center justify-center h-8 w-8 border border-[var(--color-border)] transition-colors {currentPage >=
       totalPages

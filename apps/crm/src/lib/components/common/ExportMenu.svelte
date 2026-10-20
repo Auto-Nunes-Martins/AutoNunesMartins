@@ -9,7 +9,7 @@
     preservando os filtros da página actual quando o caller passa `extraQuery`
     (tipicamente `$page.url.search`).
   */
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { ChevronDown, Download, FileSpreadsheet, FileText } from 'lucide-svelte';
 
   interface Props {
@@ -34,9 +34,14 @@
   let isOpen = $state(false);
   let menuEl = $state<HTMLDivElement | null>(null);
   let buttonEl = $state<HTMLButtonElement | null>(null);
+  const menuId = $props.id();
 
-  function toggle() {
+  async function toggle() {
     isOpen = !isOpen;
+    if (isOpen) {
+      await tick();
+      menuEl?.querySelector('a')?.focus();
+    }
   }
   function close() {
     isOpen = false;
@@ -57,7 +62,27 @@
   }
 
   function onKey(e: KeyboardEvent) {
-    if (e.key === 'Escape') close();
+    if (e.key === 'Escape' && isOpen) {
+      e.preventDefault();
+      close();
+      buttonEl?.focus();
+    }
+  }
+  function onMenuKey(e: KeyboardEvent) {
+    if (e.key === 'Tab') {
+      close();
+      return;
+    }
+    const links = [...(menuEl?.querySelectorAll('a') ?? [])];
+    const index = links.indexOf(document.activeElement as HTMLAnchorElement);
+    let next: number;
+    if (e.key === 'ArrowDown') next = (index + 1) % links.length;
+    else if (e.key === 'ArrowUp') next = (index - 1 + links.length) % links.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = links.length - 1;
+    else return;
+    e.preventDefault();
+    links[next]?.focus();
   }
 
   onMount(() => {
@@ -74,7 +99,9 @@
 
   // Estilo do botão (mesma receita visual que `<Button variant="outline">`)
   // para o menu encaixar onde quer que estivesse o botão antigo.
-  const sizeClass = size === 'sm' ? 'h-9 px-3 text-[12px]' : 'h-[38px] px-[18px] text-[13px]';
+  const sizeClass = $derived(
+    size === 'sm' ? 'h-9 px-3 text-[12px]' : 'h-[38px] px-[18px] text-[13px]',
+  );
 </script>
 
 <div class="relative inline-block">
@@ -84,6 +111,7 @@
     onclick={toggle}
     aria-haspopup="menu"
     aria-expanded={isOpen}
+    aria-controls={menuId}
     aria-label="Exportar"
     class="inline-flex items-center justify-center gap-2 border border-[var(--color-border)] hover:border-[var(--color-border-strong)] text-[var(--color-text)] font-mono uppercase tracking-[0.12em] text-[11px] transition-colors {sizeClass} {className}"
     style="border-radius: var(--radius-btn);"
@@ -105,6 +133,10 @@
     <div
       bind:this={menuEl}
       role="menu"
+      id={menuId}
+      aria-label="Formato de exportação"
+      onkeydown={onMenuKey}
+      tabindex="-1"
       class="absolute right-0 top-[calc(100%+6px)] min-w-[180px] border border-[var(--color-border)] shadow-xl z-50 panel-surface overflow-hidden"
       style="border-radius: var(--radius-card);"
     >
@@ -117,7 +149,9 @@
         <FileSpreadsheet class="h-4 w-4 text-[var(--color-text-muted)]" />
         <div class="flex flex-col leading-tight">
           <span class="font-display font-semibold text-[13px]">CSV</span>
-          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+          >
             Folha de cálculo
           </span>
         </div>
@@ -131,7 +165,9 @@
         <FileText class="h-4 w-4 text-[var(--color-text-muted)]" />
         <div class="flex flex-col leading-tight">
           <span class="font-display font-semibold text-[13px]">PDF</span>
-          <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
+          >
             Documento imprimível
           </span>
         </div>

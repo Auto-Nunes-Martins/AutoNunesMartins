@@ -1,19 +1,27 @@
 <script lang="ts">
-  import { sizedPhoto, vehiclePhotoSet } from "$lib/vehiclePhotoSources";
+  import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
   let galleryOpen = $state(false);
+  let mainPhotoLoading = $state(true);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
   import { followThumbnail } from '$lib/thumbnailFollow';
-  import {createThumbnailSession,publicThumbnail,thumbnailAttrs} from '$lib/publicThumbnail';
+  import { dragThumbnailStrip } from '$lib/dragThumbnailStrip';
+  import { thumbnailNavigation } from '$lib/thumbnailNavigation';
+  import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from '$lib/publicThumbnail';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
   import { galleryBackdrop } from '../../../../../../shared/ui/galleryBackdrop';
   import './photoViewer.css';
-  import { logoLight, logoDark, logoLightSrcset, logoDarkSrcset, catalogPlaceholder } from '$lib/localAssets';
+  import {
+    logoLight,
+    logoDark,
+    logoLightSrcset,
+    logoDarkSrcset,
+    catalogPlaceholder,
+  } from '$lib/localAssets';
   import { publicErrorCopy } from '$lib/publicError';
   import type { PublicArchive } from '$lib/publicArchive';
-  import HeroBackgroundTuner from './HeroBackgroundTuner.svelte';
-  import { highlightSlides, type PublicHighlights, type HeroSlide } from '$lib/homepageHighlights';
-  import HeroStandBackground from './HeroStandBackground.svelte';
-  import { standDefaults } from './heroStandSettings';
+  import type { PublicHighlights } from '$lib/homepageHighlights';
+  import HomeHeroV1 from './HomeHeroV1.svelte';
+  import HomeHeroV2 from './HomeHeroV2.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { submitContact } from '$lib/contactRequest';
   import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
@@ -32,7 +40,12 @@
     type PublicCard,
   } from '$lib/publicVehicles';
   import { page } from '$app/stores';
-  import { publicVehicleCanonical, vehicleJsonLdScript } from '$lib/vehicleStructuredData';
+  import {
+    publicVehicleCanonical,
+    vehicleJsonLdScript,
+    vehicleBreadcrumbItems,
+    vehicleBreadcrumbJsonLdScript,
+  } from '$lib/vehicleStructuredData';
   import { vehicleSeo } from '$lib/vehicleSeo';
   import { publicPhoto, publicHref, fuelLabels, transmissionLabels } from '$lib/publicVehicles';
   import DiscoverVehicles from './DiscoverVehicles.svelte';
@@ -43,15 +56,31 @@
   import { ringPhone } from './phoneAttention';
   import './mobileNavigation.css';
   import ThemeToggle from './ThemeToggle.svelte';
-  import { ArrowUpRight, ArrowLeft, ArrowRight, Plus, X, Heart, Menu, Phone, MapPin, Clock3, Mail } from 'lucide-svelte';
+  import {
+    ArrowUpRight,
+    ArrowLeft,
+    ArrowRight,
+    ChevronLeft,
+    ChevronRight,
+    X,
+    Heart,
+    Menu,
+    Phone,
+    MapPin,
+    Clock3,
+    Mail,
+    CalendarDays,
+    Fuel,
+  } from 'lucide-svelte';
   import { cars, photo, eur, number } from './data';
-  import { responsivePhoto, cardImageSizes, heroImageSizes } from './images';
+  import { responsivePhoto, cardImageSizes } from './images';
   import { designMotion, entrance, conditionalEntrance } from './designMotion';
-  import StageBackdrop from './StageBackdrop.svelte';
   import OrbitPerspective from './OrbitPerspective.svelte';
   import OrbitFaq from './OrbitFaq.svelte';
   import OrbitAccordion from './OrbitAccordion.svelte';
   import PublicVehicleStory from './PublicVehicleStory.svelte';
+  import VehicleSpecIcon from '../VehicleSpecIcon.svelte';
+  import GalleryContactSlide from '../GalleryContactSlide.svelte';
   import CabinReveal from './CabinReveal.svelte';
   import OrbitTrust from './OrbitTrust.svelte';
   import OrbitStats from './OrbitStats.svelte';
@@ -74,6 +103,8 @@
   import OrbitComparison from './OrbitComparison.svelte';
   import OrbitFavorites from './OrbitFavorites.svelte';
   import FavoriteButton from '../FavoriteButton.svelte';
+  import VehicleShareButton from '../VehicleShareButton.svelte';
+  import { vehicleShareData } from '$lib/vehicleShare';
   import { useFavorites } from '$lib/favorites';
   const { ids: favoriteIds } = useFavorites();
   import CompareButton from '../CompareButton.svelte';
@@ -87,14 +118,18 @@
       update(value: number) {
         if (value > previous && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
           animation?.cancel();
-          animation = node.querySelector('.comparison-count')?.animate(
-            [{ transform: 'scale(1)' }, { transform: 'scale(1.25)' }, { transform: 'scale(1)' }],
-            { duration: 420, easing: 'ease-out' },
-          );
+          animation = node
+            .querySelector('.comparison-count')
+            ?.animate(
+              [{ transform: 'scale(1)' }, { transform: 'scale(1.25)' }, { transform: 'scale(1)' }],
+              { duration: 420, easing: 'ease-out' },
+            );
         }
         previous = value;
       },
-      destroy() { animation?.cancel(); },
+      destroy() {
+        animation?.cancel();
+      },
     };
   }
   import { catalogCars, transmissionFor } from './catalogDemo';
@@ -137,7 +172,9 @@
     archivedVehicle?: PublicArchive;
     homeHighlights?: PublicHighlights;
   } = $props();
-  const thumbnailSession = $derived(publicVehicle ? createThumbnailSession(publicVehicle.slug) : undefined);
+  const thumbnailSession = $derived(
+    publicVehicle ? createThumbnailSession(publicVehicle.slug) : undefined,
+  );
   const car = $derived(
     publicVehicle
       ? {
@@ -240,19 +277,25 @@
   let contactError = $state('');
   let reason = $state('Gostava de saber mais.');
   let zoom = $state(0);
-  const galleryCount = $derived(publicVehicle ? publicVehicle.photos.length : car ? 1 : 0);
+  const galleryPhotoCount = $derived(publicVehicle?.photos.length ?? 0);
+  const galleryCount = $derived(
+    publicVehicle ? (galleryPhotoCount ? galleryPhotoCount + 1 : 0) : car ? 1 : 0,
+  );
+  const isContactSlide = $derived(
+    !!publicVehicle && galleryPhotoCount > 0 && zoom === galleryPhotoCount,
+  );
+  const galleryPhotoIndex = $derived(isContactSlide ? 0 : zoom);
   function galleryKeydown(event: KeyboardEvent) {
     trapDialogTab(event, galleryDialog);
     if (!publicVehicle || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
-    event.preventDefault(); zoom = Math.max(0, Math.min(galleryCount - 1, zoom + (event.key === 'ArrowRight' ? 1 : -1)));
+    const count = galleryOpen ? galleryPhotoCount : galleryCount;
+    event.preventDefault();
+    zoom = Math.max(0, Math.min(count - 1, zoom + (event.key === 'ArrowRight' ? 1 : -1)));
   }
-  $effect(() => { if (publicVehicle && zoom > Math.max(0, galleryCount - 1)) zoom = 0; });
-  let heroIndex = $state(0);
+  $effect(() => {
+    if (publicVehicle && zoom > Math.max(0, galleryCount - 1)) zoom = 0;
+  });
   let heroVersion = $state(1);
-  let heroBackground = $state(standDefaults());
-  const heroSlides: HeroSlide[] = $derived(homeHighlights ? highlightSlides(homeHighlights) : []);
-  const heroCar = $derived(heroSlides[heroIndex] ?? heroSlides[0]);
-  $effect(() => { if (heroIndex >= heroSlides.length) heroIndex = 0; });
   const equipmentItems = [
     {
       question: 'Conforto',
@@ -270,21 +313,22 @@
         'Na visita, peça informação sobre o histórico, a documentação, a manutenção e as condições de entrega.',
     },
   ];
-  function changeHeroSlide(direction: number) {
-    if (heroSlides.length) heroIndex = (heroIndex + direction + heroSlides.length) % heroSlides.length;
-  }
-  function heroKeydown(event: KeyboardEvent) {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    if (event.key === 'Home') heroIndex = 0;
-    else if (event.key === 'End') heroIndex = Math.max(0, heroSlides.length - 1);
-    else changeHeroSlide(event.key === 'ArrowRight' ? 1 : -1);
-  }
   const selected = $derived.by(() => {
-    const matches = homeCars.filter(car => (!homeBrand || car.brand === homeBrand) && (!homeYear || car.year === Number(homeYear)));
-    matches.sort((a, b) => homeOrder === 'preco_asc' ? (a.price ?? Infinity) - (b.price ?? Infinity)
-      : homeOrder === 'preco_desc' ? (b.price ?? -Infinity) - (a.price ?? -Infinity)
-      : homeOrder === 'ano' ? b.year - a.year : homeOrder === 'km' ? a.km - b.km : 0);
+    const matches = homeCars.filter(
+      (car) =>
+        (!homeBrand || car.brand === homeBrand) && (!homeYear || car.year === Number(homeYear)),
+    );
+    matches.sort((a, b) =>
+      homeOrder === 'preco_asc'
+        ? (a.price ?? Infinity) - (b.price ?? Infinity)
+        : homeOrder === 'preco_desc'
+          ? (b.price ?? -Infinity) - (a.price ?? -Infinity)
+          : homeOrder === 'ano'
+            ? b.year - a.year
+            : homeOrder === 'km'
+              ? a.km - b.km
+              : 0,
+    );
     return matches.slice(0, 5);
   });
   onMount(() => {
@@ -354,15 +398,24 @@
 </script>
 
 {#if publicVehicle}
-  <SocialMetadata title={vehicleSeo(publicVehicle).title} description={vehicleSeo(publicVehicle).description}
+  <SocialMetadata
+    title={vehicleSeo(publicVehicle).title}
+    description={vehicleSeo(publicVehicle).description}
     canonical={publicVehicleCanonical(publicVehicle, $page.url.origin)}
     image={publicVehicle.photos.length ? publicPhoto(publicVehicle.slug, 0) : undefined}
-    imageAlt={publicVehicle.photos.length ? `${publicVehicle.brand} ${publicVehicle.model} (${publicVehicle.year}) — fotografia publicada` : undefined}
-    brandImage={!publicVehicle.photos.length} />
+    imageAlt={publicVehicle.photos.length
+      ? `${publicVehicle.brand} ${publicVehicle.model} (${publicVehicle.year}) — fotografia publicada`
+      : undefined}
+    brandImage={!publicVehicle.photos.length}
+  />
 {:else if !favorites && !compare && !about && !catalog && !privacy && !errorStatus}
-  <SocialMetadata title={car ? `${car.brand} ${car.model} — Auto Nunes Martins` : 'Auto Nunes Martins — Automóveis usados'}
+  <SocialMetadata
+    title={car
+      ? `${car.brand} ${car.model} — Auto Nunes Martins`
+      : 'Auto Nunes Martins — Automóveis usados'}
     description="Conheça a Auto Nunes Martins e consulte as viaturas publicadas. Compare preço, ano e quilometragem e contacte-nos para saber mais."
-    canonical={new URL(id ? $page.url.pathname : '/', $page.url.origin).href} />
+    canonical={new URL(id ? $page.url.pathname : '/', $page.url.origin).href}
+  />
 {/if}
 
 <svelte:head>
@@ -372,6 +425,7 @@
     <meta name="description" content={seo.description} />
     <link rel="canonical" href={publicVehicleCanonical(publicVehicle, $page.url.origin)} />
     {@html vehicleJsonLdScript(publicVehicle, $page.url.origin)}
+    {@html vehicleBreadcrumbJsonLdScript(publicVehicle, $page.url.origin)}
   {/if}
   {#if !favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle && !errorStatus}
     <link rel="canonical" href={new URL('/', $page.url.origin).href} />
@@ -383,7 +437,9 @@
   <link rel="preload" href={orbitTitleFont} as="font" type="font/woff2" crossorigin="anonymous" />
   <link rel="preload" href={orbitTitleItalic} as="font" type="font/woff2" crossorigin="anonymous" />
   {#if !favorites && !compare && !about && !catalog && !privacy && !publicVehicle && !errorStatus}<title
-      >{car ? `${car.brand} ${car.model} — Auto Nunes Martins` : 'Auto Nunes Martins — Automóveis usados'}</title
+      >{car
+        ? `${car.brand} ${car.model} — Auto Nunes Martins`
+        : 'Auto Nunes Martins — Automóveis usados'}</title
     ><meta
       name="description"
       content="Conheça a Auto Nunes Martins e consulte as viaturas publicadas. Compare preço, ano e quilometragem e contacte-nos para saber mais."
@@ -395,40 +451,87 @@
 >
 
 <div
-  id={!favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle ? 'inicio' : undefined}
+  id={!favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle
+    ? 'inicio'
+    : undefined}
   class="design orbit"
-  class:orbit-home={!favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle}
+  class:orbit-home={!favorites &&
+    !compare &&
+    !about &&
+    !id &&
+    !catalog &&
+    !privacy &&
+    !publicVehicle}
   class:orbit-catalog={catalog}
-  class:orbit-inner={!!(favorites || compare || about || id || catalog || privacy || publicVehicle || errorStatus)}
+  class:orbit-inner={!!(
+    favorites ||
+    compare ||
+    about ||
+    id ||
+    catalog ||
+    privacy ||
+    publicVehicle ||
+    errorStatus
+  )}
   class:orbit-privacy={privacy || about || compare || favorites}
   class:orbit-company={about}
   class:orbit-detail={!!car || !!publicVehicle}
   class:public-detail={!!publicVehicle}
   class:dark={isDark}
   data-hero-version={heroVersion}
-  class:has-address={!!standContact.address || !!standContact.email || standContact.hours.length > 0}
+  class:has-address={!!standContact.address ||
+    !!standContact.email ||
+    standContact.hours.length > 0}
   use:designMotion
 >
   <div class="read-line" aria-hidden="true"></div>
   {#if standContact.address || standContact.email || standContact.hours.length}
     <div class="nav-contact-strip">
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users must be able to scroll the contact strip.) -->
-      <div class="nav-contact-inner" role="region" tabindex="0" aria-label="Contactos e horário — deslize para ver mais">
-      <div class="nav-contact-left">
-      {#if standContact.address}<address class="nav-address"><MapPin size={13} strokeWidth={1.6} aria-hidden="true" /><span>{standContact.address.replace(/\n/g, ' · ')}</span></address>{/if}
-      {#if standContact.hours.length}<div class="nav-hours" role="group" aria-label="Horário">
-        <Clock3 size={13} strokeWidth={1.6} aria-hidden="true" />
-        {#each standContact.hours.filter(hours => hours.days !== 'Domingo e feriados') as hours}<span><span>{hours.days}</span><span>{hours.time}</span></span>{/each}
-      </div>{/if}
-      </div>
-      {#if standContact.email}<span class="nav-email"><a href={`mailto:${standContact.email}`}><Mail size={13} strokeWidth={1.6} aria-hidden="true" />{standContact.email}</a></span>{/if}
+      <div
+        class="nav-contact-inner"
+        role="region"
+        tabindex="0"
+        aria-label="Contactos e horário — deslize para ver mais"
+      >
+        <div class="nav-contact-left">
+          {#if standContact.address}<address class="nav-address">
+              <MapPin size={13} strokeWidth={1.6} aria-hidden="true" /><span
+                >{standContact.address.replace(/\n/g, ' · ')}</span
+              >
+            </address>{/if}
+          {#if standContact.hours.length}<div class="nav-hours" role="group" aria-label="Horário">
+              <Clock3 size={13} strokeWidth={1.6} aria-hidden="true" />
+              {#each standContact.hours.filter((hours) => hours.days !== 'Domingo e feriados') as hours}<span
+                  ><span>{hours.days}</span><span>{hours.time}</span></span
+                >{/each}
+            </div>{/if}
+        </div>
+        {#if standContact.email}<span class="nav-email"
+            ><a href={`mailto:${standContact.email}`}
+              ><Mail size={13} strokeWidth={1.6} aria-hidden="true" />{standContact.email}</a
+            ></span
+          >{/if}
       </div>
     </div>
   {/if}
   <div class="nav-reserve" aria-hidden="true"></div>
   <header
     class="stand-header"
-    use:catalogNavigation={{ enabled: !!(favorites || compare || about || id || catalog || privacy || publicVehicle || errorStatus), directional: catalog, open: navOpen }}
+    use:catalogNavigation={{
+      enabled: !!(
+        favorites ||
+        compare ||
+        about ||
+        id ||
+        catalog ||
+        privacy ||
+        publicVehicle ||
+        errorStatus
+      ),
+      directional: catalog,
+      open: navOpen,
+    }}
     use:hybridNav={{
       enabled: !favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle,
       open: navOpen,
@@ -437,7 +540,11 @@
   >
     <a class="logo" href="/"
       ><img
-        data-logo-light={logoLight} data-logo-dark={logoDark} data-logo-light-srcset={logoLightSrcset} data-logo-dark-srcset={logoDarkSrcset} data-theme-logo
+        data-logo-light={logoLight}
+        data-logo-dark={logoDark}
+        data-logo-light-srcset={logoLightSrcset}
+        data-logo-dark-srcset={logoDarkSrcset}
+        data-theme-logo
         src={isDark ? logoDark : logoLight}
         srcset={isDark ? logoDarkSrcset : logoLightSrcset}
         sizes="(max-width: 700px) 128px, 180px"
@@ -454,7 +561,14 @@
     >
       <a
         href="/"
-        aria-current={!favorites && !compare && !id && !catalog && !privacy && !about && !publicVehicle && !errorStatus
+        aria-current={!favorites &&
+        !compare &&
+        !id &&
+        !catalog &&
+        !privacy &&
+        !about &&
+        !publicVehicle &&
+        !errorStatus
           ? 'page'
           : undefined}
         onclick={() => (navOpen = false)}><span class="nav-label">Início</span></a
@@ -469,24 +583,53 @@
         aria-current={about ? 'page' : undefined}
         onclick={() => (navOpen = false)}><span class="nav-label">Quem somos</span></a
       >
-      <a href="/comparar" class:has-comparison={$comparisonIds.length > 0} use:comparisonAttention={$comparisonAdditions} aria-current={compare ? 'page' : undefined}
-        aria-describedby="comparison-count-description"
-        onclick={() => (navOpen = false)}><span class="nav-label">Comparar</span>{' '}<span class="comparison-count">{$comparisonIds.length}</span></a>
-      <span id="comparison-count-description" class="hero-status">viaturas selecionadas para comparação</span>
+      <a
+        href="/comparar"
+        class:has-comparison={$comparisonIds.length > 0}
+        use:comparisonAttention={$comparisonAdditions}
+        aria-current={compare ? 'page' : undefined}
+        aria-label={`Comparar${$comparisonIds.length ? `, ${$comparisonIds.length} viaturas selecionadas` : ''}`}
+        onclick={() => (navOpen = false)}
+        ><span class="nav-label">Comparar</span>{#if $comparisonIds.length > 0}{' '}<span
+            class="comparison-count">{$comparisonIds.length}</span
+          >{/if}</a
+      >
       <div class="mobile-theme"><ThemeToggle dark={isDark} onchange={toggleTheme} /></div>
     </nav>
     <div class="header-actions">
       <div class="desktop-theme"><ThemeToggle dark={isDark} onchange={toggleTheme} /></div>
-      <a class="nav-favorites" class:filled={$favoriteIds.length > 0} href="/favoritos"
-        aria-current={favorites ? 'page' : undefined} aria-label={`Guardados${$favoriteIds.length ? ` ${$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}` : ''}, ${$favoriteIds.length} viaturas nos favoritos`}
-        onclick={() => (navOpen = false)}><span class="favorite-heart" aria-hidden="true"><Heart size={19} strokeWidth={1.5} fill={$favoriteIds.length ? 'currentColor' : 'none'} aria-hidden="true" /><span class="favorite-count" class:empty={!$favoriteIds.length} class:compact={$favoriteIds.length > 99}>{$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}</span></span><span class="favorite-label">Guardados</span></a>
+      <a
+        class="nav-favorites"
+        class:filled={$favoriteIds.length > 0}
+        href="/favoritos"
+        aria-current={favorites ? 'page' : undefined}
+        aria-label={`Guardados${$favoriteIds.length ? ` ${$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}` : ''}, ${$favoriteIds.length} viaturas nos favoritos`}
+        onclick={() => (navOpen = false)}
+        ><span class="favorite-heart" aria-hidden="true"
+          ><Heart
+            size={19}
+            strokeWidth={1.5}
+            fill={$favoriteIds.length ? 'currentColor' : 'none'}
+            aria-hidden="true"
+          /><span
+            class="favorite-count"
+            class:empty={!$favoriteIds.length}
+            class:compact={$favoriteIds.length > 99}
+            >{$favoriteIds.length > 99 ? '99+' : $favoriteIds.length}</span
+          ></span
+        ><span class="favorite-label">Guardados</span></a
+      >
       {#if standContact.phone}<a
           class="nav-phone"
           onpointerenter={ringNavPhone}
           onfocus={ringNavPhone}
           href={`tel:${standContact.phone.international}`}
           onclick={() => (navOpen = false)}
-          ><Phone size={16} strokeWidth={1.7} aria-hidden="true" /><span class="nav-phone-copy"><span>Ligar agora</span><span class="nav-phone-number">{standContact.phone.display}</span></span></a
+          ><Phone size={16} strokeWidth={1.7} aria-hidden="true" /><span class="nav-phone-copy"
+            ><span>Ligar agora</span><span class="nav-phone-number"
+              >{standContact.phone.display}</span
+            ></span
+          ></a
         >{/if}
       <button
         class="mobile-menu icon-button"
@@ -494,7 +637,10 @@
         aria-controls="stand-navigation"
         aria-expanded={navOpen}
         onclick={() => (navOpen = !navOpen)}
-        >{#if navOpen}<X size={21} aria-hidden="true" />{:else}<Menu size={21} aria-hidden="true" />{/if}</button
+        >{#if navOpen}<X size={21} aria-hidden="true" />{:else}<Menu
+            size={21}
+            aria-hidden="true"
+          />{/if}</button
       >
       <span class="edition-label orbit-edition-label">{'seleção'} / 0{'1'}</span>
     </div>
@@ -506,9 +652,17 @@
       {#if errorStatus === 404 && archivedVehicle}
         <p class="kicker">JÁ NÃO ESTÁ DISPONÍVEL</p>
         <h1>{archivedVehicle.brand} {archivedVehicle.model}</h1>
-        <p class="error-description">{archivedVehicle.year} · Esta viatura já não está disponível. Explore as viaturas que temos atualmente em catálogo.</p>
+        <p class="error-description">
+          {archivedVehicle.year} · Esta viatura já não está disponível. Explore as viaturas que temos
+          atualmente em catálogo.
+        </p>
         {#if archivedVehicle.photo}
-          <img class="archive-photo" style="display:block;width:100%;max-width:800px;height:auto;max-height:480px;object-fit:contain;object-position:left;margin:28px 0" src={archivedVehicle.photo} alt={`${archivedVehicle.brand} ${archivedVehicle.model}, ${archivedVehicle.year}`} />
+          <img
+            class="archive-photo"
+            style="display:block;width:100%;max-width:800px;height:auto;max-height:480px;object-fit:contain;object-position:left;margin:28px 0"
+            src={archivedVehicle.photo}
+            alt={`${archivedVehicle.brand} ${archivedVehicle.model}, ${archivedVehicle.year}`}
+          />
         {/if}
       {:else}
         <p class="kicker">UM DESVIO DE PERCURSO · {errorStatus}</p>
@@ -516,7 +670,9 @@
         <p class="error-description">{content.message}</p>
       {/if}
       <div class="error-actions">
-        <a class="pill primary" href="/viaturas">Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a>
+        <a class="pill primary" href="/viaturas"
+          >Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
+        >
         <a class="pill" href="/">Página inicial <ArrowUpRight size={18} aria-hidden="true" /></a>
       </div>
     </main>
@@ -534,76 +690,205 @@
     <main class="not-found">
       <p class="kicker">DESVIO DE PERCURSO</p>
       <h1>Esta viatura<br />não está por aqui.</h1>
-      <div class="error-actions"><a class="pill primary" href="/viaturas">Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a><a class="pill" href="/">Página inicial <ArrowUpRight size={18} aria-hidden="true" /></a></div>
+      <div class="error-actions">
+        <a class="pill primary" href="/viaturas"
+          >Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
+        ><a class="pill" href="/">Página inicial <ArrowUpRight size={18} aria-hidden="true" /></a>
+      </div>
     </main>
   {:else if car}
     <main class="vehicle-page">
+      {#if publicVehicle}<div class="detail-top-actions">
+          <a href="/viaturas"><ArrowLeft size={14} aria-hidden="true" /> Voltar às viaturas</a
+          ><VehicleShareButton {...vehicleShareData(publicVehicle, $page.url.origin)} />
+        </div>{/if}
       <div class="breadcrumbs">
-        <a href="/viaturas"><ArrowLeft size={14} aria-hidden="true" /> Voltar às viaturas</a><span
-          >{car.brand} / {car.model}</span
-        >{#if publicVehicle}<span class="detail-favorite-desktop"><FavoriteButton id={publicVehicle.slug} name={`${publicVehicle.brand} ${publicVehicle.model}`} text /></span>{:else}<button
-          onclick={() => toggleSave(car.id)}
-          class:saved={saved.includes(car.id)}
-          aria-pressed={saved.includes(car.id)}
-          ><Heart
-            size={16}
-            fill={saved.includes(car.id) ? 'currentColor' : 'none'} aria-hidden="true" />{saved.includes(car.id) ? 'Guardada' : 'Guardar'}</button
-        >{/if}
+        {#if publicVehicle}<nav class="breadcrumb-trail" aria-label="Percurso de navegação">
+            <ol>
+              {#each vehicleBreadcrumbItems(publicVehicle) as item, index}<li>
+                  {#if index > 0}<ChevronRight
+                      size={12}
+                      aria-hidden="true"
+                    />{/if}{#if index === 3}<span aria-current="page">{item.name}</span>{:else}<a
+                      href={item.href}>{item.name}</a
+                    >{/if}
+                </li>{/each}
+            </ol>
+          </nav>{:else}<a href="/viaturas"
+            ><ArrowLeft size={14} aria-hidden="true" /> Voltar às viaturas</a
+          ><span>{car.brand} / {car.model}</span>{/if}{#if !publicVehicle}<button
+            onclick={() => toggleSave(car.id)}
+            class:saved={saved.includes(car.id)}
+            aria-pressed={saved.includes(car.id)}
+            ><Heart
+              size={16}
+              fill={saved.includes(car.id) ? 'currentColor' : 'none'}
+              aria-hidden="true"
+            />{saved.includes(car.id) ? 'Guardada' : 'Guardar'}</button
+          >{/if}
       </div>
 
       <section class="vehicle-layout" data-scene>
         <div class="vehicle-photography">
           <div class="vehicle-gallery">
             <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Arrow keys coordinate the gallery's focused buttons; explicit previous/next controls remain available.) -->
-            <div class="vehicle-photo-stage" role="group" aria-label="Galeria de fotografias" onkeydown={galleryKeydown}>
-            <button
-              class="vehicle-photo"
-              type="button"
-              onclick={() => { galleryOpen = true; galleryDialog.showModal(); }}
-              disabled={!!publicVehicle && !publicVehicle.photos.length}
-              ><img use:vehiclePhoto={{ src: publicVehicle?.photos.length
-                  ? sizedPhoto(publicPhoto(publicVehicle.slug, zoom),1600)
-                  : photo(car.image, 2000), srcset: publicVehicle?.photos.length ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, zoom)) : undefined }}
-                src={publicVehicle?.photos.length
-                  ? sizedPhoto(publicPhoto(publicVehicle.slug, zoom),1600)
-                  : photo(car.image, 2000)}
-                srcset={publicVehicle?.photos.length ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, zoom)) : undefined}
-                sizes="(max-width: 701px) 100vw, (max-width: 1050px) 60vw, (min-width: 1920px) 1050px, 66vw"
-                fetchpriority="high"
-                alt={`${publicVehicle && !publicVehicle.photos.length ? '' : 'Ampliar fotografia: '}${car.brand} ${car.model} — ${publicVehicle ? (publicVehicle.photos.length ? 'fotografia ' + (zoom + 1) : 'imagem indisponível') : 'imagem ilustrativa'}`}
-                style={publicVehicle
-                  ? '--zoom:1;object-position:center'
-                  : `--zoom:${zoom === 0 ? 1 : 1.32};object-position:${zoom === 1 ? '25%' : zoom === 2 ? '75%' : '50%'} center`}
-              /><span class="photo-counter"
-                >{publicVehicle
-                  ? publicVehicle.photos.length
-                    ? zoom + 1 + ' / ' + publicVehicle.photos.length
-                    : 'SEM FOTOGRAFIA'
-                  : '01 / 01'} <span>{publicVehicle ? '' : 'FOTOGRAFIA ILUSTRATIVA'}</span></span
-              ><span class="expand"><Plus size={24} aria-hidden="true" /></span></button
+            <div
+              class="vehicle-photo-stage"
+              role="group"
+              aria-label="Galeria de fotografias"
+              onkeydown={galleryKeydown}
             >
-            {#if publicVehicle && galleryCount > 1}
-              <button type="button" class="photo-step photo-previous" aria-label="Fotografia anterior" aria-disabled={zoom === 0} onclick={() => { if (zoom > 0) zoom -= 1; }}><ArrowLeft size={20} aria-hidden="true" /></button>
-              <button type="button" class="photo-step photo-next" aria-label="Fotografia seguinte" aria-disabled={zoom === galleryCount - 1} onclick={() => { if (zoom < galleryCount - 1) zoom += 1; }}><ArrowRight size={20} aria-hidden="true" /></button>
-            {/if}
+              <button
+                class="vehicle-photo"
+                class:contact-slide={isContactSlide}
+                aria-busy={mainPhotoLoading}
+                type="button"
+                onclick={() => {
+                  galleryOpen = true;
+                  galleryDialog.showModal();
+                }}
+                disabled={!!publicVehicle && (!publicVehicle.photos.length || isContactSlide)}
+                ><img
+                  use:vehiclePhoto={{
+                    src: publicVehicle?.photos.length
+                      ? sizedPhoto(publicPhoto(publicVehicle.slug, galleryPhotoIndex), 1600)
+                      : photo(car.image, 2000),
+                    srcset: publicVehicle?.photos.length
+                      ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, galleryPhotoIndex))
+                      : undefined,
+                    fade: true,
+                    onLoading: (loading) => (mainPhotoLoading = loading),
+                  }}
+                  src={publicVehicle?.photos.length
+                    ? sizedPhoto(publicPhoto(publicVehicle.slug, galleryPhotoIndex), 1600)
+                    : photo(car.image, 2000)}
+                  srcset={publicVehicle?.photos.length
+                    ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, galleryPhotoIndex))
+                    : undefined}
+                  sizes="(max-width: 701px) 100vw, (max-width: 1050px) 60vw, (min-width: 1920px) 1050px, 66vw"
+                  fetchpriority="high"
+                  alt={isContactSlide
+                    ? ''
+                    : `${publicVehicle && !publicVehicle.photos.length ? '' : 'Ampliar fotografia: '}${car.brand} ${car.model} — ${publicVehicle ? (publicVehicle.photos.length ? 'fotografia ' + (zoom + 1) : 'imagem indisponível') : 'imagem ilustrativa'}`}
+                  style={publicVehicle
+                    ? '--zoom:1;object-position:center'
+                    : `--zoom:${zoom === 0 ? 1 : 1.32};object-position:${zoom === 1 ? '25%' : zoom === 2 ? '75%' : '50%'} center`}
+                /><span class="photo-counter" aria-hidden={isContactSlide}
+                  >{publicVehicle
+                    ? publicVehicle.photos.length
+                      ? zoom + 1 + ' / ' + publicVehicle.photos.length
+                      : 'SEM FOTOGRAFIA'
+                    : '01 / 01'} <span>{publicVehicle ? '' : 'FOTOGRAFIA ILUSTRATIVA'}</span></span
+                ></button
+              >
+              {#if mainPhotoLoading}<span
+                  class="main-photo-loading"
+                  role="status"
+                  aria-label="A carregar fotografia"><span aria-hidden="true"></span></span
+                >{/if}
+              {#if isContactSlide}<GalleryContactSlide
+                  onContact={() =>
+                    contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`)}
+                />{/if}
+              {#if publicVehicle && !isContactSlide}
+                <div class="detail-photo-favorite">
+                  <FavoriteButton
+                    id={publicVehicle.slug}
+                    name={`${publicVehicle.brand} ${publicVehicle.model}`}
+                    onPhoto
+                  />
+                </div>
+                <div class="detail-photo-compare">
+                  <CompareButton
+                    id={publicVehicle.slug}
+                    name={`${publicVehicle.brand} ${publicVehicle.model}`}
+                    overlay
+                  />
+                </div>
+              {/if}
+              {#if publicVehicle && galleryCount > 1}
+                <button
+                  type="button"
+                  class="photo-step photo-previous"
+                  aria-label="Fotografia anterior"
+                  aria-disabled={zoom === 0}
+                  onclick={() => {
+                    if (zoom > 0) zoom -= 1;
+                  }}><ArrowLeft size={20} aria-hidden="true" /></button
+                >
+                <button
+                  type="button"
+                  class="photo-step photo-next"
+                  aria-label="Fotografia seguinte"
+                  aria-disabled={zoom === galleryCount - 1}
+                  onclick={() => {
+                    if (zoom < galleryCount - 1) zoom += 1;
+                  }}><ArrowRight size={20} aria-hidden="true" /></button
+                >
+              {/if}
             </div>
             {#if publicVehicle}
-              {#if publicVehicle.photos.length > 1}<div class="detail-thumbnails-frame"><div
-                  class="detail-thumbnails"
-                  use:followThumbnail={zoom}
-                  role="group"
-                  aria-label="Fotografias da viatura"
+              {#if publicVehicle.photos.length > 0}<div
+                  class="detail-thumbnails-frame"
+                  use:thumbnailNavigation
                 >
-                  {#each publicVehicle.photos as _, i}<button
+                  <div
+                    class="detail-thumbnails"
+                    use:followThumbnail={zoom}
+                    use:dragThumbnailStrip
+                    role="group"
+                    aria-label="Fotografias da viatura"
+                  >
+                    {#each publicVehicle.photos as _, i}<button
+                        type="button"
+                        aria-label={'Ver fotografia ' + (i + 1)}
+                        aria-pressed={zoom === i}
+                        onclick={() => (zoom = i)}
+                        ><img
+                          {...thumbnailAttrs(
+                            thumbnailSession!,
+                            sizedPhoto(publicPhoto(publicVehicle.slug, i), 320),
+                            vehiclePhotoSet(publicPhoto(publicVehicle.slug, i)),
+                          )}
+                          use:publicThumbnail={{
+                            session: thumbnailSession!,
+                            index: i,
+                            src: sizedPhoto(publicPhoto(publicVehicle.slug, i), 320),
+                            srcset: vehiclePhotoSet(publicPhoto(publicVehicle.slug, i)),
+                            sizes: '(max-width:701px) 112px, 128px',
+                          }}
+                          sizes="(max-width:701px) 112px, 128px"
+                          alt=""
+                          loading={i < 3 ? 'eager' : 'lazy'}
+                          fetchpriority="low"
+                        /><span>{i + 1}</span></button
+                      >{/each}
+                    <button
                       type="button"
-                      aria-label={'Ver fotografia ' + (i + 1)}
-                      aria-pressed={zoom === i}
-                      onclick={() => (zoom = i)}
-                      ><img {...thumbnailAttrs(thumbnailSession!,sizedPhoto(publicPhoto(publicVehicle.slug,i),320),vehiclePhotoSet(publicPhoto(publicVehicle.slug,i)))} use:publicThumbnail={{session:thumbnailSession!,index:i,src:sizedPhoto(publicPhoto(publicVehicle.slug,i),320),srcset:vehiclePhotoSet(publicPhoto(publicVehicle.slug,i)),sizes:"(max-width:701px) 112px, 128px"}} sizes="(max-width:701px) 112px, 128px" alt="" loading={i < 3 ? "eager" : "lazy"} fetchpriority="low" /><span
-                        >{i + 1}</span
+                      class="contact-thumbnail"
+                      aria-label="Falar sobre esta viatura"
+                      aria-pressed={isContactSlide}
+                      onclick={() => (zoom = galleryPhotoCount)}
+                      ><img
+                        src={sizedPhoto(publicPhoto(publicVehicle.slug, 0), 320)}
+                        alt=""
+                        loading="lazy"
+                      /><ArrowUpRight size={24} aria-hidden="true" /><span>Fale connosco</span
                       ></button
-                    >{/each}
-                </div></div>{/if}
+                    >
+                  </div>
+                  <button
+                    type="button"
+                    class="thumbnail-step thumbnail-previous"
+                    aria-label="Recuar duas miniaturas"
+                    ><ChevronLeft size={28} strokeWidth={1.5} aria-hidden="true" /></button
+                  ><button
+                    type="button"
+                    class="thumbnail-step thumbnail-next"
+                    aria-label="Avançar duas miniaturas"
+                    ><ChevronRight size={28} strokeWidth={1.5} aria-hidden="true" /></button
+                  >
+                </div>{/if}
             {:else}
               <div
                 class="detail-thumbnails"
@@ -617,7 +902,8 @@
                     aria-pressed={zoom === i}
                     onclick={() => (zoom = i)}
                   >
-                    <img use:vehiclePhoto={{ src: photo(car.image, 320) }}
+                    <img
+                      use:vehiclePhoto={{ src: photo(car.image, 320) }}
                       src={photo(car.image, 320)}
                       alt=""
                       style:transform={'scale(' + (i === 0 ? 1 : 1.32) + ')'}
@@ -650,7 +936,7 @@
           <h1 id="vehicle-title">{car.brand}<br /><span>{car.model}</span></h1>
           {#if car.line}<p class="model-line">{car.line.split(' · ')[0]}</p>{/if}
           <div class="purchase-price">
-            <span>{publicVehicle ? 'Preço publicado' : 'Preço de demonstração'}</span><strong
+            <span>{publicVehicle ? 'Preço da viatura' : 'Preço de demonstração'}</span><strong
               >{publicVehicle ? publicPrice(publicVehicle.price) : eur(car.price)}</strong
             >
           </div>
@@ -659,37 +945,78 @@
               >{number(car.km)}<small>Quilómetros</small></span
             ><span>{car.fuel}<small>Combustível</small></span>
           </div>
+          <button
+            class="trade-in-contact"
+            onclick={() => contact('Gostava de apresentar a minha viatura para retoma.')}
+          >
+            <span
+              ><strong>Tem uma viatura para retoma?</strong><small
+                >Conte-nos o que pretende trocar.</small
+              ></span
+            ><ArrowUpRight size={18} aria-hidden="true" />
+          </button>
           <button class="pill primary" onclick={() => contact()}
             >Quero conhecer <ArrowUpRight size={18} aria-hidden="true" /></button
-          ><button
-            class="secondary-contact"
-            onclick={() => contact('Gostava de apresentar a minha viatura para retoma.')}
-            >Tem uma viatura para retoma? <Plus size={15} aria-hidden="true" /></button
           >
-          {#if publicVehicle}<div class="detail-compare" role="group" aria-label="Guardar e comparar viatura"><CompareButton id={publicVehicle.slug} name={`${publicVehicle.brand} ${publicVehicle.model}`} /><span class="detail-favorite-mobile"><FavoriteButton id={publicVehicle.slug} name={`${publicVehicle.brand} ${publicVehicle.model}`} text /></span></div>{/if}
-          <p class="fine-print">
-            {publicVehicle
-              ? 'Confirme a disponibilidade, o histórico e as condições com o stand.'
-              : 'Fotografia, preço e características ilustrativos. Esta página é uma proposta visual.'}
-          </p>
+          {#if standContact.phone}<div class="purchase-phone-alternative">
+              <span>Prefere falar connosco?</span><a
+                class="purchase-call"
+                href={`tel:${standContact.phone.international}`}
+                aria-label={`Ligar para o stand: ${standContact.phone.display}`}
+                ><Phone size={15} strokeWidth={1.7} aria-hidden="true" /><span>Ligar agora</span></a
+              >
+            </div>{/if}
+          <div class="purchase-followup">
+            {#if publicVehicle}<div
+                class="detail-compare"
+                role="group"
+                aria-label="Ações da viatura"
+              >
+                <CompareButton
+                  id={publicVehicle.slug}
+                  name={`${publicVehicle.brand} ${publicVehicle.model}`}
+                /><FavoriteButton
+                  id={publicVehicle.slug}
+                  name={`${publicVehicle.brand} ${publicVehicle.model}`}
+                  text
+                /><VehicleShareButton {...vehicleShareData(publicVehicle, $page.url.origin)} />
+              </div>{/if}
+            <p class="fine-print">
+              {publicVehicle
+                ? 'Confirme a disponibilidade, o histórico e as condições com o stand.'
+                : 'Fotografia, preço e características ilustrativos. Esta página é uma proposta visual.'}
+            </p>
+          </div>
         </div>
         <section class="detail-facts" use:entrance>
           <div>
-            <p class="kicker">O ESSENCIAL. SEM RUÍDO.</p>
             <h2>Todos os detalhes.<br /><span>Uma só escolha.</span></h2>
           </div>
           <dl>
             {#each detailSpecs as spec}<div>
-                <dt>{spec[0]}</dt>
+                <dt><VehicleSpecIcon label={String(spec[0])} /><span>{spec[0]}</span></dt>
                 <dd>{spec[1]}</dd>
               </div>{/each}
           </dl>
         </section>
-        {#if !publicVehicle || publicVehicle.photos.length > 1}
+        {#if !publicVehicle || publicVehicle.photos.length > 0}
           <section class="detail-band" data-scene>
-            <img use:vehiclePhoto={{ src: publicVehicle ? sizedPhoto(publicPhoto(publicVehicle.slug, 1),1600) : photo(car.image, 1800), srcset: publicVehicle ? vehiclePhotoSet(publicPhoto(publicVehicle.slug,1)) : undefined }}
-              src={publicVehicle ? sizedPhoto(publicPhoto(publicVehicle.slug, 1),1600) : photo(car.image, 1800)}
-              srcset={publicVehicle ? vehiclePhotoSet(publicPhoto(publicVehicle.slug,1)) : undefined} sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw"
+            <img
+              use:vehiclePhoto={{
+                src: publicVehicle
+                  ? sizedPhoto(publicPhoto(publicVehicle.slug, 0), 1600)
+                  : photo(car.image, 1800),
+                srcset: publicVehicle
+                  ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, 0))
+                  : undefined,
+              }}
+              src={publicVehicle
+                ? sizedPhoto(publicPhoto(publicVehicle.slug, 0), 1600)
+                : photo(car.image, 1800)}
+              srcset={publicVehicle
+                ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, 0))
+                : undefined}
+              sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw"
               alt=""
               loading="lazy"
             />
@@ -703,7 +1030,7 @@
             <span class="band-index" aria-hidden="true">↗</span>
           </section>
         {/if}
-        {#if publicVehicle}<PublicVehicleStory vehicle={publicVehicle} onContact={() => contact()} />{/if}
+        {#if publicVehicle}<PublicVehicleStory vehicle={publicVehicle} />{/if}
         {#if !publicVehicle}
           <section class="equipment" use:entrance>
             <h2>Bom por fora.<br />Melhor de perto.</h2>
@@ -722,148 +1049,59 @@
           </p>
           <h2>Continue a explorar.</h2>
           {#if publicVehicle}
-            {#key publicVehicle.slug}<RelatedCarousel vehicles={relatedVehicles} card={vehicleCard} />{/key}
+            {#key publicVehicle.slug}<RelatedCarousel
+                vehicles={relatedVehicles}
+                card={vehicleCard}
+              />{/key}
           {:else}<div class="related-grid">
-            {#each suggestions as item}<a
-                href={publicVehicle ? publicHref(item.id) : '/viaturas'}
-                ><div class="related-image">
-                  <img use:vehiclePhoto={{ src: photo(item.image, 900) }}
-                    src={photo(item.image, 900)}
-                    alt={`${item.brand} ${item.model}`}
-                    loading="lazy"
-                  /><span><ArrowUpRight size={20} aria-hidden="true" /></span>
-                </div>
-                <div class="related-body">
-                  <span class="related-brand">{item.brand}</span>
-                  <h3>{item.model}</h3>
-                  <p>{item.year}</p>
-                  <strong class="related-price">{publicPrice(item.price)}</strong>
-                </div></a
-              >{/each}
-          </div>{/if}
+              {#each suggestions as item}<a href={publicVehicle ? publicHref(item.id) : '/viaturas'}
+                  ><div class="related-image">
+                    <img
+                      use:vehiclePhoto={{ src: photo(item.image, 900) }}
+                      src={photo(item.image, 900)}
+                      alt={`${item.brand} ${item.model}`}
+                      loading="lazy"
+                    /><span><ArrowUpRight size={20} aria-hidden="true" /></span>
+                  </div>
+                  <div class="related-body">
+                    <span class="related-brand">{item.brand}</span>
+                    <h3>{item.model}</h3>
+                    <p>{item.year}</p>
+                    <strong class="related-price">{publicPrice(item.price)}</strong>
+                  </div></a
+                >{/each}
+            </div>{/if}
         </section>{/if}
     </main>
   {:else}
     <main>
-      <section
-        class="orbit-intro"
-        data-scene
-        data-scroll-hero
-        aria-label="Viaturas em destaque"
-        aria-roledescription="carrossel"
-      >
-        {#if heroVersion === 1}<HeroStandBackground bind:settings={heroBackground} />{/if}
-        <div class="orbit-stage" data-hero-stage>
-          <StageBackdrop />
-          <div class="orbit-topline">
-            <span class="kicker hero-kicker"
-              ><span class="hero-kicker-dot"><OrbitRedDot /></span><span
-                >AUTOMÓVEIS USADOS.<span class="hero-kicker-complement">NOVAS HISTÓRIAS.</span
-                ></span
-              ></span
-            ><span class="kicker">PORTUGAL / SELEÇÃO AUTOMÓVEL</span>
-          </div>
-          <div class="orbit-copy">
-            <img
-              class="orbit-hero-signature"
-              data-logo-light={logoLight} data-logo-dark={logoDark} data-logo-light-srcset={logoLightSrcset} data-logo-dark-srcset={logoDarkSrcset} data-theme-logo={heroVersion === 2 ? '' : undefined}
-              src={isDark || heroVersion === 1 ? logoDark : logoLight}
-              srcset={isDark || heroVersion === 1 ? logoDarkSrcset : logoLightSrcset}
-              sizes="(max-width: 700px) 336px, (min-width: 1477px) 572px, (min-width: 973px) 38.7vw, 377px"
-              alt="Auto Nunes Martins"
-              width="1881"
-              height="836"
-            />
-            <h1 class="orbit-title">
-              O próximo<br /><span>é seu<span class="hero-period">.</span></span>
-            </h1>
-            <p class="orbit-title-note">
-              O carro certo para os seus dias.<br />Escolhido ao seu ritmo.
-            </p>
-          </div>
-          <div class="orbit-object">
-            <div class="object-edge"></div>
-            {#if heroCar}
-            <a
-              class="orbit-main-photo"
-              id="orbit-featured"
-              href={heroCar.href}
-              aria-labelledby="featured-vehicle-caption"
-              aria-describedby={heroCar.illustrative ? 'featured-image-note' : undefined}
-            >
-              {#each heroSlides as featured, index (featured.id)}
-                <img use:vehiclePhoto={{ src: photo(featured.image, 1800), srcset: responsivePhoto(featured.image) }}
-                  class:active={heroIndex === index}
-                  src={photo(featured.image, 1800)}
-                  srcset={responsivePhoto(featured.image)}
-                  sizes={heroImageSizes}
-                  alt=""
-                  aria-hidden="true"
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  fetchpriority={index === 0 ? 'high' : 'low'}
-                  decoding="async"
-                />
-              {/each}
-              <span id="featured-image-note" hidden>{heroCar.illustrative ? 'Fotografia ilustrativa.' : ''}</span>
-              <span class="featured-badge" aria-hidden="true">EM DESTAQUE</span>
-              <div>
-                <span id="featured-vehicle-caption"
-                  >{heroCar.brand}
-                  {heroCar.model}{' '}<small>{heroCar.year} · {number(heroCar.km)} KM</small></span
-                >
-                <ArrowUpRight size={24} aria-hidden="true" />
-              </div></a
-            ><span class="object-coordinate coordinate-a" aria-hidden="true">EM DESTAQUE</span>
-            {:else}
-              <a class="orbit-main-photo hero-empty" id="orbit-featured" href="/viaturas">
-                <span>O seu próximo carro começa com uma escolha.</span>
-                <div><span>Conheça as nossas viaturas<small>CONSULTE O CATÁLOGO</small></span><ArrowUpRight size={24} aria-hidden="true" /></div>
-              </a>
-            {/if}
-          </div>
-          {#if heroCar}
-          <div
-            class="orbit-side"
-            role="group"
-            aria-label="Navegar pelos destaques"
-            style={`--hero-progress:${(heroIndex + 1) / heroSlides.length}`}
-          >
-            <button
-              type="button"
-              aria-label="Destaque anterior"
-              disabled={heroSlides.length < 2}
-              aria-controls="orbit-featured"
-              onclick={() => changeHeroSlide(-1)}
-              onkeydown={heroKeydown}><ArrowLeft size={18} aria-hidden="true" /></button
-            >
-            <div class="hero-slide-index" aria-hidden="true">
-              <span>{String(heroIndex + 1).padStart(2, '0')}</span>
-              <span class="hero-index-track"></span>
-              <span>{String(heroSlides.length).padStart(2, '0')}</span>
-            </div>
-            <button
-              type="button"
-              aria-label="Destaque seguinte"
-              disabled={heroSlides.length < 2}
-              aria-controls="orbit-featured"
-              onclick={() => changeHeroSlide(1)}
-              onkeydown={heroKeydown}><ArrowRight size={18} aria-hidden="true" /></button
-            >
-            <span class="hero-status" role="status" aria-live="polite" aria-atomic="true">
-              Destaque {heroIndex + 1} de {heroSlides.length}: {heroCar.brand}
-              {heroCar.model}.
-            </span>
-          </div>
-          {/if}
-        </div>
-      </section>
+      {#if heroVersion === 2}
+        <HomeHeroV2
+          {homeHighlights}
+          hasAddress={!!standContact.address ||
+            !!standContact.email ||
+            standContact.hours.length > 0}
+        />
+      {:else}
+        <HomeHeroV1 {homeHighlights} />
+      {/if}
 
-      {#if import.meta.env.DEV}<div class="hero-versions" role="group" aria-label="Escolher composição do hero">
-        {#each [1, 2] as version}
-          <button type="button" aria-label={`Versão ${version} do hero`} aria-pressed={heroVersion === version} title={['Original com fotografia panorâmica', 'Original'][version - 1]} onclick={() => heroVersion = version}>{version}</button>
-        {/each}
-      </div>
-      <HeroBackgroundTuner bind:settings={heroBackground} active={heroVersion === 1} onchange={(value) => heroBackground = value} />{/if}
+      {#if import.meta.env.DEV}<div
+          class="hero-versions"
+          role="group"
+          aria-label="Escolher composição do hero"
+        >
+          {#each [1, 2] as version}
+            <button
+              type="button"
+              aria-label={`Versão ${version} do hero`}
+              aria-pressed={heroVersion === version}
+              title={['Original com fotografia panorâmica', 'Original'][version - 1]}
+              onclick={() => (heroVersion = version)}>{version}</button
+            >
+          {/each}
+        </div>
+      {/if}
       <OrbitStats />
 
       <section class="showroom" id="selecao">
@@ -879,6 +1117,7 @@
             <div class="home-basic-filters">
               <OrbitSelect
                 id="home-brand"
+                showBrandLogos
                 label="Marca"
                 value={homeBrand}
                 options={[
@@ -967,7 +1206,10 @@
     </main>
   {/if}
 
-  {#if !favorites && !compare && !about && !catalog && !privacy && !errorStatus}<section class="services" aria-labelledby="services-title">
+  {#if !favorites && !compare && !about && !catalog && !privacy && !errorStatus}<section
+      class="services"
+      aria-labelledby="services-title"
+    >
       <p class="kicker" id="services-title">O CARRO É SÓ O INÍCIO.</p>
       <div>
         {#each [['01', 'Dar o próximo passo.', 'Conheça a viatura ao seu ritmo. Combine uma visita e esclareça as suas dúvidas.', 'Quero combinar uma visita.'], ['02', 'Mudar de companhia.', 'Tem uma viatura para retoma? Conte-nos um pouco sobre ela e sobre os seus planos.', 'Gostava de falar sobre uma retoma.'], ['03', 'Saber os detalhes.', 'Equipamento, documentação e condições: reúna a informação antes de decidir.', 'Gostava de esclarecer algumas dúvidas.']] as service, index}<article
@@ -976,7 +1218,12 @@
             <span>{service[0]}<ArrowUpRight size={22} aria-hidden="true" /></span>
             <h3>{service[1]}</h3>
             <p>{service[2]}</p>
-            <button onclick={() => contact(service[3])}><span class="service-cta-label">Vamos conversar</span><ArrowUpRight size={15} aria-hidden="true" /></button>
+            <button onclick={() => contact(service[3])}
+              ><span class="service-cta-label">Vamos conversar</span><ArrowUpRight
+                size={15}
+                aria-hidden="true"
+              /></button
+            >
           </article>{/each}
       </div>
     </section>{/if}
@@ -1037,7 +1284,8 @@
         Pedido<br />enviado.
       </h2>
       <p id="contact-description">
-        O pedido foi aceite pelo serviço de email para envio ao stand. Responderemos para esclarecer as suas questões ou combinar a visita. O agendamento ainda não está confirmado.
+        O pedido foi aceite pelo serviço de email para envio ao stand. Responderemos para esclarecer
+        as suas questões ou combinar a visita. O agendamento ainda não está confirmado.
       </p>
       <button class="pill primary" onclick={() => contactDialog.close()}
         >Continuar a descobrir <ArrowUpRight size={18} aria-hidden="true" /></button
@@ -1046,22 +1294,28 @@
         onsubmit={async (event) => {
           event.preventDefault();
           if (sending) return;
-          sending = true; contactError = '';
+          sending = true;
+          contactError = '';
           const form = event.currentTarget;
           try {
             await submitContact(form);
             sent = true;
             await tick();
             confirmationHeading?.focus({ preventScroll: true });
-          } catch (error) { contactError = error instanceof Error ? error.message : 'Não foi possível enviar o pedido.'; }
-          finally { sending = false; }
+          } catch (error) {
+            contactError =
+              error instanceof Error ? error.message : 'Não foi possível enviar o pedido.';
+          } finally {
+            sending = false;
+          }
         }}
       >
         <label
           >Nome<input
             bind:this={contactName}
             required
-            name="name" maxlength="120"
+            name="name"
+            maxlength="120"
             autocomplete="name"
             placeholder="O seu nome"
           /></label
@@ -1069,7 +1323,8 @@
           >Email<input
             required
             type="email"
-            name="email" maxlength="254"
+            name="email"
+            maxlength="254"
             autocomplete="email"
             placeholder="nome@exemplo.pt"
           /></label
@@ -1082,126 +1337,451 @@
               <option>Falar sobre uma retoma</option>
             </select></FormSelectField
           ></label
-        ><label>Mensagem<textarea name="message" required maxlength="5000" rows="3" bind:value={reason}></textarea></label
+        ><label
+          >Mensagem<textarea name="message" required maxlength="5000" rows="3" bind:value={reason}
+          ></textarea></label
         ><ContactPrivacyNotice />
         {#if contactError}<p role="alert">{contactError}</p>{/if}
         <button class="pill primary" type="submit" disabled={sending}
-          >{sending ? 'A enviar…' : 'Enviar pedido'} <ArrowUpRight size={18} aria-hidden="true" /></button
+          >{sending ? 'A enviar…' : 'Enviar pedido'}
+          <ArrowUpRight size={18} aria-hidden="true" /></button
         >
       </form>{/if}
   </dialog>
-  <dialog bind:this={galleryDialog} use:galleryBackdrop onclose={() => galleryOpen = false} class="gallery-dialog" aria-labelledby="gallery-caption" onkeydown={galleryKeydown}>
-    {#if car && galleryOpen}<img use:vehiclePhoto={{ src: publicVehicle?.photos.length
-          ? publicPhoto(publicVehicle.slug, zoom)
-          : photo(car.image, 2400) }}
+  <dialog
+    bind:this={galleryDialog}
+    use:galleryBackdrop
+    onclose={() => (galleryOpen = false)}
+    class="gallery-dialog"
+    aria-labelledby="gallery-caption"
+    onkeydown={galleryKeydown}
+  >
+    {#if car && galleryOpen}<img
+        use:vehiclePhoto={{
+          src: publicVehicle?.photos.length
+            ? publicPhoto(publicVehicle.slug, zoom)
+            : photo(car.image, 2400),
+        }}
         src={publicVehicle?.photos.length
           ? publicPhoto(publicVehicle.slug, zoom)
           : photo(car.image, 2400)}
         alt={`${car.brand} ${car.model}${publicVehicle ? '' : ' — fotografia ilustrativa'}`}
       />
       <div class="viewer-controls">
-      <button class="dialog-close icon-button" onclick={() => galleryDialog.close()} aria-label="Fechar fotografia"><X size={25} aria-hidden="true" /></button>
-      <p id="gallery-caption">{car.brand} {car.model}{publicVehicle ? ' · ' + (zoom + 1) + ' / ' + galleryCount : ' / FOTOGRAFIA ILUSTRATIVA'}</p>
-    {#if publicVehicle && galleryCount > 1}
-      <button type="button" class="viewer-step viewer-previous" aria-label="Fotografia anterior" aria-disabled={zoom === 0} onclick={() => { if (zoom > 0) zoom -= 1; }}><ArrowLeft size={22} aria-hidden="true" /></button>
-      <button type="button" class="viewer-step viewer-next" aria-label="Fotografia seguinte" aria-disabled={zoom === galleryCount - 1} onclick={() => { if (zoom < galleryCount - 1) zoom += 1; }}><ArrowRight size={22} aria-hidden="true" /></button>
-    {/if}
+        <button
+          class="dialog-close icon-button"
+          onclick={() => galleryDialog.close()}
+          aria-label="Fechar fotografia"><X size={25} aria-hidden="true" /></button
+        >
+        <p id="gallery-caption">
+          {car.brand}
+          {car.model}{publicVehicle
+            ? ' · ' + (zoom + 1) + ' / ' + galleryPhotoCount
+            : ' / FOTOGRAFIA ILUSTRATIVA'}
+        </p>
+        {#if publicVehicle && galleryPhotoCount > 1}
+          <button
+            type="button"
+            class="viewer-step viewer-previous"
+            aria-label="Fotografia anterior"
+            aria-disabled={zoom === 0}
+            onclick={() => {
+              if (zoom > 0) zoom -= 1;
+            }}><ArrowLeft size={22} aria-hidden="true" /></button
+          >
+          <button
+            type="button"
+            class="viewer-step viewer-next"
+            aria-label="Fotografia seguinte"
+            aria-disabled={zoom === galleryPhotoCount - 1}
+            onclick={() => {
+              if (zoom < galleryPhotoCount - 1) zoom += 1;
+            }}><ArrowRight size={22} aria-hidden="true" /></button
+          >
+        {/if}
       </div>{/if}
   </dialog>
 </div>
 
 {#snippet vehicleCard(vehicle: CatalogCar | PublicCard, index: number, animate: boolean = true)}
-  <article class="vehicle-card" use:conditionalEntrance={animate ? (index % 2) * 110 : false}>
-    <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
-      ><img use:vehiclePhoto={{ src: photo(vehicle.image, 1100), srcset: responsivePhoto(vehicle.image, 1600) }}
-        src={photo(vehicle.image, 1100)}
-        srcset={responsivePhoto(vehicle.image, 1600)}
-        sizes={cardImageSizes}
-        alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
-        loading="lazy"
-      />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
-        class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
-      ></a
-    >
-    <div class="card-body">
-    <div class="card-info">
-      <a href={'href' in vehicle ? vehicle.href : '/viaturas'}
-        ><span>{vehicle.brand}</span>
-        <h3>{vehicle.model}</h3></a
-      >{#if 'approved' in vehicle}<FavoriteButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} />{:else}<button
-        class="save"
-        class:saved={saved.includes(vehicle.id)}
-        onclick={() => toggleSave(vehicle.id)}
-        aria-label={`${saved.includes(vehicle.id) ? 'Remover' : 'Guardar'} ${vehicle.brand} ${vehicle.model}`}
-        aria-pressed={saved.includes(vehicle.id)}
-        ><Heart size={18} fill={saved.includes(vehicle.id) ? 'currentColor' : 'none'} aria-hidden="true" /></button
-      >{/if}
-    </div>
-    <div class="card-specs">
-      <span>{vehicle.year}</span><span>{number(vehicle.km)} km</span><span>{vehicle.fuel}</span>
-    </div>
-    <div class="card-price">
-      <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong><a
-        href={'href' in vehicle ? vehicle.href : '/viaturas'}
-        ><span class="card-cta-label">Ver viatura</span> <ArrowUpRight size={14} aria-hidden="true" /></a
+  <article
+    class="vehicle-card"
+    class:public-card={'approved' in vehicle}
+    use:conditionalEntrance={animate ? (index % 2) * 110 : false}
+  >
+    <div class="card-photo">
+      <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
+        ><img
+          use:vehiclePhoto={{
+            src: photo(vehicle.image, 1100),
+            srcset: responsivePhoto(vehicle.image, 1600),
+          }}
+          src={photo(vehicle.image, 1100)}
+          srcset={responsivePhoto(vehicle.image, 1600)}
+          sizes={cardImageSizes}
+          alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
+          loading="lazy"
+        />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
+          class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
+        ></a
       >
+      {#if 'approved' in vehicle}<div class="card-compare">
+          <CompareButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} overlay />
+        </div>{/if}
     </div>
-    {#if 'approved' in vehicle}<div class="card-compare"><CompareButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} /></div>{/if}
+    <div class="card-body">
+      <div class="card-info">
+        <a class="card-detail-link" href={'href' in vehicle ? vehicle.href : '/viaturas'}
+          ><h3>{vehicle.brand} {vehicle.model}</h3>
+          {#if 'version' in vehicle && vehicle.version}<span class="card-version"
+              >{vehicle.version}</span
+            >{/if}</a
+        >
+        <div class="card-favorite">
+          {#if 'approved' in vehicle}<FavoriteButton
+              id={vehicle.id}
+              name={`${vehicle.brand} ${vehicle.model}`}
+            />{:else}<button
+              class="save"
+              class:saved={saved.includes(vehicle.id)}
+              onclick={() => toggleSave(vehicle.id)}
+              aria-label={`${saved.includes(vehicle.id) ? 'Remover' : 'Guardar'} ${vehicle.brand} ${vehicle.model}`}
+              aria-pressed={saved.includes(vehicle.id)}
+              ><Heart
+                size={18}
+                fill={saved.includes(vehicle.id) ? 'currentColor' : 'none'}
+                aria-hidden="true"
+              /></button
+            >{/if}
+        </div>
+      </div>
+      <div class="card-price">
+        <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong>
+      </div>
+      <div class="card-specs">
+        <span><CalendarDays size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.year}</span
+        ><span
+          ><svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"><path d="M4 19 8 5m8 0 4 14M12 6v2m0 3v2m0 3v2" /></svg
+          >{number(vehicle.km)} km</span
+        ><span><Fuel size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.fuel}</span>
+      </div>
     </div>
   </article>
 {/snippet}
 
 <style>
-  .vehicle-photo-stage { position: relative; }
-  .photo-step { position:absolute; top:50%; transform:translateY(-50%); z-index:2; min-width:44px; min-height:44px; display:grid; place-items:center; border:1px solid #ffffff60; border-radius:50%; background:#111a; color:white; cursor:pointer; }
-  .photo-previous { left:12px; } .photo-next { right:calc(var(--detail-thumb-width, clamp(72px, 8vw, 108px)) + 12px); }
-  .photo-step[aria-disabled='true'] {opacity:.35;cursor:default;}
-  .photo-step:focus-visible {outline:2px solid var(--red);outline-offset:3px;}
-  @media(max-width:700px){.photo-next{right:12px}}
-
-  .hero-empty { background: var(--bg); color: var(--text); }
-  .hero-empty > span { display:block; padding:12%; max-width:75%; font-size:clamp(20px,3vw,42px); line-height:1.1; }
-  .home-brands { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: var(--orbit-space-section) auto 0; }
-  .nav-favorites { position: relative; display: inline-grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; color: var(--text); border-radius: 50%; }
-  .nav-favorites.filled { color: var(--red); }
-  .nav-favorites[aria-current="page"] { background: color-mix(in srgb, var(--text) 6%, transparent); }
-  .favorite-heart { position: relative; display: inline-flex; flex: 0 0 19px; width: 19px; height: 19px; }
-  .nav-favorites .favorite-count { position: absolute; inset: 0; display: grid; place-items: center; padding-bottom: 2px; color: #fff; font-size: 7px; font-weight: 700; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-  .nav-favorites .favorite-count.compact { font-size: 5.5px; }
-  .nav-favorites .favorite-count.empty { visibility: hidden; }
-  .favorite-label { display: none; color: var(--text); }
-  @media (min-width: 1001px) {
-    .design.orbit .header-actions { gap: 12px; }
-    .nav-favorites { display: inline-flex; gap: 8px; width: auto; padding-inline: 10px; border-radius: 4px; font-size: 12px; text-decoration: none; }
-    .favorite-label { display: inline; }
-    .nav-favorites:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+  .vehicle-photo-stage {
+    position: relative;
   }
-  .nav-favorites:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
-  .mobile-theme { display: none; }
+  .detail-photo-favorite,
+  .detail-photo-compare {
+    position: absolute;
+    z-index: 3;
+  }
+  .detail-photo-favorite {
+    top: 12px;
+    right: 12px;
+  }
+  .detail-photo-compare {
+    bottom: 12px;
+    left: 12px;
+  }
+  .photo-step {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    min-width: 44px;
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #ffffff60;
+    border-radius: 50%;
+    background: #111a;
+    color: white;
+    cursor: pointer;
+  }
+  .photo-previous {
+    left: 12px;
+  }
+  .photo-next {
+    right: 12px;
+  }
+  .photo-step[aria-disabled='true'] {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .photo-step:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 3px;
+  }
+  @media (hover: hover) {
+    .photo-step:not([aria-disabled='true']):hover {
+      background: #3c3c38;
+      color: #fff;
+      transform: translateY(-50%) scale(1.06);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .photo-step {
+      transition:
+        background-color 180ms ease,
+        color 180ms ease,
+        border-color 180ms ease,
+        transform 180ms ease;
+    }
+  }
   @media (max-width: 700px) {
-    .desktop-theme { display: none; }
-    .mobile-theme { display: block; border-top: 1px solid var(--line); padding-top: 8px; }
-    .mobile-theme :global(button) { min-height: 44px; gap: 9px; }
-    .design.orbit .stand-header .logo { width: 96px; flex-basis: 96px; padding: 0; }
-    .design.orbit .stand-header .logo img { width: 100%; }
-    .design.orbit > header.stand-header { padding-inline: 16px; gap: 8px; }
+    .photo-next {
+      right: 12px;
+    }
   }
-  .comparison-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 7px; border: 1px solid var(--line); border-radius: 50%; font-size: 10px; font-weight: 500; font-variant-numeric: tabular-nums; }
-  .has-comparison .comparison-count { background: var(--red); border-color: var(--red); color: white; }
-  .nav-phone-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; line-height: 1.1; }
-  .nav-phone-number { font-size: 10px; letter-spacing: .01em; font-weight: 400; white-space: nowrap; }
+  .home-brands {
+    width: var(--orbit-frame);
+    max-width: var(--orbit-frame-max);
+    margin: var(--orbit-space-section) auto 0;
+  }
+  .nav-favorites {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    color: var(--text);
+    border-radius: 50%;
+  }
+  .nav-favorites.filled {
+    color: var(--red);
+  }
+  .nav-favorites[aria-current='page'] {
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+  }
+  .favorite-heart {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 19px;
+    width: 19px;
+    height: 19px;
+  }
+  .nav-favorites .favorite-count {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding-bottom: 2px;
+    color: #fff;
+    font-size: 7px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .nav-favorites .favorite-count.compact {
+    font-size: 5.5px;
+  }
+  .nav-favorites .favorite-count.empty {
+    visibility: hidden;
+  }
+  .favorite-label {
+    display: none;
+    color: var(--text);
+  }
+  @media (min-width: 1001px) {
+    .design.orbit .header-actions {
+      gap: 12px;
+    }
+    .nav-favorites {
+      display: inline-flex;
+      gap: 8px;
+      width: auto;
+      padding-inline: 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .favorite-label {
+      display: inline;
+    }
+    .nav-favorites:hover {
+      background: color-mix(in srgb, var(--text) 5%, transparent);
+    }
+  }
+  .nav-favorites:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 3px;
+  }
+  .mobile-theme {
+    display: none;
+  }
+  @media (max-width: 700px) {
+    .desktop-theme {
+      display: none;
+    }
+    .mobile-theme {
+      display: block;
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+    }
+    .mobile-theme :global(button) {
+      min-height: 44px;
+      gap: 9px;
+    }
+    .design.orbit .stand-header .logo {
+      width: 96px;
+      flex-basis: 96px;
+      padding: 0;
+    }
+    .design.orbit .stand-header .logo img {
+      width: 100%;
+    }
+    .design.orbit > header.stand-header {
+      padding-inline: 16px;
+      gap: 8px;
+    }
+  }
+  .comparison-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    margin-left: 7px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .has-comparison .comparison-count {
+    background: var(--red);
+    border-color: var(--red);
+    color: white;
+  }
+  .nav-phone-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    line-height: 1.1;
+  }
+  .nav-phone-number {
+    font-size: 10px;
+    letter-spacing: 0.01em;
+    font-weight: 400;
+    white-space: nowrap;
+  }
   @media (max-width: 1000px) {
-    .nav-phone-number { display: none; }
+    .nav-phone-number {
+      display: none;
+    }
   }
-  .card-compare { margin-top: 14px; }
-  .detail-compare { margin-top: 16px; }
-  @media (min-width: 701px) and (max-width: 1050px) { .design.orbit .stand-header nav { gap: 18px; } }
+  .card-compare {
+    margin-top: 4px;
+  }
+  .detail-compare {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .purchase-followup {
+    display: grid;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .purchase-followup .detail-compare {
+    margin-top: 0;
+    align-items: center;
+  }
+  .purchase .trade-in-contact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    min-height: 68px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--text) 2%, transparent);
+    color: var(--text);
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+  }
+  .trade-in-contact > span {
+    display: grid;
+    gap: 4px;
+  }
+  .trade-in-contact strong {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .trade-in-contact small {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .trade-in-contact :global(svg) {
+    flex-shrink: 0;
+  }
+  .trade-in-contact:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 3px;
+  }
+  .purchase-followup .fine-print {
+    margin: 0;
+  }
+  @media (hover: hover) {
+    .purchase .trade-in-contact:hover {
+      border-color: color-mix(in srgb, var(--text) 35%, transparent);
+      background: color-mix(in srgb, var(--text) 5%, transparent);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .trade-in-contact {
+      transition:
+        background-color 180ms ease,
+        border-color 180ms ease;
+    }
+  }
+  @media (min-width: 701px) and (max-width: 1050px) {
+    .design.orbit .stand-header nav {
+      gap: 18px;
+    }
+  }
   @media (max-width: 380px) {
-    .design.orbit > header.stand-header { padding-inline: 8px; gap: 4px; }
-    .design.orbit .stand-header .logo { width: 78px; flex-basis: 78px; padding: 0; }
-    .design.orbit .stand-header .logo img { width: 100%; }
-    .design.orbit .nav-phone { gap: 6px; padding-inline: 8px; }
-    .nav-phone-number { font-size: 9px; }
+    .design.orbit > header.stand-header {
+      padding-inline: 8px;
+      gap: 4px;
+    }
+    .design.orbit .stand-header .logo {
+      width: 78px;
+      flex-basis: 78px;
+      padding: 0;
+    }
+    .design.orbit .stand-header .logo img {
+      width: 100%;
+    }
+    .design.orbit .nav-phone {
+      gap: 6px;
+      padding-inline: 8px;
+    }
+    .nav-phone-number {
+      font-size: 9px;
+    }
   }
   .design.orbit {
     font-family: 'Orbit Inter', Arial, sans-serif;
@@ -1419,12 +1999,16 @@
       font-size: 14px;
       font-weight: 600;
       line-height: 1.3;
-      letter-spacing: -.015em;
+      letter-spacing: -0.015em;
       text-decoration: none;
       white-space: nowrap;
     }
-    #stand-navigation > a::after { content: none; }
-    #stand-navigation .nav-label { position: relative; }
+    #stand-navigation > a::after {
+      content: none;
+    }
+    #stand-navigation .nav-label {
+      position: relative;
+    }
     #stand-navigation .nav-label::after {
       content: '';
       position: absolute;
@@ -1438,14 +2022,27 @@
       transform: scaleX(0);
       transform-origin: left;
     }
-    #stand-navigation > a[aria-current='page'] { color: var(--text); }
-    #stand-navigation > a[aria-current='page'] .nav-label::after { opacity: .7; transform: scaleX(1); }
-    #stand-navigation > a:focus-visible .nav-label::after { opacity: 1; transform: scaleX(1); }
+    #stand-navigation > a[aria-current='page'] {
+      color: var(--text);
+    }
+    #stand-navigation > a[aria-current='page'] .nav-label::after {
+      opacity: 0.7;
+      transform: scaleX(1);
+    }
+    #stand-navigation > a:focus-visible .nav-label::after {
+      opacity: 1;
+      transform: scaleX(1);
+    }
     @media (hover: hover) {
-      #stand-navigation > a:hover .nav-label::after { opacity: 1; transform: scaleX(1); }
+      #stand-navigation > a:hover .nav-label::after {
+        opacity: 1;
+        transform: scaleX(1);
+      }
     }
     @media (prefers-reduced-motion: no-preference) {
-      #stand-navigation .nav-label::after { transition: transform 180ms ease-out; }
+      #stand-navigation .nav-label::after {
+        transition: transform 180ms ease-out;
+      }
     }
     #stand-navigation > a:focus-visible {
       outline: 2px solid var(--text);
@@ -1500,287 +2097,6 @@
     color: white;
   }
   /* Orbit: a suspended photographic object in a scroll-controlled space. */
-  .orbit-intro {
-    position: relative;
-    height: calc(100svh - 108px);
-    min-height: 720px;
-  }
-  .orbit-stage {
-    height: 100%;
-    position: relative;
-    perspective: 1400px;
-    isolation: isolate;
-    overflow: hidden;
-  }
-  .orbit-topline {
-    position: absolute;
-    top: 35px;
-    left: 4%;
-    right: 4%;
-    display: flex;
-    justify-content: space-between;
-    z-index: 3;
-  }
-  .orbit-topline .kicker:last-child {
-    color: var(--muted);
-    font-size: 8px;
-  }
-  .orbit-topline .hero-kicker {
-    align-items: flex-start;
-  }
-  .hero-kicker-dot {
-    display: inline-flex;
-    align-items: center;
-    height: 1.6em;
-  }
-  .hero-kicker-complement {
-    display: block;
-    margin-top: 3px;
-    color: var(--muted);
-    font-size: 0.8em;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-  }
-  @media (max-width: 701px) {
-    .hero-kicker-complement {
-      display: none;
-    }
-  }
-  .orbit-title {
-    position: absolute;
-    top: 10%;
-    left: 7%;
-    font-size: clamp(90px, 12.3vw, 200px);
-    z-index: 0;
-    line-height: 0.9;
-    letter-spacing: -0.085em;
-  }
-  .orbit-title > span {
-    display: block;
-    margin-left: 14vw;
-    color: var(--muted);
-  }
-  .orbit-object {
-    position: absolute;
-    width: 48%;
-    height: 47%;
-    left: 33%;
-    top: 30%;
-    transform-style: preserve-3d;
-    /* Match the animated desktop pose at zero scroll/pointer input before hydration. */
-    transform: translate3d(0, 0, 0) rotateY(-7deg) rotateX(3deg) rotateZ(-3deg) scale(1);
-  }
-  .orbit-main-photo {
-    position: absolute;
-    inset: 0;
-    display: block;
-    border: 1px solid #ffffff20;
-    overflow: hidden;
-    box-shadow: 0 35px 90px #0007;
-    border-radius: 5px;
-    background: #252528;
-  }
-  .orbit-main-photo img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0;
-  }
-  .orbit-main-photo img.active {
-    opacity: 1;
-  }
-  .orbit-main-photo > div > span {
-    text-transform: uppercase;
-  }
-  .orbit-side {
-    position: absolute;
-    z-index: 4;
-    right: 0;
-    top: 49%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-  }
-  .orbit-side button {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--line);
-    border-radius: 50%;
-    background: var(--bg);
-    color: var(--text);
-  }
-  .orbit-side button:hover {
-    background: var(--surface);
-    color: var(--red);
-  }
-  .hero-slide-index {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    font-size: 11px;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-    color: var(--muted);
-  }
-  .hero-slide-index > span:first-child {
-    color: var(--text);
-  }
-  .hero-index-track {
-    position: relative;
-    width: 1px;
-    height: 56px;
-    background: var(--line);
-  }
-  .hero-index-track::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--red);
-    transform: scaleY(var(--hero-progress));
-    transform-origin: top;
-  }
-  .hero-status {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .orbit-main-photo img {
-      transition: opacity 420ms ease;
-    }
-    .hero-index-track::after {
-      transition: transform 240ms ease;
-    }
-  }
-  @media (max-width: 700px) {
-    .orbit-side {
-      top: auto;
-      bottom: 60px;
-      left: 5%;
-      right: 5%;
-      transform: none;
-      flex-direction: row;
-      justify-content: space-between;
-    }
-    .hero-slide-index {
-      flex-direction: row;
-      gap: 14px;
-    }
-    .hero-index-track {
-      width: 64px;
-      height: 1px;
-    }
-    .hero-index-track::after {
-      transform: scaleX(var(--hero-progress));
-      transform-origin: left;
-    }
-  }
-  .orbit-main-photo:after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(0deg, #000b, transparent 45%);
-  }
-  .orbit-main-photo > div {
-    position: absolute;
-    z-index: 2;
-    bottom: 25px;
-    left: 25px;
-    right: 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: white;
-    font-size: 11px;
-    letter-spacing: 0.05em;
-  }
-  .orbit-main-photo small {
-    display: block;
-    font-size: 8px;
-    margin-top: 7px;
-    opacity: 0.7;
-  }
-  .object-edge {
-    position: absolute;
-    inset: 14px -14px -14px 14px;
-    border: 1px solid var(--line);
-    transform: translateZ(-30px);
-    border-radius: 6px;
-  }
-  .object-coordinate {
-    position: absolute;
-    font-size: 8px;
-    letter-spacing: 0.12em;
-    color: var(--muted);
-  }
-  .coordinate-a {
-    top: -30px;
-    left: 0;
-  }
-  .featured-badge {
-    display: none;
-    position: absolute;
-    z-index: 3;
-    top: clamp(14px, 1.8vw, 22px);
-    left: clamp(14px, 1.8vw, 22px);
-    padding: 5px 8px;
-    border: 1px solid rgb(255 255 255 / 16%);
-    border-radius: 3px;
-    background: rgb(16 17 20 / 90%);
-    color: #fff;
-    font-size: clamp(9px, 0.8vw, 11px);
-    font-weight: 500;
-    line-height: 1.2;
-    letter-spacing: 0.08em;
-    pointer-events: none;
-  }
-  @media (max-width: 700px) {
-    .featured-badge {
-      display: block;
-    }
-    .orbit-object > .object-coordinate {
-      display: none;
-    }
-  }
-
-  :global(.motion-on) .orbit-intro {
-    height: 175svh;
-    min-height: 1100px;
-  }
-  :global(.motion-on) .orbit-stage {
-    position: sticky;
-    top: 0;
-    height: 100svh;
-  }
-  :global(.motion-on) .orbit-object {
-    transform: translate3d(
-        calc(var(--mx) * -28px - var(--p) * 12vw),
-        calc(var(--my) * -18px - var(--p) * 2vh),
-        calc(var(--p) * 160px)
-      )
-      rotateY(calc(-9deg + var(--mx) * 9deg + var(--p) * 16deg))
-      rotateX(calc(5deg - var(--my) * 7deg - var(--p) * 5deg))
-      rotateZ(calc(-4deg + var(--p) * 7deg)) scale(calc(1 + var(--p) * 0.12));
-  }
-  :global(.motion-on) .orbit-title {
-    transform: translateX(calc(var(--p) * -9vw));
-    opacity: calc(1 - var(--p) * 0.75);
-  }
-  :global(.motion-on) .orbit-title > span {
-    transform: translateX(calc(var(--p) * 22vw));
-  }
   /* Flux: broad typographic opening with an unfolding triptych. */
 
   .showroom {
@@ -1928,12 +2244,6 @@
     font-size: 20px;
     font-weight: 500;
     letter-spacing: -0.04em;
-  }
-  .card-price > a {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    font-size: 9px;
   }
   .no-results {
     grid-column: 1/-1;
@@ -2213,9 +2523,6 @@
     gap: 8%;
     padding: 50px 7% 100px;
   }
-  .detail-facts .kicker {
-    margin-bottom: 25px;
-  }
   .detail-facts h2 {
     font-size: 50px;
   }
@@ -2351,9 +2658,22 @@
     min-height: 65vh;
     padding: 80px 7%;
   }
-  .error-description { max-width: 54ch; font-size: 17px; line-height: 1.7; color: var(--muted); }
-  .error-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
-  .error-actions a:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+  .error-description {
+    max-width: 54ch;
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  .error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 30px;
+  }
+  .error-actions a:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 4px;
+  }
   .not-found h1 {
     font-size: clamp(40px, 6vw, 85px);
     margin: 25px 0 40px;
@@ -2527,15 +2847,6 @@
     .edition-label {
       display: none;
     }
-    .orbit-title {
-      font-size: 13vw;
-    }
-    .orbit-object {
-      width: 56%;
-      height: 43%;
-      left: 29%;
-      top: 34%;
-    }
 
     .showroom-layout {
       grid-template-columns: 160px 1fr;
@@ -2616,64 +2927,6 @@
     .pill {
       padding: 15px 20px;
       font-size: 10px;
-    }
-    .orbit-intro,
-    :global(.motion-on) .orbit-intro {
-      height: 760px;
-      min-height: 0;
-    }
-    .orbit-stage,
-    :global(.motion-on) .orbit-stage {
-      height: 100%;
-      position: relative;
-    }
-    .orbit-topline {
-      top: 30px;
-      left: 5%;
-      right: 5%;
-    }
-    .orbit-topline .kicker:first-child {
-      font-size: 7px;
-    }
-    .orbit-topline .kicker:last-child {
-      display: none;
-    }
-    .orbit-title {
-      font-size: 18vw;
-      top: 15%;
-      left: 5%;
-    }
-    .orbit-title > span {
-      margin-left: 5vw;
-    }
-    .orbit-object,
-    :global(.motion-on) .orbit-object {
-      width: 80%;
-      height: 34%;
-      left: 12%;
-      top: 38%;
-      transform: rotateY(-6deg) rotateZ(-4deg);
-    }
-    .orbit-main-photo > div {
-      bottom: 17px;
-      left: 17px;
-      right: 17px;
-      font-size: 9px;
-    }
-    .orbit-main-photo small {
-      font-size: 7px;
-    }
-    .coordinate-a {
-      font-size: 7px;
-      top: -23px;
-    }
-
-    :global(.motion-on) .orbit-title {
-      transform: none;
-      opacity: 1;
-    }
-    :global(.motion-on) .orbit-title > span {
-      transform: none;
     }
 
     .showroom {
@@ -2893,29 +3146,9 @@
     .read-line {
       display: none;
     }
-    .orbit-intro,
-    :global(.motion-on) .orbit-intro {
-      height: 850px;
-      min-height: 0;
-    }
-
-    .orbit-stage,
-    :global(.motion-on) .orbit-stage {
-      position: relative;
-      height: 100%;
-    }
-
-    :global(.motion-on) .orbit-object {
-      transform: rotateZ(-4deg);
-    }
-    :global(.motion-on) .orbit-title,
-    :global(.motion-on) .orbit-title > span,
     :global(.motion-on) .detail-band > img,
     :global(.motion-on) .band-index {
       transform: none;
-    }
-    :global(.motion-on) .orbit-title {
-      opacity: 1;
     }
   }
   /* Compact choreography: complete each effect within a short scroll. */
@@ -2926,60 +3159,6 @@
   .design header {
     height: 94px;
     padding-inline: max(4%, calc((100vw - 1440px) / 2));
-  }
-  .orbit-intro,
-  :global(.motion-on) .orbit-intro {
-    width: 94%;
-    max-width: 1480px;
-    margin-inline: auto;
-    height: var(--intro-height);
-    min-height: 0;
-  }
-  :global(.motion-on) .orbit-intro {
-    height: calc(var(--intro-height) + 22svh);
-  }
-  .orbit-stage,
-  :global(.motion-on) .orbit-stage {
-    height: var(--intro-height);
-    min-height: 0;
-  }
-  .orbit-title {
-    top: 24%;
-    left: 3%;
-    font-size: clamp(62px, 6.7vw, 102px);
-    line-height: 0.98;
-  }
-  .orbit-title > span {
-    margin: 0;
-  }
-  .orbit-object {
-    width: 47%;
-    height: 54%;
-    left: 49%;
-    top: 20%;
-  }
-  .orbit-topline {
-    left: 3%;
-    right: 3%;
-    top: 25px;
-  }
-
-  :global(.motion-on) .orbit-object {
-    transform: translate3d(
-        calc(var(--mx) * -16px - var(--p) * 16px),
-        calc(var(--my) * -12px - var(--p) * 12px),
-        0
-      )
-      rotateY(calc(-7deg + var(--mx) * 7deg + var(--p) * 10deg))
-      rotateX(calc(3deg - var(--my) * 5deg - var(--p) * 3deg))
-      rotateZ(calc(-3deg + var(--p) * 4deg)) scale(calc(1 + var(--p) * 0.035));
-  }
-  :global(.motion-on) .orbit-title {
-    transform: translateY(calc(var(--p) * -12px));
-    opacity: calc(1 - var(--p) * 0.1);
-  }
-  :global(.motion-on) .orbit-title > span {
-    transform: translateX(calc(var(--p) * 12px));
   }
 
   .showroom {
@@ -3072,16 +3251,6 @@
     font-size: 140px;
   }
   @media (min-width: 701px) and (max-width: 1050px) {
-    .orbit-title {
-      font-size: 63px;
-    }
-    .orbit-object {
-      width: 49%;
-      left: 47%;
-      height: 48%;
-      top: 24%;
-    }
-
     .showroom-layout {
       grid-template-columns: 155px 1fr;
       gap: 25px;
@@ -3098,42 +3267,6 @@
     }
     nav {
       top: 82px;
-    }
-    .orbit-intro,
-    :global(.motion-on) .orbit-intro {
-      width: 100%;
-      height: var(--intro-height);
-    }
-    .orbit-stage,
-    :global(.motion-on) .orbit-stage {
-      position: relative;
-      height: var(--intro-height);
-    }
-    .orbit-title {
-      font-size: clamp(48px, 13vw, 76px);
-      top: 12%;
-      left: 5%;
-    }
-    .orbit-title > span {
-      margin-left: 0;
-    }
-    .orbit-object,
-    :global(.motion-on) .orbit-object {
-      width: 68%;
-      height: 32%;
-      left: 24%;
-      top: 39%;
-      transform: rotateY(-5deg) rotateZ(-3deg);
-    }
-    .orbit-topline {
-      left: 5%;
-      right: 5%;
-    }
-
-    :global(.motion-on) .orbit-title,
-    :global(.motion-on) .orbit-title > span {
-      transform: none;
-      opacity: 1;
     }
 
     .showroom {
@@ -3184,33 +3317,9 @@
       font-size: 95px;
     }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .orbit-intro,
-    :global(.motion-on) .orbit-intro {
-      height: var(--intro-height);
-    }
-    .orbit-stage,
-    :global(.motion-on) .orbit-stage {
-      position: relative;
-    }
-
-    :global(.motion-on) .orbit-object {
-      transform: rotateZ(-3deg);
-    }
-    :global(.motion-on) .orbit-title,
-    :global(.motion-on) .orbit-title > span {
-      transform: none;
-      opacity: 1;
-    }
-  }
   @media (min-width: 701px) {
     .design header {
       padding-inline: max(2.5%, calc((100vw - 1640px) / 2));
-    }
-    .orbit-intro,
-    :global(.motion-on) .orbit-intro {
-      width: 97%;
-      max-width: 1720px;
     }
     .showroom,
     .about,
@@ -3229,26 +3338,6 @@
     }
   }
   /* Element-relative destinations remain aligned at every container width. */
-
-  @media (prefers-reduced-motion: no-preference) {
-    :global(.motion-on) .orbit-stage {
-      top: max(0px, calc((100svh - var(--intro-height)) / 2));
-    }
-
-    :global(.motion-on) .orbit-intro {
-      height: calc(var(--intro-height) + 32svh);
-    }
-  }
-  @media (max-width: 700px) {
-  }
-  @media (max-width: 700px) and (prefers-reduced-motion: no-preference) {
-    :global(.motion-on) .orbit-intro {
-      height: var(--intro-height);
-    }
-    :global(.motion-on) .orbit-stage {
-      top: auto;
-    }
-  }
   /* Shared scale: useful text stays readable; display type has explicit limits. */
   .design {
     --type-label: 11px;
@@ -3296,25 +3385,6 @@
 
   .edition-label {
     font-size: 10px;
-  }
-  .orbit-title {
-    font-size: clamp(58px, 6.3vw, 98px);
-  }
-
-  .orbit-topline .kicker:last-child {
-    font-size: 10px;
-  }
-  .orbit-main-photo > div {
-    font-size: 12px;
-    letter-spacing: 0.025em;
-  }
-  .orbit-main-photo small {
-    font-size: 10px;
-    margin-top: 6px;
-  }
-  .object-coordinate {
-    font-size: 10px;
-    letter-spacing: 0.06em;
   }
 
   .showroom-heading h2,
@@ -3401,11 +3471,6 @@
   .card-price strong {
     font-size: 23px;
     line-height: 1.2;
-  }
-  .card-price > a {
-    font-size: 12px;
-    gap: 8px;
-    min-height: 32px;
   }
 
   .about {
@@ -3669,29 +3734,6 @@
       min-height: 46px;
       padding: 12px 18px;
     }
-    .orbit-title {
-      font-size: clamp(46px, 12.8vw, 67px);
-    }
-    .orbit-object,
-    :global(.motion-on) .orbit-object {
-      width: 76%;
-      left: 17%;
-      height: 34%;
-      top: 39%;
-    }
-    .orbit-topline .kicker {
-      font-size: 9px;
-      max-width: 29ch;
-    }
-    .object-coordinate {
-      font-size: 8px;
-    }
-    .orbit-main-photo > div {
-      font-size: 10px;
-    }
-    .orbit-main-photo small {
-      font-size: 9px;
-    }
 
     .showroom-heading {
       align-items: start;
@@ -3814,10 +3856,6 @@
     }
   }
   @media (max-width: 380px) {
-    .orbit-title {
-      font-size: 44px;
-    }
-
     .card-specs {
       font-size: 11px;
     }
@@ -3826,40 +3864,8 @@
     }
   }
   /* Orbit's next chapter: a larger photograph, with a separate typographic focal point. */
-  .orbit .orbit-object {
-    width: 47%;
-    height: 64%;
-    left: 48%;
-    top: calc(17% + 42px);
-  }
-  .orbit .orbit-title {
-    z-index: 2;
-    top: 24%;
-  }
-  .orbit .orbit-title > span {
-    position: relative;
-    color: var(--text);
-  }
-  .orbit-title-note {
-    position: absolute;
-    top: 60%;
-    left: 3%;
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-  }
 
   @media (prefers-reduced-motion: no-preference) {
-    .orbit:global(.motion-on) .orbit-title-note {
-      transform: translateX(calc(var(--p) * 10px));
-    }
-
-    .orbit:global(.motion-on) .orbit-title {
-      animation: orbit-title-arrival 1000ms cubic-bezier(0.2, 0.65, 0.3, 1) both;
-    }
     @keyframes orbit-title-arrival {
       from {
         opacity: 0.55;
@@ -3871,160 +3877,238 @@
       }
     }
   }
-  @media (min-width: 701px) and (max-width: 1050px) {
-    .orbit .orbit-title {
-      font-size: clamp(50px, 6.4vw, 67px);
-    }
-    .orbit .orbit-object {
-      width: 54%;
-      left: 43%;
-      height: 57%;
-      top: 21%;
-    }
-    .orbit-title-note {
-      top: 55%;
-      font-size: 8px;
-      gap: 8px;
-    }
-  }
-  @media (max-width: 700px) {
-    .orbit .orbit-title {
-      top: 12%;
-      font-size: clamp(46px, 12.8vw, 67px);
-    }
-    .orbit .orbit-object,
-    .orbit:global(.motion-on) .orbit-object {
-      width: 86%;
-      left: 8%;
-      height: 39%;
-      top: 41%;
-    }
-    .orbit-title-note {
-      top: 35%;
-      left: 5%;
-      font-size: 8px;
-      gap: 10px;
-    }
-  }
   /* Preserve the resting composition; the hero now follows natural document scroll. */
   @media (min-width: 701px) and (prefers-reduced-motion: no-preference) {
     /* Mirror heroScrollProgress at scroll zero, before parser-time initialization. */
-    .orbit .orbit-intro {
-      --p: clamp(0, tan(atan2(calc((100svh - var(--intro-height)) / 2 - 94px), 4svh)), 1);
-    }
-    .orbit .orbit-object {
-      transform: translate3d(
-          calc(var(--mx) * -16px - var(--p) * 16px),
-          calc(var(--my) * -12px - var(--p) * 12px),
-          0
-        )
-        rotateY(calc(-7deg + var(--mx) * 7deg + var(--p) * 10deg))
-        rotateX(calc(3deg - var(--my) * 5deg - var(--p) * 3deg))
-        rotateZ(calc(-3deg + var(--p) * 4deg)) scale(calc(1 + var(--p) * 0.035));
-    }
   }
   @media (prefers-reduced-motion: no-preference) {
     /* Freeze the former initial sticky offset as padding, never as scroll pinning.
        Keep the total scene height so later sections and refresh restoration stay stable. */
-    .orbit .orbit-intro,
-    .orbit:global(.motion-on) .orbit-intro {
-      --hero-nav-space: 94px;
-      box-sizing: border-box;
-      height: calc(var(--intro-height) + 4svh);
-      padding-top: clamp(
-        0px,
-        calc((100svh - var(--intro-height)) / 2 - var(--hero-nav-space)),
-        3.5svh
-      );
-    }
-    .orbit .orbit-stage,
-    .orbit:global(.motion-on) .orbit-stage {
-      position: relative;
-      top: 0;
-    }
   }
   @media (max-width: 700px) {
     .orbit {
       --intro-height: clamp(520px, calc(100svh - 204px), 640px);
     }
   }
-  @media (max-width: 700px) and (prefers-reduced-motion: no-preference) {
-    .orbit .orbit-intro,
-    .orbit:global(.motion-on) .orbit-intro {
-      --hero-nav-space: 82px;
-    }
-  }
 
   /* Photo stays edge-to-edge; only the information below it receives padding. */
-  .design.orbit { --vehicle-card-hover-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent); }
-  :global(:where(html)[data-theme='dark']) .design.orbit { --vehicle-card-hover-shadow: 0 0 22px color-mix(in srgb, var(--text) 12%, transparent); }
-  .vehicle-card, .related-grid > a {
+  .design.orbit {
+    --vehicle-card-photo-extra: 60px;
+    --vehicle-card-hover-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent);
+  }
+  :global(:where(html)[data-theme='dark']) .design.orbit {
+    --vehicle-card-hover-shadow: 0 0 22px color-mix(in srgb, var(--text) 12%, transparent);
+  }
+  .vehicle-card,
+  .related-grid > a {
     background: var(--bg);
   }
-  .vehicle-card .card-image, .related-grid > a > .related-image {
+  .vehicle-card .card-image,
+  .related-grid > a > .related-image {
     border-radius: 4px 4px 0 0;
   }
-  .card-body, .related-body {
-    padding: clamp(18px, 1.6vw, 24px);
+  /* Keep the photo prominent while returning space to a balanced information panel. */
+  .vehicle-card {
+    container-type: inline-size;
+    position: relative;
+    isolation: isolate;
+    --vehicle-card-title-size: clamp(21px, 1.6vw, 25px);
   }
-  .vehicle-card .card-info { margin-top: 0; align-items: flex-start; }
-  .vehicle-card .card-info h3, .related-grid .related-body h3 {
+  .vehicle-card:not(.public-card) {
+    --vehicle-card-photo-extra: 32px;
+  }
+  .card-photo {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .vehicle-card .card-compare {
+    position: absolute;
+    z-index: 2;
+    bottom: 12px;
+    left: 12px;
+    margin: 0;
+  }
+  .card-favorite {
+    position: absolute;
+    z-index: 2;
+    right: clamp(16px, 1.2vw, 20px);
+    top: calc(
+      100cqw / 1.4 + var(--vehicle-card-photo-extra) + clamp(16px, 1.2vw, 20px) + 2px +
+        var(--vehicle-card-title-size) * 0.625 - 22px
+    );
+  }
+  .card-favorite .save {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  /* Native link covers the card; independent controls remain above its hit area. */
+  .card-detail-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: 4px;
+  }
+  .card-detail-link:focus-visible::after {
+    outline: 2px solid var(--red);
+    outline-offset: 4px;
+  }
+  .vehicle-card .card-compare :global(button) {
+    position: relative;
+    z-index: 2;
+  }
+  .vehicle-card .card-image {
+    aspect-ratio: auto;
+    height: calc(100cqw / 1.4 + var(--vehicle-card-photo-extra));
+  }
+  .card-body,
+  .related-body {
+    padding: clamp(16px, 1.2vw, 20px);
+  }
+  .vehicle-card .card-body {
+    padding-block: calc(clamp(16px, 1.2vw, 20px) + 2px);
+  }
+  .vehicle-card .card-info {
+    margin-top: 0;
+    align-items: flex-start;
+    padding-right: 56px;
+  }
+  .vehicle-card .card-info h3,
+  .related-grid .related-body h3 {
     font-size: clamp(21px, 1.6vw, 25px);
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.25;
-    letter-spacing: -.035em;
-    margin-top: 5px;
+    letter-spacing: -0.035em;
+    margin-top: 0;
     overflow-wrap: anywhere;
   }
-  .vehicle-card .card-info > a > span, .related-brand {
+  .vehicle-card .card-info > a > span,
+  .related-brand {
     color: var(--muted);
     font-size: 12px;
     font-weight: 500;
     line-height: 1.5;
   }
+  .vehicle-card .card-info .card-version {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    overflow-wrap: anywhere;
+  }
+  @container (max-width: 360px) {
+    .vehicle-card .card-info h3 {
+      font-size: calc(var(--vehicle-card-title-size) - 1px);
+      line-height: calc(var(--vehicle-card-title-size) * 1.25);
+    }
+  }
   .vehicle-card .card-specs {
-    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 18px;
+    gap: 6px 12px;
     font-size: 12px;
     line-height: 1.65;
   }
+  .vehicle-card .card-specs > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+  .vehicle-card .card-specs > span :global(svg) {
+    flex-shrink: 0;
+  }
+  .vehicle-card .card-specs > span + span:before {
+    content: none;
+  }
   .vehicle-card .card-price {
-    margin-top: 20px;
-    padding-top: 18px;
+    margin-top: 18px;
+    border-top: 0;
+    padding-top: 0;
     gap: 12px 16px;
   }
-  .vehicle-card .card-price strong, .related-price {
+  .vehicle-card .card-price::before {
+    content: '';
+    flex: 1;
+    min-width: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .vehicle-card .card-price strong {
+    text-align: right;
+  }
+  .vehicle-card .card-price strong,
+  .related-price {
     font-size: clamp(21px, 1.6vw, 25px);
     font-weight: 600;
     line-height: 1.3;
-    letter-spacing: -.035em;
+    letter-spacing: -0.035em;
   }
-  .vehicle-card .card-price > a { min-height: 44px; font-size: 12px; }
   @media (min-width: 701px) {
     /* Different title lengths keep prices and actions aligned across a row. */
-    .vehicle-card {display:flex;flex-direction:column;height:100%;}
-    .vehicle-card .card-image {flex-shrink:0;}
-    .vehicle-card .card-body {display:flex;flex:1;flex-direction:column;}
-    .vehicle-card .card-specs {margin-bottom:20px;}
-    .vehicle-card .card-price {margin-top:auto;}
+    .vehicle-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .vehicle-card .card-image {
+      flex-shrink: 0;
+    }
+    .vehicle-card .card-body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+    }
+    .vehicle-card .card-specs {
+      margin-bottom: 0;
+    }
   }
-  .related-grid .related-body p { margin-top: 12px; font-size: 12px; line-height: 1.65; }
-  .related-price { display: block; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
-  .vehicle-card:focus-within { outline-color: color-mix(in srgb, var(--text) 50%, var(--bg)); }
-  .vehicle-card:focus-within, .related-grid > a:focus-visible { box-shadow: var(--vehicle-card-hover-shadow); }
-  .vehicle-card:focus-within .card-arrow,
-  .related-grid > a:focus-visible > .related-image > span { color: #fff; background: var(--red); rotate: 45deg; }
-  .card-price > a:focus-visible :global(svg) { rotate: 45deg; }
-  .card-arrow :global(svg), .related-image > span :global(svg) {
+  .related-grid .related-body p {
+    margin-top: 12px;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .related-price {
+    display: block;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+  .vehicle-card:has(:focus-visible) {
+    outline-color: color-mix(in srgb, var(--text) 50%, var(--bg));
+  }
+  .vehicle-card:has(:focus-visible),
+  .related-grid > a:focus-visible {
+    box-shadow: var(--vehicle-card-hover-shadow);
+  }
+  .vehicle-card:has(:focus-visible) .card-arrow,
+  .related-grid > a:focus-visible > .related-image > span {
+    color: #fff;
+    background: var(--red);
+    rotate: 45deg;
+  }
+  .card-arrow :global(svg),
+  .related-image > span :global(svg) {
     color: inherit;
     stroke: currentColor;
     transition: none;
   }
-  .vehicle-card .card-body :is(a, button):focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+  .vehicle-card .card-body :is(a, button):focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 4px;
+  }
   @media (hover: hover) {
     .vehicle-card:hover .card-arrow,
-    .related-grid > a:hover > .related-image > span { color: #fff; background: var(--red); rotate: 45deg; }
-    .card-price > a:hover :global(svg) { rotate: 45deg; }
-    .vehicle-card:hover, .related-grid > a:hover {
+    .related-grid > a:hover > .related-image > span {
+      color: #fff;
+      background: var(--red);
+      rotate: 45deg;
+    }
+    .vehicle-card:hover,
+    .related-grid > a:hover {
       outline-color: color-mix(in srgb, var(--text) 40%, var(--bg));
       box-shadow: var(--vehicle-card-hover-shadow);
     }
@@ -4035,37 +4119,61 @@
     }
   }
   @media (prefers-reduced-motion: no-preference) {
-    .vehicle-card, .related-grid > a { transition: outline-color 180ms ease, box-shadow 240ms ease; }
-    .vehicle-card .card-arrow, .related-grid > a > .related-image > span { transition: rotate 300ms ease; }
-    .card-price > a :global(svg) { transition: rotate 300ms ease; }
+    .vehicle-card,
+    .related-grid > a {
+      transition:
+        outline-color 180ms ease,
+        box-shadow 240ms ease;
+    }
+    .vehicle-card .card-arrow,
+    .related-grid > a > .related-image > span {
+      transition: rotate 300ms ease;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
-    .vehicle-card .card-arrow, .related-grid > a > .related-image > span { transition: none; }
+    .vehicle-card .card-arrow,
+    .related-grid > a > .related-image > span {
+      transition: none;
+    }
   }
 
-  .card-cta-label { position: relative; }
-  .card-cta-label::after { content: ''; position: absolute; left: 0; bottom: -4px; width: 100%; height: 1px; background: currentColor; opacity: 0; transform: scaleX(0); transform-origin: left; }
-  .card-price > a:focus-visible .card-cta-label::after { opacity: 1; transform: scaleX(1); }
-  @media (hover: hover) {
-    .card-price > a:hover .card-cta-label::after { opacity: 1; transform: scaleX(1); }
+  .services button > .service-cta-label {
+    position: relative;
   }
-  @media (prefers-reduced-motion: no-preference) {
-    .card-cta-label::after { transition: transform 300ms ease, opacity 300ms ease; }
-  }
-  .services button > .service-cta-label { position: relative; }
   .services button > .service-cta-label::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: -3px;
-    height: 1px; background: var(--red); transform: scaleX(0); transform-origin: left;
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 1px;
+    background: var(--red);
+    transform: scaleX(0);
+    transform-origin: left;
   }
-  .services button:focus-visible > .service-cta-label::after { transform: scaleX(1); }
-  .services button :global(svg) { color: var(--text); }
-  .services button:focus-visible :global(svg) { rotate: 45deg; }
+  .services button:focus-visible > .service-cta-label::after {
+    transform: scaleX(1);
+  }
+  .services button :global(svg) {
+    color: var(--text);
+  }
+  .services button:focus-visible :global(svg) {
+    rotate: 45deg;
+  }
   @media (hover: hover) {
-    .services button:hover > .service-cta-label::after { transform: scaleX(1); }
-    .services button:hover :global(svg) { rotate: 45deg; }
+    .services button:hover > .service-cta-label::after {
+      transform: scaleX(1);
+    }
+    .services button:hover :global(svg) {
+      rotate: 45deg;
+    }
   }
   @media (prefers-reduced-motion: no-preference) {
-    .services button > .service-cta-label::after { transition: transform 220ms ease; }
-    .services button :global(svg) { transition: rotate 220ms ease; }
+    .services button > .service-cta-label::after {
+      transition: transform 220ms ease;
+    }
+    .services button :global(svg) {
+      transition: rotate 220ms ease;
+    }
   }
 </style>

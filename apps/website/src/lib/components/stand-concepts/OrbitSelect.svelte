@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { Check, ChevronDown } from 'lucide-svelte';
+  import { brandLogo } from '$lib/brandLogos';
 
   let {
     id,
@@ -13,6 +14,7 @@
     hideLabel = false,
     subtle = false,
     disabled = false,
+    showBrandLogos = false,
   }: {
     id: string;
     label: string;
@@ -24,6 +26,7 @@
     hideLabel?: boolean;
     subtle?: boolean;
     disabled?: boolean;
+    showBrandLogos?: boolean;
   } = $props();
   let root: HTMLDivElement;
   let trigger: HTMLButtonElement;
@@ -183,7 +186,15 @@
     }}
     onkeydown={keydown}
   >
-    <span>{text}</span><ChevronDown size={15} aria-hidden="true" />
+    <span class="select-value"
+      >{#if showBrandLogos && value && brandLogo(value)}<img
+          class="option-logo"
+          src={brandLogo(value)}
+          alt=""
+          width="30"
+          height="22"
+        />{/if}<span>{text}</span></span
+    ><ChevronDown size={15} aria-hidden="true" />
   </button>
   {#if open}<div
       id={`${id}-list`}
@@ -208,10 +219,15 @@
           onclick={() => commit(index)}
           onkeydown={keydown}
         >
-          <span>{option.label}</span>{#if option.value === value}<Check
-              size={14}
-              aria-hidden="true"
-            />{/if}
+          <span class="option-label"
+            >{#if showBrandLogos && option.value && brandLogo(option.value)}<img
+                class="option-logo"
+                src={brandLogo(option.value)}
+                alt=""
+                width="30"
+                height="22"
+              />{/if}<span>{option.label}</span></span
+          >{#if option.value === value}<Check size={14} aria-hidden="true" />{/if}
         </button>
       {/each}
     </div>{/if}
@@ -267,6 +283,31 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .select-value,
+  .option-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .select-value > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .option-label {
+    flex: 1;
+  }
+  .option-logo {
+    display: block;
+    flex-shrink: 0;
+    width: 30px;
+    height: 22px;
+    object-fit: contain;
+  }
+  :global(:where(html)[data-theme='dark']) .option-logo {
+    filter: invert(1);
+  }
   .select-trigger :global(svg) {
     flex-shrink: 0;
     color: var(--muted);
@@ -277,6 +318,8 @@
   }
   .open .select-trigger :global(svg) {
     transform: rotate(180deg);
+    color: var(--red);
+    filter: none;
   }
   .select-trigger:focus-visible {
     outline: 2px solid var(--red);

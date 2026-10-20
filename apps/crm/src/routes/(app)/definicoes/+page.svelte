@@ -78,6 +78,7 @@
       <div class="flex items-center gap-2 flex-shrink-0">
         <button
           type="button"
+          aria-pressed={$theme === 'light'}
           onclick={() => theme.set('light')}
           class="inline-flex items-center gap-2 px-3 h-10 border font-mono text-[11px] uppercase tracking-[0.12em] transition-colors {$theme ===
           'light'
@@ -90,6 +91,7 @@
         </button>
         <button
           type="button"
+          aria-pressed={$theme === 'dark'}
           onclick={() => theme.set('dark')}
           class="inline-flex items-center gap-2 px-3 h-10 border font-mono text-[11px] uppercase tracking-[0.12em] transition-colors {$theme ===
           'dark'
@@ -153,11 +155,6 @@
                 <p class="text-[12px] text-[var(--color-text-muted)] max-w-prose">
                   {setting.description}
                 </p>
-                <div
-                  class="mt-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
-                >
-                  key: <code class="text-[var(--color-text-muted)]">{setting.key}</code>
-                </div>
               </div>
               <div class="flex items-center gap-2">
                 <input

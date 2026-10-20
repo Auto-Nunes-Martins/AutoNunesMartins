@@ -27,7 +27,7 @@
   import Button from '$lib/components/common/Button.svelte';
   import Skeleton from '$lib/components/common/Skeleton.svelte';
   import { formatDate, formatDateLong, formatEUR } from '$lib/utils/format';
-  import type { IconComponent } from '$lib/types/ui';
+  import { activityStyle as styleFor } from '$lib/activityPresentation';
   import type { PageData } from './$types';
   import type { ActionData } from './$types';
   import CancellationPanel from '$lib/components/sale/CancellationPanel.svelte';
@@ -62,37 +62,6 @@
 
   let updatingDelivery = $state(false);
 
-  // ─── Timeline styling — mirrors /atividade so the look stays consistent.
-  // Each activity type maps to an icon + brand-tinted accent colour + a
-  // human-readable Portuguese label. Anything not in the map falls back to
-  // a neutral icon.
-  const STYLE_FOR_TYPE: Record<string, { icon: IconComponent; color: string; label: string }> = {
-    VEHICLE_ADDED: { icon: Car, color: '#22d3ee', label: 'Viatura adicionada' },
-    VEHICLE_UPDATED: { icon: PencilLine, color: '#5eead4', label: 'Viatura editada' },
-    VEHICLE_STATUS_CHANGED: { icon: ArrowRightLeft, color: '#06b6d4', label: 'Estado de viatura' },
-    VEHICLE_DELETED: { icon: Trash2, color: 'var(--color-red)', label: 'Viatura eliminada' },
-    SALE_CREATED: { icon: Receipt, color: '#e6b800', label: 'Venda registada' },
-    SALE_UPDATED: { icon: PencilLine, color: '#f59e0b', label: 'Venda editada' },
-    TRADE_IN_RECEIVED: { icon: ArrowRightLeft, color: '#f97316', label: 'Retoma recebida' },
-    CUSTOMER_ADDED: { icon: UserPlus, color: '#a78bfa', label: 'Cliente adicionado' },
-    CUSTOMER_UPDATED: { icon: UserCog, color: '#c4b5fd', label: 'Cliente editado' },
-    TASK_CREATED: { icon: ListPlus, color: '#5c8def', label: 'Tarefa criada' },
-    TASK_STATUS_CHANGED: { icon: ArrowRightLeft, color: '#7dd3fc', label: 'Estado de tarefa' },
-    TASK_COMPLETED: {
-      icon: CheckCircle2,
-      color: 'var(--color-success)',
-      label: 'Tarefa concluída',
-    },
-    EXPENSE_ADDED: { icon: Wallet, color: '#e0a040', label: 'Despesa registada' },
-    EXPENSE_UPDATED: { icon: CircleDollarSign, color: '#fbbf24', label: 'Despesa editada' },
-  };
-
-  function styleFor(type: string): { icon: IconComponent; color: string; label: string } {
-    return (
-      STYLE_FOR_TYPE[type] ?? { icon: Activity, color: 'var(--color-text-muted)', label: type }
-    );
-  }
-
   function relativeTime(iso: string): string {
     const ms = Date.now() - new Date(iso).getTime();
     const sec = Math.floor(ms / 1000);
@@ -125,7 +94,7 @@
 
 <section class="pt-8 pb-12 space-y-6">
   <!-- Header -->
-  <div class="flex items-end justify-between gap-6">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
     <div>
       <div class="mb-2 flex items-center gap-2">
         {#if s.cancelledAt}<span class="text-[var(--color-red)] font-semibold">Anulada</span
@@ -153,9 +122,11 @@
         Para {c.name} <span class="text-[var(--color-text-faint)]">·</span> NIF {c.nif}
       </p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <Button variant="outline" href={crmPath(`/viaturas/${v.id}`)}>Ver viatura</Button>
-      <Button variant="outline" href={crmPath(`/viaturas/${v.id}/editar`)}>Editar viatura e preços</Button>
+      <Button variant="outline" href={crmPath(`/viaturas/${v.id}/editar`)}
+        >Editar viatura e preços</Button
+      >
       <Button variant="outline" href={crmPath(`/clientes/${c.id}`)}>Ver cliente</Button>
     </div>
   </div>
@@ -272,7 +243,7 @@
             >
               Venda original
               <span
-                class="text-[#f97316] normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity"
+                class="text-[var(--color-warning)] normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity"
                 >→</span
               >
             </div>
@@ -595,7 +566,7 @@
                   : null}
               <li
                 class="grid items-center gap-3 md:gap-4 px-5 py-3 grid-cols-[36px_1.5px_1fr_auto] md:grid-cols-[36px_1.5px_1fr_auto_auto] {tradeInHref
-                  ? 'hover:bg-[color-mix(in_oklab,#f97316_6%,transparent)] transition-colors'
+                  ? 'hover:bg-[color-mix(in_oklab,var(--color-warning)_6%,transparent)] transition-colors'
                   : ''}"
               >
                 <span
@@ -618,7 +589,7 @@
                       title="Ver detalhes do carro recebido na retoma"
                     >
                       <div
-                        class="text-[14px] text-[var(--color-text)] truncate group-hover/tradein:text-[#f97316] transition-colors"
+                        class="text-[14px] text-[var(--color-text)] truncate group-hover/tradein:text-[var(--color-warning)] transition-colors"
                       >
                         {item.message}
                       </div>
@@ -633,7 +604,7 @@
                           </span>
                         {/if}
                         <span class="text-[var(--color-text-faint)]">·</span>
-                        <span class="text-[#f97316] normal-case tracking-normal">
+                        <span class="text-[var(--color-warning)] normal-case tracking-normal">
                           ver viatura →
                         </span>
                       </div>

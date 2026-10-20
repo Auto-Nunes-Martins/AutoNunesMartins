@@ -31,6 +31,7 @@
   }: Props = $props();
 
   let dialogEl: HTMLDialogElement | undefined = $state();
+  const uid = $props.id();
 
   // Sync the native <dialog>'s open state with the bound prop. showModal()
   // gives us the backdrop + focus trap; close() returns control to the page.
@@ -41,6 +42,7 @@
   });
 
   function handleCancel() {
+    if (busy) return;
     open = false;
     oncancel?.();
   }
@@ -58,6 +60,12 @@
 -->
 <dialog
   bind:this={dialogEl}
+  aria-labelledby={uid + '-title'}
+  aria-describedby={message ? uid + '-message' : undefined}
+  oncancel={(event) => {
+    event.preventDefault();
+    handleCancel();
+  }}
   onclose={handleCancel}
   class="confirm-dialog"
 >
@@ -73,12 +81,16 @@
       {/if}
       <div class="min-w-0">
         <h2
+          id={uid + '-title'}
           class="font-display font-bold italic text-[18px] tracking-[-0.01em] text-[var(--color-text)]"
         >
           {title}
         </h2>
         {#if message}
-          <p class="mt-1.5 text-[13.5px] leading-snug text-[var(--color-text-muted)]">
+          <p
+            id={uid + '-message'}
+            class="mt-1.5 text-[13.5px] leading-snug text-[var(--color-text-muted)]"
+          >
             {message}
           </p>
         {/if}
@@ -103,6 +115,8 @@
 
 <style>
   .confirm-dialog {
+    margin: auto;
+    max-width: calc(100vw - 32px);
     padding: 0;
     border: 1px solid var(--color-border);
     background: var(--color-bg-elevated);

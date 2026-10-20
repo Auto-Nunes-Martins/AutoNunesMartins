@@ -1,11 +1,13 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { onDestroy, untrack } from 'svelte';
   import { Calendar, CheckSquare, Users } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import { formatDate } from '$lib/utils/format';
   import type { TodayTaskRow } from '$lib/server/dashboard';
   import type { TaskAssignee } from '$lib/server/tasks';
+  import { taskPriority } from '$lib/components/task/presentation';
 
   interface Props {
     items: TodayTaskRow[];
@@ -22,48 +24,26 @@
     | { kind: 'byUser'; assigneeId: string; name: string };
 
   let scope = $state<Scope>({ kind: 'mine' });
-  let rows = $state<TodayTaskRow[]>(items);
+  let rows = $state<TodayTaskRow[]>(untrack(() => items));
   let loading = $state(false);
   let loadError = $state('');
 
   // Keep `rows` aligned with new props if the parent re-streams.
-  let initialItemsRef = items;
+  let initialItemsRef = untrack(() => items);
+  let loadedScope: Scope = { kind: 'mine' };
+  let controller: AbortController | undefined;
+  onDestroy(() => controller?.abort());
   $effect(() => {
-    if (items !== initialItemsRef && scope.kind === 'mine') {
+    if (items !== initialItemsRef && scope.kind === 'mine' && !loading) {
       rows = items;
       initialItemsRef = items;
     }
   });
 
-  // Maps to the prototype's `.tag.red / .gold / .blue / .green` classes.
-  const PRIORITY_TAG_COLOR: Record<string, { text: string; border: string }> = {
-    URGENT: {
-      text: 'text-[var(--color-red)]',
-      border: 'border-[var(--color-red)]',
-    },
-    HIGH: {
-      text: 'text-[var(--color-warning)]',
-      border: 'border-[color-mix(in_oklab,var(--color-warning)_45%,transparent)]',
-    },
-    MEDIUM: {
-      text: 'text-[var(--color-info)]',
-      border: 'border-[color-mix(in_oklab,var(--color-info)_45%,transparent)]',
-    },
-    LOW: {
-      text: 'text-[var(--color-success)]',
-      border: 'border-[color-mix(in_oklab,var(--color-success)_45%,transparent)]',
-    },
-  };
-
-  const PRIORITY_FULL_LABEL: Record<string, string> = {
-    URGENT: 'Urgente',
-    HIGH: 'Alta',
-    MEDIUM: 'Média',
-    LOW: 'Baixa',
-  };
-
   async function refetch(next: Scope) {
-    const previousScope = scope;
+    controller?.abort();
+    controller = new AbortController();
+    const signal = controller.signal;
     scope = next;
     loading = true;
     loadError = '';
@@ -77,15 +57,19 @@
       }
       const res = await fetch(crmPath(`/api/today-tasks?${qs.toString()}`), {
         headers: { accept: 'application/json' },
+        signal,
       });
       if (!res.ok) throw new Error('Unable to load dashboard tasks');
       const data = (await res.json()) as { items?: TodayTaskRow[] };
+      if (signal.aborted) return;
       rows = data.items ?? [];
+      loadedScope = next;
     } catch {
-      scope = previousScope;
+      if (signal.aborted) return;
+      scope = loadedScope;
       loadError = 'Não foi possível atualizar as tarefas. Tente selecionar o filtro novamente.';
     } finally {
-      loading = false;
+      if (!signal.aborted) loading = false;
     }
   }
 
@@ -129,7 +113,7 @@
         <span class="sr-only">Filtrar tarefas por responsável</span>
         <select
           aria-label="Filtrar tarefas por responsável"
-          disabled={loading}
+          aria-busy={loading}
           value={scope.kind === 'byUser' ? scope.assigneeId : scope.kind}
           onchange={(event) => {
             const value = event.currentTarget.value;
@@ -172,14 +156,11 @@
   {:else}
     <ul class="task-list">
       {#each rows as t (t.id)}
-        {@const tagStyle = PRIORITY_TAG_COLOR[t.priority] ?? {
-          text: 'text-[var(--color-text-muted)]',
-          border: 'border-[var(--color-border)]',
-        }}
+        {@const priority = taskPriority(t.priority)}
         <li>
           <a href={crmPath(`/tarefas/${t.id}/editar`)} class="task-row group">
             <div class="priority-mark" aria-hidden="true">
-              <strong class={tagStyle.text}
+              <strong style:color={priority.color}
                 >{(
                   { URGENT: 'URG', HIGH: 'ALT', MEDIUM: 'MED', LOW: 'BXA' } as Record<
                     string,
@@ -193,9 +174,7 @@
             <div class="task-body">
               <div class="task-heading">
                 <span class="task-title">{t.title}</span>
-                <span class="priority {tagStyle.text} {tagStyle.border}"
-                  >{PRIORITY_FULL_LABEL[t.priority] ?? t.priority}</span
-                >
+                <span class="priority" style:color={priority.color}>{priority.label}</span>
               </div>
               <div class="task-details">
                 {#if t.isOverdue}<span class="overdue">Em atraso</span>{/if}
@@ -307,7 +286,7 @@
     text-transform: uppercase;
     letter-spacing: 0.07em;
     padding: 3px 6px;
-    border: 1px solid;
+    border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
     border-radius: 3px;
     line-height: 1.4;
   }

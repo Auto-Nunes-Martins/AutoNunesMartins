@@ -1,7 +1,13 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { PriorityEnum, TaskStatusEnum, taskCreateSchema, taskUpdateSchema } from '@anm/types';
+import {
+  PriorityEnum,
+  TaskStatusEnum,
+  taskCreateSchema,
+  taskUpdateSchema,
+  taskMoveSchema,
+} from '@anm/types';
 import { prisma } from '../db.js';
 import { getTaskByIdForActor, listAllTasks, type TaskScope } from '../lib/data/task.js';
 import {
@@ -12,6 +18,8 @@ import {
   deleteTask,
   purgeStaleCompletedTasks,
   updateTask,
+  moveTask,
+  TaskBoardConflict,
 } from '../lib/server/taskService.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 import { param } from '../lib/http.js';
@@ -29,6 +37,7 @@ const listQuerySchema = z.object({
   dueAfter: z.coerce.date().optional(),
   q: z.string().optional(),
   scope: ScopeEnum.optional(),
+  order: z.enum(['board', 'priority']).optional(),
   /**
    * When true, include recurring tasks currently in DONE-standby
    * (waiting for their next occurrence date). Default false hides them.
@@ -185,6 +194,43 @@ router.patch(
         return;
       }
       throw err;
+    }
+  }),
+);
+
+router.patch(
+  '/:id/move',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const parsed = taskMoveSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
+      return;
+    }
+    try {
+      const result = await moveTask(param(req, 'id'), parsed.data, {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      res.json(result);
+    } catch (error) {
+      if (error instanceof TaskNotFound) {
+        res.status(404).json({ error: 'Task not found' });
+        return;
+      }
+      if (error instanceof TaskBoardConflict) {
+        res.status(409).json({ error: error.message });
+        return;
+      }
+      if (error instanceof TaskValidationError) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+      throw error;
     }
   }),
 );

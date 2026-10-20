@@ -37,12 +37,6 @@
 </section>
 
 <style>
-  :global(.design.orbit) .orbit-faq :global(.expanded .chevron) {
-    color: var(--red);
-    opacity: 1;
-    filter: none;
-    text-shadow: none;
-  }
   .orbit-faq {
     width: var(--orbit-frame, 90%);
     max-width: var(--orbit-frame-max, 1720px);

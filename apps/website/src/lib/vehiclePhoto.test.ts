@@ -20,6 +20,41 @@ class ImageNode extends EventTarget {
 }
 
 describe('vehicle photo fallback', () => {
+  it('reports pending downloads and clears loading on completion or failure', () => {
+    const node = new ImageNode();
+    const states: boolean[] = [];
+    const onLoading = (loading: boolean) => states.push(loading);
+    const action = vehiclePhoto(node.asImage(), { src: node.src, onLoading });
+    expect(states).toEqual([true]);
+    node.dispatchEvent(new Event('load'));
+    expect(states.at(-1)).toBe(false);
+    action.update({ src: '/next.webp', onLoading });
+    expect(states.at(-1)).toBe(true);
+    node.dispatchEvent(new Event('error'));
+    expect(states.at(-1)).toBe(false);
+    action.destroy();
+  });
+
+  it('does not let an older decode hide the next photo loading state', async () => {
+    let finishDecode!: () => void;
+    const decoding = new Promise<void>((resolve) => {
+      finishDecode = resolve;
+    });
+    const node = Object.assign(new ImageNode(), { decode: () => decoding });
+    const states: boolean[] = [];
+    const onLoading = (loading: boolean) => states.push(loading);
+    const action = vehiclePhoto(node.asImage(), { src: node.src, onLoading });
+    node.dispatchEvent(new Event('load'));
+    action.update({ src: '/next.webp', onLoading });
+    finishDecode();
+    await decoding;
+    expect(states).toEqual([true, true]);
+    node.dispatchEvent(new Event('load'));
+    await decoding;
+    expect(states.at(-1)).toBe(false);
+    action.destroy();
+  });
+
   it('keeps the normal placeholder for a vehicle without photos', () => {
     const node = new ImageNode();
     node.src = catalogPlaceholder;
