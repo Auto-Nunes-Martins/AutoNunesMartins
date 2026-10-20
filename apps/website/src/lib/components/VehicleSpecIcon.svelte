@@ -4,6 +4,7 @@
   let { label, value = '' }: { label: string; value?: string } = $props();
   const logo = $derived(label === 'Marca' ? brandLogo(value) : undefined);
   const icons = {
+    Modelo: Car,
     Ano: CalendarDays,
     Potência: Gauge,
     Combustível: Fuel,
@@ -19,7 +20,7 @@
     style={`mask-image: url('${logo}'); -webkit-mask-image: url('${logo}');`}
     aria-hidden="true"
   ></span>
-{:else if ['Quilometragem', 'Caixa', 'Cilindrada', 'Lugares', 'Portas', 'Modelo'].includes(label)}
+{:else if ['Quilometragem', 'Caixa', 'Cilindrada', 'Lugares', 'Portas'].includes(label)}
   <svg
     width="20"
     height="20"
@@ -36,19 +37,13 @@
     {:else if label === 'Caixa'}
       <path d="M5 5v14m7-14v14m7-14v7H5M3 5h4m3 0h4m3 0h4M3 19h4m3 0h4" />
     {:else if label === 'Cilindrada'}
-      <rect x="6" y="3" width="12" height="8" rx="1" /><path d="M6 6h12m-8 5v5m4-5v5" /><circle
-        cx="12"
-        cy="19"
-        r="3"
-      />
+      <g transform="rotate(-35 12 12)">
+        <rect x="6.5" y="3" width="11" height="8" rx="1.2" />
+        <path d="M6.5 5.5h11m-11 3h11M10.5 11v5m3-5v5" />
+        <circle cx="12" cy="19" r="3" />
+      </g>
     {:else if label === 'Portas'}
       <path d="m5 10 5-6h9v16H5V10Z M8 10l3-4h5v4H8Zm7 4h2" />
-    {:else if label === 'Modelo'}
-      <path d="m3 14 1-5h4l3-4h5l4 7 1 2v4h-3m-12 0H3v-4Zm5-5h10m-7-4v4m-4 9h7" /><circle
-        cx="7"
-        cy="18"
-        r="2"
-      /><circle cx="17" cy="18" r="2" />
     {:else}
       <path d="M7 3h3v4H7zM7 9h3l2 6h6a2 2 0 0 1 2 2v2H9a3 3 0 0 1-3-3V9Zm2 10-1 2m10-2 1 2" />
     {/if}
