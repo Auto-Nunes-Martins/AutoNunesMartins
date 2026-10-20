@@ -2169,7 +2169,7 @@
   }
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
     .vehicle-card:hover .card-image img {
-      transform: scale(1.03);
+      transform: scale(1.035);
     }
   }
   .image-category {
