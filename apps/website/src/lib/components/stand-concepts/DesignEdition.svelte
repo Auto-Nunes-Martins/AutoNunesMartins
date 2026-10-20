@@ -2165,7 +2165,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 1s cubic-bezier(0.25, 0.5, 0.65, 1);
+    transition: transform 650ms cubic-bezier(0.2, 0.75, 0.55, 1);
   }
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
     .vehicle-card:hover .card-image img {
