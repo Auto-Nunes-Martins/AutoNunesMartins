@@ -242,7 +242,7 @@
   article {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
   }
   .review-content {
     position: relative;
