@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { sessionFetch } from '$lib/auth/session';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
   import { tick, untrack } from 'svelte';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import {
     formFeedback,
     isFormDirty,
@@ -76,7 +77,7 @@
     const timeout = setTimeout(async () => {
       searchingCustomers = true;
       try {
-        const response = await fetch(crmPath(`/clientes/pesquisar?q=${encodeURIComponent(q)}`), {
+        const response = await sessionFetch(crmPath(`/clientes/pesquisar?q=${encodeURIComponent(q)}`), {
           signal: controller.signal,
         });
         if (!response.ok) throw new Error('Pesquisa indisponível');

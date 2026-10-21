@@ -2,7 +2,7 @@ import { crmPath } from '$lib/paths';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { customerCreateSchema } from '@anm/types';
 import { customersApi } from '$lib/server/customers';
-import { ApiError } from '$lib/server/api';
+import { ApiError, rethrowAuthError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -13,6 +13,7 @@ export const load: PageServerLoad = async (event) => {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Cliente não encontrado');
     }
+    rethrowAuthError(err);
     throw err;
   }
 };

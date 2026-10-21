@@ -1,7 +1,7 @@
 <script lang="ts">
   import DateInput from '$lib/components/common/DateInput.svelte';
   import '$lib/styles/expenseCards.css';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { invalidateAll } from '$app/navigation';
   import { Check, Pencil, Plus, Trash2, Wallet, X } from 'lucide-svelte';
   import { toast } from 'svelte-sonner';

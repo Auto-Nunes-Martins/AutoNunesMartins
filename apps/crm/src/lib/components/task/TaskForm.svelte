@@ -1,7 +1,7 @@
 <script lang="ts">
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { formFeedback, markFormSaved, showFormErrors } from '$lib/forms/formFeedback';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';

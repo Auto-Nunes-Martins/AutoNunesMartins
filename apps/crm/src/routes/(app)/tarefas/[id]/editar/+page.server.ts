@@ -2,7 +2,7 @@ import { crmPath } from '$lib/paths';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { taskCreateSchema } from '@anm/types';
 import { tasksApi, usersApi } from '$lib/server/tasks';
-import { ApiError } from '$lib/server/api';
+import { ApiError, rethrowAuthError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -16,6 +16,7 @@ export const load: PageServerLoad = async (event) => {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Tarefa não encontrada');
     }
+    rethrowAuthError(err);
     throw err;
   }
 };

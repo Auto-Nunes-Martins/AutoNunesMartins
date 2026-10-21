@@ -1,7 +1,8 @@
 <script lang="ts">
+  import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { toast } from 'svelte-sonner';
   import {
     Activity,
@@ -516,8 +517,13 @@
         {/each}
       </div>
     {:then tl}
-      <PanelHeader icon={Activity} title="Histórico do negócio" meta={`${tl.total} EVENTOS`} />
-      {#if tl.items.length === 0}
+        <PanelHeader icon={Activity} title="Histórico do negócio" meta={tl._error ? undefined : `${tl.total} EVENTOS`} />
+        {#if tl._error}
+          <div class="p-5 space-y-3" role="alert">
+            <p class="text-[13px] text-[var(--color-text-muted)]">{tl._error}</p>
+            <ErrorRecovery status={tl._status ?? 503} />
+          </div>
+        {:else if tl.items.length === 0}
         <div
           class="p-8 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
         >

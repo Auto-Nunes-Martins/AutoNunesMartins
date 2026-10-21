@@ -7,6 +7,14 @@ const security: Handle = async ({ event, resolve }) => {
   const route = event.url.pathname.slice(base.length) || '/';
   // Layout loads do not protect +server endpoints. Guard the entire server surface.
   if (route !== '/' && !event.locals.auth().userId) {
+    // Enhanced actions and JSON relays must not follow a redirect to login HTML.
+    const message = 'A sessão terminou. Entre novamente para continuar.';
+    if (event.request.headers.get('x-sveltekit-action') === 'true') {
+      return Response.json({ type: 'error', status: 401, error: { message } }, { status: 401 });
+    }
+    if (!event.isDataRequest && !event.request.headers.get('accept')?.includes('text/html')) {
+      return Response.json({ error: message }, { status: 401 });
+    }
     return new Response(null, { status: 303, headers: { location: base + '/' } });
   }
   if (

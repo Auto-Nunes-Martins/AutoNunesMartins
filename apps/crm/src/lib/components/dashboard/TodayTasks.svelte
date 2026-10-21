@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import { onDestroy, untrack } from 'svelte';
   import { Calendar, CheckSquare, Users } from 'lucide-svelte';
@@ -55,7 +56,7 @@
       } else {
         qs.set('scope', next.kind);
       }
-      const res = await fetch(crmPath(`/api/today-tasks?${qs.toString()}`), {
+      const res = await sessionFetch(crmPath(`/api/today-tasks?${qs.toString()}`), {
         headers: { accept: 'application/json' },
         signal,
       });

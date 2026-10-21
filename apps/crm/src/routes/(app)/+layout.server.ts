@@ -1,6 +1,6 @@
 import { crmPath } from '$lib/paths';
-import { redirect } from '@sveltejs/kit';
-import { apiJson, ApiError } from '$lib/server/api';
+import { redirect, error } from '@sveltejs/kit';
+import { apiJson, ApiError, apiErrorMessage, rethrowAuthError } from '$lib/server/api';
 import type { LayoutServerLoad } from './$types';
 
 interface MeResponse {
@@ -35,12 +35,8 @@ export const load: LayoutServerLoad = async (event) => {
     const me = await apiJson<MeResponse>(event, '/api/me');
     currentUser = me.user;
   } catch (err) {
-    // If the backend hasn't provisioned the user yet (very first request),
-    // requireUser middleware auto-provisions and a refetch would succeed.
-    // We surface null so the UI can render an "Em provisionamento" state.
-    if (!(err instanceof ApiError) || err.status !== 403) {
-      throw err;
-    }
+    const status = err instanceof ApiError && [401, 403].includes(err.status) ? err.status : 503;
+    error(status, apiErrorMessage(status));
   }
 
   // Active-vehicle count for the sidebar badge. Cached 60s in the backend
@@ -57,7 +53,8 @@ export const load: LayoutServerLoad = async (event) => {
     ]);
     vehicleStats = v;
     taskStats = t;
-  } catch {
+  } catch (err) {
+    rethrowAuthError(err);
     /* badges hide on error */
   }
 

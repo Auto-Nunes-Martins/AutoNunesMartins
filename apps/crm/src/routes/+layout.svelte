@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { theme } from '$lib/stores/theme';
   import { ClerkProvider } from 'svelte-clerk';
+  import SessionRecovery from '$lib/components/shell/SessionRecovery.svelte';
   import { Toaster } from 'svelte-sonner';
 
   interface Props {
@@ -17,6 +18,7 @@
 </script>
 
 <ClerkProvider>
+  <SessionRecovery />
   {@render children?.()}
 </ClerkProvider>
 

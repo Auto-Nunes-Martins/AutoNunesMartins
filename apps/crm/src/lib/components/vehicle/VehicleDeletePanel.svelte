@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { crmPath } from '$lib/paths';
   import { Trash2 } from 'lucide-svelte';
   import { toast } from 'svelte-sonner';

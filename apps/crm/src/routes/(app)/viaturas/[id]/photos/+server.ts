@@ -1,8 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
+import { getApiToken } from '$lib/server/api';
 export const POST: RequestHandler = async (event) => {
-  const token = await event.locals.auth().getToken();
+  const token = await getApiToken(event);
   if (!token) return json({ error: 'Unauthorized' }, { status: 401 });
   // Stream through the relay; global admission and byte/pixel limits live in Express.
   const response = await fetch(
@@ -12,6 +13,8 @@ export const POST: RequestHandler = async (event) => {
     ),
     {
       method: 'POST',
+      redirect: 'manual',
+      credentials: 'omit',
       body: event.request.body,
       duplex: 'half',
       headers: {

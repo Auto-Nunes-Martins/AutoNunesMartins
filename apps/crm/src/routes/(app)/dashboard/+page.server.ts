@@ -1,4 +1,5 @@
 import type { PageServerLoad } from './$types';
+import { rethrowAuthError } from '$lib/server/api';
 import {
   dashboardApi,
   type DashboardPayload,
@@ -17,11 +18,11 @@ export const load: PageServerLoad = async (event) => {
     usersApi
       .list(event)
       .then((result) => result.items)
-      .catch(() => [] as TaskAssignee[]),
+      .catch((err) => { rethrowAuthError(err); return [] as TaskAssignee[]; }),
     dashboardApi
       .highlights(event)
       .then((result) => result.items)
-      .catch(() => [] as DashboardHighlight[]),
+      .catch((err) => { rethrowAuthError(err); return [] as DashboardHighlight[]; }),
   ]);
   // Await the showcase so its photo and dimensions are present in the first HTML.
   return { dashboard, users, highlights };

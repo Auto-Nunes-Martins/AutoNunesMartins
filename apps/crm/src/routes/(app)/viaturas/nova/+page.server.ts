@@ -2,7 +2,7 @@ import { crmPath } from '$lib/paths';
 import { fail, error, redirect } from '@sveltejs/kit';
 import { vehicleCreateSchema } from '@anm/types';
 import { vehiclesApi } from '$lib/server/vehicles';
-import { ApiError } from '$lib/server/api';
+import { ApiError, rethrowAuthError } from '$lib/server/api';
 import { webPublicationAction } from '$lib/server/webPublication';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -14,7 +14,7 @@ export const load: PageServerLoad = async (event) => {
   const signedPhotos = await vehiclesApi
     .signedPhotos(event, id)
     .then((result) => result.photos)
-    .catch(() => []);
+    .catch((err) => { rethrowAuthError(err); return []; });
   return { vehicle, signedPhotos };
 };
 

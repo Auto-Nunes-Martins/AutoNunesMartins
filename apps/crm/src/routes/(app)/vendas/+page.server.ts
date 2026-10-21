@@ -1,3 +1,4 @@
+import { apiFailure } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 import {
   salesApi,
@@ -14,25 +15,7 @@ function pickDeliveryStatus(value: string | null): DeliveryStatus | undefined {
     : undefined;
 }
 
-export type SaleListStream =
-  | (SaleListResponse & { _error?: undefined })
-  | {
-      items: [];
-      total: 0;
-      page: 1;
-      pageSize: 25;
-      totalPages: 0;
-      totals: {
-        count: 0;
-        revenue: '0';
-        vat: '0';
-        expenses: '0';
-        commission: '0';
-        profit: '0';
-        avgMarginPct: 0;
-      };
-      _error: string;
-    };
+export type SaleListStream = SaleListResponse & { _error?: string; _status?: number };
 
 export const load: PageServerLoad = (event) => {
   const sp = event.url.searchParams;
@@ -65,7 +48,7 @@ export const load: PageServerLoad = (event) => {
         profit: '0',
         avgMarginPct: 0,
       },
-      _error: (err as Error).message,
+      ...apiFailure(err),
     }),
   );
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionFetch } from '$lib/auth/session';
  import {photoAttrs,photoFallback,type SignedVariantPhoto} from "$lib/vehicleImage";
   import { crmPath } from '$lib/paths';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
@@ -76,7 +77,7 @@
           continue;
         }
 
-        const persistRes = await fetch(apiBase, {
+        const persistRes = await sessionFetch(apiBase, {
           method: 'POST', headers: { 'content-type': file.type }, body: file,
         });
         if (!persistRes.ok) {
@@ -107,7 +108,7 @@
     if (next.length === photos.length && next.every((path, index) => path === photos[index]?.path)) return true;
     busy = true;
     try {
-      const res = await fetch(`${apiBase}/reorder`, {
+      const res = await sessionFetch(`${apiBase}/reorder`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ photos: next }),
@@ -132,7 +133,7 @@
     if (disabled || busy || !window.confirm('Eliminar esta foto? A eliminação é imediata e também a retira do site, caso esteja publicada.')) return;
     busy = true;
     try {
-      const res = await fetch(`${apiBase}/${encodeURIComponent(path)}`, { method: 'DELETE' });
+      const res = await sessionFetch(`${apiBase}/${encodeURIComponent(path)}`, { method: 'DELETE' });
       if (res.ok) {
         await invalidateAll();
         toast.success('Foto eliminada.');

@@ -29,6 +29,7 @@ function fromSource(source: string, file: string): any {
     else if (specifier === 'svelte') value = svelte;
     else if (specifier === 'lucide-svelte') value = new Proxy({}, { get: () => icon });
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
+    else if (specifier === '$lib/auth/session') value = { sessionFetch: () => { throw new Error('Unexpected SSR fetch'); } };
     else if (specifier === '$lib/utils/format') value = format;
     else if (specifier === '$lib/components/task/presentation') value = taskPresentation;
     else if (specifier === '$lib/linkedRow') value = { linkedRow };

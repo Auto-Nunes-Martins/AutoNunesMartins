@@ -1,4 +1,5 @@
 import type { PageServerLoad } from './$types';
+import { apiFailure } from '$lib/server/api';
 import {
   vehiclesApi,
   type VehicleListParams,
@@ -25,14 +26,15 @@ function pickStatus(value: string | null): VehicleStatus | undefined {
 }
 
 export type VehicleListStream =
-  | (VehicleListResponse & { _error?: undefined })
+  | (VehicleListResponse & { _error?: undefined; _status?: undefined })
   | {
-      items: [];
+      items: VehicleListResponse['items'];
       total: number;
       page: number;
       pageSize: number;
       totalPages: number;
       _error: string;
+      _status: number;
     };
 
 export const load: PageServerLoad = (event) => {
@@ -67,7 +69,7 @@ export const load: PageServerLoad = (event) => {
       page: 1,
       pageSize: 25,
       totalPages: 0,
-      _error: (err as Error).message,
+      ...apiFailure(err),
     }),
   );
 
@@ -93,7 +95,7 @@ export const load: PageServerLoad = (event) => {
               page: 1,
               pageSize: 100,
               totalPages: 0,
-              _error: (err as Error).message,
+              ...apiFailure(err),
             }),
           );
 

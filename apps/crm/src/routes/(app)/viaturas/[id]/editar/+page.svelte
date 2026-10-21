@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import { onMount, tick, untrack } from 'svelte';
   import { invalidateAll } from '$app/navigation';
@@ -118,7 +119,7 @@
     void rememberSavedForms();
   });
   async function freshState() {
-    const response = await fetch(crmPath(`/viaturas/${baseline.id}/editar/save`), {
+    const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/editar/save`), {
       cache: 'no-store',
     });
     if (!response.ok)
@@ -200,7 +201,7 @@
       for (const [index, photo] of files.entries()) {
         if (photo.uploadedPath) continue;
         progress = `A preparar fotografia ${index + 1} de ${files.length}…`;
-        const response = await fetch(crmPath(`/viaturas/${baseline.id}/photos`), {
+        const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/photos`), {
           method: 'POST',
           headers: {
             'content-type': photo.file!.type,
@@ -227,7 +228,7 @@
       publication.photoPaths = publication.photoPaths.map(resolvePath);
       progress = 'A guardar todas as alterações…';
       saveRequestStarted = true;
-      const response = await fetch(crmPath(`/viaturas/${baseline.id}/editar/save`), {
+      const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/editar/save`), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
