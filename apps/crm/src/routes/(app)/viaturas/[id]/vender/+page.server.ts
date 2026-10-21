@@ -4,7 +4,7 @@ import { customerCreateSchema, saleCreateSchema } from '@anm/types';
 import { vehiclesApi } from '$lib/server/vehicles';
 import { customersApi } from '$lib/server/customers';
 import { salesApi } from '$lib/server/sales';
-import { ApiError } from '$lib/server/api';
+import { ApiError, rethrowAuthError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -28,6 +28,7 @@ export const load: PageServerLoad = async (event) => {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Viatura não encontrada');
     }
+    rethrowAuthError(err);
     throw err;
   }
 };

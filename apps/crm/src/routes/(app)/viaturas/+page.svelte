@@ -1,7 +1,9 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { linkedRow } from '$lib/linkedRow';
-  import { ArrowRight, Car, Plus, Tag } from 'lucide-svelte';
+  import { ArrowRight, Car, Plus, Tag, AlertCircle, RefreshCw } from 'lucide-svelte';
+  import { invalidateAll } from '$app/navigation';
+  import { refreshCrmSession } from '$lib/auth/session';
   import { page } from '$app/stores';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
@@ -21,6 +23,21 @@
   }
 
   let { data }: Props = $props();
+  let retrying = $state(false);
+  let retryError = $state('');
+  async function retryLoading() {
+    if (retrying) return;
+    retrying = true;
+    retryError = '';
+    try {
+      await refreshCrmSession();
+      await invalidateAll();
+    } catch {
+      retryError = 'A ligação continua indisponível. Tente novamente dentro de instantes.';
+    } finally {
+      retrying = false;
+    }
+  }
   const filtered = $derived(
     Boolean(
       data.filters.q ||
@@ -60,8 +77,10 @@
         <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-red)]"></span>
         {formatDateLong(today)}
         {#await data.list then list}
-          <span class="text-[var(--color-text-faint)]">·</span>
-          <span class="tabular-nums">{list.total} no inventário</span>
+          {#if !list._error}
+            <span class="text-[var(--color-text-faint)]">·</span>
+            <span class="tabular-nums">{list.total} no inventário</span>
+          {/if}
         {/await}
       </div>
     </div>
@@ -90,7 +109,10 @@
     sem rascunhos, página fica limpa.
   -->
   {#await data.drafts then drafts}
-    {#if !drafts._error && drafts.items.length > 0}
+    {#if drafts._error}
+      <Panel>{@render loadFailure('Não foi possível carregar os rascunhos.', drafts._status)}</Panel
+      >
+    {:else if drafts.items.length > 0}
       <Panel class="border-l-4 !border-l-[var(--color-warning)]">
         <PanelHeader
           icon={Tag}
@@ -184,10 +206,7 @@
       <VehicleTableSkeleton rows={6} />
     {:then list}
       {#if list._error}
-        <div class="p-4 flex items-center gap-3 text-[var(--color-red)] text-[13px]">
-          <strong class="font-mono uppercase tracking-[0.2em] text-[10px]">Erro</strong>
-          <span>{list._error}</span>
-        </div>
+        {@render loadFailure('Não foi possível carregar as viaturas.', list._status)}
       {:else if list.items.length === 0}
         <EmptyState
           icon={Car}
@@ -217,3 +236,66 @@
     {/await}
   </Panel>
 </section>
+
+{#snippet loadFailure(title: string, status?: number)}
+  <div class="list-load-error" role="status" aria-live="polite">
+    <AlertCircle size={20} aria-hidden="true" />
+    <div>
+      <h2>{title}</h2>
+      <p>
+        {retryError ||
+          (status === 401
+            ? 'Não foi possível validar a sessão. Tente novamente para restabelecer a ligação.'
+            : status === 403
+              ? 'A sua conta não tem autorização para consultar estes dados.'
+              : 'O carregamento falhou. Isto não significa que o inventário esteja vazio.')}
+      </p>
+    </div>
+    <Button
+      variant="outline"
+      type="button"
+      disabled={retrying}
+      loading={retrying}
+      onclick={retryLoading}
+    >
+      <RefreshCw size={14} aria-hidden="true" />Tentar novamente
+    </Button>
+  </div>
+{/snippet}
+
+<style>
+  .list-load-error {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+  }
+  .list-load-error > :global(svg) {
+    color: var(--color-warning);
+    flex-shrink: 0;
+  }
+  .list-load-error > div {
+    flex: 1;
+    min-width: 0;
+  }
+  .list-load-error h2 {
+    margin: 0;
+    color: var(--color-text);
+    font: 500 14px/1.5 var(--font-sans);
+  }
+  .list-load-error p {
+    margin: 6px 0 0;
+    color: var(--color-text-muted);
+    font: 12px/1.7 var(--font-sans);
+  }
+  @media (max-width: 600px) {
+    .list-load-error {
+      flex-wrap: wrap;
+      align-items: flex-start;
+      padding: 20px;
+    }
+    .list-load-error > :global(button) {
+      margin-left: 36px;
+    }
+  }
+</style>

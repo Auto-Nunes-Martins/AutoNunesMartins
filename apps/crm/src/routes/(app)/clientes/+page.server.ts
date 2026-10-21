@@ -1,3 +1,4 @@
+import { apiFailure } from '$lib/server/api';
 import type { PageServerLoad } from './$types';
 import {
   customersApi,
@@ -5,16 +6,7 @@ import {
   type CustomerListResponse,
 } from '$lib/server/customers';
 
-export type CustomerListStream =
-  | (CustomerListResponse & { _error?: undefined })
-  | {
-      items: [];
-      total: 0;
-      page: 1;
-      pageSize: 25;
-      totalPages: 0;
-      _error: string;
-    };
+export type CustomerListStream = CustomerListResponse & { _error?: string; _status?: number };
 
 export const load: PageServerLoad = (event) => {
   const sp = event.url.searchParams;
@@ -33,7 +25,7 @@ export const load: PageServerLoad = (event) => {
       page: 1,
       pageSize: 25,
       totalPages: 0,
-      _error: (err as Error).message,
+      ...apiFailure(err),
     }),
   );
 

@@ -2,7 +2,7 @@
   import {photoAttrs,photoFallback} from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
   import { untrack } from 'svelte';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { tick } from 'svelte';
   import { formFeedback, markFormSaved } from '$lib/forms/formFeedback';
   import { toast } from 'svelte-sonner';

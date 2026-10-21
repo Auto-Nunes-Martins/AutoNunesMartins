@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trash2 } from 'lucide-svelte';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { toast } from 'svelte-sonner';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';

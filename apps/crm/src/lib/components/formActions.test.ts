@@ -16,7 +16,7 @@ function component(source: string, imports: Record<string, unknown> = {}) {
       /^import \* as \$ from 'svelte\/internal\/server';/m,
       'const $ = imports.server;',
     )
-    .replace(/^import \{ enhance \} from '\$app\/forms';/m, '')
+    .replace(/^import \{ enhance \} from '\$lib\/auth\/enhance';/m, '')
     .replace(/^import \{ goto \} from '\$app\/navigation';/m, '')
     .replace(/^import \{ ([^}]+) \} from 'svelte';/m, 'const { $1 } = imports.svelte;')
     .replace(/^import \{ toast \} from 'svelte-sonner';/m, '')

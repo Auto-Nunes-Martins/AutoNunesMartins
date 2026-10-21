@@ -2,7 +2,7 @@
   import DateInput from '$lib/components/common/DateInput.svelte';
   import '$lib/styles/expenseCards.css';
   import { crmPath } from '$lib/paths';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { filterNavigation } from '$lib/filterNavigation';
   import { page } from '$app/stores';
   import { Check, Pencil, Plus, Trash2, Wallet, X } from 'lucide-svelte';

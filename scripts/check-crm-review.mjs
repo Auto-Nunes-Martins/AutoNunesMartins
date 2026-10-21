@@ -60,8 +60,9 @@ export function beforeNavigate(){}export function afterNavigate(fn){queueMicrota
 await writeFile(
   root + '/forms.js',
   `import {invalidateAll} from './navigation.js';
+export async function applyAction(result){window.__crmSetForm(result.data??null);}
 export function enhance(form,submit){const handler=async event=>{event.preventDefault();if(!form.reportValidity())return;const formData=new FormData(form);if(event.submitter?.name)formData.set(event.submitter.name,event.submitter.value);let cancelled=false;
-const done=submit?.({formElement:form,formData,submitter:event.submitter,cancel(){cancelled=true}});if(cancelled)return;const result={type:'failure',status:422,data:{error:'Validação de teste: os dados preenchidos foram mantidos.'}};await done?.({result,update:async()=>window.__crmSetForm(result.data)});};form.addEventListener('submit',handler);return{destroy(){form.removeEventListener('submit',handler)}}}`,
+const done=await submit?.({formElement:form,formData,submitter:event.submitter,cancel(){cancelled=true}});if(cancelled)return;const result={type:'failure',status:422,data:{error:'Validação de teste: os dados preenchidos foram mantidos.'}};await done?.({result,update:async()=>window.__crmSetForm(result.data)});};form.addEventListener('submit',handler);return{destroy(){form.removeEventListener('submit',handler)}}}`,
 );
 await writeFile(root + '/environment.js', 'export const browser=true;export const dev=true;');
 await writeFile(root + '/paths.js', `export const base='';export const assets='';`);

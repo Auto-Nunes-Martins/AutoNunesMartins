@@ -8,7 +8,7 @@ import {
 } from '@anm/types';
 import { salesApi } from '$lib/server/sales';
 import { activityApi, type ActivityListResult } from '$lib/server/activity';
-import { ApiError } from '$lib/server/api';
+import { ApiError, rethrowAuthError, apiFailure } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async (event) => {
     // or "viatura adicionada", since the doc-checklist lives on the Vehicle
     // model (pendingDocFlags), not on the Sale. Streamed so the rest of the
     // page renders immediately.
-    const timeline: Promise<ActivityListResult> = activityApi
+    const timeline: Promise<ActivityListResult & { _error?: string; _status?: number }> = activityApi
       .list(event, {
         scope: [
           { type: 'sale', id: sale.id },
@@ -30,12 +30,13 @@ export const load: PageServerLoad = async (event) => {
         pageSize: 100,
       })
       .catch(
-        (): ActivityListResult => ({
+        (err) => ({
           items: [],
           total: 0,
           page: 1,
           pageSize: 100,
           pageCount: 1,
+          ...apiFailure(err),
         }),
       );
 
@@ -44,6 +45,7 @@ export const load: PageServerLoad = async (event) => {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Venda não encontrada');
     }
+    rethrowAuthError(err);
     throw err;
   }
 };

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { toast } from 'svelte-sonner';
   import { Moon, Palette, Settings as SettingsIcon, Sun, User as UserIcon } from 'lucide-svelte';
   import { UserProfile } from 'svelte-clerk';

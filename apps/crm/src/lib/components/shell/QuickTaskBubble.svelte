@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionFetch } from '$lib/auth/session';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath, crmRoute } from '$lib/paths';
   import { onMount, onDestroy, tick, untrack } from 'svelte';
@@ -201,7 +202,7 @@
     loadError = null;
     try {
       const qs = new URLSearchParams({ status: 'TODO', scope: currentScope });
-      const res = await fetch(crmPath(`/api/tasks?${qs.toString()}`), {
+      const res = await sessionFetch(crmPath(`/api/tasks?${qs.toString()}`), {
         signal,
         headers: { accept: 'application/json' },
       });
@@ -232,7 +233,7 @@
   async function loadUsers() {
     if (usersLoaded) return;
     try {
-      const res = await fetch(crmPath('/api/users'), { headers: { accept: 'application/json' } });
+      const res = await sessionFetch(crmPath('/api/users'), { headers: { accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { items: TaskAssignee[] };
       users = data.items ?? [];
@@ -344,7 +345,7 @@
       const dueISO = resolveDue(dueChoice, customDate);
       if (dueISO) body.dueDate = dueISO;
       if (assigneeChoice) body.assigneeId = assigneeChoice;
-      const res = await fetch(crmPath('/api/tasks'), {
+      const res = await sessionFetch(crmPath('/api/tasks'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
@@ -378,7 +379,7 @@
     items = items.filter((t) => t.id !== task.id);
     let rejected = false;
     try {
-      const res = await fetch(crmPath(`/tarefas/${task.id}/status`), {
+      const res = await sessionFetch(crmPath(`/tarefas/${task.id}/status`), {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ status: 'IN_PROGRESS' }),

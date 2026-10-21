@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { activityApi, type ActivityListParams, type ActivityListResult } from '$lib/server/activity';
 import { usersApi, type TaskAssignee } from '$lib/server/tasks';
+import { error } from '@sveltejs/kit';
+import { apiFailure } from '$lib/server/api';
 
 const ENTITY_TYPES = ['vehicle', 'sale', 'task', 'customer', 'expense'] as const;
 
@@ -40,8 +42,9 @@ export const load: PageServerLoad = async (event) => {
     ]);
     users = usersResp.items;
     result = list;
-  } catch {
-    /* errors surface as empty list */
+  } catch (err) {
+    const failure = apiFailure(err);
+    error(failure._status, failure._error);
   }
 
   return { result, users, params };

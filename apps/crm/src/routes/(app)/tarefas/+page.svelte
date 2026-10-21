@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import { tick, untrack } from 'svelte';
   import { CalendarClock, Plus, Search, X } from 'lucide-svelte';
@@ -142,7 +143,7 @@
     let conflict = false;
     let saved = false;
     try {
-      const res = await fetch(crmPath(`/tarefas/${task.id}/move`), {
+      const res = await sessionFetch(crmPath(`/tarefas/${task.id}/move`), {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(taskMovePayload(task, status, board)),
@@ -266,7 +267,7 @@
     const target = pendingCancel;
     cancelling = true;
     try {
-      const res = await fetch(crmPath(`/tarefas/${target.id}`), { method: 'DELETE' });
+      const res = await sessionFetch(crmPath(`/tarefas/${target.id}`), { method: 'DELETE' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // Drop locally for instant feedback, then revalidate.
       standbyTasks = standbyTasks.filter((t) => t.id !== target.id);

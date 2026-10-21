@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import { activityHref as hrefFor } from '$lib/activityNavigation';
   import { onMount, onDestroy } from 'svelte';
@@ -38,7 +39,7 @@
     loading = true;
     loadError = '';
     try {
-      const res = await fetch(crmPath('/api/notifications'), {
+      const res = await sessionFetch(crmPath('/api/notifications'), {
         signal,
         headers: { accept: 'application/json' },
       });

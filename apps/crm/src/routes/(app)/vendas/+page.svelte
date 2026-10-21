@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
   import { linkedRow } from '$lib/linkedRow';
@@ -81,8 +82,10 @@
         <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-red)]"></span>
         {formatDateLong(today)}
         {#await data.list then list}
+          {#if !list._error}
           <span class="text-[var(--color-text-faint)]">·</span>
           <span class="tabular-nums">{list.total} registadas</span>
+          {/if}
         {/await}
       </div>
     </div>
@@ -201,6 +204,8 @@
         <div class="p-4 flex items-center gap-3 text-[var(--color-red)] text-[13px]">
           <strong class="font-mono uppercase tracking-[0.2em] text-[10px]">Erro</strong>
           <span>{list._error}</span>
+          </div>
+          <div class="px-4 pb-4"><ErrorRecovery status={list._status ?? 503} />
         </div>
       {:else if list.items.length === 0}
         <EmptyState

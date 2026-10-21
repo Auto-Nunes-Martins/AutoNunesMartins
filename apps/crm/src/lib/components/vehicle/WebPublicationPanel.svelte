@@ -3,7 +3,7 @@
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { crmPath } from '$lib/paths';
   import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { tick, untrack, type Snippet } from 'svelte';
   import { publicationDraftKey, reconcilePhotoSelection } from './publicationDraft';
   import VehiclePhotoDraft from './VehiclePhotoDraft.svelte';

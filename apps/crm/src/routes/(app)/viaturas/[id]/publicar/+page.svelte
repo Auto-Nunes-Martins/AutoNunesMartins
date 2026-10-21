@@ -1,7 +1,7 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { untrack } from 'svelte';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import { toast } from 'svelte-sonner';
   import { ArrowRightLeft, Check, Tag } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';

@@ -3,7 +3,7 @@ import { vehicleExpenseCreateSchema, vehicleExpenseUpdateSchema } from '@anm/typ
 import { vehiclesApi } from '$lib/server/vehicles';
 import { expensesApi } from '$lib/server/vehicleExpenses';
 import { dashboardApi } from '$lib/server/dashboard';
-import { ApiError } from '$lib/server/api';
+import { ApiError, rethrowAuthError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -15,7 +15,8 @@ export const load: PageServerLoad = async (event) => {
       try {
         const { photos } = await vehiclesApi.signedPhotos(event, event.params.id);
         signedPhotos = photos;
-      } catch {
+      } catch (err) {
+        rethrowAuthError(err);
         // Surface as empty gallery rather than break the page.
         signedPhotos = [];
       }
@@ -26,7 +27,8 @@ export const load: PageServerLoad = async (event) => {
     try {
       const { items } = await dashboardApi.highlights(event);
       isFeatured = items.some((item) => item.id === vehicle.id);
-    } catch {
+    } catch (err) {
+      rethrowAuthError(err);
       // Non-blocking: if the featured lookup fails we just hide the badge.
       isFeatured = false;
     }
@@ -36,6 +38,7 @@ export const load: PageServerLoad = async (event) => {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Viatura não encontrada');
     }
+    rethrowAuthError(err);
     throw err;
   }
 };

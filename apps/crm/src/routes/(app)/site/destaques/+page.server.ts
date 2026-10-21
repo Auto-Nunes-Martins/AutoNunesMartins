@@ -1,12 +1,13 @@
 import { error, fail } from '@sveltejs/kit';
-import { apiJson, ApiError } from '$lib/server/api';
+import { apiJson, ApiError, rethrowAuthError } from '$lib/server/api';
 import type { HighlightsEditor } from '$lib/homepageHighlights';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
   try {
     return { editor: await apiJson<HighlightsEditor>(event, '/api/homepage-highlights') };
-  } catch {
+  } catch (err) {
+    rethrowAuthError(err);
     error(503, 'Não foi possível carregar os destaques. Tente novamente.');
   }
 };

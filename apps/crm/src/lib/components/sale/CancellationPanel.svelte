@@ -1,6 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
-  import { enhance } from '$app/forms';
+  import { enhance } from '$lib/auth/enhance';
   import type { CancellationReview, SaleDetailResponse } from '$lib/server/sales';
   import { formatDate, formatEUR } from '$lib/utils/format';
   import Panel from '$lib/components/common/Panel.svelte';

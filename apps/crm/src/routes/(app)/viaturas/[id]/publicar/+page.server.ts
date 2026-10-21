@@ -3,7 +3,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { moneySchema } from '@anm/types';
 import { vehiclesApi } from '$lib/server/vehicles';
-import { ApiError } from '$lib/server/api';
+import { ApiError, rethrowAuthError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -20,6 +20,7 @@ export const load: PageServerLoad = async (event) => {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Viatura não encontrada');
     }
+    rethrowAuthError(err);
     throw err;
   }
 };

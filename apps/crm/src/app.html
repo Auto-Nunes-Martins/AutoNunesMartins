@@ -41,13 +41,10 @@
   <!--
     preload-code="eager"  : compile + download the JS for every visible link
                             (sidebar, topbar) as soon as the page is parsed.
-    preload-data="hover"  : fetch the load function's data on mouseover so
-                            a subsequent click navigates instantly.
-    SvelteKit also automatically caches loaded data per route; combined with
-    the backend's in-memory cache, repeat navigations within the same session
-    serve from memory and skip the skeleton flash entirely.
+    Private data loads wait for the session preflight on navigation. Hover
+    preloads run before that guard and can cache an expired-session response.
   -->
-  <body data-sveltekit-preload-code="eager" data-sveltekit-preload-data="hover">
+  <body data-sveltekit-preload-code="eager" data-sveltekit-preload-data="off">
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

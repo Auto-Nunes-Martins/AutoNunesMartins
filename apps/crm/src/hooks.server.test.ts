@@ -25,13 +25,33 @@ const invoke = (path: string, userId: string | null = null, method = 'GET', orig
       url: new URL('https://trial.onrender.com' + path),
       request: new Request('https://trial.onrender.com' + path, {
         method,
-        headers: origin ? { origin } : {},
+        headers: { accept: 'text/html', ...(origin ? { origin } : {}) },
       }),
       locals: { auth: () => ({ userId }) },
     },
     resolve: async () => new Response('fixture'),
   } as any);
 describe('CRM prefix and server security', () => {
+  it('returns explicit 401 for relays and enhanced actions without redirecting to login HTML', async () => {
+    for (const action of [false, true]) {
+      const result = await handle({
+        event: {
+          url: new URL('https://trial.onrender.com/crm/api/users'),
+          request: new Request('https://trial.onrender.com/crm/api/users', {
+            headers: { accept: 'application/json', ...(action ? { 'x-sveltekit-action': 'true' } : {}) },
+          }),
+          locals: { auth: () => ({ userId: null }) },
+        },
+        resolve: vi.fn(() => { throw new Error('must not resolve'); }),
+      } as any);
+      expect(result.status).toBe(401);
+      expect(result.headers.has('location')).toBe(false);
+      expect(result.headers.get('content-type')).toContain('application/json');
+      expect(result.headers.get('cache-control')).toBe('private, no-store');
+      const body = await result.json();
+      if (action) expect(body).toMatchObject({ type: 'error', status: 401 });
+    }
+  });
   it('prefixes links, assets, actions and strips only the exact base boundary', () => {
     for (const path of [
       '/dashboard',

@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { customersApi } from '$lib/server/customers';
-import { ApiError } from '$lib/server/api';
+import { ApiError, rethrowAuthError } from '$lib/server/api';
 
 export const load: PageServerLoad = async (event) => {
   try {
@@ -11,6 +11,7 @@ export const load: PageServerLoad = async (event) => {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Cliente não encontrado');
     }
+    rethrowAuthError(err);
     throw err;
   }
 };

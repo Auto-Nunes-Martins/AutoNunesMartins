@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
@@ -30,7 +31,7 @@
     controller?.abort(); controller = new AbortController(); const signal = controller.signal;
     const cached = cache.get(value); results = cached ?? null; loading = true; error = '';
     try {
-      const response = await fetch(crmPath(`/api/search?q=${encodeURIComponent(value)}&limit=5`), { signal, headers: { accept: 'application/json' } });
+      const response = await sessionFetch(crmPath(`/api/search?q=${encodeURIComponent(value)}&limit=5`), { signal, headers: { accept: 'application/json' } });
       if (!response.ok) throw new Error('Pesquisa indisponível. Tente novamente.');
       const data = await response.json() as Payload;
       if (signal.aborted || current !== generation || value !== query.trim()) return;
