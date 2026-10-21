@@ -84,8 +84,8 @@
         <div class="auth-container">
           <ClerkLoading><p class="intro" role="status">A carregar o acesso seguro…</p></ClerkLoading
           ><SignIn
-            forceRedirectUrl={crmPath("/dashboard")}
-            signUpForceRedirectUrl={crmPath("/dashboard")}
+            forceRedirectUrl={crmPath('/a-entrar')}
+            signUpForceRedirectUrl={crmPath('/a-entrar')}
             appearance={clerkAppearance}
           />
         </div>
