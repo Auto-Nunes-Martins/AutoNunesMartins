@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath, crmRoute } from '$lib/paths';
   import { onMount, onDestroy, tick, untrack } from 'svelte';
   import { fade, fly, scale, slide } from 'svelte/transition';
@@ -575,8 +576,8 @@
             title="Data personalizada"
           >
             <Calendar class="h-3 w-3" />
-            <input
-              type="date"
+            <DateInput
+
               bind:value={customDate}
               oninput={() => {
                 dueChoice = customDate ? 'custom' : 'none';

@@ -6,13 +6,32 @@ import { Server } from '../apps/website/.svelte-kit/output/server/index.js';
 import { manifest } from '../apps/website/.svelte-kit/output/server/manifest.js';
 
 const privateMarker = 'PRIVATE_UNEXPECTED_ERROR_FIXTURE_NEVER_RENDER';
-const archiveSlug = 'archived-abcdef123456';
-const archivedVehicle = { slug: archiveSlug, brand: 'BMW', model: 'Série 1', year: 2019, photo: `/viaturas/${archiveSlug}/arquivo/foto` };
+const unavailableSlug = 'inactive-abcdef123456';
+const unavailableVehicle = {
+  slug: unavailableSlug,
+  brand: 'BMW',
+  model: 'Série 1',
+  year: 2019,
+  photo: `/viaturas/${unavailableSlug}/indisponivel/foto`,
+};
 const api = createServer((request, response) => {
   response.writeHead(request.url.includes('unavailable-') ? 503 : 404, {
     'content-type': 'application/json',
   });
-  response.end(JSON.stringify({ error: 'PRIVATE_BACKEND_FIXTURE_NEVER_RENDER', ...(request.url.endsWith('/' + archiveSlug) ? { archive: { ...archivedVehicle, vin: 'PRIVATE_ARCHIVE_FIELD', price: 'PRIVATE_ARCHIVE_PRICE' } } : {}) }));
+  response.end(
+    JSON.stringify({
+      error: 'PRIVATE_BACKEND_FIXTURE_NEVER_RENDER',
+      ...(request.url.endsWith('/' + unavailableSlug)
+        ? {
+            unavailableVehicle: {
+              ...unavailableVehicle,
+              vin: 'PRIVATE_UNAVAILABLE_FIELD',
+              price: 'PRIVATE_UNAVAILABLE_PRICE',
+            },
+          }
+        : {}),
+    }),
+  );
 });
 await new Promise((resolve) => api.listen(0, '127.0.0.1', resolve));
 const index = manifest._.nodes.length;
@@ -66,15 +85,10 @@ try {
     [
       '/viaturas/missing-abcdef123456',
       404,
-      'Viatura não disponível',
-      'Esta viatura não está publicada.',
+      'Viatura não encontrada',
+      'Não encontrámos esta viatura.',
     ],
-    [
-      `/viaturas/${archiveSlug}`,
-      404,
-      'BMW Série 1 2019 — Já não disponível',
-      'BMW Série 1',
-    ],
+    [`/viaturas/${unavailableSlug}`, 404, 'BMW Série 1 2019 — Já não disponível', 'BMW Série 1'],
     [
       '/viaturas/unavailable-abcdef123456',
       503,
@@ -101,11 +115,19 @@ try {
       'internal error details must stay out of HTML',
     );
     const main = /<main\b[^>]*>([\s\S]*?)<\/main>/.exec(html)?.[1];
-    if (path.includes(archiveSlug)) {
+    if (path.includes(unavailableSlug)) {
       assert.ok(main.includes('JÁ NÃO ESTÁ DISPONÍVEL') && main.includes('2019'));
-      assert.equal((main.match(/<img\b/g) || []).length, 1, 'one minimal approved photograph');
-      assert.ok(main.includes(archivedVehicle.photo));
-      assert.ok(!html.includes('PRIVATE_ARCHIVE') && !main.includes('€') && !main.includes('related-carousel'));
+      assert.equal(
+        (main.match(/<img\b/g) || []).length,
+        1,
+        'one photograph from the existing vehicle',
+      );
+      assert.ok(main.includes(unavailableVehicle.photo));
+      assert.ok(
+        !html.includes('PRIVATE_UNAVAILABLE') &&
+          !main.includes('€') &&
+          !main.includes('related-carousel'),
+      );
     }
     assert.ok(
       main?.includes('href="/"') && main.includes('href="/viaturas"'),

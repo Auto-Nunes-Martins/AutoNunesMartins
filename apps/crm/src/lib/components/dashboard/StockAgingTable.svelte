@@ -1,6 +1,7 @@
 <script lang="ts">
   import { photoFallback } from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
+  import { linkedRow } from '$lib/linkedRow';
   import { Car, ChevronRight, Clock } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
@@ -43,7 +44,13 @@
       Sem viaturas em stock prolongado
     </div>
   {:else}
-    <div class="overflow-x-auto">
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native horizontal scrolling by keyboard.) -->
+    <div
+      class="overflow-x-auto"
+      tabindex="0"
+      role="region"
+      aria-label="Stock prolongado — tabela com deslocamento horizontal"
+    >
       <table class="crm-table aging-table w-full text-[13px]">
         <thead class="bg-[color-mix(in_oklab,var(--color-text)_2%,transparent)]">
           <tr class="border-b border-[var(--color-border)]">
@@ -77,10 +84,11 @@
         <tbody>
           {#each items as v (v.id)}
             <tr
-              class="border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
+              use:linkedRow
+              class="linked-row border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
             >
               <td class="px-5 py-3.5">
-                <a href={crmPath(`/viaturas/${v.id}`)} class="flex items-center gap-3">
+                <a href={crmPath(`/viaturas/${v.id}`)} class="row-link flex items-center gap-3">
                   <div
                     class="h-10 w-14 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0 overflow-hidden"
                     style="border-radius: 3px;"

@@ -7,6 +7,9 @@
   import { tick, untrack, type Snippet } from 'svelte';
   import { publicationDraftKey, reconcilePhotoSelection } from './publicationDraft';
   import VehiclePhotoDraft from './VehiclePhotoDraft.svelte';
+  import DescriptionEditor from './DescriptionEditor.svelte';
+  import RichDescription from '../../../../../../shared/ui/RichDescription.svelte';
+  import { descriptionText } from '@anm/types/richDescription';
   import type { EditPhoto } from './vehicleEditDraft';
   import PhotoGallery from './PhotoGallery.svelte';
   import {
@@ -35,7 +38,7 @@
     vehicle: VehicleDetailResponse;
     photos?: SignedVariantPhoto[];
     managePhotos?: boolean;
-    vehicleDetails?: Snippet;
+    vehicleDetails?: Snippet<[Snippet]>;
     disabled?: boolean;
     busy?: boolean;
     unified?: boolean;
@@ -107,7 +110,7 @@
     ['AVAILABLE', 'RESERVED'].includes(vehicle.status) && !vehicle.sale && !vehicle.soldDate,
   );
   const ready = $derived(
-    eligible && (!price || Number(price) > 0) && description.trim().length > 0,
+    eligible && (!price || Number(price) > 0) && descriptionText(description).length > 0,
   );
   function savedPublicationDraft() {
     const details = vehicle.publicSpecifications;
@@ -244,6 +247,112 @@
   };
 </script>
 
+{#snippet vehicleCharacteristics()}
+  <fieldset
+    class="vehicle-characteristics crm-form-layout"
+    data-vehicle-specifications
+    disabled={disabled || pending}
+  >
+    <legend>Características e equipamento</legend>
+    <input type="hidden" name="specificationsPresent" form={publicationFormId} value="true" />
+    <p class="note">
+      Preencha apenas características e equipamento confirmados nesta viatura. Os campos vazios não
+      aparecem no site.
+    </p>
+    <div class="fields crm-compact-fields">
+      <label style="--field-width: 180px"
+        >Transmissão<select
+          name="publicTransmission"
+          form={publicationFormId}
+          bind:value={transmission}
+          ><option value="">Não indicada</option><option value="MANUAL">Manual</option><option
+            value="AUTOMATIC">Automática</option
+          ></select
+        ></label
+      >
+      <label style="--field-width: 260px"
+        ><span>Versão / motorização <small>(opcional)</small></span><input
+          name="version"
+          form={publicationFormId}
+          maxlength="160"
+          bind:value={specs.version}
+          placeholder="Ex.: 1.6 TDI S-line"
+        /></label
+      >
+      <label style="--field-width: 150px"
+        >Categoria<input
+          name="category"
+          form={publicationFormId}
+          maxlength="80"
+          bind:value={specs.category}
+        /></label
+      >
+      <label style="--field-width: 130px"
+        >Cor<input
+          name="color"
+          form={publicationFormId}
+          maxlength="80"
+          bind:value={specs.color}
+        /></label
+      >
+    </div>
+    <div class="number-fields">
+      <label
+        >Potência (cv)<input
+          name="powerHp"
+          form={publicationFormId}
+          type="number"
+          min="1"
+          max="3000"
+          step="1"
+          bind:value={specs.powerHp}
+        /></label
+      >
+      <label
+        >Cilindrada (cm³)<input
+          name="engineCc"
+          form={publicationFormId}
+          type="number"
+          min="1"
+          max="20000"
+          step="1"
+          bind:value={specs.engineCc}
+        /></label
+      >
+      <label
+        >Portas<input
+          name="doors"
+          form={publicationFormId}
+          type="number"
+          min="1"
+          max="8"
+          step="1"
+          bind:value={specs.doors}
+        /></label
+      >
+      <label
+        >Lugares<input
+          name="seats"
+          form={publicationFormId}
+          type="number"
+          min="1"
+          max="20"
+          step="1"
+          bind:value={specs.seats}
+        /></label
+      >
+    </div>
+    <label
+      >Equipamento confirmado (um item por linha)<textarea
+        name="equipment"
+        form={publicationFormId}
+        rows="3"
+        bind:value={specs.equipment}
+      ></textarea></label
+    >
+  </fieldset>
+{/snippet}
+
 {#if managePhotos}
   {#if unified}
     <VehiclePhotoDraft
@@ -290,253 +399,182 @@
   </p>
 {/if}
 
-{@render vehicleDetails?.()}
+<div class:editing-panels={unified}>
+  {#if vehicleDetails}
+    {@render vehicleDetails(vehicleCharacteristics)}
+  {:else}
+    <section class="standalone-characteristics">{@render vehicleCharacteristics()}</section>
+  {/if}
 
-<section class="web-publication" aria-labelledby="web-publication-title">
-  <div class="heading">
-    <div>
-      <h2 id="web-publication-title">Publicação no website</h2>
-      <p>
-        O arquivo mínimo tem autorização própria. <a href={crmPath('/site/arquivo')}
-          >Gerir identificação e fotografia do arquivo público</a
-        >.
-      </p>
-      <p>
-        {vehicle.webPublished
-          ? eligible
-            ? vehicle.status === 'RESERVED'
-              ? 'Publicada · Reservada'
-              : 'Publicada no site'
-            : 'Publicação aprovada, mas oculta devido ao estado interno ou venda.'
-          : 'Não publicada · visível apenas no CRM'}
-      </p>
-    </div>
-    {#if vehicle.webPublished && !unified}<form
-        method="POST"
-        action="?/webPublication"
-        use:enhance={submit}
-      >
-        <input type="hidden" name="operation" value="remove" /><button
-          type="submit"
-          disabled={disabled || pending || photoBusy || photoDragging}>Remover do site</button
-        >
-      </form>{/if}
-  </div>
-  <p class="note">
-    Este controlo é independente da disponibilidade interna. Retirar do site não altera o estado nem
-    a venda. As viaturas reservadas aparecem com a indicação «Reservada».
-    {unified
-      ? 'O botão «Guardar alterações» aplica os dados, as fotografias e a publicação em conjunto.'
-      : 'Guarde primeiro quaisquer alterações à ficha interna.'}
-  </p>
-  {#if vehicle.webPublished && vehicle.publicSlug && eligible}<a
-      href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.publicSlug)}
-      target="_blank"
-      rel="noreferrer">Ver ficha pública ↗</a
-    >{/if}
-  <form
-    id={publicationFormId}
-    data-edit-publication
-    novalidate={unified}
-    method="POST"
-    action="?/webPublication"
-    use:formFeedback={{
-      onstatechange: (state) => {
-        formValid = state.valid;
-        onstatechange?.(state);
-      },
-    }}
-    use:enhance={submit}
-    bind:this={publicationForm}
-  >
-    <fieldset class="publication-lock" data-save-lock disabled={disabled || pending}>
-      <input type="hidden" name="operation" value="publish" />
-      {#if unified}
-        <input type="hidden" name="published" value={String(draftPublished)} />
-        <label class="publish-toggle"
-          ><input type="checkbox" data-error-field="published" bind:checked={draftPublished} /> Publicar
-          esta viatura no website</label
-        >
-        <p class="note">
-          Esta escolha só é aplicada ao guardar. Fotografias novas só ficam públicas se forem
-          selecionadas.
+  <section class="web-publication" aria-labelledby="web-publication-title">
+    <div class="heading">
+      <div>
+        <h2 id="web-publication-title">Publicação no website</h2>
+        <p class="publication-status">
+          {vehicle.webPublished
+            ? eligible
+              ? vehicle.status === 'RESERVED'
+                ? 'Publicada · Reservada'
+                : 'Publicada no site'
+              : 'Publicação aprovada, mas oculta devido ao estado interno ou venda.'
+            : 'Não publicada · visível apenas no CRM'}
         </p>
-      {/if}
-      <div class="fields">
-        <label
-          >Preço público (€)<input
-            name="publicPrice"
-            type="number"
-            min="0.01"
-            max="9999999999.99"
-            step="0.01"
-            bind:value={price}
-          /></label
-        >
-        <label
-          >Transmissão<select name="publicTransmission" bind:value={transmission}
-            ><option value="">Não indicada</option><option value="MANUAL">Manual</option><option
-              value="AUTOMATIC">Automática</option
-            ></select
-          ></label
-        >
       </div>
-      <label
-        >Descrição pública<textarea
-          name="publicDescription"
-          rows="3"
-          maxlength="6000"
-          required={!unified || draftPublished}
-          bind:value={description}
-        ></textarea></label
-      >
-      <p class="note">
-        Apenas este texto será publicado. Não inclua notas internas, matrícula, VIN ou dados
-        pessoais. O preço público é aprovado separadamente do preço interno.
-      </p>
-      <fieldset>
-        <legend>Detalhes públicos confirmados (opcional)</legend>
-        <input type="hidden" name="specificationsPresent" value="true" />
-        <p class="note">
-          Preencha apenas características e equipamento confirmados nesta viatura. Os campos vazios
-          não aparecem no site.
-        </p>
-        <div class="fields">
-          <label
-            >Potência (cv)<input
-              name="powerHp"
-              type="number"
-              min="1"
-              max="3000"
-              step="1"
-              bind:value={specs.powerHp}
-            /></label
-          >
-          <label
-            >Cilindrada (cm³)<input
-              name="engineCc"
-              type="number"
-              min="1"
-              max="20000"
-              step="1"
-              bind:value={specs.engineCc}
-            /></label
-          >
-          <label
-            >Portas<input
-              name="doors"
-              type="number"
-              min="1"
-              max="8"
-              step="1"
-              bind:value={specs.doors}
-            /></label
-          >
-          <label
-            >Lugares<input
-              name="seats"
-              type="number"
-              min="1"
-              max="20"
-              step="1"
-              bind:value={specs.seats}
-            /></label
-          >
-          <label
-            >Versão / motorização <span>(opcional)</span><input
-              name="version"
-              maxlength="160"
-              bind:value={specs.version}
-              placeholder="Ex.: 1.6 TDI S-line"
-            /></label
-          >
-          <label
-            >Categoria<input name="category" maxlength="80" bind:value={specs.category} /></label
-          >
-          <label>Cor<input name="color" maxlength="80" bind:value={specs.color} /></label>
-        </div>
-        <label
-          >Equipamento confirmado (um item por linha)<textarea
-            name="equipment"
-            rows="5"
-            bind:value={specs.equipment}
-          ></textarea></label
-        >
-      </fieldset>
-      {#if !managePhotos}<fieldset>
-          <legend>Fotografias autorizadas para o site</legend>
-          <p class="note">
-            A foto principal do anúncio e do CRM é a mesma. Para a alterar, use o editor de
-            fotografias. A autorização para publicar cada fotografia é explícita.
-          </p>
-          <PublicPhotoPicker
-            bind:selected
-            bind:dragging={photoDragging}
-            allowed={allowedPhotos}
-            {photos}
-            persisted={vehicle.publicPhotoPaths}
-            published={vehicle.webPublished && eligible}
-            primaryPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
-            requirePublicPrincipal={eligible}
-            pending={disabled || pending || photoBusy}
-          />
-        </fieldset>{/if}
-      <details class="publication-preview">
-        <summary>Pré-visualizar o anúncio · {selected.length} fotografias</summary>
-        <div class="preview-card">
-          {#if cover}<img
-              {...photoAttrs(cover, 800, '(max-width:700px) 80vw, 600px')}
-              use:photoFallback={cover.url}
-              alt="Foto principal do anúncio"
-            />{:else}<div class="preview-empty">Imagem indisponível</div>{/if}
-          <div>
-            <span class="preview-kicker">Pré-visualização · só muda no site depois de guardar</span>
-            <h3>{vehicle.brand} {vehicle.model}</h3>
-            <p>{vehicle.year} · {vehicle.mileage.toLocaleString('pt-PT')} km</p>
-            <strong>{price && Number(price) > 0 ? formatEUR(price) : 'Preço sob consulta'}</strong>
-            <p class="preview-description">{description}</p>
-          </div>
-        </div>
-      </details>
-      <div class="requirements" aria-live="polite">
-        {#if !eligible}<p>
-            Requer estado Disponível ou Reservado, sem venda registada.
-          </p>{/if}{#if !price}<p>
-            Sem preço indicado, o site mostrará «Preço sob consulta».
-          </p>{:else if !(Number(price) > 0)}<p>
-            Indique um preço positivo ou deixe o campo vazio.
-          </p>{/if}{#if !description.trim()}<p>
-            Falta uma descrição pública.
-          </p>{/if}{#if !selected.length}<p>
-            Sem fotografia selecionada, será pedida confirmação para publicar com «Imagem
-            indisponível».
-          </p>{/if}
-      </div>
-      {#if !unified}<p class="note" role="status">
-          {publicationDirty
-            ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos e a seleção de fotografias.'
-            : 'Publicação guardada · sem alterações.'}
-        </p>
-        <button
-          type="submit"
-          class="primary"
-          disabled={disabled ||
-            pending ||
-            photoBusy ||
-            photoDragging ||
-            !ready ||
-            !formValid ||
-            !publicationDirty}
-          >{pending
-            ? 'A guardar…'
-            : vehicle.webPublished
-              ? 'Guardar publicação no site'
-              : 'Publicar no site'}</button
+      {#if vehicle.webPublished && vehicle.publicSlug && eligible}<a
+          class="public-view-link"
+          href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.publicSlug)}
+          target="_blank"
+          rel="noreferrer">Ver ficha pública ↗</a
         >{/if}
-    </fieldset>
-  </form>
-  <p role="status" aria-live="polite">{message}</p>
-</section>
+      {#if vehicle.webPublished && !unified}<form
+          method="POST"
+          action="?/webPublication"
+          use:enhance={submit}
+        >
+          <input type="hidden" name="operation" value="remove" /><button
+            type="submit"
+            disabled={disabled || pending || photoBusy || photoDragging}>Remover do site</button
+          >
+        </form>{/if}
+    </div>
+    <form
+      id={publicationFormId}
+      class="crm-form-layout"
+      data-edit-publication
+      novalidate={unified}
+      method="POST"
+      action="?/webPublication"
+      use:formFeedback={{
+        onstatechange: (state) => {
+          formValid = state.valid;
+          onstatechange?.(state);
+        },
+      }}
+      use:enhance={submit}
+      bind:this={publicationForm}
+    >
+      <fieldset class="publication-lock" data-save-lock disabled={disabled || pending}>
+        <input type="hidden" name="operation" value="publish" />
+        {#if unified}
+          <input type="hidden" name="published" value={String(draftPublished)} />
+          <label class="publish-toggle"
+            ><input type="checkbox" data-error-field="published" bind:checked={draftPublished} /> Publicar
+            esta viatura no website</label
+          >
+          <p class="note">
+            Aplicado ao guardar. Apenas as fotografias selecionadas ficam públicas.
+          </p>
+        {/if}
+        <h3 class="publication-group-title">Dados do anúncio</h3>
+        <div class="fields crm-compact-fields">
+          <label class="public-price-field" style="--field-width: 170px"
+            >Preço público (€)<input
+              name="publicPrice"
+              type="number"
+              min="0.01"
+              max="9999999999.99"
+              step="0.01"
+              bind:value={price}
+            /></label
+          >
+        </div>
+        <DescriptionEditor
+          bind:value={description}
+          disabled={disabled || pending}
+          required={!unified || draftPublished}
+        />
+        <p class="note">
+          Visível no website. Não inclua notas internas, matrícula, VIN ou dados pessoais. O preço
+          público é independente do interno.
+        </p>
+        {#if !managePhotos}<fieldset>
+            <legend>Fotografias autorizadas para o site</legend>
+            <p class="note">
+              A foto principal do anúncio e do CRM é a mesma. Para a alterar, use o editor de
+              fotografias. A autorização para publicar cada fotografia é explícita.
+            </p>
+            <PublicPhotoPicker
+              bind:selected
+              bind:dragging={photoDragging}
+              allowed={allowedPhotos}
+              {photos}
+              persisted={vehicle.publicPhotoPaths}
+              published={vehicle.webPublished && eligible}
+              primaryPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
+              requirePublicPrincipal={eligible}
+              pending={disabled || pending || photoBusy}
+            />
+          </fieldset>{/if}
+        <details class="publication-help">
+          <summary>Como funciona a publicação</summary>
+          <p class="note">
+            Retirar do site não altera o estado nem a venda. As viaturas reservadas aparecem como
+            «Reservada».
+            {unified
+              ? '«Guardar alterações» aplica os dados, as fotografias e a publicação em conjunto.'
+              : 'Guarde primeiro as alterações à ficha interna.'}
+          </p>
+        </details>
+        <details class="publication-preview">
+          <summary>Pré-visualizar o anúncio · {selected.length} fotografias</summary>
+          <div class="preview-card">
+            {#if cover}<img
+                {...photoAttrs(cover, 800, '(max-width:700px) 80vw, 600px')}
+                use:photoFallback={cover.url}
+                alt="Foto principal do anúncio"
+              />{:else}<div class="preview-empty">Imagem indisponível</div>{/if}
+            <div>
+              <span class="preview-kicker"
+                >Pré-visualização · só muda no site depois de guardar</span
+              >
+              <h3>{vehicle.brand} {vehicle.model}</h3>
+              <p>{vehicle.year} · {vehicle.mileage.toLocaleString('pt-PT')} km</p>
+              <strong>{price && Number(price) > 0 ? formatEUR(price) : 'Preço sob consulta'}</strong
+              >
+              <div class="preview-description"><RichDescription value={description} /></div>
+            </div>
+          </div>
+        </details>
+        <div class="requirements" aria-live="polite">
+          {#if !eligible}<p>
+              Requer estado Disponível ou Reservado, sem venda registada.
+            </p>{/if}{#if !price}<p>
+              Sem preço indicado, o site mostrará «Preço sob consulta».
+            </p>{:else if !(Number(price) > 0)}<p>
+              Indique um preço positivo ou deixe o campo vazio.
+            </p>{/if}{#if !descriptionText(description)}<p>
+              Falta uma descrição pública.
+            </p>{/if}{#if !selected.length}<p>
+              Sem fotografia selecionada, será pedida confirmação para publicar com «Imagem
+              indisponível».
+            </p>{/if}
+        </div>
+        {#if !unified}<p class="note" role="status">
+            {publicationDirty
+              ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos e a seleção de fotografias.'
+              : 'Publicação guardada · sem alterações.'}
+          </p>
+          <button
+            type="submit"
+            class="primary"
+            disabled={disabled ||
+              pending ||
+              photoBusy ||
+              photoDragging ||
+              !ready ||
+              !formValid ||
+              !publicationDirty}
+            >{pending
+              ? 'A guardar…'
+              : vehicle.webPublished
+                ? 'Guardar publicação no site'
+                : 'Publicar no site'}</button
+          >{/if}
+      </fieldset>
+    </form>
+    <p role="status" aria-live="polite">{message}</p>
+  </section>
+</div>
 
 <dialog
   class="publication-dialog"
@@ -563,13 +601,111 @@
 </dialog>
 
 <style>
+  .vehicle-characteristics {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+  .vehicle-characteristics legend {
+    font-size: 18px;
+    font-weight: 600;
+    padding: 0;
+  }
+  .standalone-characteristics {
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-bg-1);
+    margin-block: 20px;
+  }
+  .editing-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    max-width: 1480px;
+    margin-inline: auto;
+    align-items: start;
+  }
+  .editing-panels > :global(*) {
+    min-width: 0;
+  }
+  .number-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 140px));
+    gap: 14px;
+    margin-block: 16px;
+  }
+  .number-fields > label {
+    min-width: 0;
+    margin-bottom: 0;
+    align-content: start;
+  }
+  .number-fields input {
+    min-width: 0;
+    width: 100%;
+  }
+  .number-fields :is([name='doors'], [name='seats']) {
+    max-width: 90px;
+  }
+  .fields :is([name='category'], [name='color']) {
+    max-width: 240px;
+  }
+  .fields [name='version'] {
+    max-width: 480px;
+  }
+  .fields [name='publicTransmission'] {
+    max-width: 240px;
+  }
+  @container (min-width: 480px) {
+    .number-fields {
+      grid-template-columns: minmax(0, 120px) minmax(0, 140px) repeat(2, minmax(0, 90px));
+    }
+  }
+  .public-price-field input {
+    max-width: 240px;
+  }
+  label small {
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+  .public-view-link {
+    margin-left: auto;
+    align-self: center;
+    white-space: nowrap;
+  }
+  .publication-group-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 20px 0 12px;
+  }
   .publish-toggle {
     display: flex;
     align-items: center;
     gap: 10px;
     font-size: 15px;
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-bg-2);
+  }
+  .publication-status {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 5px;
+  }
+  .publication-help {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin: 8px 0 16px;
+  }
+  .publication-help summary {
+    cursor: pointer;
+    width: fit-content;
+  }
+  .publication-intro {
+    margin: 10px 0 0;
   }
   .publication-lock {
     border: 0;
@@ -606,7 +742,7 @@
     flex-wrap: wrap;
   }
   .web-publication {
-    padding: 24px;
+    padding: 20px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     background: var(--color-bg-1);
@@ -615,7 +751,10 @@
     display: flex;
     align-items: start;
     justify-content: space-between;
-    gap: 20px;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--color-border);
   }
   h2 {
     font-size: 19px;
@@ -639,9 +778,14 @@
     margin: 0;
   }
   .fields {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     gap: 16px;
+  }
+  .fields {
+    margin-bottom: 18px;
+  }
+  .fields > label {
+    margin-bottom: 0;
   }
   label {
     display: grid;
@@ -657,12 +801,15 @@
     color: var(--color-text);
     border: 1px solid var(--color-border);
     padding: 10px;
+    min-height: 44px;
     border-radius: var(--radius-btn);
   }
   fieldset {
-    border: 1px solid var(--color-border);
-    padding: 14px;
-    margin: 20px 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    padding: 16px 0 0;
+    margin: 24px 0 0;
+    min-width: 0;
   }
   legend {
     font-size: 13px;
@@ -752,9 +899,6 @@
     outline-offset: 3px;
   }
   @media (max-width: 600px) {
-    .fields {
-      grid-template-columns: 1fr;
-    }
     .heading {
       flex-direction: column;
     }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
@@ -48,16 +49,53 @@
     ...createdCustomers,
     ...data.customers.filter((c) => !createdCustomers.some((n) => n.id === c.id)),
   ]);
-  function customerCreated(id: string, customer?: CustomerListItem) {
+  async function customerCreated(id: string, customer?: CustomerListItem) {
     if (customer) createdCustomers = [...createdCustomers, customer];
     customerId = id;
     customerSearch = '';
     customerDialog.close();
     saleForm?.dispatchEvent(new Event('change', { bubbles: true }));
+    await tick();
+    saleForm?.querySelector<HTMLInputElement>('[name="salePrice"]')?.focus({ preventScroll: true });
   }
   let saleForm: HTMLFormElement;
   let customerSearch = $state('');
   let customerId = $state('');
+  let selectedFromSearch = $state<CustomerListItem | null>(null);
+  let remoteCustomers = $state<CustomerListItem[] | null>(null);
+  let remoteCustomerTotal = $state(0);
+  let searchingCustomers = $state(false);
+  let customerSearchError = $state('');
+  $effect(() => {
+    const q = customerSearch.trim();
+    remoteCustomers = null;
+    customerSearchError = '';
+    searchingCustomers = false;
+    if (!q || customerId) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      searchingCustomers = true;
+      try {
+        const response = await fetch(crmPath(`/clientes/pesquisar?q=${encodeURIComponent(q)}`), {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error('Pesquisa indisponível');
+        const result = (await response.json()) as { items: CustomerListItem[]; total: number };
+        if (controller.signal.aborted) return;
+        remoteCustomers = result.items;
+        remoteCustomerTotal = result.total;
+      } catch {
+        if (!controller.signal.aborted)
+          customerSearchError = 'Não foi possível pesquisar todos os clientes. Tente novamente.';
+      } finally {
+        if (!controller.signal.aborted) searchingCustomers = false;
+      }
+    }, 250);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  });
   // Read initial salePrice from data directly (not via $derived `v`) to avoid
   // Svelte 5's state_referenced_locally warning. We only need a default.
   let salePriceInput = $state(untrack(() => data.vehicle.salePrice ?? ''));
@@ -96,21 +134,26 @@
   let tradeInPlateError = $state<string | null>(null);
   let submitting = $state(false);
 
-  const filteredCustomers = $derived.by(() => {
+  const matchingCustomers = $derived.by(() => {
     const q = customerSearch.trim().toLowerCase();
-    if (!q) return customers.slice(0, 50);
-    return customers
-      .filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          c.nif.includes(q) ||
-          c.phone.includes(q) ||
-          (c.email ?? '').toLowerCase().includes(q),
-      )
-      .slice(0, 50);
+    if (remoteCustomers !== null && q) return remoteCustomers;
+    if (!q) return customers;
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.nif.includes(q) ||
+        c.phone.includes(q) ||
+        (c.email ?? '').toLowerCase().includes(q),
+    );
   });
+  const filteredCustomers = $derived(matchingCustomers.slice(0, 50));
 
-  const selectedCustomer = $derived(customerId ? customers.find((c) => c.id === customerId) : null);
+  const selectedCustomer = $derived(
+    customerId
+      ? (customers.find((c) => c.id === customerId) ??
+          (selectedFromSearch?.id === customerId ? selectedFromSearch : null))
+      : null,
+  );
 
   // Live margin VAT preview (mirrors backend computation exactly, including
   // the manual commission fold-in so the previewed "Lucro Real" matches the
@@ -164,7 +207,8 @@
     if (!tradeInBrand.trim()) return 'Indica a marca do carro de retoma.';
     if (!tradeInModel.trim()) return 'Indica o modelo do carro de retoma.';
     if (!tradeInYear) return 'Indica o ano do carro de retoma.';
-    if (!tradeInMileage) return 'Indica a quilometragem do carro de retoma.';
+    if (tradeInMileage == null || tradeInMileage === '')
+      return 'Indica a quilometragem do carro de retoma.';
     if (!tradeInAllowance || Number(tradeInAllowance) <= 0)
       return 'Indica o valor atribuído à retoma.';
     if (tradeInDisposition === 'STOCK' && !tradeInVin.trim())
@@ -172,13 +216,46 @@
     return null;
   }
 
-  function pickCustomer(id: string) {
+  async function pickCustomer(id: string) {
+    selectedFromSearch = filteredCustomers.find((customer) => customer.id === id) ?? null;
     customerId = id;
     customerSearch = '';
+    await tick();
+    saleForm?.querySelector<HTMLInputElement>('[name="salePrice"]')?.focus({ preventScroll: true });
   }
 
-  function clearCustomer() {
+  async function clearCustomer() {
     customerId = '';
+    selectedFromSearch = null;
+    await tick();
+    saleForm
+      ?.querySelector<HTMLInputElement>('[data-error-field="customerId"]')
+      ?.focus({ preventScroll: true });
+  }
+  function navigateRadio<T extends string>(
+    event: KeyboardEvent,
+    current: T,
+    choices: T[],
+    select: (value: T) => void,
+  ) {
+    const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const index = choices.indexOf(current);
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? choices.length - 1
+          : (index +
+              (event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1) +
+              choices.length) %
+            choices.length;
+    const group = event.currentTarget as HTMLElement;
+    select(choices[next]!);
+    void tick().then(() =>
+      group.querySelector<HTMLButtonElement>('[role="radio"][aria-checked="true"]')?.focus(),
+    );
   }
 </script>
 
@@ -186,7 +263,7 @@
   <title>Registar Venda · {v.brand} {v.model}</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="sale-workflow pt-8 pb-12 space-y-6">
   <div>
     <ItalicHero text="Registar venda" size="lg" />
     <p
@@ -207,6 +284,10 @@
     bind:this={saleForm}
     use:formFeedback
     use:enhance={({ cancel, formElement }) => {
+      if (submitting) {
+        cancel();
+        return;
+      }
       if (!customerId) {
         toast.error('Seleciona um cliente.');
         cancel();
@@ -258,7 +339,7 @@
     <input type="hidden" name="tradeIn.disposition" value={tradeInDisposition} />
 
     <!-- LEFT: customer + sale fields -->
-    <div class="lg:col-span-7 space-y-6">
+    <div class="sale-fields crm-form-layout lg:col-span-8 space-y-6">
       <Panel>
         <PanelHeader icon={UserIcon} title="Cliente">
           {#snippet actions()}<Button variant="outline" size="sm" onclick={openCustomer}
@@ -296,18 +377,24 @@
               <Search class="h-4 w-4 text-[var(--color-text-faint)]" />
               <input
                 type="search"
+                maxlength="120"
+                aria-label="Pesquisar cliente por nome, NIF, telefone ou email"
                 data-error-field="customerId"
                 placeholder="Pesquisar por nome, NIF ou telefone…"
                 bind:value={customerSearch}
-                class="flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
+                class="min-w-0 flex-1 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
               />
             </div>
 
             <div
-              class="max-h-72 overflow-y-auto border border-[var(--color-border)] bg-[var(--color-bg-1)]"
+              class="max-h-48 overflow-y-auto border border-[var(--color-border)] bg-[var(--color-bg-1)]"
               style="border-radius: var(--radius-btn);"
             >
-              {#if filteredCustomers.length === 0}
+              {#if searchingCustomers && filteredCustomers.length === 0}
+                <p class="p-4 text-sm text-[var(--color-text-muted)]" role="status">
+                  A pesquisar clientes…
+                </p>
+              {:else if filteredCustomers.length === 0 && !customerSearchError}
                 <div
                   class="p-4 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
                 >
@@ -341,6 +428,26 @@
                 {/each}
               {/if}
             </div>
+            {#if searchingCustomers && filteredCustomers.length > 0}<p
+                role="status"
+                class="text-xs text-[var(--color-text-muted)]"
+              >
+                A pesquisar todos os clientes…
+              </p>{/if}
+            {#if customerSearchError}<p role="alert" class="text-xs text-[var(--color-red)]">
+                {customerSearchError}
+              </p>{/if}
+            {#if remoteCustomers !== null && remoteCustomerTotal > filteredCustomers.length}<p
+                class="text-xs text-[var(--color-text-muted)]"
+              >
+                A mostrar {filteredCustomers.length} correspondências. Acrescente mais informação à pesquisa.
+              </p>{/if}
+            {#if matchingCustomers.length > filteredCustomers.length}<p
+                class="text-xs text-[var(--color-text-muted)]"
+              >
+                A mostrar os primeiros {filteredCustomers.length} clientes. Escreva para encontrar o cliente
+                pretendido.
+              </p>{/if}
           {/if}
         </div>
       </Panel>
@@ -364,12 +471,21 @@
               class="inline-flex h-11 p-1 border border-[var(--color-border)] bg-[var(--color-bg-1)] self-start"
               style="border-radius: var(--radius-btn);"
               role="radiogroup"
+              tabindex="-1"
               aria-label="Tipo de comprador"
+              onkeydown={(event) =>
+                navigateRadio(
+                  event,
+                  buyerType,
+                  ['PARTICULAR', 'COMERCIANTE'],
+                  (value) => (buyerType = value),
+                )}
             >
               <button
                 type="button"
                 role="radio"
                 aria-checked={buyerType === 'PARTICULAR'}
+                tabindex={buyerType === 'PARTICULAR' ? 0 : -1}
                 onclick={() => (buyerType = 'PARTICULAR')}
                 class="px-4 font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors {buyerType ===
                 'PARTICULAR'
@@ -383,6 +499,7 @@
                 type="button"
                 role="radio"
                 aria-checked={buyerType === 'COMERCIANTE'}
+                tabindex={buyerType === 'COMERCIANTE' ? 0 : -1}
                 onclick={() => (buyerType = 'COMERCIANTE')}
                 class="px-4 font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors {buyerType ===
                 'COMERCIANTE'
@@ -404,8 +521,8 @@
             </span>
           </div>
         </div>
-        <div class="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label class="flex flex-col">
+        <div class="sale-detail-fields crm-field-grid px-5 pb-5">
+          <label class="flex flex-col crm-field-4">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
             >
@@ -423,22 +540,22 @@
               style="border-radius: var(--radius-btn);"
             />
           </label>
-          <label class="flex flex-col">
+          <label class="flex flex-col crm-field-4">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
             >
               Data da venda
             </span>
-            <input
+            <DateInput
               name="saleDate"
-              type="date"
+
               required
               value={today}
               class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             />
           </label>
-          <label class="flex flex-col">
+          <label class="flex flex-col crm-field-4">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
             >
@@ -455,40 +572,34 @@
               <option value="DELIVERED">Entregue</option>
             </select>
           </label>
-          <label class="flex flex-col">
+          <label class="flex flex-col crm-field-4">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
             >
               Data da entrega (opcional)
             </span>
-            <input
+            <DateInput
               name="deliveryDate"
-              type="date"
+
               class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             />
           </label>
 
-          <!--
-            Manual commission. Spans both columns so it stands apart from
-            the standard sale fields. The hint and tooltip surface the
-            VAT-exempt nature of the income (art. 9.º, 27.º, a) CIVA) so
-            the form documents *why* the user enters a net amount and not
-            a gross value — this matters for the demo's credibility.
-          -->
-          <label class="flex flex-col md:col-span-2">
+          <label class="flex flex-col crm-field-8">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"
             >
-              Comissão extra (opcional)
+              Comissão extra (€)
               <span
                 class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px]"
               >
-                · ex: comissão de financiamento paga pelo banco
+                · opcional
               </span>
             </span>
             <input
               name="commission"
+              data-compact-amount
               type="number"
               step="0.01"
               min="0"
@@ -501,7 +612,7 @@
             <span
               class="mt-1.5 font-mono text-[10px] text-[var(--color-text-faint)] uppercase tracking-[0.12em] leading-relaxed"
             >
-              Valor líquido que recebes — somado ao Lucro Real.<br />
+              Valor líquido, somado ao Lucro Real.<br />
               <span class="normal-case tracking-normal text-[10.5px]">
                 Isento de IVA (art. 9.º, 27.º, a) CIVA) — entra como rendimento para efeitos de IRC.
               </span>
@@ -557,12 +668,21 @@
                 class="inline-flex h-11 p-1 border border-[var(--color-border)] bg-[var(--color-bg-1)] self-start"
                 style="border-radius: var(--radius-btn);"
                 role="radiogroup"
+                tabindex="-1"
                 aria-label="Destino da retoma"
+                onkeydown={(event) =>
+                  navigateRadio(
+                    event,
+                    tradeInDisposition,
+                    ['STOCK', 'SCRAP'],
+                    (value) => (tradeInDisposition = value),
+                  )}
               >
                 <button
                   type="button"
                   role="radio"
                   aria-checked={tradeInDisposition === 'STOCK'}
+                  tabindex={tradeInDisposition === 'STOCK' ? 0 : -1}
                   onclick={() => (tradeInDisposition = 'STOCK')}
                   class="px-4 font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors {tradeInDisposition ===
                   'STOCK'
@@ -576,6 +696,7 @@
                   type="button"
                   role="radio"
                   aria-checked={tradeInDisposition === 'SCRAP'}
+                  tabindex={tradeInDisposition === 'SCRAP' ? 0 : -1}
                   onclick={() => (tradeInDisposition = 'SCRAP')}
                   class="px-4 font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors {tradeInDisposition ===
                   'SCRAP'
@@ -597,8 +718,8 @@
               </span>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label class="flex flex-col">
+            <div class="crm-field-grid">
+              <label class="flex flex-col crm-field-4">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
@@ -606,6 +727,8 @@
                 </span>
                 <input
                   name="tradeIn.brand"
+                  required
+                  maxlength="60"
                   type="text"
                   bind:value={tradeInBrand}
                   placeholder="Renault"
@@ -613,7 +736,7 @@
                   style="border-radius: var(--radius-btn);"
                 />
               </label>
-              <label class="flex flex-col">
+              <label class="flex flex-col crm-field-8">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
@@ -621,6 +744,8 @@
                 </span>
                 <input
                   name="tradeIn.model"
+                  required
+                  maxlength="80"
                   type="text"
                   bind:value={tradeInModel}
                   placeholder="Clio"
@@ -628,7 +753,7 @@
                   style="border-radius: var(--radius-btn);"
                 />
               </label>
-              <label class="flex flex-col">
+              <label class="flex flex-col crm-field-3">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
@@ -636,6 +761,7 @@
                 </span>
                 <input
                   name="tradeIn.year"
+                  required
                   type="number"
                   min="1950"
                   max={new Date().getFullYear() + 1}
@@ -645,7 +771,7 @@
                   style="border-radius: var(--radius-btn);"
                 />
               </label>
-              <label class="flex flex-col">
+              <label class="flex flex-col crm-field-3">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
@@ -665,7 +791,7 @@
                   <option value="LPG">GPL</option>
                 </select>
               </label>
-              <label class="flex flex-col">
+              <label class="flex flex-col crm-field-3">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
@@ -673,6 +799,7 @@
                 </span>
                 <input
                   name="tradeIn.mileage"
+                  required
                   type="number"
                   min="0"
                   bind:value={tradeInMileage}
@@ -681,7 +808,7 @@
                   style="border-radius: var(--radius-btn);"
                 />
               </label>
-              <label class="flex flex-col">
+              <label class="flex flex-col crm-field-3">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
@@ -706,7 +833,7 @@
                   </span>
                 {/if}
               </label>
-              <label class="flex flex-col md:col-span-2">
+              <label class="flex flex-col crm-field-8">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"
                 >
@@ -725,6 +852,8 @@
                 </span>
                 <input
                   name="tradeIn.vin"
+                  minlength="17"
+                  required={tradeInDisposition === 'STOCK'}
                   type="text"
                   bind:value={tradeInVin}
                   oninput={() => (tradeInVinError = null)}
@@ -743,7 +872,7 @@
                   </span>
                 {/if}
               </label>
-              <label class="flex flex-col md:col-span-2">
+              <label class="flex flex-col crm-field-4">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
@@ -751,6 +880,7 @@
                 </span>
                 <input
                   name="tradeIn.allowanceValue"
+                  required
                   type="number"
                   step="0.01"
                   min="0"
@@ -769,7 +899,7 @@
                   {/if}
                 </span>
               </label>
-              <label class="flex flex-col md:col-span-2">
+              <label class="flex flex-col crm-field-full">
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
@@ -790,15 +920,16 @@
       </Panel>
     </div>
 
-    <!-- RIGHT: live profit preview -->
-    <div class="lg:col-span-5">
+    <!-- RIGHT: live profit preview and final action remain together. -->
+    <div class="sale-summary lg:col-span-4">
       <Panel>
-        <PanelHeader
-          icon={Calendar}
-          title="Pré-visualização"
-          meta={buyerType === 'COMERCIANTE' ? 'SEM IVA — COMERCIANTE' : 'REGIME MARGEM 23/123'}
-        />
+        <PanelHeader icon={Calendar} title="Resumo da venda" />
         <div class="p-5 space-y-4">
+          <p class="text-[11px] text-[var(--color-text-muted)]">
+            {buyerType === 'COMERCIANTE'
+              ? 'Venda a comerciante · sem IVA discriminado'
+              : 'Regime de margem · IVA 23/123'}
+          </p>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <div
@@ -900,19 +1031,20 @@
             </div>
           </div>
         </div>
+        <div
+          class="sale-summary-actions flex flex-wrap items-center justify-end gap-3 border-t border-[var(--color-border)] p-5"
+        >
+          <Button variant="ghost" href={crmPath(`/viaturas/${v.id}`)}>Cancelar</Button>
+          <Button
+            variant="primary"
+            type="submit"
+            loading={submitting}
+            disabled={submitting || !customerId || !salePriceInput}
+          >
+            Registar venda
+          </Button>
+        </div>
       </Panel>
-    </div>
-
-    <div class="lg:col-span-12 flex items-center justify-end gap-3 pt-2">
-      <Button variant="ghost" href={crmPath(`/viaturas/${v.id}`)}>Cancelar</Button>
-      <Button
-        variant="primary"
-        type="submit"
-        loading={submitting}
-        disabled={submitting || !customerId || !salePriceInput}
-      >
-        Registar venda
-      </Button>
     </div>
   </form>
 </section>
@@ -938,6 +1070,26 @@
 </dialog>
 
 <style>
+  .sale-workflow {
+    max-width: 1320px;
+    margin-inline: auto;
+  }
+  .sale-fields {
+    min-width: 0;
+  }
+  .sale-fields :global([data-compact-amount]) {
+    max-width: 240px;
+  }
+  .sale-summary {
+    min-width: 0;
+    align-self: start;
+  }
+  @media (min-width: 1024px) {
+    .sale-summary {
+      position: sticky;
+      top: 88px;
+    }
+  }
   .customer-dialog {
     width: min(700px, calc(100vw - 32px));
     max-height: calc(100svh - 40px);

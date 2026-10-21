@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
   import { formFeedback, markFormSaved, showFormErrors } from '$lib/forms/formFeedback';
@@ -105,7 +106,11 @@
   method="POST"
   action="?/submit"
   use:formFeedback
-  use:enhance={({ formElement }) => {
+  use:enhance={({ formElement, cancel }) => {
+    if (submitting) {
+      cancel();
+      return;
+    }
     submitting = true;
     return async ({ result, update }) => {
       submitting = false;
@@ -125,7 +130,7 @@
       await update({ reset: false, invalidateAll: result.type === 'success' });
     };
   }}
-  class="space-y-6"
+  class="crm-form-layout space-y-6"
 >
   <label class="flex flex-col">
     <span class={label()}>Título</span>
@@ -145,7 +150,7 @@
     <span class={label()}>Descrição</span>
     <textarea
       name="description"
-      rows="4"
+      rows="3"
       maxlength="4000"
       placeholder="Detalhes, links, contactos…"
       class="px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
@@ -154,8 +159,8 @@
     ></textarea>
   </label>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <label class="flex flex-col">
+  <div class="crm-field-grid">
+    <label class="flex flex-col crm-field-3">
       <span class={label()}>Estado</span>
       <select
         name="status"
@@ -168,7 +173,7 @@
         {/each}
       </select>
     </label>
-    <label class="flex flex-col">
+    <label class="flex flex-col crm-field-3">
       <span class={label()}>Prioridade</span>
       <select
         name="priority"
@@ -181,7 +186,7 @@
         {/each}
       </select>
     </label>
-    <label class="flex flex-col">
+    <label class="flex flex-col crm-field-6">
       <span class={label()}>Responsável</span>
       <select
         name="assigneeId"
@@ -201,33 +206,33 @@
     </label>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <label class="flex flex-col">
+  <div class="crm-field-grid">
+    <label class="flex flex-col crm-field-4">
       <span class={label()}>Data início</span>
-      <input
+      <DateInput
         name="startDate"
-        type="date"
+
         value={initial.startDate?.slice(0, 10) ?? ''}
         class={input()}
         style="border-radius: var(--radius-btn);"
       />
     </label>
-    <label class="flex flex-col">
+    <label class="flex flex-col crm-field-4">
       <span class={label()}>Prazo</span>
-      <input
+      <DateInput
         name="dueDate"
-        type="date"
+
         bind:value={dueDate}
         required={recurrence !== 'NONE'}
         class={input()}
         style="border-radius: var(--radius-btn);"
       />
     </label>
-    <label class="flex flex-col">
+    <label class="flex flex-col crm-field-4">
       <span class={label()}>Lembrete</span>
-      <input
+      <DateInput
         name="reminderDate"
-        type="date"
+
         value={initial.reminderDate?.slice(0, 10) ?? ''}
         class={input()}
         style="border-radius: var(--radius-btn);"

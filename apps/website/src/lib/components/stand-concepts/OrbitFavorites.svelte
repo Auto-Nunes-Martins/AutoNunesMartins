@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { tick, untrack, type Snippet } from 'svelte';
+  import OrbitBackLink from './OrbitBackLink.svelte';
   import { Heart, ArrowUpRight, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-svelte';
   import { useFavorites } from '$lib/favorites';
   import { publicCard, type PublicCard } from '$lib/publicVehicles';
@@ -45,7 +46,7 @@
 <svelte:head>
   <link rel="canonical" href={new URL('/favoritos', $page.url.origin).href} /><title>Favoritos — Auto Nunes Martins</title><meta name="robots" content="noindex, follow" /><meta name="description" content="Retome as viaturas que guardou e compare as suas opções ao seu ritmo." /></svelte:head>
 <main class="favorites-page">
-  <a class="back" href="/viaturas"><ArrowLeft size={15} aria-hidden="true" /> Explorar viaturas</a>
+  <OrbitBackLink />
   <div class="intro"><div><p class="eyebrow">AS ESCOLHAS QUE FICAM</p><h1 bind:this={heading} tabindex="-1">Chamaram-lhe<br /><span>a atenção.</span></h1><p class="lead">Guarde o que faz sentido. Volte aos detalhes quando quiser.</p></div><Heart class="intro-heart" size={66} strokeWidth={1} aria-hidden="true" /></div>
   {#if !$ready}<p role="status">A preparar os seus favoritos…</p>
   {:else if !$ids.length}
@@ -73,7 +74,6 @@
   button { font: inherit; color: inherit; cursor: pointer; }
   a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
   h1:focus { outline: none; }
-  .back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 12px; color: var(--muted); }
   .intro { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 38px 0 48px; }
   .intro :global(.intro-heart) { color: var(--red); flex-shrink: 0; margin-right: 3%; }
   .eyebrow { margin: 0 0 20px; font-size: 10px; color: var(--muted); letter-spacing: .12em; }

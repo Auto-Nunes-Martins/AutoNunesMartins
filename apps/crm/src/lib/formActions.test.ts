@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 // This catches a toast-only callback that silently drops a server redirect.
 const fixtures = [
   ['routes/(app)/viaturas/[id]/publicar/+page.svelte', 'submitting'],
-  ['routes/(app)/viaturas/[id]/editar/+page.svelte', 'deleting'],
+  ['lib/components/vehicle/VehicleDeletePanel.svelte', 'busy'],
   ['routes/(app)/clientes/[id]/editar/+page.svelte', 'deleting'],
   ['routes/(app)/tarefas/[id]/editar/+page.svelte', 'deleting'],
   ['routes/(app)/financeiro/+page.svelte', 'submitting', 'savingId', null],
@@ -50,6 +50,7 @@ for (const [path, ...states] of fixtures) {
             toast: { success: vi.fn(), error: vi.fn() },
             v: { id: 'vehicle-id', brand: 'Marca', model: 'Modelo' },
             wasFeatured: false,
+            onredirect: vi.fn(),
             showAdd: true,
             editingId: 'expense-id',
             message: '',

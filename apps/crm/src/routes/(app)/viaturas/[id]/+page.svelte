@@ -21,6 +21,7 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PhotoGallery from '$lib/components/vehicle/PhotoGallery.svelte';
   import ExpenseTable from '$lib/components/vehicle/ExpenseTable.svelte';
+  import VehicleDeletePanel from '$lib/components/vehicle/VehicleDeletePanel.svelte';
   import ProfitCard from '$lib/components/vehicle/ProfitCard.svelte';
   import { formatDate, formatEUR, formatInt } from '$lib/utils/format';
   import type { PageData } from './$types';
@@ -341,4 +342,5 @@
       </div>
     </Panel>
   {/if}
+  <VehicleDeletePanel id={v.id} brand={v.brand} model={v.model} blocked={!!v.sale} />
 </section>

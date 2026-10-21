@@ -6,20 +6,21 @@
   display: none;
 }
 
-/* A short inner page occupies the first screen before the shared invitation.
- * svh avoids toolbar-driven resizing; longer mains retain their natural flow.
- * The homepage already owns its viewport composition and is not stretched.
- */
+/* Shared inner-page frame: the whole page fills a screen, rather than reserving
+ * an extra screen above the common contact/footer. Longer content grows naturally.
+ * Homepage compositions, including the preserved V2, keep their own layout. */
+.design.orbit.orbit-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
 .design.orbit.orbit-inner > main {
   box-sizing: border-box;
-  min-block-size: max(
-    0px,
-    calc(100vh - var(--nav-full-height, 94px) - var(--nav-address-height, 0px))
-  );
-  min-block-size: max(
-    0px,
-    calc(100svh - var(--nav-full-height, 94px) - var(--nav-address-height, 0px))
-  );
+  flex: 1 0 auto;
+  min-block-size: calc(clamp(760px, 90svh, 1200px) - 15px);
+}
+.design.orbit.orbit-inner > header {
+  flex-shrink: 0;
 }
 
 /* Navigation feedback is neutral; reserve red for the established brand accents. */
@@ -196,13 +197,20 @@
   max-width: var(--orbit-frame-max);
   margin: auto;
   padding: var(--orbit-space-section) 0;
-  min-height: 60svh;
+  min-height: 0;
 }
 .design.orbit .not-found h1 {
   font-size: clamp(36px, 4.5vw, 64px);
   max-width: 22ch;
   line-height: 1.06;
   letter-spacing: -0.05em;
+}
+.design.orbit .not-found.known-unavailable,
+.design.orbit .not-found.vehicle-error {
+  padding-block: var(--orbit-space-page-start) var(--orbit-space-section);
+}
+@media (max-width: 700px) {
+  .design.orbit .not-found.known-unavailable { padding-top: 32px; }
 }
 .design.orbit .not-found > p:not(.kicker) {
   color: var(--muted);
@@ -287,6 +295,7 @@
   --orbit-frame: min(96%, calc(100% - 48px));
   --orbit-frame-max: 1320px;
   --orbit-space-section: clamp(64px, 6vw, 96px);
+  --orbit-space-page-start: clamp(32px, 3vw, 48px);
   --orbit-space-half: calc(var(--orbit-space-section) / 2);
   --orbit-space-arrival: clamp(96px, 8vw, 128px);
   --orbit-space-heading: clamp(28px, 3vw, 44px);

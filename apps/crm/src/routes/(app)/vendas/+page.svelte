@@ -1,5 +1,7 @@
 <script lang="ts">
+  import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
+  import { linkedRow } from '$lib/linkedRow';
   import { goto } from '$app/navigation';
   import { filterNavigation } from '$lib/filterNavigation';
   import { page } from '$app/stores';
@@ -146,8 +148,8 @@
         >
           Venda desde
         </span>
-        <input
-          type="date"
+        <DateInput
+
           value={data.filters.dateFrom ?? ''}
           onchange={(e) => setParam('dateFrom', e.currentTarget.value || undefined)}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -161,8 +163,8 @@
         >
           Venda até
         </span>
-        <input
-          type="date"
+        <DateInput
+
           value={data.filters.dateTo ?? ''}
           onchange={(e) => setParam('dateTo', e.currentTarget.value || undefined)}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -221,7 +223,7 @@
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
                   <div
-                    class="font-display font-semibold text-[14px] truncate group-hover:text-[var(--color-red)] transition-colors"
+                    class="font-display font-semibold text-[14px] line-clamp-2 break-words group-hover:text-[var(--color-red)] transition-colors"
                   >
                     {s.vehicle.brand}
                     {s.vehicle.model}
@@ -302,7 +304,7 @@
           role="region"
           aria-label="Vendas — tabela com deslocamento horizontal"
         >
-          <table class="crm-table w-full text-[13px] min-w-[1100px]">
+          <table class="crm-table sales-table w-full text-[13px] min-w-[1100px]">
             <thead>
               <tr class="border-b border-[var(--color-border)]">
                 <th
@@ -316,7 +318,7 @@
                   Cliente
                 </th>
                 <th
-                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] cursor-pointer hover:text-[var(--color-text)]"
+                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] sortable-heading"
                   aria-sort={data.filters.sortBy === 'saleDate'
                     ? data.filters.sortDir === 'asc'
                       ? 'ascending'
@@ -335,7 +337,7 @@
                   Compra
                 </th>
                 <th
-                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] cursor-pointer hover:text-[var(--color-text)]"
+                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] sortable-heading"
                   aria-sort={data.filters.sortBy === 'salePrice'
                     ? data.filters.sortDir === 'asc'
                       ? 'ascending'
@@ -365,7 +367,7 @@
                   Comissão
                 </th>
                 <th
-                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] cursor-pointer hover:text-[var(--color-text)]"
+                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] sortable-heading"
                   aria-sort={data.filters.sortBy === 'realProfit'
                     ? data.filters.sortDir === 'asc'
                       ? 'ascending'
@@ -380,7 +382,7 @@
                   >
                 </th>
                 <th
-                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] cursor-pointer hover:text-[var(--color-text)]"
+                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] sortable-heading"
                   aria-sort={data.filters.sortBy === 'marginPct'
                     ? data.filters.sortDir === 'asc'
                       ? 'ascending'
@@ -405,10 +407,11 @@
               {#each list.items as s (s.id)}
                 {@const isLoss = Number(s.realProfit) < 0}
                 <tr
-                  class="border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
+                  use:linkedRow
+                  class="linked-row border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
                 >
                   <td class="px-4 py-3">
-                    <a href={crmPath(`/vendas/${s.id}`)} class="flex items-center gap-3">
+                    <a href={crmPath(`/vendas/${s.id}`)} class="row-link flex items-center gap-3">
                       <div
                         class="h-9 w-9 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
                         style="border-radius: 3px;"
@@ -564,3 +567,20 @@
     {/await}
   </Panel>
 </section>
+
+<style>
+  .sales-table th.sortable-heading {
+    padding: 0;
+  }
+  .sales-table th.sortable-heading button {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 16px;
+    text-align: right;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .sales-table th.sortable-heading button:hover {
+    color: var(--color-text);
+  }
+</style>

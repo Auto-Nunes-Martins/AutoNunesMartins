@@ -1,11 +1,12 @@
 <script lang="ts">
+  import OrbitBackLink from './OrbitBackLink.svelte';
  import {sizedPhoto,vehiclePhotoSet} from "$lib/vehiclePhotoSources";
   import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from '$lib/publicThumbnail';
   import { catalogPlaceholder } from '$lib/localAssets';
   import { page } from '$app/stores';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { onMount, tick, untrack } from 'svelte';
-  import { ArrowUpRight, ArrowLeft, Plus, X, RotateCcw } from 'lucide-svelte';
+  import { ArrowUpRight, Plus, X, RotateCcw } from 'lucide-svelte';
   import { useComparison, comparisonRows } from '$lib/comparison';
   import { publicHref, publicPhoto, publicPrice } from '$lib/publicVehicles';
   import { loadSelectedVehicles, type SelectedVehicle as Entry } from '$lib/selectedVehicles';
@@ -79,7 +80,7 @@
 </svelte:head>
 
 <main class="comparison-page">
-  <nav class="back-nav" aria-label="Voltar à lista de viaturas"><a class="back" href="/viaturas"><ArrowLeft size={16} aria-hidden="true" /> Viaturas</a></nav>
+  <nav class="back-nav" aria-label="Voltar"><OrbitBackLink /></nav>
   <header class="page-heading">
     <h1 bind:this={heading} tabindex="-1">Comparar viaturas<span>.</span></h1>
     {#if $ready && $ids.length}
@@ -181,14 +182,13 @@
 </main>
 
 <style>
-  .comparison-page { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: 30px 0 88px; color: var(--text); }
+  .comparison-page { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: var(--orbit-space-page-start) 0 88px; color: var(--text); }
   a { color: inherit; text-decoration: none; }
   button, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
   a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
   h1:focus { outline: none; }
   .back-nav {display:block;}
-  .back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; color: var(--muted); }
   .page-heading { display:block; margin:16px 0 36px; max-width:1200px; }
   .selection-toolbar {display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:22px;}
   .selection-count {margin:0;color:var(--muted);font-size:13px;}
@@ -247,7 +247,7 @@
   @media (hover: hover) { .add:hover, .primary:hover { background: var(--red); color: white; } .detail-link:hover { text-decoration: underline; text-underline-offset: 4px; } .remove:hover { background: var(--text); color: var(--bg); } }
   @media (prefers-reduced-motion: no-preference) { .add, .primary, .remove { transition: background-color 180ms ease, color 180ms ease; } }
   @media (max-width: 700px) {
-    .comparison-page { padding: 14px 0 64px; }
+    .comparison-page { padding: 32px 0 64px; }
     .page-heading {margin:12px 0 30px;}
     .selection-toolbar {margin-top:18px;gap:12px;}
     h1 { font-size: clamp(34px, 8.5vw, 44px); }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { linkedRow } from '$lib/linkedRow';
   import { Phone, Mail, FileText, User as UserIcon } from 'lucide-svelte';
   import RowActions from '$lib/components/common/RowActions.svelte';
   import { formatDate } from '$lib/utils/format';
@@ -52,14 +53,17 @@
             <UserIcon class="h-5 w-5 text-[var(--color-red)]" />
           </div>
           <div class="min-w-0 flex-1">
-            <div class="flex items-center justify-between gap-2">
+            <div class="flex items-start justify-between gap-2">
               <div
-                class="font-display font-bold italic text-[15px] truncate group-hover:text-[var(--color-red)] transition-colors"
+                class="font-display font-bold italic text-[15px] line-clamp-2 break-words group-hover:text-[var(--color-red)] transition-colors"
               >
                 {c.name}
               </div>
-              <span class="num-value text-[18px] flex-shrink-0">
-                {c._count.sales}
+              <span class="text-[11px] text-[var(--color-text-muted)] flex-shrink-0">
+                <strong class="num-value text-[14px] text-[var(--color-text)]"
+                  >{c._count.sales}</strong
+                >
+                {c._count.sales === 1 ? 'compra' : 'compras'}
               </span>
             </div>
             <div
@@ -94,7 +98,13 @@
   {/each}
 </div>
 
-<div class="hidden md:block overflow-x-auto">
+<!-- svelte-ignore a11y_no_noninteractive_tabindex (Native horizontal scrolling by keyboard.) -->
+<div
+  class="hidden md:block overflow-x-auto"
+  tabindex="0"
+  role="region"
+  aria-label="Clientes — tabela com deslocamento horizontal"
+>
   <table class="crm-table w-full text-[13px]">
     <thead>
       <tr class="border-b border-[var(--color-border)]">
@@ -132,10 +142,11 @@
     <tbody>
       {#each items as c (c.id)}
         <tr
-          class="border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
+          use:linkedRow
+          class="linked-row border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
         >
           <td class="px-4 py-3">
-            <a href={crmPath(`/clientes/${c.id}`)} class="flex items-center gap-3">
+            <a href={crmPath(`/clientes/${c.id}`)} class="row-link flex items-center gap-3">
               <div
                 class="h-11 w-11 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
                 style="border-radius: var(--radius-btn);"
@@ -159,20 +170,28 @@
           <td class="px-4 py-3 num-value text-[12.5px]">{c.nif}</td>
           <td class="px-4 py-3">
             <div class="flex flex-col gap-0.5">
-              <span class="flex items-center gap-1.5 text-[12px]">
+              <a
+                href={`tel:${c.phone.replace(/\s/g, '')}`}
+                class="contact-link flex items-center gap-1.5 text-[12px]"
+                aria-label={`Ligar para ${c.name}: ${c.phone}`}
+              >
                 <Phone class="h-3 w-3 text-[var(--color-text-faint)]" />
                 <span class="font-mono">{c.phone}</span>
-              </span>
+              </a>
               {#if c.email}
-                <span class="flex items-center gap-1.5 text-[12px] text-[var(--color-text-muted)]">
+                <a
+                  href={`mailto:${c.email}`}
+                  class="contact-link flex items-center gap-1.5 text-[12px] text-[var(--color-text-muted)]"
+                  aria-label={`Enviar email a ${c.name}: ${c.email}`}
+                >
                   <Mail class="h-3 w-3 text-[var(--color-text-faint)]" />
                   {c.email}
-                </span>
+                </a>
               {/if}
             </div>
           </td>
           <td class="px-4 py-3 text-right">
-            <span class="num-value text-[18px]">
+            <span class="num-value text-[14px]">
               {c._count.sales}
             </span>
           </td>

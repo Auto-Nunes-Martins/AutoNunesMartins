@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import './lib/styles/formLayout.css';
+@import './lib/styles/select.css';
 
 @import '@fontsource/barlow/400.css';
 @import '@fontsource/barlow/500.css';

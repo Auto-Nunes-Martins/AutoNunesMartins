@@ -1,8 +1,80 @@
-/* One set of rows/forms: cards on phones, the existing table on desktop. */
+/* One set of rows/forms. Use cards whenever the panel is too narrow for the table,
+ * including a tablet beside the sidebar, rather than relying on viewport width. */
+.expense-layout {
+  container-type: inline-size;
+  min-width: 0;
+}
+.expense-fields,
+.expense-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+}
+.expense-fields > *,
+.expense-filters > * {
+  min-width: 0;
+}
+.expense-fields :is(input:not([type='checkbox']), select),
+.expense-filters :is(input, select) {
+  width: 100%;
+  min-width: 0;
+}
+.expense-fields input[name='amount'] {
+  max-width: 150px;
+}
+.expense-fields input[name='date'] {
+  max-width: 170px;
+}
+.expense-filters input[type='date'] {
+  max-width: 170px;
+}
+.expense-fields .expense-confirm,
+.expense-fields .expense-form-actions {
+  grid-column: 1 / -1;
+}
+.expense-fields .expense-form-actions {
+  flex-wrap: wrap;
+}
+@container (min-width: 480px) {
+  .expense-fields,
+  .expense-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .expense-fields .expense-description {
+    grid-column: 1 / -1;
+  }
+  .expense-filters > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+@container (min-width: 760px) {
+  .expense-fields {
+    grid-template-columns: 150px minmax(0, 1fr) 130px 150px;
+  }
+  .expense-fields .expense-description {
+    grid-column: auto;
+  }
+}
+@container (min-width: 960px) {
+  .expense-filters {
+    grid-template-columns: minmax(0, 1fr) 160px 150px 150px auto;
+  }
+  .expense-filters > :last-child {
+    grid-column: auto;
+  }
+}
+@media (pointer: coarse) {
+  .expense-fields :is(input:not([type='checkbox']), select),
+  .expense-filters :is(input, select) {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
 .expense-action-label {
   display: none;
 }
-@media (min-width: 768px) {
+@container (min-width: 680px) {
   .expense-table th:first-child {
     width: 140px;
   }
@@ -29,7 +101,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@container (width < 680px) {
   .expense-table-wrap {
     overflow: visible;
   }

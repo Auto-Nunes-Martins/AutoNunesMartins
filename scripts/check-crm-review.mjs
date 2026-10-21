@@ -341,7 +341,6 @@ if (process.argv.includes('--serve')) {
         '/tarefas',
         '/dashboard',
         '/definicoes',
-        '/site/arquivo',
       ]) {
         await page.goto(origin + path + '?__state=empty');
         await page.locator('main section').first().waitFor();
@@ -421,7 +420,7 @@ if (process.argv.includes('--serve')) {
           'One primary create action on mobile',
         );
       }
-      for (const path of ['/vendas/fixture-sale', '/tarefas/task-urgent/editar', '/site/arquivo']) {
+      for (const path of ['/vendas/fixture-sale', '/tarefas/task-urgent/editar']) {
         await page.goto(origin + path);
         await page.locator('main section').first().waitFor();
         const clipped = await page.locator('main').evaluate((main) =>

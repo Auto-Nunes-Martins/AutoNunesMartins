@@ -1,5 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { linkedRow } from '$lib/linkedRow';
   import { ArrowRight, Car, Plus, Tag } from 'lucide-svelte';
   import { page } from '$app/stores';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -108,11 +109,12 @@
             {@const age = daysSince(v.acquisitionDate)}
             {@const isUrgent = age > 5}
             <li
-              class="flex items-center gap-4 px-5 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors"
+              use:linkedRow
+              class="linked-row flex items-center gap-4 px-5 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors"
             >
               <a
                 href={crmPath(`/viaturas/${v.id}`)}
-                class="flex-1 min-w-0 flex items-center gap-3 group/link"
+                class="row-link flex-1 min-w-0 flex items-center gap-3 group/link"
               >
                 <div
                   class="h-10 w-10 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"

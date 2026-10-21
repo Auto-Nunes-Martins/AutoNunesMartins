@@ -9,6 +9,11 @@
   import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from '$lib/publicThumbnail';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
   import { galleryBackdrop } from '../../../../../../shared/ui/galleryBackdrop';
+  import RichDescription from '../../../../../../shared/ui/RichDescription.svelte';
+  import UnavailableVehiclePanel from './UnavailableVehiclePanel.svelte';
+  import OrbitBackLink from './OrbitBackLink.svelte';
+  import MissingVehiclePanel from './MissingVehiclePanel.svelte';
+  import { descriptionText } from '@anm/types/richDescription';
   import './photoViewer.css';
   import {
     logoLight,
@@ -18,7 +23,7 @@
     catalogPlaceholder,
   } from '$lib/localAssets';
   import { publicErrorCopy } from '$lib/publicError';
-  import type { PublicArchive } from '$lib/publicArchive';
+  import type { UnavailableVehicle } from '$lib/unavailableVehicle';
   import type { PublicHighlights } from '$lib/homepageHighlights';
   import HomeHeroV1 from './HomeHeroV1.svelte';
   import HomeHeroV2 from './HomeHeroV2.svelte';
@@ -154,7 +159,7 @@
     publicVehicle,
     relatedVehicles = [],
     errorStatus,
-    archivedVehicle,
+    unavailableVehicle,
     homeHighlights,
   }: {
     id?: string;
@@ -169,7 +174,7 @@
     publicVehicle?: PublicVehicle;
     relatedVehicles?: PublicVehicle[];
     errorStatus?: number;
-    archivedVehicle?: PublicArchive;
+    unavailableVehicle?: UnavailableVehicle;
     homeHighlights?: PublicHighlights;
   } = $props();
   const thumbnailSession = $derived(
@@ -650,33 +655,24 @@
 
   {#if errorStatus}
     {@const content = publicErrorCopy(errorStatus, $page.url.pathname)}
-    <main class="not-found">
-      {#if errorStatus === 404 && archivedVehicle}
-        <p class="kicker">JÁ NÃO ESTÁ DISPONÍVEL</p>
-        <h1>{archivedVehicle.brand} {archivedVehicle.model}</h1>
-        <p class="error-description">
-          {archivedVehicle.year} · Esta viatura já não está disponível. Explore as viaturas que temos
-          atualmente em catálogo.
-        </p>
-        {#if archivedVehicle.photo}
-          <img
-            class="archive-photo"
-            style="display:block;width:100%;max-width:800px;height:auto;max-height:480px;object-fit:contain;object-position:left;margin:28px 0"
-            src={archivedVehicle.photo}
-            alt={`${archivedVehicle.brand} ${archivedVehicle.model}, ${archivedVehicle.year}`}
-          />
-        {/if}
+    <main class="not-found" class:known-unavailable={errorStatus === 404 && !!unavailableVehicle} class:vehicle-error={errorStatus === 404 && $page.url.pathname.startsWith('/viaturas/')}>
+      {#if errorStatus === 404 && unavailableVehicle}
+        <UnavailableVehiclePanel vehicle={unavailableVehicle} />
+      {:else if errorStatus === 404 && $page.url.pathname.startsWith('/viaturas/')}
+        <MissingVehiclePanel heading={content.heading} message={content.message} />
       {:else}
         <p class="kicker">UM DESVIO DE PERCURSO · {errorStatus}</p>
         <h1>{content.heading}</h1>
         <p class="error-description">{content.message}</p>
       {/if}
-      <div class="error-actions">
-        <a class="pill primary" href="/viaturas"
-          >Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
-        >
-        <a class="pill" href="/">Página inicial <ArrowUpRight size={18} aria-hidden="true" /></a>
-      </div>
+      {#if !(errorStatus === 404 && (unavailableVehicle || $page.url.pathname.startsWith('/viaturas/')))}
+        <div class="error-actions">
+          <a class="pill primary" href="/viaturas"
+            >Explorar viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
+          >
+          <a class="pill" href="/">Página inicial <ArrowUpRight size={18} aria-hidden="true" /></a>
+        </div>
+      {/if}
     </main>
   {:else if favorites}
     <OrbitFavorites card={vehicleCard} />
@@ -701,8 +697,7 @@
   {:else if car}
     <main class="vehicle-page">
       {#if publicVehicle}<div class="detail-top-actions">
-          <a href="/viaturas"><ArrowLeft size={14} aria-hidden="true" /> Voltar às viaturas</a
-          ><VehicleShareButton {...vehicleShareData(publicVehicle, $page.url.origin)} />
+          <OrbitBackLink /><VehicleShareButton {...vehicleShareData(publicVehicle, $page.url.origin)} />
         </div>{/if}
       <div class="breadcrumbs">
         {#if publicVehicle}<nav class="breadcrumb-trail" aria-label="Percurso de navegação">
@@ -717,7 +712,7 @@
                 </li>{/each}
             </ol>
           </nav>{:else}<a href="/viaturas"
-            ><ArrowLeft size={14} aria-hidden="true" /> Voltar às viaturas</a
+            ><ArrowLeft size={14} aria-hidden="true" /> Voltar</a
           ><span>{car.brand} / {car.model}</span>{/if}{#if !publicVehicle}<button
             onclick={() => toggleSave(car.id)}
             class:saved={saved.includes(car.id)}
@@ -1007,6 +1002,12 @@
               </div>{/each}
           </dl>
         </section>
+        {#if publicVehicle && descriptionText(publicVehicle.description)}
+          <section class="vehicle-description" aria-labelledby="vehicle-description-title">
+            <h2 id="vehicle-description-title">Descrição da viatura.</h2>
+            <RichDescription value={publicVehicle.description} />
+          </section>
+        {/if}
         {#if !publicVehicle || publicVehicle.photos.length > 0}
           <section class="detail-band" data-scene>
             <img
@@ -1487,6 +1488,19 @@
 {/snippet}
 
 <style>
+  .vehicle-description {
+    grid-column: 1;
+    min-width: 0;
+    padding-block: 28px 40px;
+    border-top: 1px solid var(--line);
+    color: var(--ink, var(--text));
+  }
+  .vehicle-description h2 {
+    margin: 0 0 20px;
+    font-size: clamp(22px, 2vw, 30px);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
   .vehicle-photo-stage {
     position: relative;
   }
@@ -2675,8 +2689,10 @@
     margin-top: 8px;
   }
 
+  .not-found.known-unavailable {
+    padding: var(--orbit-space-section) 0;
+  }
   .not-found {
-    min-height: 65vh;
     padding: 80px 7%;
   }
   .error-description {

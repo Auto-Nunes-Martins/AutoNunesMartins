@@ -17,18 +17,12 @@ const mocks = vi.hoisted(() => ({
       update: vi.fn(),
     },
     activityLog: { create: vi.fn() },
-    publicVehicleArchive: { findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
   download: vi.fn(),
   auth: vi.fn(),
 }));
 vi.mock('../db.js', () => ({ prisma: mocks.db }));
-vi.mock('../lib/server/publicArchive.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../lib/server/publicArchive.js')>()),
-  prepareVehicleArchive: vi.fn(),
-  syncPublishedArchive: vi.fn(),
-}));
 vi.mock('../logger.js', () => ({ logger: { error: vi.fn() } }));
 vi.mock('../lib/data/storage.js', () => ({
   getBucketName: () => 'private-vehicle-photos',
@@ -115,7 +109,6 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.db.publicVehicleArchive.findUnique.mockResolvedValue(null);
   mocks.db.$transaction.mockImplementation(async (fn) => fn(mocks.db));
   mocks.db.vehicle.findMany.mockResolvedValue([fixture()]);
   mocks.db.vehicle.findFirst.mockResolvedValue(fixture());

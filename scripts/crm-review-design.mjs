@@ -110,30 +110,58 @@ export async function reviewDesign(page, origin, output, before = false) {
     }
   }
   if (!before) {
-    await page.setViewportSize({ width:390,height:844 });
-    await page.goto(origin+'/atividade');
-    const types=page.locator('main details');
-    assert.equal(await types.getAttribute('open'),null,'Advanced filters are collapsed initially');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(origin + '/atividade');
+    const types = page.locator('main details');
+    assert.equal(
+      await types.getAttribute('open'),
+      null,
+      'Advanced filters are collapsed initially',
+    );
     await types.locator('summary').click();
-    await types.getByRole('button',{name:'Viatura adicionada',exact:true}).click();
-    assert.equal(await types.getByRole('button',{name:'Viatura adicionada',exact:true}).getAttribute('aria-pressed'),'true');
-    assert.match(page.url(),/VEHICLE_ADDED/);
-    assert(await page.getByText('Por Equipa de teste',{exact:true}).first().isVisible(),'Mobile activity shows its actor');
+    await types.getByRole('button', { name: 'Viatura adicionada', exact: true }).click();
+    assert.equal(
+      await types
+        .getByRole('button', { name: 'Viatura adicionada', exact: true })
+        .getAttribute('aria-pressed'),
+      'true',
+    );
+    assert.match(page.url(), /VEHICLE_ADDED/);
+    assert(
+      await page.getByText('Por Equipa de teste', { exact: true }).first().isVisible(),
+      'Mobile activity shows its actor',
+    );
 
-    const touch=await page.context().browser().newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-    await touch.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
-    const touchPage=await touch.newPage();
-    await touchPage.goto(origin+'/tarefas');
-    const filter=touchPage.getByRole('button',{name:'Alta',exact:true});
+    const touch = await page
+      .context()
+      .browser()
+      .newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await touch.route('**/*', (route) =>
+      new URL(route.request().url()).origin === origin ? route.continue() : route.abort(),
+    );
+    const touchPage = await touch.newPage();
+    await touchPage.goto(origin + '/tarefas');
+    const filter = touchPage.getByRole('button', { name: 'Alta', exact: true });
     await filter.waitFor();
-    assert.equal(await touchPage.evaluate(()=>matchMedia('(hover: hover)').matches),false);
+    assert.equal(await touchPage.evaluate(() => matchMedia('(hover: hover)').matches), false);
     await filter.hover();
-    assert.equal(await filter.evaluate(el=>getComputedStyle(el).boxShadow),'none','Touch does not retain desktop hover overlays');
+    assert.equal(
+      await filter.evaluate((el) => getComputedStyle(el).boxShadow),
+      'none',
+      'Touch does not retain desktop hover overlays',
+    );
     await filter.tap();
-    await touchPage.waitForFunction(() => [...document.querySelectorAll('button')].some(
-      button => button.textContent.trim() === 'Alta' && button.getAttribute('aria-pressed') === 'true',
-    ));
-    assert.equal(await filter.getAttribute('aria-pressed'),'true','Touch still selects the filter');
+    await touchPage.waitForFunction(() =>
+      [...document.querySelectorAll('button')].some(
+        (button) =>
+          button.textContent.trim() === 'Alta' && button.getAttribute('aria-pressed') === 'true',
+      ),
+    );
+    assert.equal(
+      await filter.getAttribute('aria-pressed'),
+      'true',
+      'Touch still selects the filter',
+    );
     await touch.close();
   }
   await writeFile(
@@ -160,10 +188,11 @@ export async function reviewExpenses(page, origin, output, vehicleId) {
         width: el.getBoundingClientRect().width,
         view: innerWidth,
         display: getComputedStyle(el.querySelector('tbody tr')).display,
+        panel: el.closest('.expense-layout').getBoundingClientRect().width,
         scroll: document.documentElement.scrollWidth,
       }));
-      assert.equal(size.display, width < 768 ? 'grid' : 'table-row');
-      if (width < 768) {
+      assert.equal(size.display, size.panel < 680 ? 'grid' : 'table-row');
+      if (size.panel < 680) {
         assert(size.width <= size.view, `${name}: expense cards fit mobile`);
         assert(size.scroll <= size.view, `${name}: no horizontal document overflow`);
         assert(await table.getByText('Editar', { exact: true }).isVisible());

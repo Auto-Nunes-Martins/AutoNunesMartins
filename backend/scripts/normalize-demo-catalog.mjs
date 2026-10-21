@@ -23,7 +23,7 @@ const dataFor = state => ({ ...catalogState(state), publicSpecifications: state.
 const db = new PrismaClient();
 const relatedCounts = async client => ({
   sales: await client.sale.count(), customers: await client.customer.count(),
-  expenses: await client.vehicleExpense.count(), archives: await client.publicVehicleArchive.count(),
+  expenses: await client.vehicleExpense.count(),
 });
 const localPath = value => {
   const path = resolve(value);

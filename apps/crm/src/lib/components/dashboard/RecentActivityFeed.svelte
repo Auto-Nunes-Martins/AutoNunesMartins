@@ -1,5 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { activityHref as hrefFor } from '$lib/activityNavigation';
   import { Activity, User as UserIcon } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
@@ -16,21 +17,6 @@
   }
 
   let { items, title = 'Atividade Recente', dashboard = false }: Props = $props();
-
-  function hrefFor(row: RecentActivityRow): string | null {
-    switch (row.entityType) {
-      case 'vehicle':
-        return crmPath(`/viaturas/${row.entityId}`);
-      case 'sale':
-        return crmPath(`/vendas/${row.entityId}`);
-      case 'customer':
-        return crmPath(`/clientes/${row.entityId}`);
-      case 'task':
-        return crmPath(`/tarefas/${row.entityId}/editar`);
-      default:
-        return null;
-    }
-  }
 
   function relativeTime(iso: string): string {
     const ms = Date.now() - new Date(iso).getTime();

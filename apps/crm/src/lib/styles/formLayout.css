@@ -1,0 +1,292 @@
+/* Size fields by their content, using the form's actual width (including dialogs). */
+.crm-form-layout {
+  container-type: inline-size;
+  min-width: 0;
+}
+.crm-form-page {
+  max-width: 1080px;
+  margin-inline: auto;
+}
+.crm-record-page {
+  max-width: 1240px;
+  margin-inline: auto;
+}
+.crm-form-sections {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.crm-field-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.crm-field-grid > * {
+  grid-column: span 12;
+  min-width: 0;
+}
+.crm-field-grid :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.crm-field-grid label > span:first-child {
+  line-height: 1.5;
+}
+.crm-field-grid .crm-field-full {
+  grid-column: 1 / -1;
+}
+@container (min-width: 480px) {
+  .crm-field-grid > * {
+    grid-column: span 6;
+  }
+  .crm-field-grid .crm-field-full {
+    grid-column: 1 / -1;
+  }
+}
+@container (min-width: 720px) {
+  .crm-field-grid > * {
+    grid-column: span var(--field-span, 6);
+  }
+  .crm-field-grid .crm-field-2 {
+    --field-span: 2;
+  }
+  .crm-field-grid .crm-field-3 {
+    --field-span: 3;
+  }
+  .crm-field-grid .crm-field-4 {
+    --field-span: 4;
+  }
+  .crm-field-grid .crm-field-5 {
+    --field-span: 5;
+  }
+  .crm-field-grid .crm-field-6 {
+    --field-span: 6;
+  }
+  .crm-field-grid .crm-field-7 {
+    --field-span: 7;
+  }
+  .crm-field-grid .crm-field-8 {
+    --field-span: 8;
+  }
+  .crm-field-grid .crm-field-full {
+    grid-column: 1 / -1;
+  }
+}
+.crm-form-layout .crm-form-help {
+  max-width: 72ch;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+@media (pointer: coarse) {
+  .crm-form-layout
+    :is(input, select, textarea):not([type='checkbox']):not([type='radio']):not([type='hidden']) {
+    font-size: 16px;
+  }
+}
+
+/* The label itself owns the width: no empty oversized grid tracks around short inputs. */
+.crm-compact-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 16px 14px;
+}
+.crm-compact-fields > label {
+  flex: 0 1 var(--field-width, 180px);
+  min-width: 0;
+  max-width: 100%;
+}
+.crm-compact-fields :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+@container (max-width:479px) {
+  .crm-compact-fields > label {
+    flex: 1 1 min(var(--field-width, 180px), 100%);
+  }
+}
+
+/* One visual language for controls, including specifications rendered in the vehicle panel. */
+:is(.crm-form-layout, main, dialog)
+  label:has(
+    > :is(
+      input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not(
+          [type='search']
+        ):not([type='file']):not([type='range']):not([type='color']):not([type='submit']):not(
+          [type='button']
+        ):not([type='reset']),
+      .crm-date-control,
+      select,
+      textarea
+    )
+  ) {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+:is(.crm-form-layout, main, dialog)
+  label:has(
+    > :is(
+      input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not(
+          [type='search']
+        ):not([type='file']):not([type='range']):not([type='color']):not([type='submit']):not(
+          [type='button']
+        ):not([type='reset']),
+      .crm-date-control,
+      select,
+      textarea
+    )
+  )
+  > span:first-child {
+  margin-bottom: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--color-text-muted);
+}
+:is(.crm-form-layout, main, dialog)
+  :is(input, select, textarea):not([type='hidden']):not([type='checkbox']):not([type='radio']):not(
+    [type='search']
+  ):not([type='file']):not([type='range']):not([type='color']):not([type='submit']):not(
+    [type='button']
+  ):not([type='reset']) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  background-color: var(--color-bg-0) !important;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+  outline: none;
+  transition:
+    border-color 140ms,
+    box-shadow 140ms,
+    background-color 140ms;
+}
+:is(.crm-form-layout, main, dialog)
+  :is(input, select):not([type='hidden']):not([type='checkbox']):not([type='radio']):not(
+    [type='search']
+  ):not([type='file']):not([type='range']):not([type='color']):not([type='submit']):not(
+    [type='button']
+  ):not([type='reset']) {
+  height: 44px;
+}
+:is(.crm-form-layout, main, dialog)
+  :is(input, select, textarea):not([type='hidden']):not([type='checkbox']):not(
+    [type='radio']
+  ):focus {
+  border-color: var(--color-red);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-red) 12%, transparent);
+}
+:is(.crm-form-layout, main, dialog) select:not([multiple]):not([size]) {
+  padding-inline-end: 38px;
+}
+:is(.crm-form-layout, main, dialog) :is(input, textarea)::placeholder {
+  color: var(--color-text-faint);
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  :is(.crm-form-layout, main, dialog)
+    :is(input, select, textarea):not([type='hidden']):not([type='checkbox']):not(
+      [type='radio']
+    ):not([type='file']):not([type='range']):not([type='color']):not([type='submit']):not(
+      [type='button']
+    ):not([type='reset']) {
+    font-size: 16px;
+  }
+}
+
+:is(.crm-form-layout, main, dialog)
+  :is(input, select, textarea):disabled:not([type='checkbox']):not([type='radio']):not(
+    [type='search']
+  ):not([type='hidden']) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dates keep an editable native value and keyboard support, with a larger calendar target. */
+:is(.crm-form-layout, main, dialog) input[type='date'] {
+  color-scheme: dark;
+  font-variant-numeric: tabular-nums;
+  line-height: normal;
+}
+html[data-theme='light'] :is(.crm-form-layout, main, dialog) input[type='date'] {
+  color-scheme: light;
+}
+input[type='date']::-webkit-datetime-edit {
+  padding: 0;
+}
+input[type='date']::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  padding: 5px;
+  margin-left: 6px;
+  margin-right: -5px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition:
+    opacity 140ms,
+    background-color 140ms;
+}
+input[type='date']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: var(--color-interaction-hover);
+}
+
+/* A search surface belongs to the whole compound control, not its inner text box. */
+:is(main, header, dialog) :is(div, label):has(> input[type='search']):has(> svg),
+.gs-input-shell {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  background-color: var(--color-bg-0) !important;
+}
+.qt-input {
+  background-color: var(--color-bg-0) !important;
+}
+:is(main, header, dialog)
+  :is(div, label):has(> input[type='search']):has(> svg)
+  > input[type='search'],
+.gs-input-shell > input[type='search'] {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  padding-block: 0;
+  line-height: 1.5;
+}
+:is(main, dialog) label:not(:has(> svg)) > input[type='search'] {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  background-color: var(--color-bg-0) !important;
+  color: var(--color-text);
+}

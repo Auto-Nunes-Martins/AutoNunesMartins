@@ -24,7 +24,8 @@ function component(source: string, imports: Record<string, unknown> = {}) {
       /^import \{ isValidNIF \} from '@anm\/types';/m,
       'const isValidNIF = imports.isValidNIF;',
     )
-    .replace(/^import (\w+) from '[^']+';/gm, 'const $1 = imports.$1;')
+    .replace(/^import \{ ([^}]+) \} from 'lucide-svelte';/m, 'const { $1 } = imports;')
+    .replace(/^import (\w+) from ['"][^'"]+['"];/gm, 'const $1 = imports.$1;')
     .replace(/^import \{ [^}]+ \} from '\$lib\/forms\/formFeedback';/m, '')
     .replace(/^import \{ crmPath \} from '\$lib\/paths';/m, 'const crmPath = (path) => path;')
     .replace('export default function', 'return function');
@@ -34,7 +35,13 @@ function component(source: string, imports: Record<string, unknown> = {}) {
 const source = (file: string) => readFileSync(new URL(file, import.meta.url), 'utf8');
 const Button = component(source('./common/Button.svelte'));
 const CustomerForm = component(source('./customer/CustomerForm.svelte'), { Button });
-const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button });
+const DateIcon = component('<svg></svg>');
+const DateInput = component(source('./common/DateInput.svelte'), {
+  CalendarDays: DateIcon,
+  ChevronLeft: DateIcon,
+  ChevronRight: DateIcon,
+});
+const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button, DateInput });
 
 type Element = { name: string; attributes: any[]; ancestors: Element[] };
 
@@ -81,12 +88,16 @@ describe.each([
     const forms = nodes.filter((node) => node.name === 'form');
     expect(forms).toHaveLength(1);
     expect(attribute(forms[0]!, 'action')).toBe('?/submit');
-    const save = nodes.find((node) => node.name === 'button')!;
+    const save = nodes.find(
+      (node) => node.name === 'button' && attribute(node, 'type') === 'submit',
+    )!;
     expect(attribute(save, 'type')).toBe('submit');
     expect(save.ancestors).not.toContain(forms[0]);
     expect(owner(save, nodes)).toBe(forms[0]);
-    for (const field of nodes.filter((node) =>
-      ['input', 'select', 'textarea'].includes(node.name),
+    for (const field of nodes.filter(
+      (node) =>
+        ['input', 'select', 'textarea'].includes(node.name) &&
+        attribute(node, 'name') !== undefined,
     )) {
       expect(owner(field, nodes)).toBe(forms[0]);
     }
@@ -97,6 +108,28 @@ describe.each([
 
   it('renders delete as a separate form with no edit fields or edit validation', () => {
     const page = source(`../../routes/(app)/${route}/[id]/editar/+page.svelte`);
+    if (route === 'viaturas') {
+      const Trash2 = component('<svg></svg>');
+      const DeletePanel = component(source('./vehicle/VehicleDeletePanel.svelte'), { Trash2 });
+      const Wrapper = component(
+        '<script>import Form from "./Form.svelte"; import DeletePanel from "./DeletePanel.svelte";</script><Form /><DeletePanel id="vehicle" brand="Audi" model="Q5" />',
+        { Form, DeletePanel },
+      );
+      const nodes = elements(render(Wrapper, {}).body);
+      const forms = nodes.filter((node) => node.name === 'form');
+      expect(forms).toHaveLength(2);
+      const deletion = forms.find((form) => attribute(form, 'action')?.endsWith('?/delete'))!;
+      expect(deletion).toBeDefined();
+      expect(
+        nodes
+          .filter((node) => attribute(node, 'required') !== undefined)
+          .every((node) => !node.ancestors.includes(deletion)),
+      ).toBe(true);
+      expect(forms.every((form) => !form.ancestors.some((node) => node.name === 'form'))).toBe(
+        true,
+      );
+      return;
+    }
     const deletionSnippet = page.match(/\{#snippet extraActions\(\)\}[\s\S]*?\{\/snippet\}/)?.[0];
     expect(deletionSnippet).toBeDefined();
     const Wrapper = component(
@@ -120,14 +153,18 @@ describe.each([
       expect(form.ancestors.some((node) => node.name === 'form')).toBe(false);
     const edit = forms.find((form) => attribute(form, 'action') === '?/submit')!;
     const deletion = forms.find((form) => attribute(form, 'action') === '?/delete')!;
-    const buttons = nodes.filter((node) => node.name === 'button');
+    const buttons = nodes.filter(
+      (node) => node.name === 'button' && attribute(node, 'type') === 'submit',
+    );
     expect(buttons.filter((button) => owner(button, nodes) === edit)).toHaveLength(1);
     expect(buttons.filter((button) => owner(button, nodes) === deletion)).toHaveLength(1);
     expect(
       nodes.filter((node) => attribute(node, 'required') !== undefined).length,
     ).toBeGreaterThan(0);
-    for (const field of nodes.filter((node) =>
-      ['input', 'select', 'textarea'].includes(node.name),
+    for (const field of nodes.filter(
+      (node) =>
+        ['input', 'select', 'textarea'].includes(node.name) &&
+        attribute(node, 'name') !== undefined,
     )) {
       expect(owner(field, nodes)).toBe(edit);
     }
@@ -142,17 +179,26 @@ describe.each([
     const nodes = elements(render(Wrapper, {}).body);
     const forms = nodes.filter((node) => node.name === 'form');
     expect(new Set(forms.map((form) => attribute(form, 'id'))).size).toBe(2);
-    const buttons = nodes.filter((node) => node.name === 'button');
+    const buttons = nodes.filter(
+      (node) => node.name === 'button' && attribute(node, 'type') === 'submit',
+    );
     expect(buttons.map((button) => owner(button, nodes))).toEqual(forms);
   });
 });
 
 it('preserves a custom vehicle save action and customer NIF save validation', () => {
   const vehicle = elements(render(VehicleForm, { props: { action: '?/custom' } }).body);
-  const save = vehicle.find((node) => node.name === 'button')!;
+  const save = vehicle.find(
+    (node) => node.name === 'button' && attribute(node, 'type') === 'submit',
+  )!;
   expect(attribute(owner(save, vehicle)!, 'action')).toBe('?/custom');
   const customer = elements(render(CustomerForm, { props: { initial: { nif: 'invalid' } } }).body);
-  expect(attribute(customer.find((node) => node.name === 'button')!, 'disabled')).toBe('');
+  expect(
+    attribute(
+      customer.find((node) => node.name === 'button' && attribute(node, 'type') === 'submit')!,
+      'disabled',
+    ),
+  ).toBe('');
 });
 
 it('renders a usable nine-digit phone pattern in the customer form', () => {

@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
-import { publicArchiveSchema } from '../publicArchive';
+import { unavailableVehicleSchema } from '../unavailableVehicle';
 import {
   emptyStock,
   publicCatalogSchema,
@@ -10,14 +10,17 @@ import {
 } from '../publicVehicles';
 
 // Native server fetch intentionally avoids SvelteKit credential forwarding and CRM auth helpers.
-export async function publicRequest(path: string, headers: Record<string,string> = {}) {
-  return fetch(new URL(`/api/public/vehicles${path}`, env.INTERNAL_BACKEND_URL || PUBLIC_BACKEND_URL), {
-    headers: { accept: 'application/json', ...headers },
-    credentials: 'omit',
-    cache: 'no-store',
-    redirect: 'error',
-    signal: AbortSignal.timeout(8000),
-  });
+export async function publicRequest(path: string, headers: Record<string, string> = {}) {
+  return fetch(
+    new URL(`/api/public/vehicles${path}`, env.INTERNAL_BACKEND_URL || PUBLIC_BACKEND_URL),
+    {
+      headers: { accept: 'application/json', ...headers },
+      credentials: 'omit',
+      cache: 'no-store',
+      redirect: 'error',
+      signal: AbortSignal.timeout(8000),
+    },
+  );
 }
 export async function loadPublicStock(params: URLSearchParams): Promise<PublicStock> {
   // Enforce the dependency even if the public API is deployed independently.
@@ -38,8 +41,12 @@ export async function loadPublicVehicle(slug: string) {
     const response = await publicRequest(`/${slug}`);
     if (response.status === 404) {
       const body = await response.json().catch(() => null);
-      const parsed = publicArchiveSchema.safeParse(body?.archive);
-      return { status: 404 as const, vehicle: null, ...(parsed.success && parsed.data.slug === slug ? { archive: parsed.data } : {}) };
+      const parsed = unavailableVehicleSchema.safeParse(body?.unavailableVehicle);
+      return {
+        status: 404 as const,
+        vehicle: null,
+        ...(parsed.success && parsed.data.slug === slug ? { unavailableVehicle: parsed.data } : {}),
+      };
     }
     if (!response.ok)
       return { status: response.status === 404 ? (404 as const) : (503 as const), vehicle: null };
@@ -56,6 +63,11 @@ export async function loadRelatedVehicles(slug: string) {
   try {
     const response = await publicRequest(`/${slug}/related`);
     if (!response.ok) return [];
-    return publicVehicleSchema.array().max(5).parse(await response.json());
-  } catch { return []; }
+    return publicVehicleSchema
+      .array()
+      .max(5)
+      .parse(await response.json());
+  } catch {
+    return [];
+  }
 }

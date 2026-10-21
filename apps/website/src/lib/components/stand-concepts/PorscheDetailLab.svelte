@@ -6,6 +6,8 @@
   import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from '$lib/publicThumbnail';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
   import { galleryBackdrop } from '../../../../../../shared/ui/galleryBackdrop';
+  import RichDescription from '../../../../../../shared/ui/RichDescription.svelte';
+  import { vehicleSeo } from '$lib/vehicleSeo';
   import './photoViewer.css';
   import {
     logoLight,
@@ -305,8 +307,7 @@
     <title>{publicVehicle.brand} {publicVehicle.model} — Auto Nunes Martins</title>
     <meta
       name="description"
-      content={publicVehicle.description?.slice(0, 160) ||
-        publicVehicle.brand + ' ' + publicVehicle.model}
+      content={vehicleSeo(publicVehicle).description}
     />
     <link rel="canonical" href={publicVehicleCanonical(publicVehicle, $page.url.origin)} />
     {@html vehicleJsonLdScript(publicVehicle, $page.url.origin)}
@@ -419,7 +420,7 @@
           : 'Tente novamente mais tarde.'}
       </p>
       <a class="pill" href="/viaturas"
-        >Voltar às viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
+        >Voltar <ArrowUpRight size={18} aria-hidden="true" /></a
       >
     </main>
   {:else if catalog}
@@ -432,12 +433,12 @@
     <main class="not-found">
       <p class="kicker">DESVIO DE PERCURSO</p>
       <h1>Esta viatura<br />não está por aqui.</h1>
-      <a class="pill" href="/">Voltar à seleção <ArrowUpRight size={18} aria-hidden="true" /></a>
+      <a class="pill" href="/">Voltar <ArrowUpRight size={18} aria-hidden="true" /></a>
     </main>
   {:else if car}
     <main class="vehicle-page">
       <div class="breadcrumbs">
-        <a href="/viaturas"><ArrowLeft size={14} aria-hidden="true" /> Voltar às viaturas</a><span
+        <a href="/viaturas"><ArrowLeft size={14} aria-hidden="true" /> Voltar</a><span
           >{car.brand} / {car.model}</span
         ><button
           onclick={() => toggleSave(car.id)}
@@ -666,7 +667,7 @@
         {/if}
         {#if publicVehicle?.description}<section class="equipment public-description" use:entrance>
             <h2>Sobre esta viatura.</h2>
-            <p>{publicVehicle.description}</p>
+            <RichDescription value={publicVehicle.description} />
           </section>{/if}
         {#if !publicVehicle || publicVehicle.specifications?.equipment?.length}
           <section class="equipment" use:entrance>
