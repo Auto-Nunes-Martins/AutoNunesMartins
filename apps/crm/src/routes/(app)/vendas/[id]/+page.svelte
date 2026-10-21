@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
@@ -92,7 +93,7 @@
   <title>Venda · {v.brand} {v.model}</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="crm-record-page pt-8 pb-12 space-y-6">
   <!-- Header -->
   <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
     <div>
@@ -482,9 +483,9 @@
           >
             Data de entrega
           </span>
-          <input
+          <DateInput
             name="deliveryDate"
-            type="date"
+
             value={s.deliveryDate ? s.deliveryDate.slice(0, 10) : ''}
             class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)]"
             style="border-radius: var(--radius-btn);"

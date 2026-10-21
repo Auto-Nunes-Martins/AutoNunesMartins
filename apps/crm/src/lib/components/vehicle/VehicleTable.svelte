@@ -1,6 +1,7 @@
 <script lang="ts">
   import { photoFallback } from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
+  import { linkedRow } from '$lib/linkedRow';
   import { Car, FileText, Check, Tag } from 'lucide-svelte';
   import RowActions from '$lib/components/common/RowActions.svelte';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
@@ -76,9 +77,9 @@
             {/if}
           </div>
           <div class="min-w-0 flex-1">
-            <div class="flex items-center justify-between gap-2">
+            <div class="flex items-start justify-between gap-2">
               <div
-                class="font-display font-semibold text-[14px] truncate group-hover:text-[var(--color-red)] transition-colors"
+                class="font-display font-semibold text-[14px] line-clamp-2 break-words group-hover:text-[var(--color-red)] transition-colors"
               >
                 {v.brand}
                 {v.model}
@@ -151,7 +152,13 @@
   Desktop (md+): the original wide table. Wrapped so it never renders on
   mobile (saves the layout from horizontal-scrolling its way off-screen).
 -->
-<div class="hidden md:block overflow-x-auto">
+<!-- svelte-ignore a11y_no_noninteractive_tabindex (Native horizontal scrolling by keyboard.) -->
+<div
+  class="hidden md:block overflow-x-auto"
+  tabindex="0"
+  role="region"
+  aria-label="Viaturas — tabela com deslocamento horizontal"
+>
   <table class="crm-table w-full text-[13px]">
     <thead>
       <tr class="border-b border-[var(--color-border)]">
@@ -194,10 +201,11 @@
     <tbody>
       {#each items as v (v.id)}
         <tr
-          class="border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
+          use:linkedRow
+          class="linked-row border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
         >
           <td class="px-4 py-3">
-            <a href={crmPath(`/viaturas/${v.id}`)} class="flex items-center gap-3">
+            <a href={crmPath(`/viaturas/${v.id}`)} class="row-link flex items-center gap-3">
               <div
                 class="h-11 w-14 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0 overflow-hidden"
                 style="border-radius: 3px;"

@@ -458,7 +458,7 @@
     width: var(--orbit-frame);
     max-width: var(--orbit-frame-max);
     margin: auto;
-    padding: var(--orbit-space-half) 0 var(--orbit-space-section);
+    padding: var(--orbit-space-page-start) 0 var(--orbit-space-section);
   }
   * {
     box-sizing: border-box;
@@ -496,6 +496,10 @@
     cursor: default;
   }
   .eyebrow {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    line-height: 20px;
     font-size: var(--orbit-type-label);
     letter-spacing: 0.13em;
     color: var(--muted);

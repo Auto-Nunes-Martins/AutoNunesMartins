@@ -1,5 +1,7 @@
 <script lang="ts">
+  import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
+  import { activityHref as hrefFor } from '$lib/activityNavigation';
   import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
@@ -35,21 +37,6 @@
   }
 
   let { data }: Props = $props();
-
-  function hrefFor(row: { entityType: string; entityId: string }): string | null {
-    switch (row.entityType) {
-      case 'vehicle':
-        return crmPath(`/viaturas/${row.entityId}`);
-      case 'sale':
-        return crmPath(`/vendas/${row.entityId}`);
-      case 'customer':
-        return crmPath(`/clientes/${row.entityId}`);
-      case 'task':
-        return crmPath(`/tarefas/${row.entityId}/editar`);
-      default:
-        return null;
-    }
-  }
 
   function relativeTime(iso: string): string {
     const ms = Date.now() - new Date(iso).getTime();
@@ -276,9 +263,9 @@
           >
             De
           </label>
-          <input
+          <DateInput
             id="actv-from"
-            type="date"
+
             bind:value={from}
             onchange={applyFilters}
             class="w-full h-10 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -292,9 +279,9 @@
           >
             Até
           </label>
-          <input
+          <DateInput
             id="actv-to"
-            type="date"
+
             bind:value={to}
             onchange={applyFilters}
             class="w-full h-10 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"

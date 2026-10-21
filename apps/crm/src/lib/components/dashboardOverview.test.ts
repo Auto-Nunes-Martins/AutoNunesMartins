@@ -10,6 +10,8 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import * as format from '$lib/utils/format';
 import * as taskPresentation from '$lib/components/task/presentation';
+import { linkedRow } from '$lib/linkedRow';
+import { activityHref } from '$lib/activityNavigation';
 
 // Render the actual overview components. Icons are decorative; panel snippets
 // and all operational text/links are rendered by their real components.
@@ -29,6 +31,8 @@ function fromSource(source: string, file: string): any {
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
     else if (specifier === '$lib/utils/format') value = format;
     else if (specifier === '$lib/components/task/presentation') value = taskPresentation;
+    else if (specifier === '$lib/linkedRow') value = { linkedRow };
+    else if (specifier === '$lib/activityNavigation') value = { activityHref };
     // This text/navigation test stubs decorative event icons as above.
     else if (specifier === '$lib/activityPresentation')
       value = {

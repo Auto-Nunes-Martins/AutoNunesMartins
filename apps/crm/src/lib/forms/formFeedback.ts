@@ -3,7 +3,10 @@ export type FormFailure = { error?: string; field?: string | null; issues?: Issu
 
 type FeedbackState = { dirty: boolean; valid: boolean };
 type Options = { onstatechange?: (state: FeedbackState) => void };
-const forms = new Map<HTMLFormElement, { baseline: string; lastSnapshot: string; dirty: boolean } & Options>();
+const forms = new Map<
+  HTMLFormElement,
+  { baseline: string; lastSnapshot: string; dirty: boolean } & Options
+>();
 let nextErrorId = 0;
 
 function snapshot(form: HTMLFormElement) {
@@ -24,15 +27,23 @@ function notify(form: HTMLFormElement) {
   const state = forms.get(form);
   if (!state) return;
   state.dirty = snapshot(form) !== state.baseline;
-  const valid = [...form.elements].every(field =>
-    !(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)
-      || !field.willValidate || field.validity.valid,
+  const valid = [...form.elements].every(
+    (field) =>
+      !(
+        field instanceof HTMLInputElement ||
+        field instanceof HTMLSelectElement ||
+        field instanceof HTMLTextAreaElement
+      ) ||
+      !field.willValidate ||
+      field.validity.valid,
   );
   state.onstatechange?.({ dirty: state.dirty, valid });
 }
 
 /** Recheck programmatic changes, including photo inputs associated from outside the form. */
-export function refreshFormFeedback(form: HTMLFormElement) { notify(form); }
+export function refreshFormFeedback(form: HTMLFormElement) {
+  notify(form);
+}
 
 export function hasUnsavedForms() {
   return [...forms].some(([form, state]) => form.isConnected && snapshot(form) !== state.baseline);
@@ -66,8 +77,17 @@ function clearFieldError(field: HTMLElement) {
   delete field.dataset.formError;
 }
 
+function feedbackFields(form: HTMLFormElement): HTMLElement[] {
+  // Controls may be displayed in another panel while retaining their native form owner.
+  return [...new Set([...form.elements, ...form.querySelectorAll('[data-error-field]')])].filter(
+    (field): field is HTMLElement => field instanceof HTMLElement,
+  );
+}
+
 export function clearFormErrors(form: HTMLFormElement) {
-  form.querySelectorAll<HTMLElement>('[data-form-error]').forEach(clearFieldError);
+  feedbackFields(form)
+    .filter((field) => field.hasAttribute('data-form-error'))
+    .forEach(clearFieldError);
   form.querySelector('[data-form-error-summary]')?.remove();
 }
 
@@ -97,7 +117,7 @@ export function showFormErrors(form: HTMLFormElement, failure: FormFailure = {})
   for (const issue of issues) {
     const name = issue.path?.join('.');
     if (!name) continue;
-    const field = [...form.querySelectorAll<HTMLElement>('[name], [data-error-field]')].find(
+    const field = feedbackFields(form).find(
       (el) =>
         (el.dataset.errorField === name || el.getAttribute('name') === name) &&
         el.getAttribute('type') !== 'hidden',

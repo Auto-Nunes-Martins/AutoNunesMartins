@@ -206,7 +206,6 @@ export const routes = {
   '/tarefas/task-urgent/editar': 'tarefas/[id]/editar',
   '/atividade': 'atividade',
   '/site/destaques': 'site/destaques',
-  '/site/arquivo': 'site/arquivo',
   '/definicoes': 'definicoes',
   '/guia': 'guia',
 };
@@ -407,36 +406,6 @@ export function dataFor(url, tasks = initialTasks) {
             ? []
             : [{ ...vehicle, photos: [{ path: vehicle.photos[0], url: '/__fixture/photo' }] }],
         },
-      };
-      break;
-    case 'site/arquivo':
-      data = {
-        q: filters.q ?? '',
-        items: empty
-          ? []
-          : [
-              {
-                slug: vehicle.publicSlug,
-                brand: vehicle.brand,
-                model: vehicle.model,
-                year: vehicle.year,
-                identificationAllowed: true,
-                hasPhoto: true,
-                photoAllowed: true,
-                canAuthorize: true,
-              },
-              {
-                slug: 'outro-endereco-fixture',
-                brand: 'Peugeot',
-                model: '208',
-                year: 2021,
-                identificationAllowed: false,
-                hasPhoto: false,
-                photoAllowed: false,
-                canAuthorize: true,
-              },
-            ],
-        truncated: false,
       };
       break;
     case 'definicoes':

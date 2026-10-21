@@ -1,0 +1,86 @@
+/* Keep native form submission, validation and keyboard behavior, with the public site's quiet visual treatment. */
+select:not([multiple]):not([size]) {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b8b88' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-inline-end: 38px;
+  transition:
+    border-color 140ms,
+    background-color 140ms;
+}
+select:not([multiple]):not([size]):hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+@supports (appearance: base-select) {
+  select:not([multiple]):not([size]),
+  select:not([multiple]):not([size])::picker(select) {
+    appearance: base-select;
+  }
+  select:not([multiple]):not([size]) {
+    background-image: none;
+    padding-inline-end: 12px;
+    align-items: center;
+    gap: 10px;
+  }
+  select:not([multiple]):not([size])::picker-icon {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    color: var(--color-text-muted);
+    transition:
+      rotate 140ms,
+      color 140ms;
+  }
+  select:not([multiple]):not([size]):open::picker-icon {
+    rotate: 180deg;
+    color: var(--color-red);
+  }
+  select:not([multiple]):not([size])::picker(select) {
+    margin-block: 6px;
+    padding: 5px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 4px;
+    background: var(--color-bg-1);
+    color: var(--color-text);
+    box-shadow: 0 12px 28px #0003;
+    max-height: min(300px, 60dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  select:not([multiple]):not([size]) option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+    padding: 9px 11px;
+    border-radius: 2px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  select:not([multiple]):not([size]) option:is(:hover, :focus-visible) {
+    background: var(--color-interaction-hover);
+    box-shadow: inset 2px 0 var(--color-red);
+    outline: none;
+  }
+  select:not([multiple]):not([size]) option:checked {
+    font-weight: 600;
+  }
+  select:not([multiple]):not([size]) option::checkmark {
+    color: var(--color-red);
+    order: 1;
+    margin-inline-start: auto;
+  }
+  select:not([multiple]):not([size]) option:disabled {
+    color: var(--color-text-faint);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  select:not([multiple]):not([size]),
+  select:not([multiple]):not([size])::picker-icon {
+    transition: none;
+  }
+}

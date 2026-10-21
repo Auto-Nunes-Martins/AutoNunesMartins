@@ -35,26 +35,9 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 16px;
+  padding-top: var(--orbit-space-page-start);
 }
-.detail-top-actions > a {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  color: var(--muted);
-  font-size: 12px;
-  text-decoration: none;
-}
-.detail-top-actions > a:hover {
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-.detail-top-actions > a:focus-visible {
-  outline: 2px solid var(--red);
-  outline-offset: 3px;
-}
+
 .detail-top-actions .vehicle-share {
   text-align: right;
   max-width: 50%;
@@ -874,4 +857,8 @@
     font-size: 15px;
     overflow-wrap: anywhere;
   }
+}
+
+@media (max-width: 700px) {
+  .design.orbit.orbit-detail .detail-top-actions { padding-top: 32px; }
 }

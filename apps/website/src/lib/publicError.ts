@@ -4,10 +4,10 @@ export function publicErrorCopy(status: number, pathname: string) {
   if (status === 404)
     return vehicle
       ? {
-          title: 'Viatura não disponível',
-          heading: 'Esta viatura não está publicada.',
+          title: 'Viatura não encontrada',
+          heading: 'Não encontrámos esta viatura.',
           message:
-            'Pode ter sido retirada da seleção. Consulte as viaturas disponíveis ou volte ao início.',
+            'Não existe informação para este endereço. Consulte as viaturas disponíveis ou volte ao início.',
         }
       : {
           title: 'Página não encontrada',

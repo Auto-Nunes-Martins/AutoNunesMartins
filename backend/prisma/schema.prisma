@@ -70,33 +70,11 @@ model Vehicle {
   /// da venda X" so the dealer can follow consolidated profit across both
   /// deals. NULL for vehicles purchased the regular way.
   sourceTradeIn TradeIn? @relation("TradeInToVehicle")
-  publicArchives PublicVehicleArchive[]
 
   @@index([status])
   @@index([brand, model])
   @@index([acquisitionDate])
   @@index([webPublished, status])
-}
-
-/// Minimal, separately withdrawable proof of an actual publication. No expiry.
-/// The single small photo is an approved public derivative, independent of CRM deletion.
-model PublicVehicleArchive {
-  slug                  String   @id
-  originKey             String
-  vehicleId             String?
-  brand                 String
-  model                 String
-  year                  Int
-  identificationAllowed Boolean  @default(true)
-  photoAllowed          Boolean  @default(true)
-  photoSourcePath       String?
-  photoBytes            Bytes?   @db.ByteA
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
-
-  @@index([vehicleId])
-  @@index([originKey])
 }
 
 enum PublicTransmission {

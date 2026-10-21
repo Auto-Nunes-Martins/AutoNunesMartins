@@ -1,7 +1,7 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { activityHref as hrefFor } from '$lib/activityNavigation';
   import { onMount, onDestroy } from 'svelte';
-  import { goto } from '$app/navigation';
   import {
     Activity,
     ArrowRightLeft,
@@ -88,24 +88,8 @@
     return `${day}d`;
   }
 
-  function hrefFor(entityType: string, entityId: string): string | null {
-    switch (entityType) {
-      case 'vehicle':
-        return crmPath(`/viaturas/${entityId}`);
-      case 'sale':
-        return crmPath(`/vendas/${entityId}`);
-      case 'customer':
-        return crmPath(`/clientes/${entityId}`);
-      case 'task':
-        return crmPath(`/tarefas/${entityId}/editar`);
-      default:
-        return null;
-    }
-  }
-
-  function goAndClose(href: string) {
-    close();
-    void goto(href);
+  function closeOnNavigation(event: MouseEvent) {
+    if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) close();
   }
 
   onMount(() => {
@@ -227,9 +211,9 @@
             </div>
           {/if}
           {#if data.alerts.stockAged > 0}
-            <button
-              type="button"
-              onclick={() => goAndClose(crmPath('/viaturas?status=AVAILABLE'))}
+            <a
+              href={crmPath('/viaturas?status=AVAILABLE')}
+              onclick={closeOnNavigation}
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
@@ -238,12 +222,12 @@
               <span class="text-[12.5px] text-[var(--color-text)] flex-1">
                 {data.alerts.stockAged} viatura{data.alerts.stockAged === 1 ? '' : 's'} em stock +60 dias
               </span>
-            </button>
+            </a>
           {/if}
           {#if data.alerts.tasksDueOrOverdue > 0}
-            <button
-              type="button"
-              onclick={() => goAndClose(crmPath('/tarefas'))}
+            <a
+              href={crmPath('/tarefas')}
+              onclick={closeOnNavigation}
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
@@ -254,12 +238,12 @@
                   ? ''
                   : 's'} para hoje / em atraso
               </span>
-            </button>
+            </a>
           {/if}
           {#if data.alerts.remindersToday > 0}
-            <button
-              type="button"
-              onclick={() => goAndClose(crmPath('/tarefas'))}
+            <a
+              href={crmPath('/tarefas')}
+              onclick={closeOnNavigation}
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
@@ -269,15 +253,15 @@
                 {data.alerts.remindersToday} lembrete{data.alerts.remindersToday === 1 ? '' : 's'}
                 para hoje
               </span>
-            </button>
+            </a>
           {/if}
           {#if data.alerts.draftVehicles > 0}
             <!-- Rascunhos: mesmo padrão visual que os outros 3 alertas
                  (ícone+separador vermelho) para a sino manter coesão.
                  O destaque laranja vive na página destino (/viaturas). -->
-            <button
-              type="button"
-              onclick={() => goAndClose(crmPath('/viaturas'))}
+            <a
+              href={crmPath('/viaturas')}
+              onclick={closeOnNavigation}
               class="w-full flex items-center gap-2.5 px-2 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_6%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             >
@@ -287,7 +271,7 @@
                 {data.alerts.draftVehicles} viatura{data.alerts.draftVehicles === 1 ? '' : 's'} em rascunho
                 — preço por definir
               </span>
-            </button>
+            </a>
           {/if}
         </section>
 
@@ -307,14 +291,14 @@
           {:else}
             <ul class="divide-y divide-[var(--color-border)]">
               {#each data.recent as item (item.id)}
-                {@const href = hrefFor(item.entityType, item.entityId)}
+                {@const href = hrefFor(item)}
                 {@const s = styleForType(item.type)}
                 {@const Icon = s.icon}
                 <li>
                   {#if href}
-                    <button
-                      type="button"
-                      onclick={() => goAndClose(href)}
+                    <a
+                      {href}
+                      onclick={closeOnNavigation}
                       class="w-full flex items-start gap-2.5 px-4 py-2 text-left hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors"
                     >
                       <Icon class="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style="color: {s.color};" />
@@ -328,7 +312,7 @@
                       >
                         {item.message}
                       </span>
-                    </button>
+                    </a>
                   {:else}
                     <div class="flex items-start gap-2.5 px-4 py-2">
                       <Icon class="h-3.5 w-3.5 flex-shrink-0 mt-0.5" style="color: {s.color};" />
@@ -351,14 +335,14 @@
         </section>
 
         <footer class="border-t border-[var(--color-border)] p-3">
-          <button
-            type="button"
-            onclick={() => goAndClose(crmPath('/dashboard'))}
+          <a
+            href={crmPath('/dashboard')}
+            onclick={closeOnNavigation}
             class="w-full inline-flex items-center justify-center gap-2 h-9 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] hover:text-[var(--color-text)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] transition-colors"
             style="border-radius: var(--radius-btn);"
           >
             Ver dashboard completo →
-          </button>
+          </a>
         </footer>
       {/if}
     </div>

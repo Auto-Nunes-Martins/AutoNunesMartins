@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DateInput from '$lib/components/common/DateInput.svelte';
   import '$lib/styles/expenseCards.css';
   import { crmPath } from '$lib/paths';
   import { enhance } from '$app/forms';
@@ -81,9 +82,9 @@
   <!-- Per-vehicle profit analysis used to live here as a second tab; it now
        sits inside /vendas (single source of truth). This page is dedicated to
        operational expenses (rent, bills, services). -->
-  <Panel>
+  <Panel class="expense-layout">
     <PanelHeader icon={Wallet} title="Filtros" />
-    <div class="p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+    <div class="p-4 expense-filters">
       <label class="flex flex-col">
         <span
           class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
@@ -126,8 +127,8 @@
         >
           De
         </span>
-        <input
-          type="date"
+        <DateInput
+
           value={data.expensesFilters.dateFrom ?? ''}
           onchange={(e) => setParam('dateFrom', e.currentTarget.value || undefined)}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -140,8 +141,8 @@
         >
           Até
         </span>
-        <input
-          type="date"
+        <DateInput
+
           value={data.expensesFilters.dateTo ?? ''}
           onchange={(e) => setParam('dateTo', e.currentTarget.value || undefined)}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -157,7 +158,7 @@
     </div>
   </Panel>
 
-  <Panel>
+  <Panel class="expense-layout">
     <PanelHeader icon={Wallet} title="Despesas operacionais" meta="" />
 
     {#if showAdd}
@@ -180,7 +181,7 @@
             }
           };
         }}
-        class="border-b border-[var(--color-border)] p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end"
+        class="border-b border-[var(--color-border)] p-4 expense-fields"
       >
         <label class="flex flex-col">
           <span
@@ -199,7 +200,7 @@
             {/each}
           </select>
         </label>
-        <label class="flex flex-col md:col-span-2">
+        <label class="expense-description flex flex-col">
           <span
             class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
           >
@@ -237,16 +238,16 @@
           >
             Data
           </span>
-          <input
+          <DateInput
             name="date"
-            type="date"
+
             required
             value={todayISO}
             class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
             style="border-radius: var(--radius-btn);"
           />
         </label>
-        <div class="md:col-span-5 flex items-center justify-end gap-2">
+        <div class="expense-form-actions flex items-center justify-end gap-2">
           <Button variant="ghost" size="sm" onclick={() => (showAdd = false)}>Cancelar</Button>
           <Button variant="primary" size="sm" type="submit" loading={submitting}>Adicionar</Button>
         </div>
@@ -332,7 +333,7 @@
                             }
                           };
                         }}
-                        class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end"
+                        class="expense-fields"
                       >
                         <input type="hidden" name="expenseId" value={e.id} />
                         <label class="flex flex-col">
@@ -353,7 +354,7 @@
                             {/each}
                           </select>
                         </label>
-                        <label class="flex flex-col md:col-span-2">
+                        <label class="expense-description flex flex-col">
                           <span
                             class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
                           >
@@ -391,16 +392,16 @@
                           >
                             Data
                           </span>
-                          <input
+                          <DateInput
                             name="date"
-                            type="date"
+
                             required
                             value={e.date.slice(0, 10)}
                             class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
                             style="border-radius: var(--radius-btn);"
                           />
                         </label>
-                        <div class="md:col-span-5 flex justify-end gap-2">
+                        <div class="expense-form-actions flex justify-end gap-2">
                           <button
                             type="button"
                             onclick={cancelEdit}

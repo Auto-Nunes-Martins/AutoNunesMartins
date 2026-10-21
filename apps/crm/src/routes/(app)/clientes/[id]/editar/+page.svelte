@@ -30,7 +30,7 @@
   <title>Editar {c.name} · Auto Nunes Martins</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="crm-form-page pt-8 pb-12 space-y-6">
   <div>
     <ItalicHero text="Editar " accent={c.name} size="lg" />
     <p

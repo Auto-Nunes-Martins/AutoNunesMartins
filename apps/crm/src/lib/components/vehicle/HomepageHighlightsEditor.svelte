@@ -189,6 +189,7 @@
     <div class="catalogue">
       <label class="search"
         ><Search size={16} /><input
+          type="search"
           aria-label="Pesquisar viaturas publicadas"
           placeholder="Marca, modelo ou ano"
           bind:value={query}

@@ -1,0 +1,21 @@
+/* Only rows with a real detail link opt in; expense/edit-only rows keep the default cursor. */
+.linked-row {
+  cursor: pointer;
+}
+.linked-row:has(.row-link:focus-visible) {
+  outline: 2px solid var(--color-info);
+  outline-offset: -2px;
+}
+.crm-table .linked-row .num-value {
+  white-space: nowrap;
+}
+.crm-table .linked-row .contact-link {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 24px;
+}
+.crm-table .linked-row .contact-link:hover {
+  color: var(--color-info);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

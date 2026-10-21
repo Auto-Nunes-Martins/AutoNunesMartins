@@ -33,7 +33,7 @@
   <title>Editar {t.title} · Auto Nunes Martins</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="crm-form-page pt-8 pb-12 space-y-6">
   <div>
     <ItalicHero text="Editar " accent={t.title} size="md" />
     {#if t.recurrenceParentId}

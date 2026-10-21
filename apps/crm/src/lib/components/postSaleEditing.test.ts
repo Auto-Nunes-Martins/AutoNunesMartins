@@ -21,7 +21,13 @@ function component(source: string, imports: Record<string, unknown> = {}) {
 }
 const source = (file: string) => readFileSync(new URL(file, import.meta.url), 'utf8');
 const Button = component(source('./common/Button.svelte'));
-const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button });
+const DateIcon = component('<svg></svg>');
+const DateInput = component(source('./common/DateInput.svelte'), {
+  CalendarDays: DateIcon,
+  ChevronLeft: DateIcon,
+  ChevronRight: DateIcon,
+});
+const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button, DateInput });
 const Empty = component('<span></span>');
 const Panel = component('<script>let {children} = $props();</script>{@render children?.()}');
 const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page.svelte'), {
@@ -29,8 +35,11 @@ const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page
   Panel,
   ItalicHero: Empty,
   PhotoGallery: Empty,
-  WebPublicationPanel: component('<script>let {vehicleDetails}=$props();</script>{@render vehicleDetails?.()}'),
+  WebPublicationPanel: component(
+    '<script>let {vehicleDetails}=$props();</script>{@render vehicleDetails?.()}',
+  ),
   Trash2: Empty,
+  VehicleDeletePanel: Empty,
   untrack: (fn: () => unknown) => fn(),
   onMount: () => {},
 });

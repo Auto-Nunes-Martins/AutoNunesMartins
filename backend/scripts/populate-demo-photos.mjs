@@ -31,7 +31,7 @@ const cachePath = value => {
   if (!path.replaceAll('\\', '/').startsWith(root)) throw Error('Backup/report must remain in ignored .cache/.');
   return path;
 };
-const counts = async db => ({ sales: await db.sale.count(), customers: await db.customer.count(), expenses: await db.vehicleExpense.count(), archives: await db.publicVehicleArchive.count() });
+const counts = async db => ({ sales: await db.sale.count(), customers: await db.customer.count(), expenses: await db.vehicleExpense.count() });
 const db = new PrismaClient();
 const uploaded = [];
 let committed = false;

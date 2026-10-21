@@ -55,6 +55,11 @@
       "types": "./src/nif.ts",
       "anm-runtime": "./dist/nif.js",
       "default": "./src/nif.ts"
+    },
+    "./richDescription": {
+      "types": "./src/richDescription.ts",
+      "anm-runtime": "./dist/richDescription.js",
+      "default": "./src/richDescription.ts"
     }
   },
   "scripts": {
@@ -66,6 +71,7 @@
     "build:runtime": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "htmlparser2": "^12.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

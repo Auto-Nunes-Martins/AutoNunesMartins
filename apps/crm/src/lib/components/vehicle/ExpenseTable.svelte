@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DateInput from '$lib/components/common/DateInput.svelte';
   import '$lib/styles/expenseCards.css';
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
@@ -50,7 +51,7 @@
 </script>
 
 <section
-  class="overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-1)]"
+  class="expense-layout overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-1)]"
   style="border-radius: var(--radius-card);"
 >
   <PanelHeader icon={Wallet} title="Despesas" meta={`${expenses.length} REGISTOS`}>
@@ -93,7 +94,7 @@
           await update({ reset: false });
         };
       }}
-      class="border-b border-[var(--color-border)] p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end"
+      class="border-b border-[var(--color-border)] p-4 expense-fields"
     >
       <label class="flex flex-col">
         <span
@@ -112,7 +113,7 @@
           {/each}
         </select>
       </label>
-      <label class="flex flex-col md:col-span-2">
+      <label class="expense-description flex flex-col">
         <span
           class="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
         >
@@ -150,10 +151,10 @@
         >
           Data
         </span>
-        <input
+        <DateInput
           name="date"
           required
-          type="date"
+
           value={today}
           class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
           style="border-radius: var(--radius-btn);"
@@ -161,7 +162,7 @@
       </label>
       {#if isSoldLike}
         <label
-          class="md:col-span-4 inline-flex items-center gap-2 text-[12px] text-[var(--color-warning)]"
+          class="expense-confirm inline-flex items-center gap-2 text-[12px] text-[var(--color-warning)]"
         >
           <input
             type="checkbox"
@@ -172,7 +173,7 @@
           Esta viatura já está vendida — confirmo a alteração e que o lucro será recalculado.
         </label>
       {/if}
-      <div class="md:col-span-1 flex justify-end gap-2">
+      <div class="expense-form-actions flex justify-end gap-2">
         <Button variant="ghost" size="sm" onclick={() => (showForm = false)}>Cancelar</Button>
         <Button variant="primary" size="sm" type="submit" loading={submitting}>Adicionar</Button>
       </div>
@@ -255,7 +256,7 @@
                         await update({ reset: false });
                       };
                     }}
-                    class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end"
+                    class="expense-fields"
                   >
                     <input type="hidden" name="expenseId" value={e.id} />
                     <label class="flex flex-col">
@@ -276,7 +277,7 @@
                         {/each}
                       </select>
                     </label>
-                    <label class="flex flex-col md:col-span-2">
+                    <label class="expense-description flex flex-col">
                       <span
                         class="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
                       >
@@ -314,10 +315,10 @@
                       >
                         Data
                       </span>
-                      <input
+                      <DateInput
                         name="date"
                         required
-                        type="date"
+
                         value={e.date.slice(0, 10)}
                         class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
                         style="border-radius: var(--radius-btn);"
@@ -326,7 +327,7 @@
 
                     {#if isSoldLike}
                       <label
-                        class="md:col-span-4 inline-flex items-center gap-2 text-[12px] text-[var(--color-warning)]"
+                        class="expense-confirm inline-flex items-center gap-2 text-[12px] text-[var(--color-warning)]"
                       >
                         <input
                           type="checkbox"
@@ -338,7 +339,7 @@
                       </label>
                     {/if}
 
-                    <div class="md:col-span-1 flex justify-end gap-2">
+                    <div class="expense-form-actions flex justify-end gap-2">
                       <button
                         type="button"
                         onclick={cancelEdit}

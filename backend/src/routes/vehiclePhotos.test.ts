@@ -15,7 +15,6 @@ const mocks = vi.hoisted(() => ({
   logger: { error: vi.fn() },
 }));
 vi.mock('../db.js', () => ({ prisma: mocks }));
-vi.mock('../lib/server/publicArchive.js', () => ({ revokeArchivePhotos: vi.fn() }));
 vi.mock('../logger.js', () => ({ logger: mocks.logger }));
 vi.mock('../middleware/clerk.js', () => ({
   requireUser: (_req: unknown, _res: unknown, next: () => void) => next(),
@@ -57,7 +56,7 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.$transaction.mockImplementation(async work => work(mocks));
+  mocks.$transaction.mockImplementation(async (work) => work(mocks));
   rows.clear();
   publicRows.clear();
   rows.set(id, [a, b]);
@@ -247,16 +246,35 @@ const remove = (photo: string) =>
   });
 
 describe('photo HTTP contract and storage boundary', () => {
-  it.each([2, 20])('prepares a private edit upload without associating/approving it, even with %i existing photos', async count => {
-    const previous = Array.from({ length: count }, (_, index) => `${id}/existing-${index}.jpg`);
-    rows.set(id, previous);
-    const input = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } }).jpeg().toBuffer();
-    const response = await fetch(base, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-edit-stage': 'true', 'x-upload-id': '12345678-1234-4234-8234-123456789abc' }, body: input });
-    expect(response.status).toBe(201);
-    expect(await response.json()).toMatchObject({ path: `${id}/12345678-1234-4234-8234-123456789abc.jpg`, staged: true });
-    expect(rows.get(id)).toEqual(previous); expect(publicRows.get(id)).toEqual([a, b]);
-    expect(mocks.vehicle.updateMany).not.toHaveBeenCalled();
-  });
+  it.each([2, 20])(
+    'prepares a private edit upload without associating/approving it, even with %i existing photos',
+    async (count) => {
+      const previous = Array.from({ length: count }, (_, index) => `${id}/existing-${index}.jpg`);
+      rows.set(id, previous);
+      const input = await sharp({
+        create: { width: 30, height: 20, channels: 3, background: 'red' },
+      })
+        .jpeg()
+        .toBuffer();
+      const response = await fetch(base, {
+        method: 'POST',
+        headers: {
+          'content-type': 'image/jpeg',
+          'x-edit-stage': 'true',
+          'x-upload-id': '12345678-1234-4234-8234-123456789abc',
+        },
+        body: input,
+      });
+      expect(response.status).toBe(201);
+      expect(await response.json()).toMatchObject({
+        path: `${id}/12345678-1234-4234-8234-123456789abc.jpg`,
+        staged: true,
+      });
+      expect(rows.get(id)).toEqual(previous);
+      expect(publicRows.get(id)).toEqual([a, b]);
+      expect(mocks.vehicle.updateMany).not.toHaveBeenCalled();
+    },
+  );
   it('rejects legacy path persistence and signed URLs so the pipeline cannot be bypassed', async () => {
     expect((await post({ path: c })).status).toBe(415);
     expect(
@@ -324,14 +342,12 @@ describe('photo HTTP contract and storage boundary', () => {
     expect(rows.get(id)).toEqual([c, a, b]);
   });
   it('never writes storage if an optimizer result exceeds the 2 MB cap', async () => {
-    const spy = vi
-      .spyOn(optimization, 'optimizePhoto')
-      .mockResolvedValueOnce({
-        buffer: Buffer.alloc(2_000_001),
-        contentType: 'image/webp',
-        extension: 'webp',
-        optimized: true,
-      });
+    const spy = vi.spyOn(optimization, 'optimizePhoto').mockResolvedValueOnce({
+      buffer: Buffer.alloc(2_000_001),
+      contentType: 'image/webp',
+      extension: 'webp',
+      optimized: true,
+    });
     try {
       expect((await upload(Buffer.from('fixture'))).status).toBe(422);
       expect(mocks.upload).not.toHaveBeenCalled();
