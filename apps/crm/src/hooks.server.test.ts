@@ -35,6 +35,7 @@ describe('CRM prefix and server security', () => {
   it('prefixes links, assets, actions and strips only the exact base boundary', () => {
     for (const path of [
       '/dashboard',
+      '/a-entrar',
       '/viaturas/car/photos',
       '/logo-transparent.png',
       '/api/users',
@@ -46,7 +47,12 @@ describe('CRM prefix and server security', () => {
     expect(() => crmPath('//evil.test')).toThrow();
   });
   it('guards private endpoints as well as pages without invoking resolve', async () => {
-    for (const path of ['/crm/dashboard', '/crm/api/users', '/crm/tarefas/a/status']) {
+    for (const path of [
+      '/crm/dashboard',
+      '/crm/a-entrar',
+      '/crm/api/users',
+      '/crm/tarefas/a/status',
+    ]) {
       const result = await invoke(path);
       expect(result.status).toBe(303);
       expect(result.headers.get('location')).toBe('/crm/');
@@ -57,6 +63,7 @@ describe('CRM prefix and server security', () => {
   });
   it('permits authenticated invited users and rejects cross-origin actions', async () => {
     expect((await invoke('/crm/dashboard', 'user_admin')).status).toBe(200);
+    expect((await invoke('/crm/a-entrar', 'user_admin')).status).toBe(200);
     expect((await invoke('/crm/dashboard', 'user_other')).status).toBe(200);
     expect((await invoke('/crm/api/users', 'user_other')).status).toBe(200);
     expect((await invoke('/crm/api/tasks', 'user_admin', 'POST', 'https://evil.test')).status).toBe(
