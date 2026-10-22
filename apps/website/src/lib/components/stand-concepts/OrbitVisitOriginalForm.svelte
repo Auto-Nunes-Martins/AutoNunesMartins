@@ -57,7 +57,7 @@
     padding: clamp(24px, 2vw, 32px);
     border: 1px solid #ffffff30;
     border-radius: 8px;
-    background: #101913c9;
+    background: var(--visit-form-panel, #101913c9);
     backdrop-filter: blur(12px);
     color: #f5f5f1;
   }
@@ -87,7 +87,7 @@
     min-width: 0;
     border: 1px solid #ffffff38;
     border-radius: 4px;
-    background: #ffffff09;
+    background: var(--visit-field, #ffffff09);
     color: #f5f5f1;
     padding: 12px 14px;
     font: inherit;
@@ -95,15 +95,15 @@
     line-height: 1.5;
   }
   input::placeholder, textarea::placeholder { color: #b7c1b9; opacity: 1; }
-  option { background: #17221b; color: #f5f5f1; }
+  option { background: var(--visit-option, #17221b); color: #f5f5f1; }
   textarea { resize: vertical; min-height: 96px; }
   button:focus-visible { outline: 2px solid #f5f5f1; outline-offset: 3px; }
   @media (hover: hover) {
-    :is(input, select, textarea):hover { background: #ffffff13; border-color: #ffffff70; box-shadow: 0 0 12px #ffffff08; }
+    :is(input, select, textarea):hover { background: var(--visit-field-hover, #ffffff13); border-color: #ffffff70; box-shadow: 0 0 12px #ffffff08; }
     .button.primary:hover { background: #e9ede8; border-color: #e9ede8; }
   }
   :is(input, select, textarea):focus {
-    background: #ffffff16;
+    background: var(--visit-field-focus, #ffffff16);
     border-color: #f5f5f1;
     box-shadow: inset 0 0 0 .35px #f5f5f1;
     outline: none;

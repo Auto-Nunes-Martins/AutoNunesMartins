@@ -1,12 +1,14 @@
 <script lang="ts">
   import OrbitVisitStudio from './OrbitVisitStudio.svelte';
   import OrbitCompactFooter from './OrbitCompactFooter.svelte';
+  import type { SceneBackground } from './homeVisualFamilies';
 
-  let { onContact }: { onContact: () => void } = $props();
+  let { onContact, background }: { onContact: () => void; background?: SceneBackground } = $props();
 </script>
 
 <OrbitVisitStudio
   id="contactos"
+  {background}
   backgroundTone="original"
   formTreatment="original"
   formDivider

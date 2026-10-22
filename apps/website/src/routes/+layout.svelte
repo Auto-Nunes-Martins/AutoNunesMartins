@@ -1,5 +1,6 @@
 <script lang="ts">
   import '../app.css';
+  import NavigationProgress from '../../../../shared/ui/NavigationProgress.svelte';
   import WebsiteIconHead from '$lib/components/WebsiteIconHead.svelte';
   import WhatsAppContact from '$lib/components/WhatsAppContact.svelte';
   import { onMount, setContext, tick } from 'svelte';
@@ -51,6 +52,7 @@
 </script>
 
 <WebsiteIconHead />
+<NavigationProgress />
 {@render children()}
 <WhatsAppContact />
 <NotificationHost />

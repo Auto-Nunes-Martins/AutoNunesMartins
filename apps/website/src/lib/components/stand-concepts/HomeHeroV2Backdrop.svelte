@@ -114,6 +114,26 @@
 </div>
 
 <style>
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      :global(.hero-v2 .v2-orbit-intro) {
+        view-timeline-name: --v2-backdrop-depth;
+        view-timeline-axis: block;
+      }
+      .v2-studio-light, .v2-light-plane, .v2-photo-ground {
+        animation: v2-background-depth 1s linear both;
+        animation-timeline: --v2-backdrop-depth;
+        animation-range: exit 0% exit 100%;
+      }
+      .v2-studio-light { --v2-depth-distance: 140px; }
+      .v2-light-plane { --v2-depth-distance: 200px; }
+      .v2-photo-ground { --v2-depth-distance: 90px; }
+    }
+  }
+  @keyframes v2-background-depth {
+    from { translate: 0 0; }
+    to { translate: 0 var(--v2-depth-distance); }
+  }
   .v2-stage-backdrop {
     position: absolute;
     inset: 0;

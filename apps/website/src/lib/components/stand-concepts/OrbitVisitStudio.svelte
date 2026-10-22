@@ -10,6 +10,9 @@
   import OrbitVisitOriginalForm from './OrbitVisitOriginalForm.svelte';
   import FormSelectField from './FormSelectField.svelte';
   import OrbitVisitLabel from './OrbitVisitLabel.svelte';
+  import ScenePhotograph from './ScenePhotograph.svelte';
+  import VisitMapArtwork from './VisitMapArtwork.svelte';
+  import type { SceneBackground } from './homeVisualFamilies';
 
   let {
     id = 'contactos-proposta',
@@ -28,6 +31,7 @@
     formIntro = 'Uma pergunta é um bom começo.',
     mapArtwork = 'studio',
     harmonizedTypography = false,
+    background,
   }: {
     id?: string;
     contact?: StandContact;
@@ -45,6 +49,7 @@
     formIntro?: string;
     mapArtwork?: 'studio' | 'original';
     harmonizedTypography?: boolean;
+    background?: SceneBackground;
   } = $props();
   let section: HTMLElement;
   let useReferenceTone = $state(true);
@@ -81,7 +86,7 @@
 </script>
 
 <section
-  class="visit-studio"
+  class="visit-studio landscape-window"
   bind:this={section}
   class:original-tone={backgroundTone === 'original'}
   class:reference-tone={backgroundReferenceId && (!compareBackgroundTones || useReferenceTone)}
@@ -90,18 +95,24 @@
   class:has-form-divider={formDivider}
   class:borderless-panels={borderlessPanels}
   class:harmonized-type={harmonizedTypography}
+  class:family-theme={!!background?.theme}
+  style={background?.theme ? Object.entries(background.theme).map(([key, value]) => `--visit-${key}:${value}`).join(';') : undefined}
   {id}
   aria-labelledby={`${id}-heading`}
 >
-  <img
-    class="studio-photo"
-    src={photo('photo-1576212767334-9e289e294c77', backgroundTone === 'original' ? 2200 : 1280)}
-    srcset={responsivePhoto('photo-1576212767334-9e289e294c77')}
-    sizes="100vw"
-    alt=""
-    loading="lazy"
-    decoding="async"
-  />
+  <div class="studio-landscape" aria-hidden="true">
+    {#if background}<ScenePhotograph {background} />{:else}
+    <img
+      class="studio-photo"
+      src={photo('photo-1576212767334-9e289e294c77', backgroundTone === 'original' ? 2200 : 1280)}
+      srcset={responsivePhoto('photo-1576212767334-9e289e294c77')}
+      sizes="(prefers-reduced-motion: reduce) 100vw, (max-aspect-ratio: 3/2) 150vh, 100vw"
+      alt=""
+      loading="lazy"
+      decoding="async"
+    />
+    {/if}
+  </div>
   <div class="studio-inner">
     <div class="visit-copy">
       <div class="heading-line">
@@ -126,6 +137,7 @@
 
       <div class="location" class:original-map={mapArtwork === 'original'}>
         {#if mapArtwork === 'original'}
+          {#if background?.theme}<span class="location-map" aria-hidden="true"><VisitMapArtwork {id} /></span>{:else}
           <img
             class="location-map"
             src={locationMap}
@@ -135,6 +147,7 @@
             loading="lazy"
             decoding="async"
           />
+          {/if}
         {:else}
           <svg
             class="location-map"
@@ -351,6 +364,17 @@
 </section>
 
 <style>
+  .visit-studio.landscape-window {
+    /* Keep the reserved border geometry without a bright rule at the photo edge. */
+    border-block-color: transparent;
+  }
+  .studio-landscape {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    isolation: isolate;
+  }
+
   .visit-studio,
   .visit-studio * {
     box-sizing: border-box;
@@ -383,7 +407,7 @@
   .borderless-panels :global(.inline-contact) {
     border-color: transparent;
   }
-  .visit-studio::before {
+  .studio-landscape::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -399,13 +423,12 @@
     object-position: center 58%;
     filter: saturate(0.45);
   }
-  .original-tone::before {
+  .original-tone .studio-landscape::before {
     background:
       linear-gradient(90deg, #101114a6 0%, #10111480 48%, #10111433 100%),
       linear-gradient(0deg, #0c0c0e99, #0c0c0e0d 75%);
   }
-  .original-tone.reference-tone .studio-photo,
-  .original-tone.reference-tone::before {
+  .original-tone.reference-tone .studio-landscape {
     bottom: auto;
     height: max(100%, var(--reference-background-height, 100%));
   }
@@ -1093,7 +1116,7 @@
     .original-tone .studio-photo {
       object-position: 62% center;
     }
-    .original-tone::before {
+    .original-tone .studio-landscape::before {
       background:
         linear-gradient(90deg, #101114a6, #10111473), linear-gradient(0deg, #0c0c0e99, transparent);
     }
@@ -1276,5 +1299,10 @@
         border-color 300ms ease,
         color 180ms ease;
     }
+  }
+  /* Only the map surface changes; all neutral text/actions remain original. */
+  .family-theme .location.original-map { background: var(--visit-map-surface); }
+  .family-theme .location.original-map::before {
+    background: linear-gradient(90deg, var(--visit-map-surface) 0%, color-mix(in srgb, var(--visit-map-surface) 90%, transparent) 44%, color-mix(in srgb, var(--visit-map-surface) 22%, transparent) 100%);
   }
 </style>

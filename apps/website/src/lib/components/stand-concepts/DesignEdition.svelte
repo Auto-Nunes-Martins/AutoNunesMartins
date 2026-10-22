@@ -25,7 +25,9 @@
   import { publicErrorCopy } from '$lib/publicError';
   import type { UnavailableVehicle } from '$lib/unavailableVehicle';
   import type { PublicHighlights } from '$lib/homepageHighlights';
-  import HomeHeroV1 from './HomeHeroV1.svelte';
+  import HomeHeroDirections from './HomeHeroDirections.svelte';
+  import { heroDirections } from './homeHeroDirections';
+  import { homeVisualFamilies } from './homeVisualFamilies';
   import HomeHeroV2 from './HomeHeroV2.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { submitContact } from '$lib/contactRequest';
@@ -87,10 +89,12 @@
   import VehicleSpecIcon from '../VehicleSpecIcon.svelte';
   import GalleryContactSlide from '../GalleryContactSlide.svelte';
   import CabinReveal from './CabinReveal.svelte';
-  import OrbitTrust from './OrbitTrust.svelte';
+  import ServiceBannerProposals from './ServiceBannerProposals.svelte';
   import OrbitStats from './OrbitStats.svelte';
   import PublicStockBrands from './PublicStockBrands.svelte';
   import type { PublicBrandDirectory } from '$lib/catalogBrandLinks';
+  import HomeChoiceGuide from './HomeChoiceGuide.svelte';
+  import HomeNextSteps from './HomeNextSteps.svelte';
   import OrbitEditorialPause from './OrbitEditorialPause.svelte';
   import OrbitRedDot from './OrbitRedDot.svelte';
   import VisitInvitation from './VisitInvitation.svelte';
@@ -172,7 +176,7 @@
     stock?: PublicStock;
     brandDirectory?: PublicBrandDirectory;
     publicVehicle?: PublicVehicle;
-    relatedVehicles?: PublicVehicle[];
+    relatedVehicles?: PublicVehicle[] | Promise<PublicVehicle[]>;
     errorStatus?: number;
     unavailableVehicle?: UnavailableVehicle;
     homeHighlights?: PublicHighlights;
@@ -231,7 +235,7 @@
   );
   const suggestions = $derived(
     publicVehicle
-      ? relatedVehicles.map((item) => ({
+      ? (Array.isArray(relatedVehicles) ? relatedVehicles : []).map((item) => ({
           id: item.slug,
           brand: item.brand,
           model: item.model,
@@ -300,7 +304,15 @@
   $effect(() => {
     if (publicVehicle && zoom > Math.max(0, galleryCount - 1)) zoom = 0;
   });
-  let heroVersion = $state(1);
+  function initialHeroVersion() {
+    const requested = import.meta.env.DEV ? Number($page.url.searchParams.get('hero')) : 5;
+    return heroDirections.some((direction) => direction.id === requested) ? requested : 5;
+  }
+  const availableHeroDirections = import.meta.env.DEV
+    ? heroDirections
+    : heroDirections.filter(({ id }) => id === 5 || id === 2);
+  let heroVersion = $state(initialHeroVersion());
+  const homeVisualFamily = $derived($page.url.pathname === '/' ? homeVisualFamilies[heroVersion] : undefined);
   const equipmentItems = [
     {
       question: 'Conforto',
@@ -1052,17 +1064,25 @@
           </section>
         {/if}
       </section>
-      {#if suggestions.length}<section class="related">
+      {#if publicVehicle}<section class="related">
+        <p class="kicker">PREÇOS PRÓXIMOS DO SEU</p>
+        <h2>Continue a explorar.</h2>
+        {#await relatedVehicles}
+          <div class="related-grid" role="status" aria-label="A consultar sugestões atuais">
+            {#each [0, 1, 2] as index}{@render vehicleCard(null, index, false)}{/each}
+          </div>
+        {:then vehicles}
+          {#if vehicles.length}
+            {#key publicVehicle.slug}<RelatedCarousel {vehicles} card={vehicleCard} />{/key}
+          {:else}<p><a href="/viaturas">Explorar todas as viaturas</a></p>{/if}
+        {:catch}<p><a href="/viaturas">Consultar sugestões no catálogo</a></p>{/await}
+      </section>
+      {:else if suggestions.length}<section class="related">
           <p class="kicker">
             {publicVehicle ? 'PREÇOS PRÓXIMOS DO SEU' : 'PREÇOS PRÓXIMOS · DEMONSTRAÇÃO'}
           </p>
           <h2>Continue a explorar.</h2>
-          {#if publicVehicle}
-            {#key publicVehicle.slug}<RelatedCarousel
-                vehicles={relatedVehicles}
-                card={vehicleCard}
-              />{/key}
-          {:else}<div class="related-grid">
+          <div class="related-grid">
               {#each suggestions as item}<a href={publicVehicle ? publicHref(item.id) : '/viaturas'}
                   ><div class="related-image">
                     <img
@@ -1079,7 +1099,7 @@
                     <strong class="related-price">{publicPrice(item.price)}</strong>
                   </div></a
                 >{/each}
-            </div>{/if}
+            </div>
         </section>{/if}
     </main>
   {:else}
@@ -1092,25 +1112,24 @@
             standContact.hours.length > 0}
         />
       {:else}
-        <HomeHeroV1 {homeHighlights} />
+        {#key heroVersion}<HomeHeroDirections version={heroVersion} {homeHighlights} />{/key}
       {/if}
 
-      {#if import.meta.env.DEV}<div
+      <div
           class="hero-versions"
           role="group"
           aria-label="Escolher composição do hero"
         >
-          {#each [1, 2] as version}
+          {#each availableHeroDirections as { id: version, name }}
             <button
               type="button"
               aria-label={`Versão ${version} do hero`}
               aria-pressed={heroVersion === version}
-              title={['Original com fotografia panorâmica', 'Original'][version - 1]}
+              title={name}
               onclick={() => (heroVersion = version)}>{version}</button
             >
           {/each}
         </div>
-      {/if}
       <OrbitStats />
 
       <section class="showroom" id="selecao">
@@ -1179,7 +1198,7 @@
                   }}>Limpar filtros <ArrowUpRight size={17} aria-hidden="true" /></button
                 >
               </div>{/if}
-            <DiscoverVehicles />
+            <DiscoverVehicles background={homeVisualFamily?.catalog} />
           </div>
         </div>
       </section>
@@ -1208,14 +1227,17 @@
       </section>
 
       <CabinReveal />
-      <OrbitPerspective />
-      <OrbitTrust />
-      <OrbitReviews />
-      <OrbitEditorialPause onContact={contact} />
+      <ServiceBannerProposals onContact={contact} />
+      <OrbitPerspective grouped lead="A escolha certa" middle="começa por" highlight="fazer sentido." />
+      <div class="home-choice-group">
+        <HomeNextSteps />
+        <OrbitReviews />
+      </div>
+      <OrbitEditorialPause onContact={contact} background={homeVisualFamily?.pause} />
     </main>
   {/if}
 
-  {#if !favorites && !compare && !about && !catalog && !privacy && !errorStatus}<section
+  {#if $page.url.pathname !== '/' && !favorites && !compare && !about && !catalog && !privacy && !errorStatus}<section
       class="services"
       aria-labelledby="services-title"
     >
@@ -1242,6 +1264,9 @@
     <!-- The shared contact/footer follows the content without duplicating the homepage FAQ. -->
   {:else if !id}
     <VisitInvitation onContact={contact} logoSrc={logoLight} />
+    {#if $page.url.pathname === '/'}
+      <div class="home-choice-after-visit"><HomeChoiceGuide /></div>
+    {/if}
     <OrbitFaq />
   {:else}
     <OrbitFaq
@@ -1267,7 +1292,7 @@
     />
   {/if}
 
-  <OrbitPageEnding onContact={() => contact()} />
+  <OrbitPageEnding onContact={() => contact()} background={homeVisualFamily?.visit} />
 
   <dialog
     bind:this={contactDialog}
@@ -1412,12 +1437,15 @@
   </dialog>
 </div>
 
-{#snippet vehicleCard(vehicle: CatalogCar | PublicCard, index: number, animate: boolean = true)}
+{#snippet vehicleCard(vehicle: CatalogCar | PublicCard | null, index: number, animate: boolean = true)}
   <article
     class="vehicle-card"
-    class:public-card={'approved' in vehicle}
-    use:conditionalEntrance={animate ? (index % 2) * 110 : false}
+    class:public-card={!!vehicle && 'approved' in vehicle}
+    class:pending-card={!vehicle}
+    aria-hidden={!vehicle ? 'true' : undefined}
+    use:conditionalEntrance={vehicle && animate ? (index % 2) * 110 : false}
   >
+    {#if vehicle}
     <div class="card-photo">
       <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
         ><img
@@ -1484,10 +1512,48 @@
         ><span><Fuel size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.fuel}</span>
       </div>
     </div>
+    {:else}
+      <div class="card-photo"><div class="card-image"></div></div>
+      <div class="card-body">
+        <div class="card-info"><div><h3 class="pending-line">A carregar viatura</h3><span class="card-version pending-line">&nbsp;</span></div></div>
+        <div class="card-price"><strong class="pending-line">&nbsp;</strong></div>
+        <div class="card-specs"><span class="pending-line">&nbsp;</span></div>
+      </div>
+    {/if}
   </article>
 {/snippet}
 
 <style>
+  .design.orbit-home main :global(.home-services + .orbit-perspective) {
+    margin-top: 0;
+  }
+  .home-choice-group {
+    padding-top: var(--orbit-space-section, 86px);
+  }
+  .home-choice-group :global(.next-steps) {
+    padding-top: 0;
+    margin-block: var(--orbit-space-half, 40px);
+    margin-bottom: calc(var(--orbit-space-half, 40px) * 2.5);
+  }
+  .home-choice-group + :global(.editorial-pause) {
+    margin-top: var(--orbit-space-section, 86px);
+  }
+  .home-choice-after-visit {
+    padding-top: var(--orbit-space-half, 40px);
+    padding-bottom: var(--orbit-space-section, 86px);
+  }
+  @media (min-width: 701px) {
+    .home-choice-after-visit {
+      /* Account for the invitation's trailing pad without making the pause too long. */
+      padding-top: calc(clamp(16px, 2vw, 32px) + var(--orbit-space-section, 86px));
+    }
+  }
+  .home-choice-group :global(.reviews) {
+    padding-top: calc(var(--orbit-space-half, 40px) * 1.5);
+    padding-bottom: 0;
+  }
+  .pending-line { display: block; min-width: 100px; color: transparent; background: var(--surface); border-radius: 3px; }
+  .pending-card .card-image { background: var(--surface); }
   .vehicle-description {
     grid-column: 1;
     min-width: 0;
@@ -2429,6 +2495,8 @@
     border-radius: 5px;
   }
   .vehicle-photo > img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;

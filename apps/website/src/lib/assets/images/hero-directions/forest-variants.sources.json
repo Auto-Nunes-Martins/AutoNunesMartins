@@ -1,0 +1,367 @@
+{
+  "date": "2026-10-22",
+  "purpose": "Decorative scenery; not the stand location or vehicle sale photographs.",
+  "license": "https://www.pexels.com/license/",
+  "processing": "WebP quality 93 with smartSubsample; native source pixels only; responsive resizing and portrait crops, no AI edits, no enlargement, no sharpening.",
+  "variants": [
+    {
+      "id": 3,
+      "key": "pine-bends",
+      "name": "Pinhal em curvas",
+      "photo": "33991308",
+      "author": "Stan Versluis",
+      "page": "aerial-view-of-winding-road-through-forest",
+      "focus": "50% 65%",
+      "mobileFocus": "50% 50%",
+      "cropX": 0.3,
+      "width": 8064,
+      "height": 4536,
+      "assets": [
+        {
+          "file": "pine-bends-1280.webp",
+          "width": 1280,
+          "height": 720,
+          "bytes": 320080
+        },
+        {
+          "file": "pine-bends-1920.webp",
+          "width": 1920,
+          "height": 1080,
+          "bytes": 710396
+        },
+        {
+          "file": "pine-bends-2560.webp",
+          "width": 2560,
+          "height": 1440,
+          "bytes": 1185540
+        },
+        {
+          "file": "pine-bends-3840.webp",
+          "width": 3840,
+          "height": 2160,
+          "bytes": 2493328
+        },
+        {
+          "file": "pine-bends-5760.webp",
+          "width": 5760,
+          "height": 3240,
+          "bytes": 4776642
+        }
+      ],
+      "mobileCrop": {
+        "left": 1399,
+        "top": 0,
+        "width": 3402,
+        "height": 4536
+      },
+      "mobileAssets": [
+        {
+          "file": "pine-bends-portrait-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 177966
+        },
+        {
+          "file": "pine-bends-portrait-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 494634
+        },
+        {
+          "file": "pine-bends-portrait-1920.webp",
+          "width": 1920,
+          "height": 2560,
+          "bytes": 1378976
+        }
+      ],
+      "url": "https://www.pexels.com/photo/aerial-view-of-winding-road-through-forest-33991308/",
+      "download": "https://images.pexels.com/photos/33991308/pexels-photo-33991308.jpeg?cs=srgb&fm=jpg"
+    },
+    {
+      "id": 4,
+      "key": "green-serpentine",
+      "name": "Serra verde",
+      "photo": "33025694",
+      "author": "Max Grakov",
+      "page": "aerial-view-of-winding-forest-road",
+      "focus": "50% 60%",
+      "mobileFocus": "50% 50%",
+      "cropX": 0.48,
+      "width": 5472,
+      "height": 3648,
+      "assets": [
+        {
+          "file": "green-serpentine-1280.webp",
+          "width": 1280,
+          "height": 853,
+          "bytes": 623064
+        },
+        {
+          "file": "green-serpentine-1920.webp",
+          "width": 1920,
+          "height": 1280,
+          "bytes": 1387394
+        },
+        {
+          "file": "green-serpentine-2560.webp",
+          "width": 2560,
+          "height": 1707,
+          "bytes": 2302578
+        },
+        {
+          "file": "green-serpentine-3840.webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 4540864
+        },
+        {
+          "file": "green-serpentine-5472.webp",
+          "width": 5472,
+          "height": 3648,
+          "bytes": 6726636
+        }
+      ],
+      "mobileCrop": {
+        "left": 1313,
+        "top": 0,
+        "width": 2736,
+        "height": 3648
+      },
+      "mobileAssets": [
+        {
+          "file": "green-serpentine-portrait-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 307768
+        },
+        {
+          "file": "green-serpentine-portrait-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 849412
+        },
+        {
+          "file": "green-serpentine-portrait-1920.webp",
+          "width": 1920,
+          "height": 2560,
+          "bytes": 2295522
+        }
+      ],
+      "url": "https://www.pexels.com/photo/aerial-view-of-winding-forest-road-33025694/",
+      "download": "https://images.pexels.com/photos/33025694/pexels-photo-33025694.jpeg?cs=srgb&fm=jpg"
+    },
+    {
+      "id": 5,
+      "key": "forest-ribbon",
+      "name": "Estrada na floresta",
+      "photo": "33275771",
+      "author": "Pok Rie",
+      "page": "winding-road-in-lush-green-forest-aerial-view",
+      "focus": "50% 70%",
+      "mobileFocus": "50% 50%",
+      "cropX": 0.35,
+      "width": 5472,
+      "height": 3648,
+      "assets": [
+        {
+          "file": "forest-ribbon-1280.webp",
+          "width": 1280,
+          "height": 853,
+          "bytes": 542776
+        },
+        {
+          "file": "forest-ribbon-1920.webp",
+          "width": 1920,
+          "height": 1280,
+          "bytes": 1222398
+        },
+        {
+          "file": "forest-ribbon-2560.webp",
+          "width": 2560,
+          "height": 1707,
+          "bytes": 2117366
+        },
+        {
+          "file": "forest-ribbon-3840.webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 4514566
+        },
+        {
+          "file": "forest-ribbon-5472.webp",
+          "width": 5472,
+          "height": 3648,
+          "bytes": 8824210
+        }
+      ],
+      "mobileCrop": {
+        "left": 958,
+        "top": 0,
+        "width": 2736,
+        "height": 3648
+      },
+      "mobileAssets": [
+        {
+          "file": "forest-ribbon-portrait-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 306102
+        },
+        {
+          "file": "forest-ribbon-portrait-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 875596
+        },
+        {
+          "file": "forest-ribbon-portrait-1920.webp",
+          "width": 1920,
+          "height": 2560,
+          "bytes": 2536278
+        }
+      ],
+      "url": "https://www.pexels.com/photo/winding-road-in-lush-green-forest-aerial-view-33275771/",
+      "download": "https://images.pexels.com/photos/33275771/pexels-photo-33275771.jpeg?cs=srgb&fm=jpg"
+    },
+    {
+      "id": 6,
+      "key": "woodland-curves",
+      "name": "Curvas no bosque",
+      "photo": "16845869",
+      "author": "Jérémy Glineur",
+      "page": "curvy-road-on-mountainside",
+      "focus": "50% 65%",
+      "mobileFocus": "50% 50%",
+      "cropX": 0.1,
+      "width": 4150,
+      "height": 3320,
+      "assets": [
+        {
+          "file": "woodland-curves-1280.webp",
+          "width": 1280,
+          "height": 1024,
+          "bytes": 629670
+        },
+        {
+          "file": "woodland-curves-1920.webp",
+          "width": 1920,
+          "height": 1536,
+          "bytes": 1340832
+        },
+        {
+          "file": "woodland-curves-2560.webp",
+          "width": 2560,
+          "height": 2048,
+          "bytes": 2193702
+        },
+        {
+          "file": "woodland-curves-3840.webp",
+          "width": 3840,
+          "height": 3072,
+          "bytes": 3872398
+        },
+        {
+          "file": "woodland-curves-4150.webp",
+          "width": 4150,
+          "height": 3320,
+          "bytes": 3697544
+        }
+      ],
+      "mobileCrop": {
+        "left": 166,
+        "top": 0,
+        "width": 2490,
+        "height": 3320
+      },
+      "mobileAssets": [
+        {
+          "file": "woodland-curves-portrait-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 297382
+        },
+        {
+          "file": "woodland-curves-portrait-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 812928
+        },
+        {
+          "file": "woodland-curves-portrait-1920.webp",
+          "width": 1920,
+          "height": 2560,
+          "bytes": 2163600
+        }
+      ],
+      "url": "https://www.pexels.com/photo/curvy-road-on-mountainside-16845869/",
+      "download": "https://images.pexels.com/photos/16845869/pexels-photo-16845869.jpeg?cs=srgb&fm=jpg"
+    },
+    {
+      "id": 7,
+      "key": "green-trail",
+      "name": "Caminho entre árvores",
+      "photo": "34295541",
+      "author": "viewofilayda",
+      "page": "aerial-view-of-winding-forest-road",
+      "focus": "50% 0%",
+      "mobileFocus": "0% 50%",
+      "cropX": 0,
+      "width": 3000,
+      "height": 4000,
+      "assets": [
+        {
+          "file": "green-trail-1280.webp",
+          "width": 1280,
+          "height": 1707,
+          "bytes": 1276752
+        },
+        {
+          "file": "green-trail-1920.webp",
+          "width": 1920,
+          "height": 2560,
+          "bytes": 2758458
+        },
+        {
+          "file": "green-trail-2560.webp",
+          "width": 2560,
+          "height": 3413,
+          "bytes": 4641736
+        },
+        {
+          "file": "green-trail-3000.webp",
+          "width": 3000,
+          "height": 4000,
+          "bytes": 5922866
+        }
+      ],
+      "mobileCrop": {
+        "left": 0,
+        "top": 0,
+        "width": 3000,
+        "height": 4000
+      },
+      "mobileAssets": [
+        {
+          "file": "green-trail-portrait-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 328420
+        },
+        {
+          "file": "green-trail-portrait-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 924908
+        },
+        {
+          "file": "green-trail-portrait-1920.webp",
+          "width": 1920,
+          "height": 2560,
+          "bytes": 2758458
+        }
+      ],
+      "url": "https://www.pexels.com/photo/aerial-view-of-winding-forest-road-34295541/",
+      "download": "https://images.pexels.com/photos/34295541/pexels-photo-34295541.jpeg?cs=srgb&fm=jpg"
+    }
+  ]
+}

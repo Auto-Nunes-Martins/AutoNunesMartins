@@ -1,8 +1,12 @@
-/* Version 1 is the panoramic stand composition and default; version 2 keeps the original hero. */
+/* Public comparison offers V2/V5; development keeps all compositions. */
 .design.orbit.orbit-home .hero-versions { position: fixed; z-index: 45; left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); display: flex; gap: 6px; padding: 5px; border: 1px solid var(--line); border-radius: 30px; background: color-mix(in srgb, var(--bg) 94%, transparent); box-shadow: 0 4px 20px #0002; backdrop-filter: blur(8px); }
 .design.orbit.orbit-home .hero-versions button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--bg); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
 .design.orbit.orbit-home .hero-versions button[aria-pressed='true'] { color: white; background: var(--red); border-color: var(--red); }
 .design.orbit.orbit-home .hero-versions button:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+@media (max-width: 380px) {
+  .design.orbit.orbit-home .hero-versions { gap: 0; left: 8px; padding: 4px; }
+  .design.orbit.orbit-home .hero-versions button { width: 42px; border-color: transparent; }
+}
 
 /* Keep the original stage and content spacing. The independent photograph
    fills the intro, including its top padding, and extends beyond its width. */

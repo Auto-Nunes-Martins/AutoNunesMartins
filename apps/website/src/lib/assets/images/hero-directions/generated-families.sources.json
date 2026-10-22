@@ -1,0 +1,767 @@
+{
+  "tool": "built-in image_gen",
+  "upscale": false,
+  "embeddedBlur": false,
+  "generated": [
+    {
+      "version": 4,
+      "component": "catalog",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-e4b29299-6fd5-4aa8-af85-9a2dc4267826.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, portrait 3:4 composition, highest genuine native detail. Asset: vehicle catalog CTA background. Palette and atmosphere match ONLY this observed reference description: V4 header reference atmosphere: fresh vivid yet natural spring green deciduous mountain woodland, pale limestone outcrops and light grey terrain, clear diffuse daylight. NEW scene/composition: Portrait close aerial study of fresh rounded green tree crowns beside a pale limestone ledge, a tiny gravel footpath curving along upper right, foliage across middle left.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1086,
+      "nativeHeight": 1448,
+      "sha256": "09d9a11e0dfe1d3419e3230ba1375dc50545b3b566ae5bdcf9da5d38a97a1609",
+      "files": [
+        {
+          "file": "scene-v4-catalog-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 397120
+        },
+        {
+          "file": "scene-v4-catalog-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 1020088
+        },
+        {
+          "file": "scene-v4-catalog-1086.webp",
+          "width": 1086,
+          "height": 1448,
+          "bytes": 1032750
+        }
+      ]
+    },
+    {
+      "version": 4,
+      "component": "pause",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-eea44942-a9a0-4eb3-9a6b-3e5b8e00e7c4.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: editorial website interlude with white text over centre-left. Palette and atmosphere match ONLY this observed reference description: V4 header reference atmosphere: fresh vivid yet natural spring green deciduous mountain woodland, pale limestone outcrops and light grey terrain, clear diffuse daylight. NEW scene/composition: Wide green limestone valley, one empty narrow light-grey country road gently rising away on right, young bright-green woodland and scattered pale rocks. Long gently rolling contour, no switchbacks. Calm forest area on left for white copy.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "e691b8d8b799b12de975f14013969c7d3562932f0d09293030ae74d43711c4b7",
+      "files": [
+        {
+          "file": "scene-v4-pause-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 142386
+        },
+        {
+          "file": "scene-v4-pause-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 401036
+        },
+        {
+          "file": "scene-v4-pause-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 897004
+        },
+        {
+          "file": "scene-v4-pause-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 286242,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v4-pause-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 341824,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "version": 4,
+      "component": "visit",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-f7eb60cf-13e8-4ce7-a191-8b7ac5a5a31e.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: static website contact section with white text/cards over central area. Palette and atmosphere match ONLY this observed reference description: V4 header reference atmosphere: fresh vivid yet natural spring green deciduous mountain woodland, pale limestone outcrops and light grey terrain, clear diffuse daylight. NEW scene/composition: Wide elevated view into a fresh green wooded ravine with pale rock shelves and a modest natural stream, soft daylight, centre-left uniform leafy texture, no famous location.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "115def9a2a884a3ce6fdd0183897763db60584661ec77721cd192cd3580b09a2",
+      "files": [
+        {
+          "file": "scene-v4-visit-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 159112
+        },
+        {
+          "file": "scene-v4-visit-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 443534
+        },
+        {
+          "file": "scene-v4-visit-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 982110
+        },
+        {
+          "file": "scene-v4-visit-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 348336,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v4-visit-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 417002,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "version": 5,
+      "component": "visit",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-05580401-94e4-40c4-92a6-c913b259d0d3.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: static website contact section with white text/cards over central area. Palette and atmosphere match ONLY this observed reference description: V5 header reference atmosphere: dense dark olive broadleaf crowns, deep forest shade with tiny warm sunlit leaves, silver-grey rock, understated strong natural tonal depth. NEW scene/composition: Wide still forest creek and smooth granite boulders under dark olive broadleaf woodland, soft shafts of late-day light only on far right tree crowns, high viewpoint, rich real foliage across central area.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "f1258f9aa1e2e08eaed467613c90fbabba6c73bb001359d1a1a1364f8c9a1d74",
+      "files": [
+        {
+          "file": "scene-v5-visit-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 152400
+        },
+        {
+          "file": "scene-v5-visit-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 418794
+        },
+        {
+          "file": "scene-v5-visit-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 940392
+        },
+        {
+          "file": "scene-v5-visit-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 322942,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v5-visit-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 382738,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "version": 6,
+      "component": "catalog",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-8fe3b81e-ad47-440e-936e-c648a63a5f88.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, portrait 3:4 composition, highest genuine native detail. Asset: vehicle catalog CTA background. Palette and atmosphere match ONLY this observed reference description: V6 header reference atmosphere: cool blue-green mixed mountain woodland, deep teal shadows, occasional muted copper leaf litter and charcoal ground, subdued cool daylight. NEW scene/composition: Portrait photograph looking obliquely down into cool blue-green trees and ferns along a dark slate footpath at right, little copper leaf litter around path, fine texture, gentle soft daylight.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1086,
+      "nativeHeight": 1448,
+      "sha256": "645dc77e8bac6b46c4e8379f28d90f1e78301b48cd2fa9b004570658fbc3392b",
+      "files": [
+        {
+          "file": "scene-v6-catalog-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 370612
+        },
+        {
+          "file": "scene-v6-catalog-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 955892
+        },
+        {
+          "file": "scene-v6-catalog-1086.webp",
+          "width": 1086,
+          "height": 1448,
+          "bytes": 970472
+        }
+      ]
+    },
+    {
+      "version": 6,
+      "component": "pause",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-da97c131-d7ec-4b72-be09-a5329560ffb3.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: editorial website interlude with white text over centre-left. Palette and atmosphere match ONLY this observed reference description: V6 header reference atmosphere: cool blue-green mixed mountain woodland, deep teal shadows, occasional muted copper leaf litter and charcoal ground, subdued cool daylight. NEW scene/composition: Wide elevated photograph of a cool teal-green wooded ridge with one empty charcoal road taking a wide shallow curve at far right, muted copper earth on verge, darker calm trees on left for white copy, no hairpins.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "889818585a367e0736b170454cf2fd048a5763f952b08ded8cc3abafffaac7f2",
+      "files": [
+        {
+          "file": "scene-v6-pause-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 137360
+        },
+        {
+          "file": "scene-v6-pause-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 384180
+        },
+        {
+          "file": "scene-v6-pause-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 840906
+        },
+        {
+          "file": "scene-v6-pause-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 283724,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v6-pause-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 339994,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "version": 6,
+      "component": "visit",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-d9cad10a-f76c-4be9-9832-4269b6d3f13d.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: static website contact section with white text/cards over central area. Palette and atmosphere match ONLY this observed reference description: V6 header reference atmosphere: cool blue-green mixed mountain woodland, deep teal shadows, occasional muted copper leaf litter and charcoal ground, subdued cool daylight. NEW scene/composition: Wide quiet cool-green forest valley with rounded deciduous crowns, tall scattered conifers, a narrow dark rocky brook crossing lower foreground; restrained natural copper earth details, peaceful continuous forest behind central content.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "1c8447f2e6eff3b61dc2fbe193ce2867a7c1b8d8ca27a7e3e063c79aeaaf0099",
+      "files": [
+        {
+          "file": "scene-v6-visit-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 150652
+        },
+        {
+          "file": "scene-v6-visit-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 416004
+        },
+        {
+          "file": "scene-v6-visit-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 943608
+        },
+        {
+          "file": "scene-v6-visit-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 320316,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v6-visit-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 382784,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "version": 7,
+      "component": "catalog",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-0c915f97-13e0-4226-afe8-7587709c150e.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, portrait 3:4 composition, highest genuine native detail. Asset: vehicle catalog CTA background. Palette and atmosphere match ONLY this observed reference description: V7 header reference atmosphere: silvery sage-green eucalyptus woodland and soft olive scrub, earthy taupe paths, pale warm late-afternoon light, airy natural terrain. NEW scene/composition: Portrait close aerial photo of soft sage eucalyptus crowns and olive shrub texture beside a dusty taupe footpath that barely appears along far right, pale warm light, no road.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1086,
+      "nativeHeight": 1448,
+      "sha256": "a67c070a234eedec8485742c9d45bc51e451eda56439fe406fb503ac9bdc59db",
+      "files": [
+        {
+          "file": "scene-v7-catalog-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 382986
+        },
+        {
+          "file": "scene-v7-catalog-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 1004542
+        },
+        {
+          "file": "scene-v7-catalog-1086.webp",
+          "width": 1086,
+          "height": 1448,
+          "bytes": 1018270
+        }
+      ]
+    },
+    {
+      "version": 7,
+      "component": "pause",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-14121387-e047-4e20-8c71-4964d14a7c2a.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: editorial website interlude with white text over centre-left. Palette and atmosphere match ONLY this observed reference description: V7 header reference atmosphere: silvery sage-green eucalyptus woodland and soft olive scrub, earthy taupe paths, pale warm late-afternoon light, airy natural terrain. NEW scene/composition: Wide natural sage-green eucalyptus valley with a broad earthy taupe track making one relaxed curve on right through low scrub, pale warm sunlight, continuous fine foliage centre-left for white copy; no switchbacks.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "710ccc25f5f08ad3a9862c8525789754ea4fa7a6e8932aebfa777deaa2c8da8e",
+      "files": [
+        {
+          "file": "scene-v7-pause-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 133272
+        },
+        {
+          "file": "scene-v7-pause-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 365574
+        },
+        {
+          "file": "scene-v7-pause-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 836894
+        },
+        {
+          "file": "scene-v7-pause-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 289210,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v7-pause-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 336380,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "version": 7,
+      "component": "visit",
+      "applied": true,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-7862cb5a-0b0b-47c4-9157-ca13de9b85e9.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: static website contact section with white text/cards over central area. Palette and atmosphere match ONLY this observed reference description: V7 header reference atmosphere: silvery sage-green eucalyptus woodland and soft olive scrub, earthy taupe paths, pale warm late-afternoon light, airy natural terrain. NEW scene/composition: Wide airy eucalyptus grove on low rolling hills, silvery sage crowns and soft olive shrubs, warm taupe rocky ground, a small empty natural clearing toward far right, elevated viewpoint, natural warm late afternoon.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "2785ca7348d048ab61fc6b5b879632540208a1a90446dfee411b90da56c43485",
+      "files": [
+        {
+          "file": "scene-v7-visit-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 139638
+        },
+        {
+          "file": "scene-v7-visit-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 377048
+        },
+        {
+          "file": "scene-v7-visit-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 834672
+        },
+        {
+          "file": "scene-v7-visit-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 287460,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v7-visit-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 341272,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "version": 3,
+      "component": "catalog",
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-5f625dba-d198-4c23-82bb-46928d8897e5.png",
+      "prompt": "Use case: photorealistic decorative aerial landscape photograph, ONE standalone high-detail image. Match the recently inspected V3 header's visual family precisely: very dense temperate spruce and rounded deciduous crowns; restrained dark olive, moss, bottle-green and deep almost-black gaps between trees; fine natural individual foliage; flat soft diffuse overcast illumination; understated photographic exposure; charcoal-grey road. Avoid bright spring/lime foliage, blue/teal grading or warm golden sunlight. Composition: Portrait 3:4. Strictly vertical bird's-eye drone view of dense mature temperate mixed woodland canopy. A different new patch of forest with large dark olive rounded broadleaf crowns interspersed with deep evergreen spruce crowns. Only a tiny sliver of empty charcoal-grey forest lane at far upper right. Texture fills frame; no ground-level foreground. Calm middle-left for white website text. New fictional geography, not a crop, recolour or reproduction of the header photograph. No mountain panorama, sky, horizon, dramatic rocky slope, waterfall, creek, ground-level viewpoint, people, vehicles, buildings, typography, logos, watermark, frames or collage. No blur, bokeh, mist, painterly leaves or artificial sharpening. Sharp natural aerial texture throughout at maximum genuine native detail. Decorative background, no claim of a real dealership location.",
+      "applied": true,
+      "revision": 2,
+      "nativeWidth": 1086,
+      "nativeHeight": 1448,
+      "sha256": "d9fae9409e404bf5cc2a1e3f9ede1ba75b2bf0264748592980a6cfdc83811436",
+      "files": [
+        {
+          "file": "scene-v3-r2-catalog-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 320910
+        },
+        {
+          "file": "scene-v3-r2-catalog-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 828918
+        },
+        {
+          "file": "scene-v3-r2-catalog-1086.webp",
+          "width": 1086,
+          "height": 1448,
+          "bytes": 860278
+        }
+      ]
+    },
+    {
+      "version": 3,
+      "component": "pause",
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-43144c17-a540-4832-aed8-7baf6721687b.png",
+      "prompt": "Use case: photorealistic decorative aerial landscape photograph, ONE standalone high-detail image. Match the recently inspected V3 header's visual family precisely: very dense temperate spruce and rounded deciduous crowns; restrained dark olive, moss, bottle-green and deep almost-black gaps between trees; fine natural individual foliage; flat soft diffuse overcast illumination; understated photographic exposure; charcoal-grey road. Avoid bright spring/lime foliage, blue/teal grading or warm golden sunlight. Composition: Landscape 16:9. Strictly vertical bird's-eye drone view of dense mature temperate mixed woodland. A new long single gentle diagonal bend in a narrow empty dark asphalt road runs from far lower right toward upper right, partly concealed beneath tree crowns. No repeated hairpins. Left two thirds uninterrupted fine canopy texture for white editorial copy. No horizon. New fictional geography, not a crop, recolour or reproduction of the header photograph. No mountain panorama, sky, horizon, dramatic rocky slope, waterfall, creek, ground-level viewpoint, people, vehicles, buildings, typography, logos, watermark, frames or collage. No blur, bokeh, mist, painterly leaves or artificial sharpening. Sharp natural aerial texture throughout at maximum genuine native detail. Decorative background, no claim of a real dealership location.",
+      "applied": true,
+      "revision": 2,
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "8ee4f968e37fdbeaa0caf02de12cea90c1a0f584305f3807249cc2897d23d42e",
+      "files": [
+        {
+          "file": "scene-v3-r2-pause-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 146684
+        },
+        {
+          "file": "scene-v3-r2-pause-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 396016
+        },
+        {
+          "file": "scene-v3-r2-pause-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 855110
+        },
+        {
+          "file": "scene-v3-r2-pause-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 312864,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v3-r2-pause-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 366272,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "version": 3,
+      "component": "visit",
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-c428fe30-5d0e-475d-8d31-f8e91af8916b.png",
+      "prompt": "Use case: photorealistic decorative aerial landscape photograph, ONE standalone high-detail image. Match the recently inspected V3 header's visual family precisely: very dense temperate spruce and rounded deciduous crowns; restrained dark olive, moss, bottle-green and deep almost-black gaps between trees; fine natural individual foliage; flat soft diffuse overcast illumination; understated photographic exposure; charcoal-grey road. Avoid bright spring/lime foliage, blue/teal grading or warm golden sunlight. Composition: Landscape 16:9. High overhead drone view, camera pointing straight down onto an entirely new dense temperate forest canopy, with a single broad rounded charcoal-grey lane hugging the far upper right edge around an oval island of trees. Quiet contiguous dark foliage across centre and lower portion for contact panel and map overlay. Different geography and composition from editorial and header; no repeated switchbacks. New fictional geography, not a crop, recolour or reproduction of the header photograph. No mountain panorama, sky, horizon, dramatic rocky slope, waterfall, creek, ground-level viewpoint, people, vehicles, buildings, typography, logos, watermark, frames or collage. No blur, bokeh, mist, painterly leaves or artificial sharpening. Sharp natural aerial texture throughout at maximum genuine native detail. Decorative background, no claim of a real dealership location.",
+      "applied": true,
+      "revision": 2,
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "ecc1fa31ca05f9abff520f22d262801faea3fce0da35389fc5ef4b2901e8751e",
+      "files": [
+        {
+          "file": "scene-v3-r2-visit-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 138550
+        },
+        {
+          "file": "scene-v3-r2-visit-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 377730
+        },
+        {
+          "file": "scene-v3-r2-visit-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 825884
+        },
+        {
+          "file": "scene-v3-r2-visit-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 292426,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v3-r2-visit-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 349880,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ]
+    }
+  ],
+  "preserved": {
+    "1": "Previous backgrounds and treatments",
+    "2": "Previous backgrounds and treatments",
+    "5": {
+      "catalog": "scene5: forest-ribbon native portrait; existing scale(1.55), saturate(.45), CSS blur(1.2px)",
+      "pause": "curves: Pexels 33275772, original accepted crop and editorial scroll"
+    }
+  },
+  "supersededV3": [
+    {
+      "version": 3,
+      "component": "catalog",
+      "applied": false,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-4ab2689d-d209-4be4-a624-892711c9354f.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE new standalone image, portrait 3:4 composition, highest native detail available. Asset: forest texture background for a narrow vehicle-catalog CTA, white text over left middle. Inspired by the inspected V3 header atmosphere ONLY: temperate dark olive and deep green mixed conifers, rounded deciduous crowns, soft overcast light. NEW scene: close aerial oblique view of a small moss-lined forest clearing with a narrow slate footpath disappearing behind spruce crowns along the far right edge. Fresh geography, NOT the winding switchback road or any header photograph composition. Dense organic fine foliage, realistic needle clusters and moss, understated photographic exposure, sharp throughout, low contrast around left middle for copy. No embedded blur/bokeh, no buildings, vehicles, people, signage, logos, typography, frames or collage. Decorative fictional landscape; not a claim about the dealership.",
+      "nativeWidth": 1086,
+      "nativeHeight": 1448,
+      "sha256": "c27d9ff743caafa1126875dd98ef78a5686d1581ff1d23abaeaa36835d434058",
+      "files": [
+        {
+          "file": "scene-v3-catalog-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 379274
+        },
+        {
+          "file": "scene-v3-catalog-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 1020306
+        },
+        {
+          "file": "scene-v3-catalog-1086.webp",
+          "width": 1086,
+          "height": 1448,
+          "bytes": 1032230
+        }
+      ],
+      "supersededByRevision": 2
+    },
+    {
+      "version": 3,
+      "component": "pause",
+      "applied": false,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-cfacbe07-ccc5-40fd-aed3-ef22d41158cb.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: editorial website interlude with white text over centre-left. Palette and atmosphere match ONLY this observed reference description: V3 header reference atmosphere: temperate mixed spruce and broadleaf forest, muted dark olive greens, mossy deep greens, diffuse overcast light, softly silver-grey ground. NEW scene/composition: Wide oblique aerial photograph of a secluded smooth dark-grey forest road taking one broad gentle bend past a mossy wooded hillside, distant forest ridge occupying upper third. Road on far lower right; centre-left uninterrupted foliage for white copy. Not hairpin switchbacks.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "f593dd5004497713cb33354497a0fb5715a4695fce1523e14a5e3d27bec10c54",
+      "files": [
+        {
+          "file": "scene-v3-pause-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 131592
+        },
+        {
+          "file": "scene-v3-pause-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 363644
+        },
+        {
+          "file": "scene-v3-pause-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 796260
+        },
+        {
+          "file": "scene-v3-pause-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 276176,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v3-pause-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 330648,
+          "crop": {
+            "left": 629,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ],
+      "supersededByRevision": 2
+    },
+    {
+      "version": 3,
+      "component": "visit",
+      "applied": false,
+      "source": "C:\\Users\\Goncalo\\.codex\\generated_images\\01a16096-f3a8-7a20-9d5c-4b2d5d10e2e4\\exec-f0106398-4f08-42be-a7dc-561b2bf37eec.png",
+      "prompt": "Use case: photorealistic decorative landscape photograph. Generate ONE brand-new standalone image, landscape 16:9 composition, highest genuine native detail. Asset: static website contact section with white text/cards over central area. Palette and atmosphere match ONLY this observed reference description: V3 header reference atmosphere: temperate mixed spruce and broadleaf forest, muted dark olive greens, mossy deep greens, diffuse overcast light, softly silver-grey ground. NEW scene/composition: Wide quiet forest valley with a narrow rocky stream disappearing through mature spruces, one low wooded slope to right, no sky except a thin soft bright gap high on right. Elevated viewpoint, calm continuous detailed foliage across centre for content overlay.. This must be a distinct fictional landscape, not a crop, recoloring, replication or rearrangement of any existing header photograph or earlier generated scene. Sharp realistic fine foliage and terrain throughout, believable botanical scale, generous natural quiet copy area, subtle photographic exposure. No embedded blur, bokeh, fog, logos, typography, vehicles, people, buildings, dealership premises, watermark, border or collage. Do not render website UI. Decorative setting only, no claim of a real business location.",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "sha256": "07845e8ac338d1ff58161355bdfeadc569980492e7ef04c1d1388f42aa42364e",
+      "files": [
+        {
+          "file": "scene-v3-visit-640.webp",
+          "width": 640,
+          "height": 360,
+          "bytes": 152168
+        },
+        {
+          "file": "scene-v3-visit-1080.webp",
+          "width": 1080,
+          "height": 608,
+          "bytes": 419524
+        },
+        {
+          "file": "scene-v3-visit-1672.webp",
+          "width": 1672,
+          "height": 941,
+          "bytes": 953172
+        },
+        {
+          "file": "scene-v3-visit-portrait-640.webp",
+          "width": 640,
+          "height": 854,
+          "bytes": 340766,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        },
+        {
+          "file": "scene-v3-visit-portrait-705.webp",
+          "width": 705,
+          "height": 941,
+          "bytes": 406454,
+          "crop": {
+            "left": 532,
+            "top": 0,
+            "width": 705,
+            "height": 941
+          }
+        }
+      ],
+      "supersededByRevision": 2
+    }
+  ]
+}

@@ -15,7 +15,7 @@
 }
 
 :where(html)[data-theme='light'] .design.orbit :is(
-  .vehicle-card, .related-grid > a, .discover, .trust-services article,
+  .vehicle-card, .related-grid > a, .trust-services article,
   .services article, .reviews article, .orbit-perspective, .orbit-faq,
   .contact-dialog, .favorites-page .empty, .comparison-page .empty,
   .catalog .empty-state

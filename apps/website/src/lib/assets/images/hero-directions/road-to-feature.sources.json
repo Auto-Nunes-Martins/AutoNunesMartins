@@ -1,0 +1,68 @@
+{
+  "purpose": "Decorative forest-road backgrounds for home hero version 1 only; these are not vehicle sale photographs or verified stand locations.",
+  "generator": "OpenAI built-in imagegen tool; no CLI/API fallback",
+  "date": "2026-10-22",
+  "quality_revision": {
+    "date": "2026-10-22",
+    "composition": "Restores the first approved long road layout; selected detail edits use that image as the composition reference.",
+    "selected_sources": {
+      "desktop": "exec-49deb374-aab2-45ce-beed-3dfaa8ba449d.png",
+      "mobile": "exec-71c56a83-f2a5-4564-bf6f-1897a00ff38f.png"
+    },
+    "native_dimensions": {
+      "desktop": [
+        1860,
+        846
+      ],
+      "mobile": [
+        1086,
+        1448
+      ]
+    },
+    "encoding": "WebP quality 94, smartSubsample; no enlargement, sharpening, blur or image-scale transform.",
+    "resolution_limit": "The tool returned the native dimensions listed here, despite larger dimensions requested in the prompts. These are not native 4K images; very large/high-DPR displays can exceed their detail resolution.",
+    "reference": {
+      "photographer": "Venti Views",
+      "page": "https://unsplash.com/photos/areal-view-of-road-in-the-middle-of-forest-Clwh1mksdAM",
+      "license": "https://unsplash.com/license",
+      "use": "Colour and detail reference; not the active hero photograph."
+    },
+    "active_assets": [
+      {
+        "file": "road-approved-1280.webp",
+        "width": 1280,
+        "height": 582,
+        "bytes": 490586
+      },
+      {
+        "file": "road-approved-1860.webp",
+        "width": 1860,
+        "height": 846,
+        "bytes": 920410
+      },
+      {
+        "file": "road-approved-mobile-640.webp",
+        "width": 640,
+        "height": 853,
+        "bytes": 375206
+      },
+      {
+        "file": "road-approved-mobile-1086.webp",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 950070
+      }
+    ],
+    "desktop_prompt": "Edit target: Image 1, the existing accepted panoramic forest-road background. Image 2 is a COLOR, LIGHTING and FINE PHOTOGRAPHIC DETAIL reference only. Rebuild Image 1 as a genuinely high-detail photographic master at native 3840 x 1744 pixels, not a stretched or sharpened low-resolution copy. Preserve its road composition precisely: road enters bottom left, sweeps through lower middle, then rises toward right-middle behind the website's future featured vehicle area. Preserve the quiet forest space on the left for text. Match Image 2's fresh varied pine greens, sage highlights, cool neutral shadows, natural grey road contrast and crisp top-down forest texture; remove the dark olive/yellow cast and soft CGI/painterly canopy of Image 1. Every canopy needs natural irregular branches, small leaf/needle textures and genuine photographic microdetail, deep depth of field, sharp near and far, clear dry atmosphere. Straight-down to slightly elevated aerial documentary photography, evenly lit overcast daylight; no bokeh, no atmospheric blur, no fog, no fake sharpen halos, no artificial plastic conifer shapes. The whole scene must remain crisp at a wide website hero size and high-density screen. No vehicles, no people, no buildings, no text, no logos or UI. This is a decorative scenery image only. Keep road direction, layout and aspect ratio of Image 1.",
+    "mobile_prompt": "Edit target: Image 1, the accepted portrait mobile forest-road background. Image 2 is a COLOR, LIGHTING and FINE PHOTOGRAPHIC DETAIL reference only. Rebuild Image 1 as a genuinely high-detail photographic master at native 2160 x 2880 pixels, not a stretched or sharpened low-resolution copy. Preserve its mobile road placement: the road enters at upper right, winds down the right side, bends toward the middle around half-height and continues naturally toward the lower left. Keep the upper-left two-thirds quiet forest for white website text; the future featured-car photo overlays the middle. Match Image 2's fresh varied pine greens, sage highlights, cool neutral shadows, natural grey road contrast and crisp forest textures; remove the dark olive/yellow cast and soft CGI/painterly canopy. Natural irregular tree crowns with sharply resolved fine branches and small leaf/needle texture, deep depth of field with all distances sharp, evenly lit clear overcast daylight. True aerial documentary photograph, not illustration or 3D rendering. No bokeh, no blur, fog or atmospheric softness, no sharpening halos, no repetitive plastic conifer shapes. Optimized subject detail for high-density mobile screens. No vehicles, people, buildings, text, logos or UI. Keep the accepted portrait composition and road path."
+  },
+  "assets": [
+    { "file": "road-to-feature-1280.webp", "width": 1280, "height": 583, "bytes": 231016 },
+    { "file": "road-to-feature-1859.webp", "width": 1859, "height": 846, "bytes": 422556 },
+    { "file": "road-to-feature-mobile-640.webp", "width": 640, "height": 853, "bytes": 196416 },
+    { "file": "road-to-feature-mobile-1086.webp", "width": 1086, "height": 1448, "bytes": 446028 }
+  ],
+  "desktop_prompt": "Use case: photorealistic-natural. Asset type: decorative homepage background photograph for a calm Portuguese used-car dealership. Create a very wide panoramic aerial forest-road photograph, aspect ratio about 2.2:1, with natural deep green pines and eucalyptus, soft overcast daylight and realistic fine tree texture, similar to a fresh green overhead photograph of a winding road through woodland. This is a compositional website background, NO vehicle photos or sales advertising. The important art direction: one ordinary narrow asphalt country road enters from the LOWER LEFT edge around x=15%, y=100%, gently winds through the LOWER MIDDLE around x=40%, y=78%, then travels diagonally toward the RIGHT-MIDDLE at x=76%, y=46%, narrowing into the woodland there. That right-middle point will be covered by an actual featured-car photograph in the website; the road should naturally lead the eye there and continue plausibly behind it, not abruptly end or form a dead end. Upper and middle LEFT HALF must be quiet dark forest canopy with no competing roads or bright objects, as light headline text will sit there. Composition should still allow a portrait crop around x=75% showing the curved approach to the destination, with the road leading toward the middle of that crop. High elevated aerial angle, generous real woodland, restrained dark sage and natural pine green, subtle cool grey asphalt. Professional, modest, welcoming, not luxury or spa imagery. No cars, no people, no buildings, no dramatic sunbeams, no mountains or horizon, no text, no card, no logo, no lettering, no watermark.",
+  "mobile_reference": "Generated desktop forest-road image, used for style and palette only",
+  "mobile_prompt": "Use case: photorealistic-natural. Create a PORTRAIT 3:4 companion photograph for the provided forest-road image, using it only as reference for natural pine/eucalyptus woodland, overhead aerial photographic realism, fresh deep-green palette, quiet overcast daylight and grey asphalt. This is a decorative MOBILE website background, not a car advertisement. Recompose the road specifically for mobile: a single narrow ordinary asphalt road enters at the UPPER RIGHT edge around x=99%, y=12%, gently curves down along the RIGHT SIDE around x=85%, y=29%, then bends toward the MIDDLE at x=58%, y=52%, continuing naturally behind that region. That middle region will be covered by the real featured-car photograph in the mobile website. The road should lead the eye from the right side of the headline down toward the car photograph. Keep the LEFT TWO THIRDS of the TOP THIRD quiet dark forest with no road or distracting bright objects, as white text sits there. Keep the lowest quarter primarily forest for vehicle details. Match the reference's real ordinary Portuguese woodland feel; no luxury, no dramatic light. No cars, no people, no buildings, no cards, no text, no logo, no watermark. Portrait composition."
+}

@@ -345,6 +345,18 @@
     background: #e30613;
     color: white;
   }
+  .notice-action[href='/comparar'] {
+    box-sizing: border-box;
+    min-height: 38px;
+    padding-block: 7px;
+    line-height: 1.3;
+  }
+  @media (hover: none), (pointer: coarse) {
+    .notice-action[href='/comparar'] {
+      min-height: 44px;
+      padding-block: 8px;
+    }
+  }
   .favorite-notification .notice-action {
     padding: 8px 0;
     min-height: 44px;
