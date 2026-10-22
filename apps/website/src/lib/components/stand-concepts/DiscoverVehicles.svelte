@@ -138,6 +138,7 @@
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .discover { view-timeline: --discover-landscape block; }
+      .discover-landscape { inset-block: -16px; }
       .discover-landscape img {
         animation: landscape-scroll linear both;
         animation-timeline: --discover-landscape;
@@ -146,8 +147,8 @@
     }
   }
   @keyframes landscape-scroll {
-    from { translate: 0 -4px; }
-    to { translate: 0 4px; }
+    from { translate: 0 -16px; }
+    to { translate: 0 16px; }
   }
   .discover.discover .arrow { width: 44px; height: 44px; padding: 10px; border-radius: 50%; background: #fffdf5; color: #d50816; }
   .discover { position: relative; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; align-self: stretch; width: 100%; height: auto; min-height: 280px; padding: clamp(20px, 2.1vw, 32px); padding-bottom: 90px; overflow: hidden; isolation: isolate; border: 1px solid var(--line); border-radius: 4px; color: var(--text); text-decoration: none; background: linear-gradient(145deg, color-mix(in srgb,var(--text) 2%,transparent),transparent 65%); }
