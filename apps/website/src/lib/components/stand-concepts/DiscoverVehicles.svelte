@@ -104,7 +104,7 @@
   onpointerenter={(event) => { if (event.pointerType === 'mouse') enter(); }}
   onpointerleave={(event) => { if (event.pointerType === 'mouse') leave(); }}
   onfocus={enter} onblur={leave}>
-  <span class="discover-landscape" aria-hidden="true"><img src={background?.src ?? forest} srcset={background?.portrait ?? `${forestSmall} 640w, ${forest} 1280w`} style:object-position={background ? background.mobileFocus : undefined} style:filter={background?.exposure === undefined ? undefined : `saturate(.45) blur(1.2px) brightness(${background.exposure})`} style:transform={background ? 'scale(1.55)' : undefined} sizes={background ? '(max-width: 700px) calc(155vw - 62px), 53vw' : '(max-width: 700px) calc(100vw - 40px), 34vw'} width="1280" height="1707" alt="" loading="lazy" decoding="async" /></span>
+  <span class="discover-landscape" aria-hidden="true"><span class="discover-image-motion"><img src={background?.src ?? forest} srcset={background?.portrait ?? `${forestSmall} 640w, ${forest} 1280w`} style:object-position={background ? background.mobileFocus : undefined} style:filter={background?.exposure === undefined ? undefined : `saturate(.45) blur(1.2px) brightness(${background.exposure})`} style:transform={background ? 'scale(1.55)' : undefined} sizes={background ? '(max-width: 700px) calc(155vw - 62px), 53vw' : '(max-width: 700px) calc(100vw - 40px), 34vw'} width="1280" height="1707" alt="" loading="lazy" decoding="async" /></span></span>
   <span class="eyebrow">Continue a descobrir</span>
   <strong><span>Ver todas</span><span class="title-accent" class:scroll-light={scrollDriven && !reduced} style={`--sweep:${lineSweep};--start:${Math.max(0,textSweep-1)*120-10}%;--end:${Math.min(1,textSweep)*120-10}%;--light:${Math.min(1,Math.max(0,Math.min(textSweep,2-textSweep)*8))};--segment-start:${scrollLight.segmentStart}px;--segment-end:${scrollLight.segmentEnd}px;--light-inset:${scrollLight.lightInset}px;--accent-light:${scrollLight.accentLight}`}>as viaturas<span class="title-line" class:line-hidden={lineSweep <= 0 || lineSweep >= 2 || (scrollDriven && !reduced && !scrollLight.lineVisible)} aria-hidden="true"><i></i></span></span></strong>
   <div class="road" aria-hidden="true">
@@ -133,13 +133,15 @@
 <style>
   .discover.discover { --text: #fffdf5; --muted: #e2e7db; --bg: #111913; --surface: #23352b; --line: #ffffff40; border-color: transparent; background: #17251b; }
   .discover-landscape { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+  .discover-image-motion { position: absolute; inset: 0; }
   .discover-landscape img { position: absolute; inset: -4px; display: block; width: calc(100% + 8px); max-width: none; height: calc(100% + 8px); max-height: none; object-fit: cover; object-position: 50% 50%; filter: saturate(.45) blur(1.2px); }
   .discover-landscape::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg,#101114b8,#10111459),linear-gradient(0deg,#0c0c0eb3,transparent 75%); }
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .discover { view-timeline: --discover-landscape block; }
-      .discover-landscape { inset-block: -16px; }
-      .discover-landscape img {
+      .discover-image-motion {
+        inset-block: -32px;
+        will-change: transform;
         animation: landscape-scroll linear both;
         animation-timeline: --discover-landscape;
         animation-range: entry 0% exit 100%;
@@ -147,8 +149,8 @@
     }
   }
   @keyframes landscape-scroll {
-    from { translate: 0 -16px; }
-    to { translate: 0 16px; }
+    from { transform: translate3d(0, -32px, 0); }
+    to { transform: translate3d(0, 32px, 0); }
   }
   .discover.discover .arrow { width: 44px; height: 44px; padding: 10px; border-radius: 50%; background: #fffdf5; color: #d50816; }
   .discover { position: relative; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; align-self: stretch; width: 100%; height: auto; min-height: 280px; padding: clamp(20px, 2.1vw, 32px); padding-bottom: 90px; overflow: hidden; isolation: isolate; border: 1px solid var(--line); border-radius: 4px; color: var(--text); text-decoration: none; background: linear-gradient(145deg, color-mix(in srgb,var(--text) 2%,transparent),transparent 65%); }
