@@ -24,7 +24,7 @@ export function hoveringCard(node: HTMLElement, enabled: boolean) {
   };
   const afterFocus = () => queueMicrotask(update);
   const finished = (event: AnimationEvent) => {
-    if (event.target === node && event.animationName === 'hd-soft-in') {
+    if (event.target === node) {
       entered = true;
       update();
     }
