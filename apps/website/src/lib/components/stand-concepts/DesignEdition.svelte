@@ -27,6 +27,7 @@
   import type { PublicHighlights } from '$lib/homepageHighlights';
   import HomeHeroDirections from './HomeHeroDirections.svelte';
   import { heroDirections } from './homeHeroDirections';
+  import './serviceTypography.css';
   import { homeVisualFamilies } from './homeVisualFamilies';
   import HomeHeroV2 from './HomeHeroV2.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
@@ -308,9 +309,7 @@
     const requested = import.meta.env.DEV ? Number($page.url.searchParams.get('hero')) : 5;
     return heroDirections.some((direction) => direction.id === requested) ? requested : 5;
   }
-  const availableHeroDirections = import.meta.env.DEV
-    ? heroDirections
-    : heroDirections.filter(({ id }) => id === 5 || id === 2);
+  const availableHeroDirections = heroDirections;
   let heroVersion = $state(initialHeroVersion());
   const homeVisualFamily = $derived($page.url.pathname === '/' ? homeVisualFamilies[heroVersion] : undefined);
   const equipmentItems = [

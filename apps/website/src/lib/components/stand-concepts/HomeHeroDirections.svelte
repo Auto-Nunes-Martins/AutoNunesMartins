@@ -13,6 +13,7 @@
   import './homeHeroDirections.css';
   import './homeHeroVariants.css';
   import './featuredHover.css';
+  import './featuredCard.css';
   import { hoveringCard } from './v5HoveringCard';
   import FeaturedPriceWave from './FeaturedPriceWave.svelte';
   import FeaturedBacklight from './FeaturedBacklight.svelte';
@@ -115,7 +116,7 @@
   {#if car}
     {#snippet featuredContent()}
       <div class="hd-feature-top">
-        <span class="hd-eyebrow">Em destaque{#if version === 5}<span class="hd-label-glint" aria-hidden="true">Em destaque</span>{/if}</span><span class="hd-edition" aria-hidden="true"
+        <span class="hd-eyebrow">Em destaque<span class="hd-label-glint" aria-hidden="true">Em destaque</span></span><span class="hd-edition" aria-hidden="true"
           >{String(index + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span
         >
       </div>
@@ -123,7 +124,7 @@
         {#if failed}<span class="hd-photo-note">Fotografia temporariamente indisponível</span>{/if}
         <span class="hd-photo-arrow" aria-hidden="true"><ArrowUpRight size={22} strokeWidth={1.5} /></span>
       {/snippet}
-      {#snippet photograph(details = true)}
+      {#snippet photograph()}
       <a
         class="hd-photo"
         class:hd-photo-failed={failed}
@@ -145,17 +146,12 @@
             }}
           />
         {/key}
-        {#if details}{@render photoDetails()}{/if}
       </a>
       {/snippet}
-      {#if version === 5}
-        <div class="hd-photo-stage">
-          <div class="hd-photo-motion"><div class="hd-idle-plane">{@render photograph(false)}</div></div>
-          <div class="hd-photo-ui">{@render photoDetails()}</div>
-        </div>
-      {:else}
-        {@render photograph()}
-      {/if}
+      <div class="hd-photo-stage">
+        <div class="hd-photo-motion"><div class="hd-idle-plane">{@render photograph()}</div></div>
+        <div class="hd-photo-ui">{@render photoDetails()}</div>
+      </div>
       <div class="hd-caption" id="hd-vehicle-caption">
         <div class="hd-identity">
           <span class="hd-brand">{car.brand}</span>
@@ -167,7 +163,7 @@
           </p>
         </div>
         <div class="hd-price">
-          <strong>{#if version === 5}<FeaturedPriceWave value={publicPrice(car.price)} />{:else}{publicPrice(car.price)}{/if}</strong>{#if car.availability === 'RESERVED'}<span
+          <strong><FeaturedPriceWave value={publicPrice(car.price)} /></strong>{#if car.availability === 'RESERVED'}<span
               >Reservada</span
             >{/if}<a href={publicHref(car.slug)}
             >Conhecer viatura <ArrowUpRight size={15} aria-hidden="true" /></a
@@ -204,7 +200,7 @@
     {/snippet}
     <div
       class="hd-feature"
-      use:hoveringCard={version === 5}
+      use:hoveringCard={true}
       use:featuredAutoplay={{ count: items.length, revision: selection, next: () => select(index + 1, true) }}
       role="region"
       aria-label="Viaturas em destaque"
@@ -227,6 +223,7 @@
 <section
   class="hero-v1 hd-root hd-1"
   data-photo-variant={version}
+  data-featured-card="v5"
   style:--road-focus={background?.focus}
   style:--road-mobile-focus={background?.mobileFocus}
   class:hd-dark={$dark}
@@ -252,7 +249,7 @@
       />
     </picture>
   </div>
-  {#if version === 5 && car}<div class="hd-feature-light" aria-hidden="true"><FeaturedBacklight /></div>{/if}
+  {#if car}<div class="hd-feature-light" aria-hidden="true"><FeaturedBacklight /></div>{/if}
   <div class="hd-composition">
     {@render introduction()}
     {@render vehicle()}

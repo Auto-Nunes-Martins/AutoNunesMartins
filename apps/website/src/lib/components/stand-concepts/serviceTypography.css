@@ -1,0 +1,20 @@
+/* Keep the increase local to the right-hand service list. */
+.home-services .services-column .service-row .service-title {
+  font-size: 15px;
+  line-height: 1.4;
+}
+.home-services .services-column .service-row .service-description {
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.home-services .services-column .service-list .service-row {
+  padding-block: 12px;
+}
+@media (max-width: 700px) {
+  .home-services .services-column .service-row .service-title {
+    font-size: 13px;
+  }
+  .home-services .services-column .service-row .service-description {
+    font-size: 12px;
+  }
+}
