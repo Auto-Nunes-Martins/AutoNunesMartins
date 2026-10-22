@@ -7,7 +7,7 @@
   import { useFavorites } from '$lib/favorites';
   import { publicCard, type PublicCard } from '$lib/publicVehicles';
   import { loadSelectedVehicles, type SelectedVehicle } from '$lib/selectedVehicles';
-  let { card }: { card: Snippet<[PublicCard, number]> } = $props();
+  let { card }: { card: Snippet<[PublicCard | null, number]> } = $props();
   const favorites = useFavorites();
   const { ids, ready } = favorites;
   const pageSize = 12;
@@ -53,14 +53,18 @@
     <section class="empty"><Heart size={38} strokeWidth={1.2} aria-hidden="true" /><h2>A sua seleção começa aqui.</h2><p>Use o coração nas viaturas que lhe despertam interesse. Ficam guardadas neste navegador, sem precisar de criar uma conta.</p><a class="primary" href="/viaturas">Descobrir viaturas <ArrowUpRight size={18} aria-hidden="true" /></a></section>
   {:else}
     <div class="toolbar"><p>{$ids.length} {$ids.length === 1 ? 'viatura guardada' : 'viaturas guardadas'}</p><button type="button" onclick={() => remove()}>Limpar favoritos</button></div>
-    {#if loading}<p role="status" class="loading">A consultar os dados atuais…</p>{/if}
+    <p role="status" class="loading">{loading ? 'A consultar os dados atuais…' : '\u00a0'}</p>
     {#if entries.some(entry => entry.status === 503)}<div class="retry"><p>Alguns dados estão temporariamente indisponíveis.</p><button type="button" onclick={() => refresh += 1}><RotateCcw size={16} aria-hidden="true" /> Tentar novamente</button></div>{/if}
     <h2 class="sr-only">Viaturas guardadas</h2>
-    <div class="favorites-grid">
+    <div class="favorites-grid" aria-busy={loading}>
+      {#if loading}
+        {#each $ids.slice((currentPage - 1) * pageSize, currentPage * pageSize) as _, index}{@render card(null, index)}{/each}
+      {:else}
       {#each entries as entry, index (entry.id)}
         {#if entry.vehicle}{@render card(publicCard(entry.vehicle), index)}
         {:else}<article class="unavailable"><Heart size={28} strokeWidth={1.2} aria-hidden="true" /><h2>{entry.status === 404 ? 'Já não está publicada.' : 'Dados por atualizar.'}</h2><p>{entry.status === 404 ? 'Esta viatura deixou de estar disponível no catálogo. Pode removê-la dos favoritos.' : 'O favorito está guardado. Tente consultar os dados novamente.'}</p><button type="button" onclick={() => remove(entry.id)}>Remover dos favoritos</button></article>{/if}
       {/each}
+      {/if}
     </div>
     {#if pages > 1}<nav class="pagination" aria-label="Paginação de favoritos"><button type="button" disabled={currentPage === 1} onclick={() => changePage(currentPage - 1)}><ArrowLeft size={16} aria-hidden="true" /> Anterior</button><span>{currentPage} / {pages}</span><button type="button" disabled={currentPage === pages} onclick={() => changePage(currentPage + 1)}>Seguinte <ArrowRight size={16} aria-hidden="true" /></button></nav>{/if}
     <p class="note">Guardados apenas neste navegador. Limpar os dados do navegador remove a seleção. Os detalhes são consultados no catálogo atual.</p>

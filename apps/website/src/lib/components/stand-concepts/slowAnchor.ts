@@ -1,14 +1,20 @@
-/** Shared, interruptible 800 ms anchor movement; never changes global scroll behavior. */
+export type AnchorScrollProfile = 'default' | 'discovery';
+
+/** Shared, interruptible anchor movement; never changes global scroll behavior. */
 export function createAnchorScroller() {
   let frame = 0;
   let removeFocusTarget: (() => void) | undefined;
+  let cancelNative: (() => void) | undefined;
   const events = ['wheel', 'touchstart', 'pointerdown', 'keydown', 'popstate'] as const;
   const stop = () => {
     cancelAnimationFrame(frame);
     frame = 0;
     events.forEach(event => window.removeEventListener(event, stop));
+    const cancel = cancelNative;
+    cancelNative = undefined;
+    cancel?.();
   };
-  const scroll = (target: HTMLElement) => {
+  const scroll = (target: HTMLElement, profile: AnchorScrollProfile = 'default') => {
     stop();
     removeFocusTarget?.();
     const start = window.scrollY;
@@ -40,6 +46,36 @@ export function createAnchorScroller() {
       return;
     }
     events.forEach(event => window.addEventListener(event, stop, { passive: true }));
+    if (profile === 'discovery') {
+      // Let the browser move the viewport independently of the reveal callbacks.
+      // Re-reading geometry and writing scrollY each frame forces extra layouts.
+      const end = destination();
+      let settleTimer: ReturnType<typeof setTimeout>;
+      let deadline: ReturnType<typeof setTimeout>;
+      const cleanup = () => {
+        clearTimeout(settleTimer); clearTimeout(deadline);
+        window.removeEventListener('scroll', settle);
+        window.removeEventListener('scrollend', complete);
+      };
+      const complete = () => {
+        if (!target.isConnected) { stop(); return; }
+        if (Math.abs(window.scrollY - end) > 1) return;
+        cancelNative = undefined; cleanup(); finish();
+      };
+      const settle = () => { clearTimeout(settleTimer); settleTimer = setTimeout(complete, 160); };
+      cancelNative = () => {
+        cleanup();
+        window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+      };
+      window.addEventListener('scroll', settle, { passive: true });
+      window.addEventListener('scrollend', complete);
+      // The idle fallback covers browsers without scrollend; the deadline only
+      // cleans up an interrupted/blocked trip and never forces a late jump.
+      deadline = setTimeout(() => { complete(); if (cancelNative) stop(); }, 3000);
+      settle();
+      window.scrollTo({ top: end, behavior: 'smooth' });
+      return;
+    }
     const began = performance.now();
     const step = (now: number) => {
       if (!target.isConnected) { stop(); return; }

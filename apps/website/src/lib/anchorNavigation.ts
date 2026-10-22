@@ -1,4 +1,5 @@
 import { anchorTarget, createAnchorScroller, internalAnchor } from './components/stand-concepts/slowAnchor';
+import type { AnchorScrollProfile } from './components/stand-concepts/slowAnchor';
 
 type Options = { tick: () => Promise<void>; push: (url: URL) => void; navigate: (url: URL) => Promise<void> };
 export function installAnchorNavigation({ tick, push, navigate }: Options) {
@@ -6,7 +7,7 @@ export function installAnchorNavigation({ tick, push, navigate }: Options) {
   let version = 0;
   let frame = 0;
   const stop = () => { ++version; cancelAnimationFrame(frame); scroller.stop(); };
-  const reveal = async (hash: string) => {
+  const reveal = async (hash: string, profile: AnchorScrollProfile = 'default') => {
     stop();
     const request = version;
     // Link handlers close mobile menus first; measure after their DOM update.
@@ -15,7 +16,7 @@ export function installAnchorNavigation({ tick, push, navigate }: Options) {
     frame = requestAnimationFrame(() => {
       if (request !== version) return;
       const target = anchorTarget(hash);
-      if (target) scroller.scroll(target);
+      if (target) scroller.scroll(target, profile);
     });
   };
   const click = (event: MouseEvent) => {
@@ -36,7 +37,9 @@ export function installAnchorNavigation({ tick, push, navigate }: Options) {
     event.preventDefault();
     stop();
     if (url.hash !== current.hash) push(url);
-    void reveal(url.hash);
+    const profile = current.pathname === '/' && url.hash === '#selecao' &&
+      link.matches('.hd-scroll, .cabin-link') ? 'discovery' : 'default';
+    void reveal(url.hash, profile);
   };
   const events = ['wheel', 'touchstart', 'pointerdown', 'keydown', 'popstate'] as const;
   document.addEventListener('click', click, true);

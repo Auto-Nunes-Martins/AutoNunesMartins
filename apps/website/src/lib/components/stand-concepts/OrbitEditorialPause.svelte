@@ -3,11 +3,24 @@
   import { photo } from './data';
   import { responsivePhoto } from './images';
   import OrbitVisitLabel from './OrbitVisitLabel.svelte';
-  let { onContact }: { onContact: (message: string) => void } = $props();
+  import ScenePhotograph from './ScenePhotograph.svelte';
+  import type { SceneBackground } from './homeVisualFamilies';
+  let { onContact, background }: { onContact: (message: string) => void; background?: SceneBackground } = $props();
 </script>
 
-<section class="editorial-pause" aria-labelledby="editorial-pause-title">
-  <img src={photo('photo-1576212767334-9e289e294c77', 2200)} srcset={responsivePhoto('photo-1576212767334-9e289e294c77')} sizes="100vw" alt="" loading="lazy" decoding="async" />
+<section id="proximo-passo" class="editorial-pause" aria-labelledby="editorial-pause-title">
+  <div class="pause-landscape" aria-hidden="true">
+    {#if background}<ScenePhotograph {background} />{:else}
+    <img
+      src={photo('photo-1576212767334-9e289e294c77', 2200)}
+      srcset={responsivePhoto('photo-1576212767334-9e289e294c77')}
+      sizes="(prefers-reduced-motion: reduce) 100vw, (max-aspect-ratio: 3/2) 150vh, 100vw"
+      alt=""
+      loading="lazy"
+      decoding="async"
+    />
+    {/if}
+  </div>
   <div class="pause-inner">
     <div>
       <OrbitVisitLabel spaceBelow={15} />
@@ -27,6 +40,13 @@
 </section>
 
 <style>
+  .pause-landscape {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    isolation: isolate;
+  }
+
   .editorial-pause {
     --text: #f5f5f1;
     --muted: #ececef;
@@ -39,7 +59,7 @@
     background: #111214;
     color: var(--text);
   }
-  .editorial-pause > img {
+  .pause-landscape > img {
     position: absolute;
     inset: 0;
     z-index: -2;
@@ -49,7 +69,7 @@
     object-position: center 44%;
     filter: saturate(0.45);
   }
-  .editorial-pause::before {
+  .pause-landscape::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -80,7 +100,9 @@
     letter-spacing: -0.045em;
     line-height: 1.15;
   }
-  .red-stop { color: var(--red); }
+  .red-stop {
+    color: var(--red);
+  }
   .pause-note {
     margin-top: 12px;
     color: var(--muted);
@@ -130,11 +152,35 @@
     }
   }
   @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) and (clip-path: inset(0)) {
+      .editorial-pause {
+        clip-path: inset(0);
+        view-timeline-name: --editorial-window;
+        view-timeline-axis: block;
+      }
+      /* The photograph and shade move as ONE composited plane. */
+      .editorial-pause > .pause-landscape {
+        position: absolute;
+        inset: calc(-8vh - 2px) 0 auto;
+        height: calc(100% + 16vh + 4px);
+        will-change: transform;
+        animation: editorial-window-travel 1s linear both;
+        animation-timeline: --editorial-window;
+        animation-range: cover 0% cover 100%;
+      }
+    }
     a,
     button {
       transition:
         color 180ms ease,
         background-color 180ms ease;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pause-landscape > img {
+      inset: 0;
+      height: 100%;
+      transform: none;
     }
   }
   @media (max-width: 1100px) {
@@ -146,10 +192,10 @@
     }
   }
   @media (max-width: 700px) {
-    .editorial-pause > img {
+    .pause-landscape > img {
       object-position: 48% center;
     }
-    .editorial-pause::before {
+    .pause-landscape::before {
       background:
         linear-gradient(90deg, #101114a6, #10111473), linear-gradient(0deg, #0c0c0e99, transparent);
     }
@@ -169,6 +215,14 @@
     }
     h2 {
       font-size: 32px;
+    }
+  }
+  @keyframes editorial-window-travel {
+    from {
+      transform: translate3d(0, -8vh, 0);
+    }
+    to {
+      transform: translate3d(0, 8vh, 0);
     }
   }
 </style>

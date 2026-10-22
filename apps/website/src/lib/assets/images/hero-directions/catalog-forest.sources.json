@@ -1,0 +1,32 @@
+{
+  "purpose": "Decorative background for the existing Ver todas as viaturas card.",
+  "photographer": "Venti Views",
+  "page": "https://unsplash.com/photos/areal-view-of-road-in-the-middle-of-forest-Clwh1mksdAM",
+  "license": "https://unsplash.com/license",
+  "original": [
+    5471,
+    3076
+  ],
+  "crop": {
+    "left": 2125,
+    "top": 424,
+    "width": 1398,
+    "height": 1864
+  },
+  "processing": "WebP quality 93, smartSubsample, portrait crop and reduction only; no blur, enlargement or sharpening.",
+  "assets": [
+    {
+      "file": "catalog-forest-640.webp",
+      "width": 640,
+      "height": 853,
+      "bytes": 363330
+    },
+    {
+      "file": "catalog-forest-1280.webp",
+      "width": 1280,
+      "height": 1707,
+      "bytes": 1311854
+    }
+  ],
+  "framing": "Static crop 1.65x closer than the first card background, emphasizing canopy texture; no CSS enlargement or blur."
+}

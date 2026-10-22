@@ -40,10 +40,15 @@
     >
       {#each [0, 1, 2] as panel}
         <div class="cabin-panel panel-{panel}" aria-hidden="true">
-          <img src={interior} srcset={responsivePhoto('photo-1652453822981-653a9a522a5b')} sizes="(min-width: 1920px) 1720px, 96vw" alt="" loading="lazy" decoding="async" style={`left: ${panel * -100}%`} />
-          <div class="fold-shade"></div>
+          <div class="cabin-panel-face">
+            <img src={interior} srcset={responsivePhoto('photo-1652453822981-653a9a522a5b')} sizes="(min-width: 1920px) 1720px, 96vw" alt="" loading="lazy" decoding="async" style={`--panel: ${panel}`} />
+            <div class="fold-shade"></div>
+          </div>
         </div>
       {/each}
+    </div>
+    <div class="panorama-flat" aria-hidden="true">
+      <img src={interior} srcset={responsivePhoto('photo-1652453822981-653a9a522a5b')} sizes="(min-width: 1920px) 1720px, 96vw" alt="" loading="lazy" decoding="async" />
     </div>
     <div class="panorama-caption">
       <span>UM OUTRO PONTO DE VISTA</span><span>INTERIOR / SELEÇÃO AUTOMÓVEL</span>
@@ -102,6 +107,7 @@
     --reveal-b: 1;
     --reveal-c: 1;
     --unfold: 1;
+    --flat: clamp(0, calc((var(--unfold) - 0.999) * 1000), 1);
     width: 95%;
     max-width: 1640px;
     margin: 22px auto 78px;
@@ -154,17 +160,48 @@
     display: flex;
     transform-style: preserve-3d;
   }
+  /* A flat photograph has no hinges to rasterize. Hand off to one continuous
+     surface in the last 0.1% of unfolding, and reverse that handoff on scroll.
+     This also covers reduced motion and the focus-to-open interaction. */
+  .panorama-flat {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 6px;
+    background: #19191b;
+    opacity: var(--flat);
+    pointer-events: none;
+  }
+  .panorama-flat img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 53%;
+    display: block;
+  }
   .cabin-panel {
     position: relative;
     width: calc(100% / 3);
     height: 100%;
+    backface-visibility: hidden;
+  }
+  .cabin-panel-face {
+    position: absolute;
+    inset: 0;
     overflow: hidden;
     background: #19191b;
-    backface-visibility: hidden;
+    border-radius: inherit;
+  }
+  /* Bleed real image pixels beneath the hinged edges: separately rasterized
+     3D surfaces otherwise expose the page through their antialiased edges.
+     Keep panel geometry and the full panorama's image coordinates unchanged. */
+  .panel-1 .cabin-panel-face {
+    inset-inline: -1px;
   }
   .cabin-panel img {
     position: absolute;
     top: 0;
+    left: calc(var(--panel) * -100%);
     width: 300%;
     max-width: none;
     height: 100%;
@@ -172,7 +209,12 @@
     object-position: center 53%;
     display: block;
   }
-  .cabin-panel:after {
+  .panel-1 img {
+    width: calc(300% - 6px);
+    left: calc(-100% + 3px);
+  }
+  .cabin-panel-face:after,
+  .panorama-flat:after {
     content: '';
     position: absolute;
     inset: 0;

@@ -21,9 +21,11 @@
   let loadedReload = -1;
   let pair = $state('0-1');
   const pairs = [[0, 1], [0, 2], [1, 2]] as const;
-  const visible = $derived(compact && entries.length === 3
-    ? pair.split('-').map(index => entries[Number(index)]!).filter(Boolean)
-    : entries);
+  // Keep the actual table geometry while fresh data is fetched; never display cached inventory.
+  const displayEntries = $derived(loading ? $ids.map(id => ({ id, status: 0, vehicle: null } as Entry)) : entries);
+  const visible = $derived(compact && displayEntries.length === 3
+    ? pair.split('-').map(index => displayEntries[Number(index)]!).filter(Boolean)
+    : displayEntries);
   const facts = comparisonRows.filter(row => row.label !== 'Preço');
   const middleLabels = $derived(!compact && visible.length > 1);
   const sessions = new WeakMap<Entry, ReturnType<typeof createThumbnailSession>>();
@@ -92,7 +94,7 @@
     {/if}
   </header>
 
-  {#if !$ready || loading}
+  {#if !$ready}
     <p role="status" class="loading">A carregar as viaturas…</p>
   {:else if !$ids.length}
     <section class="empty" aria-labelledby="empty-title">
@@ -105,17 +107,18 @@
     {#if entries.some(entry => entry.status === 503)}
       <div class="retry" role="status"><p>Alguns dados estão temporariamente indisponíveis.</p><button type="button" onclick={() => reload += 1}><RotateCcw size={16} aria-hidden="true" /> Tentar novamente</button></div>
     {/if}
-    {#if compact && entries.length === 3}
+    {#if compact && displayEntries.length === 3}
       <div class="pair-picker">
         <label for="comparison-pair">Comparar lado a lado</label>
         <select id="comparison-pair" bind:value={pair}>
           {#each pairs as indexes}
-            <option value={indexes.join('-')}>{name(entries[indexes[0]]!)} + {name(entries[indexes[1]]!)}</option>
+            <option value={indexes.join('-')}>{loading ? `Viaturas ${indexes[0] + 1} e ${indexes[1] + 1}` : `${name(entries[indexes[0]]!)} + ${name(entries[indexes[1]]!)}`}</option>
           {/each}
         </select>
       </div>
     {/if}
-    <div class="comparison-board" class:single={visible.length === 1} class:pair={visible.length === 2} class:triple={visible.length === 3}>
+    <div class="comparison-board" aria-busy={loading} class:single={visible.length === 1} class:pair={visible.length === 2} class:triple={visible.length === 3}>
+      {#if loading}<p class="sr-only" role="status">A carregar as viaturas…</p>{/if}
       <table>
         <caption class="sr-only">Comparação de {visible.map(name).join(' e ')}</caption>
         <colgroup>{#each visible as entry, column}<col />{#if middleLabels && column === 0}<col class="attribute-column" />{/if}{/each}</colgroup>
@@ -124,13 +127,14 @@
             {#each visible as entry, column (entry.id)}
               <td>
                 <div class="vehicle-photo">
-                  {#if entry.vehicle}
+                  {#if loading}<div class="pending-photo" aria-hidden="true"></div>
+                  {:else if entry.vehicle}
                     {@const session = imageSessions.get(entry.id)!}
                     {@const src = entry.vehicle.photos.length ? sizedPhoto(publicPhoto(entry.id, 0),800) : catalogPlaceholder}
                     {@const srcset = entry.vehicle.photos.length ? vehiclePhotoSet(publicPhoto(entry.id,0)) : undefined}
                     <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><img {...thumbnailAttrs(session,src,srcset)} use:publicThumbnail={{session,index:0,src,srcset,sizes:'(max-width:700px) 90vw, 560px'}} sizes="(max-width:700px) 90vw, 560px" alt={entry.vehicle.photos.length ? name(entry) : `Fotografia indisponível: ${name(entry)}`} width="480" height="320" /></a>
                   {:else}<div class="missing-photo"><img src={catalogPlaceholder} alt="Fotografia indisponível" width="480" height="320" /></div>{/if}
-                  <button class="remove" type="button" aria-label={`Remover ${name(entry)} da comparação`} onclick={() => remove(entry)}><X size={18} aria-hidden="true" /></button>
+                  <button class="remove" type="button" disabled={loading} aria-label={`Remover ${name(entry)} da comparação`} onclick={() => remove(entry)}><X size={18} aria-hidden="true" /></button>
                 </div>
               </td>
               {#if middleLabels && column === 0}<td class="attribute-space" aria-hidden="true"></td>{/if}
@@ -139,7 +143,12 @@
           <tr class="summary-row">
             {#each visible as entry, column (entry.id)}
               <th scope="col" id={`vehicle-${entry.id}`}>
-                {#if entry.vehicle}
+                {#if loading}
+                  <span class="brand pending-line" aria-hidden="true">&nbsp;</span>
+                  <div class="pending-line pending-title" aria-hidden="true">&nbsp;</div>
+                  <strong class="price pending-line" aria-hidden="true">&nbsp;</strong>
+                  <span class="detail-link pending-line" aria-hidden="true">&nbsp;</span>
+                {:else if entry.vehicle}
                   <span class="brand">{entry.vehicle.brand}</span>
                   <h2><a href={publicHref(entry.id)}>{entry.vehicle.model}</a></h2>
                   <strong class="price">{entry.vehicle.price === null ? 'Preço não indicado' : publicPrice(entry.vehicle.price)}</strong>
@@ -157,14 +166,14 @@
           <tbody class="fact-group">
             {#if middleLabels}
             <tr class="aligned-fact">{#each visible as entry, column (entry.id)}
-              <td class="fact-value" class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'} headers={`vehicle-${entry.id} fact-${index}`}>{entry.vehicle ? row.value(entry.vehicle) : 'Indisponível'}</td>
+              <td class="fact-value" class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'} headers={`vehicle-${entry.id} fact-${index}`}>{#if loading}<span class="pending-line" aria-hidden="true">&nbsp;</span>{:else}{entry.vehicle ? row.value(entry.vehicle) : 'Indisponível'}{/if}</td>
               {#if column === 0}<th class="fact-label" scope="row" id={`fact-${index}`}><span>{row.label}</span></th>{/if}
             {/each}</tr>
             {:else}
             <tr><th class="fact-label" id={`fact-${index}`} colspan={visible.length}><span>{row.label}</span></th></tr>
             <tr>
               {#each visible as entry (entry.id)}
-                <td class="fact-value" class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'} headers={`vehicle-${entry.id} fact-${index}`}>{entry.vehicle ? row.value(entry.vehicle) : 'Indisponível'}</td>
+                <td class="fact-value" class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'} headers={`vehicle-${entry.id} fact-${index}`}>{#if loading}<span class="pending-line" aria-hidden="true">&nbsp;</span>{:else}{entry.vehicle ? row.value(entry.vehicle) : 'Indisponível'}{/if}</td>
               {/each}
             </tr>
             {/if}
@@ -182,6 +191,8 @@
 </main>
 
 <style>
+  .pending-photo { height: clamp(150px,12vw,210px); background: var(--surface); }
+  .pending-line { display: block; background: var(--surface); border-radius: 3px; width: 80%; }
   .comparison-page { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: var(--orbit-space-page-start) 0 88px; color: var(--text); }
   a { color: inherit; text-decoration: none; }
   button, select { font: inherit; color: inherit; }
@@ -212,8 +223,8 @@
   .summary-row th { padding-block: 14px 18px; position: sticky; top:var(--nav-visible-height,80px); z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); }
   .summary-row .attribute-space {position:sticky;top:var(--nav-visible-height,80px);z-index:2;background:var(--bg);border-bottom:1px solid var(--line);}
   .brand { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
-  h2 { margin: 0; font-size: clamp(21px, 2vw, 28px); line-height: 1.15; font-weight: 500; letter-spacing: -.045em; overflow-wrap: anywhere; }
-  .summary-row h2 { min-height: 2.3em; }
+  h2, .pending-title { margin: 0; font-size: clamp(21px, 2vw, 28px); line-height: 1.15; font-weight: 500; letter-spacing: -.045em; overflow-wrap: anywhere; }
+  .summary-row h2, .pending-title { min-height: 2.3em; }
   .price { display: block; margin-top: 10px; font-size: clamp(20px, 1.7vw, 24px); font-weight: 500; letter-spacing: -.035em; }
   .detail-link { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; min-height: 44px; margin-top: 4px; }
   .fact-label {padding:12px 16px 8px;color:var(--muted);font-size:12px;line-height:1.5;text-align:left;}
@@ -258,10 +269,10 @@
     .vehicle-photo { border-radius: 3px; }
     .remove { top: 5px; right: 5px; width: 36px; height: 36px; }
     .remove::before { content: ''; position: absolute; inset: -4px; }
-    .vehicle-photo img {height:clamp(100px,28vw,150px);}
+    .vehicle-photo img, .pending-photo {height:clamp(100px,28vw,150px);}
     .summary-row th { padding-block: 12px 14px; }
     .brand { font-size: 13px; margin-bottom: 6px; }
-    h2 { font-size: clamp(18px, 4.8vw, 23px); line-height: 1.15; }
+    h2, .pending-title { font-size: clamp(18px, 4.8vw, 23px); line-height: 1.15; }
     .price { font-size: clamp(18px, 4.8vw, 23px); margin-top: 8px; }
     .detail-link { gap: 8px; font-size: 13px; margin-top: 4px; }
     .fact-label {font-size:12px;padding-block:14px 9px;}

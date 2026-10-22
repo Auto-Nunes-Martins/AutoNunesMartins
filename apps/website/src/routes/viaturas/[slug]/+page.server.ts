@@ -3,6 +3,8 @@ import { loadPublicVehicle, loadRelatedVehicles } from '$lib/server/publicVehicl
 import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
   setHeaders({ 'cache-control': 'no-store' });
+  // Suggestions are independent and below the vehicle. They must not delay opening its details.
+  const relatedVehicles = loadRelatedVehicles(params.slug);
   const result = await loadPublicVehicle(params.slug);
   if (!result.vehicle) {
     if (result.status === 503) setHeaders({ 'retry-after': '120' });
@@ -16,5 +18,5 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         : {}),
     });
   }
-  return { vehicle: result.vehicle, relatedVehicles: await loadRelatedVehicles(params.slug) };
+  return { vehicle: result.vehicle, relatedVehicles };
 };

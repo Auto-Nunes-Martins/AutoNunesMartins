@@ -8,6 +8,7 @@
   import { ArrowUpRight, ArrowLeft, ArrowRight } from 'lucide-svelte';
   import HomeHeroV2Backdrop from './HomeHeroV2Backdrop.svelte';
   import { homeHeroV2Motion } from './homeHeroV2Motion';
+  import { featuredHover } from './featuredHover';
   import './homeHeroV2.css';
   let {
     homeHighlights,
@@ -76,7 +77,7 @@
           O carro certo para os seus dias.<br />Escolhido ao seu ritmo.
         </p>
       </div>
-      <div class="v2-orbit-object">
+      <div class="v2-orbit-object" use:featuredHover>
         <div class="v2-object-edge"></div>
         {#if heroCar}
           <a

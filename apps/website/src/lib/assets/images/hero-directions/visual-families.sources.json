@@ -1,0 +1,97 @@
+{
+  "purpose": "Photographic exceptions explicitly approved for version 5 catalog and editorial pause only. New secondary scenes for all other configured areas are documented in generated-families.sources.json.",
+  "processing": "Native photographic sources, portrait crops and downsampling only. WebP quality 93; no sharpening, enlargement or offline blur.",
+  "extras": [
+    {
+      "key": "family-curves",
+      "source": ".cache/hero-directions/source-33275772.jpg",
+      "credit": "Pok Rie",
+      "page": "https://www.pexels.com/photo/aerial-view-of-winding-mountain-road-through-forest-33275772/",
+      "license": "https://www.pexels.com/license/",
+      "original": [
+        5472,
+        3648
+      ],
+      "assets": [
+        {
+          "file": "family-curves-wide-1280.webp",
+          "width": 1280,
+          "height": 853,
+          "bytes": 532354
+        },
+        {
+          "file": "family-curves-wide-1920.webp",
+          "width": 1920,
+          "height": 1280,
+          "bytes": 1176306
+        },
+        {
+          "file": "family-curves-wide-3840.webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 4279292
+        },
+        {
+          "file": "family-curves-wide-5472.webp",
+          "width": 5472,
+          "height": 3648,
+          "bytes": 8184426
+        },
+        {
+          "file": "family-curves-portrait-640.webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 281534
+        },
+        {
+          "file": "family-curves-portrait-1080.webp",
+          "width": 1080,
+          "height": 1440,
+          "bytes": 797796
+        },
+        {
+          "file": "family-curves-portrait-1920.webp",
+          "width": 1920,
+          "height": 2560,
+          "bytes": 2376164
+        }
+      ]
+    }
+  ],
+  "existing_sources": "forest-variants.sources.json",
+  "mapping": {
+    "5": {
+      "catalog": "forest-ribbon (approved existing header photo exception)",
+      "pause": "family-curves (approved complementary photograph)",
+      "visit": "scene-v5-visit (new generation)"
+    }
+  },
+  "native_portraits": [
+    {
+      "file": "family-forest-ribbon-portrait-native.webp",
+      "width": 2736,
+      "height": 3648,
+      "bytes": 5125574,
+      "crop": {
+        "left": 958,
+        "top": 0,
+        "width": 2736,
+        "height": 3648
+      },
+      "source": ".cache/hero-directions/source-33275771.jpg"
+    },
+    {
+      "file": "family-family-curves-portrait-native.webp",
+      "width": 2736,
+      "height": 3648,
+      "bytes": 4571340,
+      "crop": {
+        "left": 1368,
+        "top": 0,
+        "width": 2736,
+        "height": 3648
+      },
+      "source": ".cache/hero-directions/source-33275772.jpg"
+    }
+  ]
+}
