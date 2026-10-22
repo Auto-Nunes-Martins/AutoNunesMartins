@@ -3,8 +3,18 @@ const mocks = vi.hoisted(() => ({ enhance: vi.fn(), applyAction: vi.fn(), refres
 vi.mock('$app/forms', () => ({ enhance: mocks.enhance, applyAction: mocks.applyAction }));
 vi.mock('./session', () => ({ refreshCrmSession: mocks.refresh, sessionRejected: mocks.rejected }));
 import { enhance } from './enhance';
+import { listNavigationCache } from '$lib/lists/navigationCache';
 beforeEach(() => { vi.clearAllMocks(); mocks.refresh.mockResolvedValue('token'); });
 describe('authenticated enhanced forms', () => {
+  it.each(['success', 'redirect'])('clears list snapshots before the %s callback can navigate', async type => {
+    const clear = vi.spyOn(listNavigationCache, 'clear');
+    const callback = vi.fn(async () => { expect(clear).toHaveBeenCalledOnce(); });
+    enhance({} as HTMLFormElement, () => callback);
+    const complete = await mocks.enhance.mock.calls[0]![1]({ cancel: vi.fn() });
+    await complete({ result: { type, status: type === 'redirect' ? 303 : 200 }, update: vi.fn() });
+    expect(callback).toHaveBeenCalledOnce();
+    clear.mockRestore();
+  });
   it('cancels before the saving state is entered when token renewal fails', async () => {
     mocks.refresh.mockRejectedValueOnce(new Error('offline'));
     const submit = vi.fn(), cancel = vi.fn();

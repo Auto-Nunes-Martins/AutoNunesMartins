@@ -34,8 +34,6 @@
   // Reactive: when SvelteKit re-runs the load function after a form action,
   // `data` is reassigned and these derived values pick up the new vehicle.
   const v = $derived(data.vehicle);
-  const signedPhotos = $derived(data.signedPhotos);
-  const isFeatured = $derived(data.isFeatured);
 
   const FUEL_LABELS: Record<string, string> = {
     GASOLINE: 'Gasolina',
@@ -87,16 +85,26 @@
         >
           VIN {v.vin}
         </span>
-        {#if isFeatured}
-          <span
-            class="inline-flex items-center gap-1 px-2 py-0.5 bg-[color-mix(in_oklab,#e6b800_15%,transparent)] border border-[color-mix(in_oklab,#e6b800_45%,transparent)] text-[#e6b800] font-mono text-[9.5px] uppercase tracking-[0.22em]"
-            style="border-radius: var(--radius-btn);"
-            title="Esta viatura está nos destaques do site e da dashboard"
+        <span class="featured-slot">
+        {#await data.isFeatured}
+          <span class="invisible" aria-hidden="true">Em destaque</span>
+        {:then isFeatured}
+          {#if isFeatured}
+            <span
+              class="inline-flex items-center gap-1 px-2 py-0.5 bg-[color-mix(in_oklab,#e6b800_15%,transparent)] border border-[color-mix(in_oklab,#e6b800_45%,transparent)] text-[#e6b800] font-mono text-[9.5px] uppercase tracking-[0.22em]"
+              style="border-radius: var(--radius-btn);"
+              title="Esta viatura está nos destaques do site e da dashboard"
+            >
+              <Star class="h-2.5 w-2.5 fill-[#e6b800]" />
+              Em destaque
+            </span>
+          {:else}<span class="invisible" aria-hidden="true">Em destaque</span>{/if}
+        {:catch}
+          <span role="status"
+            >Não foi possível verificar os destaques. Verifique a sessão e atualize a página.</span
           >
-            <Star class="h-2.5 w-2.5 fill-[#e6b800]" />
-            Em destaque
-          </span>
-        {/if}
+        {/await}
+        </span>
       </div>
       <ItalicHero text={`${v.brand} `} accent={v.model} size="lg" />
       <p
@@ -212,17 +220,27 @@
   <!-- Top grid: gallery + spec/profit -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <div class="lg:col-span-7 space-y-6">
-      <PhotoGallery
-        vehicleId={v.id}
-        photos={signedPhotos}
-        principalPath={vehiclePrincipalPath(v) ?? null}
-        editable={false}
-        publicPaths={v.publicPhotoPaths}
-        published={v.webPublished &&
-          ['AVAILABLE', 'RESERVED'].includes(v.status) &&
-          !v.sale &&
-          !v.soldDate}
-      />
+      {#await data.signedPhotos}
+        <PhotoGallery vehicleId={v.id} photos={[]} loading photoCount={v.photos.length}
+          principalPath={vehiclePrincipalPath(v) ?? null} editable={false} publicPaths={v.publicPhotoPaths}
+          published={v.webPublished && ['AVAILABLE', 'RESERVED'].includes(v.status) && !v.sale && !v.soldDate} />
+      {:then signedPhotos}
+        <PhotoGallery
+          vehicleId={v.id}
+          photos={signedPhotos}
+          principalPath={vehiclePrincipalPath(v) ?? null}
+          editable={false}
+          publicPaths={v.publicPhotoPaths}
+          published={v.webPublished &&
+            ['AVAILABLE', 'RESERVED'].includes(v.status) &&
+            !v.sale &&
+            !v.soldDate}
+        />
+      {:catch}
+        <PhotoGallery vehicleId={v.id} photos={[]} loadError photoCount={v.photos.length}
+          principalPath={vehiclePrincipalPath(v) ?? null} editable={false} publicPaths={v.publicPhotoPaths}
+          published={v.webPublished && ['AVAILABLE', 'RESERVED'].includes(v.status) && !v.sale && !v.soldDate} />
+      {/await}
 
       <Panel>
         <PanelHeader icon={FileText} title="Notas" />
@@ -243,7 +261,7 @@
             icon={Tag}
             label="PVP"
             value={v.salePrice ? formatEUR(v.salePrice) : '—'}
-            valueClass="text-[var(--color-red)] font-bold"
+            valueClass="text-[var(--color-text)] font-bold"
           />
           <SpecRow icon={FuelIcon} label="Combustível" value={FUEL_LABELS[v.fuel] ?? v.fuel} />
         </div>
@@ -344,3 +362,7 @@
   {/if}
   <VehicleDeletePanel id={v.id} brand={v.brand} model={v.model} blocked={!!v.sale} />
 </section>
+
+<style>
+  .featured-slot { display: inline-flex; min-width: 130px; min-height: 22px; align-items: center; }
+</style>

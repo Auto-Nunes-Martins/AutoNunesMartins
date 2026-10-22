@@ -10,28 +10,34 @@ export const load: PageServerLoad = async (event) => {
   try {
     const vehicle = await vehiclesApi.get(event, event.params.id);
 
-    let signedPhotos: { path: string; url: string }[] = [];
-    if (vehicle.photos.length > 0) {
-      try {
-        const { photos } = await vehiclesApi.signedPhotos(event, event.params.id);
-        signedPhotos = photos;
-      } catch (err) {
-        rethrowAuthError(err);
-        // Surface as empty gallery rather than break the page.
-        signedPhotos = [];
-      }
-    }
+    // Only the vehicle is required to render the page. Start independent
+    // lookups together and stream them so storage cannot block its details.
+    const signedPhotos =
+      vehicle.photos.length > 0
+        ? vehiclesApi
+            .signedPhotos(event, event.params.id)
+            .then(({ photos }) => photos)
+            .catch((err) => {
+              rethrowAuthError(err);
+              throw error(
+                503,
+                'Não foi possível carregar as fotografias. Atualize a página para tentar novamente.',
+              );
+            })
+        : Promise.resolve([]);
 
     // Whether THIS vehicle is the one currently pinned as Dashboard hero.
-    let isFeatured = false;
-    try {
-      const { items } = await dashboardApi.highlights(event);
-      isFeatured = items.some((item) => item.id === vehicle.id);
-    } catch (err) {
-      rethrowAuthError(err);
-      // Non-blocking: if the featured lookup fails we just hide the badge.
-      isFeatured = false;
-    }
+    const isFeatured = dashboardApi
+      .highlights(event)
+      .then(({ items }) => items.some((item) => item.id === vehicle.id))
+      .catch((err) => {
+        rethrowAuthError(err);
+        return false;
+      });
+    // SvelteKit owns delivery of streamed rejections. Attach handlers now as
+    // either lookup can fail before the initial response has been serialized.
+    void signedPhotos.catch(() => {});
+    void isFeatured.catch(() => {});
 
     return { vehicle, signedPhotos, isFeatured };
   } catch (err) {

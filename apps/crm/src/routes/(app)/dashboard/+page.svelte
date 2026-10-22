@@ -102,6 +102,18 @@
   </div>
 
   <!-- Streamed dashboard -->
+  <!-- The showcase is already available in SSR; keep it mounted while metrics stream. -->
+  <FeaturedVehicleHero highlights={data.highlights}>
+    {#snippet metrics()}
+      {#await data.dashboard then result}
+        {#if result.kind === 'ok'}
+          <span><strong>{result.payload.kpis.vendasMes.count}</strong><small>Vendas · Mês</small></span>
+          {@const revenue = formatCompactEUR(result.payload.salesChart.ytdRevenue)}
+          <span><strong>{revenue.value}{revenue.suffix ?? ''}</strong><small>Faturação YTD</small></span>
+        {/if}
+      {/await}
+    {/snippet}
+  </FeaturedVehicleHero>
   {#await data.dashboard}
     <!-- Skeleton state -->
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -131,6 +143,10 @@
         </Panel>
       </div>
     </div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="lg:col-span-7"><Panel><div class="p-5"><Skeleton height="360px" /></div></Panel></div>
+      <div class="lg:col-span-5"><TodayTasks pending currentUserId={data.currentUser?.id ?? null} /></div>
+    </div>
   {:then result}
     {#if result.kind === 'error'}
       <Panel>
@@ -141,14 +157,6 @@
       </Panel>
     {:else}
       {@const d = result.payload}
-
-      <!-- Featured vehicle hero — awaited in the load function so it ships
-           in the initial HTML and doesn't cause a layout shift. -->
-      <FeaturedVehicleHero
-        highlights={data.highlights}
-        salesThisMonth={d.kpis.vendasMes.count}
-        revenueYtd={d.salesChart.ytdRevenue}
-      />
 
       <!-- Smart Alerts banner (renders only when there's something to alert about) -->
       <SmartAlertsBanner alerts={d.alerts} />
@@ -227,7 +235,6 @@
         <div class="lg:col-span-5">
           <TodayTasks
             items={d.todayTasks}
-            users={data.users}
             currentUserId={data.currentUser?.id ?? null}
           />
         </div>

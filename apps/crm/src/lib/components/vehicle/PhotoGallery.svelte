@@ -3,7 +3,7 @@
  import {photoAttrs,photoFallback,type SignedVariantPhoto} from "$lib/vehicleImage";
   import { crmPath } from '$lib/paths';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
-  import type { Snippet } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import { Camera, Plus, Star, Trash2, Upload, ArrowLeft, ArrowRight, X } from 'lucide-svelte';
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
@@ -38,16 +38,17 @@
     >;
   }
 
-  let { vehicleId, photos, editor, disabled = false, dragging = false, editable = true, publicPaths, published = false, principalPath, busy = $bindable(false) }: Props = $props();
+  let { vehicleId, photos, editor, disabled = false, dragging = false, editable = true, publicPaths, published = false, principalPath, busy = $bindable(false), loading = false, photoCount = photos.length, loadError = false }: Props & { loading?: boolean; photoCount?: number; loadError?: boolean } = $props();
   // All photo ops go through SvelteKit proxy endpoints so the user's Clerk
   // session is forwarded server-side as a Bearer token to the Express backend.
   const apiBase = $derived(crmPath(`/viaturas/${vehicleId}/photos`));
 
   let uploading = $state(false);
-  let activeIndex = $state(0);
+  let activeIndex = $state(untrack(() => principalPath === null ? -1 : Math.max(0, photos.findIndex(photo => photo.path === principalPath))));
   let loadedPrincipal = '';
   $effect(()=>{ const key=vehicleId+'|'+principalPath;if(key!==loadedPrincipal){loadedPrincipal=key;if(principalPath!==undefined)activeIndex=principalPath===null?-1:Math.max(0,photos.findIndex(photo=>photo.path===principalPath));} });
   let viewer = $state<HTMLDialogElement>(undefined!), opener = $state<HTMLButtonElement>(undefined!);
+  let viewerOpen = $state(false);
   let imageFailed = $state(false);
   let failedThumbnailUrls = $state<string[]>([]);
   const uid = $props.id();
@@ -163,7 +164,7 @@
   class="overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-1)]"
   style="border-radius: var(--radius-card);"
 >
-  <PanelHeader icon={Camera} title="Fotografias" meta={`${photos.length} / 20`}>
+  <PanelHeader icon={Camera} title="Fotografias" meta={`${photoCount} / 20`}>
     {#snippet actions()}
       {#if editable}
       <label
@@ -202,7 +203,17 @@
 
   <div class:photo-workspace={!!editor}>
     <div>
-      {#if photos.length === 0}
+      {#if loading || loadError}
+        <div class="photo-empty aspect-[16/10] grid place-items-center bg-[var(--color-bg-2)]" role={loadError ? 'alert' : 'status'} aria-busy={loading}>
+          <span class="p-5 text-center text-sm text-[var(--color-text-muted)]">{loadError ? 'Não foi possível carregar as fotografias. Verifique a sessão e atualize a página.' : 'A carregar fotografias…'}</span>
+        </div>
+        {#if photoCount > 0}
+          {#if publicPaths && principalPath}<p class="saved-visibility" aria-hidden="true">{published && publicPaths.includes(principalPath) ? '✓ No site' : publicPaths.includes(principalPath) ? 'Autorizada · viatura fora do site' : 'Só no CRM'}</p>{/if}
+          {#if !editor}<div class="flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border)]" aria-hidden="true">
+            {#each Array(photoCount) as _}<span class="block h-16 w-24 flex-shrink-0 bg-[var(--color-bg-2)] rounded"></span>{/each}
+          </div>{/if}
+        {/if}
+      {:else if photos.length === 0}
         <div
           class="photo-empty aspect-[16/10] flex flex-col items-center justify-center gap-3 bg-[var(--color-bg-2)]"
         >
@@ -218,7 +229,7 @@
         <!-- Primary photo -->
         <div class="photo-preview aspect-[16/10] bg-[var(--color-bg-2)] overflow-hidden">
           {#if primary}
-            <button bind:this={opener} type="button" class="photo-open" aria-label={`Ampliar fotografia ${activeIndex + 1} de ${photos.length}`} onclick={() => viewer.showModal()} onkeydown={photoKey}>
+            <button bind:this={opener} type="button" class="photo-open" aria-label={`Ampliar fotografia ${activeIndex + 1} de ${photos.length}`} onclick={() => { viewerOpen = true; viewer.showModal(); }} onkeydown={photoKey}>
             {#if imageFailed}<span class="photo-unavailable">Fotografia indisponível</span>{:else}
             <img
               {...photoAttrs(primary,1600,'(max-width:700px) 100vw, 1100px')} use:photoFallback={primary.url}
@@ -333,9 +344,9 @@
   </div>
 </section>
 
-<dialog class="crm-photo-viewer" bind:this={viewer} aria-labelledby={captionId} onkeydown={photoKey} onclose={() => opener?.focus({ preventScroll: true })} onclick={event => { if (event.target === viewer) viewer.close(); }}>
+<dialog class="crm-photo-viewer" bind:this={viewer} aria-labelledby={captionId} onkeydown={photoKey} onclose={() => { viewerOpen = false; opener?.focus({ preventScroll: true }); }} onclick={event => { if (event.target === viewer) viewer.close(); }}>
   <button type="button" class="viewer-close" aria-label="Fechar fotografia" onclick={() => viewer.close()}><X size={22} aria-hidden="true" /></button>
-  {#if primary}
+  {#if viewerOpen && primary}
     {#if imageFailed}<p class="photo-unavailable" role="status">Fotografia indisponível. Pode navegar para outra fotografia.</p>{:else}<img src={primary.url} alt={`Fotografia ${activeIndex + 1} da viatura`} onerror={() => imageFailed = true} />{/if}
   {/if}
   <p id={captionId}>Fotografia {activeIndex + 1} de {photos.length}</p>
@@ -351,7 +362,8 @@
   .saved-visibility {padding:10px 14px;font-size:13px;font-weight:600;background:var(--color-bg-2);border-bottom:1px solid var(--color-border);}
   .saved-visibility.on-site {background:color-mix(in srgb,#1e9c67 20%,var(--color-bg-1));}
   .thumb-visibility {position:absolute;bottom:2px;left:2px;padding:2px 4px;background:#111c;color:white;font-size:9px;pointer-events:none;}
-  .photo-open { display: block; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: zoom-in; }
+  /* Intrinsic image sizes must never grow the aspect-ratio frame after decoding. */
+  .photo-open { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: zoom-in; }
   .photo-step,.viewer-step,.viewer-close { display: grid; place-items: center; position: absolute; min-width: 44px; min-height: 44px; background: #1119; color: white; border: 1px solid #ffffff70; border-radius: 50%; cursor: pointer; z-index: 2; }
   .photo-step,.viewer-step { top: 50%; transform: translateY(-50%); }
   .previous {left: 8px;} .next {right: 8px;} .viewer-close {top: 4px;right: 4px;}

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 vi.mock('$app/paths', () => ({ base: '/crm' }));
 import { bindCrmSession, crmSessionState, refreshCrmSession, sessionFetch } from './session';
+import { listNavigationCache } from '$lib/lists/navigationCache';
 
 let cleanup: () => void;
 beforeEach(() => {
@@ -10,6 +11,45 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup?.(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe('Clerk session recovery', () => {
+  it('bounds waiting for the provider during hydration and allows a later retry', async () => {
+    vi.useFakeTimers();
+    const request = sessionFetch('/crm/api/tasks');
+    const rejected = expect(request).rejects.toMatchObject({ status: 503 });
+    await vi.advanceTimersByTimeAsync(12000);
+    await rejected;
+    expect(fetch).not.toHaveBeenCalled();
+    cleanup = bindCrmSession(async () => 'token');
+    expect((await sessionFetch('/crm/api/tasks')).status).toBe(200);
+  });
+  it('cancels a read while waiting for hydration without sending it after the provider mounts', async () => {
+    const controller = new AbortController();
+    const request = sessionFetch('/crm/api/tasks', { signal: controller.signal });
+    const rejected = expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    controller.abort();
+    await rejected;
+    cleanup = bindCrmSession(async () => 'token');
+    await Promise.resolve();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['POST', 'PATCH', 'DELETE'])('clears saved list snapshots after a successful %s', async method => {
+    cleanup = bindCrmSession(async () => 'token');
+    const clear = vi.spyOn(listNavigationCache, 'clear');
+    await sessionFetch('/crm/api/test', { method });
+    expect(clear).toHaveBeenCalledOnce();
+    clear.mockRestore();
+  });
+  it('clears cached lists when the provider unbinds or the session identity changes', async () => {
+    let identity = 'session-a';
+    cleanup = bindCrmSession(async () => 'token', () => identity);
+    await refreshCrmSession(false);
+    const clear = vi.spyOn(listNavigationCache, 'clear');
+    identity = 'session-b';
+    await refreshCrmSession(false);
+    expect(clear).toHaveBeenCalledOnce();
+    cleanup();
+    expect(clear).toHaveBeenCalledTimes(2);
+    clear.mockRestore();
+  });
   it('discards a token completed after the provider/session binding changes', async () => {
     let resolve!: (value: string) => void;
     cleanup = bindCrmSession(() => new Promise<string>((done) => { resolve = done; }));

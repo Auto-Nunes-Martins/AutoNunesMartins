@@ -1,5 +1,6 @@
 <script lang="ts">
   import '../app.css';
+  import NavigationProgress from '../../../../shared/ui/NavigationProgress.svelte';
   import { onMount } from 'svelte';
   import { theme } from '$lib/stores/theme';
   import { ClerkProvider } from 'svelte-clerk';
@@ -18,6 +19,7 @@
 </script>
 
 <ClerkProvider>
+  <NavigationProgress />
   <SessionRecovery />
   {@render children?.()}
 </ClerkProvider>

@@ -1,7 +1,7 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { cache } from '../lib/data/cache.js';
-import { loadDashboard } from '../lib/server/dashboardService.js';
+import { loadDashboard, loadTodayTasks, type DashboardPayload } from '../lib/server/dashboardService.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 
 const router = Router();
@@ -21,16 +21,13 @@ router.get(
       return;
     }
     const actorId = req.user.id;
-    const payload = await cache.wrap(`dashboard:${actorId}`, DASHBOARD_TTL_MS, () =>
-      loadDashboard(actorId),
-    );
-
-    // Browser-level cache hint so the browser/SvelteKit can short-circuit
-    // duplicate hits inside the same TTL window.
-    // Browser-level cache: short max-age, long stale-while-revalidate so the
-    // browser can serve from cache on back/forward + tab returns instantly
-    // and refresh in the background.
-    res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=120');
+    const key = `dashboard:${actorId}`;
+    const cached = cache.get<DashboardPayload>(key);
+    // Keep aggregate caching, but always read the actionable task list fresh.
+    const payload = cached
+      ? { ...cached, todayTasks: await loadTodayTasks(actorId) }
+      : await cache.wrap(key, DASHBOARD_TTL_MS, () => loadDashboard(actorId));
+    res.set('Cache-Control', 'private, no-store');
     res.json(payload);
   }),
 );

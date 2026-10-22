@@ -4,16 +4,19 @@
   import { ArrowLeft, ArrowRight, Calendar, Fuel, Gauge, Star, Tag } from 'lucide-svelte';
   import type { DashboardHighlight } from '$lib/server/dashboard';
   import { formatEUR, formatInt } from '$lib/utils/format';
+  import type { Snippet } from 'svelte';
   let {
     highlights,
     stockCount,
     salesThisMonth,
     revenueYtd,
+    metrics,
   }: {
     highlights: DashboardHighlight[];
     stockCount?: number;
     salesThisMonth?: number;
     revenueYtd?: string | null;
+    metrics?: Snippet;
   } = $props();
   let index = $state(0);
   let failedImages = $state<Record<string, boolean>>({});
@@ -116,6 +119,7 @@
     <div class="photo-top">
       <span class="photo-label">Mesmas fotografias da homepage</span>
       <div class="stats">
+        {#if metrics}{@render metrics()}{/if}
         {#if stockCount !== undefined}<span
             ><strong>{formatInt(stockCount)}</strong><small>Em stock</small></span
           >{/if}
@@ -332,11 +336,16 @@
     gap: 22px;
     text-align: right;
   }
-  .stats strong {
+  .stats :global(strong) {
+    font-family: var(--font-display);
+    font-weight: 600;
     font-size: 21px;
     color: white;
   }
-  .stats small {
+  .stats :global(small) {
+    display: block;
+    line-height: 1.5;
+    margin-top: 3px;
     color: #fffb;
     text-transform: uppercase;
     font-family: var(--font-mono);

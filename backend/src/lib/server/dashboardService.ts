@@ -3,7 +3,7 @@ import { prisma } from '../../db.js';
 import { vehiclePrincipalPath } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { taskAttentionWhere } from '../data/task.js';
 import { appSettings } from '../data/appSettings.js';
-import { createSignedReadUrls } from '../data/storage.js';
+import { signedThumbnails } from '../data/storage.js';
 import { logger } from '../../logger.js';
 
 interface MonthlyKpi {
@@ -319,16 +319,18 @@ async function loadStockAged(now: Date): Promise<StockAgedRow[]> {
   });
 
   const paths = rows.map(vehiclePrincipalPath).filter((p): p is string => Boolean(p));
-  let signed = new Map<string, string>();
+  let signed = new Map<string, string | null>();
+  let originalUrls = new Map<string, string>();
   if (paths.length > 0) {
     try {
-      signed = await createSignedReadUrls(paths, 3600, 320);
+      const urls = await signedThumbnails(paths);
+      signed = urls.thumbnails;
+      originalUrls = urls.originals;
     } catch (err) {
       logger.warn({ err }, 'Failed to batch-sign stock-aged thumbnails');
     }
   }
 
-  const originalUrls=await createSignedReadUrls(paths).catch(()=>new Map<string,string>());
   return rows.map((r) => ({
     id: r.id,
     brand: r.brand,
@@ -344,7 +346,7 @@ async function loadStockAged(now: Date): Promise<StockAgedRow[]> {
   }));
 }
 
-async function loadTodayTasks(actorId: string): Promise<TodayTaskRow[]> {
+export async function loadTodayTasks(actorId: string): Promise<TodayTaskRow[]> {
   const todayStart = startOfToday();
   const todayEnd = endOfToday();
   // Surface anything the user can act on today:
@@ -368,13 +370,15 @@ async function loadTodayTasks(actorId: string): Promise<TodayTaskRow[]> {
     },
     // Over-fetch then sort in-memory: status enum doesn't have a natural order
     // suitable for "in-progress first" in Prisma; doing it client-side is cheap.
-    orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
-    take: 15,
+    orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }],
+    take: 30,
     include: { assignee: { select: { id: true, name: true } } },
   });
 
   const PRIORITY_RANK: Record<string, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
   rows.sort((a, b) => {
+    const group = (task: typeof a) => task.dueDate && task.dueDate < todayStart ? 0 : task.dueDate && task.dueDate <= todayEnd ? 1 : 2;
+    if (group(a) !== group(b)) return group(a) - group(b);
     // IN_PROGRESS first
     const aIp = a.status === 'IN_PROGRESS' ? 0 : 1;
     const bIp = b.status === 'IN_PROGRESS' ? 0 : 1;
@@ -388,7 +392,7 @@ async function loadTodayTasks(actorId: string): Promise<TodayTaskRow[]> {
     const db = b.dueDate?.getTime() ?? Number.POSITIVE_INFINITY;
     return da - db;
   });
-  const top = rows.slice(0, 5);
+  const top = rows.slice(0, 8);
 
   return top.map((t) => ({
     id: t.id,

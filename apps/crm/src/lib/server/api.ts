@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
 import { error as httpError, type RequestEvent } from '@sveltejs/kit';
+import { measureNavigation, backendNavigationTiming } from './navigationTiming';
 
 export class ApiError extends Error {
   constructor(
@@ -59,7 +60,7 @@ export async function apiFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const token = await getApiToken(event);
+  const token = await measureNavigation(event.locals, 'token', () => getApiToken(event));
   if (!token) return Response.json({ error: apiErrorMessage(401) }, { status: 401 });
 
   const headers = new Headers(init.headers);
@@ -71,7 +72,13 @@ export async function apiFetch(
   }
 
   const url = `${env.INTERNAL_BACKEND_URL || PUBLIC_BACKEND_URL}${path}`;
-  const send = () => event.fetch(url, { ...init, headers, credentials: 'omit', redirect: 'manual' });
+  const candidate = (path.split('?')[0] ?? '').split('/')[2] ?? '';
+  const service = ['me', 'vehicles', 'vehicle-expenses', 'sales', 'customers', 'tasks', 'users', 'dashboard', 'homepage-highlights', 'notifications', 'activity', 'settings', 'search', 'operational-expenses'].includes(candidate) ? candidate : 'other';
+  const send = () => measureNavigation(event.locals, `api-${service}`, async () => {
+    const response = await event.fetch(url, { ...init, cache: 'no-store', headers, credentials: 'omit', redirect: 'manual' });
+    backendNavigationTiming(event.locals, response.headers.get('server-timing'));
+    return response;
+  });
   let response = await send();
   // A JWT can expire between the CRM and the API. Retry a read once using
   // Clerk, but never replay a mutation or a streamed upload.

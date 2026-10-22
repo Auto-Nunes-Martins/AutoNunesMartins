@@ -29,6 +29,7 @@ function fromSource(source: string, file: string): any {
     else if (specifier === 'svelte') value = svelte;
     else if (specifier === 'lucide-svelte') value = new Proxy({}, { get: () => icon });
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
+    else if (specifier === '$app/navigation') value = { invalidateAll: async () => {} };
     else if (specifier === '$lib/auth/session') value = { sessionFetch: () => { throw new Error('Unexpected SSR fetch'); } };
     else if (specifier === '$lib/utils/format') value = format;
     else if (specifier === '$lib/components/task/presentation') value = taskPresentation;
@@ -112,15 +113,49 @@ describe('dashboard operational overview', () => {
     for (const expected of [
       'Confirmar documentação da entrega',
       'Urgente',
-      '14/10/2026',
+      '14/10',
       'Geral',
-      '15/10/2026',
+      '15/10',
       'Utilizador de teste',
     ])
       expect(content).toContain(expected);
     expect(content).toMatch(/atras/i);
     expect(html).toContain('/tarefas/task-general/editar');
     expect(html).toContain('/tarefas/task-assigned/editar');
+  });
+  it('orders overdue work first and limits completion to own or general tasks', () => {
+    const base = { priority: 'LOW', status: 'TODO', dueDate: null, isOverdue: false };
+    const html = render(component('TodayTasks'), { props: { currentUserId: 'me', items: [
+      { ...base, id: 'other', title: 'Outra pessoa', priority: 'URGENT', assignee: { id: 'other-user', name: 'Outra pessoa' } },
+      { ...base, id: 'late', title: 'Prazo ultrapassado', isOverdue: true, assignee: null },
+      { ...base, id: 'mine', title: 'Tarefa própria', assignee: { id: 'me', name: 'Eu' } },
+    ] } }).body;
+    expect(html.indexOf('/tarefas/late/editar')).toBeLessThan(html.indexOf('/tarefas/other/editar'));
+    expect(html).toContain('Concluir tarefa: Prazo ultrapassado');
+    expect(html).toContain('Concluir tarefa: Tarefa própria');
+    expect(html).not.toContain('Concluir tarefa: Outra pessoa');
+    expect(html).toContain('/tarefas');
+  });
+  it('uses a task skeleton during streaming without presenting old task data as current', () => {
+    const html = render(component('TodayTasks'), { props: { pending: true, items: [
+      { id: 'old', title: 'Dado antigo', priority: 'LOW', status: 'TODO', dueDate: null, isOverdue: false, assignee: null },
+    ] } }).body;
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('A carregar tarefas');
+    expect(html).not.toContain('Dado antigo');
+    expect(html).not.toContain('Sem tarefas a pedir atenção');
+  });
+  it('limits the compact preview to four actionable tasks while keeping full management available', () => {
+    const items = Array.from({ length: 7 }, (_, index) => ({
+      id: `task-${index}`, title: `Trabalho ${index}`, priority: 'MEDIUM',
+      status: index === 0 ? 'DONE' : 'TODO', dueDate: null, isOverdue: false, assignee: null,
+    }));
+    const html = render(component('TodayTasks'), { props: { currentUserId: 'me', items } }).body;
+    expect(html.match(/aria-label="Concluir tarefa:/g)).toHaveLength(4);
+    expect(html).not.toContain('/tarefas/task-0/editar');
+    expect(html).not.toContain('/tarefas/task-5/editar');
+    expect(html).toContain('Ver todas');
+    expect(html).toContain('Atualizar tarefas');
   });
   it('keeps vehicle identity, age, mileage and price visible in the stock overview', () => {
     const html = render(component('StockAgingTable'), {

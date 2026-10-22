@@ -28,35 +28,18 @@ export const load: LayoutServerLoad = async (event) => {
     throw redirect(302, crmPath('/'));
   }
 
-  // Fetch the Prisma User row that backs this Clerk session — we need User.id
-  // (not the Clerk ID) anywhere we filter by assignee/owner on the backend.
-  let currentUser: MeResponse['user'] | null = null;
-  try {
-    const me = await apiJson<MeResponse>(event, '/api/me');
-    currentUser = me.user;
-  } catch (err) {
-    const status = err instanceof ApiError && [401, 403].includes(err.status) ? err.status : 503;
-    error(status, apiErrorMessage(status));
-  }
-
-  // Active-vehicle count for the sidebar badge. Cached 60s in the backend
-  // (and invalidated on every vehicle mutation via emitActivity), so this
-  // adds at most ~1 cheap roundtrip on first nav each minute.
-  let vehicleStats: VehicleStatsResponse | null = null;
-  let taskStats: TaskStatsResponse | null = null;
-  try {
-    // Issued in parallel so the layout doesn't pay for two sequential
-    // roundtrips on each navigation.
-    const [v, t] = await Promise.all([
-      apiJson<VehicleStatsResponse>(event, '/api/vehicles/stats'),
-      apiJson<TaskStatsResponse>(event, '/api/tasks/stats'),
-    ]);
-    vehicleStats = v;
-    taskStats = t;
-  } catch (err) {
+  // These authenticated reads are independent; avoid an extra serial roundtrip.
+  const optionalStats = <T>(path: string) => apiJson<T>(event, path).catch((err) => {
     rethrowAuthError(err);
-    /* badges hide on error */
-  }
-
-  return { clerkUserId: userId, currentUser, vehicleStats, taskStats };
+    return null;
+  });
+  const [me, vehicleStats, taskStats] = await Promise.all([
+    apiJson<MeResponse>(event, '/api/me').catch((err) => {
+      const status = err instanceof ApiError && [401, 403].includes(err.status) ? err.status : 503;
+      return error(status, apiErrorMessage(status));
+    }),
+    optionalStats<VehicleStatsResponse>('/api/vehicles/stats'),
+    optionalStats<TaskStatsResponse>('/api/tasks/stats'),
+  ]);
+  return { clerkUserId: userId, currentUser: me.user, vehicleStats, taskStats };
 };

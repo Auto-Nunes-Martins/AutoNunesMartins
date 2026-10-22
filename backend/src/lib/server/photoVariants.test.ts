@@ -4,6 +4,7 @@ const mock = vi.hoisted(() => ({
   objects: new Map<string, { buffer: Buffer; type: string }>(),
   failWidth: 0,
   uploads: [] as string[],
+  downloads: [] as string[],
 }));
 vi.mock('../data/storage.js', () => ({
   getBucketName: () => 'private',
@@ -11,6 +12,7 @@ vi.mock('../data/storage.js', () => ({
     storage: {
       from: () => ({
         download: async (path: string) => {
+          mock.downloads.push(path);
           const o = mock.objects.get(path);
           return o
             ? { data: new Blob([new Uint8Array(o.buffer)], { type: o.type }), error: null }
@@ -33,6 +35,7 @@ import {
   forgetPhotoVariants,
   manifestPath,
   readPhotoBytes,
+  readVariantManifest,
   variantPath,
   variantRoot,
 } from './photoVariants';
@@ -40,10 +43,50 @@ const path = 'cabcdefghijklmnopqrstuvwx/12345678-1234-1234-1234-123456789abc.jpg
 beforeEach(() => {
   mock.objects.clear();
   mock.uploads = [];
+  mock.downloads = [];
   mock.failWidth = 0;
   forgetPhotoVariants(path);
 });
 describe('private reusable photo variants', () => {
+  it('shares concurrent missing-manifest reads, caches legacy misses and invalidates explicitly', async () => {
+    await Promise.all(Array.from({ length: 10 }, () => readVariantManifest(path)));
+    expect(mock.downloads).toEqual([manifestPath(path)]);
+    const clock = vi.spyOn(Date, 'now');
+    const now = Date.now();
+    try {
+      clock.mockReturnValue(now + 30_000);
+      await readVariantManifest(path);
+      expect(mock.downloads).toHaveLength(1);
+      forgetPhotoVariants(path);
+      await readVariantManifest(path);
+      expect(mock.downloads).toHaveLength(2);
+      clock.mockReturnValue(now + 91_000);
+      await readVariantManifest(path);
+      expect(mock.downloads).toHaveLength(3);
+    } finally { clock.mockRestore(); }
+  });
+  it('does not repopulate the cache with a read invalidated during download', async () => {
+    const pending = readVariantManifest(path);
+    forgetPhotoVariants(path);
+    await pending;
+    await readVariantManifest(path);
+    expect(mock.downloads).toHaveLength(2);
+  });
+  it('retains immutable manifests beyond a minute and refreshes after their TTL', async () => {
+    const input = await sharp({ create: { width: 400, height: 300, channels: 3, background: 'blue' } }).jpeg().toBuffer();
+    await ensurePhotoVariants(path, input);
+    const before = mock.downloads.length;
+    const now = Date.now();
+    const clock = vi.spyOn(Date, 'now');
+    try {
+      clock.mockReturnValue(now + 61_000);
+      expect(await readVariantManifest(path)).not.toBeNull();
+      expect(mock.downloads).toHaveLength(before);
+      clock.mockReturnValue(now + 41 * 60_000);
+      expect(await readVariantManifest(path)).not.toBeNull();
+      expect(mock.downloads).toHaveLength(before + 1);
+    } finally { clock.mockRestore(); }
+  });
   it('rejects unsafe/nested namespaces', () => {
     for (const p of ['../a.jpg', 'owner/../a.jpg', 'owner/.variants/a.jpg', 'a.jpg'])
       expect(() => variantRoot(p)).toThrow();

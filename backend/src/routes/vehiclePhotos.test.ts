@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   $transaction: vi.fn(),
   deleteObjects: vi.fn(),
   createSignedReadUrl: vi.fn(),
+  signedPhotos: vi.fn(),
   upload: vi.fn(),
   logger: { error: vi.fn() },
 }));
@@ -22,6 +23,7 @@ vi.mock('../middleware/clerk.js', () => ({
 vi.mock('../lib/data/storage.js', () => ({
   deleteObjects: mocks.deleteObjects,
   createSignedReadUrl: mocks.createSignedReadUrl,
+  signedPhotos: mocks.signedPhotos,
   getBucketName: () => 'photos',
   getSupabase: () => ({ storage: { from: () => ({ upload: mocks.upload }) } }),
 }));
@@ -87,6 +89,17 @@ beforeEach(() => {
 });
 
 describe('atomic photo changes across shared database callers', () => {
+  it('returns the signed gallery through one batch and keeps missing vehicles as 404', async () => {
+    mocks.signedPhotos.mockResolvedValue([{ path: a, url: 'signed:a' }, { path: b, url: 'signed:b' }]);
+    const response = await fetch(`${base}/signed`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ photos: [{ path: a }, { path: b }] });
+    expect(mocks.signedPhotos).toHaveBeenCalledTimes(1);
+    expect(mocks.signedPhotos).toHaveBeenCalledWith([a, b]);
+    rows.delete(id);
+    expect((await fetch(`${base}/signed`)).status).toBe(404);
+    expect(mocks.signedPhotos).toHaveBeenCalledTimes(1);
+  });
   it('uses the same cover/order internally and publicly without authorizing private photos', async () => {
     rows.set(id, [a, b, c]);
     publicRows.set(id, [a, c]);

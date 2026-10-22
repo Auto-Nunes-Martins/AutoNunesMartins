@@ -6,7 +6,7 @@ vi.mock('$lib/server/tasks', () => ({ usersApi: { list: mocks.users } }));
 vi.mock('$lib/server/activity', () => ({ activityApi: { list: mocks.activity } }));
 vi.mock('$lib/server/dashboard', () => ({ dashboardApi: { get: mocks.dashboard, highlights: mocks.highlights } }));
 import { ApiError } from './api';
-import { load as vehiclesLoad } from '../../routes/(app)/viaturas/+page.server';
+import { load as vehiclesLoad } from './listPages/vehicles';
 import { load as activityLoad } from '../../routes/(app)/atividade/+page.server';
 import { load as dashboardLoad } from '../../routes/(app)/dashboard/+page.server';
 const event = { url: new URL('https://crm.example.test/crm/viaturas') } as any;
@@ -41,7 +41,7 @@ describe('authenticated load failures remain distinct from empty business data',
     await expect(activityLoad(event)).rejects.toMatchObject({ status });
   });
   it.each([401, 403])('does not hide access failure in optional dashboard data (%s)', async (status) => {
-    mocks.users.mockRejectedValue(new ApiError(status, null));
+    mocks.highlights.mockRejectedValue(new ApiError(status, null));
     await expect(dashboardLoad(event)).rejects.toMatchObject({ status });
   });
 });

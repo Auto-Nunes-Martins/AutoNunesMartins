@@ -27,13 +27,15 @@ export const variantPath = (path: string, width: number) => `${variantRoot(path)
 // XMP carries our generated manifest, never user EXIF/location data.
 export const manifestPath = (path: string) => `${variantRoot(path)}/manifest.webp`;
 const manifests = new Map<string, { until: number; value: VariantManifest | null }>();
+const manifestReads = new Map<string, Promise<VariantManifest | null>>();
 export function forgetPhotoVariants(path: string) {
   manifests.delete(path);
+  manifestReads.delete(path);
   for (const key of bytesCache.keys()) if (key.startsWith(path + '|')) bytesCache.delete(key);
 }
-function remember(path: string, value: VariantManifest | null) {
+function remember(path: string, value: VariantManifest | null, ttl = value ? 40 * 60_000 : 5_000) {
   if (manifests.size >= 500) manifests.delete(manifests.keys().next().value!);
-  manifests.set(path, { until: Date.now() + (value ? 60_000 : 5_000), value });
+  manifests.set(path, { until: Date.now() + ttl, value });
 }
 export function validManifest(value: unknown): value is VariantManifest {
   const v = value as VariantManifest | null;
@@ -54,19 +56,43 @@ export function validManifest(value: unknown): value is VariantManifest {
         Number.isInteger(p.height) &&
         p.height > 0 &&
         p.bytes > 0 &&
-        p.bytes <= MAX_UPLOAD_BYTES
+        p.bytes <= MAX_UPLOAD_BYTES,
     )
   );
 }
 export async function readVariantManifest(path: string): Promise<VariantManifest | null> {
   const cached = manifests.get(path);
   if (cached && cached.until > Date.now()) return cached.value;
+  const pending = manifestReads.get(path);
+  if (pending) return pending;
+  const read: Promise<VariantManifest | null> = Promise.resolve().then(() =>
+    loadVariantManifest(path, () => manifestReads.get(path) === read),
+  );
+  manifestReads.set(path, read);
+  try {
+    return await read;
+  } finally {
+    if (manifestReads.get(path) === read) manifestReads.delete(path);
+  }
+}
+async function loadVariantManifest(
+  path: string,
+  isCurrent: () => boolean,
+): Promise<VariantManifest | null> {
+  // Defer cache writes to the current read only: deletion/generation may
+  // invalidate this request while its download is still in flight.
+  const store = (value: VariantManifest | null, ttl?: number) => {
+    if (isCurrent()) remember(path, value, ttl);
+  };
   try {
     const { data, error } = await getSupabase()
       .storage.from(getBucketName())
       .download(manifestPath(path));
     if (error || !data || data.size > 8192) {
-      remember(path, null);
+      // Immutable masters keep successful manifests useful for the signed-URL
+      // lifetime. Missing legacy sidecars can be retried after one minute;
+      // transient storage failures retain a short retry window.
+      store(null, String(error?.statusCode) === '404' ? 60_000 : 5_000);
       return null;
     }
     const meta = await sharp(Buffer.from(await data.arrayBuffer()), {
@@ -78,16 +104,31 @@ export async function readVariantManifest(path: string): Promise<VariantManifest
       ? JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'))
       : null;
     const manifest = validManifest(value) ? value : null;
-    remember(path, manifest);
+    store(manifest);
     return manifest;
   } catch {
-    remember(path, null);
+    store(null);
     return null;
   }
 }
+/** A bounded worker pool avoids waves waiting for their slowest download. */
+export async function readVariantManifests(paths: string[]) {
+  const unique = [...new Set(paths)];
+  const result = new Map<string, VariantManifest | null>();
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(8, unique.length) }, async () => {
+      while (next < unique.length) {
+        const path = unique[next++]!;
+        result.set(path, await readVariantManifest(path));
+      }
+    }),
+  );
+  return result;
+}
 /** Sequential decoding/encoding, bounded pixels and time. Masters are never overwritten. */
 export async function buildPhotoVariants(
-  input: Buffer
+  input: Buffer,
 ): Promise<{ manifest: VariantManifest; files: { width: number; buffer: Buffer }[] }> {
   if (!input.length || input.length > MAX_UPLOAD_BYTES)
     throw new Error('Master exceeds supported byte limit');
@@ -166,7 +207,7 @@ export async function ensurePhotoVariants(path: string, input?: Buffer) {
   const sidecar = await sharp({ create: { width: 1, height: 1, channels: 3, background: '#fff' } })
     .webp({ lossless: true })
     .withXmp(
-      `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:anm="urn:anm:photo-variants:v1"><anm:manifest>${encoded}</anm:manifest></rdf:Description></rdf:RDF></x:xmpmeta>`
+      `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:anm="urn:anm:photo-variants:v1"><anm:manifest>${encoded}</anm:manifest></rdf:Description></rdf:RDF></x:xmpmeta>`,
     )
     .toBuffer();
   const { error } = await bucket.upload(manifestPath(path), sidecar, {

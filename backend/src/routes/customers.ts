@@ -15,6 +15,7 @@ import {
 } from '../lib/server/customerService.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 import { param } from '../lib/http.js';
+import { readCrmList } from '../lib/data/crmListCache.js';
 
 const router = Router();
 
@@ -35,8 +36,8 @@ router.get(
       res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
       return;
     }
-    const result = await listCustomers(prisma, parsed.data);
-    res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
+    const result = await readCrmList('customers', req.user, parsed.data, () => listCustomers(prisma, parsed.data));
+    res.set('Cache-Control', 'private, no-store');
     res.json(result);
   }),
 );

@@ -4,8 +4,12 @@ import { prisma } from '../db.js';
 import { getEnv } from '../env.js';
 import { logger } from '../logger.js';
 import { asyncHandler } from './asyncHandler.js';
+import { recordRequestTiming } from './requestTiming.js';
+import { singleFlight, attemptWindow } from '../lib/data/singleFlight.js';
 
 const env = getEnv();
+const userReads = singleFlight();
+const allowAvatarBackfill = attemptWindow(5 * 60_000);
 
 export const clerkMiddleware = asyncHandler(
   baseClerkMiddleware({
@@ -55,13 +59,14 @@ function pickName(u: ClerkUserShape, fallbackEmail: string): string {
  */
 export const requireUser = asyncHandler(
   async (req: AuthedRequest, res: Response, next: NextFunction): Promise<void> => {
+    const authStarted = performance.now();
     const auth = getAuth(req);
     if (!auth?.userId) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
 
-    let user = await prisma.user.findUnique({ where: { clerkId: auth.userId } });
+    let user = await userReads(auth.userId, () => prisma.user.findUnique({ where: { clerkId: auth.userId! } }));
 
     if (!user) {
       try {
@@ -86,7 +91,7 @@ export const requireUser = asyncHandler(
         next(err);
         return;
       }
-    } else if (user.imageUrl === null) {
+    } else if (user.imageUrl === null && allowAvatarBackfill(auth.userId)) {
       // Backfill imageUrl for users provisioned before this column existed,
       // or who hadn't uploaded a picture at provisioning time. Fire-and-forget
       // so it never blocks the request. The webhook will keep it fresh once
@@ -113,6 +118,7 @@ export const requireUser = asyncHandler(
       name: user.name,
       role: user.role,
     };
+    recordRequestTiming(res, 'backend-auth', performance.now() - authStarted);
     next();
   },
 );
