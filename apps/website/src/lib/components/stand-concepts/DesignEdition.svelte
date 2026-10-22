@@ -1532,7 +1532,7 @@
   }
   .home-choice-group :global(.next-steps) {
     padding-top: 0;
-    margin-block: var(--orbit-space-half, 40px);
+    margin-top: calc(var(--orbit-space-half, 40px) * 1.5);
     margin-bottom: calc(var(--orbit-space-half, 40px) * 2.5);
   }
   .home-choice-group + :global(.editorial-pause) {
