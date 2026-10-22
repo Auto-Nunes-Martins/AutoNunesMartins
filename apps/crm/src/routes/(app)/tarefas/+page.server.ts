@@ -3,6 +3,7 @@ import { tasksApi, usersApi, type TaskListParams } from '$lib/server/tasks';
 import { activityApi } from '$lib/server/activity';
 
 export const load: PageServerLoad = async (event) => {
+  event.depends?.('crm:overview');
   const sp = event.url.searchParams;
   const scopeRaw = sp.get('scope');
   const scope: TaskListParams['scope'] =

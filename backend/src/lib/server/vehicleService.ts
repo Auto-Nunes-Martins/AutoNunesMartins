@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import type { VehicleCreate, VehicleUpdate } from '@anm/types';
 import { prisma } from '../../db.js';
 import { emitActivity } from '../data/activity.js';
-import { getVehicleById, sumVehicleExpenses } from '../data/vehicle.js';
+import { getVehicleById } from '../data/vehicle.js';
 import { computeSaleFigures } from '../domain/sale.js';
 import Decimal from 'decimal.js';
 import { lockVehicle, recomputeSaleIfExists, saleMutation } from './saleFinancials.js';
@@ -289,7 +289,11 @@ export async function getVehicleWithProfit(id: string) {
   const vehicle = await getVehicleById(prisma, id);
   if (!vehicle) return null;
 
-  const expensesTotal = await sumVehicleExpenses(prisma, id);
+  // The detail query already includes every expense. Sum those exact rows
+  // with decimal arithmetic instead of issuing a second aggregate query.
+  const expensesTotal = vehicle.expenses
+    .reduce((total, expense) => total.plus(expense.amount.toString()), new Decimal(0))
+    .toString();
   // If a Sale row exists, project figures using its persisted commission
   // so the "projeção" view matches what the sale actually pays out. If
   // there's no sale yet, commission is unknown — projection uses 0.

@@ -14,6 +14,7 @@ import {
 } from '../lib/server/saleService.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 import { param } from '../lib/http.js';
+import { readCrmList } from '../lib/data/crmListCache.js';
 
 import { saleCancellationDecisionSchema, saleCancellationSchema } from '@anm/types';
 import {
@@ -52,8 +53,8 @@ router.get(
       res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
       return;
     }
-    const result = await listSales(parsed.data);
-    res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
+    const result = await readCrmList('sales', req.user, parsed.data, () => listSales(parsed.data));
+    res.set('Cache-Control', 'private, no-store');
     res.json(result);
   }),
 );

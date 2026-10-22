@@ -2,7 +2,6 @@ import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
-import { cache } from '../lib/data/cache.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 
 const router = Router();
@@ -12,7 +11,7 @@ const ScopeEnum = z.enum(['mine', 'general', 'all', 'byUser']);
 const querySchema = z.object({
   scope: ScopeEnum.optional().default('mine'),
   assigneeId: z.string().optional(),
-});
+}).refine(query => query.scope !== 'byUser' || Boolean(query.assigneeId?.trim()), { message: 'Responsável obrigatório' });
 
 interface TaskRow {
   id: string;
@@ -35,7 +34,6 @@ function endOfToday(): Date {
   return t;
 }
 
-const TTL_MS = 45_000;
 const PRIORITY_RANK: Record<string, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
 /**
@@ -63,20 +61,22 @@ async function buildTodayTasks(
     ],
   };
 
-  let scopeClause: { assigneeId?: string | null } = {};
-  if (scope === 'mine') scopeClause = { assigneeId: actorId };
+  let scopeClause: { assigneeId?: string | null; OR?: { assigneeId: string | null }[] } = {};
+  if (scope === 'mine') scopeClause = { OR: [{ assigneeId: actorId }, { assigneeId: null }] };
   else if (scope === 'general') scopeClause = { assigneeId: null };
   else if (scope === 'byUser' && assigneeId) scopeClause = { assigneeId };
   // 'all' → no narrowing
 
   const rows = await prisma.task.findMany({
     where: { AND: [baseWhere, scopeClause] },
-    orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
+    orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }],
     take: 30,
     include: { assignee: { select: { id: true, name: true } } },
   });
 
   rows.sort((a, b) => {
+    const group = (task: typeof a) => task.dueDate && task.dueDate < todayStart ? 0 : task.dueDate && task.dueDate <= todayEnd ? 1 : 2;
+    if (group(a) !== group(b)) return group(a) - group(b);
     const aIp = a.status === 'IN_PROGRESS' ? 0 : 1;
     const bIp = b.status === 'IN_PROGRESS' ? 0 : 1;
     if (aIp !== bIp) return aIp - bIp;
@@ -113,11 +113,8 @@ router.get(
       return;
     }
     const { scope, assigneeId } = parsed.data;
-    const cacheKey = `dashboardTasks:${req.user.id}:${scope}:${assigneeId ?? ''}`;
-    const items = await cache.wrap(cacheKey, TTL_MS, () =>
-      buildTodayTasks(req.user!.id, scope, assigneeId),
-    );
-    res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
+    const items = await buildTodayTasks(req.user.id, scope, assigneeId);
+    res.set('Cache-Control', 'private, no-store');
     res.json({ items });
   }),
 );

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ListFreshness from '$lib/components/common/ListFreshness.svelte';
   import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
@@ -6,7 +7,7 @@
   import { goto } from '$app/navigation';
   import { filterNavigation } from '$lib/filterNavigation';
   import { page } from '$app/stores';
-  import { ArrowRightLeft, Car, Receipt, Search, X } from 'lucide-svelte';
+  import { ArrowRightLeft, Receipt, Search, X } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
@@ -24,6 +25,7 @@
   }
 
   let { data }: Props = $props();
+  const listView = $derived(data.listView);
   const navigation = filterNavigation(() => $page.url);
   const today = new Date();
 
@@ -81,7 +83,7 @@
       >
         <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-red)]"></span>
         {formatDateLong(today)}
-        {#await data.list then list}
+        {#await ($listView.value ?? data.list) then list}
           {#if !list._error}
           <span class="text-[var(--color-text-faint)]">·</span>
           <span class="tabular-nums">{list.total} registadas</span>
@@ -191,9 +193,10 @@
     </div>
   </Panel>
 
+  <ListFreshness snapshot={$listView} />
   <!-- Streamed table -->
   <Panel>
-    {#await data.list}
+    {#await ($listView.value ?? data.list)}
       <div class="p-4 space-y-2">
         {#each Array(6) as _, i (i)}
           <Skeleton width="100%" height="44px" />
@@ -417,12 +420,6 @@
                 >
                   <td class="px-4 py-3">
                     <a href={crmPath(`/vendas/${s.id}`)} class="row-link flex items-center gap-3">
-                      <div
-                        class="h-9 w-9 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
-                        style="border-radius: 3px;"
-                      >
-                        <Car class="h-4 w-4 text-[var(--color-red)]" />
-                      </div>
                       <div class="min-w-0">
                         <div
                           class="font-display font-semibold text-[13.5px] truncate group-hover:text-[var(--color-red)] transition-colors"

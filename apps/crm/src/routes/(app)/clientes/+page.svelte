@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ListFreshness from '$lib/components/common/ListFreshness.svelte';
   import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
   import { crmPath } from '$lib/paths';
   import { Plus, Search, Users, X } from 'lucide-svelte';
@@ -20,6 +21,7 @@
   }
 
   let { data }: Props = $props();
+  const listView = $derived(data.listView);
   const navigation = filterNavigation(() => $page.url);
   const today = new Date();
 
@@ -44,7 +46,7 @@
       >
         <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-red)]"></span>
         {formatDateLong(today)}
-        {#await data.list then list}
+        {#await ($listView.value ?? data.list) then list}
           {#if !list._error}
           <span class="text-[var(--color-text-faint)]">·</span>
           <span class="tabular-nums">{list.total} no registo</span>
@@ -110,9 +112,10 @@
     </div>
   </Panel>
 
+  <ListFreshness snapshot={$listView} />
   <!-- Streamed table -->
   <Panel>
-    {#await data.list}
+    {#await ($listView.value ?? data.list)}
       <CustomerTableSkeleton rows={6} />
     {:then list}
       {#if list._error}

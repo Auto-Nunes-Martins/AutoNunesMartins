@@ -9,6 +9,7 @@
   import VehiclePhotoDraft from './VehiclePhotoDraft.svelte';
   import DescriptionEditor from './DescriptionEditor.svelte';
   import RichDescription from '../../../../../../shared/ui/RichDescription.svelte';
+  import VehicleSpecGlyph from '../../../../../../shared/ui/VehicleSpecGlyph.svelte';
   import { descriptionText } from '@anm/types/richDescription';
   import type { EditPhoto } from './vehicleEditDraft';
   import PhotoGallery from './PhotoGallery.svelte';
@@ -261,7 +262,7 @@
     </p>
     <div class="fields crm-compact-fields">
       <label style="--field-width: 180px"
-        >Transmissão<select
+        ><span class="spec-field-label"><VehicleSpecGlyph label="Caixa" />Transmissão</span><select
           name="publicTransmission"
           form={publicationFormId}
           bind:value={transmission}
@@ -271,7 +272,7 @@
         ></label
       >
       <label style="--field-width: 260px"
-        ><span>Versão / motorização <small>(opcional)</small></span><input
+        ><span class="spec-field-label">Versão / motorização <small>(opcional)</small></span><input
           name="version"
           form={publicationFormId}
           maxlength="160"
@@ -280,7 +281,7 @@
         /></label
       >
       <label style="--field-width: 150px"
-        >Categoria<input
+        ><span class="spec-field-label"><VehicleSpecGlyph label="Categoria" />Categoria</span><input
           name="category"
           form={publicationFormId}
           maxlength="80"
@@ -288,7 +289,7 @@
         /></label
       >
       <label style="--field-width: 130px"
-        >Cor<input
+        ><span class="spec-field-label"><VehicleSpecGlyph label="Cor" />Cor</span><input
           name="color"
           form={publicationFormId}
           maxlength="80"
@@ -298,7 +299,7 @@
     </div>
     <div class="number-fields">
       <label
-        >Potência (cv)<input
+        ><span class="spec-field-label"><VehicleSpecGlyph label="Potência" />Potência (cv)</span><input
           name="powerHp"
           form={publicationFormId}
           type="number"
@@ -309,7 +310,7 @@
         /></label
       >
       <label
-        >Cilindrada (cm³)<input
+        ><span class="spec-field-label"><VehicleSpecGlyph label="Cilindrada" />Cilindrada (cm³)</span><input
           name="engineCc"
           form={publicationFormId}
           type="number"
@@ -320,7 +321,7 @@
         /></label
       >
       <label
-        >Portas<input
+        ><span class="spec-field-label"><VehicleSpecGlyph label="Portas" />Portas</span><input
           name="doors"
           form={publicationFormId}
           type="number"
@@ -331,7 +332,7 @@
         /></label
       >
       <label
-        >Lugares<input
+        ><span class="spec-field-label"><VehicleSpecGlyph label="Lugares" />Lugares</span><input
           name="seats"
           form={publicationFormId}
           type="number"
@@ -601,6 +602,7 @@
 </dialog>
 
 <style>
+  .spec-field-label { display:flex;align-items:center;gap:8px;min-height:20px; }
   .vehicle-characteristics {
     width: 100%;
     min-width: 0;

@@ -21,7 +21,7 @@ describe('CRM authenticated server relay', () => {
     expect(url).toBe('https://api.example.test/api/vehicles');
     expect(new Headers(init.headers).get('authorization')).toBe('Bearer request-token');
     expect(new Headers(init.headers).has('cookie')).toBe(false);
-    expect(init).toMatchObject({ credentials: 'omit', redirect: 'manual' });
+    expect(init).toMatchObject({ credentials: 'omit', redirect: 'manual', cache: 'no-store' });
   });
   it('deduplicates near-expiry renewal within a request but never across sessions', async () => {
     const e = event(5);

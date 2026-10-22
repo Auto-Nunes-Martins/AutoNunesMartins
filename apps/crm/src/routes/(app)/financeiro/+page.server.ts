@@ -12,6 +12,7 @@ import { ApiError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = (event) => {
+  event.depends?.('crm:overview');
   const sp = event.url.searchParams;
 
   const expensesParams: OperationalExpenseListParams = {

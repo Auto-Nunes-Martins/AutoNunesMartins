@@ -27,7 +27,7 @@ const DateInput = component(source('./common/DateInput.svelte'), {
   ChevronLeft: DateIcon,
   ChevronRight: DateIcon,
 });
-const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button, DateInput });
+const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button, DateInput, VehicleSpecGlyph: DateIcon });
 const Empty = component('<span></span>');
 const Panel = component('<script>let {children} = $props();</script>{@render children?.()}');
 const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page.svelte'), {

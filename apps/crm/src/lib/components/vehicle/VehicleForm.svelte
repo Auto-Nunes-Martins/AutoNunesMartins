@@ -1,4 +1,5 @@
 <script lang="ts">
+  import VehicleSpecGlyph from '../../../../../../shared/ui/VehicleSpecGlyph.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
   import { enhance } from '$lib/auth/enhance';
@@ -195,7 +196,7 @@
       </div>
       <div class="crm-compact-fields">
         <label class="flex flex-col" style="--field-width: 180px">
-          <span class={fieldLabelClass()}>Marca</span>
+          <span class="{fieldLabelClass()} identification-label">Marca</span>
           <input
             name="brand"
             type="text"
@@ -207,7 +208,7 @@
           />
         </label>
         <label class="flex flex-col" style="--field-width: 280px">
-          <span class={fieldLabelClass()}>Modelo</span>
+          <span class="{fieldLabelClass()} identification-label">Modelo</span>
           <input
             name="model"
             type="text"
@@ -220,7 +221,7 @@
         </label>
 
         <label class="flex flex-col" style="--field-width: 260px">
-          <span class={fieldLabelClass()}>VIN</span>
+          <span class="{fieldLabelClass()} identification-label">VIN</span>
           <input
             name="vin"
             type="text"
@@ -233,11 +234,11 @@
             style="border-radius: var(--radius-btn); text-transform: uppercase;"
           />
         </label>
-        <label class="flex flex-col" style="--field-width: 164px">
-          <span class={fieldLabelClass()} title="Matrícula portuguesa">
+        <label class="flex flex-col" style="--field-width: 180px">
+          <span class="{fieldLabelClass()} identification-label plate-label" title="Matrícula portuguesa">
             Matrícula
             <span
-              class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px] ml-1"
+              class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px]"
             >
               · opcional
             </span>
@@ -257,7 +258,7 @@
         </label>
 
         <label class="flex flex-col" style="--field-width: 104px">
-          <span class={fieldLabelClass()}>Ano</span>
+          <span class="{fieldLabelClass()} identification-label"><VehicleSpecGlyph label="Ano" />Ano</span>
           <input
             name="year"
             type="number"
@@ -271,7 +272,7 @@
           />
         </label>
         <label class="flex flex-col" style="--field-width: 190px">
-          <span class={fieldLabelClass()}>Combustível</span>
+          <span class="{fieldLabelClass()} identification-label"><VehicleSpecGlyph label="Combustível" />Combustível</span>
           <select
             name="fuel"
             required
@@ -286,7 +287,7 @@
           </select>
         </label>
         <label class="flex flex-col" style="--field-width: 150px">
-          <span class={fieldLabelClass()}>Quilometragem</span>
+          <span class="{fieldLabelClass()} identification-label"><VehicleSpecGlyph label="Quilometragem" />Quilometragem</span>
           <input
             name="mileage"
             type="number"
@@ -300,7 +301,7 @@
           />
         </label>
         <label class="flex flex-col" style="--field-width: 220px">
-          <span class={fieldLabelClass()}>Estado</span>
+          <span class="{fieldLabelClass()} identification-label"><VehicleSpecGlyph label="Estado" />Estado</span>
           {#if saleRecorded || initial.status === 'SOLD' || initial.status === 'DELIVERED' || initial.status === 'RETURNED'}
             <input type="hidden" name="status" value={initial.status} />
             <p class="text-[13px] text-[var(--color-text-muted)]">
@@ -446,6 +447,8 @@
 </div>
 
 <style>
+  .identification-label { display:flex;align-items:center;gap:8px;min-height:20px; }
+  .plate-label { white-space: nowrap; gap: 6px; }
   .document-checklist {
     border: 0;
     border-top: 1px solid var(--color-border);

@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { crmPath } from '$lib/paths';
+import { listNavigationCache } from '$lib/lists/navigationCache';
 
 export type SessionState = 'ready' | 'recovering' | 'expired' | 'unavailable';
 export const crmSessionState = writable<SessionState>('ready');
@@ -8,6 +9,33 @@ let tokenGetter: TokenGetter | null = null;
 let sessionIdentity: (() => string | null | undefined) | null = null;
 let pending: Promise<string> | null = null;
 let navigationDeferred = false;
+let lastIdentity: string | null | undefined;
+const bindingWaiters = new Set<() => void>();
+
+/** Universal loads run before SessionRecovery mounts during browser hydration. */
+async function waitForSessionBinding(signal?: AbortSignal | null): Promise<void> {
+  signal?.throwIfAborted();
+  if (tokenGetter) return;
+  await new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timeout);
+      bindingWaiters.delete(ready);
+      signal?.removeEventListener('abort', abort);
+    };
+    const ready = () => { cleanup(); resolve(); };
+    const abort = () => { cleanup(); reject(signal?.reason ?? new DOMException('Aborted', 'AbortError')); };
+    const timeout = setTimeout(() => { cleanup(); reject(new SessionUnavailable(503)); }, 12000);
+    bindingWaiters.add(ready);
+    signal?.addEventListener('abort', abort, { once: true });
+  });
+  if (!tokenGetter) throw new SessionUnavailable(401);
+}
+export function currentCrmSessionIdentity() {
+  const identity = sessionIdentity?.();
+  if (lastIdentity !== undefined && identity !== lastIdentity) listNavigationCache.clear(401);
+  lastIdentity = identity;
+  return identity;
+}
 export function deferSessionNavigation(value: boolean) { navigationDeferred = value; }
 export function isSessionNavigationDeferred() { return navigationDeferred; }
 
@@ -24,11 +52,14 @@ export function bindCrmSession(getter: TokenGetter, identity: () => string | nul
   sessionIdentity = identity;
   pending = null;
   crmSessionState.set('ready');
+  for (const ready of bindingWaiters) ready();
   return () => {
     if (tokenGetter === getter) {
       tokenGetter = null;
       sessionIdentity = null;
       pending = null;
+      lastIdentity = undefined;
+      listNavigationCache.clear(401);
     }
   };
 }
@@ -50,10 +81,12 @@ export async function refreshCrmSession(force = true): Promise<string | null> {
       ]);
       if (tokenGetter !== getter) throw new SessionUnavailable(503);
       if (!token) throw new SessionUnavailable(401);
+      currentCrmSessionIdentity();
       if (tokenGetter === getter) crmSessionState.set('ready');
       return token;
     } catch (error) {
       const failure = error instanceof SessionUnavailable ? error : new SessionUnavailable(503);
+      if (failure.status === 401) listNavigationCache.clear(401);
       if (tokenGetter === getter) crmSessionState.set(failure.status === 401 ? 'expired' : 'unavailable');
       throw failure;
     } finally {
@@ -65,6 +98,7 @@ export async function refreshCrmSession(force = true): Promise<string | null> {
 }
 
 export function sessionRejected() {
+  listNavigationCache.clear(401);
   crmSessionState.set('expired');
 }
 
@@ -75,6 +109,9 @@ export async function sessionFetch(input: string, init: RequestInit = {}): Promi
   if (url.origin !== window.location.origin || !url.pathname.startsWith(prefix)) {
     throw new Error('Authenticated requests must target this CRM.');
   }
+  // Never start with a null provider and then mistake its initial mount for an
+  // account switch when the response arrives. Token/SDK readiness is checked next.
+  if (!tokenGetter) await waitForSessionBinding(init.signal);
   const headers = new Headers(init.headers);
   const send = async (force: boolean) => {
     const token = await refreshCrmSession(force);
@@ -94,5 +131,8 @@ export async function sessionFetch(input: string, init: RequestInit = {}): Promi
     response = await send(true);
   }
   if (response.status === 401) sessionRejected();
+  if (response.status === 403 || (response.ok && !['GET', 'HEAD', 'OPTIONS'].includes((init.method ?? 'GET').toUpperCase()))) {
+    listNavigationCache.clear();
+  }
   return response;
 }

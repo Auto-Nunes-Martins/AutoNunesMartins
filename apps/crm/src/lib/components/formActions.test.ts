@@ -41,7 +41,7 @@ const DateInput = component(source('./common/DateInput.svelte'), {
   ChevronLeft: DateIcon,
   ChevronRight: DateIcon,
 });
-const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button, DateInput });
+const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button, DateInput, VehicleSpecGlyph: DateIcon });
 
 type Element = { name: string; attributes: any[]; ancestors: Element[] };
 

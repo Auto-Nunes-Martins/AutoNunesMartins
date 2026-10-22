@@ -14,6 +14,7 @@ function parseEntityType(v: string | null): ActivityListParams['entityType'] | u
 }
 
 export const load: PageServerLoad = async (event) => {
+  event.depends?.('crm:overview');
   const url = event.url;
   const params: ActivityListParams = {
     actorId: url.searchParams.get('actorId') ?? undefined,

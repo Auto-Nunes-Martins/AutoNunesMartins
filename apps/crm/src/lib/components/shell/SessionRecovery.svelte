@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { beforeNavigate, goto, invalidateAll } from '$app/navigation';
+  import { beforeNavigate, goto, invalidate, invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
   import { useClerkContext } from 'svelte-clerk';
   import { crmPath, crmRoute } from '$lib/paths';
   import { hasUnsavedForms } from '$lib/forms/formFeedback';
-  import { bindCrmSession, crmSessionState, deferSessionNavigation, refreshCrmSession, SessionUnavailable } from '$lib/auth/session';
+  import { bindCrmSession, crmSessionState, deferSessionNavigation, refreshCrmSession, currentCrmSessionIdentity, SessionUnavailable } from '$lib/auth/session';
 
   const clerk = useClerkContext();
   const privatePage = $derived(crmRoute($page.url.pathname) !== '/');
@@ -14,6 +14,13 @@
   let checking = $state(false);
   let disposed = false;
   let navigationAttempt = 0;
+  let checkedSessionId: string | null | undefined;
+  const identityChanged = () => checkedSessionId !== undefined && checkedSessionId !== (clerk.session?.id ?? null);
+
+  $effect(() => {
+    // Track SDK logout/account changes even when the current page stays open.
+    if (clerk.isLoaded) currentCrmSessionIdentity();
+  });
 
   if (typeof window !== 'undefined') {
     const unbind = bindCrmSession(async (options) => {
@@ -35,11 +42,14 @@
     if (checking || !privatePage) return;
     checking = true;
     try {
-      await refreshCrmSession(force);
+      const resetLayout = force || identityChanged();
+      await refreshCrmSession(resetLayout);
       lastCheck = Date.now();
+      checkedSessionId = clerk.session?.id ?? null;
       // Revalidate overview data after resume, but never reset an editor or form.
       if (reload && overviewRoutes.has(crmRoute($page.url.pathname)) && !hasUnsavedForms()) {
-        await invalidateAll();
+        if (resetLayout) await invalidateAll();
+        else await invalidate('crm:overview');
       }
     } catch { /* The session banner supplies recovery without discarding page state. */ }
     finally { checking = false; }
@@ -49,19 +59,24 @@
     deferSessionNavigation(false);
     const attempt = ++navigationAttempt;
     if (navigation.willUnload || !navigation.to || crmRoute(navigation.to.url.pathname) === '/') return;
-    if (Date.now() - lastCheck < 45000 && $crmSessionState === 'ready') return;
+    if (Date.now() - lastCheck < 45000 && $crmSessionState === 'ready' && !identityChanged()) return;
     navigation.cancel();
     // The app's unsaved-form guard runs next. Ask only on the resumed navigation,
     // after session renewal, rather than twice for a navigation already cancelled.
     deferSessionNavigation(true);
     const destination = navigation.to.url.href;
-    void refreshCrmSession(true).then(async () => {
+    // A normal idle check may reuse the SDK's still-valid token. Only recovery
+    // after a rejected session needs to bypass that cache and reload the shell.
+    const force = $crmSessionState !== 'ready' || identityChanged();
+    void refreshCrmSession(force).then(async () => {
       if (disposed || attempt !== navigationAttempt) return;
+      const resetLayout = force || identityChanged();
       lastCheck = Date.now();
+      checkedSessionId = clerk.session?.id ?? null;
       if (navigation.type === 'popstate' && navigation.delta) history.go(navigation.delta);
       else await goto(destination, {
         replaceState: crmRoute(navigation.from?.url.pathname ?? '') === '/a-entrar',
-        invalidateAll: true,
+        invalidateAll: resetLayout,
       });
     }).catch(() => { /* Stay on the current page; the banner offers recovery. */ });
   });
@@ -69,7 +84,7 @@
   onMount(() => {
     void recover(false);
     const resume = () => {
-      if (document.visibilityState === 'visible' && Date.now() - lastCheck > 45000) void recover(true, true);
+      if (document.visibilityState === 'visible' && Date.now() - lastCheck > 45000) void recover($crmSessionState !== 'ready', true);
     };
     const online = () => { lastCheck = 0; resume(); };
     document.addEventListener('visibilitychange', resume);

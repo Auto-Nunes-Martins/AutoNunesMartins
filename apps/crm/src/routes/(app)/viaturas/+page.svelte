@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ListFreshness from '$lib/components/common/ListFreshness.svelte';
   import { crmPath } from '$lib/paths';
   import { linkedRow } from '$lib/linkedRow';
   import { ArrowRight, Car, Plus, Tag, AlertCircle, RefreshCw } from 'lucide-svelte';
@@ -23,6 +24,8 @@
   }
 
   let { data }: Props = $props();
+  const listView = $derived(data.listView);
+  const draftsView = $derived(data.draftsView);
   let retrying = $state(false);
   let retryError = $state('');
   async function retryLoading() {
@@ -76,7 +79,7 @@
       >
         <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-red)]"></span>
         {formatDateLong(today)}
-        {#await data.list then list}
+        {#await ($listView.value ?? data.list) then list}
           {#if !list._error}
             <span class="text-[var(--color-text-faint)]">·</span>
             <span class="tabular-nums">{list.total} no inventário</span>
@@ -108,7 +111,7 @@
     como sinal de urgência subtil. Só renderiza quando há rascunhos —
     sem rascunhos, página fica limpa.
   -->
-  {#await data.drafts then drafts}
+  {#await ($draftsView.value ?? data.drafts) then drafts}
     {#if drafts._error}
       <Panel>{@render loadFailure('Não foi possível carregar os rascunhos.', drafts._status)}</Panel
       >
@@ -138,12 +141,6 @@
                 href={crmPath(`/viaturas/${v.id}`)}
                 class="row-link flex-1 min-w-0 flex items-center gap-3 group/link"
               >
-                <div
-                  class="h-10 w-10 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
-                  style="border-radius: 3px;"
-                >
-                  <Car class="h-4 w-4 text-[var(--color-text-muted)]" />
-                </div>
                 <div class="min-w-0">
                   <div
                     class="font-display font-semibold text-[14px] truncate group-hover/link:text-[var(--color-red)] transition-colors"
@@ -200,9 +197,11 @@
     {/if}
   {/await}
 
+  <ListFreshness snapshot={$listView} />
+  <ListFreshness snapshot={$draftsView} label="Lista de rascunhos" />
   <!-- Streamed table: skeleton first, then data flows in -->
   <Panel>
-    {#await data.list}
+    {#await ($listView.value ?? data.list)}
       <VehicleTableSkeleton rows={6} />
     {:then list}
       {#if list._error}

@@ -14,7 +14,7 @@ import { Router, type Response, type Request, type NextFunction } from 'express'
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import {
-  signedPhoto,
+  signedPhotos,
   deleteObjects,
   getSupabase,
   getBucketName,
@@ -195,9 +195,7 @@ router.get(
       return;
     }
 
-    const signed = await Promise.all(
-      vehicle.photos.map(path=>signedPhoto(path)),
-    );
+    const signed = await signedPhotos(vehicle.photos);
     res.json({ photos: signed });
   }),
 );

@@ -5,25 +5,19 @@ import {
   type DashboardPayload,
   type DashboardHighlight,
 } from '$lib/server/dashboard';
-import { usersApi, type TaskAssignee } from '$lib/server/tasks';
 export type DashboardStream =
   | { kind: 'ok'; payload: DashboardPayload }
   | { kind: 'error'; message: string };
 export const load: PageServerLoad = async (event) => {
+  event.depends?.('crm:overview');
   const dashboard: Promise<DashboardStream> = dashboardApi
     .get(event)
     .then((payload): DashboardStream => ({ kind: 'ok', payload }))
     .catch((err): DashboardStream => ({ kind: 'error', message: (err as Error).message }));
-  const [users, highlights] = await Promise.all([
-    usersApi
-      .list(event)
-      .then((result) => result.items)
-      .catch((err) => { rethrowAuthError(err); return [] as TaskAssignee[]; }),
-    dashboardApi
-      .highlights(event)
-      .then((result) => result.items)
-      .catch((err) => { rethrowAuthError(err); return [] as DashboardHighlight[]; }),
-  ]);
+  const highlights = await dashboardApi
+    .highlights(event)
+    .then(result => result.items)
+    .catch(err => { rethrowAuthError(err); return [] as DashboardHighlight[]; });
   // Await the showcase so its photo and dimensions are present in the first HTML.
-  return { dashboard, users, highlights };
+  return { dashboard, highlights };
 };

@@ -112,12 +112,6 @@
                 href={crmPath(`/vendas/${s.id}`)}
                 class="flex items-center gap-4 px-5 py-4 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
               >
-                <div
-                  class="h-12 w-16 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
-                  style="border-radius: 3px;"
-                >
-                  <Car class="h-5 w-5 text-[var(--color-red)]" />
-                </div>
                 <div class="flex-1 min-w-0">
                   <div
                     class="font-display font-bold italic text-[15px] truncate group-hover:text-[var(--color-red)] transition-colors"

@@ -279,6 +279,8 @@ describe.each(['PARTICULAR', 'COMERCIANTE'] as const)(
       const result = await getVehicleWithProfit('vehicle');
       expect(result?.figures?.vatAmount).toBe(buyerType === 'COMERCIANTE' ? '0' : '916.26');
       expect(result?.figures?.realProfit).toBe(buyerType === 'COMERCIANTE' ? '5400' : '4483.74');
+      expect(result?.expensesTotal).toBe('100');
+      expect(mocks.db.vehicleExpense.aggregate).not.toHaveBeenCalled();
     });
     it.each([
       [{ salePrice: '16000' }, '1103.25', '5296.75', '6400'],

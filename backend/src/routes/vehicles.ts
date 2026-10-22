@@ -7,7 +7,7 @@ import { vehicleCreateSchema, vehicleFilterSchema, vehicleUpdateSchema } from '@
 import { vehiclePrincipalPath } from '../../../shared/vehiclePhotoPrincipal.mjs';
 import { prisma } from '../db.js';
 import { listVehicles } from '../lib/data/vehicle.js';
-import { createSignedReadUrls } from '../lib/data/storage.js';
+import { signedThumbnails } from '../lib/data/storage.js';
 import { logger } from '../logger.js';
 import {
   VehicleHasSale,
@@ -25,6 +25,7 @@ import { param } from '../lib/http.js';
 import { saveVehicleEdit, vehicleEditSchema } from '../lib/server/vehicleEditService.js';
 import { WebPublicationError } from '../lib/server/webPublicationService.js';
 import { deleteObjects } from '../lib/data/storage.js';
+import { readCrmList } from '../lib/data/crmListCache.js';
 
 const router = Router();
 
@@ -65,38 +66,48 @@ router.get(
       res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
       return;
     }
-    const result = await listVehicles(prisma, parsed.data);
+    const buildList = async () => {
+      const result = await listVehicles(prisma, parsed.data);
 
-    // Batch-sign primary photos (index 0) so the list can show thumbnails.
-    // A single Supabase call handles all rows on the current page.
-    const primaryPaths = result.items
-      .map(vehiclePrincipalPath)
-      .filter((p): p is string => typeof p === 'string' && p.length > 0);
+      // Batch-sign primary photos (index 0) so the list can show thumbnails.
+      // A single Supabase call handles all rows on the current page.
+      const primaryPaths = result.items
+        .map(vehiclePrincipalPath)
+        .filter((p): p is string => typeof p === 'string' && p.length > 0);
 
-    let signed: Map<string, string> = new Map();
-    if (primaryPaths.length > 0) {
-      try {
-        signed = await createSignedReadUrls(primaryPaths, 3600, 320);
-      } catch (err) {
-        logger.warn({ err }, 'Failed to batch-sign vehicle thumbnails (list still works)');
+      let signed: Map<string, string | null> = new Map();
+      let originalUrls = new Map<string, string>();
+      if (primaryPaths.length > 0) {
+        try {
+          const urls = await signedThumbnails(primaryPaths);
+          signed = urls.thumbnails;
+          originalUrls = urls.originals;
+        } catch (err) {
+          logger.warn({ err }, 'Failed to batch-sign vehicle thumbnails (list still works)');
+        }
       }
-    }
 
-    const originalUrls=await createSignedReadUrls(primaryPaths).catch(()=>new Map<string,string>());
-    res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
-    res.json({
-      ...result,
-      items: result.items.map((v) => {
-        const primary = vehiclePrincipalPath(v);
-        return {
-          ...v,
-          purchasePrice: v.purchasePrice.toString(),
-          salePrice: v.salePrice?.toString() ?? null,
-          thumbnailUrl: primary ? (signed.get(primary) ?? null) : null,
-          thumbnailOriginalUrl: primary ? (originalUrls.get(primary) ?? null) : null,
-        };
-      }),
-    });
+      return {
+        ...result,
+        items: result.items.map((v) => {
+          const primary = vehiclePrincipalPath(v);
+          return {
+            ...v,
+            purchasePrice: v.purchasePrice.toString(),
+            salePrice: v.salePrice?.toString() ?? null,
+            thumbnailUrl: primary ? (signed.get(primary) ?? null) : null,
+            thumbnailOriginalUrl: primary ? (originalUrls.get(primary) ?? null) : null,
+          };
+        }),
+      };
+    };
+    // Validate live row versions even for cache hits. Scope results by actor, role,
+    // filters, ordering and pagination; time-dependent aging views stay uncached.
+    const payload = !parsed.data.agedStock
+      ? await readCrmList('vehicles', req.user, parsed.data, buildList)
+      : await buildList();
+    res.set('Cache-Control', 'private, no-store');
+    res.json(payload);
   }),
 );
 

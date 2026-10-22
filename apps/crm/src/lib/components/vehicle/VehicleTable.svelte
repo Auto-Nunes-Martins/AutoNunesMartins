@@ -137,7 +137,7 @@
             >
               PVP
             </div>
-            <div class="num-value text-[13px] text-[var(--color-red)] mt-0.5">
+            <div class="num-value text-[13px] text-[var(--color-text)] mt-0.5">
               {v.salePrice ? formatEUR(v.salePrice) : '—'}
             </div>
           </div>
@@ -251,7 +251,7 @@
           <td class="px-4 py-3 num-value text-[12px] text-right text-[var(--color-text-muted)]">
             {formatDate(v.acquisitionDate)}
           </td>
-          <td class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-red)]">
+          <td class="px-4 py-3 num-value text-[13px] text-right text-[var(--color-text)]">
             {v.salePrice ? formatEUR(v.salePrice) : '—'}
           </td>
           <td class="px-4 py-3">

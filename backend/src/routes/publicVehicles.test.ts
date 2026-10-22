@@ -386,7 +386,7 @@ describe('public HTTP responses never disclose private inventory', () => {
     expect(mocks.db.vehicle.update).not.toHaveBeenCalled();
     const entry = readFileSync(new URL('../app.ts', import.meta.url), 'utf8');
     expect(entry.indexOf("app.use('/api/public/vehicles', publicVehiclesRouter)")).toBeLessThan(
-      entry.indexOf('app.use(clerkMiddleware)'),
+      entry.indexOf("app.use(timedMiddleware('backend-clerk', clerkMiddleware))"),
     );
     expect(entry).toContain("app.use('/api/vehicles', vehiclesRouter)");
   });

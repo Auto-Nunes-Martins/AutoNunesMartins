@@ -2,7 +2,7 @@
   import type { IconComponent } from '$lib/types/ui';
 
   interface Props {
-    icon: IconComponent;
+    icon?: IconComponent;
     label: string;
     value?: string;
     valueClass?: string;
@@ -12,7 +12,7 @@
 </script>
 
 <div class="spec-row">
-  <Icon class="spec-icon" />
+  {#if Icon}<Icon class="spec-icon" />{/if}
   <div class="spec-sep"></div>
   <div class="flex flex-col gap-0.5">
     <span class="spec-label">{label}</span>

@@ -85,9 +85,9 @@
     </button>
 
     <!-- Breadcrumbs (desktop) -->
-    <div class="tb-breadcrumbs items-center gap-2 flex-shrink-0">
+    <div class="tb-breadcrumbs items-center gap-2" title={resolvedCrumbs.join(' / ')}>
       <span class="h-1.5 w-1.5 bg-[var(--color-red)]"></span>
-      <div class="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em]">
+      <div class="crumb-trail flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em]">
         {#each resolvedCrumbs as crumb, i (i)}
           {#if i > 0}
             <span class="text-[var(--color-text-faint)]">/</span>
@@ -188,6 +188,11 @@
   .topbar {
     container-type: inline-size;
   }
+  /* Reserve one label column across routes; text length cannot move search. */
+  .tb-breadcrumbs { flex: 0 0 clamp(180px, 22cqw, 280px); min-width: 0; }
+  .crumb-trail { min-width: 0; overflow: hidden; white-space: nowrap; }
+  .crumb-trail > span { flex-shrink: 0; }
+  .crumb-trail > span:last-child { min-width: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
   .tb-breadcrumbs,
   .tb-search-inline {
     display: flex;

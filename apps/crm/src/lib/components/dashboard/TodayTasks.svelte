@@ -1,329 +1,426 @@
 <script lang="ts">
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
-  import { onDestroy, untrack } from 'svelte';
-  import { Calendar, CheckSquare, Users } from 'lucide-svelte';
+  import { onDestroy, untrack, tick } from 'svelte';
+  import { invalidateAll } from '$app/navigation';
+  import { Check, CheckSquare, ArrowUpRight, RotateCcw } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import { formatDate } from '$lib/utils/format';
   import type { TodayTaskRow } from '$lib/server/dashboard';
-  import type { TaskAssignee } from '$lib/server/tasks';
-  import { taskPriority } from '$lib/components/task/presentation';
+  import { taskPriority, TASK_STATUS_LABELS } from '$lib/components/task/presentation';
 
-  interface Props {
-    items: TodayTaskRow[];
-    users?: TaskAssignee[];
+  let {
+    items = [],
+    currentUserId = null,
+    pending = false,
+  }: {
+    items?: TodayTaskRow[];
     currentUserId?: string | null;
-  }
-
-  let { items, users = [], currentUserId = null }: Props = $props();
-
-  type Scope =
-    | { kind: 'mine' }
-    | { kind: 'general' }
-    | { kind: 'all' }
-    | { kind: 'byUser'; assigneeId: string; name: string };
-
-  let scope = $state<Scope>({ kind: 'mine' });
+    pending?: boolean;
+  } = $props();
   let rows = $state<TodayTaskRow[]>(untrack(() => items));
   let loading = $state(false);
   let loadError = $state('');
-
-  // Keep `rows` aligned with new props if the parent re-streams.
-  let initialItemsRef = untrack(() => items);
-  let loadedScope: Scope = { kind: 'mine' };
+  let actionError = $state('');
+  let announcement = $state('');
+  let pendingId = $state<string | null>(null);
+  let initialItems = untrack(() => items);
   let controller: AbortController | undefined;
-  onDestroy(() => controller?.abort());
+  let destroyed = false;
+  let content: HTMLDivElement;
+  onDestroy(() => {
+    destroyed = true;
+    controller?.abort();
+  });
   $effect(() => {
-    if (items !== initialItemsRef && scope.kind === 'mine' && !loading) {
-      rows = items;
-      initialItemsRef = items;
+    if (items !== initialItems) {
+      initialItems = items;
+      if (!loading && !pendingId) rows = items;
     }
   });
+  const today = new Date();
+  const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const groupIndex = (task: TodayTaskRow) =>
+    task.isOverdue ? 0 : task.dueDate?.slice(0, 10) === dateKey ? 1 : 2;
+  const ordered = $derived(
+    rows
+      .filter((task) => task.status !== 'DONE')
+      .sort((a, b) => {
+        const rank: Record<string, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+        return (
+          groupIndex(a) - groupIndex(b) ||
+          (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9) ||
+          (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999')
+        );
+      }),
+  );
+  const visible = $derived(ordered.slice(0, 4));
+  function dueLabel(task: TodayTaskRow) {
+    if (!task.dueDate) return task.status === 'IN_PROGRESS' ? 'Em curso' : 'Sem prazo';
+    const date =
+      task.dueDate.slice(0, 10) === dateKey ? 'Hoje' : formatDate(task.dueDate).slice(0, 5);
+    return task.isOverdue ? `Atraso · ${date}` : date;
+  }
+  const busy = $derived(pending || loading);
 
-  async function refetch(next: Scope) {
+  async function refetch() {
     controller?.abort();
     controller = new AbortController();
     const signal = controller.signal;
-    scope = next;
     loading = true;
     loadError = '';
     try {
-      const qs = new URLSearchParams();
-      if (next.kind === 'byUser') {
-        qs.set('scope', 'byUser');
-        qs.set('assigneeId', next.assigneeId);
-      } else {
-        qs.set('scope', next.kind);
-      }
-      const res = await sessionFetch(crmPath(`/api/today-tasks?${qs.toString()}`), {
-        headers: { accept: 'application/json' },
+      const res = await sessionFetch(crmPath('/api/today-tasks?scope=mine'), {
         signal,
+        cache: 'no-store',
       });
-      if (!res.ok) throw new Error('Unable to load dashboard tasks');
+      if (!res.ok) throw new Error('Unable to load tasks');
       const data = (await res.json()) as { items?: TodayTaskRow[] };
       if (signal.aborted) return;
       rows = data.items ?? [];
-      loadedScope = next;
     } catch {
-      if (signal.aborted) return;
-      scope = loadedScope;
-      loadError = 'Não foi possível atualizar as tarefas. Tente selecionar o filtro novamente.';
+      if (!signal.aborted) {
+        loadError = 'Não foi possível consultar as tarefas atuais.';
+      }
     } finally {
       if (!signal.aborted) loading = false;
     }
   }
-
-  // Hide the current user from the per-user list (they have "Minhas")
-  // and unassigned rows (the system has no name).
-  const userOptions = $derived(users.filter((u) => u.id !== currentUserId && Boolean(u.name)));
-
-  // Build today's date label in the prototype's "QUI · 30 ABR · N ATIVAS" format.
-  const PT_WEEKDAYS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
-  const PT_MONTHS = [
-    'JAN',
-    'FEV',
-    'MAR',
-    'ABR',
-    'MAI',
-    'JUN',
-    'JUL',
-    'AGO',
-    'SET',
-    'OUT',
-    'NOV',
-    'DEZ',
-  ];
-  const todayLabel = $derived.by(() => {
-    const d = new Date();
-    return `${PT_WEEKDAYS[d.getDay()]} · ${d.getDate()} ${PT_MONTHS[d.getMonth()]} · ${rows.length} ATIVAS`;
-  });
+  async function complete(task: TodayTaskRow) {
+    if (
+      pendingId ||
+      busy ||
+      !currentUserId ||
+      (task.assignee && task.assignee.id !== currentUserId)
+    )
+      return;
+    pendingId = task.id;
+    actionError = '';
+    announcement = '';
+    try {
+      const res = await sessionFetch(crmPath(`/tarefas/${task.id}/status`), {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'DONE' }),
+      });
+      if (!res.ok) throw new Error('Unable to complete task');
+      if (destroyed) return;
+      // Remove only after server confirmation. Never replay the write on refresh failure.
+      rows = rows.filter((row) => row.id !== task.id);
+      announcement = `Tarefa concluída: ${task.title}`;
+      await refetch();
+      await invalidateAll().catch(() => {
+        actionError =
+          'Tarefa concluída. Atualize a página para consultar os restantes indicadores.';
+      });
+      await tick();
+      content?.focus({ preventScroll: true });
+    } catch {
+      if (!destroyed)
+        actionError = 'Não foi possível confirmar a conclusão. Consulte a tarefa antes de repetir.';
+    } finally {
+      if (!destroyed) pendingId = null;
+    }
+  }
 </script>
 
 <Panel>
-  <PanelHeader
-    variant="dashboard"
-    icon={CheckSquare}
-    iconClass="text-[var(--color-info)]"
-    title="Tarefas · Hoje"
-    meta={todayLabel}
-  >
+  <PanelHeader icon={CheckSquare} title="Tarefas">
     {#snippet actions()}
-      <label class="task-scope">
-        <Users class="h-3 w-3" />
-        <span class="sr-only">Filtrar tarefas por responsável</span>
-        <select
-          aria-label="Filtrar tarefas por responsável"
-          aria-busy={loading}
-          value={scope.kind === 'byUser' ? scope.assigneeId : scope.kind}
-          onchange={(event) => {
-            const value = event.currentTarget.value;
-            const user = userOptions.find((option) => option.id === value);
-            if (user) refetch({ kind: 'byUser', assigneeId: user.id, name: user.name });
-            else if (value === 'mine' || value === 'general' || value === 'all')
-              refetch({ kind: value });
-          }}
-        >
-          <option value="mine">Minhas</option>
-          <option value="general">Geral · Sem responsável</option>
-          <option value="all">Todas</option>
-          {#if userOptions.length > 0}
-            <optgroup label="Por utilizador">
-              {#each userOptions as user (user.id)}<option value={user.id}>{user.name}</option
-                >{/each}
-            </optgroup>
-          {/if}
-        </select>
-      </label>
+      <button
+        class="refresh-tasks"
+        type="button"
+        aria-label="Atualizar tarefas"
+        title="Atualizar tarefas"
+        disabled={busy || !!pendingId}
+        onclick={() => void refetch()}
+      >
+        <RotateCcw size={14} aria-hidden="true" />
+      </button>
+      <a class="all-tasks" href={crmPath('/tarefas')}
+        >Ver todas <ArrowUpRight size={13} aria-hidden="true" /></a
+      >
     {/snippet}
   </PanelHeader>
-
-  {#if loadError}
-    <p role="status" class="px-5 pt-4 text-[12px] text-[var(--color-red)]">{loadError}</p>
-  {/if}
-
-  {#if loading}
-    <div
-      class="p-6 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
-    >
-      A carregar…
-    </div>
-  {:else if rows.length === 0}
-    <div
-      class="p-8 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
-    >
-      Sem tarefas para hoje
-    </div>
-  {:else}
-    <ul class="task-list">
-      {#each rows as t (t.id)}
-        {@const priority = taskPriority(t.priority)}
-        <li>
-          <a href={crmPath(`/tarefas/${t.id}/editar`)} class="task-row group">
-            <div class="priority-mark" aria-hidden="true">
-              <strong style:color={priority.color}
-                >{(
-                  { URGENT: 'URG', HIGH: 'ALT', MEDIUM: 'MED', LOW: 'BXA' } as Record<
-                    string,
-                    string
-                  >
-                )[t.priority] ?? '—'}</strong
+  <div
+    class="task-content"
+    role="region"
+    aria-label="Tarefas atuais · minhas e gerais"
+    tabindex="-1"
+    bind:this={content}
+    aria-busy={busy}
+  >
+    {#if loadError}
+      <div class="task-empty" role="status">
+        <p>{loadError}</p>
+        <button type="button" onclick={() => void refetch()}>Tentar novamente</button>
+      </div>
+    {:else if busy}
+      <div role="status">
+        <span class="sr-only">A carregar tarefas…</span>
+        {#each Array(4) as _}
+          <div class="task-item pending-row" aria-hidden="true">
+            <span class="pending-copy"><span></span><span></span></span><span class="pending-check"
+            ></span>
+          </div>
+        {/each}
+      </div>
+    {:else if !visible.length}
+      <div class="task-empty">
+        <p class="empty-title">Sem tarefas a pedir atenção.</p>
+        <p>As suas tarefas e as gerais estão em dia.</p>
+        <a href={crmPath('/tarefas')}>Abrir lista completa</a>
+      </div>
+    {:else}
+      <ul class="task-list">
+        {#each visible as task (task.id)}
+          {@const priority = taskPriority(task.priority)}
+          {@const canComplete =
+            !!currentUserId && (!task.assignee || task.assignee.id === currentUserId)}
+          <li class="task-item" class:is-saving={pendingId === task.id}>
+            <a class="task-copy" href={crmPath(`/tarefas/${task.id}/editar`)} title={task.title}>
+              <span class="task-title">{task.title}</span>
+              <span
+                class="task-meta"
+                title={`${task.dueDate ? formatDate(task.dueDate) : 'Sem prazo'} · ${task.assignee?.name ?? 'Geral'}`}
               >
-              <span>{t.isOverdue ? 'Atraso' : 'Hoje'}</span>
-            </div>
-            <span class="task-divider" aria-hidden="true"></span>
-            <div class="task-body">
-              <div class="task-heading">
-                <span class="task-title">{t.title}</span>
-                <span class="priority" style:color={priority.color}>{priority.label}</span>
-              </div>
-              <div class="task-details">
-                {#if t.isOverdue}<span class="overdue">Em atraso</span>{/if}
-                {#if t.dueDate}
-                  <span class="task-date"><Calendar class="h-3 w-3" />{formatDate(t.dueDate)}</span>
-                {:else}<span>Sem prazo</span>{/if}
-                <span class="assignee"
-                  ><Users class="h-3 w-3" />{t.assignee?.name ?? 'Geral · Sem responsável'}</span
-                >
-              </div>
-            </div>
-          </a>
-        </li>
-      {/each}
-    </ul>
-  {/if}
+                <span class:overdue={task.isOverdue}>{dueLabel(task)}</span>
+                <span class="meta-separator" aria-hidden="true">·</span>
+                <span>{task.assignee?.name ?? 'Geral'}</span>
+                {#if task.priority === 'URGENT' || task.priority === 'HIGH'}
+                  <span class="meta-separator" aria-hidden="true">·</span><span class="priority"
+                    >{priority.label}</span
+                  >
+                {/if}
+                {#if task.status === 'IN_PROGRESS' && task.dueDate}
+                  <span class="meta-separator" aria-hidden="true">·</span><span
+                    >{TASK_STATUS_LABELS.IN_PROGRESS}</span
+                  >
+                {/if}
+              </span>
+            </a>
+            {#if canComplete}
+              <button
+                class="complete-task"
+                type="button"
+                disabled={!!pendingId}
+                aria-label={`Concluir tarefa: ${task.title}`}
+                title="Concluir tarefa"
+                onclick={() => void complete(task)}
+              >
+                {#if pendingId === task.id}<span class="saving-spinner" aria-hidden="true"></span>
+                {:else}<span class="check-target"><Check size={12} aria-hidden="true" /></span>{/if}
+              </button>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
+  {#if actionError}<p class="action-error" role="alert">{actionError}</p>{/if}
+  <span class="sr-only" role="status" aria-live="polite">{announcement}</span>
 </Panel>
 
 <style>
-  .task-scope {
+  .all-tasks,
+  .refresh-tasks {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    color: var(--color-text-muted);
-  }
-  .task-scope select {
-    max-width: 170px;
+    justify-content: center;
+    gap: 5px;
     height: 32px;
-    padding: 0 8px;
-    background: var(--color-bg-1);
     color: var(--color-text-muted);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-btn);
-    font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .refresh-tasks {
+    width: 32px;
     cursor: pointer;
   }
-  .task-scope select:focus-visible {
-    outline: 2px solid var(--color-red);
-    outline-offset: 2px;
+  .all-tasks:hover,
+  .task-copy:hover .task-title,
+  .refresh-tasks:hover {
+    color: var(--color-text);
   }
-  .task-scope select:disabled {
-    opacity: 0.6;
-    cursor: wait;
+  .task-content {
+    height: 240px;
+    overflow: auto;
+    outline-offset: -2px;
   }
   .task-list {
-    margin: 0;
-    padding: 0;
     list-style: none;
+    padding: 0;
+    margin: 0;
   }
-  .task-list li + li {
-    border-top: 1px solid var(--color-border);
-  }
-  .task-row {
-    display: grid;
-    grid-template-columns: 48px 1.5px minmax(0, 1fr);
-    align-items: center;
-    gap: 14px;
-    padding: 16px 20px;
-    transition: background 0.15s;
-  }
-  .priority-mark {
-    text-align: right;
-  }
-  .priority-mark strong {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-style: italic;
-    font-weight: 800;
-    line-height: 1;
-  }
-  .priority-mark > span {
-    display: block;
-    margin-top: 5px;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-  }
-  .task-divider {
-    height: 34px;
-    background: var(--color-red);
-  }
-  .task-row:hover {
-    background: color-mix(in oklab, var(--color-text) 3%, transparent);
-  }
-  .task-row:focus-visible {
-    outline: 2px solid var(--color-red);
-    outline-offset: -3px;
-  }
-  .task-heading {
+  .task-item {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
+    align-items: center;
+    gap: 8px;
+    height: 60px;
+    padding: 5px 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .task-item:last-child {
+    border-bottom: 0;
+  }
+  .task-copy {
+    flex: 1;
+    min-width: 0;
+    text-decoration: none;
+    color: var(--color-text);
   }
   .task-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
     font-size: 13px;
-    font-weight: 600;
-    line-height: 1.5;
+    line-height: 18px;
+    font-weight: 500;
     overflow-wrap: anywhere;
   }
-  .priority {
-    flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    padding: 3px 6px;
-    border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
-    border-radius: 3px;
-    line-height: 1.4;
-  }
-  .task-details {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px 12px;
-    margin-top: 8px;
+  .task-meta {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--color-text-muted);
     font-size: 11px;
-    line-height: 1.5;
+    line-height: 14px;
   }
-  .task-date,
-  .assignee {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+  .meta-separator {
+    padding-inline: 4px;
+    color: var(--color-text-faint);
   }
-  .task-date {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-variant-numeric: tabular-nums;
-  }
-  .overdue {
+  .task-meta .overdue {
     color: var(--color-red);
+  }
+  .priority {
     font-weight: 600;
   }
-  @media (max-width: 640px) {
-    .task-row {
-      grid-template-columns: 40px 1.5px minmax(0, 1fr);
-      gap: 10px;
-      padding: 16px;
+  .complete-task {
+    width: 40px;
+    height: 44px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+  .check-target {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+  .complete-task:hover .check-target {
+    color: var(--color-text);
+    border-color: var(--color-text-muted);
+    background: var(--color-bg-2);
+  }
+  button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+  }
+  .task-empty {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+  .task-empty p {
+    margin: 0;
+    max-width: 34ch;
+    line-height: 1.6;
+  }
+  .task-empty .empty-title {
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .task-empty a,
+  .task-empty button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    color: var(--color-text);
+  }
+  .action-error {
+    padding: 10px 16px;
+    margin: 0;
+    border-top: 1px solid var(--color-border);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--color-red);
+  }
+  .pending-copy {
+    flex: 1;
+    display: grid;
+    gap: 7px;
+  }
+  .pending-copy > span {
+    height: 12px;
+    width: 80%;
+    background: var(--color-bg-2);
+    border-radius: 2px;
+  }
+  .pending-copy > span + span {
+    height: 9px;
+    width: 52%;
+  }
+  .pending-check {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    margin-inline: 11px;
+  }
+  .saving-spinner {
+    height: 16px;
+    width: 16px;
+    border: 1.5px solid var(--color-border);
+    border-top-color: var(--color-text-muted);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
-    .task-heading {
-      flex-wrap: wrap;
-      gap: 6px;
+  }
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 2px;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  @media (max-width: 640px) {
+    .task-item {
+      padding-inline: 12px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .saving-spinner {
+      animation: none;
     }
   }
 </style>
