@@ -1,9 +1,9 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import Button from '$lib/components/common/Button.svelte';
   import { page } from '$app/stores';
   import { AlertOctagon } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
-  import Button from '$lib/components/common/Button.svelte';
   import Wordmark from '$lib/components/brand/Wordmark.svelte';
   import CrmBrandHead from '$lib/components/brand/CrmBrandHead.svelte';
   import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
@@ -43,6 +43,6 @@
       </p>
     </div>
     <ErrorRecovery {status} />
-    <Button variant="primary" href={crmPath('/')}>Voltar ao início</Button>
+    <Button variant="primary" reload href={crmPath('/')}>Voltar ao início</Button>
   </div>
 </main>

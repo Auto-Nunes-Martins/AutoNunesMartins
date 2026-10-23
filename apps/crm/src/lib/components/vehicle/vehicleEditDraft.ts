@@ -1,4 +1,5 @@
 import type { SignedVariantPhoto } from '$lib/vehicleImage';
+import { descriptionHtml } from '@anm/types/richDescription';
 export type EditPhoto = SignedVariantPhoto & {
   file?: File;
   uploadId?: string;
@@ -34,6 +35,7 @@ export function publicDraftFromForm(form: FormData) {
 export function publicEditKey(value: ReturnType<typeof publicDraftFromForm>) {
   return JSON.stringify({
     ...value,
+    description: descriptionHtml(value.description),
     price: value.price === null ? null : Number(value.price),
     photoPaths: [...value.photoPaths].sort(),
   });

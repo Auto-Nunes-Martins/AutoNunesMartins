@@ -422,10 +422,10 @@
             aria-pressed={active}
             onclick={() => setPriority(active ? undefined : p.value)}
             style={active
-              ? `color: ${p.color}; border-color: ${p.color}; background: color-mix(in srgb, ${p.color} 12%, transparent)`
+              ? `border-color: ${p.color}`
               : undefined}
             class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors flex items-center gap-1.5 {active
-              ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
+              ? 'crm-filter-selected'
               : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
           >
             <span class="h-1.5 w-1.5 rounded-full" style="background: {p.color};"></span>
@@ -447,7 +447,7 @@
             aria-pressed={active}
             onclick={() => setScope(opt.value as Scope)}
             class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors {active
-              ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
+              ? 'crm-filter-selected'
               : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
           >
             {opt.label}
@@ -462,7 +462,7 @@
           onclick={toggleShowScheduled}
           title="Mostrar tarefas recorrentes (semanais, mensais, anuais) já agendadas para um próximo ciclo"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors {showScheduledActive
-            ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
+            ? 'crm-filter-selected'
             : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
         >
           <CalendarClock class="h-3 w-3" />

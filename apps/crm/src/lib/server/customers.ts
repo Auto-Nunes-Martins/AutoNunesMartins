@@ -38,7 +38,7 @@ export interface CustomerDetailSale {
     brand: string;
     model: string;
     year: number;
-    vin: string;
+    vin: string | null;
     licensePlate: string | null;
     photos: string[];
   };

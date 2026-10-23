@@ -14,35 +14,30 @@
 
   let { items }: Props = $props();
 
+  function destination(vehicle: VehicleListItem) {
+    return crmPath(vehicle.status === 'DRAFT'
+      ? `/viaturas/nova?viatura=${vehicle.id}`
+      : `/viaturas/${vehicle.id}`);
+  }
+
   function actionsFor(vehicle: VehicleListItem) {
+    if (vehicle.status === 'DRAFT') {
+      return [{ label: 'Completar ficha', href: destination(vehicle), icon: Tag }];
+    }
     return [
-      { label: 'Ver ficha', href: crmPath(`/viaturas/${vehicle.id}`), icon: FileText },
+      { label: 'Ver ficha', href: destination(vehicle), icon: FileText },
       ...(['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(vehicle.status)
-        ? [
-            {
-              label: 'Registar venda',
-              href: crmPath(`/viaturas/${vehicle.id}/vender`),
-              icon: Check,
-            },
-          ]
-        : []),
-      ...(vehicle.status === 'DRAFT'
-        ? [
-            {
-              label: 'Completar rascunho',
-              href: crmPath(`/viaturas/${vehicle.id}/publicar`),
-              icon: Tag,
-            },
-          ]
+        ? [{ label: 'Registar venda', href: crmPath(`/viaturas/${vehicle.id}/vender`), icon: Check }]
         : []),
     ];
   }
+
 </script>
 
 {#snippet rowActions(v: VehicleListItem)}
   <RowActions
     label={`${v.brand} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`}
-    editHref={crmPath(`/viaturas/${v.id}/editar`)}
+    editHref={v.status === 'DRAFT' ? destination(v) : crmPath(`/viaturas/${v.id}/editar`)}
     actions={actionsFor(v)}
   />
 {/snippet}
@@ -54,10 +49,10 @@
 -->
 <div class="md:hidden divide-y divide-[var(--color-border)]">
   {#each items as v (v.id)}
-    <article>
+    <article use:linkedRow class="linked-row">
       <a
-        href={crmPath(`/viaturas/${v.id}`)}
-        class="block px-4 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
+        href={destination(v)}
+        class="row-link block px-4 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
       >
         <div class="flex items-center gap-3">
           <div
@@ -205,7 +200,7 @@
           class="linked-row border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
         >
           <td class="px-4 py-3">
-            <a href={crmPath(`/viaturas/${v.id}`)} class="row-link flex items-center gap-3">
+            <a href={destination(v)} class="row-link flex items-center gap-3">
               <div
                 class="h-11 w-14 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0 overflow-hidden"
                 style="border-radius: 3px;"

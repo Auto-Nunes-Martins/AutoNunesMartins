@@ -59,6 +59,13 @@ const input = () =>
       specifications: {},
     },
   });
+it('rejects a formatted description with no visible text when publishing, but permits it in a private draft', () => {
+  const value = input();
+  value.publication!.description = '<!--anm:rich-description:v1--><p><br></p>';
+  expect(vehicleEditSchema.safeParse(value).success).toBe(false);
+  value.publication!.published = false;
+  expect(vehicleEditSchema.safeParse(value).success).toBe(true);
+});
 beforeEach(() => {
   vi.clearAllMocks();
   row = {
@@ -107,14 +114,11 @@ describe('single vehicle edit transaction', () => {
     expect(row.publicPhotoPaths).toEqual([a]);
     expect(mocked.update).not.toHaveBeenCalled();
   });
-  it('accepts an explicitly empty plate without a generic schema error', async () => {
-    const value = vehicleEditSchema.parse({
-      ...input(),
-      publication: undefined,
-      data: { licensePlate: null },
-    });
+  it('rejects clearing the now-required plate and accepts clearing an optional VIN', async () => {
+    expect(vehicleEditSchema.safeParse({ ...input(), data: { licensePlate: null } }).success).toBe(false);
+    const value = vehicleEditSchema.parse({ ...input(), publication: undefined, data: { vin: '' } });
     await saveVehicleEdit(id, value, actor);
-    expect(mocked.update.mock.calls[0]?.[2]).toEqual({ licensePlate: null });
+    expect(mocked.update.mock.calls[0]?.[2]).toEqual({ vin: null });
   });
   it('commits internal fields, chosen order and explicit approval through one transaction', async () => {
     const value = input();

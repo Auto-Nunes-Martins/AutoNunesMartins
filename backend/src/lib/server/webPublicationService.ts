@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
+import { descriptionText } from '@anm/types/richDescription';
 import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { emitActivity } from '../data/activity.js';
 import {
@@ -82,7 +83,7 @@ export async function applyWebPublication(
         'publication.photoPaths',
       );
     }
-    if (!input.description?.trim()) {
+    if (!descriptionText(input.description ?? '').trim()) {
       throw new WebPublicationError(409, 'Uma descrição pública é obrigatória.');
     }
     if (!['AVAILABLE', 'RESERVED'].includes(vehicle.status) || vehicle.soldDate || vehicle.sale) {

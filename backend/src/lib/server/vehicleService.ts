@@ -69,7 +69,7 @@ export async function createVehicle(
         year: data.year,
         fuel: data.fuel,
         mileage: data.mileage,
-        vin: data.vin,
+        vin: data.vin ?? null,
         // Matrícula already canonicalized by `licensePlatePtSchema` to
         // "XX-XX-XX" form; null when the user didn't enter one.
         licensePlate: data.licensePlate ?? null,

@@ -79,7 +79,7 @@
       >
         <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-red)]"></span>
         {formatDateLong(today)}
-        {#await ($listView.value ?? data.list) then list}
+        {#await $listView.value ?? data.list then list}
           {#if !list._error}
             <span class="text-[var(--color-text-faint)]">·</span>
             <span class="tabular-nums">{list.total} no inventário</span>
@@ -111,7 +111,7 @@
     como sinal de urgência subtil. Só renderiza quando há rascunhos —
     sem rascunhos, página fica limpa.
   -->
-  {#await ($draftsView.value ?? data.drafts) then drafts}
+  {#await $draftsView.value ?? data.drafts then drafts}
     {#if drafts._error}
       <Panel>{@render loadFailure('Não foi possível carregar os rascunhos.', drafts._status)}</Panel
       >
@@ -138,7 +138,7 @@
               class="linked-row flex items-center gap-4 px-5 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors"
             >
               <a
-                href={crmPath(`/viaturas/${v.id}`)}
+                href={crmPath(`/viaturas/nova?viatura=${v.id}`)}
                 class="row-link flex-1 min-w-0 flex items-center gap-3 group/link"
               >
                 <div class="min-w-0">
@@ -183,7 +183,7 @@
                 </div>
               </a>
               <a
-                href={crmPath(`/viaturas/${v.id}/publicar`)}
+                href={crmPath(`/viaturas/nova?viatura=${v.id}`)}
                 class="crm-action inline-flex items-center gap-1.5 px-3 h-9 border font-mono uppercase tracking-[0.12em] text-[11px] text-[var(--color-warning)] transition-colors flex-shrink-0"
                 style="background: color-mix(in srgb, var(--color-warning) 10%, transparent); border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); border-radius: var(--radius-btn);"
               >
@@ -201,7 +201,7 @@
   <ListFreshness snapshot={$draftsView} label="Lista de rascunhos" />
   <!-- Streamed table: skeleton first, then data flows in -->
   <Panel>
-    {#await ($listView.value ?? data.list)}
+    {#await $listView.value ?? data.list}
       <VehicleTableSkeleton rows={6} />
     {:then list}
       {#if list._error}

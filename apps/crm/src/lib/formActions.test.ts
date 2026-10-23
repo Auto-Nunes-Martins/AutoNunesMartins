@@ -144,7 +144,7 @@ for (const file of [
     const markFormSaved = vi.fn();
     const callback = runInNewContext(
       ts.transpile('const callback = ' + callbacks('lib/components/' + file)[0] + '; callback'),
-      { formElement: {}, markFormSaved, submitting: true, tick: async () => {} },
+      { formElement: {}, markFormSaved, onsaved: vi.fn(), submitting: true, tick: async () => {} },
     );
     const update = vi.fn(async () => {
       expect(markFormSaved).toHaveBeenCalledOnce();

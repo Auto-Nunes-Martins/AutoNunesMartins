@@ -13,6 +13,10 @@
     pending = true;
     message = '';
     try {
+      if (status !== 401 && !hasUnsavedForms()) {
+        window.location.reload();
+        return;
+      }
       await refreshCrmSession();
       if (hasUnsavedForms()) {
         message = 'A sessão foi validada. Guarde ou termine a edição antes de atualizar os dados.';

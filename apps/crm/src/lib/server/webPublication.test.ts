@@ -18,6 +18,48 @@ function event(values: Record<string, string | string[]>) {
 }
 afterEach(() => vi.clearAllMocks());
 describe('Shared create/edit publication action', () => {
+  it('identifies an empty formatted description instead of accepting markup as content', async () => {
+    const result = await webPublicationAction(
+      event({
+        operation: 'publish',
+        publicDescription: '<!--anm:rich-description:v1--><p><br></p>',
+        publicPhotoPaths: ['photo'],
+      }),
+      id,
+    );
+    expect(result).toMatchObject({
+      status: 400,
+      data: {
+        issues: expect.arrayContaining([expect.objectContaining({ path: ['publicDescription'] })]),
+      },
+    });
+    expect(vehiclesApi.webPublication).not.toHaveBeenCalled();
+  });
+  it('retains the wizard vehicle ID when the enhanced action replaces the query string', async () => {
+    await webPublicationAction(
+      event({
+        vehicleId: id,
+        operation: 'publish',
+        publicDescription: 'Descrição confirmada',
+        publicPhotoPaths: ['approved-photo'],
+      }),
+      '',
+    );
+    expect(vehiclesApi.webPublication).toHaveBeenCalledWith(
+      expect.anything(),
+      id,
+      expect.objectContaining({ published: true }),
+    );
+  });
+  it('never lets a posted identifier override the vehicle from an edit route', async () => {
+    await webPublicationAction(
+      event({ vehicleId: 'clzzzzzzzzzzzzzzzzzzzzzzz', operation: 'remove' }),
+      id,
+    );
+    expect(vehiclesApi.webPublication).toHaveBeenCalledWith(expect.anything(), id, {
+      published: false,
+    });
+  });
   it('requires explicit confirmation for publication without photos from either flow', async () => {
     const result = await webPublicationAction(
       event({ operation: 'publish', publicPrice: '10000', publicDescription: 'Factual' }),

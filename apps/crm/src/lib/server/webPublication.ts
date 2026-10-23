@@ -1,5 +1,6 @@
 import { fail, type RequestEvent } from '@sveltejs/kit';
 import { z } from 'zod';
+import { descriptionText } from '@anm/types/richDescription';
 import { publicSpecificationsSchema } from '@anm/types';
 import { vehiclesApi } from './vehicles';
 import { ApiError } from './api';
@@ -9,14 +10,25 @@ const schema = z.object({
     .regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/)
     .refine((v) => Number(v) > 0, 'Indique um preço positivo ou deixe o campo vazio.')
     .nullable(),
-  description: z.string().trim().min(1, 'Escreva uma descrição pública.').max(6000),
+  description: z
+    .string()
+    .trim()
+    .min(1, 'Escreva uma descrição pública.')
+    .max(6000)
+    .refine((value) => descriptionText(value).trim().length > 0, 'Escreva uma descrição pública.'),
   photoPaths: z.array(z.string()).max(20),
   transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
   specifications: publicSpecificationsSchema.optional(),
 });
 export async function webPublicationAction(event: RequestEvent, id: string) {
-  if (!/^c[a-z0-9]{24}$/.test(id)) return fail(400, { error: 'Viatura inválida.' });
   const form = await event.request.formData();
+  // Enhanced ?/actions replace the wizard's ?viatura= query string.
+  id ||= String(form.get('vehicleId') ?? '');
+  if (!/^c[a-z0-9]{24}$/.test(id))
+    return fail(400, {
+      error:
+        'Não foi possível identificar a viatura. Reabra a ficha; os dados preenchidos foram mantidos.',
+    });
   const remove = form.get('operation') === 'remove';
   const parsed = schema.safeParse({
     price: form.get('publicPrice') || null,
@@ -79,8 +91,33 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
     );
     return { webPublicationUpdated: true };
   } catch (err) {
-    if (err instanceof ApiError)
+    if (err instanceof ApiError) {
+      const feedback = err.body as {
+        error?: string;
+        field?: string;
+        issues?: { path: (string | number)[]; message: string }[];
+      } | null;
       return fail(err.status, {
+        ...(feedback?.field ? { field: feedback.field } : {}),
+        ...(feedback?.issues
+          ? {
+              issues: feedback.issues.map((issue) => ({
+                path:
+                  issue.path[0] === 'specifications'
+                    ? issue.path.slice(1)
+                    : [
+                        {
+                          price: 'publicPrice',
+                          description: 'publicDescription',
+                          transmission: 'publicTransmission',
+                          photoPaths: 'publicPhotoPaths',
+                        }[String(issue.path[0])] ?? issue.path[0],
+                        ...issue.path.slice(1),
+                      ],
+                message: issue.message,
+              })),
+            }
+          : {}),
         error:
           err.status === 403
             ? 'Só um administrador pode alterar a publicação.'
@@ -90,6 +127,7 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
                 ? 'Confirme preço, descrição e fotografias selecionadas.'
                 : 'Não foi possível alterar a publicação. Tente novamente.',
       });
+    }
     throw err;
   }
 }

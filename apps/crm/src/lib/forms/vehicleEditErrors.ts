@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { descriptionText } from '@anm/types/richDescription';
 import { vehicleUpdateSchema, licensePlatePtSchema, publicSpecificationsSchema } from '@anm/types';
 import type { publicDraftFromForm } from '$lib/components/vehicle/vehicleEditDraft';
 export type EditIssue = { key: string; message: string; photoPath?: string };
@@ -32,7 +33,7 @@ const labels: Record<string, string> = {
 };
 const fields = vehicleUpdateSchema
   .omit({ id: true })
-  .extend({ licensePlate: licensePlatePtSchema.nullable().optional() });
+  .extend({ licensePlate: licensePlatePtSchema.optional() });
 const publication = z.object({
   price: z
     .string()
@@ -166,7 +167,7 @@ export function validateVehicleEdit(
         })),
       }),
     );
-  if (pub.published && !pub.description.trim())
+  if (pub.published && !descriptionText(pub.description).trim())
     issues.push({
       key: 'publicDescription',
       message: 'Descrição pública: escreva uma descrição antes de publicar.',

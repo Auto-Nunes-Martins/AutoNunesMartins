@@ -34,7 +34,7 @@ model Vehicle {
   year            Int
   fuel            Fuel
   mileage         Int
-  vin             String        @unique
+  vin             String?       @unique
   /// Portuguese license plate (matrícula), stored canonical as "XX-XX-XX".
   /// Nullable so legacy rows imported without a registered plate don't break;
   /// unique when set (Postgres allows multiple NULLs in a unique index).

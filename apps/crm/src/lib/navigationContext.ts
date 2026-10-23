@@ -2,6 +2,7 @@
 export function contextualParent(path: string): { href: string; label: string } | null {
   const parts = path.split('/').filter(Boolean);
   const section = parts[0];
+  if (path === '/viaturas/nova') return null;
   if (section === 'site' && parts.length > 1)
     return { href: '/dashboard', label: 'Voltar ao Dashboard' };
   const names: Record<string, string> = {

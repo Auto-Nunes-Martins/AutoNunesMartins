@@ -16,6 +16,8 @@
     busy?: boolean;
     onconfirm: () => void;
     oncancel?: () => void;
+    secondaryLabel?: string;
+    onsecondary?: () => void;
   }
 
   let {
@@ -28,6 +30,8 @@
     busy = false,
     onconfirm,
     oncancel,
+    secondaryLabel,
+    onsecondary,
   }: Props = $props();
 
   let dialogEl: HTMLDialogElement | undefined = $state();
@@ -69,7 +73,7 @@
   onclose={handleCancel}
   class="confirm-dialog"
 >
-  <div class="px-6 pt-6 pb-5 max-w-md">
+  <div class="dialog-content">
     <div class="flex items-start gap-3">
       {#if tone === 'danger'}
         <div
@@ -82,7 +86,7 @@
       <div class="min-w-0">
         <h2
           id={uid + '-title'}
-          class="font-display font-bold italic text-[18px] tracking-[-0.01em] text-[var(--color-text)]"
+          class="dialog-title"
         >
           {title}
         </h2>
@@ -97,7 +101,8 @@
       </div>
     </div>
 
-    <div class="mt-5 flex items-center justify-end gap-2">
+    <div class="dialog-actions">
+      {#if secondaryLabel}<Button variant="outline" onclick={onsecondary} disabled={busy}>{secondaryLabel}</Button>{/if}
       <Button variant="ghost" onclick={handleCancel} disabled={busy}>
         {cancelLabel}
       </Button>
@@ -116,13 +121,25 @@
 <style>
   .confirm-dialog {
     margin: auto;
+    width: min(480px, calc(100vw - 32px));
     max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
     padding: 0;
     border: 1px solid var(--color-border);
     background: var(--color-bg-elevated);
     color: var(--color-text);
     border-radius: var(--radius-card);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  }
+  .dialog-content { padding: 28px; }
+  .dialog-title { font-family: var(--font-display, inherit); font-size: 20px; font-weight: 600; line-height: 1.3; }
+  .dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 28px; }
+  .dialog-actions :global(button) { max-width: 100%; white-space: normal; height: auto; min-height: 44px; padding-block: 10px; line-height: 1.4; }
+  @media (max-width: 480px) {
+    .dialog-content { padding: 24px 20px; }
+    .dialog-actions { flex-direction: column; align-items: stretch; }
+    .dialog-actions :global(button) { width: 100%; }
   }
   .confirm-dialog::backdrop {
     background: rgba(0, 0, 0, 0.55);

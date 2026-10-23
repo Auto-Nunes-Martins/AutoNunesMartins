@@ -11,7 +11,7 @@ export interface VehicleListItem {
   year: number;
   fuel: Fuel;
   mileage: number;
-  vin: string;
+  vin: string | null;
   /** Portuguese license plate ("matrícula"), canonical "XX-XX-XX" or null. */
   licensePlate: string | null;
   purchasePrice: string;
@@ -59,7 +59,7 @@ export interface VehicleDetailResponse {
   year: number;
   fuel: Fuel;
   mileage: number;
-  vin: string;
+  vin: string | null;
   licensePlate: string | null;
   purchasePrice: string;
   salePrice: string | null;

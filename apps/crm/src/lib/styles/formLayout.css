@@ -3,6 +3,14 @@
   container-type: inline-size;
   min-width: 0;
 }
+/* Match the actual native constraint; optional fields never get an asterisk. */
+.crm-form-layout
+  label:has(input[required], select[required], textarea[required])
+  > span:first-child::after {
+  content: ' *';
+  color: var(--color-red);
+  font-weight: 700;
+}
 .crm-form-page {
   max-width: 1080px;
   margin-inline: auto;

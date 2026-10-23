@@ -1,9 +1,12 @@
 <script lang="ts">
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
-  import { onMount, tick, untrack } from 'svelte';
+  import { onMount, onDestroy, tick, untrack } from 'svelte';
+  import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
+  import VehicleSaveProgress from '$lib/components/vehicle/VehicleSaveProgress.svelte';
+  import { vehicleSavedFeedback } from '$lib/components/vehicle/vehicleSaveFeedback';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import VehicleForm from '$lib/components/vehicle/VehicleForm.svelte';
@@ -26,7 +29,27 @@
   import type { VehicleDetailResponse } from '$lib/server/vehicles';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
+  let confirmationOpen = $state(false),
+    confirmationMessage = $state(''),
+    confirmationLabel = $state('Confirmar');
+  let resolveConfirmation: ((value: boolean) => void) | undefined;
+  function confirmEdit(message: string, label: string) {
+    confirmationMessage = message;
+    confirmationLabel = label;
+    confirmationOpen = true;
+    return new Promise<boolean>((resolve) => {
+      resolveConfirmation = resolve;
+    });
+  }
+  function answerConfirmation(value: boolean) {
+    const resolve = resolveConfirmation;
+    resolveConfirmation = undefined;
+    confirmationOpen = false;
+    resolve?.(value);
+  }
+  onDestroy(() => answerConfirmation(false));
   let root: HTMLElement;
+  let savePhase = $state(0), preparedPhotos = $state(0), photoTotal = $state(0);
   let deleting = $state(false);
   const v = $derived(data.vehicle);
   let baseline = $state<VehicleDetailResponse>(
@@ -129,7 +152,7 @@
     return (await response.json()) as Pick<PageData, 'vehicle' | 'signedPhotos'>;
   }
   async function saveAll() {
-    if (saving || deleting || needsReload || !dirty) return;
+    if (saving || deleting || needsReload || confirmationOpen || !dirty) return;
     const current = forms();
     if (!current.internal || !current.publication) return;
     const internal = new FormData(current.internal),
@@ -172,20 +195,24 @@
       message = 'Corrija os pontos indicados. O rascunho foi mantido.';
       return;
     }
-    if (
-      publication.published &&
-      !orderedPhotos.length &&
-      !window.confirm('Publicar sem fotografia? O site mostrará «Imagem indisponível».')
-    )
-      return;
-    if (
-      removedCount &&
-      !window.confirm(
+    const warnings: string[] = [];
+    if (publication.published && !orderedPhotos.length)
+      warnings.push('Publicar sem fotografia? O site mostrará «Imagem indisponível».');
+    if (removedCount)
+      warnings.push(
         `Eliminar ${removedCount} fotografia(s) ao guardar? Também deixam de estar disponíveis no site.`,
-      )
+      );
+    if (
+      warnings.length &&
+      !(await confirmEdit(warnings.join(' '), 'Confirmar e guardar alterações'))
     )
       return;
     saving = true;
+    savePhase = 0; preparedPhotos = 0; photoTotal = 0;
+    await tick();
+    root.querySelector<HTMLElement>('[data-save-progress]')?.scrollIntoView({ block: 'nearest' });
+    const publishing = publicDirty && publication.published;
+    const previouslyPublished = baseline.webPublished;
     message = '';
     let committed = false,
       saveRequestStarted = false,
@@ -198,6 +225,8 @@
           'A viatura foi alterada entretanto. O rascunho foi mantido. Atualize a ficha e reveja as alterações antes de guardar.',
         );
       const files = photoDraft.filter((photo) => photo.file);
+      photoTotal = files.length; preparedPhotos = files.filter(photo => photo.uploadedPath).length;
+      if (files.length) savePhase = 1;
       for (const [index, photo] of files.entries()) {
         if (photo.uploadedPath) continue;
         progress = `A preparar fotografia ${index + 1} de ${files.length}…`;
@@ -222,10 +251,12 @@
           throw new Error(editIssues[0]!.message);
         }
         photo.uploadedPath = result.path;
+        preparedPhotos += 1;
       }
       const resolvePath = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
       publication.photoPaths = publication.photoPaths.map(resolvePath);
+      savePhase = 2;
       progress = 'A guardar todas as alterações…';
       saveRequestStarted = true;
       const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/editar/save`), {
@@ -259,7 +290,11 @@
       await invalidateAll().catch(() => {});
       message =
         'Todas as alterações foram guardadas. As fotografias só estão públicas de acordo com a seleção confirmada.';
-      toast.success('Alterações guardadas.');
+      vehicleSavedFeedback({ title: publishing ? (previouslyPublished ? 'Publicação atualizada' : 'Viatura publicada') : 'Alterações guardadas',
+        brand: saved.vehicle.brand, model: saved.vehicle.model, year: saved.vehicle.year,
+        detail: publishing ? 'O website já reflete as alterações confirmadas.' : 'A ficha da viatura foi atualizada no CRM.',
+        photo: saved.signedPhotos.find(photo => photo.path === saved.vehicle.photos[0]),
+      });
     } catch (error) {
       message =
         error instanceof Error
@@ -285,8 +320,16 @@
       if (committed) await rememberSavedForms();
     }
   }
-  function discard() {
-    if (dirty && !window.confirm('Descartar todas as alterações por guardar?')) return;
+  async function discard() {
+    if (confirmationOpen || saving) return;
+    if (
+      dirty &&
+      !(await confirmEdit(
+        'Descartar todas as alterações por guardar? Os dados já guardados mantêm-se.',
+        'Descartar alterações',
+      ))
+    )
+      return;
     const current = forms();
     if (current.internal) markFormSaved(current.internal);
     if (current.publication) markFormSaved(current.publication);
@@ -308,10 +351,15 @@
       >← Voltar à ficha da viatura</a
     ><ItalicHero text="Editar" accent=" {data.vehicle.brand} {data.vehicle.model}" size="lg" />
     <p class="edit-note">
-      Um único botão guarda os dados, as fotografias e as escolhas de publicação. Nenhuma alteração
+      Guardar alterações aplica os dados, as fotografias e as escolhas de publicação. Nenhuma alteração
       desta edição é aplicada antes de guardar.
     </p>
   </div>
+  <div class="edit-save edit-save-top">
+    <p role="status">{saving ? progress || 'A guardar…' : needsReload ? 'Recarregue a ficha para continuar.' : dirty ? 'Alterações por guardar' : 'Sem alterações por guardar'}</p>
+    <div><button type="button" class="primary" disabled={saving || deleting || needsReload || !dirty} onclick={() => void saveAll()}>{saving ? 'A guardar…' : 'Guardar alterações'}</button></div>
+  </div>
+  {#if saving}<VehicleSaveProgress phase={savePhase} completed={preparedPhotos} total={photoTotal} label={progress || 'A guardar as alterações…'} />{/if}
   {#if editIssues.length}<div class="edit-errors" role="alert">
       <strong>Não foi possível guardar. Corrija os seguintes pontos:</strong>
       <ul>
@@ -399,6 +447,16 @@
   />
 </section>
 
+<ConfirmDialog
+  bind:open={confirmationOpen}
+  title="Confirmar alteração"
+  message={confirmationMessage}
+  confirmLabel={confirmationLabel}
+  cancelLabel="Continuar a editar"
+  onconfirm={() => answerConfirmation(true)}
+  oncancel={() => answerConfirmation(false)}
+/>
+
 <style>
   .vehicle-edit-page {
     width: 100%;
@@ -406,6 +464,7 @@
     margin-inline: auto;
     min-width: 0;
   }
+  .edit-save-top { position: sticky; top: 76px; z-index: 15; background: var(--color-bg-elevated); box-shadow: 0 6px 18px #0001; }
   .edit-errors {
     padding: 16px;
     border: 1px solid var(--color-warning);
@@ -500,5 +559,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
     }
+    .edit-save-top > div { display: block; }
+    .edit-save-top button { width: 100%; }
   }
 </style>

@@ -55,7 +55,7 @@ export interface StockAgedRow {
   brand: string;
   model: string;
   year: number;
-  vin: string;
+  vin: string | null;
   licensePlate: string | null;
   mileage: number;
   salePrice: string | null;

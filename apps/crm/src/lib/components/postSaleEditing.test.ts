@@ -27,7 +27,11 @@ const DateInput = component(source('./common/DateInput.svelte'), {
   ChevronLeft: DateIcon,
   ChevronRight: DateIcon,
 });
-const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button, DateInput, VehicleSpecGlyph: DateIcon });
+const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), {
+  Button,
+  DateInput,
+  VehicleSpecGlyph: DateIcon,
+});
 const Empty = component('<span></span>');
 const Panel = component('<script>let {children} = $props();</script>{@render children?.()}');
 const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page.svelte'), {
@@ -40,8 +44,10 @@ const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page
   ),
   Trash2: Empty,
   VehicleDeletePanel: Empty,
+  ConfirmDialog: Empty,
   untrack: (fn: () => unknown) => fn(),
   onMount: () => {},
+  onDestroy: () => {},
 });
 
 describe('post-sale vehicle editing UI', () => {
@@ -94,7 +100,7 @@ describe('post-sale vehicle editing UI', () => {
     expect(html).toContain('value="RESERVED"');
     expect(html).not.toContain('value="SOLD"');
     expect(html).not.toContain('value="DELIVERED"');
-    expect(html).toContain('Preço de venda previsto (€)');
+    expect(html).toContain('Preço de venda (PVP) (€)');
     expect(html).not.toContain('Preço registado da venda');
   });
   it('keeps a returned trade-in editable while preserving its historical state outside stock', () => {
