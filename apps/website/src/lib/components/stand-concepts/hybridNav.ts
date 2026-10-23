@@ -1,3 +1,5 @@
+import { scrollFrame, setScrollStyle } from './scrollFrame';
+
 type Options = { enabled: boolean; open: boolean; close: () => void };
 
 /** Finish arriving when the hero leaves the viewport. Keep startup JS in sync. */
@@ -14,7 +16,6 @@ export function compactNavProgress(scrollY: number, heroBottom: number, viewport
 export function hybridNav(header: HTMLElement, initial: Options) {
   let options = initial;
   const root = header.parentElement!;
-  let frame = 0;
   const reset = () => {
     root.classList.remove('nav-pinned', 'nav-hidden');
     root.style.removeProperty('--nav-progress');
@@ -22,11 +23,9 @@ export function hybridNav(header: HTMLElement, initial: Options) {
     header.removeAttribute('aria-hidden');
   };
   const draw = () => {
-    frame = 0;
     const hero = root.querySelector<HTMLElement>('.hero-v1, .orbit-intro');
     if (!options.enabled || !hero) {
-      reset();
-      return;
+      return reset;
     }
     const y = Math.max(0, window.scrollY);
     const state = compactNavProgress(y, hero.getBoundingClientRect().bottom + y, innerHeight);
@@ -34,16 +33,19 @@ export function hybridNav(header: HTMLElement, initial: Options) {
     const engaged = options.open || !!header.querySelector(':focus-visible');
     const pinned = state.pinned || (root.classList.contains('nav-pinned') && engaged && y > 100);
     const progress = pinned && engaged ? 1 : state.progress;
-    root.classList.toggle('nav-pinned', pinned);
-    root.classList.remove('nav-hidden');
-    root.style.setProperty('--nav-progress', String(progress));
-    const invisible = pinned && progress <= 0;
-    header.inert = invisible;
-    if (invisible) header.setAttribute('aria-hidden', 'true');
-    else header.removeAttribute('aria-hidden');
+    return () => {
+      root.classList.toggle('nav-pinned', pinned);
+      root.classList.remove('nav-hidden');
+      setScrollStyle(root, '--nav-progress', String(progress));
+      const invisible = pinned && progress <= 0;
+      header.inert = invisible;
+      if (invisible) header.setAttribute('aria-hidden', 'true');
+      else header.removeAttribute('aria-hidden');
+    };
   };
+  const task = scrollFrame(draw);
   const schedule = () => {
-    if (!frame) frame = requestAnimationFrame(draw);
+    task.schedule();
   };
   const keydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && options.open) {
@@ -61,14 +63,14 @@ export function hybridNav(header: HTMLElement, initial: Options) {
   resize.observe(root);
   const hero = root.querySelector('.hero-v1, .orbit-intro');
   if (hero) resize.observe(hero);
-  draw();
+  task.runNow(performance.now());
   return {
     update(next: Options) {
       options = next;
       schedule();
     },
     destroy() {
-      cancelAnimationFrame(frame);
+      task.cancel();
       resize.disconnect();
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);

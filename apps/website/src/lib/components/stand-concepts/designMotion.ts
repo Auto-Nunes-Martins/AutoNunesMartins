@@ -1,10 +1,16 @@
-import { sceneProgress, chapterProgress, approachProgress, heroScrollProgress, heroAccentFrame } from './scrollTiming';
+import {
+  sceneProgress,
+  chapterProgress,
+  approachProgress,
+  heroScrollProgress,
+  heroAccentFrame,
+} from './scrollTiming';
+import { scrollFrame, setScrollStyle } from './scrollFrame';
 
 /** Scroll choreography that observes native browser scrolling without intercepting input. */
 export function designMotion(root: HTMLElement) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const pointer = matchMedia('(hover: hover) and (pointer: fine)');
-  let frame = 0;
   let lastTime = 0;
   const progress = new Map<HTMLElement, number>();
   const approach = new Map<HTMLElement, number>();
@@ -15,13 +21,15 @@ export function designMotion(root: HTMLElement) {
   let sections = Array.from(root.querySelectorAll<HTMLElement>('[data-scene]'));
   const clamp = (n: number) => Math.min(1, Math.max(0, n));
   const draw = (time: number) => {
-    frame = 0;
     if (reduced.matches || document.hidden) return;
     const elapsed = lastTime ? Math.min(50, time - lastTime) : 16;
     lastTime = time;
     const damping = 1 - Math.exp(-elapsed / 105);
     let settling = false;
     const height = window.innerHeight;
+    const width = window.innerWidth;
+    const scrollY = window.scrollY;
+    const reading = clamp(scrollY / Math.max(1, document.documentElement.scrollHeight - height));
     const rows = sections
       .map((node) => ({ node, bounds: node.getBoundingClientRect() }))
       .filter(({ bounds }) => bounds.bottom >= -50 && bounds.top <= height + 50)
@@ -42,90 +50,104 @@ export function designMotion(root: HTMLElement) {
           heroBounds: heroStage?.getBoundingClientRect() ?? null,
         };
       });
-    for (const { node, bounds, approachBounds, pinHeight, pinTop, heroBounds } of rows) {
-      if (bounds.bottom < -50 || bounds.top > height + 50) continue;
-      const {
-        through,
-        enter,
-        pinned: pinnedProgress,
-      } = sceneProgress(bounds.top, bounds.height, height, pinHeight, pinTop);
-      const targetProgress = heroBounds === null
-        ? pinnedProgress
-        : heroScrollProgress(bounds.top, bounds.top + window.scrollY, heroBounds.height, height);
-      if (heroBounds) {
-        // Only the wide hero uses the stable track; keep tablet/mobile choreography intact.
-        const stableAccent = window.innerWidth > 1050;
-        const accent = heroAccentFrame(bounds.top, bounds.height, heroBounds.top, heroBounds.height, height, stableAccent ? window.scrollY : 0);
-        const prior = Number.parseFloat(node.style.getPropertyValue('--accent-progress'));
-        const delta = accent.progress - prior;
-        const value = stableAccent || !Number.isFinite(prior) || Math.abs(delta) > 0.65 || Math.abs(delta) < 0.0005
-          ? accent.progress : prior + delta * damping;
-        node.style.setProperty('--accent-stage-shift', `${accent.shift}px`);
-        node.style.setProperty('--accent-progress', String(value));
-        if (Math.abs(accent.progress - value) > 0.0005) settling = true;
-      }
-      const previous = progress.get(node) ?? targetProgress;
-      // Restore/jump navigation lands immediately; normal scrolling gets a short scrub.
-      const difference = targetProgress - previous;
-      const pinned =
-        Math.abs(difference) > 0.65 || Math.abs(difference) < 0.0005
-          ? targetProgress
-          : previous + difference * damping;
-      progress.set(node, pinned);
-      if (Math.abs(targetProgress - pinned) > 0.0005) settling = true;
-      node.style.setProperty('--through', String(through));
-      node.style.setProperty('--p', String(pinned));
-      node.style.setProperty('--stage-a', String(chapterProgress(pinned, 0, 0.88)));
-      node.style.setProperty('--stage-b', String(chapterProgress(pinned, 0.1, 1)));
-      node.style.setProperty('--enter', String(enter));
-      if (node.hasAttribute('data-approach')) {
-        const targetBounds = approachBounds ?? bounds;
-        const target = approachProgress(targetBounds.top, targetBounds.height, height);
-        const prior = approach.get(node) ?? target;
-        const delta = target - prior;
-        const value =
-          Math.abs(delta) > 0.8 || Math.abs(delta) < 0.0005 ? target : prior + delta * damping;
-        approach.set(node, value);
-        if (Math.abs(target - value) > 0.0005) settling = true;
-        node.style.setProperty('--approach', String(value));
-        if (node.hasAttribute('data-scan-delay')) {
-          // Shift only the scan by a small viewport offset; keep its scroll slope unchanged.
-          const delay = Number(node.dataset.scanDelay) || 0;
-          const scanTarget = approachProgress(
-            targetBounds.top + height * delay,
-            targetBounds.height,
+    return () => {
+      for (const { node, bounds, approachBounds, pinHeight, pinTop, heroBounds } of rows) {
+        if (bounds.bottom < -50 || bounds.top > height + 50) continue;
+        const {
+          through,
+          enter,
+          pinned: pinnedProgress,
+        } = sceneProgress(bounds.top, bounds.height, height, pinHeight, pinTop);
+        const targetProgress =
+          heroBounds === null
+            ? pinnedProgress
+            : heroScrollProgress(bounds.top, bounds.top + scrollY, heroBounds.height, height);
+        if (heroBounds) {
+          // Only the wide hero uses the stable track; keep tablet/mobile choreography intact.
+          const stableAccent = width > 1050;
+          const accent = heroAccentFrame(
+            bounds.top,
+            bounds.height,
+            heroBounds.top,
+            heroBounds.height,
             height,
+            stableAccent ? scrollY : 0,
           );
-          const scanPrior = Number.parseFloat(node.style.getPropertyValue('--scan'));
-          const scanDelta = scanTarget - scanPrior;
-          const scan =
-            !Number.isFinite(scanPrior) || Math.abs(scanDelta) > 0.8 || Math.abs(scanDelta) < 0.0005
-              ? scanTarget
-              : scanPrior + scanDelta * damping;
-          node.style.setProperty('--scan', String(scan));
-          if (Math.abs(scanTarget - scan) > 0.0005) settling = true;
+          const prior = Number.parseFloat(node.style.getPropertyValue('--accent-progress'));
+          const delta = accent.progress - prior;
+          const value =
+            stableAccent ||
+            !Number.isFinite(prior) ||
+            Math.abs(delta) > 0.65 ||
+            Math.abs(delta) < 0.0005
+              ? accent.progress
+              : prior + delta * damping;
+          setScrollStyle(node, '--accent-stage-shift', `${accent.shift}px`);
+          setScrollStyle(node, '--accent-progress', String(value));
+          if (Math.abs(accent.progress - value) > 0.0005) settling = true;
         }
-        node.style.setProperty('--reveal-a', String(chapterProgress(value, 0.06, 0.58)));
-        node.style.setProperty('--reveal-b', String(chapterProgress(value, 0.28, 0.83)));
-        node.style.setProperty('--reveal-c', String(chapterProgress(value, 0.5, 1)));
+        const previous = progress.get(node) ?? targetProgress;
+        // Restore/jump navigation lands immediately; normal scrolling gets a short scrub.
+        const difference = targetProgress - previous;
+        const pinned =
+          Math.abs(difference) > 0.65 || Math.abs(difference) < 0.0005
+            ? targetProgress
+            : previous + difference * damping;
+        progress.set(node, pinned);
+        if (Math.abs(targetProgress - pinned) > 0.0005) settling = true;
+        setScrollStyle(node, '--through', String(through));
+        setScrollStyle(node, '--p', String(pinned));
+        setScrollStyle(node, '--stage-a', String(chapterProgress(pinned, 0, 0.88)));
+        setScrollStyle(node, '--stage-b', String(chapterProgress(pinned, 0.1, 1)));
+        setScrollStyle(node, '--enter', String(enter));
+        if (node.hasAttribute('data-approach')) {
+          const targetBounds = approachBounds ?? bounds;
+          const target = approachProgress(targetBounds.top, targetBounds.height, height);
+          const prior = approach.get(node) ?? target;
+          const delta = target - prior;
+          const value =
+            Math.abs(delta) > 0.8 || Math.abs(delta) < 0.0005 ? target : prior + delta * damping;
+          approach.set(node, value);
+          if (Math.abs(target - value) > 0.0005) settling = true;
+          setScrollStyle(node, '--approach', String(value));
+          if (node.hasAttribute('data-scan-delay')) {
+            // Shift only the scan by a small viewport offset; keep its scroll slope unchanged.
+            const delay = Number(node.dataset.scanDelay) || 0;
+            const scanTarget = approachProgress(
+              targetBounds.top + height * delay,
+              targetBounds.height,
+              height,
+            );
+            const scanPrior = Number.parseFloat(node.style.getPropertyValue('--scan'));
+            const scanDelta = scanTarget - scanPrior;
+            const scan =
+              !Number.isFinite(scanPrior) ||
+              Math.abs(scanDelta) > 0.8 ||
+              Math.abs(scanDelta) < 0.0005
+                ? scanTarget
+                : scanPrior + scanDelta * damping;
+            setScrollStyle(node, '--scan', String(scan));
+            if (Math.abs(scanTarget - scan) > 0.0005) settling = true;
+          }
+          setScrollStyle(node, '--reveal-a', String(chapterProgress(value, 0.06, 0.58)));
+          setScrollStyle(node, '--reveal-b', String(chapterProgress(value, 0.28, 0.83)));
+          setScrollStyle(node, '--reveal-c', String(chapterProgress(value, 0.5, 1)));
+        }
       }
-    }
-    x += (targetX - x) * 0.09;
-    y += (targetY - y) * 0.09;
-    root.style.setProperty('--mx', String(x));
-    root.style.setProperty('--my', String(y));
-    root.style.setProperty(
-      '--reading',
-      String(clamp(window.scrollY / Math.max(1, document.documentElement.scrollHeight - height))),
-    );
-    if (settling || Math.abs(targetX - x) + Math.abs(targetY - y) > 0.002) schedule();
+      x += (targetX - x) * 0.09;
+      y += (targetY - y) * 0.09;
+      setScrollStyle(root, '--mx', String(x));
+      setScrollStyle(root, '--my', String(y));
+      setScrollStyle(root, '--reading', String(reading));
+      if (settling || Math.abs(targetX - x) + Math.abs(targetY - y) > 0.002) schedule();
+    };
   };
+  const task = scrollFrame(draw);
   const schedule = () => {
-    if (!frame && !document.hidden) frame = requestAnimationFrame(draw);
+    if (!document.hidden) task.schedule();
   };
   const visibility = () => {
-    cancelAnimationFrame(frame);
-    frame = 0;
+    task.cancel();
     lastTime = 0;
     if (!document.hidden) schedule();
   };
@@ -146,9 +168,7 @@ export function designMotion(root: HTMLElement) {
     lastTime = 0;
     root.classList.toggle('motion-on', !reduced.matches);
     // Apply the initial scroll pose in the same task as enabling motion, not a frame later.
-    cancelAnimationFrame(frame);
-    frame = 0;
-    draw(performance.now());
+    task.runNow(performance.now());
   };
   const resize = new ResizeObserver(schedule);
   resize.observe(root);
@@ -176,7 +196,7 @@ export function designMotion(root: HTMLElement) {
     const initialX = document.documentElement.getAttribute('data-orbit-restore-x');
     if (initialY !== null && Number.isFinite(Number(initialY))) {
       window.scrollTo({ top: Number(initialY), left: Number(initialX) || 0, behavior: 'instant' });
-      draw(performance.now());
+      task.runNow(performance.now());
     }
     document.documentElement.removeAttribute('data-orbit-restore-y');
     document.documentElement.removeAttribute('data-orbit-restore-x');
@@ -196,7 +216,7 @@ export function designMotion(root: HTMLElement) {
       document.documentElement.removeAttribute('data-orbit-restoring');
       progress.clear();
       approach.clear();
-      cancelAnimationFrame(frame);
+      task.cancel();
       resize.disconnect();
       mutation.disconnect();
       window.removeEventListener('scroll', schedule);

@@ -559,7 +559,7 @@
   }
 
   .design.orbit-home .car-grid {
-    row-gap: var(--orbit-space-section);
+    row-gap: var(--orbit-space-grid);
   }
 
   .design.orbit-home .pause-inner {
