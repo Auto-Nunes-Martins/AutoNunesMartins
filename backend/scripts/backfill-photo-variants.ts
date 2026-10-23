@@ -4,13 +4,18 @@ import { dirname, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { prisma } from '../src/db.js';
 import { getSupabase, getBucketName } from '../src/lib/data/storage.js';
-import { ensurePhotoVariants, variantRoot } from '../src/lib/server/photoVariants.js';
+import {
+  ensurePhotoVariants,
+  variantRoot,
+  readVariantManifest,
+  PHOTO_ENCODING_VERSION,
+} from '../src/lib/server/photoVariants.js';
 import { isVehiclePhotoPath } from '../../shared/vehiclePhotoPrincipal.mjs';
 
 const apply = process.argv.includes('--apply');
 const reportIndex = process.argv.indexOf('--report');
 const reportPath = resolve(
-  reportIndex >= 0 ? process.argv[reportIndex + 1]! : '.cache/photo-variants-backfill.json'
+  reportIndex >= 0 ? process.argv[reportIndex + 1]! : '.cache/photo-variants-backfill.json',
 );
 const digest = (value: unknown) =>
   createHash('sha256')
@@ -27,6 +32,7 @@ const report = {
   startedAt: new Date().toISOString(),
   finishedAt: null as string | null,
   mode: apply ? 'apply' : 'inspect',
+  encodingVersion: PHOTO_ENCODING_VERSION,
   concurrency: 1,
   privateBucket: false,
   vehicles: 0,
@@ -77,7 +83,14 @@ try {
     if (!destination.startsWith(id + '/.variants/v1/') || destination === path)
       throw new Error('Unsafe derivative destination');
     if (!apply) {
-      report.items.push({ key, status: 'inspect', destination: digest(destination).slice(0, 16) });
+      const existing = await readVariantManifest(path);
+      report.items.push({
+        key,
+        status: 'inspect',
+        destination: digest(destination).slice(0, 16),
+        currentEncodingVersion: existing?.encodingVersion ?? null,
+        needsUpgrade: existing?.encodingVersion !== PHOTO_ENCODING_VERSION,
+      });
       continue;
     }
     try {
@@ -114,7 +127,7 @@ try {
           key,
           status: result.reused ? 'reused' : 'created',
           variants: result.created,
-        })
+        }),
       );
     } catch (error) {
       const known = [
@@ -149,13 +162,13 @@ try {
       skipped: report.skipped,
       vehicleStateUnchanged: report.vehicleStateUnchanged,
       stopped: stopping,
-    })
+    }),
   );
   if (report.failed || report.skipped || !report.vehicleStateUnchanged || stopping)
     process.exitCode = 1;
 } catch {
   console.error(
-    'Backfill stopped: verify environment, private bucket and report; no credentials are logged.'
+    'Backfill stopped: verify environment, private bucket and report; no credentials are logged.',
   );
   process.exitCode = 1;
   await save();

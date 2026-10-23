@@ -1,17 +1,38 @@
 <script lang="ts">
   import type { SceneBackground } from './homeVisualFamilies';
+  import { coverImageSizes } from '$lib/coverImageSizes';
   let { background }: { background: SceneBackground } = $props();
 </script>
 
-<picture style:--scene-focus={background.focus} style:--scene-mobile-focus={background.mobileFocus}>
+<picture
+  use:coverImageSizes={{
+    desktop: background.width / background.height,
+    portrait: background.portraitAspectRatio ?? 0.75,
+  }}
+  style:--scene-focus={background.focus}
+  style:--scene-mobile-focus={background.mobileFocus}
+>
+  {#if background.avifPortrait}<source
+      type="image/avif"
+      media="(max-width: 700px)"
+      srcset={background.avifPortrait}
+      sizes="max(100vw, 90vh)"
+    />{/if}
   <source media="(max-width: 700px)" srcset={background.portrait} sizes="max(100vw, 90vh)" />
+  {#if background.avifDesktop}<source
+      type="image/avif"
+      srcset={background.avifDesktop}
+      sizes="max(100vw, 150vh)"
+    />{/if}
   <img
     src={background.src}
     srcset={background.desktop}
     sizes="max(100vw, 150vh)"
     width={background.width}
     height={background.height}
-    style:filter={background.exposure === undefined ? undefined : `saturate(.45) brightness(${background.exposure})`}
+    style:filter={background.exposure === undefined
+      ? undefined
+      : `saturate(.45) brightness(${background.exposure})`}
     alt=""
     loading="lazy"
     decoding="async"

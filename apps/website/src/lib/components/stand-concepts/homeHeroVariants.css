@@ -1,78 +1,23 @@
-/* Scene framing and distinct outer entries for the seven hero directions. */
-/* A small exposure lift for V3's photograph in both themes; keep its text overlays. */
-.hd-root[data-photo-variant='3'] .hd-landscape img {
-  filter: saturate(0.45) brightness(1.08);
-}
-
-.hd-root[data-photo-variant]:not([data-photo-variant='1']) .hd-landscape img {
+/* Permanent fifth composition: preserve its approved framing and entry. */
+.hd-root[data-photo-variant='5'] .hd-landscape img {
   object-position: var(--road-focus, 50% 100%);
 }
 @media (max-width: 700px) {
-  .hd-root[data-photo-variant]:not([data-photo-variant='1']) .hd-landscape img {
+  .hd-root[data-photo-variant='5'] .hd-landscape img {
     object-position: var(--road-mobile-focus, 50% 50%);
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .hd-root[data-photo-variant='3'] .hd-feature {
-    animation: hd-rise-in 1900ms 180ms var(--v1-arrival-ease) both;
-  }
-  .hd-root[data-photo-variant='4'] .hd-feature {
-    animation: hd-side-in 1900ms 180ms var(--v1-arrival-ease) both;
-  }
-  .hd-root[data-photo-variant='4'] .hd-v1-title-line > * {
-    animation-name: hd-title-reveal;
-  }
   .hd-root[data-photo-variant='5'] .hd-feature {
     animation: hd-soft-in 1900ms 180ms var(--v1-arrival-ease) both;
   }
   .hd-root[data-photo-variant='5'] .hd-v1-title-line > * {
     animation-name: hd-title-side;
   }
-  .hd-root[data-photo-variant='6'] .hd-feature {
-    animation: hd-open-in 1900ms 180ms var(--v1-arrival-ease) both;
-  }
-  .hd-root[data-photo-variant='7'] .hd-feature {
-    animation: hd-meet-in 1900ms 180ms var(--v1-arrival-ease) both;
-  }
-  .hd-root[data-photo-variant='7'] .hd-v1-title-line > * {
-    animation-name: hd-title-side;
-  }
   @supports (clip-path: inset(0)) {
-    .hd-root.hd-1[data-photo-variant='3'] {
-      --v1-scroll-travel: clamp(80px, 12svh, 120px);
-    }
-    .hd-root.hd-1[data-photo-variant='4'] {
-      --v1-scroll-travel: clamp(100px, 19svh, 180px);
-    }
     .hd-root.hd-1[data-photo-variant='5'] {
       --v1-scroll-travel: clamp(90px, 16svh, 150px);
     }
-    .hd-root.hd-1[data-photo-variant='6'] {
-      --v1-scroll-travel: clamp(100px, 17svh, 160px);
-    }
-    .hd-root.hd-1[data-photo-variant='7'] {
-      --v1-scroll-travel: clamp(90px, 15svh, 150px);
-    }
-  }
-}
-@keyframes hd-rise-in {
-  from {
-    opacity: 0.15;
-    translate: 0 28px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-@keyframes hd-side-in {
-  from {
-    opacity: 0.15;
-    translate: 48px 0;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
   }
 }
 @keyframes hd-soft-in {
@@ -82,40 +27,6 @@
   }
   to {
     opacity: 1;
-    translate: 0 0;
-  }
-}
-@keyframes hd-open-in {
-  from {
-    opacity: 0.2;
-    clip-path: inset(0 0 35% 0);
-    translate: 0 12px;
-  }
-  to {
-    opacity: 1;
-    clip-path: inset(0);
-    translate: 0 0;
-  }
-}
-@keyframes hd-meet-in {
-  from {
-    opacity: 0.15;
-    translate: -28px 12px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-@keyframes hd-title-reveal {
-  from {
-    opacity: 0.2;
-    clip-path: inset(0 0 100% 0);
-    translate: 0 8px;
-  }
-  to {
-    opacity: 1;
-    clip-path: inset(0);
     translate: 0 0;
   }
 }

@@ -5,10 +5,6 @@
   import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
   import { catalogPlaceholder } from '$lib/localAssets';
   import { usePublicTheme } from '$lib/publicTheme';
-  import roadWide from '$lib/assets/images/hero-directions/road-approved-1860.webp?url&no-inline';
-  import roadWideSmall from '$lib/assets/images/hero-directions/road-approved-1280.webp?url&no-inline';
-  import roadPortrait from '$lib/assets/images/hero-directions/road-approved-mobile-1086.webp?url&no-inline';
-  import roadPortraitSmall from '$lib/assets/images/hero-directions/road-approved-mobile-640.webp?url&no-inline';
   import { heroBackgrounds } from './homeHeroBackgrounds';
   import './homeHeroDirections.css';
   import './homeHeroVariants.css';
@@ -18,9 +14,10 @@
   import FeaturedPriceWave from './FeaturedPriceWave.svelte';
   import FeaturedBacklight from './FeaturedBacklight.svelte';
   import { featuredAutoplay } from './featuredAutoplay';
+  import { coverImageSizes } from '$lib/coverImageSizes';
 
-  let { version, homeHighlights }: { version: number; homeHighlights?: PublicHighlights } =
-    $props();
+  const version = 5;
+  let { homeHighlights }: { homeHighlights?: PublicHighlights } = $props();
   const { dark } = usePublicTheme();
   const items = $derived(homeHighlights?.items ?? []);
   let index = $state(0);
@@ -35,12 +32,12 @@
     'pela frente.',
     'Encontre o carro que acompanha os seus planos. Sem pressas.',
   ];
-  const background = $derived(heroBackgrounds[version]);
+  const background = heroBackgrounds[5];
   function anchorStart(node: HTMLElement) {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const measure = () => {
       const bounds = node.getBoundingClientRect();
-      const side = version === 7 ? 18 : 0;
+      const side = 0;
       node.style.setProperty('--v1-anchor-start', `${bounds.top + scrollY}px`);
       node.style.setProperty('--v1-canvas-left', `${bounds.left - side}px`);
       node.style.setProperty('--v1-canvas-width', `${bounds.width + side * 2}px`);
@@ -116,37 +113,41 @@
   {#if car}
     {#snippet featuredContent()}
       <div class="hd-feature-top">
-        <span class="hd-eyebrow">Em destaque<span class="hd-label-glint" aria-hidden="true">Em destaque</span></span><span class="hd-edition" aria-hidden="true"
+        <span class="hd-eyebrow"
+          >Em destaque<span class="hd-label-glint" aria-hidden="true">Em destaque</span></span
+        ><span class="hd-edition" aria-hidden="true"
           >{String(index + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span
         >
       </div>
       {#snippet photoDetails()}
         {#if failed}<span class="hd-photo-note">Fotografia temporariamente indisponível</span>{/if}
-        <span class="hd-photo-arrow" aria-hidden="true"><ArrowUpRight size={22} strokeWidth={1.5} /></span>
+        <span class="hd-photo-arrow" aria-hidden="true"
+          ><ArrowUpRight size={22} strokeWidth={1.5} /></span
+        >
       {/snippet}
       {#snippet photograph()}
-      <a
-        class="hd-photo"
-        class:hd-photo-failed={failed}
-        href={publicHref(car.slug)}
-        aria-label={`Conhecer ${car.brand} ${car.model}`}
-      >
-        {#key image}
-          <img
-            src={failed ? catalogPlaceholder : sizedPhoto(image, 1600)}
-            srcset={failed ? undefined : vehiclePhotoSet(image)}
-            sizes="(max-width: 700px) 100vw, 55vw"
-            width="1600"
-            height="1067"
-            alt={`${car.brand} ${car.model}`}
-            fetchpriority="high"
-            decoding="async"
-            onerror={() => {
-              failed = true;
-            }}
-          />
-        {/key}
-      </a>
+        <a
+          class="hd-photo"
+          class:hd-photo-failed={failed}
+          href={publicHref(car.slug)}
+          aria-label={`Conhecer ${car.brand} ${car.model}`}
+        >
+          {#key image}
+            <img
+              src={failed ? catalogPlaceholder : sizedPhoto(image, 1600)}
+              srcset={failed ? undefined : vehiclePhotoSet(image)}
+              sizes="(max-width: 700px) 100vw, 55vw"
+              width="1600"
+              height="1067"
+              alt={`${car.brand} ${car.model}`}
+              fetchpriority="high"
+              decoding="async"
+              onerror={() => {
+                failed = true;
+              }}
+            />
+          {/key}
+        </a>
       {/snippet}
       <div class="hd-photo-stage">
         <div class="hd-photo-motion"><div class="hd-idle-plane">{@render photograph()}</div></div>
@@ -163,9 +164,9 @@
           </p>
         </div>
         <div class="hd-price">
-          <strong><FeaturedPriceWave value={publicPrice(car.price)} /></strong>{#if car.availability === 'RESERVED'}<span
-              >Reservada</span
-            >{/if}<a href={publicHref(car.slug)}
+          <strong><FeaturedPriceWave value={publicPrice(car.price)} /></strong
+          >{#if car.availability === 'RESERVED'}<span>Reservada</span>{/if}<a
+            href={publicHref(car.slug)}
             >Conhecer viatura <ArrowUpRight size={15} aria-hidden="true" /></a
           >
         </div>
@@ -191,7 +192,11 @@
           >
         </div>
       {/if}
-      <span class="hd-sr" role="status" aria-live={automaticChange ? 'off' : 'polite'} aria-atomic="true"
+      <span
+        class="hd-sr"
+        role="status"
+        aria-live={automaticChange ? 'off' : 'polite'}
+        aria-atomic="true"
         >Destaque {index + 1} de {items.length}: {car.brand}
         {car.model}. {publicPrice(car.price)}{car.availability === 'RESERVED'
           ? '. Reservada'
@@ -201,7 +206,11 @@
     <div
       class="hd-feature"
       use:hoveringCard={true}
-      use:featuredAutoplay={{ count: items.length, revision: selection, next: () => select(index + 1, true) }}
+      use:featuredAutoplay={{
+        count: items.length,
+        revision: selection,
+        next: () => select(index + 1, true),
+      }}
       role="region"
       aria-label="Viaturas em destaque"
       aria-roledescription="carrossel"
@@ -231,16 +240,25 @@
   use:anchorStart
 >
   <div class="hd-landscape" aria-hidden="true">
-    <picture>
+    <picture
+      use:coverImageSizes={{ desktop: background.width / background.height, portrait: 0.75 }}
+    >
       <source
+        type="image/avif"
         media="(max-width: 700px)"
-        srcset={background?.portrait ?? `${roadPortraitSmall} 640w, ${roadPortrait} 1086w`}
+        srcset={background.avifPortrait}
         sizes="max(100vw, 90vh)"
       />
+      <source media="(max-width: 700px)" srcset={background.portrait} sizes="max(100vw, 90vh)" />
+      <source
+        type="image/avif"
+        srcset={background.avifDesktop}
+        sizes="(max-width: 1050px) max(100vw, 150vh), max(100vw, 125vh)"
+      />
       <img
-        src={background?.src ?? roadWide}
-        srcset={background?.desktop ?? `${roadWideSmall} 1280w, ${roadWide} 1860w`}
-        sizes="max(100vw, 200vh)"
+        src={background.src}
+        srcset={background.desktop}
+        sizes="(max-width: 1050px) max(100vw, 150vh), max(100vw, 125vh)"
         width={background?.width ?? 1860}
         height={background?.height ?? 846}
         alt=""

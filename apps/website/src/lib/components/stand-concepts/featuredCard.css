@@ -115,7 +115,7 @@
   height: 100%;
   max-width: none;
   overflow: visible;
-  opacity: 0.76;
+  opacity: 0.64;
 }
 [data-featured-card]:has(.hd-feature :focus-visible) .hd-backlight {
   opacity: 1;

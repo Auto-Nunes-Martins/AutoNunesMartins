@@ -6,6 +6,7 @@ import {
   variantPath,
   manifestPath,
   forgetPhotoVariants,
+  PHOTO_WIDTHS,
 } from '../server/photoVariants.js';
 
 let cached: SupabaseClient | null = null;
@@ -179,7 +180,7 @@ export async function deleteObjects(paths: string[]) {
   const supabase = getSupabase();
   const all = paths.flatMap((path) => {
     try {
-      return [path, ...[320, 800, 1600, 2560].map((w) => variantPath(path, w)), manifestPath(path)];
+      return [path, ...PHOTO_WIDTHS.map((w) => variantPath(path, w)), manifestPath(path)];
     } catch {
       return [path];
     }
