@@ -14,7 +14,6 @@
   import FeaturedPriceWave from './FeaturedPriceWave.svelte';
   import FeaturedBacklight from './FeaturedBacklight.svelte';
   import { featuredAutoplay } from './featuredAutoplay';
-  import { coverImageSizes } from '$lib/coverImageSizes';
 
   const version = 5;
   let { homeHighlights }: { homeHighlights?: PublicHighlights } = $props();
@@ -240,25 +239,30 @@
   use:anchorStart
 >
   <div class="hd-landscape" aria-hidden="true">
-    <picture
-      use:coverImageSizes={{ desktop: background.width / background.height, portrait: 0.75 }}
-    >
+    <!-- Resolve the responsive source in the initial HTML. Include the entry's
+         maximum 1.055 scale, without measuring its changing transformed bounds.
+         The portrait also covers the stacked content on short phone screens. -->
+    <picture>
       <source
         type="image/avif"
         media="(max-width: 700px)"
         srcset={background.avifPortrait}
-        sizes="max(100vw, 90vh)"
+        sizes="max(calc(55vw + 600px), 105.5vw, 94.95vh)"
       />
-      <source media="(max-width: 700px)" srcset={background.portrait} sizes="max(100vw, 90vh)" />
+      <source
+        media="(max-width: 700px)"
+        srcset={background.portrait}
+        sizes="max(calc(55vw + 600px), 105.5vw, 94.95vh)"
+      />
       <source
         type="image/avif"
         srcset={background.avifDesktop}
-        sizes="(max-width: 1050px) max(100vw, 150vh), max(100vw, 125vh)"
+        sizes="(max-width: 1050px) max(105.5vw, 158.25vh), max(105.5vw, 131.875vh)"
       />
       <img
         src={background.src}
         srcset={background.desktop}
-        sizes="(max-width: 1050px) max(100vw, 150vh), max(100vw, 125vh)"
+        sizes="(max-width: 1050px) max(105.5vw, 158.25vh), max(105.5vw, 131.875vh)"
         width={background?.width ?? 1860}
         height={background?.height ?? 846}
         alt=""

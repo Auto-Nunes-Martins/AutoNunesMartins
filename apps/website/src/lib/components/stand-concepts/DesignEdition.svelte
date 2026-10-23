@@ -80,6 +80,7 @@
   } from 'lucide-svelte';
   import { cars, photo, eur, number } from './data';
   import { responsivePhoto, cardImageSizes } from './images';
+  import { coverPhotoSizes } from '$lib/coverPhotoSizes';
   import { designMotion, entrance, conditionalEntrance } from './designMotion';
   import OrbitPerspective from './OrbitPerspective.svelte';
   import OrbitFaq from './OrbitFaq.svelte';
@@ -295,7 +296,7 @@
   function galleryKeydown(event: KeyboardEvent) {
     trapDialogTab(event, galleryDialog);
     if (!publicVehicle || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
-    const count = galleryOpen ? galleryPhotoCount : galleryCount;
+    const count = galleryCount;
     event.preventDefault();
     zoom = Math.max(0, Math.min(count - 1, zoom + (event.key === 'ArrowRight' ? 1 : -1)));
   }
@@ -754,6 +755,7 @@
                 }}
                 disabled={!!publicVehicle && (!publicVehicle.photos.length || isContactSlide)}
                 ><img
+                  use:coverPhotoSizes
                   use:vehiclePhoto={{
                     src: publicVehicle?.photos.length
                       ? sizedPhoto(publicPhoto(publicVehicle.slug, galleryPhotoIndex), 1600)
@@ -1019,6 +1021,7 @@
         {#if !publicVehicle || publicVehicle.photos.length > 0}
           <section class="detail-band" data-scene>
             <img
+              use:coverPhotoSizes
               use:vehiclePhoto={{
                 src: publicVehicle
                   ? sizedPhoto(publicPhoto(publicVehicle.slug, 0), 1600)
@@ -1366,50 +1369,104 @@
     aria-labelledby="gallery-caption"
     onkeydown={galleryKeydown}
   >
-    {#if car && galleryOpen}<img
-        use:vehiclePhoto={{
-          src: publicVehicle?.photos.length
-            ? publicPhoto(publicVehicle.slug, zoom)
-            : photo(car.image, 2400),
-        }}
-        src={publicVehicle?.photos.length
-          ? publicPhoto(publicVehicle.slug, zoom)
-          : photo(car.image, 2400)}
-        alt={`${car.brand} ${car.model}${publicVehicle ? '' : ' — fotografia ilustrativa'}`}
-      />
-      <div class="viewer-controls">
-        <button
-          class="dialog-close icon-button"
-          onclick={() => galleryDialog.close()}
-          aria-label="Fechar fotografia"><X size={25} aria-hidden="true" /></button
-        >
-        <p id="gallery-caption">
-          {car.brand}
-          {car.model}{publicVehicle
+    {#if car && galleryOpen}
+      <div class="viewer-stage">
+        {#if isContactSlide && publicVehicle}
+          <div class="viewer-contact">
+            <img
+              use:vehiclePhoto={{ src: publicPhoto(publicVehicle.slug, 0) }}
+              src={publicPhoto(publicVehicle.slug, 0)}
+              alt=""
+            />
+            <GalleryContactSlide
+              onContact={() => {
+                galleryDialog.close();
+                contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`);
+              }}
+            />
+          </div>
+        {:else}<img
+            use:vehiclePhoto={{
+              src: publicVehicle?.photos.length
+                ? publicPhoto(publicVehicle.slug, zoom)
+                : photo(car.image, 2400),
+            }}
+            src={publicVehicle?.photos.length
+              ? publicPhoto(publicVehicle.slug, zoom)
+              : photo(car.image, 2400)}
+            alt={`${car.brand} ${car.model}${publicVehicle ? '' : ' — fotografia ilustrativa'}`}
+          />{/if}
+        <div class="viewer-controls">
+          <button
+            class="dialog-close icon-button"
+            onclick={() => galleryDialog.close()}
+            aria-label="Fechar fotografia"><X size={25} aria-hidden="true" /></button
+          >
+          {#if publicVehicle && galleryCount > 1}
+            <button
+              type="button"
+              class="viewer-step viewer-previous"
+              aria-label="Fotografia anterior"
+              aria-disabled={zoom === 0}
+              onclick={() => {
+                if (zoom > 0) zoom -= 1;
+              }}><ArrowLeft size={22} aria-hidden="true" /></button
+            >
+            <button
+              type="button"
+              class="viewer-step viewer-next"
+              aria-label="Fotografia seguinte"
+              aria-disabled={zoom === galleryCount - 1}
+              onclick={() => {
+                if (zoom < galleryCount - 1) zoom += 1;
+              }}><ArrowRight size={22} aria-hidden="true" /></button
+            >
+          {/if}
+        </div>
+      </div>
+      <p id="gallery-caption">
+        {car.brand}
+        {car.model}{isContactSlide
+          ? ' · Fale connosco'
+          : publicVehicle
             ? ' · ' + (zoom + 1) + ' / ' + galleryPhotoCount
             : ' / FOTOGRAFIA ILUSTRATIVA'}
-        </p>
-        {#if publicVehicle && galleryPhotoCount > 1}
+      </p>
+      {#if publicVehicle && galleryPhotoCount}
+        <div
+          class="viewer-thumbnails"
+          use:followThumbnail={zoom}
+          role="group"
+          aria-label="Fotografias da viatura"
+        >
+          {#each publicVehicle.photos as _, i}
+            <button
+              type="button"
+              aria-label={`Ver fotografia ${i + 1}`}
+              aria-pressed={zoom === i}
+              onclick={() => (zoom = i)}
+            >
+              <img
+                use:vehiclePhoto={{ src: sizedPhoto(publicPhoto(publicVehicle.slug, i), 320) }}
+                src={sizedPhoto(publicPhoto(publicVehicle.slug, i), 320)}
+                alt=""
+                loading="lazy"
+              />
+            </button>
+          {/each}
           <button
             type="button"
-            class="viewer-step viewer-previous"
-            aria-label="Fotografia anterior"
-            aria-disabled={zoom === 0}
-            onclick={() => {
-              if (zoom > 0) zoom -= 1;
-            }}><ArrowLeft size={22} aria-hidden="true" /></button
+            class="viewer-contact-thumbnail"
+            aria-label="Fale connosco"
+            aria-pressed={isContactSlide}
+            onclick={() => (zoom = galleryPhotoCount)}
           >
-          <button
-            type="button"
-            class="viewer-step viewer-next"
-            aria-label="Fotografia seguinte"
-            aria-disabled={zoom === galleryPhotoCount - 1}
-            onclick={() => {
-              if (zoom < galleryPhotoCount - 1) zoom += 1;
-            }}><ArrowRight size={22} aria-hidden="true" /></button
-          >
-        {/if}
-      </div>{/if}
+            <img src={sizedPhoto(publicPhoto(publicVehicle.slug, 0), 320)} alt="" loading="lazy" />
+            <span>Fale connosco</span>
+          </button>
+        </div>
+      {/if}
+    {/if}
   </dialog>
 </div>
 
@@ -1429,6 +1486,7 @@
       <div class="card-photo">
         <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
           ><img
+            use:coverPhotoSizes
             use:vehiclePhoto={{
               src: photo(vehicle.image, 1100),
               srcset: responsivePhoto(vehicle.image, 1600),

@@ -50,6 +50,25 @@ beforeEach(() => {
   forgetPhotoVariants(path);
 });
 describe('private reusable photo variants', () => {
+  it('reports cold storage and warm pixel-cache timings without changing the delivered bytes', async () => {
+    const buffer = Buffer.from('photo-fixture');
+    mock.objects.set(path, { buffer, type: 'image/jpeg' });
+    const timing = vi.fn();
+    const cold = await readPhotoBytes(path, 320, timing);
+    expect(cold?.buffer.equals(buffer)).toBe(true);
+    expect(timing.mock.calls.map(([stage]) => stage)).toEqual([
+      'photo-cache-miss',
+      'photo-manifest',
+      'photo-storage',
+    ]);
+    expect(timing.mock.calls.every(([, ms]) => Number.isFinite(ms) && ms >= 0)).toBe(true);
+    const downloads = mock.downloads.length;
+    timing.mockClear();
+    const warm = await readPhotoBytes(path, 320, timing);
+    expect(warm?.buffer.equals(buffer)).toBe(true);
+    expect(timing.mock.calls).toEqual([['photo-cache-hit', 0]]);
+    expect(mock.downloads).toHaveLength(downloads);
+  });
   it('shares concurrent missing-manifest reads, caches legacy misses and invalidates explicitly', async () => {
     await Promise.all(Array.from({ length: 10 }, () => readVariantManifest(path)));
     expect(mock.downloads).toEqual([manifestPath(path)]);

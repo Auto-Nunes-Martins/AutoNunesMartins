@@ -237,11 +237,22 @@ const bytesCache = new Map<
   { until: number; buffer: Buffer; contentType: string; etag: string }
 >();
 const CACHE_BYTES = 12 * 1024 * 1024;
-export async function readPhotoBytes(path: string, width?: PhotoWidth) {
+export type PhotoReadTiming = (
+  stage: 'photo-cache-hit' | 'photo-cache-miss' | 'photo-manifest' | 'photo-storage',
+  ms: number,
+) => void;
+export async function readPhotoBytes(path: string, width?: PhotoWidth, timing?: PhotoReadTiming) {
   const key = path + '|' + (width ?? 'original'),
     hit = bytesCache.get(key);
-  if (width && hit && hit.until > Date.now()) return hit;
+  if (width && hit && hit.until > Date.now()) {
+    timing?.('photo-cache-hit', 0);
+    return hit;
+  }
+  timing?.('photo-cache-miss', 0);
+  const manifestStart = performance.now();
   let chosen = width ? await preferredVariantPath(path, width) : path;
+  if (width) timing?.('photo-manifest', performance.now() - manifestStart);
+  const storageStart = performance.now();
   const bucket = getSupabase().storage.from(getBucketName());
   let result = await bucket.download(chosen);
   if ((result.error || !result.data) && chosen !== path) {
@@ -253,10 +264,13 @@ export async function readPhotoBytes(path: string, width?: PhotoWidth) {
     !result.data ||
     result.data.size > MAX_UPLOAD_BYTES ||
     !['image/jpeg', 'image/png', 'image/webp'].includes(result.data.type)
-  )
+  ) {
+    timing?.('photo-storage', performance.now() - storageStart);
     return null;
+  }
   const buffer = Buffer.from(await result.data.arrayBuffer()),
     contentType = result.data.type;
+  timing?.('photo-storage', performance.now() - storageStart);
   const etag = '"' + createHash('sha256').update(path).update(buffer).digest('hex') + '"';
   const value = { until: Date.now() + 60_000, buffer, contentType, etag };
   if (width && buffer.length <= 2_000_000) {

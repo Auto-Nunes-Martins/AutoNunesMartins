@@ -225,6 +225,30 @@ describe('scroll action read/write integration', () => {
     expect(calls.filter((call) => call.startsWith('write --'))).toEqual([]);
   });
 
+  it('does not remeasure vehicle detail scenes when the pointer moves or leaves', () => {
+    const { calls, root } = fixture();
+    root.classList.add('public-detail');
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('hover: hover'),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const motion = designMotion(root);
+    cleanup.push(motion.destroy);
+    advance();
+    advance();
+    calls.length = 0;
+    const listeners = vi.mocked(root.addEventListener).mock.calls;
+    const move = listeners.find(([event]) => event === 'pointermove')![1] as (
+      event: unknown,
+    ) => void;
+    const leave = listeners.find(([event]) => event === 'pointerleave')![1] as () => void;
+    move({ clientX: 500, clientY: 300 });
+    leave();
+    advance();
+    expect(calls).toEqual([]);
+  });
+
   it('does not measure catalogue geometry or queue scroll work below the desktop breakpoint', () => {
     const { win } = fixture(390);
     const measure = vi.fn(() => {

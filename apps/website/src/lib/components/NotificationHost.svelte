@@ -6,6 +6,7 @@
   import { fade } from 'svelte/transition';
   import { cubicInOut, cubicOut } from 'svelte/easing';
   import { ArrowUpRight, X } from 'lucide-svelte';
+  import { notificationPosition } from '$lib/notificationPosition';
   import { useNotifications } from '$lib/notifications';
   const notifications = useNotifications();
   const { notices } = notifications;
@@ -14,6 +15,7 @@
   let offset = $state(110);
   let announcement = $state('');
   let visibleLimit = $state(4);
+  let stack: HTMLDivElement;
   const front = $derived($notices[0]);
   const visible = $derived($notices.slice(0, visibleLimit));
   $effect(() => {
@@ -94,28 +96,13 @@
     const update = () => {
       reduced = media.matches;
     };
-    let frame = 0;
-    let header: Element | null = null;
-    const resize = new ResizeObserver(() => schedule());
-    const measure = () => {
-      frame = 0;
-      const current = document.querySelector('.stand-header');
-      if (current !== header) {
-        resize.disconnect();
-        header = current;
-        if (header) resize.observe(header);
-      }
-      const bottom = header?.getBoundingClientRect().bottom ?? 0;
-      offset = Math.max(16, Math.ceil(bottom + 12));
-      const cardBudget = window.innerWidth <= 700 ? 150 : 100;
-      visibleLimit = Math.max(
-        1,
-        Math.min(4, Math.floor((window.innerHeight - offset - 44) / cardBudget)),
-      );
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
-    };
+    let hasNotices = false;
+    const positioning = notificationPosition(
+      () => hasNotices || !!stack?.querySelector('.notice-slot'),
+      (nextOffset, nextLimit) => { offset = nextOffset; visibleLimit = nextLimit; },
+    );
+    const schedule = positioning.schedule;
+    const unsubscribe = notices.subscribe(items => { hasNotices = items.length > 0; schedule(); });
     const changes = new MutationObserver(schedule);
     changes.observe(document.body, {
       childList: true,
@@ -124,14 +111,14 @@
       attributeFilter: ['class', 'aria-hidden'],
     });
     update();
-    measure();
+    schedule();
     media.addEventListener('change', update);
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
     document.addEventListener('transitionend', schedule, true);
     return () => {
-      cancelAnimationFrame(frame);
-      resize.disconnect();
+      unsubscribe();
+      positioning.destroy();
       changes.disconnect();
       media.removeEventListener('change', update);
       window.removeEventListener('scroll', schedule);
@@ -152,6 +139,7 @@
   {announcement}
 </div>
 <div
+  bind:this={stack}
   class="notification-stack"
   class:on-comparison={onComparison}
   style={`--notice-top:${offset}px`}

@@ -101,7 +101,7 @@
   aria-labelledby={`${id}-heading`}
 >
   <div class="studio-landscape" aria-hidden="true">
-    {#if background}<ScenePhotograph {background} />{:else}
+    {#if background}<ScenePhotograph {background} bounded />{:else}
     <img
       class="studio-photo"
       src={photo('photo-1576212767334-9e289e294c77', backgroundTone === 'original' ? 2200 : 1280)}

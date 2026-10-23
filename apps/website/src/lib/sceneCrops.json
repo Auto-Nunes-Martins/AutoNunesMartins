@@ -1,0 +1,23 @@
+{
+  "catalog": {
+    "sourceWidth": 2736,
+    "sourceHeight": 3648,
+    "left": 342,
+    "top": 456,
+    "width": 2052,
+    "height": 2736,
+    "fraction": 0.75,
+    "originalZoom": 1.55,
+    "originalBlur": 1.2
+  },
+  "cabin": {
+    "sourceWidth": 2560,
+    "sourceHeight": 3835,
+    "left": 0,
+    "top": 530,
+    "width": 2560,
+    "height": 2835,
+    "positionY": 0.53,
+    "minViewport": 320
+  }
+}

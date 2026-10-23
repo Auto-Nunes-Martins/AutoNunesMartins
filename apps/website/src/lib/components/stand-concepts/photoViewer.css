@@ -1,18 +1,168 @@
-html:has(dialog.gallery-dialog[open]) { overflow: hidden; }
-.design.orbit .gallery-dialog {
-  position: fixed; inset: auto; left: 50vw; top: 50dvh; transform: translate(-50%, -50%); margin: 0; width: min(1960px, calc(100vw - 64px));
-  height: min(1240px, calc(100dvh - clamp(24px, 4dvh, 64px))); max-width: calc(100vw - 32px); max-height: calc(100dvh - 24px);
-  padding: 8px; border: 0; border-radius: 0; background: transparent; overflow: hidden; box-sizing: border-box;
+html:has(dialog.gallery-dialog[open]) {
+  overflow: hidden;
 }
-.design.orbit .gallery-dialog[open] { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; }
-.design.orbit .gallery-dialog::backdrop { background: rgb(8 8 12 / 62%); backdrop-filter: blur(4px); }
-.design.orbit .gallery-dialog img { display: block; width: 100%; height: 100%; min-height: 0; max-height: 100%; object-fit: contain; margin: auto; }
-.design.orbit .gallery-dialog .viewer-controls { display:grid; grid-template-columns:44px minmax(0, 1fr) 44px 44px; gap:8px; align-items:center; width:min(480px, 100%); margin:0 auto; }
-.design.orbit .gallery-dialog p { grid-column:2; grid-row:1; text-align:center; margin:0; padding:6px; border-radius:6px; background:#111b; color:white; font-size:13px; line-height:1.5; }
-.design.orbit .gallery-dialog :is(.dialog-close, .viewer-step) { display: grid; place-items: center; position: static; transform:none; grid-row:1; width: 44px; height: 44px; min-height: 44px; padding: 0; border: 1px solid #ffffff70; border-radius: 50%; background: #1119; color: white; cursor: pointer; }
-.design.orbit .gallery-dialog .dialog-close { grid-column:4; }
-.design.orbit .gallery-dialog .viewer-previous { grid-column:1; }
-.design.orbit .gallery-dialog .viewer-next { grid-column:3; }
-.design.orbit .gallery-dialog button[aria-disabled='true'] { opacity: .35; cursor: default; }
-.design.orbit .gallery-dialog button:focus-visible { outline: 2px solid white; outline-offset: 3px; }
-@media(max-width:600px) { .design.orbit .gallery-dialog { width:calc(100vw - 48px); } .design.orbit .gallery-dialog p {font-size:12px;} }
+.design.orbit .gallery-dialog {
+  position: fixed;
+  inset: auto;
+  left: 50vw;
+  top: 50dvh;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  width: min(1960px, calc(100vw - 64px));
+  height: min(1180px, calc(100dvh - clamp(40px, 7dvh, 88px)));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 24px);
+  padding: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.design.orbit .gallery-dialog[open] {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: 10px;
+}
+.design.orbit .gallery-dialog .viewer-stage {
+  position: relative;
+  min-height: 0;
+  padding: 0 64px;
+}
+.design.orbit .gallery-dialog::backdrop {
+  background: rgb(8 8 12 / 62%);
+  backdrop-filter: blur(4px);
+}
+.design.orbit .gallery-dialog img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  object-fit: contain;
+  margin: auto;
+}
+.design.orbit .gallery-dialog .viewer-contact {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.design.orbit .gallery-dialog .viewer-contact > img {
+  object-fit: cover;
+}
+.design.orbit .gallery-dialog .viewer-controls {
+  display: contents;
+}
+.design.orbit .gallery-dialog #gallery-caption {
+  text-align: center;
+  margin: 0;
+  padding: 6px;
+  border-radius: 6px;
+  background: #111b;
+  color: white;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.design.orbit .gallery-dialog :is(.dialog-close, .viewer-step) {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  z-index: 2;
+  transform: translateY(-50%);
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid #ffffff70;
+  border-radius: 50%;
+  background: #111d;
+  color: white;
+  cursor: pointer;
+}
+.design.orbit .gallery-dialog .dialog-close {
+  right: 4px;
+  top: 8px;
+  transform: none;
+}
+.design.orbit .gallery-dialog .viewer-previous {
+  left: 0;
+}
+.design.orbit .gallery-dialog .viewer-next {
+  right: 0;
+}
+.design.orbit .gallery-dialog .viewer-thumbnails {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  min-width: 0;
+  padding: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff70 transparent;
+}
+.design.orbit .gallery-dialog .viewer-thumbnails button {
+  position: relative;
+  flex: 0 0 80px;
+  height: 56px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #111;
+  cursor: pointer;
+  opacity: 0.65;
+}
+.design.orbit .gallery-dialog .viewer-thumbnails button[aria-pressed='true'] {
+  border-color: white;
+  opacity: 1;
+}
+.design.orbit .gallery-dialog .viewer-thumbnails button:first-child {
+  margin-inline-start: auto;
+}
+.design.orbit .gallery-dialog .viewer-thumbnails button:last-child {
+  margin-inline-end: auto;
+}
+.design.orbit .gallery-dialog .viewer-thumbnails img {
+  object-fit: cover;
+}
+.design.orbit .gallery-dialog .viewer-contact-thumbnail span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #111b;
+  backdrop-filter: blur(3px);
+  color: white;
+  font-size: 10px;
+}
+.design.orbit .gallery-dialog button[aria-disabled='true'] {
+  opacity: 0.35;
+  cursor: default;
+}
+.design.orbit .gallery-dialog button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .design.orbit .gallery-dialog {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    padding: 4px;
+    height: min(1240px, calc(100dvh - 24px));
+  }
+  .design.orbit .gallery-dialog .viewer-stage {
+    padding: 0;
+  }
+  .design.orbit .gallery-dialog .dialog-close {
+    right: 4px;
+  }
+  .design.orbit .gallery-dialog #gallery-caption {
+    font-size: 12px;
+  }
+  .design.orbit .gallery-dialog .viewer-thumbnails button {
+    flex-basis: 64px;
+    height: 48px;
+  }
+}

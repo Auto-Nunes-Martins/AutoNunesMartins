@@ -3,7 +3,8 @@
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import { standContact } from './stand-concepts/standContact';
-  import { passedHomeStats, whatsappUrl } from '$lib/whatsappContact';
+  import { whatsappUrl } from '$lib/whatsappContact';
+  import { watchHomeStats } from '$lib/whatsappVisibility';
 
   const href = whatsappUrl(standContact.whatsapp);
   const label = standContact.whatsapp?.demo ? 'WhatsApp — demonstração' : 'Contactar pelo WhatsApp';
@@ -12,40 +13,9 @@
   let refresh = () => {};
   afterNavigate(() => { pastStats = false; refresh(); });
   onMount(() => {
-    let frame = 0;
-    let stats: Element | null = null;
-    let home: Element | null = null;
-    const intersection = new IntersectionObserver(() => schedule(), { threshold: [0, 1] });
-    const resize = new ResizeObserver(() => schedule());
-    const inspect = () => {
-      frame = 0;
-      const currentHome = isHome ? document.querySelector('.orbit-home') : null;
-      const currentStats = currentHome?.querySelector('.orbit-stats') ?? null;
-      if (currentStats !== stats || currentHome !== home) {
-        intersection.disconnect(); resize.disconnect();
-        stats = currentStats; home = currentHome;
-        if (stats) { intersection.observe(stats); resize.observe(stats); }
-        if (home) resize.observe(home);
-      }
-      pastStats = passedHomeStats(stats?.getBoundingClientRect().bottom ?? null);
-    };
-    const schedule = () => { if (!frame) frame = requestAnimationFrame(inspect); };
-    refresh = () => { cancelAnimationFrame(frame); inspect(); };
-    window.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', schedule);
-    window.visualViewport?.addEventListener('resize', schedule);
-    // Rebind the real stats element after navigation or a changed homepage layout.
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true });
-    inspect();
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-      intersection.disconnect(); resize.disconnect(); refresh = () => {};
-      window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
-      window.visualViewport?.removeEventListener('resize', schedule);
-    };
+    const visibility = watchHomeStats(() => isHome, passed => { pastStats = passed; });
+    refresh = visibility.refresh;
+    return () => { visibility.destroy(); refresh = () => {}; };
   });
 </script>
 

@@ -2,6 +2,8 @@
   import { ArrowUpRight, Plus, Minus } from 'lucide-svelte';
   import { photo } from './data';
   import { responsivePhoto } from './images';
+  import { cabinImages } from '$lib/cabinImages';
+  import sceneCrops from '$lib/sceneCrops.json';
   let active = $state(0);
   const points = [
     {
@@ -24,6 +26,14 @@
   const interior = photo('photo-1652453822981-653a9a522a5b', 2200);
 </script>
 
+{#snippet photograph(panel: number)}
+  <picture class="cabin-image">
+    <source type="image/avif" media={`(min-width: ${sceneCrops.cabin.minViewport}px)`} srcset={cabinImages.avif} sizes="(min-width: 1920px) 1720px, 96vw" />
+    <source media={`(min-width: ${sceneCrops.cabin.minViewport}px)`} srcset={cabinImages.webp} sizes="(min-width: 1920px) 1720px, 96vw" />
+    <img src={interior} srcset={responsivePhoto('photo-1652453822981-653a9a522a5b')} sizes="(min-width: 1920px) 1720px, 96vw" alt="" loading="lazy" decoding="async" style={`--panel: ${panel}`} />
+  </picture>
+{/snippet}
+
 <section class="cabin-reveal" data-scene data-approach aria-labelledby="cabin-heading">
   <div class="cabin-heading">
     <div>
@@ -41,14 +51,14 @@
       {#each [0, 1, 2] as panel}
         <div class="cabin-panel panel-{panel}" aria-hidden="true">
           <div class="cabin-panel-face">
-            <img src={interior} srcset={responsivePhoto('photo-1652453822981-653a9a522a5b')} sizes="(min-width: 1920px) 1720px, 96vw" alt="" loading="lazy" decoding="async" style={`--panel: ${panel}`} />
+            {@render photograph(panel)}
             <div class="fold-shade"></div>
           </div>
         </div>
       {/each}
     </div>
     <div class="panorama-flat" aria-hidden="true">
-      <img src={interior} srcset={responsivePhoto('photo-1652453822981-653a9a522a5b')} sizes="(min-width: 1920px) 1720px, 96vw" alt="" loading="lazy" decoding="async" />
+      {@render photograph(0)}
     </div>
     <div class="panorama-caption">
       <span>UM OUTRO PONTO DE VISTA</span><span>INTERIOR / SELEÇÃO AUTOMÓVEL</span>
@@ -101,6 +111,7 @@
 </section>
 
 <style>
+  .cabin-image { display: contents; }
   .cabin-reveal {
     --approach: 1;
     --reveal-a: 1;

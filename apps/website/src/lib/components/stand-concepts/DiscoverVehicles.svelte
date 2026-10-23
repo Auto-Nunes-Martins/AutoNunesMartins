@@ -4,6 +4,11 @@
   import forestSmall from '$lib/assets/images/hero-directions/catalog-forest-640.webp?url&no-inline';
   import forest from '$lib/assets/images/hero-directions/catalog-forest-1280.webp?url&no-inline';
   import type { SceneBackground } from './homeVisualFamilies';
+  import { coverImageSizes } from '$lib/coverImageSizes';
+  import sceneCrops from '$lib/sceneCrops.json';
+  const crop = sceneCrops.catalog;
+  const photoZoom = crop.originalZoom * crop.fraction;
+  const photoBlur = crop.originalBlur / crop.fraction;
   let { background }: { background?: SceneBackground } = $props();
   const CAR_ENTER_MS = 850;
   const LINE_ENTER_MS = 300;
@@ -131,25 +136,28 @@
   onblur={leave}
 >
   <span class="discover-landscape" aria-hidden="true"
-    ><picture>
+    ><picture use:coverImageSizes={{
+      desktop: background?.portraitAspectRatio ?? 0.75,
+      portrait: background?.portraitAspectRatio ?? 0.75,
+    }}>
       {#if background?.avifPortrait}<source
           type="image/avif"
           srcset={background.avifPortrait}
-          sizes="(max-width: 700px) calc(155vw - 62px), 53vw"
+          sizes="(max-width: 700px) calc(116.25vw - 46.5px), max(25.5vw, 450px)"
         />{/if}
       <img
         src={background?.src ?? forest}
         srcset={background?.portrait ?? `${forestSmall} 640w, ${forest} 1280w`}
         style:object-position={background ? background.mobileFocus : undefined}
-        style:filter={background?.exposure === undefined
-          ? undefined
-          : `saturate(.45) blur(1.2px) brightness(${background.exposure})`}
-        style:transform={background ? 'scale(1.55)' : undefined}
+        style:filter={background
+          ? `saturate(.45) blur(${photoBlur}px)${background.exposure === undefined ? '' : ` brightness(${background.exposure})`}`
+          : undefined}
+        style:transform={background ? `scale(${photoZoom})` : undefined}
         sizes={background
-          ? '(max-width: 700px) calc(155vw - 62px), 53vw'
+          ? '(max-width: 700px) calc(116.25vw - 46.5px), max(25.5vw, 450px)'
           : '(max-width: 700px) calc(100vw - 40px), 34vw'}
-        width="1280"
-        height="1707"
+        width={background ? crop.width : 1280}
+        height={background ? crop.height : 1707}
         alt=""
         loading="lazy"
         decoding="async"

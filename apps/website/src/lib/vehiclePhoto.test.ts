@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { catalogPlaceholder } from './localAssets';
 import { vehiclePhoto } from './vehiclePhoto';
 
@@ -20,6 +20,73 @@ class ImageNode extends EventTarget {
 }
 
 describe('vehicle photo fallback', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function fadingImage() {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    vi.stubGlobal('getComputedStyle', () => ({ objectFit: 'cover', objectPosition: '50% 50%' }));
+    const background = new Map<string, string>();
+    const parentElement = {
+      style: {
+        getPropertyValue: (key: string) => background.get(key) ?? '',
+        getPropertyPriority: () => '',
+        setProperty: (key: string, value: string) => background.set(key, value),
+        removeProperty: (key: string) => background.delete(key),
+      },
+    };
+    const cancel = vi.fn();
+    let finish!: () => void;
+    const finished = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const animate = vi.fn(() => ({ cancel, finished }));
+    const node = Object.assign(new ImageNode(), {
+      animate,
+      parentElement,
+      style: { opacity: '' },
+      complete: true,
+      naturalWidth: 800,
+    });
+    return { node, background, cancel, animate, finish, finished };
+  }
+
+  it('dissolves over the previous decoded photo without exposing the page background', async () => {
+    const { node, background, animate, finish, finished } = fadingImage();
+    const action = vehiclePhoto(node.asImage(), { src: node.src, fade: true });
+    const previous = node.src;
+    node.complete = false;
+    action.update({ src: '/next.webp', fade: true });
+    expect(background.get('background-image')).toContain(previous);
+    expect(node.style.opacity).toBe('0');
+    node.dispatchEvent(new Event('load'));
+    expect(animate).toHaveBeenCalledWith([{ opacity: 0 }, { opacity: 1 }], expect.any(Object));
+    expect(node.style.opacity).toBe('1');
+    finish();
+    await finished;
+    expect(background.size).toBe(0);
+    expect(node.style.opacity).toBe('');
+    action.destroy();
+  });
+
+  it('never starts a stale fade after rapid selection and teardown', async () => {
+    const { node, animate, background } = fadingImage();
+    let finish!: () => void;
+    const decoding = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    Object.assign(node, { decode: () => decoding });
+    const action = vehiclePhoto(node.asImage(), { src: node.src, fade: true });
+    node.complete = false;
+    node.dispatchEvent(new Event('load'));
+    action.update({ src: '/next.webp', fade: true });
+    node.dispatchEvent(new Event('load'));
+    action.destroy();
+    finish();
+    await decoding;
+    expect(animate).not.toHaveBeenCalled();
+    expect(background.size).toBe(0);
+    expect(node.style.opacity).toBe('');
+  });
   it('reports pending downloads and clears loading on completion or failure', () => {
     const node = new ImageNode();
     const states: boolean[] = [];
