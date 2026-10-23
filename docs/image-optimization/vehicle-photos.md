@@ -1,0 +1,92 @@
+# Vehicle photographs and permanent homepage composition
+
+The fifth homepage composition is permanent. The selector and retired hero implementations
+were removed. The shared contact ending uses the same forest image and palette on all
+pages rendered by DesignEdition. Existing source artwork remains available for future
+derivatives; production imports only the chosen composition.
+
+## Vehicle delivery
+
+- Supported derivative requests are shared through `@anm/types/photoWidths`:
+  320, 384, 800, 1280, 1600 and 2560 CSS source-width descriptors.
+- 384 accommodates a 112 CSS-pixel thumbnail on a DPR-3 display without jumping to 800.
+  1280 accommodates typical mobile cards and featured photographs at high density.
+- WebP derivatives use quality 90, effort 6 and smart subsampling. The previous recipe
+  used quality 94 and effort 3. Existing upload admission, master optimization, original
+  zoom delivery, live authorization and private/no-cache response policies are retained.
+- Derivatives are generated directly from each stored master, never from another derivative.
+  No image is enlarged. Requests above the master's available derivatives retain the
+  original fallback, so a requested width is not a promise that a small master has that width.
+- The manifest schema and namespace stay compatible. `encodingVersion: 2` distinguishes
+  this recipe, so a complete old manifest is regenerated rather than incorrectly reused.
+  Derivative uploads finish before the manifest is published. Masters and vehicle rows
+  are never replaced by the backfill.
+
+On 23 October 2026 the configured private storage was updated: 44 masters produced 208
+derivatives, with zero failures/skips. Every master was checked before/after and vehicle
+state remained unchanged. Detailed reports are local, under
+`artifacts/vehicle-photo-compression/`, and are not deployment assets.
+
+## Measurements and visual review
+
+Six public vehicle cover photographs were used for comparisons. The audit renders
+normal display sizes and original-pixel crops of headlights, grilles, paint and tyres.
+The chosen recipe showed no material visible deterioration in these comparisons.
+This is a visual assessment, not a claim of mathematically lossless compression.
+
+Actual mean bytes served locally after regeneration:
+
+| Requested width | Previous sample | New sample |
+| --------------- | --------------: | ---------: |
+| 320             |          25,991 |     20,135 |
+| 800             |         146,595 |    110,655 |
+| 1600            |         500,611 |    373,722 |
+
+The new 384 version averaged 27,781 bytes; the new 1280 version averaged 255,994 bytes.
+When these are appropriate for the display density, they avoid the previous jumps to
+800 and 1600 respectively. These sample savings are not guarantees for every photograph.
+
+## Homepage backgrounds
+
+`scripts/optimize-home-v5-images.mjs` creates AVIF quality 70 (4:4:4) and WebP quality 90
+fallbacks without changing crops, focus points or CSS colour treatment. It covers the
+hero, discovery card, services, editorial pause and contact ending. The approved service
+photograph is now served locally, retaining its existing position and grayscale treatment.
+
+`coverImageSizes` measures the required object-fit cover width, including tall portrait
+crops. It leaves device pixel density to the browser. Lazy backgrounds receive their
+actual required size before scrolling into view. Listeners and observers are removed
+on unmount. Conservative SSR estimates remain available before hydration.
+
+At equal resolution, the largest AVIF portrait derivatives reduced the original hero,
+discovery and editorial source bytes by approximately 22%, 20% and 28%. The contact
+wide image fell from 940,392 to 589,923 bytes. The service image at 1920 fell from
+797,182 bytes (previous CDN JPEG response) to 335,049 bytes (local AVIF).
+Resolution selection can provide additional savings. Compression alone does not reduce
+decoded pixel memory at the same dimensions, and this work does not establish the cause
+or resolution of the previously reported browser crashes.
+
+## Reproducing the comparisons
+
+From the repository root, using the installed dependencies:
+
+```powershell
+node scripts/audit-vehicle-photo-compression.mjs --download
+node scripts/optimize-home-v5-images.mjs --download
+node scripts/compare-home-v5-images.mjs
+```
+
+The first script caches read-only public vehicle samples locally. The background script
+preserves all source files and creates additional deployment assets plus a generated
+import module. `--module-only` rebuilds that import module from the local measurements.
+
+The storage migration defaults to inspection. With the backend's existing private
+environment, run from `backend/`:
+
+```powershell
+node --env-file=.env --import tsx scripts/backfill-photo-variants.ts --report ../artifacts/vehicle-photo-compression/backfill-inspect.json
+node --env-file=.env --import tsx scripts/backfill-photo-variants.ts --apply --report ../artifacts/vehicle-photo-compression/backfill-applied.json
+```
+
+The apply operation is idempotent for the current encoding version. Do not commit
+credentials, downloaded masters or temporary comparisons with the implementation.

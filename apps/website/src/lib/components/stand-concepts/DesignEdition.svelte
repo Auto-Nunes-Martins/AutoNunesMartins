@@ -26,10 +26,8 @@
   import type { UnavailableVehicle } from '$lib/unavailableVehicle';
   import type { PublicHighlights } from '$lib/homepageHighlights';
   import HomeHeroDirections from './HomeHeroDirections.svelte';
-  import { heroDirections } from './homeHeroDirections';
   import './serviceTypography.css';
   import { homeVisualFamilies } from './homeVisualFamilies';
-  import HomeHeroV2 from './HomeHeroV2.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { submitContact } from '$lib/contactRequest';
   import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
@@ -149,7 +147,6 @@
   import './orbitInitialLight.css';
   import './orbitDetail.css';
   import './navAddress.css';
-  import './homeHeroPhoto.css';
   import './orbitLightTheme.css';
   let {
     id,
@@ -305,13 +302,8 @@
   $effect(() => {
     if (publicVehicle && zoom > Math.max(0, galleryCount - 1)) zoom = 0;
   });
-  function initialHeroVersion() {
-    const requested = import.meta.env.DEV ? Number($page.url.searchParams.get('hero')) : 5;
-    return heroDirections.some((direction) => direction.id === requested) ? requested : 5;
-  }
-  const availableHeroDirections = heroDirections;
-  let heroVersion = $state(initialHeroVersion());
-  const homeVisualFamily = $derived($page.url.pathname === '/' ? homeVisualFamilies[heroVersion] : undefined);
+  const heroVersion = 5;
+  const homeVisualFamily = homeVisualFamilies[5];
   const equipmentItems = [
     {
       question: 'Conforto',
@@ -666,7 +658,11 @@
 
   {#if errorStatus}
     {@const content = publicErrorCopy(errorStatus, $page.url.pathname)}
-    <main class="not-found" class:known-unavailable={errorStatus === 404 && !!unavailableVehicle} class:vehicle-error={errorStatus === 404 && $page.url.pathname.startsWith('/viaturas/')}>
+    <main
+      class="not-found"
+      class:known-unavailable={errorStatus === 404 && !!unavailableVehicle}
+      class:vehicle-error={errorStatus === 404 && $page.url.pathname.startsWith('/viaturas/')}
+    >
       {#if errorStatus === 404 && unavailableVehicle}
         <UnavailableVehiclePanel vehicle={unavailableVehicle} />
       {:else if errorStatus === 404 && $page.url.pathname.startsWith('/viaturas/')}
@@ -708,7 +704,9 @@
   {:else if car}
     <main class="vehicle-page">
       {#if publicVehicle}<div class="detail-top-actions">
-          <OrbitBackLink /><VehicleShareButton {...vehicleShareData(publicVehicle, $page.url.origin)} />
+          <OrbitBackLink /><VehicleShareButton
+            {...vehicleShareData(publicVehicle, $page.url.origin)}
+          />
         </div>{/if}
       <div class="breadcrumbs">
         {#if publicVehicle}<nav class="breadcrumb-trail" aria-label="Percurso de navegação">
@@ -722,8 +720,7 @@
                     >{/if}
                 </li>{/each}
             </ol>
-          </nav>{:else}<a href="/viaturas"
-            ><ArrowLeft size={14} aria-hidden="true" /> Voltar</a
+          </nav>{:else}<a href="/viaturas"><ArrowLeft size={14} aria-hidden="true" /> Voltar</a
           ><span>{car.brand} / {car.model}</span>{/if}{#if !publicVehicle}<button
             onclick={() => toggleSave(car.id)}
             class:saved={saved.includes(car.id)}
@@ -1064,71 +1061,46 @@
         {/if}
       </section>
       {#if publicVehicle}<section class="related">
-        <p class="kicker">PREÇOS PRÓXIMOS DO SEU</p>
-        <h2>Continue a explorar.</h2>
-        {#await relatedVehicles}
-          <div class="related-grid" role="status" aria-label="A consultar sugestões atuais">
-            {#each [0, 1, 2] as index}{@render vehicleCard(null, index, false)}{/each}
-          </div>
-        {:then vehicles}
-          {#if vehicles.length}
-            {#key publicVehicle.slug}<RelatedCarousel {vehicles} card={vehicleCard} />{/key}
-          {:else}<p><a href="/viaturas">Explorar todas as viaturas</a></p>{/if}
-        {:catch}<p><a href="/viaturas">Consultar sugestões no catálogo</a></p>{/await}
-      </section>
+          <p class="kicker">PREÇOS PRÓXIMOS DO SEU</p>
+          <h2>Continue a explorar.</h2>
+          {#await relatedVehicles}
+            <div class="related-grid" role="status" aria-label="A consultar sugestões atuais">
+              {#each [0, 1, 2] as index}{@render vehicleCard(null, index, false)}{/each}
+            </div>
+          {:then vehicles}
+            {#if vehicles.length}
+              {#key publicVehicle.slug}<RelatedCarousel {vehicles} card={vehicleCard} />{/key}
+            {:else}<p><a href="/viaturas">Explorar todas as viaturas</a></p>{/if}
+          {:catch}<p><a href="/viaturas">Consultar sugestões no catálogo</a></p>{/await}
+        </section>
       {:else if suggestions.length}<section class="related">
           <p class="kicker">
             {publicVehicle ? 'PREÇOS PRÓXIMOS DO SEU' : 'PREÇOS PRÓXIMOS · DEMONSTRAÇÃO'}
           </p>
           <h2>Continue a explorar.</h2>
           <div class="related-grid">
-              {#each suggestions as item}<a href={publicVehicle ? publicHref(item.id) : '/viaturas'}
-                  ><div class="related-image">
-                    <img
-                      use:vehiclePhoto={{ src: photo(item.image, 900) }}
-                      src={photo(item.image, 900)}
-                      alt={`${item.brand} ${item.model}`}
-                      loading="lazy"
-                    /><span><ArrowUpRight size={20} aria-hidden="true" /></span>
-                  </div>
-                  <div class="related-body">
-                    <span class="related-brand">{item.brand}</span>
-                    <h3>{item.model}</h3>
-                    <p>{item.year}</p>
-                    <strong class="related-price">{publicPrice(item.price)}</strong>
-                  </div></a
-                >{/each}
-            </div>
+            {#each suggestions as item}<a href={publicVehicle ? publicHref(item.id) : '/viaturas'}
+                ><div class="related-image">
+                  <img
+                    use:vehiclePhoto={{ src: photo(item.image, 900) }}
+                    src={photo(item.image, 900)}
+                    alt={`${item.brand} ${item.model}`}
+                    loading="lazy"
+                  /><span><ArrowUpRight size={20} aria-hidden="true" /></span>
+                </div>
+                <div class="related-body">
+                  <span class="related-brand">{item.brand}</span>
+                  <h3>{item.model}</h3>
+                  <p>{item.year}</p>
+                  <strong class="related-price">{publicPrice(item.price)}</strong>
+                </div></a
+              >{/each}
+          </div>
         </section>{/if}
     </main>
   {:else}
     <main>
-      {#if heroVersion === 2}
-        <HomeHeroV2
-          {homeHighlights}
-          hasAddress={!!standContact.address ||
-            !!standContact.email ||
-            standContact.hours.length > 0}
-        />
-      {:else}
-        {#key heroVersion}<HomeHeroDirections version={heroVersion} {homeHighlights} />{/key}
-      {/if}
-
-      <div
-          class="hero-versions"
-          role="group"
-          aria-label="Escolher composição do hero"
-        >
-          {#each availableHeroDirections as { id: version, name }}
-            <button
-              type="button"
-              aria-label={`Versão ${version} do hero`}
-              aria-pressed={heroVersion === version}
-              title={name}
-              onclick={() => (heroVersion = version)}>{version}</button
-            >
-          {/each}
-        </div>
+      <HomeHeroDirections {homeHighlights} />
       <OrbitStats />
 
       <section class="showroom" id="selecao">
@@ -1227,7 +1199,12 @@
 
       <CabinReveal />
       <ServiceBannerProposals onContact={contact} />
-      <OrbitPerspective grouped lead="A escolha certa" middle="começa por" highlight="fazer sentido." />
+      <OrbitPerspective
+        grouped
+        lead="A escolha certa"
+        middle="começa por"
+        highlight="fazer sentido."
+      />
       <div class="home-choice-group">
         <HomeNextSteps />
         <OrbitReviews />
@@ -1436,7 +1413,11 @@
   </dialog>
 </div>
 
-{#snippet vehicleCard(vehicle: CatalogCar | PublicCard | null, index: number, animate: boolean = true)}
+{#snippet vehicleCard(
+  vehicle: CatalogCar | PublicCard | null,
+  index: number,
+  animate: boolean = true,
+)}
   <article
     class="vehicle-card"
     class:public-card={!!vehicle && 'approved' in vehicle}
@@ -1445,76 +1426,81 @@
     use:conditionalEntrance={vehicle && animate ? (index % 2) * 110 : false}
   >
     {#if vehicle}
-    <div class="card-photo">
-      <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
-        ><img
-          use:vehiclePhoto={{
-            src: photo(vehicle.image, 1100),
-            srcset: responsivePhoto(vehicle.image, 1600),
-          }}
-          src={photo(vehicle.image, 1100)}
-          srcset={responsivePhoto(vehicle.image, 1600)}
-          sizes={cardImageSizes}
-          alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
-          loading="lazy"
-        />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
-          class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
-        ></a
-      >
-      {#if 'approved' in vehicle}<div class="card-compare">
-          <CompareButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} overlay />
-        </div>{/if}
-    </div>
-    <div class="card-body">
-      <div class="card-info">
-        <a class="card-detail-link" href={'href' in vehicle ? vehicle.href : '/viaturas'}
-          ><h3>{vehicle.brand} {vehicle.model}</h3>
-          {#if 'version' in vehicle && vehicle.version}<span class="card-version"
-              >{vehicle.version}</span
-            >{/if}</a
+      <div class="card-photo">
+        <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
+          ><img
+            use:vehiclePhoto={{
+              src: photo(vehicle.image, 1100),
+              srcset: responsivePhoto(vehicle.image, 1600),
+            }}
+            src={photo(vehicle.image, 1100)}
+            srcset={responsivePhoto(vehicle.image, 1600)}
+            sizes={cardImageSizes}
+            alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
+            loading="lazy"
+          />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
+            class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
+          ></a
         >
-        <div class="card-favorite">
-          {#if 'approved' in vehicle}<FavoriteButton
-              id={vehicle.id}
-              name={`${vehicle.brand} ${vehicle.model}`}
-            />{:else}<button
-              class="save"
-              class:saved={saved.includes(vehicle.id)}
-              onclick={() => toggleSave(vehicle.id)}
-              aria-label={`${saved.includes(vehicle.id) ? 'Remover' : 'Guardar'} ${vehicle.brand} ${vehicle.model}`}
-              aria-pressed={saved.includes(vehicle.id)}
-              ><Heart
-                size={18}
-                fill={saved.includes(vehicle.id) ? 'currentColor' : 'none'}
-                aria-hidden="true"
-              /></button
-            >{/if}
+        {#if 'approved' in vehicle}<div class="card-compare">
+            <CompareButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} overlay />
+          </div>{/if}
+      </div>
+      <div class="card-body">
+        <div class="card-info">
+          <a class="card-detail-link" href={'href' in vehicle ? vehicle.href : '/viaturas'}
+            ><h3>{vehicle.brand} {vehicle.model}</h3>
+            {#if 'version' in vehicle && vehicle.version}<span class="card-version"
+                >{vehicle.version}</span
+              >{/if}</a
+          >
+          <div class="card-favorite">
+            {#if 'approved' in vehicle}<FavoriteButton
+                id={vehicle.id}
+                name={`${vehicle.brand} ${vehicle.model}`}
+              />{:else}<button
+                class="save"
+                class:saved={saved.includes(vehicle.id)}
+                onclick={() => toggleSave(vehicle.id)}
+                aria-label={`${saved.includes(vehicle.id) ? 'Remover' : 'Guardar'} ${vehicle.brand} ${vehicle.model}`}
+                aria-pressed={saved.includes(vehicle.id)}
+                ><Heart
+                  size={18}
+                  fill={saved.includes(vehicle.id) ? 'currentColor' : 'none'}
+                  aria-hidden="true"
+                /></button
+              >{/if}
+          </div>
+        </div>
+        <div class="card-price">
+          <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong>
+        </div>
+        <div class="card-specs">
+          <span><CalendarDays size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.year}</span
+          ><span
+            ><svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"><path d="M4 19 8 5m8 0 4 14M12 6v2m0 3v2m0 3v2" /></svg
+            >{number(vehicle.km)} km</span
+          ><span><Fuel size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.fuel}</span>
         </div>
       </div>
-      <div class="card-price">
-        <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong>
-      </div>
-      <div class="card-specs">
-        <span><CalendarDays size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.year}</span
-        ><span
-          ><svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"><path d="M4 19 8 5m8 0 4 14M12 6v2m0 3v2m0 3v2" /></svg
-          >{number(vehicle.km)} km</span
-        ><span><Fuel size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.fuel}</span>
-      </div>
-    </div>
     {:else}
       <div class="card-photo"><div class="card-image"></div></div>
       <div class="card-body">
-        <div class="card-info"><div><h3 class="pending-line">A carregar viatura</h3><span class="card-version pending-line">&nbsp;</span></div></div>
+        <div class="card-info">
+          <div>
+            <h3 class="pending-line">A carregar viatura</h3>
+            <span class="card-version pending-line">&nbsp;</span>
+          </div>
+        </div>
         <div class="card-price"><strong class="pending-line">&nbsp;</strong></div>
         <div class="card-specs"><span class="pending-line">&nbsp;</span></div>
       </div>
@@ -1551,8 +1537,16 @@
     padding-top: calc(var(--orbit-space-half, 40px) * 1.5);
     padding-bottom: 0;
   }
-  .pending-line { display: block; min-width: 100px; color: transparent; background: var(--surface); border-radius: 3px; }
-  .pending-card .card-image { background: var(--surface); }
+  .pending-line {
+    display: block;
+    min-width: 100px;
+    color: transparent;
+    background: var(--surface);
+    border-radius: 3px;
+  }
+  .pending-card .card-image {
+    background: var(--surface);
+  }
   .vehicle-description {
     grid-column: 1;
     min-width: 0;

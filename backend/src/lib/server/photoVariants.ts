@@ -2,11 +2,15 @@ import sharp from 'sharp';
 import { createHash } from 'node:crypto';
 import { getSupabase, getBucketName } from '../data/storage.js';
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_PIXELS } from './photoOptimization.js';
+import { vehiclePhotoWidths } from '@anm/types/photoWidths';
 
-export const PHOTO_WIDTHS = [320, 800, 1600, 2560] as const;
+export const PHOTO_WIDTHS = vehiclePhotoWidths;
+// Schema/paths remain compatible; existing derivatives are regenerated from their master.
+export const PHOTO_ENCODING_VERSION = 2;
 export type PhotoWidth = (typeof PHOTO_WIDTHS)[number];
 export type VariantManifest = {
   version: 1;
+  encodingVersion?: number;
   sourceHash: string;
   width: number;
   height: number;
@@ -48,7 +52,7 @@ export function validManifest(value: unknown): value is VariantManifest {
     Number.isInteger(v.height) &&
     v.height > 0 &&
     Array.isArray(v.variants) &&
-    v.variants.length <= 4 &&
+    v.variants.length <= PHOTO_WIDTHS.length &&
     v.variants.every(
       (p) =>
         isPhotoWidth(p.width) &&
@@ -150,6 +154,7 @@ export async function buildPhotoVariants(
     height = rotated ? metadata.width : metadata.height;
   const manifest: VariantManifest = {
     version: 1,
+    encodingVersion: PHOTO_ENCODING_VERSION,
     sourceHash: createHash('sha256').update(input).digest('hex'),
     width,
     height,
@@ -162,7 +167,7 @@ export async function buildPhotoVariants(
     const { data, info } = await sharp(input, options)
       .rotate()
       .resize({ width: target, withoutEnlargement: true })
-      .webp({ quality: 94, effort: 3, smartSubsample: true })
+      .webp({ quality: 90, effort: 6, smartSubsample: true })
       .timeout({ seconds: 20 })
       .toBuffer({ resolveWithObject: true });
     files.push({ width: target, buffer: data });
@@ -177,7 +182,7 @@ export async function ensurePhotoVariants(path: string, input?: Buffer) {
   if (existing) {
     if (input && createHash('sha256').update(input).digest('hex') !== existing.sourceHash)
       throw new Error('Immutable master content changed');
-    let complete = true;
+    let complete = existing.encodingVersion === PHOTO_ENCODING_VERSION;
     for (const part of existing.variants) {
       const { data, error } = await bucket.info(variantPath(path, part.width));
       if (error || !data) {

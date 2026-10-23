@@ -9,7 +9,8 @@
     Headphones,
   } from 'lucide-svelte';
   import { logoDark, logoDarkSrcset } from '$lib/localAssets';
-  import { photo, responsivePhoto } from './images';
+  import { homeV5Images } from '$lib/homeV5Images';
+  import { coverImageSizes } from '$lib/coverImageSizes';
 
   let { onContact }: { onContact: (message?: string) => void } = $props();
 
@@ -45,7 +46,7 @@
       copy: 'A conversa continua também depois da compra.',
     },
   ];
-  const interiorPhoto = 'photo-1652453822981-653a9a522a5b';
+  const interiorPhoto = homeV5Images['service-wide'];
 </script>
 
 <div class="home-services" id="propostas-servicos">
@@ -54,15 +55,23 @@
     aria-labelledby="home-services-title"
     data-service-proposal="1"
   >
-    <img
-      class="banner-background"
-      src={photo(interiorPhoto, 2200)}
-      srcset={responsivePhoto(interiorPhoto)}
-      sizes="100vw"
-      alt=""
-      loading="lazy"
-      decoding="async"
-    />
+    <picture
+      use:coverImageSizes={{
+        desktop: interiorPhoto.width / interiorPhoto.height,
+        portrait: interiorPhoto.width / interiorPhoto.height,
+      }}
+    >
+      <source type="image/avif" srcset={interiorPhoto.avif} sizes="100vw" />
+      <img
+        class="banner-background"
+        src={interiorPhoto.src}
+        srcset={interiorPhoto.srcset}
+        sizes="100vw"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+    </picture>
     <div class="banner-content">
       <div class="brand-column">
         <span class="brand-eyebrow">AUTO NUNES MARTINS / SERVIÇOS</span>

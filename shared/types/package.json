@@ -56,6 +56,11 @@
       "anm-runtime": "./dist/nif.js",
       "default": "./src/nif.ts"
     },
+    "./photoWidths": {
+      "types": "./src/photoWidths.ts",
+      "anm-runtime": "./dist/photoWidths.js",
+      "default": "./src/photoWidths.ts"
+    },
     "./richDescription": {
       "types": "./src/richDescription.ts",
       "anm-runtime": "./dist/richDescription.js",

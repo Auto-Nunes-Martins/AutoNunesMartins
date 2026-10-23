@@ -38,6 +38,8 @@ import {
   readVariantManifest,
   variantPath,
   variantRoot,
+  preferredVariantPath,
+  PHOTO_ENCODING_VERSION,
 } from './photoVariants';
 const path = 'cabcdefghijklmnopqrstuvwx/12345678-1234-1234-1234-123456789abc.jpg';
 beforeEach(() => {
@@ -63,7 +65,9 @@ describe('private reusable photo variants', () => {
       clock.mockReturnValue(now + 91_000);
       await readVariantManifest(path);
       expect(mock.downloads).toHaveLength(3);
-    } finally { clock.mockRestore(); }
+    } finally {
+      clock.mockRestore();
+    }
   });
   it('does not repopulate the cache with a read invalidated during download', async () => {
     const pending = readVariantManifest(path);
@@ -73,7 +77,11 @@ describe('private reusable photo variants', () => {
     expect(mock.downloads).toHaveLength(2);
   });
   it('retains immutable manifests beyond a minute and refreshes after their TTL', async () => {
-    const input = await sharp({ create: { width: 400, height: 300, channels: 3, background: 'blue' } }).jpeg().toBuffer();
+    const input = await sharp({
+      create: { width: 400, height: 300, channels: 3, background: 'blue' },
+    })
+      .jpeg()
+      .toBuffer();
     await ensurePhotoVariants(path, input);
     const before = mock.downloads.length;
     const now = Date.now();
@@ -85,7 +93,9 @@ describe('private reusable photo variants', () => {
       clock.mockReturnValue(now + 41 * 60_000);
       expect(await readVariantManifest(path)).not.toBeNull();
       expect(mock.downloads).toHaveLength(before + 1);
-    } finally { clock.mockRestore(); }
+    } finally {
+      clock.mockRestore();
+    }
   });
   it('rejects unsafe/nested namespaces', () => {
     for (const p of ['../a.jpg', 'owner/../a.jpg', 'owner/.variants/a.jpg', 'a.jpg'])
@@ -100,8 +110,8 @@ describe('private reusable photo variants', () => {
     const copy = Buffer.from(input);
     const result = await buildPhotoVariants(input);
     expect(input.equals(copy)).toBe(true);
-    expect(result.manifest.variants.map((v) => v.width)).toEqual([320, 800]);
-    expect(result.manifest.variants.map((v) => v.height)).toEqual([213, 533]);
+    expect(result.manifest.variants.map((v) => v.width)).toEqual([320, 384, 800]);
+    expect(result.manifest.variants.map((v) => v.height)).toEqual([213, 256, 533]);
     expect((await buildPhotoVariants(await sharp(input).resize(200).toBuffer())).files).toEqual([]);
   });
   it('auto-orients EXIF and strips location/EXIF from derivatives', async () => {
@@ -133,7 +143,7 @@ describe('private reusable photo variants', () => {
     expect(mock.objects.get(path)!.buffer.equals(input)).toBe(true);
     mock.failWidth = 0;
     const result = await ensurePhotoVariants(path, input);
-    expect(result.created).toBe(3);
+    expect(result.created).toBe(5);
     expect(mock.uploads.at(-1)).toBe(manifestPath(path));
     const count = mock.uploads.length;
     forgetPhotoVariants(path);
@@ -158,5 +168,41 @@ describe('private reusable photo variants', () => {
     forgetPhotoVariants(path);
     mock.objects.delete(variantPath(path, 320));
     expect((await readPhotoBytes(path, 320))!.buffer.equals(input)).toBe(true);
+  });
+  it('selects small high-density thumbnails and intermediate cards without changing the master', async () => {
+    const input = await sharp({
+      create: { width: 1800, height: 1200, channels: 3, background: '#254253' },
+    })
+      .jpeg()
+      .toBuffer();
+    mock.objects.set(path, { buffer: input, type: 'image/jpeg' });
+    await ensurePhotoVariants(path, input);
+    expect(await preferredVariantPath(path, 336)).toBe(variantPath(path, 384));
+    expect(await preferredVariantPath(path, 1074)).toBe(variantPath(path, 1280));
+    expect(mock.objects.get(path)!.buffer.equals(input)).toBe(true);
+  });
+  it('upgrades complete older recipes rather than silently reusing their compression', async () => {
+    const input = await sharp({
+      create: { width: 1000, height: 700, channels: 3, background: '#385b61' },
+    })
+      .jpeg()
+      .toBuffer();
+    const built = await ensurePhotoVariants(path, input);
+    const old = { ...built.manifest, encodingVersion: undefined };
+    const encoded = Buffer.from(JSON.stringify(old)).toString('base64');
+    const sidecar = await sharp({
+      create: { width: 1, height: 1, channels: 3, background: '#fff' },
+    })
+      .webp({ lossless: true })
+      .withXmp(
+        `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:anm="urn:anm:photo-variants:v1"><anm:manifest>${encoded}</anm:manifest></rdf:Description></rdf:RDF></x:xmpmeta>`,
+      )
+      .toBuffer();
+    mock.objects.set(manifestPath(path), { buffer: sidecar, type: 'image/webp' });
+    forgetPhotoVariants(path);
+    const upgraded = await ensurePhotoVariants(path, input);
+    expect(upgraded.reused).toBe(false);
+    expect(upgraded.manifest.encodingVersion).toBe(PHOTO_ENCODING_VERSION);
+    expect(mock.uploads.at(-1)).toBe(manifestPath(path));
   });
 });
