@@ -26,7 +26,7 @@ function component(source: string, imports: Record<string, unknown> = {}) {
     )
     .replace(/^import \{ ([^}]+) \} from 'lucide-svelte';/m, 'const { $1 } = imports;')
     .replace(/^import (\w+) from ['"][^'"]+['"];/gm, 'const $1 = imports.$1;')
-    .replace(/^import \{ [^}]+ \} from '\$lib\/forms\/formFeedback';/m, '')
+    .replace(/^import\s+\{[^}]+\}\s+from '\$lib\/forms\/formFeedback';/m, '')
     .replace(/^import \{ crmPath \} from '\$lib\/paths';/m, 'const crmPath = (path) => path;')
     .replace('export default function', 'return function');
   return new Function('imports', code)({ server, svelte, isValidNIF, ...imports });
@@ -41,7 +41,11 @@ const DateInput = component(source('./common/DateInput.svelte'), {
   ChevronLeft: DateIcon,
   ChevronRight: DateIcon,
 });
-const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), { Button, DateInput, VehicleSpecGlyph: DateIcon });
+const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), {
+  Button,
+  DateInput,
+  VehicleSpecGlyph: DateIcon,
+});
 
 type Element = { name: string; attributes: any[]; ancestors: Element[] };
 

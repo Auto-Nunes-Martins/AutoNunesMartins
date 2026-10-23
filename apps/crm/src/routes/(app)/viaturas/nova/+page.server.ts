@@ -7,15 +7,22 @@ import { webPublicationAction } from '$lib/server/webPublication';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
+  const draftOwner = event.locals.auth().userId;
   const id = event.url.searchParams.get('viatura');
-  if (!id) return { vehicle: null, signedPhotos: [] };
+  if (!id) return { vehicle: null, signedPhotos: [], intendedStatus: 'AVAILABLE' as const, draftOwner };
   if (!/^c[a-z0-9]{24}$/.test(id)) error(400, 'Viatura inválida.');
   const vehicle = await vehiclesApi.get(event, id);
   const signedPhotos = await vehiclesApi
     .signedPhotos(event, id)
     .then((result) => result.photos)
-    .catch((err) => { rethrowAuthError(err); return []; });
-  return { vehicle, signedPhotos };
+    .catch((err) => {
+      rethrowAuthError(err);
+      return [];
+    });
+  const requested = event.url.searchParams.get('estado');
+  const intendedStatus: 'AVAILABLE' | 'RESERVED' | 'DOCS_PENDING' =
+    requested === 'RESERVED' || requested === 'DOCS_PENDING' ? requested : 'AVAILABLE';
+  return { vehicle, signedPhotos, intendedStatus, draftOwner };
 };
 
 function parseFormToVehicleCreate(formData: FormData) {
@@ -65,8 +72,8 @@ export const actions: Actions = {
     }
 
     try {
-      const { id } = await vehiclesApi.create(event, parsed.data);
-      redirect(303, crmPath(`/viaturas/nova?viatura=${id}`));
+      const { id } = await vehiclesApi.create(event, { ...parsed.data, status: 'DRAFT' });
+      redirect(303, crmPath(`/viaturas/nova?viatura=${id}&estado=${parsed.data.status}`));
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { error?: string } | null;

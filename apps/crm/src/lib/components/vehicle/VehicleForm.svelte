@@ -3,7 +3,12 @@
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
   import { enhance } from '$lib/auth/enhance';
-  import { formFeedback, markFormSaved, showFormErrors } from '$lib/forms/formFeedback';
+  import {
+    formFeedback,
+    markFormSaved,
+    showFormErrors,
+    showInvalidFormFields,
+  } from '$lib/forms/formFeedback';
   import { tick, type Snippet } from 'svelte';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
@@ -16,7 +21,7 @@
     year?: number | null;
     fuel?: Fuel | '';
     mileage?: number | null;
-    vin?: string;
+    vin?: string | null;
     licensePlate?: string | null;
     purchasePrice?: string;
     salePrice?: string;
@@ -49,6 +54,7 @@
     unified?: boolean;
     onsaveall?: () => void;
     onstatechange?: (state: { dirty: boolean; valid: boolean }) => void;
+    onsaved?: () => void | Promise<void>;
   }
 
   let {
@@ -65,10 +71,10 @@
     unified = false,
     onsaveall,
     onstatechange,
+    onsaved,
   }: Props = $props();
 
   let dirty = $state(false);
-  let valid = $state(false);
   const formId = $props.id();
 
   const FUELS: { value: Fuel; label: string }[] = [
@@ -97,39 +103,33 @@
   const today = new Date().toISOString().slice(0, 10);
   const defaultAcquisitionDate = $derived(initial.acquisitionDate ?? today);
 
-  // Matrícula auto-formatter. Reactive: typing reformats the value so the
-  // user sees "12-AB-34" as they go instead of having to hit the dashes
-  // themselves. Stripping non-alphanumerics first, capping at 6 chars,
-  // then re-grouping in pairs separated by "-".
-  // The plate is an editable local draft, initialized once when the form mounts.
+  // Format only on blur: editing the middle must preserve the caret.
   const initialPlate = () => initial.licensePlate ?? '';
   let licensePlateInput = $state(initialPlate());
-  function formatPlate(raw: string): string {
-    const compact = raw
-      .replace(/[^A-Za-z0-9]/g, '')
-      .toUpperCase()
-      .slice(0, 6);
-    if (compact.length <= 2) return compact;
-    if (compact.length <= 4) return `${compact.slice(0, 2)}-${compact.slice(2)}`;
-    return `${compact.slice(0, 2)}-${compact.slice(2, 4)}-${compact.slice(4)}`;
-  }
   function onPlateInput(e: Event) {
-    const el = e.currentTarget as HTMLInputElement;
-    licensePlateInput = formatPlate(el.value);
+    licensePlateInput = (e.currentTarget as HTMLInputElement).value;
   }
+  function onPlateBlur(e: FocusEvent) {
+    const el = e.currentTarget as HTMLInputElement;
+    const compact = el.value.replace(/[\s-]/g, '').toUpperCase();
+    licensePlateInput = compact.length === 6
+      ? `${compact.slice(0, 2)}-${compact.slice(2, 4)}-${compact.slice(4)}`
+      : el.value.toUpperCase();
+    el.value = licensePlateInput;
+  }
+
 </script>
 
 <div class="space-y-6">
   <form
     id={formId}
     data-edit-vehicle
-    novalidate={unified}
+    novalidate
     method="POST"
     action={action ?? '?/submit'}
     use:formFeedback={{
       onstatechange: (state) => {
         dirty = state.dirty;
-        valid = state.valid;
         onstatechange?.(state);
       },
     }}
@@ -139,7 +139,11 @@
         onsaveall?.();
         return;
       }
-      if (submitting || disabled || !valid || (requireChanges && !dirty)) {
+      if (submitting || disabled || (requireChanges && !dirty)) {
+        cancel();
+        return;
+      }
+      if (showInvalidFormFields(formElement)) {
         cancel();
         return;
       }
@@ -147,6 +151,7 @@
       return async ({ result, update }) => {
         let guardCleared = false;
         try {
+          if (result.type === 'success' || result.type === 'redirect') await onsaved?.();
           if (result.type === 'success') {
             toast.success('Dados da viatura guardados. A publicação no site é independente.');
             if (redirectOnSuccess) {
@@ -190,6 +195,7 @@
     <fieldset class="crm-form-sections" data-save-lock disabled={submitting || disabled}>
       <div>
         <h2 class="font-display font-semibold text-[18px]">Identificação da viatura</h2>
+        <p class="required-note"><span aria-hidden="true">*</span> Campos obrigatórios.</p>
         <p class="text-[12px] text-[var(--color-text-muted)] mt-1">
           Dados internos do stock. A publicação no site é configurada separadamente.
         </p>
@@ -221,11 +227,10 @@
         </label>
 
         <label class="flex flex-col" style="--field-width: 260px">
-          <span class="{fieldLabelClass()} identification-label">VIN</span>
+          <span class="{fieldLabelClass()} identification-label">VIN · opcional</span>
           <input
             name="vin"
             type="text"
-            required
             maxlength="17"
             minlength="17"
             value={initial.vin ?? ''}
@@ -235,22 +240,22 @@
           />
         </label>
         <label class="flex flex-col" style="--field-width: 180px">
-          <span class="{fieldLabelClass()} identification-label plate-label" title="Matrícula portuguesa">
+          <span
+            class="{fieldLabelClass()} identification-label plate-label"
+            title="Matrícula portuguesa"
+          >
             Matrícula
-            <span
-              class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px]"
-            >
-              · opcional
-            </span>
           </span>
           <input
             name="licensePlate"
             type="text"
-            maxlength="8"
+            required
+            maxlength="10"
             autocomplete="off"
             spellcheck="false"
             value={licensePlateInput}
             oninput={onPlateInput}
+            onblur={onPlateBlur}
             placeholder="AA-00-AA"
             class="{inputClass()} font-mono tracking-[0.18em] uppercase"
             style="border-radius: var(--radius-btn); text-transform: uppercase;"
@@ -258,7 +263,9 @@
         </label>
 
         <label class="flex flex-col" style="--field-width: 104px">
-          <span class="{fieldLabelClass()} identification-label"><VehicleSpecGlyph label="Ano" />Ano</span>
+          <span class="{fieldLabelClass()} identification-label"
+            ><VehicleSpecGlyph label="Ano" />Ano</span
+          >
           <input
             name="year"
             type="number"
@@ -272,7 +279,9 @@
           />
         </label>
         <label class="flex flex-col" style="--field-width: 190px">
-          <span class="{fieldLabelClass()} identification-label"><VehicleSpecGlyph label="Combustível" />Combustível</span>
+          <span class="{fieldLabelClass()} identification-label"
+            ><VehicleSpecGlyph label="Combustível" />Combustível</span
+          >
           <select
             name="fuel"
             required
@@ -287,7 +296,9 @@
           </select>
         </label>
         <label class="flex flex-col" style="--field-width: 150px">
-          <span class="{fieldLabelClass()} identification-label"><VehicleSpecGlyph label="Quilometragem" />Quilometragem</span>
+          <span class="{fieldLabelClass()} identification-label"
+            ><VehicleSpecGlyph label="Quilometragem" />Quilometragem</span
+          >
           <input
             name="mileage"
             type="number"
@@ -301,7 +312,9 @@
           />
         </label>
         <label class="flex flex-col" style="--field-width: 220px">
-          <span class="{fieldLabelClass()} identification-label"><VehicleSpecGlyph label="Estado" />Estado</span>
+          <span class="{fieldLabelClass()} identification-label"
+            ><VehicleSpecGlyph label="Estado" />Estado</span
+          >
           {#if saleRecorded || initial.status === 'SOLD' || initial.status === 'DELIVERED' || initial.status === 'RETURNED'}
             <input type="hidden" name="status" value={initial.status} />
             <p class="text-[13px] text-[var(--color-text-muted)]">
@@ -331,7 +344,7 @@
       <h2 class="font-display font-semibold text-[18px]">Valores e aquisição</h2>
       <div class="crm-compact-fields">
         <label class="flex flex-col" style="--field-width: 170px">
-          <span class={fieldLabelClass()}>Preço Compra (€)</span>
+          <span class={fieldLabelClass()}>Preço de compra (€)</span>
           <input
             name="purchasePrice"
             type="number"
@@ -346,10 +359,11 @@
         </label>
         <label class="flex flex-col" style="--field-width: 240px">
           <span class={fieldLabelClass()}
-            >{saleRecorded ? 'Preço registado da venda (€)' : 'Preço de venda previsto (€)'}</span
+            >{saleRecorded ? 'Preço registado da venda (€)' : 'Preço de venda (PVP) (€)'}</span
           >
           <input
             name="salePrice"
+            required
             type="number"
             step="0.01"
             min="0"
@@ -363,7 +377,6 @@
           <span class={fieldLabelClass()}>Aquisição</span>
           <DateInput
             name="acquisitionDate"
-
             required
             value={defaultAcquisitionDate}
             class={inputClass()}
@@ -433,7 +446,7 @@
           type="submit"
           form={formId}
           loading={submitting}
-          disabled={submitting || disabled || !valid || (requireChanges && !dirty)}
+          disabled={submitting || disabled || (requireChanges && !dirty)}
         >
           {submitLabel}
         </Button>
@@ -447,8 +460,30 @@
 </div>
 
 <style>
-  .identification-label { display:flex;align-items:center;gap:8px;min-height:20px; }
-  .plate-label { white-space: nowrap; gap: 6px; }
+  label:has(input[required], select[required], textarea[required]) > span:first-child::after {
+    content: ' *';
+    color: var(--color-red);
+    font-weight: 700;
+  }
+  .required-note {
+    font-size: 12px;
+    margin-top: 8px;
+    color: var(--color-text-muted);
+  }
+  .required-note span {
+    color: var(--color-red);
+    font-weight: 700;
+  }
+  .identification-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 20px;
+  }
+  .plate-label {
+    white-space: nowrap;
+    gap: 6px;
+  }
   .document-checklist {
     border: 0;
     border-top: 1px solid var(--color-border);

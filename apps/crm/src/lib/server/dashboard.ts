@@ -42,7 +42,7 @@ export interface StockAgedRow {
   brand: string;
   model: string;
   year: number;
-  vin: string;
+  vin: string | null;
   licensePlate: string | null;
   mileage: number;
   salePrice: string | null;
@@ -97,7 +97,7 @@ export interface FeaturedVehicleDto {
   year: number;
   fuel: string;
   mileage: number;
-  vin: string;
+  vin: string | null;
   licensePlate: string | null;
   status: string;
   salePrice: string | null;

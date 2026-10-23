@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { descriptionText } from '@anm/types/richDescription';
 import { publicSpecificationsSchema, vehicleUpdateSchema, licensePlatePtSchema } from '@anm/types';
 import { lockVehicle, saleMutation } from './saleFinancials.js';
 import {
@@ -22,7 +23,7 @@ export const vehicleEditSchema = z
       .extend({
         licensePlate: z.preprocess(
           (value) => (typeof value === 'string' && !value.trim() ? null : value),
-          licensePlatePtSchema.nullable().optional(),
+          licensePlatePtSchema.optional(),
         ),
       })
       .strict(),
@@ -53,7 +54,7 @@ export const vehicleEditSchema = z
       })
       .strict()
       .refine(
-        (value) => !value.published || value.description.length > 0,
+        (value) => !value.published || descriptionText(value.description).trim().length > 0,
         'Uma descrição pública é obrigatória.',
       )
       .optional(),

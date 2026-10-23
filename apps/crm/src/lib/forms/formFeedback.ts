@@ -1,3 +1,4 @@
+import { descriptionHtml } from '@anm/types/richDescription';
 type Issue = { path?: PropertyKey[]; message?: string };
 export type FormFailure = { error?: string; field?: string | null; issues?: Issue[] };
 
@@ -16,7 +17,7 @@ function snapshot(form: HTMLFormElement) {
   const value = JSON.stringify(
     [...new FormData(form)].map(([key, value]) => [
       key,
-      typeof value === 'string' ? value : [value.name, value.size, value.lastModified],
+      typeof value === 'string' ? (key === 'publicDescription' ? descriptionHtml(value) : value) : [value.name, value.size, value.lastModified],
     ]),
   );
   if (state) state.lastSnapshot = value;
@@ -54,13 +55,13 @@ export function isFormDirty(form: HTMLFormElement) {
   return !!state && snapshot(form) !== state.baseline;
 }
 
-export function markFormSaved(form: HTMLFormElement) {
+export function markFormSaved(form: HTMLFormElement, options: { preserveErrors?: boolean } = {}) {
   const state = forms.get(form);
   if (state) {
     state.baseline = snapshot(form);
     state.dirty = false;
   }
-  clearFormErrors(form);
+  if (!options.preserveErrors) clearFormErrors(form);
   notify(form);
 }
 
@@ -134,8 +135,34 @@ export function showFormErrors(form: HTMLFormElement, failure: FormFailure = {})
   summary.textContent = first
     ? 'Há campos por corrigir. Reveja os campos assinalados; os dados preenchidos foram mantidos.'
     : (failure.error ?? 'Não foi possível guardar. Os dados preenchidos foram mantidos.');
+  if (issues.length) {
+    const list = document.createElement('ul');
+    for (const issue of issues) {
+      const item = document.createElement('li');
+      item.textContent = issue.message ?? 'Reveja este campo.';
+      list.append(item);
+    }
+    summary.append(list);
+  }
   form.prepend(summary);
   (first ?? summary).focus();
+}
+
+/** Show native constraints inside the CRM without a browser validation popup. */
+export function showInvalidFormFields(form: HTMLFormElement) {
+  const invalid = [...form.elements].filter(
+    (field): field is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement =>
+      (field instanceof HTMLInputElement ||
+        field instanceof HTMLSelectElement ||
+        field instanceof HTMLTextAreaElement) &&
+      field.willValidate &&
+      !field.validity.valid,
+  );
+  if (!invalid.length) return false;
+  showFormErrors(form, {
+    issues: invalid.map((field) => ({ path: [field.name], message: field.validationMessage })),
+  });
+  return true;
 }
 
 /** In-memory only: no personal data is copied to browser storage. */
@@ -154,6 +181,7 @@ export function formFeedback(form: HTMLFormElement, options: Options = {}) {
     // Include Svelte's formatted/bound value after the input handler flushes.
     queueMicrotask(() => notify(form));
   };
+  let invalidFocusQueued = false;
   const invalid = (event: Event) => {
     const field = event.target;
     if (
@@ -161,7 +189,15 @@ export function formFeedback(form: HTMLFormElement, options: Options = {}) {
       field instanceof HTMLSelectElement ||
       field instanceof HTMLTextAreaElement
     ) {
+      event.preventDefault();
       addFieldError(field, field.validationMessage);
+      if (!invalidFocusQueued) {
+        invalidFocusQueued = true;
+        queueMicrotask(() => {
+          invalidFocusQueued = false;
+          if (field.isConnected) field.focus();
+        });
+      }
     }
   };
   const beforeUnload = (event: BeforeUnloadEvent) => {

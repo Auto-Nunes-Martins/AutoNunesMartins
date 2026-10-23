@@ -41,6 +41,13 @@
 />
 
 <style>
+  :global([data-sonner-toast][data-styled='false']) {
+    padding: 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
   /* Wider toast with room to breathe; clamped to viewport so it never
      overflows. */
   :global([data-sonner-toaster]) {

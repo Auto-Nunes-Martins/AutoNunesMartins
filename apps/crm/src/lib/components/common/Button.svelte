@@ -7,6 +7,7 @@
     type?: 'button' | 'submit';
     form?: string;
     href?: string;
+    reload?: boolean;
     disabled?: boolean;
     loading?: boolean;
     onclick?: (e: MouseEvent) => void;
@@ -20,6 +21,7 @@
     type = 'button',
     form,
     href,
+    reload = false,
     disabled,
     loading,
     onclick,
@@ -53,6 +55,7 @@
 {#if href}
   <a
     {href}
+    data-sveltekit-reload={reload || undefined}
     aria-disabled={disabled || loading ? 'true' : undefined}
     tabindex={disabled || loading ? -1 : undefined}
     onclick={(event) => {

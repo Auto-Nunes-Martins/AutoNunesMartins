@@ -39,7 +39,7 @@ export interface SaleListRow {
     brand: string;
     model: string;
     year: number;
-    vin: string;
+    vin: string | null;
     licensePlate: string | null;
   };
   customer: {

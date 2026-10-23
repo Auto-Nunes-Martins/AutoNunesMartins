@@ -127,7 +127,7 @@
         aria-pressed={active}
         onclick={() => toggleChip('status', s.value, filters.status)}
         class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] border transition-colors {active
-          ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
+          ? 'crm-filter-selected'
           : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
       >
         {s.label}
@@ -149,7 +149,7 @@
         aria-pressed={active}
         onclick={() => toggleChip('fuel', f.value, filters.fuel)}
         class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] border transition-colors {active
-          ? 'border-[var(--color-red)] bg-[color-mix(in_oklab,var(--color-red)_15%,transparent)] text-[var(--color-red)]'
+          ? 'crm-filter-selected'
           : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
       >
         {f.label}

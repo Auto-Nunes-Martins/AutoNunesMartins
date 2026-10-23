@@ -624,3 +624,19 @@ textarea:not(:disabled) {
 [aria-invalid='true']:not([type='hidden']) {
   border-color: var(--color-red) !important;
 }
+
+/* Shared selected filter treatment: neutral surface, white label, restrained brand edge.
+   Fixed foreground/background keep the same contrast in both CRM themes. */
+.crm-filter-selected {
+  color: #fff;
+  background: #292b31;
+  border-color: color-mix(in srgb, var(--color-red) 50%, #41434b);
+}
+.crm-filter-selected:hover {
+  color: #fff;
+  background: #33363d;
+}
+.crm-filter-selected:focus-visible {
+  outline: 2px solid var(--color-red);
+  outline-offset: 3px;
+}

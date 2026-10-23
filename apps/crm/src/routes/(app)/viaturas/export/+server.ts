@@ -81,7 +81,7 @@ export const GET: RequestHandler = async (event) => {
     v.brand,
     v.model,
     String(v.year),
-    v.vin,
+    v.vin ?? '',
     String(v.mileage),
     FUEL_LABELS[v.fuel],
     fmtDate(v.acquisitionDate),

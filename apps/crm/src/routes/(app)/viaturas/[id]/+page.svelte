@@ -86,24 +86,24 @@
           VIN {v.vin}
         </span>
         <span class="featured-slot">
-        {#await data.isFeatured}
-          <span class="invisible" aria-hidden="true">Em destaque</span>
-        {:then isFeatured}
-          {#if isFeatured}
-            <span
-              class="inline-flex items-center gap-1 px-2 py-0.5 bg-[color-mix(in_oklab,#e6b800_15%,transparent)] border border-[color-mix(in_oklab,#e6b800_45%,transparent)] text-[#e6b800] font-mono text-[9.5px] uppercase tracking-[0.22em]"
-              style="border-radius: var(--radius-btn);"
-              title="Esta viatura está nos destaques do site e da dashboard"
+          {#await data.isFeatured}
+            <span class="invisible" aria-hidden="true">Em destaque</span>
+          {:then isFeatured}
+            {#if isFeatured}
+              <span
+                class="inline-flex items-center gap-1 px-2 py-0.5 bg-[color-mix(in_oklab,#e6b800_15%,transparent)] border border-[color-mix(in_oklab,#e6b800_45%,transparent)] text-[#e6b800] font-mono text-[9.5px] uppercase tracking-[0.22em]"
+                style="border-radius: var(--radius-btn);"
+                title="Esta viatura está nos destaques do site e da dashboard"
+              >
+                <Star class="h-2.5 w-2.5 fill-[#e6b800]" />
+                Em destaque
+              </span>
+            {:else}<span class="invisible" aria-hidden="true">Em destaque</span>{/if}
+          {:catch}
+            <span role="status"
+              >Não foi possível verificar os destaques. Verifique a sessão e atualize a página.</span
             >
-              <Star class="h-2.5 w-2.5 fill-[#e6b800]" />
-              Em destaque
-            </span>
-          {:else}<span class="invisible" aria-hidden="true">Em destaque</span>{/if}
-        {:catch}
-          <span role="status"
-            >Não foi possível verificar os destaques. Verifique a sessão e atualize a página.</span
-          >
-        {/await}
+          {/await}
         </span>
       </div>
       <ItalicHero text={`${v.brand} `} accent={v.model} size="lg" />
@@ -143,7 +143,7 @@
   -->
   {#if v.status === 'DRAFT'}
     <a
-      href={crmPath(`/viaturas/${v.id}/publicar`)}
+      href={crmPath(`/viaturas/nova?viatura=${v.id}`)}
       class="flex items-center gap-3 p-4 pl-5 border bg-[color-mix(in_oklab,var(--color-warning)_8%,transparent)] hover:bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] transition-colors group"
       style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, var(--color-warning) 45%, transparent);"
     >
@@ -160,15 +160,15 @@
         <div
           class="font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mt-0.5 normal-case tracking-normal"
         >
-          Define o preço de venda e a descrição para a publicar. Enquanto estiver em rascunho não
-          pode ser vendida nem aparece como disponível.
+          Complete os dados e escolha se conclui apenas no CRM ou também publica no site. Enquanto
+          estiver em rascunho não pode ser vendida nem aparece como disponível.
         </div>
       </div>
       <span
         class="font-mono text-[10px] uppercase tracking-[0.18em] group-hover:translate-x-0.5 transition-transform flex-shrink-0"
         style="color: var(--color-warning);"
       >
-        Publicar →
+        Completar ficha →
       </span>
     </a>
   {/if}
@@ -221,9 +221,19 @@
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <div class="lg:col-span-7 space-y-6">
       {#await data.signedPhotos}
-        <PhotoGallery vehicleId={v.id} photos={[]} loading photoCount={v.photos.length}
-          principalPath={vehiclePrincipalPath(v) ?? null} editable={false} publicPaths={v.publicPhotoPaths}
-          published={v.webPublished && ['AVAILABLE', 'RESERVED'].includes(v.status) && !v.sale && !v.soldDate} />
+        <PhotoGallery
+          vehicleId={v.id}
+          photos={[]}
+          loading
+          photoCount={v.photos.length}
+          principalPath={vehiclePrincipalPath(v) ?? null}
+          editable={false}
+          publicPaths={v.publicPhotoPaths}
+          published={v.webPublished &&
+            ['AVAILABLE', 'RESERVED'].includes(v.status) &&
+            !v.sale &&
+            !v.soldDate}
+        />
       {:then signedPhotos}
         <PhotoGallery
           vehicleId={v.id}
@@ -237,9 +247,19 @@
             !v.soldDate}
         />
       {:catch}
-        <PhotoGallery vehicleId={v.id} photos={[]} loadError photoCount={v.photos.length}
-          principalPath={vehiclePrincipalPath(v) ?? null} editable={false} publicPaths={v.publicPhotoPaths}
-          published={v.webPublished && ['AVAILABLE', 'RESERVED'].includes(v.status) && !v.sale && !v.soldDate} />
+        <PhotoGallery
+          vehicleId={v.id}
+          photos={[]}
+          loadError
+          photoCount={v.photos.length}
+          principalPath={vehiclePrincipalPath(v) ?? null}
+          editable={false}
+          publicPaths={v.publicPhotoPaths}
+          published={v.webPublished &&
+            ['AVAILABLE', 'RESERVED'].includes(v.status) &&
+            !v.sale &&
+            !v.soldDate}
+        />
       {/await}
 
       <Panel>
@@ -364,5 +384,10 @@
 </section>
 
 <style>
-  .featured-slot { display: inline-flex; min-width: 130px; min-height: 22px; align-items: center; }
+  .featured-slot {
+    display: inline-flex;
+    min-width: 130px;
+    min-height: 22px;
+    align-items: center;
+  }
 </style>

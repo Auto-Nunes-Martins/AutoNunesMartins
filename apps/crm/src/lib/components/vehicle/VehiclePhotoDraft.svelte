@@ -73,7 +73,7 @@
       </figure>
       </div>
       <div class="organize-panel">
-        <div class="organize-heading"><h3>Organizar fotografias</h3><p>Arraste para ordenar; também pode usar Espaço e as setas no cartão. Tudo é aplicado em <strong>Guardar alterações</strong>.</p></div>
+        <div class="organize-heading"><h3>Organizar fotografias</h3><p>Arraste para ordenar; também pode usar Espaço e as setas no cartão. As alterações só são aplicadas <strong>ao guardar</strong>.</p></div>
         <PublicPhotoPicker dense {revealPath} {persistedCoverPath} {requirePublicPrincipal} bind:selected allowed={displayOrder} {photos} {persisted} {published} {form} pending={disabled} staged onprimary={primary} onreorder={reorder} ondelete={remove} primaryPath={cover?.path}>
           {#snippet addPhoto()}<button type="button" class="add-photo-card" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Plus size={30} strokeWidth={1.3} aria-hidden="true" /><strong>Adicionar fotografias</strong><span>{photos.length >= 20 ? 'Limite de 20 atingido' : 'Escolher uma ou várias'}</span></button>{/snippet}
         </PublicPhotoPicker>

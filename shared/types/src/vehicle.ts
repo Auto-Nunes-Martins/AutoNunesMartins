@@ -57,22 +57,14 @@ export const vehicleCreateSchema = z.object({
     .max(CURRENT_YEAR + 1, `Ano máximo: ${CURRENT_YEAR + 1}`),
   fuel: FuelEnum,
   mileage: z.coerce.number().int().min(0, 'Quilometragem não pode ser negativa').max(2_000_000),
-  vin: z
-    .string()
-    .trim()
-    .length(17, 'VIN deve ter 17 caracteres')
-    .regex(/^[A-HJ-NPR-Z0-9]{17}$/, 'VIN inválido (sem I, O, Q)'),
-  /**
-   * Optional Portuguese license plate. Empty / blank input is dropped
-   * (`.preprocess` returns undefined) so the form can submit "no plate
-   * yet" without triggering a validation error.
-   */
-  licensePlate: z.preprocess(
-    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
-    licensePlatePtSchema.optional(),
+  vin: z.preprocess(
+    (value) => typeof value === 'string' && !value.trim() ? null : value,
+    z.string().trim().length(17, 'VIN deve ter 17 caracteres')
+      .regex(/^[A-HJ-NPR-Z0-9]{17}$/, 'VIN inválido (sem I, O, Q)').nullable().optional(),
   ),
+  licensePlate: licensePlatePtSchema,
   purchasePrice: moneySchema,
-  salePrice: moneySchema.optional(),
+  salePrice: moneySchema,
   status: VehicleStatusEnum.exclude(['RETURNED']).default('AVAILABLE'),
   acquisitionDate: z.coerce.date(),
   description: z.string().max(2000).optional(),

@@ -11,7 +11,7 @@
   import RichDescription from '../../../../../../shared/ui/RichDescription.svelte';
   import VehicleSpecGlyph from '../../../../../../shared/ui/VehicleSpecGlyph.svelte';
   import { descriptionText } from '@anm/types/richDescription';
-  import type { EditPhoto } from './vehicleEditDraft';
+  import type { EditPhoto, publicDraftFromForm } from './vehicleEditDraft';
   import PhotoGallery from './PhotoGallery.svelte';
   import {
     formFeedback,
@@ -35,6 +35,8 @@
     photoDraft = $bindable<EditPhoto[]>([]),
     onsaveall,
     onstatechange,
+    creation = false,
+    recoveredDraft,
   }: {
     vehicle: VehicleDetailResponse;
     photos?: SignedVariantPhoto[];
@@ -46,6 +48,8 @@
     photoDraft?: EditPhoto[];
     onsaveall?: () => void;
     onstatechange?: (state: { dirty: boolean; valid: boolean }) => void;
+    creation?: boolean;
+    recoveredDraft?: ReturnType<typeof publicDraftFromForm>;
   } = $props();
   let price = $state('');
   let description = $state('');
@@ -68,7 +72,9 @@
     color: '',
     equipment: '',
   });
-  const cover = $derived(photos.find((photo) => photo.path === selected[0]));
+  const cover = $derived(
+    (unified ? photoDraft : photos).find((photo) => photo.path === selected[0]),
+  );
   let pending = $state(false);
   $effect(() => {
     busy = pending || photoBusy || photoDragging;
@@ -108,12 +114,25 @@
         ),
   );
   const eligible = $derived(
-    ['AVAILABLE', 'RESERVED'].includes(vehicle.status) && !vehicle.sale && !vehicle.soldDate,
+    (creation || ['AVAILABLE', 'RESERVED'].includes(vehicle.status)) &&
+      !vehicle.sale &&
+      !vehicle.soldDate,
   );
   const ready = $derived(
     eligible && (!price || Number(price) > 0) && descriptionText(description).length > 0,
   );
   function savedPublicationDraft() {
+    if (creation && recoveredDraft) {
+      const details = recoveredDraft.specifications as typeof recoveredDraft.specifications & Record<string, unknown>;
+      return {
+        price: recoveredDraft.price ?? '', description: recoveredDraft.description,
+        transmission: recoveredDraft.transmission ?? '', selected: recoveredDraft.photoPaths,
+        specs: { version: details.version, powerHp: String(details.powerHp ?? ''),
+          engineCc: String(details.engineCc ?? ''), doors: String(details.doors ?? ''),
+          seats: String(details.seats ?? ''), category: details.category, color: details.color,
+          equipment: details.equipment.join('\n') },
+      };
+    }
     const details = vehicle.publicSpecifications;
     return {
       price: vehicle.publicSlug
@@ -145,7 +164,7 @@
     specs = saved.specs;
     selected = saved.selected;
     previousSavedPhotos = [...saved.selected];
-    draftPublished = vehicle.webPublished;
+    draftPublished = creation ? false : vehicle.webPublished;
   }
   const draftKey = $derived(
     publicationDraftKey({ price, description, transmission, selected, specs }),
@@ -299,7 +318,8 @@
     </div>
     <div class="number-fields">
       <label
-        ><span class="spec-field-label"><VehicleSpecGlyph label="Potência" />Potência (cv)</span><input
+        ><span class="spec-field-label"><VehicleSpecGlyph label="Potência" />Potência (cv)</span
+        ><input
           name="powerHp"
           form={publicationFormId}
           type="number"
@@ -310,7 +330,9 @@
         /></label
       >
       <label
-        ><span class="spec-field-label"><VehicleSpecGlyph label="Cilindrada" />Cilindrada (cm³)</span><input
+        ><span class="spec-field-label"
+          ><VehicleSpecGlyph label="Cilindrada" />Cilindrada (cm³)</span
+        ><input
           name="engineCc"
           form={publicationFormId}
           type="number"
@@ -393,10 +415,12 @@
       {/snippet}
     </PhotoGallery>
   {/if}
-  <p class="note" role="status">
-    {selectionPending
-      ? `Seleção de fotografias por guardar. Use «${unified ? 'Guardar alterações' : 'Guardar publicação no site'}» para aplicar.`
-      : 'Os indicadores «No site» e «Só no CRM» mostram o estado já guardado.'}
+  <p class="note photo-save-note" role="status">
+    {creation
+      ? 'Fotografias em rascunho. A seleção e a publicação são aplicadas na ação final escolhida.'
+      : selectionPending
+        ? `Seleção de fotografias por guardar. Use «${unified ? 'Guardar alterações' : 'Guardar publicação no site'}» para aplicar.`
+        : 'Os indicadores «No site» e «Só no CRM» mostram o estado já guardado.'}
   </p>
 {/if}
 
@@ -412,13 +436,15 @@
       <div>
         <h2 id="web-publication-title">Publicação no website</h2>
         <p class="publication-status">
-          {vehicle.webPublished
-            ? eligible
-              ? vehicle.status === 'RESERVED'
-                ? 'Publicada · Reservada'
-                : 'Publicada no site'
-              : 'Publicação aprovada, mas oculta devido ao estado interno ou venda.'
-            : 'Não publicada · visível apenas no CRM'}
+          {creation
+            ? 'Escolha uma das ações finais para guardar ou publicar.'
+            : vehicle.webPublished
+              ? eligible
+                ? vehicle.status === 'RESERVED'
+                  ? 'Publicada · Reservada'
+                  : 'Publicada no site'
+                : 'Publicação aprovada, mas oculta devido ao estado interno ou venda.'
+              : 'Não publicada · visível apenas no CRM'}
         </p>
       </div>
       {#if vehicle.webPublished && vehicle.publicSlug && eligible}<a
@@ -455,16 +481,19 @@
       bind:this={publicationForm}
     >
       <fieldset class="publication-lock" data-save-lock disabled={disabled || pending}>
+        <input type="hidden" name="vehicleId" value={vehicle.id} />
         <input type="hidden" name="operation" value="publish" />
         {#if unified}
           <input type="hidden" name="published" value={String(draftPublished)} />
-          <label class="publish-toggle"
-            ><input type="checkbox" data-error-field="published" bind:checked={draftPublished} /> Publicar
-            esta viatura no website</label
-          >
-          <p class="note">
-            Aplicado ao guardar. Apenas as fotografias selecionadas ficam públicas.
-          </p>
+          {#if !creation}
+            <label class="publish-toggle"
+              ><input type="checkbox" data-error-field="published" bind:checked={draftPublished} /> Publicar
+              esta viatura no website</label
+            >
+            <p class="note">
+              Aplicado ao guardar. Apenas as fotografias selecionadas ficam públicas.
+            </p>
+          {/if}
         {/if}
         <h3 class="publication-group-title">Dados do anúncio</h3>
         <div class="fields crm-compact-fields">
@@ -482,8 +511,13 @@
         <DescriptionEditor
           bind:value={description}
           disabled={disabled || pending}
-          required={!unified || draftPublished}
+          required={!creation && (!unified || draftPublished)}
         />
+        {#if creation}<p class="note">
+            <span class="required-marker" style="color:var(--color-red)" aria-hidden="true">*</span> A
+            descrição pública é obrigatória apenas para «Concluir e publicar». As características opcionais
+            podem ficar vazias.
+          </p>{/if}
         <p class="note">
           Visível no website. Não inclua notas internas, matrícula, VIN ou dados pessoais. O preço
           público é independente do interno.
@@ -602,7 +636,12 @@
 </dialog>
 
 <style>
-  .spec-field-label { display:flex;align-items:center;gap:8px;min-height:20px; }
+  .spec-field-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 20px;
+  }
   .vehicle-characteristics {
     width: 100%;
     min-width: 0;

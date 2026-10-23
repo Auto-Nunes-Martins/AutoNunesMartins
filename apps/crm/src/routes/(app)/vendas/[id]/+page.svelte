@@ -313,7 +313,7 @@
       <div class="p-5 space-y-3">
         <SpecRow label="Marca / Modelo" value={`${v.brand} ${v.model}`} />
         <SpecRow icon={Calendar} label="Ano" value={String(v.year)} />
-        <SpecRow label="VIN" value={v.vin} />
+        <SpecRow label="VIN" value={v.vin ?? '—'} />
       </div>
     </Panel>
 

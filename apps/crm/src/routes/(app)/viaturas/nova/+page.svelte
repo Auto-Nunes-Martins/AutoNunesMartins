@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { crmPath } from '$lib/paths';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
-  import VehicleForm from '$lib/components/vehicle/VehicleForm.svelte';
-  import WebPublicationPanel from '$lib/components/vehicle/WebPublicationPanel.svelte';
+  import NewVehicleDraftForm from '$lib/components/vehicle/NewVehicleDraftForm.svelte';
+  import VehicleCreationWizard from '$lib/components/vehicle/VehicleCreationWizard.svelte';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
 </script>
@@ -23,41 +22,42 @@
     </p>
   </div>
 
-  <ol class="creation-steps" aria-label="Etapas da criação de viatura">
-    <li aria-current={!data.vehicle ? 'step' : undefined}>
-      <span>1</span>
-      <div><strong>Entrada no stock</strong><small>Identificação, aquisição e valores</small></div>
-    </li>
-    <li aria-current={data.vehicle ? 'step' : undefined}>
-      <span>2</span>
-      <div>
-        <strong>Fotografias e website</strong><small
-          >Prepare a apresentação e escolha se publica</small
-        >
-      </div>
-    </li>
-  </ol>
+  {#key data.draftOwner}
+  {#if !data.vehicle}<ol class="creation-steps" aria-label="Etapas da criação de viatura">
+      <li aria-current={!data.vehicle ? 'step' : undefined}>
+        <span>1</span>
+        <div>
+          <strong>Dados da viatura</strong><small>Identificação, aquisição e valores</small>
+        </div>
+      </li>
+      <li aria-current={data.vehicle ? 'step' : undefined}>
+        <span>2</span>
+        <div>
+          <strong>Fotografias e website</strong><small
+            >Prepare a apresentação e escolha se publica</small
+          >
+        </div>
+      </li>
+    </ol>{/if}
   {#if data.vehicle}
-    <p>
-      Viatura criada: {data.vehicle.brand}
-      {data.vehicle.model}. Adicione fotografias e escolha se pretende publicá-la no website.
-    </p>
-    <WebPublicationPanel managePhotos vehicle={data.vehicle} photos={data.signedPhotos} />
-    <a
-      class="inline-flex min-h-11 items-center underline"
-      href={crmPath(`/viaturas/${data.vehicle.id}`)}>Concluir e abrir ficha CRM →</a
-    >
+    {#key data.vehicle.id}<VehicleCreationWizard
+        vehicle={data.vehicle}
+        photos={data.signedPhotos}
+        intendedStatus={data.intendedStatus}
+        draftOwner={data.draftOwner}
+      />{/key}
   {:else}
     <Panel>
       <div class="p-6">
-        <VehicleForm submitLabel="Guardar e continuar" />
+        <NewVehicleDraftForm draftOwner={data.draftOwner} />
       </div>
     </Panel>
     <p class="text-sm text-[var(--color-text-muted)]">
-      Guardar cria a ficha interna. No passo seguinte pode adicionar fotografias e preparar o
-      website; a publicação é opcional e nunca automática.
+      Guardar e continuar cria um rascunho, fora do stock definitivo. No passo seguinte pode
+      adicionar fotografias e escolher se conclui apenas no CRM ou também publica no website.
     </p>
   {/if}
+  {/key}
 </section>
 
 <style>

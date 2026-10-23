@@ -91,6 +91,7 @@
 
   onMount(() => {
     let disposed = false;
+    let transactionQueued = false;
     void Promise.all([import('@tiptap/core'), import('@tiptap/starter-kit')])
       .then(([{ Editor }, { StarterKit }]) => {
         if (disposed) return;
@@ -144,7 +145,16 @@
             },
           },
           onUpdate: ({ editor: current }) => void changed(current),
-          onTransaction: () => revision++,
+          // A panel becoming inert can synchronously blur Tiptap during a Svelte
+          // render. Update toolbar state after that render, and coalesce events.
+          onTransaction: () => {
+            if (transactionQueued) return;
+            transactionQueued = true;
+            queueMicrotask(() => {
+              transactionQueued = false;
+              if (!disposed) revision++;
+            });
+          },
         });
       })
       .catch(() => {
@@ -189,7 +199,11 @@
 </script>
 
 <div class="description-editor" class:locked={disabled} class:invalid={tooLong}>
-  <label class="editor-label" for={id + '-field'}>Descrição pública</label>
+  <label class="editor-label" for={id + '-field'}
+    >Descrição pública{#if required}<span style="color:var(--color-red)" aria-hidden="true">
+        *</span
+      >{/if}</label
+  >
   {#if editor}
     <div class="editor-toolbar" role="toolbar" aria-label="Formatar descrição pública">
       <button

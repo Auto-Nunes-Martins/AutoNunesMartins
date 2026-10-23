@@ -1,10 +1,10 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import Button from '$lib/components/common/Button.svelte';
   import { page } from '$app/stores';
   import { AlertOctagon, Home } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
-  import Button from '$lib/components/common/Button.svelte';
   import Wordmark from '$lib/components/brand/Wordmark.svelte';
   import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
 
@@ -57,7 +57,7 @@
       class="border-t border-[var(--color-border)] px-6 py-4 flex flex-wrap items-center justify-between gap-3"
     >
       <ErrorRecovery {status} />
-      <Button variant="outline" href={crmPath('/dashboard')}>
+      <Button variant="outline" reload href={crmPath('/dashboard')}>
         <Home class="h-4 w-4" />
         Voltar ao Dashboard
       </Button>

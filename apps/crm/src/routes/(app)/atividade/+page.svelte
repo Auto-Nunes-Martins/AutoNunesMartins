@@ -317,7 +317,7 @@
                     applyFilters();
                   }}
                   class="inline-flex items-center gap-1.5 px-2.5 py-1 border font-mono text-[10px] uppercase tracking-[0.12em] transition-colors cursor-pointer {active
-                    ? 'border-[color-mix(in_oklab,var(--color-red)_45%,transparent)] bg-[color-mix(in_oklab,var(--color-red)_8%,transparent)] text-[var(--color-text)]'
+                    ? 'crm-filter-selected'
                     : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)]'}"
                   style="border-radius: 3px;"
                   title={s.label}

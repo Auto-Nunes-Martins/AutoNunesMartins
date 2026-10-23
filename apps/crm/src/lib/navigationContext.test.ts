@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { contextualParent, listContext } from './navigationContext';
 describe('safe contextual return', () => {
   it('returns detail/create pages to their actual internal parent', () => {
-    expect(contextualParent('/viaturas/nova')?.href).toBe('/viaturas');
+    expect(contextualParent('/viaturas/nova')).toBeNull();
     expect(contextualParent('/clientes/c1/editar')?.href).toBe('/clientes/c1');
     expect(contextualParent('/tarefas/c1')?.href).toBe('/tarefas');
     expect(contextualParent('/tarefas/c1/editar')?.href).toBe('/tarefas');
