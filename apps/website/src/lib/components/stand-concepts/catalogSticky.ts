@@ -1,3 +1,5 @@
+import { scrollFrame, setScrollStyle } from './scrollFrame';
+
 export type CatalogSidebarFrame = {
   width: number;
   viewportHeight: number;
@@ -15,7 +17,10 @@ export type CatalogSidebarPosition = { offset: number; scrollY: number };
  * Reversing direction retains its document position (no jump between sticky edges).
  * The last car bounds travel, not the editorial, pagination or the stretched grid row.
  */
-export function catalogSidebarPosition(frame: CatalogSidebarFrame, previous?: CatalogSidebarPosition): CatalogSidebarPosition {
+export function catalogSidebarPosition(
+  frame: CatalogSidebarFrame,
+  previous?: CatalogSidebarPosition,
+): CatalogSidebarPosition {
   const { width, viewportHeight, scrollY, start, end, panelHeight } = frame;
   const maxOffset = Math.max(0, end - start - panelHeight);
   const clamp = (offset: number) => Math.min(maxOffset, Math.max(0, offset));
@@ -39,47 +44,78 @@ export function catalogSticky(node: HTMLElement) {
   const grid = results?.querySelector<HTMLElement>('.catalog-grid');
   const header = node.closest('.design')?.querySelector<HTMLElement>('.stand-header');
   const root = node.closest<HTMLElement>('.design');
-  let frame = 0;
   let nativeSticky = false;
   let previous: CatalogSidebarPosition | undefined;
   let geometry = '';
   const measure = () => {
-    frame = 0;
     if (!sidebar || !grid) return;
     const scrollY = window.scrollY;
     const width = window.innerWidth;
+    if (width <= 800) {
+      return () => {
+        nativeSticky = false;
+        previous = undefined;
+        geometry = '';
+        node.classList.remove('native-sticky');
+        node.style.removeProperty('--catalog-filter-shift');
+        sidebar.style.removeProperty('height');
+      };
+    }
     const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
     const panelHeight = node.getBoundingClientRect().height;
-    const compactHeight = root ? Number.parseFloat(getComputedStyle(root).getPropertyValue('--nav-compact-row-height')) : 0;
-    nativeSticky = width > 800 && panelHeight <= viewportHeight - (compactHeight || header?.offsetHeight || 0) - 48;
-    node.classList.toggle('native-sticky', nativeSticky);
-    if (nativeSticky) {
+    const compactHeight = root
+      ? Number.parseFloat(getComputedStyle(root).getPropertyValue('--nav-compact-row-height'))
+      : 0;
+    const nextNativeSticky =
+      panelHeight <= viewportHeight - (compactHeight || header?.offsetHeight || 0) - 48;
+    const gridBounds = grid.getBoundingClientRect();
+    const sidebarBounds = sidebar.getBoundingClientRect();
+    if (nextNativeSticky) {
       // Native sticky follows the browser's scroll, without a one-frame JS transform lag.
       // Bound its containing block at the last car, preserving the existing stopping point.
-      const available = Math.max(panelHeight, grid.getBoundingClientRect().bottom - sidebar.getBoundingClientRect().top);
+      const available = Math.max(panelHeight, gridBounds.bottom - sidebarBounds.top);
       const height = `${available}px`;
-      if (sidebar.style.height !== height) sidebar.style.height = height;
-      node.style.removeProperty('--catalog-filter-shift');
-      previous = undefined;
-      return;
+      return () => {
+        nativeSticky = true;
+        node.classList.add('native-sticky');
+        if (sidebar.style.height !== height) sidebar.style.height = height;
+        node.style.removeProperty('--catalog-filter-shift');
+        previous = undefined;
+      };
     }
-    sidebar.style.removeProperty('height');
     const nextGeometry = `${width}:${viewportHeight}:${panelHeight}`;
-    if (nextGeometry !== geometry) { previous = undefined; geometry = nextGeometry; }
-    const next = catalogSidebarPosition({
-      width, viewportHeight, viewportTop: window.visualViewport?.offsetTop ?? 0,
-      navigationHeight: Math.max(0, (header?.getBoundingClientRect().bottom ?? 0) - (window.visualViewport?.offsetTop ?? 0)),
-      scrollY, panelHeight,
-      start: sidebar.getBoundingClientRect().top + scrollY,
-      end: grid.getBoundingClientRect().bottom + scrollY,
-    }, previous);
-    // Tall panels keep directional travel, using layout positioning and whole pixels.
-    if (!previous || Math.abs(next.offset - previous.offset) > .01)
-      node.style.setProperty('--catalog-filter-shift', `${Math.round(next.offset)}px`);
-    previous = next;
+    const next = catalogSidebarPosition(
+      {
+        width,
+        viewportHeight,
+        viewportTop: window.visualViewport?.offsetTop ?? 0,
+        navigationHeight: Math.max(
+          0,
+          (header?.getBoundingClientRect().bottom ?? 0) - (window.visualViewport?.offsetTop ?? 0),
+        ),
+        scrollY,
+        panelHeight,
+        start: sidebarBounds.top + scrollY,
+        end: gridBounds.bottom + scrollY,
+      },
+      nextGeometry !== geometry ? undefined : previous,
+    );
+    return () => {
+      nativeSticky = false;
+      node.classList.remove('native-sticky');
+      sidebar.style.removeProperty('height');
+      geometry = nextGeometry;
+      // Tall panels keep directional travel, using layout positioning and whole pixels.
+      if (!previous || Math.abs(next.offset - previous.offset) > 0.01)
+        setScrollStyle(node, '--catalog-filter-shift', `${Math.round(next.offset)}px`);
+      previous = next;
+    };
   };
-  const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
-  const scroll = () => { if (!nativeSticky) schedule(); };
+  const task = scrollFrame(measure);
+  const schedule = () => task.schedule();
+  const scroll = () => {
+    if (!nativeSticky && window.innerWidth > 800) schedule();
+  };
   const observer = new ResizeObserver(schedule);
   observer.observe(node);
   if (results) observer.observe(results);
@@ -93,7 +129,7 @@ export function catalogSticky(node: HTMLElement) {
   schedule();
   return {
     destroy() {
-      cancelAnimationFrame(frame);
+      task.cancel();
       observer.disconnect();
       header?.removeEventListener('transitionend', schedule);
       window.removeEventListener('resize', schedule);

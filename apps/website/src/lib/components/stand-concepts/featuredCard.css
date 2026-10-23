@@ -152,6 +152,11 @@
     transparent 100%
   );
 }
+@media (max-width: 700px) {
+  [data-featured-card] .hd-feature::before {
+    content: none;
+  }
+}
 [data-featured-card] .hd-feature-top .hd-eyebrow {
   position: relative;
 }
