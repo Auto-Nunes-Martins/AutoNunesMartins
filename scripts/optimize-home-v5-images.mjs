@@ -1,18 +1,19 @@
 // Additional derivatives only. Approved source files and framing are preserved.
 import sharp from 'sharp';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, readdir, unlink } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { format, resolveConfig } from 'prettier';
 
 const sources = 'apps/website/src/lib/assets/images/hero-directions/';
 const destination = 'apps/website/src/lib/assets/optimized/home-v5/';
 const audit = 'artifacts/vehicle-photo-compression/';
+const crops = JSON.parse(await readFile('apps/website/src/lib/sceneCrops.json', 'utf8'));
 await mkdir(destination, { recursive: true });
 await mkdir(audit, { recursive: true });
 const jobs = [
   ['forest-wide', 'forest-ribbon-5472.webp', [1280, 1920, 2560, 3840, 5472]],
   ['forest-portrait', 'forest-ribbon-portrait-1920.webp', [640, 1080, 1280, 1920]],
-  ['catalog-portrait', 'family-forest-ribbon-portrait-native.webp', [640, 1080, 1280, 1920, 2736]],
+  ['catalog-portrait', 'family-forest-ribbon-portrait-native.webp', [480, 810, 960, 1440, 2052]],
   ['curves-wide', 'family-curves-wide-5472.webp', [1280, 1920, 2560, 3840, 5472]],
   ['curves-portrait', 'family-family-curves-portrait-native.webp', [640, 1080, 1280, 1920, 2736]],
   ['visit-wide', 'scene-v5-visit-1672.webp', [640, 1080, 1672]],
@@ -20,6 +21,18 @@ const jobs = [
   ['service-wide', '@service', [640, 1080, 1280, 1920, 2560]],
 ];
 const only = process.argv.find((arg) => arg.startsWith('--only='))?.slice(7);
+// Reviewed against the existing derivatives using native-size detail crops.
+// Keep the visit sources at their previous quality: those are already enlarged
+// by the contact section, particularly its tall mobile composition.
+const encoding = {
+  'forest-wide': { webp: 88, avif: 65 },
+  'forest-portrait': { webp: 88, avif: 65 },
+  'catalog-portrait': { webp: 85, avif: 60 },
+  'curves-wide': { webp: 88, avif: 65 },
+  'curves-portrait': { webp: 88, avif: 65 },
+  'service-wide': { webp: 85, avif: 60 },
+};
+const reviewedOnly = process.argv.includes('--reviewed');
 if (process.argv.includes('--download')) {
   const response = await fetch(
     'https://images.unsplash.com/photo-1652453822981-653a9a522a5b?auto=format&fit=crop&w=2560&q=95',
@@ -33,22 +46,29 @@ if (process.argv.includes('--download')) {
   await writeFile(resolve(audit, 'service-current-1920'), Buffer.from(await current.arrayBuffer()));
 }
 const rows =
-  process.argv.includes('--module-only') || only
+  process.argv.includes('--module-only') || only || reviewedOnly
     ? JSON.parse(await readFile(resolve(audit, 'background-measurements.json'), 'utf8'))
     : [];
 for (const [name, source, widths] of process.argv.includes('--module-only') ? [] : jobs) {
   if (only && name !== only) continue;
+  if (reviewedOnly && !encoding[name]) continue;
+  const quality = encoding[name] ?? { webp: 90, avif: 70 };
   for (let i = rows.length - 1; i >= 0; i--) if (rows[i].name === name) rows.splice(i, 1);
   const input = await readFile(
     source === '@service' ? resolve(audit, 'service.master') : sources + source,
   );
   for (const width of widths) {
-    const base = sharp(input).resize({ width, withoutEnlargement: true });
+    let base = sharp(input);
+    if (name === 'catalog-portrait') {
+      const { left, top, width: cropWidth, height } = crops.catalog;
+      base = base.extract({ left, top, width: cropWidth, height });
+    }
+    base = base.resize({ width, withoutEnlargement: true });
     for (const format of ['webp', 'avif']) {
       const bytes = await (
         format === 'webp'
-          ? base.clone().webp({ quality: 90, effort: 6, smartSubsample: true })
-          : base.clone().avif({ quality: 70, effort: 5, chromaSubsampling: '4:4:4' })
+          ? base.clone().webp({ quality: quality.webp, effort: 6, smartSubsample: true })
+          : base.clone().avif({ quality: quality.avif, effort: 5, chromaSubsampling: '4:4:4' })
       ).toBuffer();
       const file = `${destination}${name}-${width}.${format}`;
       await writeFile(file, bytes);
@@ -66,7 +86,17 @@ for (const [name, source, widths] of process.argv.includes('--module-only') ? []
   }
   console.log(JSON.stringify({ name, complete: true }));
 }
+rows.sort((a, b) =>
+  jobs.findIndex(([name]) => name === a.name) - jobs.findIndex(([name]) => name === b.name) ||
+  a.width - b.width || (a.format === b.format ? 0 : a.format === 'webp' ? -1 : 1),
+);
 await writeFile(resolve(audit, 'background-measurements.json'), JSON.stringify(rows, null, 2));
+// Retire only obsolete generated catalogue derivatives. The full source stays.
+const expectedCatalog = new Set(rows.filter((row) => row.name === 'catalog-portrait').map((row) => resolve(row.file)));
+for (const file of await readdir(destination)) {
+  if (/^catalog-portrait-\d+\.(avif|webp)$/.test(file) && !expectedCatalog.has(resolve(destination, file)))
+    await unlink(resolve(destination, file));
+}
 let module =
   '// Generated by scripts/optimize-home-v5-images.mjs; approved framing is unchanged.\n';
 for (const [index, row] of rows.entries())

@@ -571,10 +571,25 @@ describe('private photo storage boundary', () => {
     );
     const etag = first.headers.get('etag')!;
     expect(etag).toBeTruthy();
+    const timing = first.headers.get('server-timing')!;
+    expect(timing).toMatch(/photo-check;dur=\d+\.\d/);
+    expect(timing).toMatch(/photo-total;dur=\d+\.\d/);
+    expect(
+      timing
+        .split(', ')
+        .every((entry) =>
+          /^photo-(?:check|manifest|storage|total|cache-hit|cache-miss);dur=\d+(?:\.\d+)?$/.test(
+            entry,
+          ),
+        ),
+    ).toBe(true);
+    expect(timing).not.toMatch(/SECRET|PRIVATE|private-vehicle-photos|12345678/);
     const second = await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`, {
       headers: { 'if-none-match': etag },
     });
     expect(second.status).toBe(304);
+    expect(second.headers.get('server-timing')).toContain('photo-cache-hit;dur=0.0');
+    expect(second.headers.get('server-timing')).toMatch(/photo-check;dur=\d/);
     mocks.db.vehicle.findFirst.mockResolvedValue(null);
     const revoked = await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`, {
       headers: { 'if-none-match': etag },

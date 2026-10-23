@@ -17,16 +17,16 @@ import image14 from './assets/optimized/home-v5/forest-portrait-1280.webp?url&no
 import image15 from './assets/optimized/home-v5/forest-portrait-1280.avif?url&no-inline';
 import image16 from './assets/optimized/home-v5/forest-portrait-1920.webp?url&no-inline';
 import image17 from './assets/optimized/home-v5/forest-portrait-1920.avif?url&no-inline';
-import image18 from './assets/optimized/home-v5/catalog-portrait-640.webp?url&no-inline';
-import image19 from './assets/optimized/home-v5/catalog-portrait-640.avif?url&no-inline';
-import image20 from './assets/optimized/home-v5/catalog-portrait-1080.webp?url&no-inline';
-import image21 from './assets/optimized/home-v5/catalog-portrait-1080.avif?url&no-inline';
-import image22 from './assets/optimized/home-v5/catalog-portrait-1280.webp?url&no-inline';
-import image23 from './assets/optimized/home-v5/catalog-portrait-1280.avif?url&no-inline';
-import image24 from './assets/optimized/home-v5/catalog-portrait-1920.webp?url&no-inline';
-import image25 from './assets/optimized/home-v5/catalog-portrait-1920.avif?url&no-inline';
-import image26 from './assets/optimized/home-v5/catalog-portrait-2736.webp?url&no-inline';
-import image27 from './assets/optimized/home-v5/catalog-portrait-2736.avif?url&no-inline';
+import image18 from './assets/optimized/home-v5/catalog-portrait-480.webp?url&no-inline';
+import image19 from './assets/optimized/home-v5/catalog-portrait-480.avif?url&no-inline';
+import image20 from './assets/optimized/home-v5/catalog-portrait-810.webp?url&no-inline';
+import image21 from './assets/optimized/home-v5/catalog-portrait-810.avif?url&no-inline';
+import image22 from './assets/optimized/home-v5/catalog-portrait-960.webp?url&no-inline';
+import image23 from './assets/optimized/home-v5/catalog-portrait-960.avif?url&no-inline';
+import image24 from './assets/optimized/home-v5/catalog-portrait-1440.webp?url&no-inline';
+import image25 from './assets/optimized/home-v5/catalog-portrait-1440.avif?url&no-inline';
+import image26 from './assets/optimized/home-v5/catalog-portrait-2052.webp?url&no-inline';
+import image27 from './assets/optimized/home-v5/catalog-portrait-2052.avif?url&no-inline';
 import image28 from './assets/optimized/home-v5/curves-wide-1280.webp?url&no-inline';
 import image29 from './assets/optimized/home-v5/curves-wide-1280.avif?url&no-inline';
 import image30 from './assets/optimized/home-v5/curves-wide-1920.webp?url&no-inline';
@@ -83,11 +83,11 @@ export const homeV5Images = {
     height: 2560,
   },
   'catalog-portrait': {
-    src: image22,
-    srcset: `${image18} 640w, ${image20} 1080w, ${image22} 1280w, ${image24} 1920w, ${image26} 2736w`,
-    avif: `${image19} 640w, ${image21} 1080w, ${image23} 1280w, ${image25} 1920w, ${image27} 2736w`,
-    width: 2736,
-    height: 3648,
+    src: image24,
+    srcset: `${image18} 480w, ${image20} 810w, ${image22} 960w, ${image24} 1440w, ${image26} 2052w`,
+    avif: `${image19} 480w, ${image21} 810w, ${image23} 960w, ${image25} 1440w, ${image27} 2052w`,
+    width: 2052,
+    height: 2736,
   },
   'curves-wide': {
     src: image28,

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { perspectiveMotion } from './perspectiveMotion';
   // Defaults preserve the homepage; other editorial pages share its exact light treatment.
   let {
     id = 'perspective-message',
@@ -17,78 +18,7 @@
     grouped?: boolean;
   } = $props();
   let section: HTMLElement;
-  onMount(() => {
-    const heading = section.querySelector('h2')!;
-    const underline = section.querySelector('em')!;
-    const lineWindow = section.querySelector<HTMLElement>('.line-window')!;
-    const fragments = [...section.querySelectorAll<HTMLElement>('.read-a, .read-b, em')];
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-    let frame = 0;
-    let nearby = !grouped;
-    const smooth = (value: number) => {
-      const p = Math.min(1, Math.max(0, value));
-      return p * p * (3 - 2 * p);
-    };
-    const draw = () => {
-      frame = 0;
-      if (reduced.matches || !nearby) return;
-      const bounds = heading.getBoundingClientRect();
-      const line = lineWindow.getBoundingClientRect();
-      // Keep the line's original timing; only the text light trails by 25px of scroll.
-      const journey = (innerHeight * 0.92 - bounds.top) / (innerHeight * 0.84);
-      const progress = smooth(journey);
-      const lightProgress = smooth(journey - 25 / (innerHeight * 0.84));
-      const light = smooth(lightProgress / 0.3) * (1 - smooth((lightProgress - 0.72) / 0.28));
-      const segmentStart = line.left + Math.max(0, lightProgress * 2 - 1) * line.width;
-      const segmentEnd = line.left + Math.min(1, lightProgress * 2) * line.width;
-      const accent = smooth((segmentEnd - segmentStart) / 20);
-      const textLeft = underline.getBoundingClientRect().left;
-      const rects = fragments.map((fragment) => fragment.getBoundingClientRect());
-      underline.style.setProperty('--segment-start', `${segmentStart - textLeft}px`);
-      underline.style.setProperty('--segment-end', `${segmentEnd - textLeft}px`);
-      underline.style.setProperty(
-        '--light-inset',
-        `${Math.min(24, (segmentEnd - segmentStart) / 2)}px`,
-      );
-      // The tip crosses the text at halfway, then keeps travelling beyond its
-      // right edge. A fixed window clips the trailing segment; opacity stays 1.
-      const x = line.left + line.width * lightProgress * 2;
-      const y = line.bottom + line.height * 0.08;
-      section.style.setProperty('--line-progress', String(progress));
-      section.style.setProperty('--line-light', String(light));
-      section.style.setProperty('--accent-light', String(accent));
-      fragments.forEach((fragment, index) => {
-        const lightX = fragment === underline ? Math.min(x, line.right) : x;
-        fragment.style.setProperty('--tip-x', `${lightX - rects[index]!.left}px`);
-        fragment.style.setProperty('--tip-y', `${y - rects[index]!.top}px`);
-      });
-    };
-    const schedule = () => {
-      if (nearby && !frame) frame = requestAnimationFrame(draw);
-    };
-    // The homepage phrase need not force style/layout on every distant scroll.
-    // Activate before it can be seen so the existing light is already in place.
-    const proximity = grouped ? new IntersectionObserver(([entry]) => {
-      nearby = !!entry?.isIntersecting;
-      if (nearby) schedule();
-      else { cancelAnimationFrame(frame); frame = 0; }
-    }, { rootMargin: '400px 0px' }) : undefined;
-    proximity?.observe(section);
-    const resize = new ResizeObserver(schedule);
-    resize.observe(heading);
-    window.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', schedule);
-    reduced.addEventListener('change', schedule);
-    draw();
-    return () => {
-      cancelAnimationFrame(frame);
-      resize.disconnect();
-      proximity?.disconnect();
-      window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
-      reduced.removeEventListener('change', schedule);
-    };
-  });
+  onMount(() => perspectiveMotion(section, grouped));
 </script>
 
 <section

@@ -156,12 +156,10 @@ router.get(
       const vehicle = await getPublicVehicle(prisma, slug.data);
       if (!vehicle) {
         const unavailableVehicle = await readUnavailableVehicle(prisma, slug.data);
-        res
-          .status(404)
-          .json({
-            error: 'Vehicle not found',
-            ...(unavailableVehicle ? { unavailableVehicle } : {}),
-          });
+        res.status(404).json({
+          error: 'Vehicle not found',
+          ...(unavailableVehicle ? { unavailableVehicle } : {}),
+        });
         return;
       }
       res.json(vehicle);
@@ -212,7 +210,13 @@ router.get(
         res.status(400).json({ error: 'Invalid photo size' });
         return;
       }
+      const timingStart = performance.now();
+      const timings: string[] = [];
+      const record = (stage: string, ms: number) => {
+        timings.push(`${stage};dur=${Math.max(0, ms).toFixed(1)}`);
+      };
       const path = await getPublicPhotoPath(prisma, slug.data, index.data);
+      record('photo-check', performance.now() - timingStart);
       if (!path) {
         res.status(404).json({ error: 'Photo not found' });
         return;
@@ -220,12 +224,15 @@ router.get(
       const photo = await readPhotoBytes(
         path,
         width as import('../lib/server/photoVariants.js').PhotoWidth | undefined,
+        record,
       );
       if (!photo) {
         res.status(404).json({ error: 'Photo not found' });
         return;
       }
+      record('photo-total', performance.now() - timingStart);
       res.set({
+        'Server-Timing': timings.join(', '),
         'Content-Type': photo.contentType,
         'X-Content-Type-Options': 'nosniff',
         'Cross-Origin-Resource-Policy': 'cross-origin',

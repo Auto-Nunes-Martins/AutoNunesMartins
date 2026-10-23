@@ -152,12 +152,15 @@ export function designMotion(root: HTMLElement) {
     if (!document.hidden) schedule();
   };
   const move = (event: PointerEvent) => {
+    // Vehicle detail has no pointer-driven scene. Do not remeasure it on mouse movement.
+    if (root.classList.contains('public-detail')) return;
     if (!pointer.matches || reduced.matches || event.clientY > window.innerHeight) return;
     targetX = event.clientX / window.innerWidth - 0.5;
     targetY = event.clientY / window.innerHeight - 0.5;
     schedule();
   };
   const leave = () => {
+    if (root.classList.contains('public-detail')) return;
     targetX = 0;
     targetY = 0;
     schedule();

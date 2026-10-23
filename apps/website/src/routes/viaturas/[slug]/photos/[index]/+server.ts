@@ -23,6 +23,20 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
         ? { 'if-none-match': request.headers.get('if-none-match')! }
         : {},
     );
+    // Numeric photo-stage diagnostics only; never forward arbitrary backend metadata.
+    const timing = response.headers.get('server-timing');
+    if (
+      timing &&
+      timing.length <= 512 &&
+      timing
+        .split(', ')
+        .every((entry) =>
+          /^photo-(?:check|manifest|storage|total|cache-hit|cache-miss);dur=\d+(?:\.\d+)?$/.test(
+            entry,
+          ),
+        )
+    )
+      headers['server-timing'] = timing;
     if (width && (response.ok || response.status === 304)) {
       headers['cache-control'] = 'private, no-cache, max-age=0, must-revalidate';
       const etag = response.headers.get('etag');
