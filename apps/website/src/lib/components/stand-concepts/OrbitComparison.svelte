@@ -130,8 +130,8 @@
                   {#if loading}<div class="pending-photo" aria-hidden="true"></div>
                   {:else if entry.vehicle}
                     {@const session = imageSessions.get(entry.id)!}
-                    {@const src = entry.vehicle.photos.length ? sizedPhoto(publicPhoto(entry.id, 0),800) : catalogPlaceholder}
-                    {@const srcset = entry.vehicle.photos.length ? vehiclePhotoSet(publicPhoto(entry.id,0)) : undefined}
+                    {@const src = entry.vehicle.photos.length ? sizedPhoto(publicPhoto(entry.vehicle, 0),800) : catalogPlaceholder}
+                    {@const srcset = entry.vehicle.photos.length ? vehiclePhotoSet(publicPhoto(entry.vehicle,0)) : undefined}
                     <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><img {...thumbnailAttrs(session,src,srcset)} use:publicThumbnail={{session,index:0,src,srcset,sizes:'(max-width:700px) 90vw, 560px'}} sizes="(max-width:700px) 90vw, 560px" alt={entry.vehicle.photos.length ? name(entry) : `Fotografia indisponível: ${name(entry)}`} width="480" height="320" /></a>
                   {:else}<div class="missing-photo"><img src={catalogPlaceholder} alt="Fotografia indisponível" width="480" height="320" /></div>{/if}
                   <button class="remove" type="button" disabled={loading} aria-label={`Remover ${name(entry)} da comparação`} onclick={() => remove(entry)}><X size={18} aria-hidden="true" /></button>

@@ -1,5 +1,15 @@
 # Public photo delivery diagnostics
 
+## Gallery copies for the current visit
+
+The detail gallery now retains each acquired photograph as a Blob and object URL for the current mounted vehicle page. It never revalidates or downloads a replacement on a later visit to that photograph, including after a browser GC. A missing, failed or discarded local copy stays unavailable for that visit; it does not fall back to HTTP. The spinner still follows actual acquisition and decode work, independently of the existing fade.
+
+The SSR principal image seeds this store using `only-if-cached` (no network on a miss). Other photographs download only when first selected, using the 2560px derivative once so fullscreen can reuse the same copy without a later resolution upgrade. There is no expiry timer. Copies remain strongly retained while the detail gallery or its fullscreen viewer is attached and are released after the last user detaches. The store has a 64 MiB retained-byte ceiling and a 20 MiB per-image bound; it does not evict still-navigable images to make room, and a capacity miss stays blank. Decoder/GPU memory is separate.
+
+Public photo URLs carry `v`, the hash of the immutable uploaded path. Fresh no-store page data supplies new identities after replacement or reordering, while the vehicle page address stays the same. Every request that actually reaches the server still validates current publication and photo approval and rejects a mismatched identity before reading pixels; the version is not an access token. Legacy unversioned URLs retain their HTTP policy. A page already open can continue displaying its retained formerly public copy, as requested by the owner. Reloading or leaving/remounting the vehicle page begins a fresh visit.
+
+Fullscreen thumbnails use the existing document thumbnail copies and identities from this visit's page response, without an additional access query. Mounted detail thumbnails pin their local entries beyond the cross-page cache TTL; closing the viewer cannot discard copies still owned by the detail strip. The viewer is cache-only: absent thumbnail copies remain blank instead of triggering a second download. On opening, its strip is mounted in the closed dialog and all available local thumbnails are decoded together before `showModal()`, so the first visible frame does not progressively fill the strip. This preparation can add a few milliseconds before opening; it never preloads large photographs. Fullscreen images and controls disable native selection/drag without removing keyboard focus indicators.
+
 Public vehicle photo responses expose a bounded `Server-Timing` header on successful image responses and conditional 304 responses. The website proxy forwards only the numeric photo-stage allowlist. No credentials, SQL, database hosts, storage keys, paths or user data are included.
 
 | Metric                                 | Meaning                                                                                                                                                                                                                                       |

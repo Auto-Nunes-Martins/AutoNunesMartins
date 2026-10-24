@@ -51,8 +51,10 @@ export function vehicleStructuredData(input: unknown, origin: string) {
     ? vehicle.photos
         .slice(0, 20)
         .flatMap((path, index) =>
-          path === `/api/public/vehicles/${slug}/photos/${index}`
-            ? [new URL(publicPhoto(slug, index), base.origin).href]
+          typeof path === 'string' && (path === `/api/public/vehicles/${slug}/photos/${index}` ||
+            (path.startsWith(`/api/public/vehicles/${slug}/photos/${index}?v=`) &&
+              /^[a-f0-9]{64}$/.test(path.split('?v=')[1] ?? '')))
+            ? [new URL(path.replace('/api/public/vehicles/', '/viaturas/'), base.origin).href]
             : [],
         )
     : [];

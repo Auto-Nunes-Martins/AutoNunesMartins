@@ -29,7 +29,7 @@ export function highlightSlides(highlights: PublicHighlights): HeroSlide[] {
     model: vehicle.model,
     year: vehicle.year,
     km: vehicle.mileage,
-    image: publicPhoto(vehicle.slug, photoIndex),
+    image: publicPhoto(vehicle, photoIndex),
     href: publicHref(vehicle.slug),
     illustrative: false,
   }));

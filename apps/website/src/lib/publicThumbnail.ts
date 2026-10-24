@@ -73,15 +73,16 @@ export function warmNavigationThumbnails(
           try {
             const cached = versions ? entries.get(`${versions[index]}/${width}`) : undefined;
             if (cached && cached.used > Date.now() - MAX_AGE) continue;
-            const image = await fetch(`/viaturas/${slug}/photos/${index}?w=${width}`, {
-              cache: 'no-cache',
+            const version = versions?.[index];
+            const image = await fetch(`/viaturas/${slug}/photos/${index}?w=${width}${version ? '&v=' + version : ''}`, {
+              cache: 'default',
               credentials: 'omit',
               signal: controller.signal,
             });
-            const version = image.headers.get('x-photo-version');
-            if (!image.ok || !version || !/^[a-f0-9]{64}$/.test(version)) continue;
+            const receivedVersion = image.headers.get('x-photo-version');
+            if (!image.ok || !receivedVersion || !/^[a-f0-9]{64}$/.test(receivedVersion)) continue;
             const blob = await image.blob();
-            if (!controller.signal.aborted) remember(slug, version, width, blob);
+            if (!controller.signal.aborted) remember(slug, receivedVersion, width, blob);
           } catch {
             /* Native image delivery remains the fallback. */
           } finally {
@@ -123,7 +124,7 @@ type Entry = {
 };
 const entries = new Map<string, Entry>();
 const available = (slug: string) =>
-  [...entries.values()].some((e) => e.slug === slug && e.used > Date.now() - MAX_AGE);
+  [...entries.values()].some((e) => e.slug === slug && (e.refs > 0 || e.used > Date.now() - MAX_AGE));
 function remember(slug: string, version: string, width: number, blob: Blob) {
   if (blob.size > 800_000 || !['image/webp', 'image/jpeg', 'image/png'].includes(blob.type)) return;
   const key = `${version}/${width}`,
@@ -159,7 +160,7 @@ function remember(slug: string, version: string, width: number, blob: Blob) {
 }
 
 /** One fresh permission snapshot per gallery; requests never reuse approval from an earlier visit. */
-export function createThumbnailSession(slug: string, freshVersions?: string[]) {
+export function createThumbnailSession(slug: string, freshVersions?: string[], cacheOnly = false) {
   const warming = navigationWarmup?.slug === slug ? navigationWarmup : undefined;
   const reuse = available(slug) || !!warming;
   let promise: Promise<string[]> | undefined,
@@ -167,7 +168,8 @@ export function createThumbnailSession(slug: string, freshVersions?: string[]) {
     users = 0;
   return {
     slug,
-    hasPixels: () => reuse,
+    hasPixels: () => reuse || cacheOnly,
+    cacheOnly,
     async prepared(index: number) {
       if (!warming) return;
       await warming.ready;
@@ -204,6 +206,8 @@ type Source = {
   src: string;
   srcset?: string;
   sizes: string;
+  onReady?: () => void;
+  minimumWidth?: number;
 };
 
 /** Avoid N conditional requests during warm client navigation; initial SSR retains native URLs. */
@@ -233,6 +237,12 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
   function native() {
     waiting = false;
     unpin();
+    if (source.session.cacheOnly) {
+      node.removeAttribute('srcset');
+      node.removeAttribute('src');
+      source.onReady?.();
+      return;
+    }
     if (source.srcset) node.srcset = source.srcset;
     else node.removeAttribute('srcset');
     node.sizes = source.sizes;
@@ -243,7 +253,9 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
     failed = true;
     unpin();
     node.removeAttribute('srcset');
-    node.src = catalogPlaceholder;
+    if (source.session.cacheOnly) node.removeAttribute('src');
+    else node.src = catalogPlaceholder;
+    source.onReady?.();
   }
   async function loaded() {
     if (waiting || failed || !alive || node.currentSrc.startsWith('blob:')) return;
@@ -259,7 +271,7 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       return;
     try {
       // The native image just completed its own live authorization. Read those exact cached bytes.
-      const response = await fetch(url, { cache: 'force-cache', credentials: 'omit' });
+      const response = await fetch(url, { cache: 'only-if-cached', mode: 'same-origin', credentials: 'omit' });
       const version = response.headers.get('x-photo-version');
       if (
         !response.ok ||
@@ -270,6 +282,12 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       )
         return;
       remember(current.session.slug, version, width, await response.blob());
+      // Retain the current page's thumbnails until their nodes leave the page.
+      // Their viewer reuse has no expiry timer and cannot evict a navigable copy.
+      if (alive && token === revision && !lease) {
+        const entry = entries.get(`${version}/${width}`);
+        if (entry) { entry.refs++; lease = entry; }
+      }
     } catch {
       /* Native delivery remains available when the browser cannot retain a response. */
     }
@@ -292,13 +310,13 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       const versions = await source.session.access();
       await source.session.prepared(source.index);
       if (!alive || token !== revision) return;
-      const needed = node.getBoundingClientRect().width * devicePixelRatio;
+      const needed = Math.max(node.getBoundingClientRect().width, source.minimumWidth ?? 0) * devicePixelRatio;
       const entry = [...entries.values()]
         .filter(
           (e) =>
             e.version === versions[source.index] &&
             e.width >= needed &&
-            e.used > Date.now() - MAX_AGE,
+            (e.refs > 0 || e.used > Date.now() - MAX_AGE),
         )
         .sort((a, b) => a.width - b.width)[0];
       if (!entry) {
@@ -312,6 +330,10 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       failed = false;
       node.removeAttribute('srcset');
       node.src = entry.blobUrl;
+      if (source.onReady) {
+        try { await node.decode(); } catch { /* Missing copies stay unavailable. */ }
+        if (alive && token === revision) source.onReady();
+      }
     } catch {
       if (alive && token === revision) native();
     }

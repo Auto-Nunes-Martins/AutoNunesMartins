@@ -292,7 +292,7 @@ describe('public HTTP responses never disclose private inventory', () => {
       specifications: {},
       transmission: 'MANUAL',
       availability: 'AVAILABLE',
-      photos: [`/api/public/vehicles/${slug}/photos/0`],
+      photos: [`/api/public/vehicles/${slug}/photos/0?v=${publicPhotoVersion(photo)}`],
     });
     expect(JSON.stringify(body)).not.toMatch(
       /SECRET|PRIVATE|vin|licensePlate|purchasePrice|salePrice|pendingDocFlags|publicPhotoPaths|private-vehicle-photos/,
@@ -628,6 +628,42 @@ describe('private photo storage boundary', () => {
     expect(revoked.status).toBe(404);
     expect(revoked.headers.get('cache-control')).toBe('no-store');
   });
+  it('caches only an authorized matching identity and changes URLs after replacement/reorder', async () => {
+    const other = `${id}/12345678-1234-1234-1234-123456789abd.jpg`;
+    const version = publicPhotoVersion(photo);
+    const path = `${base}/api/public/vehicles/${slug}/photos/0?v=${version}&w=320`;
+    const original = publicVehicleDto(fixture()).photos[0];
+    const first = await fetch(path);
+    expect(first.status).toBe(200);
+    expect(first.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
+    expect(first.headers.get('x-photo-version')).toBe(version);
+    const etag = first.headers.get('etag')!;
+    const conditional = await fetch(path, { headers: { 'if-none-match': etag } });
+    expect(conditional.status).toBe(304);
+    expect(mocks.db.vehicle.findFirst).toHaveBeenCalledTimes(2);
+    expect(conditional.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
+    const originalSize = await fetch(path.replace('&w=320', ''));
+    expect(originalSize.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
+    const changed = { ...fixture(), photos: [other, photo], publicPhotoPaths: [other, photo] };
+    mocks.db.vehicle.findFirst.mockResolvedValue(changed);
+    expect(publicVehicleDto(changed).photos[0]).not.toBe(original);
+    const stale = await fetch(path);
+    expect(stale.status).toBe(404);
+    expect(stale.headers.get('cache-control')).toBe('no-store');
+    const fresh = await fetch(`${base}${publicVehicleDto(changed).photos[0]}&w=320`);
+    expect(fresh.status).toBe(200);
+    expect(fresh.headers.get('x-photo-version')).toBe(publicPhotoVersion(other));
+    mocks.db.vehicle.findFirst.mockResolvedValue(null);
+    const revoked = await fetch(path, { headers: { 'if-none-match': etag } });
+    expect(revoked.status).toBe(404);
+    expect(revoked.headers.get('cache-control')).toBe('no-store');
+  });
+  it.each(['invalid', 'a'.repeat(63), 'A'.repeat(64), `${'a'.repeat(64)}&v=${'b'.repeat(64)}`])(
+    'rejects malformed or repeated photo identity %s before reading pixels', async (version) => {
+      expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320&v=${version}`)).status).toBe(400);
+      expect(mocks.download).not.toHaveBeenCalled();
+    },
+  );
   it('rejects arbitrary image dimensions and never exposes private paths', async () => {
     for (const size of ['1', '50000', '0320', '320&w=800'])
       expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=${size}`)).status).toBe(

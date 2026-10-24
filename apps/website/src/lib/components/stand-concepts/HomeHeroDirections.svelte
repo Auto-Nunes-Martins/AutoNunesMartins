@@ -27,8 +27,8 @@
   const active = $derived(items[displayedIndex] ?? items[0]);
   const requested = $derived(items[index] ?? items[0]);
   const car = $derived(active?.vehicle);
-  const image = $derived(requested ? publicPhoto(requested.vehicle.slug, requested.photoIndex) : '');
-  const firstImage = $derived(items[0] ? publicPhoto(items[0].vehicle.slug, items[0].photoIndex) : '');
+  const image = $derived(requested ? publicPhoto(requested.vehicle, requested.photoIndex) : '');
+  const firstImage = $derived(items[0] ? publicPhoto(items[0].vehicle, items[0].photoIndex) : '');
   const copy = [
     'Há mais caminho',
     'pela frente.',

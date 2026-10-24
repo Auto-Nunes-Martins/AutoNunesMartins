@@ -2,13 +2,41 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mock = vi.hoisted(() => ({ request: vi.fn() }));
 vi.mock('$lib/server/publicVehicles', () => ({ publicRequest: mock.request }));
 import { GET } from './[index]/+server';
-const read = () =>
+const read = (query = 'w=320') =>
   GET({
     params: { slug: 'dacia-jogger-abcdef123456', index: '0' },
-    url: new URL('http://localhost/viaturas/dacia-jogger-abcdef123456/photos/0?w=320'),
+    url: new URL('http://localhost/viaturas/dacia-jogger-abcdef123456/photos/0?' + query),
     request: new Request('http://localhost/photo'),
   } as Parameters<typeof GET>[0]);
 afterEach(() => vi.resetAllMocks());
+
+it.each([200, 304])('forwards a confirmed version and preserves HTTP access policy on %i', async status => {
+  const version = 'a'.repeat(64);
+  mock.request.mockResolvedValue(new Response(status === 200 ? 'bytes' : null, {
+    status, headers: { 'content-type': 'image/webp', 'x-photo-version': version },
+  }));
+  const result = await read(`v=${version}&w=1280`);
+  expect(result.status).toBe(status);
+  expect(mock.request).toHaveBeenCalledWith(`/dacia-jogger-abcdef123456/photos/0?w=1280&v=${version}`, {});
+  expect(result.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
+});
+it('never caches mismatched identities or invalid photo content', async () => {
+  const version = 'a'.repeat(64);
+  for (const headers of [
+    { 'content-type': 'image/webp', 'x-photo-version': 'b'.repeat(64) },
+    { 'content-type': 'text/html', 'x-photo-version': version },
+  ]) {
+    mock.request.mockResolvedValue(new Response('bad', { headers }));
+    const result = await read(`v=${version}&w=320`);
+    expect(result.status).toBe(503);
+    expect(result.headers.get('cache-control')).toBe('no-store');
+  }
+});
+it('does not silently drop a malformed/repeated version', async () => {
+  for (const query of ['w=320&v=bad', `w=320&v=${'a'.repeat(64)}&v=${'b'.repeat(64)}`])
+    expect((await read(query)).status).toBe(400);
+  expect(mock.request).not.toHaveBeenCalled();
+});
 
 it('delivers the first chunk before the backend body finishes, preserving bytes', async () => {
   let source!: ReadableStreamDefaultController<Uint8Array>;

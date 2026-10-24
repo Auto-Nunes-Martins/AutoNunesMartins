@@ -101,7 +101,7 @@
           category: publicVehicle.specifications?.category ?? '',
           price: publicVehicle.price === null ? Number.NaN : Number(publicVehicle.price),
           image: publicVehicle.photos.length
-            ? publicPhoto(publicVehicle.slug, 0)
+            ? publicPhoto(publicVehicle, 0)
             : catalogPlaceholder,
         }
       : cars.find((item) => item.id === id),
@@ -144,7 +144,7 @@
           model: item.model,
           year: item.year,
           price: item.price,
-          image: item.photos.length ? publicPhoto(item.slug, 0) : catalogPlaceholder,
+          image: item.photos.length ? publicPhoto(item, 0) : catalogPlaceholder,
         }))
       : car
         ? cars
@@ -473,17 +473,17 @@
                 ><img
                   use:vehiclePhoto={{
                     src: publicVehicle?.photos.length
-                      ? sizedPhoto(publicPhoto(publicVehicle.slug, zoom), 1600)
+                      ? sizedPhoto(publicPhoto(publicVehicle, zoom), 1600)
                       : photo(car.image, 2000),
                     srcset: publicVehicle?.photos.length
-                      ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, zoom))
+                      ? vehiclePhotoSet(publicPhoto(publicVehicle, zoom))
                       : undefined,
                   }}
                   src={publicVehicle?.photos.length
-                    ? sizedPhoto(publicPhoto(publicVehicle.slug, zoom), 1600)
+                    ? sizedPhoto(publicPhoto(publicVehicle, zoom), 1600)
                     : photo(car.image, 2000)}
                   srcset={publicVehicle?.photos.length
-                    ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, zoom))
+                    ? vehiclePhotoSet(publicPhoto(publicVehicle, zoom))
                     : undefined}
                   sizes="(max-width: 701px) 100vw, (max-width: 1050px) 60vw, (min-width: 1920px) 1050px, 66vw"
                   fetchpriority="high"
@@ -536,14 +536,14 @@
                         ><img
                           {...thumbnailAttrs(
                             thumbnailSession!,
-                            sizedPhoto(publicPhoto(publicVehicle.slug, i), 320),
-                            vehiclePhotoSet(publicPhoto(publicVehicle.slug, i)),
+                            sizedPhoto(publicPhoto(publicVehicle, i), 320),
+                            vehiclePhotoSet(publicPhoto(publicVehicle, i)),
                           )}
                           use:publicThumbnail={{
                             session: thumbnailSession!,
                             index: i,
-                            src: sizedPhoto(publicPhoto(publicVehicle.slug, i), 320),
-                            srcset: vehiclePhotoSet(publicPhoto(publicVehicle.slug, i)),
+                            src: sizedPhoto(publicPhoto(publicVehicle, i), 320),
+                            srcset: vehiclePhotoSet(publicPhoto(publicVehicle, i)),
                             sizes: '(max-width:701px) 112px, 128px',
                           }}
                           sizes="(max-width:701px) 112px, 128px"
@@ -639,17 +639,17 @@
             <img
               use:vehiclePhoto={{
                 src: publicVehicle
-                  ? sizedPhoto(publicPhoto(publicVehicle.slug, 1), 1600)
+                  ? sizedPhoto(publicPhoto(publicVehicle, 1), 1600)
                   : photo(car.image, 1800),
                 srcset: publicVehicle
-                  ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, 1))
+                  ? vehiclePhotoSet(publicPhoto(publicVehicle, 1))
                   : undefined,
               }}
               src={publicVehicle
-                ? sizedPhoto(publicPhoto(publicVehicle.slug, 1), 1600)
+                ? sizedPhoto(publicPhoto(publicVehicle, 1), 1600)
                 : photo(car.image, 1800)}
               srcset={publicVehicle
-                ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, 1))
+                ? vehiclePhotoSet(publicPhoto(publicVehicle, 1))
                 : undefined}
               sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw"
               alt=""
@@ -1049,11 +1049,11 @@
     {#if car && galleryOpen}<img
         use:vehiclePhoto={{
           src: publicVehicle?.photos.length
-            ? publicPhoto(publicVehicle.slug, zoom)
+            ? publicPhoto(publicVehicle, zoom)
             : photo(car.image, 2400),
         }}
         src={publicVehicle?.photos.length
-          ? publicPhoto(publicVehicle.slug, zoom)
+          ? publicPhoto(publicVehicle, zoom)
           : photo(car.image, 2400)}
         alt={`${car.brand} ${car.model}${publicVehicle ? '' : ' — fotografia ilustrativa'}`}
       />

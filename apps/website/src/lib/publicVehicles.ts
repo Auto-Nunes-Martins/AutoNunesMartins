@@ -31,7 +31,10 @@ export const publicVehicleSchema = z
     photos: z.array(z.string()).max(20),
   })
   .superRefine((v, ctx) => {
-    if (v.photos.some((path, i) => path !== `/api/public/vehicles/${v.slug}/photos/${i}`)) {
+    if (v.photos.some((path, i) => {
+      const base = `/api/public/vehicles/${v.slug}/photos/${i}`;
+      return path !== base && !(path.startsWith(base + '?v=') && /^[a-f0-9]{64}$/.test(path.slice(base.length + 3)));
+    })) {
       ctx.addIssue({ code: 'custom', path: ['photos'], message: 'Invalid public photo path' });
     }
   });
@@ -88,7 +91,16 @@ export const publicPrice = (value: string | number | null) =>
         maximumFractionDigits: 2,
       }).format(Number(value));
 export const publicHref = (slug: string) => `/viaturas/${slug}`;
-export const publicPhoto = (slug: string, index: number) => `${publicHref(slug)}/photos/${index}`;
+export function publicPhoto(vehicle: string | Pick<PublicVehicle, 'slug' | 'photos'>, index: number): string {
+  if (typeof vehicle === 'string') return `${publicHref(vehicle)}/photos/${index}`;
+  return vehicle.photos[index]?.replace('/api/public/vehicles/', '/viaturas/')
+    ?? `${publicHref(vehicle.slug)}/photos/${index}`;
+}
+/** Identities from this visit's fresh, no-store public vehicle response. */
+export function publicPhotoVersions(vehicle: Pick<PublicVehicle, 'photos'>): string[] | undefined {
+  const versions = vehicle.photos.map(path => path.match(/\?v=([a-f0-9]{64})$/)?.[1]);
+  return versions.every((version): version is string => !!version) ? versions : undefined;
+}
 export function publicCard(vehicle: PublicVehicle) {
   return {
     id: vehicle.slug,
@@ -99,7 +111,7 @@ export function publicCard(vehicle: PublicVehicle) {
     km: vehicle.mileage,
     fuel: fuelLabels[vehicle.fuel],
     price: vehicle.price === null ? null : Number(vehicle.price),
-    image: vehicle.photos.length ? publicPhoto(vehicle.slug, 0) : catalogPlaceholder,
+    image: vehicle.photos.length ? publicPhoto(vehicle, 0) : catalogPlaceholder,
     category: vehicle.availability === 'RESERVED' ? 'Reservada' : '',
     href: publicHref(vehicle.slug),
     photoCount: vehicle.photos.length,

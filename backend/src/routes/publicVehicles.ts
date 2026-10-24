@@ -20,6 +20,7 @@ import {
   relatedPublicVehicles,
 } from '../lib/data/publicVehicle.js';
 import { publicSlugSchema, publicVehicleQuerySchema } from '../lib/domain/publicVehicle.js';
+import { isPublicPhotoVersion, REVALIDATE_PUBLIC_PHOTO } from '../../../shared/publicPhotoCache.mjs';
 import {
   readUnavailableVehicle,
   unavailableVehiclePhotoPath,
@@ -210,6 +211,11 @@ router.get(
     }
     try {
       const width = req.query.w === undefined ? undefined : Number(req.query.w);
+      const version = req.query.v;
+      if (version !== undefined && !isPublicPhotoVersion(version)) {
+        res.status(400).json({ error: 'Invalid photo version' });
+        return;
+      }
       if (width !== undefined && (!isPhotoWidth(width) || String(width) !== req.query.w)) {
         res.status(400).json({ error: 'Invalid photo size' });
         return;
@@ -222,6 +228,12 @@ router.get(
       const path = await getPublicPhotoPath(prisma, slug.data, index.data);
       record('photo-check', performance.now() - timingStart);
       if (!path) {
+        res.status(404).json({ error: 'Photo not found' });
+        return;
+      }
+      // Never serve the new occupant of an index under an old cache identity.
+      const currentVersion = publicPhotoVersion(path);
+      if (version !== undefined && version !== currentVersion) {
         res.status(404).json({ error: 'Photo not found' });
         return;
       }
@@ -240,12 +252,12 @@ router.get(
         'Content-Type': photo.contentType,
         'X-Content-Type-Options': 'nosniff',
         'Cross-Origin-Resource-Policy': 'cross-origin',
-        'X-Photo-Version': publicPhotoVersion(path),
+        'X-Photo-Version': currentVersion,
         'X-Photo-Cache-Policy': 'shared-v1',
       });
-      if (width) {
+      if (width || version) {
         res.set({
-          'Cache-Control': 'private, no-cache, max-age=0, must-revalidate',
+          'Cache-Control': REVALIDATE_PUBLIC_PHOTO,
           ETag: photo.etag,
         });
         if (req.get('if-none-match') === photo.etag) {

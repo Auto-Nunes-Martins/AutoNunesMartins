@@ -11,6 +11,18 @@ const image = (index: number) =>
     headers: { 'x-photo-version': versions[index]! },
   });
 
+it('gives the viewer a cache-only session using identities already supplied by this page', async () => {
+  const request = vi.fn(); vi.stubGlobal('fetch', request);
+  const module = await import('./publicThumbnail');
+  const session = module.createThumbnailSession('car-abcdef123456', versions, true);
+  session.attach();
+  expect(session.cacheOnly).toBe(true);
+  expect(session.hasPixels()).toBe(true);
+  expect(await session.access()).toEqual(versions);
+  expect(request).not.toHaveBeenCalled();
+  session.detach();
+});
+
 it('selects a thumbnail matching the same responsive sizes without reducing dense-screen resolution', async () => {
   const { navigationThumbnailWidth } = await import('./publicThumbnail');
   expect(navigationThumbnailWidth(1400, 1)).toBe(320);
@@ -51,7 +63,7 @@ it('starts only explicitly, limits work to nine photos and six concurrent downlo
   expect(peak).toBe(6);
   const urls = request.mock.calls.map(([url]) => url).filter((url) => !url.endsWith('/access'));
   expect(urls).toHaveLength(9);
-  expect(urls.every((url) => url.endsWith('?w=384'))).toBe(true);
+  expect(urls.every((url) => new URL(url, 'http://localhost').searchParams.get('w') === '384')).toBe(true);
   expect(module.createThumbnailSession('car-abcdef123456').hasPixels()).toBe(true);
   session.detach();
   module.cancelNavigationThumbnails();
