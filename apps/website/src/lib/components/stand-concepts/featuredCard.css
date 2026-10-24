@@ -18,19 +18,22 @@
   bottom: 24px;
 }
 @media (min-width: 701px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  [data-featured-card] :is(.hd-photo-motion, .hd-price) {
+  [data-featured-card] :is(.hd-photo-motion, .hd-price-motion, .hd-label-motion) {
     transform: perspective(1400px) rotateX(1deg) rotateY(-1deg);
-    transform-origin: 50% 50%;
+    transform-origin: var(--featured-pivot, 50% 50%);
     transition: transform 500ms cubic-bezier(0.2, 0.65, 0.3, 1);
   }
   [data-featured-card]
-    .hd-feature:is(:hover, :has(:focus-visible))
-    :is(.hd-photo-motion, .hd-price) {
+    .hd-feature:has(.hd-photo-stage:hover, .hd-price-motion:hover, .hd-photo:focus-visible)
+    :is(.hd-photo-motion, .hd-price-motion, .hd-label-motion) {
     transform: perspective(1400px) translateY(-2px) translateZ(6px) rotateX(2deg) rotateY(-8deg);
   }
 }
 [data-featured-card] .hd-photo img {
   animation: none;
+}
+.hd-root[data-featured-card] .hd-photo {
+  background: transparent;
 }
 .hd-root[data-featured-card] .hd-caption {
   display: grid;
@@ -80,22 +83,21 @@
 }
 [data-featured-card] .hd-backlight {
   position: absolute;
-  left: calc(var(--v5-photo-left) - var(--v5-photo-width) * 0.35);
-  top: calc(var(--v5-photo-top) - var(--v5-photo-height) * 0.45);
-  width: calc(var(--v5-photo-width) * 1.7);
-  height: calc(var(--v5-photo-height) * 1.9);
+  left: calc(var(--v5-photo-left) - var(--v5-photo-width) * 0.325);
+  top: calc(var(--v5-photo-top) - var(--v5-photo-height) * 0.375);
+  width: calc(var(--v5-photo-width) * 1.65);
+  height: calc(var(--v5-photo-height) * 1.75);
   z-index: -1;
   pointer-events: none;
   opacity: 0;
   transform: scale(0.88);
-  transform-origin: 50% 54%;
+  transform-origin: 50% 50%;
   transition:
     opacity 480ms ease,
     transform 850ms cubic-bezier(0.2, 0.65, 0.3, 1);
 }
 [data-featured-card] .hd-feature-light {
-  /* Feather the light at the actual hero edges, independently of card tilt.
-     The SVG can paint its full fan; no interior rectangle shortens the shafts. */
+  /* Feather the light at the hero edges, independently of card tilt. */
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -120,46 +122,22 @@
   height: 100%;
   max-width: none;
   overflow: visible;
-  opacity: 0.64;
-}
-[data-featured-card]:has(.hd-feature :focus-visible) .hd-backlight {
   opacity: 1;
-  transform: scale(1);
+}
+[data-featured-card]:has(.hd-photo:focus-visible) .hd-backlight {
+  opacity: 0.75;
+  transform: scale(0.97);
 }
 @media (min-width: 701px) and (hover: hover) and (pointer: fine) {
-  [data-featured-card]:has(.hd-feature:hover) .hd-backlight {
-    opacity: 1;
-    transform: scale(1);
+  [data-featured-card]:has(.hd-photo-stage:hover, .hd-price-motion:hover) .hd-backlight {
+    opacity: 0.75;
+    transform: scale(0.97);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   [data-featured-card] .hd-backlight {
     transition: none;
     transform: none;
-  }
-}
-[data-featured-card] .hd-feature::before {
-  /* The ambient source stays behind the moving photograph and the flat UI. */
-  content: '';
-  position: absolute;
-  z-index: -1;
-  pointer-events: none;
-  top: 18px;
-  left: -12%;
-  width: 124%;
-  aspect-ratio: 1.6;
-  background: radial-gradient(
-    ellipse 50% 50% at 50% 50%,
-    #f4edc975 0%,
-    #dce3bd45 44%,
-    #cdd8b61f 68%,
-    #cdd8b609 86%,
-    transparent 100%
-  );
-}
-@media (max-width: 700px) {
-  [data-featured-card] .hd-feature::before {
-    content: none;
   }
 }
 [data-featured-card] .hd-feature-top .hd-eyebrow {
@@ -210,7 +188,7 @@
   [data-featured-card] .hd-feature[data-idle-ready='true'] .hd-idle-plane {
     animation: hd-v5-hovering 12s linear infinite;
     animation-play-state: running;
-    transform-origin: 50% 50%;
+    transform-origin: var(--featured-pivot, 50% 50%);
     /* One continuous phase; harmonic offsets keep the axes moving through turns.
        All offsets are zero at phase 0, so enabling idle cannot jump after entry. */
     transform: perspective(1400px)

@@ -273,6 +273,11 @@
     background: #fffdf5;
     color: #d50816;
   }
+  :global(html[data-theme='light']) .discover-landscape::after {
+    background:
+      linear-gradient(90deg, #10111485, #10111426),
+      linear-gradient(0deg, #0c0c0e80, transparent 75%);
+  }
   .discover {
     position: relative;
     display: flex;

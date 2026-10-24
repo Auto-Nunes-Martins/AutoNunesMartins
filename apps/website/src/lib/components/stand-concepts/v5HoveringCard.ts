@@ -1,5 +1,3 @@
-import { hasKeyboardFocus } from './featuredKeyboardFocus';
-
 /** Independent idle plane: never replaces the feature's entry or chosen hover. */
 export function hoveringCard(node: HTMLElement, enabled: boolean) {
   if (!enabled) return;
@@ -9,6 +7,7 @@ export function hoveringCard(node: HTMLElement, enabled: boolean) {
   let entered = node.getAnimations().some((a) => a.effect?.getComputedTiming().progress === 1);
   let visible = false;
   let started = false;
+  const hoverTargets = [...node.querySelectorAll<HTMLElement>('.hd-photo-stage, .hd-price-motion')];
   const update = () => {
     const photo = node.querySelector<HTMLImageElement>('.hd-photo img');
     const ready =
@@ -19,7 +18,8 @@ export function hoveringCard(node: HTMLElement, enabled: boolean) {
       node.dataset.idleReady = 'true';
     }
     node.dataset.idlePaused = String(
-      !ready || document.hidden || node.matches(':hover') || hasKeyboardFocus(node),
+      !ready || document.hidden || hoverTargets.some((target) => target.matches(':hover')) ||
+      !!node.querySelector('.hd-photo:focus-visible'),
     );
   };
   const afterFocus = () => queueMicrotask(update);
@@ -40,7 +40,7 @@ export function hoveringCard(node: HTMLElement, enabled: boolean) {
   node.addEventListener('animationend', finished);
   node.addEventListener('load', update, true);
   for (const event of ['pointerenter', 'pointerleave'])
-    node.addEventListener(event, update);
+    for (const target of hoverTargets) target.addEventListener(event, update);
   for (const event of ['focusin', 'focusout', 'keydown', 'pointerdown'])
     node.addEventListener(event, afterFocus);
   document.addEventListener('visibilitychange', update);
@@ -52,7 +52,7 @@ export function hoveringCard(node: HTMLElement, enabled: boolean) {
       node.removeEventListener('animationend', finished);
       node.removeEventListener('load', update, true);
       for (const event of ['pointerenter', 'pointerleave'])
-        node.removeEventListener(event, update);
+        for (const target of hoverTargets) target.removeEventListener(event, update);
       for (const event of ['focusin', 'focusout', 'keydown', 'pointerdown'])
         node.removeEventListener(event, afterFocus);
       document.removeEventListener('visibilitychange', update);
