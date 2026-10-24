@@ -570,6 +570,9 @@ describe('private photo storage boundary', () => {
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(mocks.download).toHaveBeenCalledTimes(1);
     expect(mocks.download).toHaveBeenCalledWith(photo);
+    expect(mocks.db.vehicle.findFirst.mock.calls[0]?.[0].select).toEqual({
+      id: true, photos: true, publicPhotoPaths: true,
+    });
     expect(mocks.db.vehicle.findFirst.mock.calls[0]?.[0].where).toEqual({
       ...publicVehicleWhere(),
       publicSlug: slug,

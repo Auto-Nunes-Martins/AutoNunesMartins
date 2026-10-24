@@ -2,6 +2,7 @@ import http from 'node:http';
 import { selectRoute } from './routing.mjs';
 import { immutableAssets } from './immutable-assets.mjs';
 import { clientAddress, clientAddressHeader } from './client-address.mjs';
+import { photoBackendPath, relayPublicPhoto } from './public-photo.mjs';
 
 export function createGateway(settings, ports, ready = () => true, buildAssets = immutableAssets(settings.base)) {
   const server = http.createServer((req, res) => {
@@ -12,6 +13,7 @@ export function createGateway(settings, ports, ready = () => true, buildAssets =
       return;
     }
     const privateResponse = route.service !== 'website';
+    const photoPath = route.service === 'website' ? photoBackendPath(req.method, req.url) : null;
     const headers = { 'x-content-type-options': 'nosniff' };
     if (privateResponse) {
       headers['cache-control'] = 'private, no-store';
@@ -72,15 +74,20 @@ export function createGateway(settings, ports, ready = () => true, buildAssets =
     }
     forwarded['x-forwarded-proto'] = new URL(route.origin).protocol.slice(0, -1);
     if (route.service === 'website' && address) forwarded[clientAddressHeader] = address;
+    // Match the website's anonymous photo relay: never forward visitor cookies
+    // or CRM credentials to this public read-only projection.
+    const photoHeaders = { accept: 'image/webp,image/*', host: new URL(route.origin).host };
+    if (req.headers['if-none-match']) photoHeaders['if-none-match'] = req.headers['if-none-match'];
     const upstream = http.request(
       {
         hostname: '127.0.0.1',
-        port: ports[route.service],
-        path: req.url,
+        port: ports[photoPath ? 'backend' : route.service],
+        path: photoPath || req.url,
         method: req.method,
-        headers: forwarded,
+        headers: photoPath ? photoHeaders : forwarded,
       },
       (reply) => {
+        if (photoPath) { relayPublicPhoto(req, res, reply, headers); return; }
         // Only adapter-confirmed build assets are public. Never infer cacheability
         // from a file extension (private routes can have one too).
         const immutablePrefix = `${route.service === 'crm' ? settings.base : ''}/_app/immutable/`;
@@ -116,6 +123,10 @@ export function createGateway(settings, ports, ready = () => true, buildAssets =
       },
     );
     upstream.setTimeout(180000, () => upstream.destroy());
+    if (photoPath) {
+      const deadline = setTimeout(() => upstream.destroy(new Error('Photo relay timeout')), 8000);
+      res.once('close', () => clearTimeout(deadline));
+    }
     upstream.on('error', () => {
       if (!res.headersSent) res.writeHead(502, headers);
       res.end();
