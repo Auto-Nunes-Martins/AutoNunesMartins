@@ -3,6 +3,7 @@
   import type { PublicHighlights } from '$lib/homepageHighlights';
   import { publicPhoto, publicHref, publicPrice, fuelLabels } from '$lib/publicVehicles';
   import FeaturedPhoto from './FeaturedPhoto.svelte';
+  import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
   import { usePublicTheme } from '$lib/publicTheme';
   import { heroBackgrounds } from './homeHeroBackgrounds';
   import './homeHeroDirections.css';
@@ -19,12 +20,15 @@
   const { dark } = usePublicTheme();
   const items = $derived(homeHighlights?.items ?? []);
   let index = $state(0);
+  let displayedIndex = $state(0);
   let selection = $state(0);
   let automaticChange = $state(false);
   let failed = $state(false);
-  const active = $derived(items[index] ?? items[0]);
+  const active = $derived(items[displayedIndex] ?? items[0]);
+  const requested = $derived(items[index] ?? items[0]);
   const car = $derived(active?.vehicle);
-  const image = $derived(active ? publicPhoto(active.vehicle.slug, active.photoIndex) : '');
+  const image = $derived(requested ? publicPhoto(requested.vehicle.slug, requested.photoIndex) : '');
+  const firstImage = $derived(items[0] ? publicPhoto(items[0].vehicle.slug, items[0].photoIndex) : '');
   const copy = [
     'Há mais caminho',
     'pela frente.',
@@ -54,11 +58,26 @@
         node.style.setProperty('--v5-photo-top', `${top}px`);
         node.style.setProperty('--v5-photo-width', `${photo.offsetWidth}px`);
         node.style.setProperty('--v5-photo-height', `${photo.offsetHeight}px`);
+        for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion')) {
+          let planeLeft = 0;
+          let planeTop = 0;
+          element = plane;
+          while (element && element !== node) {
+            planeLeft += element.offsetLeft;
+            planeTop += element.offsetTop;
+            element = element.offsetParent as HTMLElement | null;
+          }
+          // Attached labels rotate around the photo's centre in layout coordinates.
+          // Measuring untransformed offsets avoids feeding animation back into layout.
+          plane.style.setProperty('--featured-pivot',
+            `${left + photo.offsetWidth / 2 - planeLeft}px ${top + photo.offsetHeight / 2 - planeTop}px`);
+        }
       }
       node.dataset.canvasPinned = String(!reduced.matches && CSS.supports('clip-path', 'inset(0)'));
     };
     const resize = new ResizeObserver(measure);
     resize.observe(node);
+    for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion')) resize.observe(plane);
     window.addEventListener('resize', measure);
     reduced.addEventListener('change', measure);
     measure();
@@ -72,6 +91,7 @@
   }
   $effect(() => {
     if (index >= items.length) index = 0;
+    if (displayedIndex >= items.length) displayedIndex = 0;
   });
   $effect(() => {
     image;
@@ -93,6 +113,14 @@
   }
 </script>
 
+<svelte:head>
+  {#if firstImage}
+    <link rel="preload" as="image" href={sizedPhoto(firstImage, 1600)}
+      imagesrcset={vehiclePhotoSet(firstImage)} imagesizes="(max-width: 700px) 100vw, 55vw"
+      fetchpriority="high" />
+  {/if}
+</svelte:head>
+
 {#snippet introduction()}
   <div class="hd-copy">
     <span class="hd-eyebrow"><i aria-hidden="true"></i> Auto Nunes Martins</span>
@@ -111,10 +139,10 @@
   {#if car}
     {#snippet featuredContent()}
       <div class="hd-feature-top">
-        <span class="hd-eyebrow"
+        <div class="hd-label-motion"><div class="hd-idle-plane"><span class="hd-eyebrow"
           >Em destaque<span class="hd-label-glint" aria-hidden="true">Em destaque</span></span
-        ><span class="hd-edition" aria-hidden="true"
-          >{String(index + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span
+        ></div></div><span class="hd-edition" aria-hidden="true"
+          >{String(displayedIndex + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span
         >
       </div>
       {#snippet photoDetails()}
@@ -133,8 +161,9 @@
         >
           <FeaturedPhoto
             source={image}
-            alt={`${car.brand} ${car.model}`}
+            alt={requested ? `${requested.vehicle.brand} ${requested.vehicle.model}` : ''}
             onfailure={(value) => (failed = value)}
+            ondisplay={(source) => { if (source === image) displayedIndex = index; }}
           />
         </a>
       {/snippet}
@@ -153,8 +182,10 @@
           </p>
         </div>
         <div class="hd-price">
-          <strong><FeaturedPriceWave value={publicPrice(car.price)} /></strong
-          >{#if car.availability === 'RESERVED'}<span>Reservada</span>{/if}<a
+          <div class="hd-price-motion"><div class="hd-idle-plane">
+            <strong><FeaturedPriceWave value={publicPrice(car.price)} /></strong>
+          </div></div>
+          {#if car.availability === 'RESERVED'}<span>Reservada</span>{/if}<a
             href={publicHref(car.slug)}
             data-photo-count={car.photos.length}
             >Conhecer viatura <ArrowUpRight size={15} aria-hidden="true" /></a
@@ -170,8 +201,14 @@
             onclick={() => select(index - 1)}
             onkeydown={keyboard}><ArrowLeft size={17} aria-hidden="true" /></button
           >
-          <div class="hd-progress" aria-hidden="true">
-            {#each items as _, position}<span class:hd-current={position === index}></span>{/each}
+          <div class="hd-progress">
+            {#each items as item, position}
+              <button type="button" aria-label={`Ver destaque ${position + 1}: ${item.vehicle.brand} ${item.vehicle.model}`}
+                aria-pressed={position === displayedIndex} aria-controls="hd-vehicle-caption"
+                onclick={() => select(position)} onkeydown={keyboard}>
+                <span class:hd-current={position === displayedIndex} aria-hidden="true"></span>
+              </button>
+            {/each}
           </div>
           <button
             type="button"
@@ -187,7 +224,7 @@
         role="status"
         aria-live={automaticChange ? 'off' : 'polite'}
         aria-atomic="true"
-        >Destaque {index + 1} de {items.length}: {car.brand}
+        >Destaque {displayedIndex + 1} de {items.length}: {car.brand}
         {car.model}. {publicPrice(car.price)}{car.availability === 'RESERVED'
           ? '. Reservada'
           : ''}.</span

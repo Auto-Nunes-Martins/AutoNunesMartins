@@ -1,5 +1,3 @@
-import { hasKeyboardFocus } from './featuredKeyboardFocus';
-
 /** A persistent clock independent of vehicle changes; font sizing keeps glyphs crisp. */
 export function priceEmphasis(node: HTMLElement) {
   const feature = node.closest<HTMLElement>('.hd-feature');
@@ -7,7 +5,8 @@ export function priceEmphasis(node: HTMLElement) {
   if (!feature || !slot) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const pointer = matchMedia('(hover: hover) and (pointer: fine)');
-  let pointerInside = pointer.matches && feature.matches(':hover');
+  const hoverTargets = [...feature.querySelectorAll<HTMLElement>('.hd-photo-stage, .hd-price-motion')];
+  let pointerInside = pointer.matches && hoverTargets.some((target) => target.matches(':hover'));
   let visible = false;
   let entered = feature.dataset.carouselEntered === 'true';
   let destroyed = false;
@@ -22,7 +21,7 @@ export function priceEmphasis(node: HTMLElement) {
     return entered && visible && !document.hidden && !reduced.matches &&
       bounds.bottom > 0 && bounds.top < innerHeight;
   };
-  const interacting = () => (pointer.matches && pointerInside) || hasKeyboardFocus(feature);
+  const interacting = () => (pointer.matches && pointerInside) || !!feature.querySelector('.hd-photo:focus-visible');
   const remember = (next: Animation) => {
     animation = next;
     void next.finished.then(() => {
@@ -92,8 +91,10 @@ export function priceEmphasis(node: HTMLElement) {
   observer.observe(feature);
   resize.observe(slot);
   if (!entered) intro.observe(feature, { attributes: true, attributeFilter: ['data-carousel-entered'] });
-  feature.addEventListener('pointerenter', enter);
-  feature.addEventListener('pointerleave', leave);
+  for (const target of hoverTargets) {
+    target.addEventListener('pointerenter', enter);
+    target.addEventListener('pointerleave', leave);
+  }
   for (const event of ['focusin', 'focusout', 'keydown', 'pointerdown'])
     feature.addEventListener(event, afterInput);
   document.addEventListener('visibilitychange', sync);
@@ -108,8 +109,10 @@ export function priceEmphasis(node: HTMLElement) {
       observer.disconnect();
       resize.disconnect();
       intro.disconnect();
-      feature.removeEventListener('pointerenter', enter);
-      feature.removeEventListener('pointerleave', leave);
+      for (const target of hoverTargets) {
+        target.removeEventListener('pointerenter', enter);
+        target.removeEventListener('pointerleave', leave);
+      }
       for (const event of ['focusin', 'focusout', 'keydown', 'pointerdown'])
         feature.removeEventListener(event, afterInput);
       document.removeEventListener('visibilitychange', sync);

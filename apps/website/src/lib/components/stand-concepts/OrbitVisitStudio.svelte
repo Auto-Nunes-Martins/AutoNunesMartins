@@ -1305,4 +1305,15 @@
   .family-theme .location.original-map::before {
     background: linear-gradient(90deg, var(--visit-map-surface) 0%, color-mix(in srgb, var(--visit-map-surface) 90%, transparent) 44%, color-mix(in srgb, var(--visit-map-surface) 22%, transparent) 100%);
   }
+  :global(html[data-theme='light']) .original-tone .studio-landscape::before,
+  :global(html[data-theme='dark']) .original-tone .studio-landscape::before {
+    background:
+      linear-gradient(90deg, #10111491 0%, #1011146b 48%, #10111426 100%),
+      linear-gradient(0deg, #0c0c0e80, #0c0c0e09 75%);
+  }
+  :global(html[data-theme='light']) .family-theme .studio-inner,
+  :global(html[data-theme='dark']) .family-theme .studio-inner {
+    --visit-form-panel: #252725c9;
+    --visit-map-surface: #252725;
+  }
 </style>

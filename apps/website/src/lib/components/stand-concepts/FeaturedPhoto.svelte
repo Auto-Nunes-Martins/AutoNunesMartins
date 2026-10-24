@@ -7,7 +7,8 @@
     source,
     alt,
     onfailure,
-  }: { source: string; alt: string; onfailure: (failed: boolean) => void } = $props();
+    ondisplay,
+  }: { source: string; alt: string; onfailure: (failed: boolean) => void; ondisplay: (source: string) => void } = $props();
   type Frame = { source: string; alt: string; fallback: boolean };
   let displayed = $state<Frame>(untrack(() => ({ source, alt, fallback: false })));
   let pending = $state<Frame | undefined>();
@@ -16,6 +17,7 @@
     untrack(() => {
       pending = source === displayed.source ? undefined : next;
       onfailure(source === displayed.source && displayed.fallback);
+      if (source === displayed.source) ondisplay(source);
     });
   });
   async function ready(frame: Frame, image: HTMLImageElement) {
@@ -29,6 +31,7 @@
     displayed = frame;
     pending = undefined;
     onfailure(frame.fallback);
+    ondisplay(frame.source);
   }
   function failed(frame: Frame) {
     if (frame.fallback || frame.source !== source) return;
