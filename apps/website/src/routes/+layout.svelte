@@ -8,8 +8,17 @@
   import { afterNavigate, beforeNavigate, goto, pushState } from '$app/navigation';
   import { page } from '$app/stores';
   import { installAnchorNavigation } from '$lib/anchorNavigation';
+  import { slugPattern } from '$lib/publicVehicles';
+  import { warmNavigationThumbnails, cancelNavigationThumbnails } from '$lib/publicThumbnail';
   let anchors: ReturnType<typeof installAnchorNavigation> | undefined;
-  beforeNavigate(() => anchors?.stop());
+  beforeNavigate(({ type, to }) => {
+    anchors?.stop();
+    cancelNavigationThumbnails();
+    if (!browser || type !== 'link' || !to || to.url.origin !== location.origin) return;
+    const match = /^\/viaturas\/([^/]+)$/.exec(to.url.pathname);
+    if (match?.[1] && match[1].length <= 180 && slugPattern.test(match[1]))
+      warmNavigationThumbnails(match[1], innerWidth, devicePixelRatio);
+  });
   afterNavigate(({ type, to }) => { if (to) anchors?.afterNavigate(type, to.url); });
   import { comparisonContext, createComparison, COMPARISON_KEY } from '$lib/comparison';
   import { createFavorites, favoritesContext, FAVORITES_KEY } from '$lib/favorites';
@@ -47,7 +56,7 @@
       if (event.key === FAVORITES_KEY || event.key === null) favorites.sync(event.newValue);
     };
     window.addEventListener('storage', sync);
-    return () => { anchors?.destroy(); window.removeEventListener('storage', sync); notifications.destroy(); };
+    return () => { cancelNavigationThumbnails(); anchors?.destroy(); window.removeEventListener('storage', sync); notifications.destroy(); };
   });
 </script>
 

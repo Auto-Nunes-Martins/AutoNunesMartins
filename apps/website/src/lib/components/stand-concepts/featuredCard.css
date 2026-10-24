@@ -18,14 +18,19 @@
   bottom: 24px;
 }
 @media (min-width: 701px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  [data-featured-card] .hd-photo-motion {
+  [data-featured-card] :is(.hd-photo-motion, .hd-price) {
     transform: perspective(1400px) rotateX(1deg) rotateY(-1deg);
     transform-origin: 50% 50%;
     transition: transform 500ms cubic-bezier(0.2, 0.65, 0.3, 1);
   }
-  [data-featured-card] .hd-feature:is(:hover, :has(:focus-visible)) .hd-photo-motion {
+  [data-featured-card]
+    .hd-feature:is(:hover, :has(:focus-visible))
+    :is(.hd-photo-motion, .hd-price) {
     transform: perspective(1400px) translateY(-2px) translateZ(6px) rotateX(2deg) rotateY(-8deg);
   }
+}
+[data-featured-card] .hd-photo img {
+  animation: none;
 }
 .hd-root[data-featured-card] .hd-caption {
   display: grid;

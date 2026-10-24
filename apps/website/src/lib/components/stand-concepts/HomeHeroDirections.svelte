@@ -2,8 +2,7 @@
   import { ArrowUpRight, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-svelte';
   import type { PublicHighlights } from '$lib/homepageHighlights';
   import { publicPhoto, publicHref, publicPrice, fuelLabels } from '$lib/publicVehicles';
-  import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
-  import { catalogPlaceholder } from '$lib/localAssets';
+  import FeaturedPhoto from './FeaturedPhoto.svelte';
   import { usePublicTheme } from '$lib/publicTheme';
   import { heroBackgrounds } from './homeHeroBackgrounds';
   import './homeHeroDirections.css';
@@ -131,21 +130,11 @@
           href={publicHref(car.slug)}
           aria-label={`Conhecer ${car.brand} ${car.model}`}
         >
-          {#key image}
-            <img
-              src={failed ? catalogPlaceholder : sizedPhoto(image, 1600)}
-              srcset={failed ? undefined : vehiclePhotoSet(image)}
-              sizes="(max-width: 700px) 100vw, 55vw"
-              width="1600"
-              height="1067"
-              alt={`${car.brand} ${car.model}`}
-              fetchpriority="high"
-              decoding="async"
-              onerror={() => {
-                failed = true;
-              }}
-            />
-          {/key}
+          <FeaturedPhoto
+            source={image}
+            alt={`${car.brand} ${car.model}`}
+            onfailure={(value) => (failed = value)}
+          />
         </a>
       {/snippet}
       <div class="hd-photo-stage">

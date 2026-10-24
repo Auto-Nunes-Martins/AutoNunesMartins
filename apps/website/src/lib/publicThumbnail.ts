@@ -1,4 +1,96 @@
 import { catalogPlaceholder } from './localAssets';
+import { nearestPhotoWidth } from './vehiclePhotoSources';
+
+type NavigationWarmup = {
+  slug: string;
+  controller: AbortController;
+  ready: Promise<void>;
+  photos: Map<number, Promise<void>>;
+};
+let navigationWarmup: NavigationWarmup | undefined;
+
+export const navigationThumbnailWidth = (viewport: number, density: number) =>
+  nearestPhotoWidth((viewport <= 701 ? 112 : 128) * Math.max(1, density || 1));
+
+function photoVersions(data: unknown): string[] {
+  const versions = (data as { versions?: unknown })?.versions;
+  if (
+    !Array.isArray(versions) ||
+    versions.length > 20 ||
+    !versions.every((v: unknown) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v))
+  )
+    throw Error('Invalid photo access');
+  return versions;
+}
+
+/** Called only for an actual link navigation, never hover, focus or intersection. */
+export function warmNavigationThumbnails(slug: string, viewport: number, density: number) {
+  cancelNavigationThumbnails();
+  const width = navigationThumbnailWidth(viewport, density);
+  if (width > 800) return; // Keep native responsive delivery for unusually dense screens.
+  const controller = new AbortController();
+  const work: NavigationWarmup = { slug, controller, ready: Promise.resolve(), photos: new Map() };
+  navigationWarmup = work;
+  const deadline = setTimeout(() => controller.abort(), 8000);
+  work.ready = fetch(`/viaturas/${slug}/photos/access`, {
+    cache: 'no-store',
+    credentials: 'omit',
+    signal: controller.signal,
+  })
+    .then(async (response) => {
+      if (!response.ok) throw Error('Photos unavailable');
+      const versions = photoVersions(await response.json());
+      if (controller.signal.aborted) return;
+      // Each image still performs its own live authorization. This first query
+      // discovers the count/identities; it is not reused as permission on arrival.
+      let next = 0;
+      const finish: Array<() => void> = [];
+      for (let index = 0; index < Math.min(9, versions.length); index++) {
+        work.photos.set(
+          index,
+          new Promise<void>((resolve) => {
+            finish[index] = resolve;
+          }),
+        );
+      }
+      const worker = async () => {
+        while (next < finish.length && !controller.signal.aborted) {
+          const index = next++;
+          try {
+            const cached = entries.get(`${versions[index]}/${width}`);
+            if (cached && cached.used > Date.now() - MAX_AGE) continue;
+            const image = await fetch(`/viaturas/${slug}/photos/${index}?w=${width}`, {
+              cache: 'no-cache',
+              credentials: 'omit',
+              signal: controller.signal,
+            });
+            const version = image.headers.get('x-photo-version');
+            if (!image.ok || !version || !/^[a-f0-9]{64}$/.test(version)) continue;
+            const blob = await image.blob();
+            if (!controller.signal.aborted) remember(slug, version, width, blob);
+          } catch {
+            /* Native image delivery remains the fallback. */
+          } finally {
+            finish[index]?.();
+          }
+        }
+      };
+      void Promise.all(Array.from({ length: 3 }, worker)).finally(() => {
+        for (const resolve of finish) resolve();
+        clearTimeout(deadline);
+        if (navigationWarmup === work) navigationWarmup = undefined;
+      });
+    })
+    .catch(() => {
+      clearTimeout(deadline);
+      if (navigationWarmup === work) navigationWarmup = undefined;
+    });
+}
+
+export function cancelNavigationThumbnails() {
+  navigationWarmup?.controller.abort();
+  navigationWarmup = undefined;
+}
 
 // Exact public thumbnail bytes, in this document only; no cached authorization or persistent store.
 const MAX_BYTES = 4 * 1024 * 1024,
@@ -52,13 +144,19 @@ function remember(slug: string, version: string, width: number, blob: Blob) {
 
 /** One fresh permission snapshot per gallery; requests never reuse approval from an earlier visit. */
 export function createThumbnailSession(slug: string, freshVersions?: string[]) {
-  const reuse = available(slug);
+  const warming = navigationWarmup?.slug === slug ? navigationWarmup : undefined;
+  const reuse = available(slug) || !!warming;
   let promise: Promise<string[]> | undefined,
     controller = new AbortController(),
     users = 0;
   return {
     slug,
     hasPixels: () => reuse,
+    async prepared(index: number) {
+      if (!warming) return;
+      await warming.ready;
+      await warming.photos.get(index);
+    },
     attach() {
       if (controller.signal.aborted) {
         controller = new AbortController();
@@ -79,14 +177,7 @@ export function createThumbnailSession(slug: string, freshVersions?: string[]) {
         signal: controller.signal,
       }).then(async (response) => {
         if (!response.ok) throw Error('Photos unavailable');
-        const data = await response.json();
-        if (
-          !Array.isArray(data.versions) ||
-          data.versions.length > 20 ||
-          !data.versions.every((v: unknown) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v))
-        )
-          throw Error('Invalid photo access');
-        return data.versions as string[];
+        return photoVersions(await response.json());
       }));
     },
   };
@@ -183,6 +274,7 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
     }
     try {
       const versions = await source.session.access();
+      await source.session.prepared(source.index);
       if (!alive || token !== revision) return;
       const needed = node.getBoundingClientRect().width * devicePixelRatio;
       const entry = [...entries.values()]
