@@ -50,6 +50,31 @@ beforeEach(() => {
   forgetPhotoVariants(path);
 });
 describe('private reusable photo variants', () => {
+  it('downloads one pixel file for concurrent requests and retains the warm result', async () => {
+    const buffer = Buffer.from('shared-photo');
+    mock.objects.set(path, { buffer, type: 'image/jpeg' });
+    const photos = await Promise.all(Array.from({ length: 12 }, () => readPhotoBytes(path, 320)));
+    expect(photos.every((photo) => photo?.buffer.equals(buffer))).toBe(true);
+    expect(mock.downloads.filter((download) => download === path)).toHaveLength(1);
+    await readPhotoBytes(path, 320);
+    expect(mock.downloads.filter((download) => download === path)).toHaveLength(1);
+  });
+  it('retries a shared failed pixel download instead of retaining a failed promise', async () => {
+    const photos = await Promise.all(Array.from({ length: 4 }, () => readPhotoBytes(path, 320)));
+    expect(photos).toEqual([null, null, null, null]);
+    mock.objects.set(path, { buffer: Buffer.from('recovered'), type: 'image/jpeg' });
+    expect((await readPhotoBytes(path, 320))?.buffer.toString()).toBe('recovered');
+    expect(mock.downloads.filter((download) => download === path)).toHaveLength(2);
+  });
+  it('does not retain pixels from an invalidated in-flight download', async () => {
+    mock.objects.set(path, { buffer: Buffer.from('old'), type: 'image/jpeg' });
+    const pending = readPhotoBytes(path, 320);
+    forgetPhotoVariants(path);
+    await pending;
+    mock.objects.set(path, { buffer: Buffer.from('new'), type: 'image/jpeg' });
+    expect((await readPhotoBytes(path, 320))?.buffer.toString()).toBe('new');
+    expect(mock.downloads.filter((download) => download === path)).toHaveLength(2);
+  });
   it('reports cold storage and warm pixel-cache timings without changing the delivered bytes', async () => {
     const buffer = Buffer.from('photo-fixture');
     mock.objects.set(path, { buffer, type: 'image/jpeg' });

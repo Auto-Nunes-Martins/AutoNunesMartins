@@ -866,7 +866,7 @@
                           }}
                           sizes="(max-width:701px) 112px, 128px"
                           alt=""
-                          loading={i < 3 ? 'eager' : 'lazy'}
+                          loading={i < 9 ? 'eager' : 'lazy'}
                           fetchpriority="low"
                         /><span>{i + 1}</span></button
                       >{/each}

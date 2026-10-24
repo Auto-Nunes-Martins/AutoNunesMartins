@@ -35,6 +35,7 @@ const manifestReads = new Map<string, Promise<VariantManifest | null>>();
 export function forgetPhotoVariants(path: string) {
   manifests.delete(path);
   manifestReads.delete(path);
+  for (const key of photoReads.keys()) if (key.startsWith(path + '|')) photoReads.delete(key);
   for (const key of bytesCache.keys()) if (key.startsWith(path + '|')) bytesCache.delete(key);
 }
 function remember(path: string, value: VariantManifest | null, ttl = value ? 40 * 60_000 : 5_000) {
@@ -237,6 +238,8 @@ const bytesCache = new Map<
   { until: number; buffer: Buffer; contentType: string; etag: string }
 >();
 const CACHE_BYTES = 12 * 1024 * 1024;
+type PhotoBytes = { until: number; buffer: Buffer; contentType: string; etag: string };
+const photoReads = new Map<string, Promise<PhotoBytes | null>>();
 export type PhotoReadTiming = (
   stage: 'photo-cache-hit' | 'photo-cache-miss' | 'photo-manifest' | 'photo-storage',
   ms: number,
@@ -249,6 +252,26 @@ export async function readPhotoBytes(path: string, width?: PhotoWidth, timing?: 
     return hit;
   }
   timing?.('photo-cache-miss', 0);
+  // Share pixels only: every caller must still complete live authorization first.
+  const pending = photoReads.get(key);
+  if (pending) return pending;
+  const read: Promise<PhotoBytes | null> = Promise.resolve().then(() =>
+    loadPhotoBytes(path, width, timing, () => photoReads.get(key) === read),
+  );
+  photoReads.set(key, read);
+  try {
+    return await read;
+  } finally {
+    if (photoReads.get(key) === read) photoReads.delete(key);
+  }
+}
+async function loadPhotoBytes(
+  path: string,
+  width: PhotoWidth | undefined,
+  timing: PhotoReadTiming | undefined,
+  isCurrent: () => boolean,
+): Promise<PhotoBytes | null> {
+  const key = path + '|' + (width ?? 'original');
   const manifestStart = performance.now();
   let chosen = width ? await preferredVariantPath(path, width) : path;
   if (width) timing?.('photo-manifest', performance.now() - manifestStart);
@@ -273,7 +296,7 @@ export async function readPhotoBytes(path: string, width?: PhotoWidth, timing?: 
   timing?.('photo-storage', performance.now() - storageStart);
   const etag = '"' + createHash('sha256').update(path).update(buffer).digest('hex') + '"';
   const value = { until: Date.now() + 60_000, buffer, contentType, etag };
-  if (width && buffer.length <= 2_000_000) {
+  if (isCurrent() && width && buffer.length <= 2_000_000) {
     for (const [k, v] of bytesCache) if (v.until < Date.now()) bytesCache.delete(k);
     let size = [...bytesCache.values()].reduce((n, v) => n + v.buffer.length, 0);
     while (size + buffer.length > CACHE_BYTES && bytesCache.size) {
