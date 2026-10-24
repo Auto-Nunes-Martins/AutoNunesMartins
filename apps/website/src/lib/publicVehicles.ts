@@ -102,6 +102,7 @@ export function publicCard(vehicle: PublicVehicle) {
     image: vehicle.photos.length ? publicPhoto(vehicle.slug, 0) : catalogPlaceholder,
     category: vehicle.availability === 'RESERVED' ? 'Reservada' : '',
     href: publicHref(vehicle.slug),
+    photoCount: vehicle.photos.length,
     approved: true as const,
   };
 }
