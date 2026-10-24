@@ -5,122 +5,124 @@ import image2 from './assets/optimized/home-v5/forest-wide-1920.webp?url&no-inli
 import image3 from './assets/optimized/home-v5/forest-wide-1920.avif?url&no-inline';
 import image4 from './assets/optimized/home-v5/forest-wide-2560.webp?url&no-inline';
 import image5 from './assets/optimized/home-v5/forest-wide-2560.avif?url&no-inline';
-import image6 from './assets/optimized/home-v5/forest-wide-3840.webp?url&no-inline';
-import image7 from './assets/optimized/home-v5/forest-wide-3840.avif?url&no-inline';
-import image8 from './assets/optimized/home-v5/forest-wide-5472.webp?url&no-inline';
-import image9 from './assets/optimized/home-v5/forest-wide-5472.avif?url&no-inline';
-import image10 from './assets/optimized/home-v5/forest-portrait-640.webp?url&no-inline';
-import image11 from './assets/optimized/home-v5/forest-portrait-640.avif?url&no-inline';
-import image12 from './assets/optimized/home-v5/forest-portrait-1080.webp?url&no-inline';
-import image13 from './assets/optimized/home-v5/forest-portrait-1080.avif?url&no-inline';
-import image14 from './assets/optimized/home-v5/forest-portrait-1280.webp?url&no-inline';
-import image15 from './assets/optimized/home-v5/forest-portrait-1280.avif?url&no-inline';
-import image16 from './assets/optimized/home-v5/forest-portrait-1920.webp?url&no-inline';
-import image17 from './assets/optimized/home-v5/forest-portrait-1920.avif?url&no-inline';
-import image18 from './assets/optimized/home-v5/catalog-portrait-480.webp?url&no-inline';
-import image19 from './assets/optimized/home-v5/catalog-portrait-480.avif?url&no-inline';
-import image20 from './assets/optimized/home-v5/catalog-portrait-810.webp?url&no-inline';
-import image21 from './assets/optimized/home-v5/catalog-portrait-810.avif?url&no-inline';
-import image22 from './assets/optimized/home-v5/catalog-portrait-960.webp?url&no-inline';
-import image23 from './assets/optimized/home-v5/catalog-portrait-960.avif?url&no-inline';
-import image24 from './assets/optimized/home-v5/catalog-portrait-1440.webp?url&no-inline';
-import image25 from './assets/optimized/home-v5/catalog-portrait-1440.avif?url&no-inline';
-import image26 from './assets/optimized/home-v5/catalog-portrait-2052.webp?url&no-inline';
-import image27 from './assets/optimized/home-v5/catalog-portrait-2052.avif?url&no-inline';
-import image28 from './assets/optimized/home-v5/curves-wide-1280.webp?url&no-inline';
-import image29 from './assets/optimized/home-v5/curves-wide-1280.avif?url&no-inline';
-import image30 from './assets/optimized/home-v5/curves-wide-1920.webp?url&no-inline';
-import image31 from './assets/optimized/home-v5/curves-wide-1920.avif?url&no-inline';
-import image32 from './assets/optimized/home-v5/curves-wide-2560.webp?url&no-inline';
-import image33 from './assets/optimized/home-v5/curves-wide-2560.avif?url&no-inline';
-import image34 from './assets/optimized/home-v5/curves-wide-3840.webp?url&no-inline';
-import image35 from './assets/optimized/home-v5/curves-wide-3840.avif?url&no-inline';
-import image36 from './assets/optimized/home-v5/curves-wide-5472.webp?url&no-inline';
-import image37 from './assets/optimized/home-v5/curves-wide-5472.avif?url&no-inline';
-import image38 from './assets/optimized/home-v5/curves-portrait-640.webp?url&no-inline';
-import image39 from './assets/optimized/home-v5/curves-portrait-640.avif?url&no-inline';
-import image40 from './assets/optimized/home-v5/curves-portrait-1080.webp?url&no-inline';
-import image41 from './assets/optimized/home-v5/curves-portrait-1080.avif?url&no-inline';
-import image42 from './assets/optimized/home-v5/curves-portrait-1280.webp?url&no-inline';
-import image43 from './assets/optimized/home-v5/curves-portrait-1280.avif?url&no-inline';
-import image44 from './assets/optimized/home-v5/curves-portrait-1920.webp?url&no-inline';
-import image45 from './assets/optimized/home-v5/curves-portrait-1920.avif?url&no-inline';
-import image46 from './assets/optimized/home-v5/curves-portrait-2736.webp?url&no-inline';
-import image47 from './assets/optimized/home-v5/curves-portrait-2736.avif?url&no-inline';
-import image48 from './assets/optimized/home-v5/visit-wide-640.webp?url&no-inline';
-import image49 from './assets/optimized/home-v5/visit-wide-640.avif?url&no-inline';
-import image50 from './assets/optimized/home-v5/visit-wide-1080.webp?url&no-inline';
-import image51 from './assets/optimized/home-v5/visit-wide-1080.avif?url&no-inline';
-import image52 from './assets/optimized/home-v5/visit-wide-1672.webp?url&no-inline';
-import image53 from './assets/optimized/home-v5/visit-wide-1672.avif?url&no-inline';
-import image54 from './assets/optimized/home-v5/visit-portrait-640.webp?url&no-inline';
-import image55 from './assets/optimized/home-v5/visit-portrait-640.avif?url&no-inline';
-import image56 from './assets/optimized/home-v5/visit-portrait-705.webp?url&no-inline';
-import image57 from './assets/optimized/home-v5/visit-portrait-705.avif?url&no-inline';
-import image58 from './assets/optimized/home-v5/service-wide-640.webp?url&no-inline';
-import image59 from './assets/optimized/home-v5/service-wide-640.avif?url&no-inline';
-import image60 from './assets/optimized/home-v5/service-wide-1080.webp?url&no-inline';
-import image61 from './assets/optimized/home-v5/service-wide-1080.avif?url&no-inline';
-import image62 from './assets/optimized/home-v5/service-wide-1280.webp?url&no-inline';
-import image63 from './assets/optimized/home-v5/service-wide-1280.avif?url&no-inline';
-import image64 from './assets/optimized/home-v5/service-wide-1920.webp?url&no-inline';
-import image65 from './assets/optimized/home-v5/service-wide-1920.avif?url&no-inline';
-import image66 from './assets/optimized/home-v5/service-wide-2560.webp?url&no-inline';
-import image67 from './assets/optimized/home-v5/service-wide-2560.avif?url&no-inline';
+import image6 from './assets/optimized/home-v5/forest-wide-2880.webp?url&no-inline';
+import image7 from './assets/optimized/home-v5/forest-wide-2880.avif?url&no-inline';
+import image8 from './assets/optimized/home-v5/forest-wide-3840.webp?url&no-inline';
+import image9 from './assets/optimized/home-v5/forest-wide-3840.avif?url&no-inline';
+import image10 from './assets/optimized/home-v5/forest-wide-5472.webp?url&no-inline';
+import image11 from './assets/optimized/home-v5/forest-wide-5472.avif?url&no-inline';
+import image12 from './assets/optimized/home-v5/forest-portrait-640.webp?url&no-inline';
+import image13 from './assets/optimized/home-v5/forest-portrait-640.avif?url&no-inline';
+import image14 from './assets/optimized/home-v5/forest-portrait-1080.webp?url&no-inline';
+import image15 from './assets/optimized/home-v5/forest-portrait-1080.avif?url&no-inline';
+import image16 from './assets/optimized/home-v5/forest-portrait-1280.webp?url&no-inline';
+import image17 from './assets/optimized/home-v5/forest-portrait-1280.avif?url&no-inline';
+import image18 from './assets/optimized/home-v5/forest-portrait-1920.webp?url&no-inline';
+import image19 from './assets/optimized/home-v5/forest-portrait-1920.avif?url&no-inline';
+import image20 from './assets/optimized/home-v5/catalog-portrait-480.webp?url&no-inline';
+import image21 from './assets/optimized/home-v5/catalog-portrait-480.avif?url&no-inline';
+import image22 from './assets/optimized/home-v5/catalog-portrait-810.webp?url&no-inline';
+import image23 from './assets/optimized/home-v5/catalog-portrait-810.avif?url&no-inline';
+import image24 from './assets/optimized/home-v5/catalog-portrait-960.webp?url&no-inline';
+import image25 from './assets/optimized/home-v5/catalog-portrait-960.avif?url&no-inline';
+import image26 from './assets/optimized/home-v5/catalog-portrait-1440.webp?url&no-inline';
+import image27 from './assets/optimized/home-v5/catalog-portrait-1440.avif?url&no-inline';
+import image28 from './assets/optimized/home-v5/catalog-portrait-2052.webp?url&no-inline';
+import image29 from './assets/optimized/home-v5/catalog-portrait-2052.avif?url&no-inline';
+import image30 from './assets/optimized/home-v5/curves-wide-1280.webp?url&no-inline';
+import image31 from './assets/optimized/home-v5/curves-wide-1280.avif?url&no-inline';
+import image32 from './assets/optimized/home-v5/curves-wide-1920.webp?url&no-inline';
+import image33 from './assets/optimized/home-v5/curves-wide-1920.avif?url&no-inline';
+import image34 from './assets/optimized/home-v5/curves-wide-2560.webp?url&no-inline';
+import image35 from './assets/optimized/home-v5/curves-wide-2560.avif?url&no-inline';
+import image36 from './assets/optimized/home-v5/curves-wide-3840.webp?url&no-inline';
+import image37 from './assets/optimized/home-v5/curves-wide-3840.avif?url&no-inline';
+import image38 from './assets/optimized/home-v5/curves-wide-5472.webp?url&no-inline';
+import image39 from './assets/optimized/home-v5/curves-wide-5472.avif?url&no-inline';
+import image40 from './assets/optimized/home-v5/curves-portrait-640.webp?url&no-inline';
+import image41 from './assets/optimized/home-v5/curves-portrait-640.avif?url&no-inline';
+import image42 from './assets/optimized/home-v5/curves-portrait-1080.webp?url&no-inline';
+import image43 from './assets/optimized/home-v5/curves-portrait-1080.avif?url&no-inline';
+import image44 from './assets/optimized/home-v5/curves-portrait-1280.webp?url&no-inline';
+import image45 from './assets/optimized/home-v5/curves-portrait-1280.avif?url&no-inline';
+import image46 from './assets/optimized/home-v5/curves-portrait-1920.webp?url&no-inline';
+import image47 from './assets/optimized/home-v5/curves-portrait-1920.avif?url&no-inline';
+import image48 from './assets/optimized/home-v5/curves-portrait-2736.webp?url&no-inline';
+import image49 from './assets/optimized/home-v5/curves-portrait-2736.avif?url&no-inline';
+import image50 from './assets/optimized/home-v5/visit-wide-640.webp?url&no-inline';
+import image51 from './assets/optimized/home-v5/visit-wide-640.avif?url&no-inline';
+import image52 from './assets/optimized/home-v5/visit-wide-1080.webp?url&no-inline';
+import image53 from './assets/optimized/home-v5/visit-wide-1080.avif?url&no-inline';
+import image54 from './assets/optimized/home-v5/visit-wide-1672.webp?url&no-inline';
+import image55 from './assets/optimized/home-v5/visit-wide-1672.avif?url&no-inline';
+import image56 from './assets/optimized/home-v5/visit-portrait-640.webp?url&no-inline';
+import image57 from './assets/optimized/home-v5/visit-portrait-640.avif?url&no-inline';
+import image58 from './assets/optimized/home-v5/visit-portrait-705.webp?url&no-inline';
+import image59 from './assets/optimized/home-v5/visit-portrait-705.avif?url&no-inline';
+import image60 from './assets/optimized/home-v5/service-wide-640.webp?url&no-inline';
+import image61 from './assets/optimized/home-v5/service-wide-640.avif?url&no-inline';
+import image62 from './assets/optimized/home-v5/service-wide-1080.webp?url&no-inline';
+import image63 from './assets/optimized/home-v5/service-wide-1080.avif?url&no-inline';
+import image64 from './assets/optimized/home-v5/service-wide-1280.webp?url&no-inline';
+import image65 from './assets/optimized/home-v5/service-wide-1280.avif?url&no-inline';
+import image66 from './assets/optimized/home-v5/service-wide-1920.webp?url&no-inline';
+import image67 from './assets/optimized/home-v5/service-wide-1920.avif?url&no-inline';
+import image68 from './assets/optimized/home-v5/service-wide-2560.webp?url&no-inline';
+import image69 from './assets/optimized/home-v5/service-wide-2560.avif?url&no-inline';
 export const homeV5Images = {
   'forest-wide': {
     src: image0,
-    srcset: `${image0} 1280w, ${image2} 1920w, ${image4} 2560w, ${image6} 3840w, ${image8} 5472w`,
-    avif: `${image1} 1280w, ${image3} 1920w, ${image5} 2560w, ${image7} 3840w, ${image9} 5472w`,
+    srcset: `${image0} 1280w, ${image2} 1920w, ${image4} 2560w, ${image6} 2880w, ${image8} 3840w, ${image10} 5472w`,
+    avif: `${image1} 1280w, ${image3} 1920w, ${image5} 2560w, ${image7} 2880w, ${image9} 3840w, ${image11} 5472w`,
     width: 5472,
     height: 3648,
   },
   'forest-portrait': {
-    src: image14,
-    srcset: `${image10} 640w, ${image12} 1080w, ${image14} 1280w, ${image16} 1920w`,
-    avif: `${image11} 640w, ${image13} 1080w, ${image15} 1280w, ${image17} 1920w`,
+    src: image16,
+    srcset: `${image12} 640w, ${image14} 1080w, ${image16} 1280w, ${image18} 1920w`,
+    avif: `${image13} 640w, ${image15} 1080w, ${image17} 1280w, ${image19} 1920w`,
     width: 1920,
     height: 2560,
   },
   'catalog-portrait': {
-    src: image24,
-    srcset: `${image18} 480w, ${image20} 810w, ${image22} 960w, ${image24} 1440w, ${image26} 2052w`,
-    avif: `${image19} 480w, ${image21} 810w, ${image23} 960w, ${image25} 1440w, ${image27} 2052w`,
+    src: image26,
+    srcset: `${image20} 480w, ${image22} 810w, ${image24} 960w, ${image26} 1440w, ${image28} 2052w`,
+    avif: `${image21} 480w, ${image23} 810w, ${image25} 960w, ${image27} 1440w, ${image29} 2052w`,
     width: 2052,
     height: 2736,
   },
   'curves-wide': {
-    src: image28,
-    srcset: `${image28} 1280w, ${image30} 1920w, ${image32} 2560w, ${image34} 3840w, ${image36} 5472w`,
-    avif: `${image29} 1280w, ${image31} 1920w, ${image33} 2560w, ${image35} 3840w, ${image37} 5472w`,
+    src: image30,
+    srcset: `${image30} 1280w, ${image32} 1920w, ${image34} 2560w, ${image36} 3840w, ${image38} 5472w`,
+    avif: `${image31} 1280w, ${image33} 1920w, ${image35} 2560w, ${image37} 3840w, ${image39} 5472w`,
     width: 5472,
     height: 3648,
   },
   'curves-portrait': {
-    src: image42,
-    srcset: `${image38} 640w, ${image40} 1080w, ${image42} 1280w, ${image44} 1920w, ${image46} 2736w`,
-    avif: `${image39} 640w, ${image41} 1080w, ${image43} 1280w, ${image45} 1920w, ${image47} 2736w`,
+    src: image44,
+    srcset: `${image40} 640w, ${image42} 1080w, ${image44} 1280w, ${image46} 1920w, ${image48} 2736w`,
+    avif: `${image41} 640w, ${image43} 1080w, ${image45} 1280w, ${image47} 1920w, ${image49} 2736w`,
     width: 2736,
     height: 3648,
   },
   'visit-wide': {
-    src: image52,
-    srcset: `${image48} 640w, ${image50} 1080w, ${image52} 1672w`,
-    avif: `${image49} 640w, ${image51} 1080w, ${image53} 1672w`,
+    src: image54,
+    srcset: `${image50} 640w, ${image52} 1080w, ${image54} 1672w`,
+    avif: `${image51} 640w, ${image53} 1080w, ${image55} 1672w`,
     width: 1672,
     height: 941,
   },
   'visit-portrait': {
-    src: image56,
-    srcset: `${image54} 640w, ${image56} 705w`,
-    avif: `${image55} 640w, ${image57} 705w`,
+    src: image58,
+    srcset: `${image56} 640w, ${image58} 705w`,
+    avif: `${image57} 640w, ${image59} 705w`,
     width: 705,
     height: 941,
   },
   'service-wide': {
-    src: image62,
-    srcset: `${image58} 640w, ${image60} 1080w, ${image62} 1280w, ${image64} 1920w, ${image66} 2560w`,
-    avif: `${image59} 640w, ${image61} 1080w, ${image63} 1280w, ${image65} 1920w, ${image67} 2560w`,
+    src: image64,
+    srcset: `${image60} 640w, ${image62} 1080w, ${image64} 1280w, ${image66} 1920w, ${image68} 2560w`,
+    avif: `${image61} 640w, ${image63} 1080w, ${image65} 1280w, ${image67} 1920w, ${image69} 2560w`,
     width: 2560,
     height: 3835,
   },

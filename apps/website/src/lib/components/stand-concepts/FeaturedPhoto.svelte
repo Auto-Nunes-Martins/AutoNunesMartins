@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { featuredPhotoSizes } from './images';
   import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
   import { catalogPlaceholder } from '$lib/localAssets';
 
@@ -44,7 +45,7 @@
   <img
     src={frame.fallback ? catalogPlaceholder : sizedPhoto(frame.source, 1600)}
     srcset={frame.fallback ? undefined : vehiclePhotoSet(frame.source)}
-    sizes="(max-width: 700px) 100vw, 55vw"
+    sizes={featuredPhotoSizes}
     width="1600"
     height="1067"
     alt={frame === displayed ? frame.alt : ''}
