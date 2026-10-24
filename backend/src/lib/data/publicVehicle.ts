@@ -190,7 +190,7 @@ export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQ
 }
 
 export async function getPublicVehicle(
-  db: PrismaClient, slug: string, preparePhotos?: (paths: string[]) => void,
+  db: PrismaClient, slug: string,
 ) {
   const row = await db.vehicle.findFirst({
     where: { ...publicVehicleWhere(), publicSlug: slug },
@@ -198,9 +198,6 @@ export async function getPublicVehicle(
   });
   if (!row) return null;
   const vehicle = publicVehicleDto(row);
-  // Reuse this live public query; never expose private paths in the DTO and
-  // never cache its authorization. Warming is optional and cannot fail the page.
-  try { preparePhotos?.(approvedPaths(row)); } catch { /* Best-effort pixels only. */ }
   return vehicle;
 }
 
@@ -259,8 +256,13 @@ function currentPublicPhotoPaths(db: PrismaClient, slug: string): Promise<string
   return request;
 }
 
-export async function getPublicPhotoPath(db: PrismaClient, slug: string, index: number) {
+export async function getPublicPhotoPath(db: PrismaClient, slug: string, index: number, preparePhotos?: (paths: string[]) => void) {
   const paths = await currentPublicPhotoPaths(db, slug);
+  // Schedule pixels only after this request's fresh authorization. The requested
+  // index must exist; stale cards and missing photos must not trigger speculation.
+  if (paths?.[index]) {
+    try { preparePhotos?.(paths); } catch { /* Optional warming cannot fail delivery. */ }
+  }
   return paths?.[index] ?? null;
 }
 

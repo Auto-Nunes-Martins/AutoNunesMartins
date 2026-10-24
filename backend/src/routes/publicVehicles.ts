@@ -157,7 +157,7 @@ router.get(
       return;
     }
     try {
-      const vehicle = await getPublicVehicle(prisma, slug.data, preparePublicThumbnails);
+      const vehicle = await getPublicVehicle(prisma, slug.data);
       if (!vehicle) {
         const unavailableVehicle = await readUnavailableVehicle(prisma, slug.data);
         res.status(404).json({
@@ -219,7 +219,9 @@ router.get(
       const record = (stage: string, ms: number) => {
         timings.push(`${stage};dur=${Math.max(0, ms).toFixed(1)}`);
       };
-      const path = await getPublicPhotoPath(prisma, slug.data, index.data);
+      const path = await getPublicPhotoPath(prisma, slug.data, index.data,
+        index.data < 9 && (width === 320 || width === 384)
+          ? paths => preparePublicThumbnails(paths, width) : undefined);
       record('photo-check', performance.now() - timingStart);
       if (!path) {
         res.status(404).json({ error: 'Photo not found' });
@@ -242,6 +244,7 @@ router.get(
         'Cross-Origin-Resource-Policy': 'cross-origin',
         'X-Photo-Version': publicPhotoVersion(path),
         'X-Photo-Cache-Policy': 'shared-v1',
+        'X-Photo-Warmup': 'requested-v1',
       });
       if (width) {
         res.set({
