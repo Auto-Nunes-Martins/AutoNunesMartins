@@ -1,0 +1,76 @@
+/* Two straight contours: a firm outer corner and a shorter, finer inner echo.
+   The horizontal outset grows within the existing page gutter; Y stays fixed. */
+[data-featured-card] .hd-feature::before,
+[data-featured-card] .hd-feature::after,
+.editorial-pause::before,
+.editorial-pause::after {
+  --corner-outset: min(42px, calc(5vw - 8px));
+  --corner-inset: 10px;
+  --corner-width: clamp(76px, 8vw, 116px);
+  --corner-height: 60px;
+  /* Scale centreline lengths to 40%, accounting for 2px outer / 1px inner strokes. */
+  --corner-inner-width: calc((var(--corner-width) - 1px) * 0.4 + 0.5px);
+  --corner-inner-height: calc((var(--corner-height) - 1px) * 0.4 + 0.5px);
+  --corner-echo: color-mix(in srgb, var(--red, #e30613) 60%, transparent);
+  content: '';
+  position: absolute;
+  width: var(--corner-width);
+  height: var(--corner-height);
+  background:
+    linear-gradient(var(--red, #e30613) 0 0)
+      right top / 100% 2px no-repeat,
+    linear-gradient(var(--red, #e30613) 0 0)
+      right top / 2px 100% no-repeat,
+    linear-gradient(var(--corner-echo) 0 0)
+      right var(--corner-inset) top var(--corner-inset) / var(--corner-inner-width) 1px no-repeat,
+    linear-gradient(var(--corner-echo) 0 0)
+      right var(--corner-inset) top var(--corner-inset) / 1px var(--corner-inner-height) no-repeat;
+  pointer-events: none;
+}
+[data-featured-card] .hd-feature::before {
+  top: -22px;
+  right: calc(-1 * var(--corner-outset));
+}
+[data-featured-card] .hd-feature::after {
+  bottom: -20px;
+  left: calc(-1 * var(--corner-outset));
+  transform: rotate(180deg);
+}
+@media (max-width: 700px) {
+  [data-featured-card] .hd-feature::before,
+  [data-featured-card] .hd-feature::after,
+  .editorial-pause::before,
+  .editorial-pause::after {
+    --corner-outset: 14px;
+    --corner-inset: 8px;
+    --corner-width: 72px;
+    --corner-height: 46px;
+  }
+  [data-featured-card] .hd-feature::before {
+    top: -14px;
+  }
+  [data-featured-card] .hd-feature::after {
+    bottom: -12px;
+  }
+}
+/* Bring the invitation pair inward, framing its content without touching CTAs. */
+.editorial-pause::before {
+  top: 24px;
+  right: clamp(24px, 12vw, 240px);
+  z-index: 1;
+}
+.editorial-pause::after {
+  bottom: 24px;
+  left: clamp(24px, 12vw, 240px);
+  transform: rotate(180deg);
+  z-index: 1;
+}
+@media (max-width: 1100px) {
+  .editorial-pause::before,
+  .editorial-pause::after {
+    --corner-height: 36px;
+  }
+  .editorial-pause::after {
+    bottom: 8px;
+  }
+}

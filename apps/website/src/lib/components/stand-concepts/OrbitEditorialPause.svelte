@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowUpRight } from 'lucide-svelte';
+  import './frameCorners.css';
   import { photo } from './data';
   import { responsivePhoto } from './images';
   import OrbitVisitLabel from './OrbitVisitLabel.svelte';
