@@ -35,6 +35,8 @@ export function relayPublicPhoto(req, res, reply, commonHeaders = {}) {
     headers['x-photo-version'] = reply.headers['x-photo-version'];
   if (reply.headers['x-photo-cache-policy'] === 'shared-v1')
     headers['x-photo-cache-policy'] = 'shared-v1';
+  if (reply.headers['x-photo-warmup'] === 'requested-v1')
+    headers['x-photo-warmup'] = 'requested-v1';
   const timing = reply.headers['server-timing'];
   if (typeof timing === 'string' && timing.length <= 512 && timing.split(', ').every(entry =>
     /^photo-(?:check|manifest|storage|total|cache-hit|cache-miss);dur=\d+(?:\.\d+)?$/.test(entry)))

@@ -361,7 +361,7 @@ describe('public HTTP responses never disclose private inventory', () => {
     mocks.db.vehicle.findFirst.mockResolvedValue(null);
     expect((await fetch(`${base}/api/public/vehicles/${slug}`)).status).toBe(404);
   });
-  it('responds with detail while thumbnails warm and still revokes subsequent image requests', async () => {
+  it('waits for a requested thumbnail width before warming and still revokes subsequent image requests', async () => {
     const warmPhoto = `${id}/12345678-1234-1234-1234-123456789abe.jpg`;
     mocks.db.vehicle.findFirst.mockResolvedValue({
       ...fixture(),
@@ -373,18 +373,20 @@ describe('public HTTP responses never disclose private inventory', () => {
       finish = resolve;
     });
     mocks.download.mockReturnValue(storage);
+    let first: Promise<Response> | undefined;
     try {
-      // This would hang if rendering awaited the speculative Storage request.
       const detail = await fetch(`${base}/api/public/vehicles/${slug}`);
       expect(detail.status).toBe(200);
       expect(await detail.text()).not.toContain(warmPhoto);
-      expect(mocks.download).toHaveBeenCalledWith(variantPath(warmPhoto, 320));
+      expect(mocks.download).not.toHaveBeenCalled();
+      first = fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=384`);
+      await vi.waitFor(() => expect(mocks.download).toHaveBeenCalledWith(variantPath(warmPhoto, 384)));
       mocks.db.vehicle.findFirst.mockResolvedValue(null);
-      expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`)).status).toBe(404);
+      expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=384`)).status).toBe(404);
       expect(mocks.download).toHaveBeenCalledTimes(1);
     } finally {
       finish({ data: null, error: { statusCode: 404 } });
-      await readPhotoBytes(warmPhoto, 320);
+      await first;
       forgetPhotoVariants(warmPhoto);
     }
   });
