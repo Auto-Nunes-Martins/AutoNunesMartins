@@ -1313,7 +1313,7 @@
   }
   :global(html[data-theme='light']) .family-theme .studio-inner,
   :global(html[data-theme='dark']) .family-theme .studio-inner {
-    --visit-form-panel: #252725c9;
-    --visit-map-surface: #252725;
+    --visit-form-panel: #262626c9;
+    --visit-map-surface: #262626;
   }
 </style>

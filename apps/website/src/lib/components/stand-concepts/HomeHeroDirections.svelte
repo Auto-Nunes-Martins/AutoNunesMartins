@@ -14,6 +14,7 @@
   import FeaturedPriceWave from './FeaturedPriceWave.svelte';
   import FeaturedBacklight from './FeaturedBacklight.svelte';
   import { featuredAutoplay } from './featuredAutoplay';
+  import { scrollCue } from './scrollCue';
 
   const version = 5;
   let { homeHighlights }: { homeHighlights?: PublicHighlights } = $props();
@@ -304,7 +305,7 @@
     {@render introduction()}
     {@render vehicle()}
   </div>
-  <a class="hd-scroll" href="#selecao"
+  <a class="hd-scroll" href="#selecao" data-cue-paused="true" use:scrollCue
     ><span>Continue a descobrir</span><ArrowDown
       size={16}
       strokeWidth={1.5}
