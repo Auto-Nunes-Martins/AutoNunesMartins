@@ -8,6 +8,57 @@
 .hd-root.hd-1[data-featured-card] .hd-feature[data-carousel-entered='true'] {
   animation: none;
 }
+/* Two straight contours: a firm outer corner and a shorter, finer inner echo.
+   The horizontal outset grows within the existing page gutter; Y stays fixed. */
+[data-featured-card] .hd-feature::before,
+[data-featured-card] .hd-feature::after {
+  --corner-outset: min(42px, calc(5vw - 8px));
+  --corner-inset: 10px;
+  --corner-width: clamp(76px, 8vw, 116px);
+  --corner-height: 60px;
+  /* Scale centreline lengths to 40%, accounting for 2px outer / 1px inner strokes. */
+  --corner-inner-width: calc((var(--corner-width) - 1px) * 0.4 + 0.5px);
+  --corner-inner-height: calc((var(--corner-height) - 1px) * 0.4 + 0.5px);
+  --corner-echo: color-mix(in srgb, var(--red, #e30613) 60%, transparent);
+  content: '';
+  position: absolute;
+  width: var(--corner-width);
+  height: var(--corner-height);
+  background:
+    linear-gradient(var(--red, #e30613) 0 0)
+      right top / 100% 2px no-repeat,
+    linear-gradient(var(--red, #e30613) 0 0)
+      right top / 2px 100% no-repeat,
+    linear-gradient(var(--corner-echo) 0 0)
+      right var(--corner-inset) top var(--corner-inset) / var(--corner-inner-width) 1px no-repeat,
+    linear-gradient(var(--corner-echo) 0 0)
+      right var(--corner-inset) top var(--corner-inset) / 1px var(--corner-inner-height) no-repeat;
+  pointer-events: none;
+}
+[data-featured-card] .hd-feature::before {
+  top: -22px;
+  right: calc(-1 * var(--corner-outset));
+}
+[data-featured-card] .hd-feature::after {
+  bottom: -20px;
+  left: calc(-1 * var(--corner-outset));
+  transform: rotate(180deg);
+}
+@media (max-width: 700px) {
+  [data-featured-card] .hd-feature::before,
+  [data-featured-card] .hd-feature::after {
+    --corner-outset: 14px;
+    --corner-inset: 8px;
+    --corner-width: 72px;
+    --corner-height: 46px;
+  }
+  [data-featured-card] .hd-feature::before {
+    top: -14px;
+  }
+  [data-featured-card] .hd-feature::after {
+    bottom: -12px;
+  }
+}
 [data-featured-card] .hd-photo-ui {
   position: absolute;
   inset: 0;
@@ -138,45 +189,6 @@
   [data-featured-card] .hd-backlight {
     transition: none;
     transform: none;
-  }
-}
-[data-featured-card] .hd-feature-top .hd-eyebrow {
-  position: relative;
-}
-[data-featured-card] .hd-label-glint {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  color: transparent;
-  background-image: linear-gradient(
-    110deg,
-    transparent 36%,
-    #f2ead4 45%,
-    #fff 49%,
-    #f2ead4 53%,
-    transparent 62%
-  );
-  background-size: 280% 100%;
-  background-position: 180% 0;
-  background-clip: text;
-  -webkit-background-clip: text;
-}
-@media (prefers-reduced-motion: no-preference) {
-  [data-featured-card] .hd-feature[data-idle-ready='true'] .hd-label-glint {
-    animation: hd-feature-glint 8s linear infinite;
-  }
-  [data-featured-card] .hd-feature[data-idle-paused='true'] .hd-label-glint {
-    animation-play-state: paused;
-  }
-}
-@keyframes hd-feature-glint {
-  0%,
-  4% {
-    background-position: 180% 0;
-  }
-  30%,
-  100% {
-    background-position: -180% 0;
   }
 }
 @property --v5-float-phase {
