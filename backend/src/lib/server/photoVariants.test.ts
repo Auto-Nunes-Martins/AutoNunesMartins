@@ -6,6 +6,7 @@ const mock = vi.hoisted(() => ({
   unavailable: false,
   uploads: [] as string[],
   downloads: [] as string[],
+  pause: undefined as undefined | (() => Promise<void>),
 }));
 vi.mock('../data/storage.js', () => ({
   getBucketName: () => 'private',
@@ -14,6 +15,7 @@ vi.mock('../data/storage.js', () => ({
       from: () => ({
         download: async (path: string) => {
           mock.downloads.push(path);
+          await mock.pause?.();
           if (mock.unavailable) return { data: null, error: { statusCode: 503 } };
           const o = mock.objects.get(path);
           return o
@@ -42,6 +44,7 @@ import {
   variantRoot,
   preferredVariantPath,
   PHOTO_ENCODING_VERSION,
+  preparePublicThumbnails,
 } from './photoVariants';
 const path = 'cabcdefghijklmnopqrstuvwx/12345678-1234-1234-1234-123456789abc.jpg';
 beforeEach(() => {
@@ -50,9 +53,86 @@ beforeEach(() => {
   mock.downloads = [];
   mock.failWidth = 0;
   mock.unavailable = false;
+  mock.pause = undefined;
   forgetPhotoVariants(path);
 });
 describe('private reusable photo variants', () => {
+  it('validates generated pixels before publication but does not decode them again on delivery', async () => {
+    const input = await sharp({
+      create: { width: 400, height: 300, channels: 3, background: 'blue' },
+    })
+      .jpeg()
+      .toBuffer();
+    const stats = vi.spyOn(sharp.prototype, 'stats');
+    try {
+      const built = await buildPhotoVariants(input);
+      expect(stats).toHaveBeenCalledTimes(built.files.length);
+      stats.mockClear();
+      mock.objects.set(variantPath(path, 320), {
+        buffer: built.files[0]!.buffer,
+        type: 'image/webp',
+      });
+      const delivered = await readPhotoBytes(path, 320);
+      expect(delivered?.buffer.equals(built.files[0]!.buffer)).toBe(true);
+      expect(stats).not.toHaveBeenCalled();
+    } finally {
+      stats.mockRestore();
+    }
+  });
+  it.each([false, true])(
+    'rejects a truncated WebP even if its RIFF length is rewritten (%s)',
+    async (rewrite) => {
+      const complete = await sharp({
+        create: { width: 320, height: 200, channels: 3, background: 'blue' },
+      })
+        .webp()
+        .toBuffer();
+      const broken = Buffer.from(complete.subarray(0, complete.length - 10));
+      if (rewrite) broken.writeUInt32LE(broken.length - 8, 4);
+      mock.objects.set(variantPath(path, 320), { buffer: broken, type: 'image/webp' });
+      mock.objects.set(path, { buffer: Buffer.from('original'), type: 'image/jpeg' });
+      expect((await readPhotoBytes(path, 320))?.buffer.toString()).toBe('original');
+    },
+  );
+  it('warms only nine base thumbnails with two process-wide workers and shares foreground reads', async () => {
+    const paths = Array.from({ length: 12 }, (_, i) => `warm/photo-${i}.jpg`);
+    const buffer = await sharp({
+      create: { width: 320, height: 200, channels: 3, background: 'blue' },
+    })
+      .webp()
+      .toBuffer();
+    for (const p of paths) mock.objects.set(variantPath(p, 320), { buffer, type: 'image/webp' });
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    mock.pause = () => barrier;
+    try {
+      preparePublicThumbnails(paths);
+      preparePublicThumbnails(paths); // A second visitor must not create another worker pool.
+      await vi.waitFor(() => expect(mock.downloads).toHaveLength(2));
+      const foreground = readPhotoBytes(paths[0]!, 320);
+      release();
+      expect((await foreground)?.buffer.equals(buffer)).toBe(true);
+      await vi.waitFor(() => expect(mock.downloads).toHaveLength(9));
+      // Drain workers before resetting the mocked storage.
+      await Promise.all(paths.slice(0, 9).map((p) => readPhotoBytes(p, 320)));
+      expect(new Set(mock.downloads).size).toBe(9);
+      expect(mock.downloads.every((p) => p.endsWith('/320.webp'))).toBe(true);
+    } finally {
+      release();
+      for (const p of paths) forgetPhotoVariants(p);
+    }
+  });
+  it('never speculates a legacy master; a joining real request can still use its fallback', async () => {
+    const p = 'warm/legacy.jpg';
+    mock.objects.set(p, { buffer: Buffer.from('legacy'), type: 'image/jpeg' });
+    preparePublicThumbnails([p]);
+    const foreground = await readPhotoBytes(p, 320);
+    expect(foreground?.buffer.toString()).toBe('legacy');
+    expect(mock.downloads.filter((file) => file === p)).toHaveLength(1);
+    forgetPhotoVariants(p);
+  });
   it('reads an exact derivative without downloading its manifest and preserves its bytes', async () => {
     const buffer = await sharp({
       create: { width: 320, height: 200, channels: 3, background: 'blue' },

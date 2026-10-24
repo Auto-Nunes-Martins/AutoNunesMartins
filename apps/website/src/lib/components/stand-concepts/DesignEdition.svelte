@@ -435,6 +435,18 @@
     <link rel="canonical" href={publicVehicleCanonical(publicVehicle, $page.url.origin)} />
     {@html vehicleJsonLdScript(publicVehicle, $page.url.origin)}
     {@html vehicleBreadcrumbJsonLdScript(publicVehicle, $page.url.origin)}
+    {#if !thumbnailSession?.hasPixels()}
+      {#each publicVehicle.photos.slice(0, 9) as _, i}
+        <link
+          rel="preload"
+          as="image"
+          href={sizedPhoto(publicPhoto(publicVehicle.slug, i), 320)}
+          imagesrcset={vehiclePhotoSet(publicPhoto(publicVehicle.slug, i))}
+          imagesizes="(max-width:701px) 112px, 128px"
+          fetchpriority="low"
+        />
+      {/each}
+    {/if}
   {/if}
   {#if !favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle && !errorStatus}
     <link rel="canonical" href={new URL('/', $page.url.origin).href} />
@@ -867,7 +879,7 @@
                           sizes="(max-width:701px) 112px, 128px"
                           alt=""
                           loading={i < 9 ? 'eager' : 'lazy'}
-                          fetchpriority="low"
+                          fetchpriority={i < 9 ? 'auto' : 'low'}
                         /><span>{i + 1}</span></button
                       >{/each}
                     <button

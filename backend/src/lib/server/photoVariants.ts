@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { getSupabase, getBucketName } from '../data/storage.js';
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_PIXELS } from './photoOptimization.js';
 import { vehiclePhotoWidths } from '@anm/types/photoWidths';
+import { PhotoByteCache, type CachedPhoto } from './photoByteCache.js';
 
 export const PHOTO_WIDTHS = vehiclePhotoWidths;
 // Schema/paths remain compatible; existing derivatives are regenerated from their master.
@@ -35,8 +36,9 @@ const manifestReads = new Map<string, Promise<VariantManifest | null>>();
 export function forgetPhotoVariants(path: string) {
   manifests.delete(path);
   manifestReads.delete(path);
+  thumbnailWarmup.delete(path);
   for (const key of photoReads.keys()) if (key.startsWith(path + '|')) photoReads.delete(key);
-  for (const key of bytesCache.keys()) if (key.startsWith(path + '|')) bytesCache.delete(key);
+  bytesCache.forget(path);
 }
 function remember(path: string, value: VariantManifest | null, ttl = value ? 40 * 60_000 : 5_000) {
   if (manifests.size >= 500) manifests.delete(manifests.keys().next().value!);
@@ -171,6 +173,9 @@ export async function buildPhotoVariants(
       .webp({ quality: 90, effort: 6, smartSubsample: true })
       .timeout({ seconds: 20 })
       .toBuffer({ resolveWithObject: true });
+    // Pay for a full integrity decode once, before publishing the derivative.
+    // Delivery checks the container/dimensions, not every decoded pixel again.
+    await inspectDerivative(data, target, true);
     files.push({ width: target, buffer: data });
     manifest.variants.push({ width: info.width, height: info.height, bytes: data.length });
   }
@@ -233,18 +238,22 @@ export async function preferredVariantPath(path: string, width: number) {
     : path;
 }
 // Pixel cache only. Callers MUST validate live authorization before every read/304.
-const bytesCache = new Map<
-  string,
-  { until: number; buffer: Buffer; contentType: string; etag: string }
->();
-const CACHE_BYTES = 12 * 1024 * 1024;
-type PhotoBytes = { until: number; buffer: Buffer; contentType: string; etag: string };
-const photoReads = new Map<string, Promise<PhotoBytes | null>>();
+const bytesCache = new PhotoByteCache();
+type PhotoBytes = CachedPhoto;
+const photoReads = new Map<string, { promise: Promise<PhotoBytes | null>; speculative: boolean }>();
 export type PhotoReadTiming = (
   stage: 'photo-cache-hit' | 'photo-cache-miss' | 'photo-manifest' | 'photo-storage',
   ms: number,
 ) => void;
 export async function readPhotoBytes(path: string, width?: PhotoWidth, timing?: PhotoReadTiming) {
+  return readPixels(path, width, timing, false);
+}
+async function readPixels(
+  path: string,
+  width: PhotoWidth | undefined,
+  timing: PhotoReadTiming | undefined,
+  speculative: boolean,
+): Promise<PhotoBytes | null> {
   const key = path + '|' + (width ?? 'original'),
     hit = bytesCache.get(key);
   if (width && hit && hit.until > Date.now()) {
@@ -254,15 +263,21 @@ export async function readPhotoBytes(path: string, width?: PhotoWidth, timing?: 
   timing?.('photo-cache-miss', 0);
   // Share pixels only: every caller must still complete live authorization first.
   const pending = photoReads.get(key);
-  if (pending) return pending;
+  if (pending) {
+    const photo = await pending.promise;
+    // Warming never downloads a full-size fallback. A real request still may.
+    if (!photo && pending.speculative && !speculative)
+      return readPixels(path, width, timing, false);
+    return photo;
+  }
   const read: Promise<PhotoBytes | null> = Promise.resolve().then(() =>
-    loadPhotoBytes(path, width, timing, () => photoReads.get(key) === read),
+    loadPhotoBytes(path, width, timing, () => photoReads.get(key)?.promise === read, speculative),
   );
-  photoReads.set(key, read);
+  photoReads.set(key, { promise: read, speculative });
   try {
     return await read;
   } finally {
-    if (photoReads.get(key) === read) photoReads.delete(key);
+    if (photoReads.get(key)?.promise === read) photoReads.delete(key);
   }
 }
 async function loadPhotoBytes(
@@ -270,6 +285,7 @@ async function loadPhotoBytes(
   width: PhotoWidth | undefined,
   timing: PhotoReadTiming | undefined,
   isCurrent: () => boolean,
+  speculative: boolean,
 ): Promise<PhotoBytes | null> {
   const key = path + '|' + (width ?? 'original');
   const manifestStart = performance.now();
@@ -289,6 +305,8 @@ async function loadPhotoBytes(
         : await preferredVariantPath(path, width)
     : path;
   if (width) timing?.('photo-manifest', performance.now() - manifestStart);
+  // Old/small masters are fetched only on demand, never just to warm a thumbnail.
+  if (speculative && chosen === path) return null;
   const storageStart = performance.now();
   const bucket = getSupabase().storage.from(getBucketName());
   let result = await bucket.download(chosen);
@@ -298,18 +316,7 @@ async function loadPhotoBytes(
       if (result.data.size > MAX_UPLOAD_BYTES || result.data.type !== 'image/webp')
         throw new Error('Invalid derivative');
       derivative = Buffer.from(await result.data.arrayBuffer());
-      const image = sharp(derivative, { limitInputPixels: MAX_UPLOAD_PIXELS, failOn: 'warning' });
-      const metadata = await image.metadata();
-      if (
-        metadata.format !== 'webp' ||
-        metadata.width !== (part ? part.width : width) ||
-        !metadata.height ||
-        (metadata.pages ?? 1) !== 1
-      )
-        throw new Error('Invalid derivative');
-      // A complete, decodable file is usable even if generation of other widths
-      // was interrupted. Never send a truncated or mismatched candidate.
-      await image.stats();
+      await inspectDerivative(derivative, part ? part.width : width!);
     } catch {
       derivative = undefined;
     }
@@ -317,6 +324,7 @@ async function loadPhotoBytes(
   const missing = thumbnail ? String(result.error?.statusCode) === '404' : !!result.error;
   const invalidDerivative = !result.error && (!result.data || (thumbnail && !derivative));
   if ((missing || invalidDerivative) && chosen !== path) {
+    if (speculative) return null;
     chosen = path;
     derivative = undefined;
     result = await bucket.download(path);
@@ -335,15 +343,72 @@ async function loadPhotoBytes(
   timing?.('photo-storage', performance.now() - storageStart);
   const etag = '"' + createHash('sha256').update(path).update(buffer).digest('hex') + '"';
   const value = { until: Date.now() + 60_000, buffer, contentType, etag };
-  if (isCurrent() && width && buffer.length <= 2_000_000) {
-    for (const [k, v] of bytesCache) if (v.until < Date.now()) bytesCache.delete(k);
-    let size = [...bytesCache.values()].reduce((n, v) => n + v.buffer.length, 0);
-    while (size + buffer.length > CACHE_BYTES && bytesCache.size) {
-      const first = bytesCache.keys().next().value!;
-      size -= bytesCache.get(first)!.buffer.length;
-      bytesCache.delete(first);
-    }
-    bytesCache.set(key, value);
-  }
+  if (isCurrent() && width) bytesCache.set(key, value, width, chosen !== path);
   return value;
+}
+
+/** Private derivative paths are written by our encoder. Check the complete RIFF
+ * container and dimensions on reads, including old derivatives; full pixel
+ * decoding belongs to generation. This does not re-encode or change the bytes. */
+async function inspectDerivative(buffer: Buffer, width: number, decode = false) {
+  if (
+    buffer.length < 20 ||
+    buffer.length > MAX_UPLOAD_BYTES ||
+    buffer.toString('ascii', 0, 4) !== 'RIFF' ||
+    buffer.toString('ascii', 8, 12) !== 'WEBP' ||
+    buffer.readUInt32LE(4) + 8 !== buffer.length
+  )
+    throw new Error('Invalid derivative container');
+  let offset = 12,
+    frames = 0;
+  while (offset < buffer.length) {
+    if (offset + 8 > buffer.length) throw new Error('Truncated derivative chunk');
+    const type = buffer.toString('ascii', offset, offset + 4);
+    const length = buffer.readUInt32LE(offset + 4);
+    if (type === 'ANIM' || type === 'ANMF') throw new Error('Animated derivative');
+    if (type === 'VP8 ' || type === 'VP8L') frames++;
+    offset += 8 + length + (length % 2);
+    if (offset > buffer.length) throw new Error('Truncated derivative chunk');
+  }
+  if (frames !== 1) throw new Error('Invalid derivative frame');
+  const image = sharp(buffer, { limitInputPixels: MAX_UPLOAD_PIXELS, failOn: 'warning' });
+  const metadata = await image.metadata();
+  if (
+    metadata.format !== 'webp' ||
+    metadata.width !== width ||
+    !metadata.height ||
+    metadata.width * metadata.height > MAX_UPLOAD_PIXELS ||
+    (metadata.pages ?? 1) !== 1
+  )
+    throw new Error('Invalid derivative dimensions');
+  if (decode) await image.timeout({ seconds: 20 }).stats();
+}
+
+// Speculation is bounded process-wide (not two downloads per visitor). The base
+// 320px thumbnail is warmed; responsive requests retain every larger resolution.
+// Never warm the master or the large gallery, nor wait for this to send page data.
+const thumbnailWarmup = new Map<string, number>();
+let warming = 0;
+export function preparePublicThumbnails(approved: string[]) {
+  for (const path of approved.slice(0, 9)) {
+    const key = path + '|320';
+    if (bytesCache.get(key, false) || photoReads.has(key) || thumbnailWarmup.has(path)) continue;
+    if (thumbnailWarmup.size >= 36) break;
+    thumbnailWarmup.set(path, Date.now() + 5_000);
+  }
+  drainThumbnailWarmup();
+}
+function drainThumbnailWarmup() {
+  while (warming < 2 && thumbnailWarmup.size) {
+    const [path, until] = thumbnailWarmup.entries().next().value!;
+    thumbnailWarmup.delete(path);
+    if (until <= Date.now()) continue;
+    warming++;
+    void readPixels(path, 320, undefined, true)
+      .catch(() => null)
+      .finally(() => {
+        warming--;
+        drainThumbnailWarmup();
+      });
+  }
 }

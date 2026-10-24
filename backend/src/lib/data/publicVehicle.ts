@@ -189,12 +189,19 @@ export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQ
   );
 }
 
-export async function getPublicVehicle(db: PrismaClient, slug: string) {
+export async function getPublicVehicle(
+  db: PrismaClient, slug: string, preparePhotos?: (paths: string[]) => void,
+) {
   const row = await db.vehicle.findFirst({
     where: { ...publicVehicleWhere(), publicSlug: slug },
     select: publicVehicleSelect,
   });
-  return row ? publicVehicleDto(row) : null;
+  if (!row) return null;
+  const vehicle = publicVehicleDto(row);
+  // Reuse this live public query; never expose private paths in the DTO and
+  // never cache its authorization. Warming is optional and cannot fail the page.
+  try { preparePhotos?.(approvedPaths(row)); } catch { /* Best-effort pixels only. */ }
+  return vehicle;
 }
 
 /** The nearest five must be among the nearest five on either side of the price. */
