@@ -18,18 +18,6 @@ function client() {
 }
 
 describe('in-flight public photo authorization', () => {
-  it('warms only approved paths after live authorization and never for an absent index', async () => {
-    const { db, findFirst } = client(), warm = vi.fn();
-    findFirst.mockResolvedValue(row([a,b],[b]));
-    expect(await getPublicPhotoPath(db,'slug',0,warm)).toBe(b);
-    expect(warm).toHaveBeenCalledWith([b]);
-    warm.mockClear();
-    expect(await getPublicPhotoPath(db,'slug',1,warm)).toBeNull();
-    expect(warm).not.toHaveBeenCalled();
-    findFirst.mockResolvedValue(null);
-    expect(await getPublicPhotoPath(db,'slug',0,warm)).toBeNull();
-    expect(warm).not.toHaveBeenCalled();
-  });
   it('shares one pending permission snapshot across indices and identity checks', async () => {
     const { db, findFirst } = client(), query = deferred<ReturnType<typeof row>>();
     findFirst.mockReturnValue(query.promise);

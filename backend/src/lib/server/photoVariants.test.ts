@@ -94,31 +94,31 @@ describe('private reusable photo variants', () => {
       expect((await readPhotoBytes(path, 320))?.buffer.toString()).toBe('original');
     },
   );
-  it.each([320, 384] as const)('warms only nine requested %i thumbnails with two process-wide workers and shares foreground reads', async (width) => {
-    const paths = Array.from({ length: 12 }, (_, i) => `warm/photo-${width}-${i}.jpg`);
+  it('warms only nine base thumbnails with two process-wide workers and shares foreground reads', async () => {
+    const paths = Array.from({ length: 12 }, (_, i) => `warm/photo-${i}.jpg`);
     const buffer = await sharp({
-      create: { width, height: 200, channels: 3, background: 'blue' },
+      create: { width: 320, height: 200, channels: 3, background: 'blue' },
     })
       .webp()
       .toBuffer();
-    for (const p of paths) mock.objects.set(variantPath(p, width), { buffer, type: 'image/webp' });
+    for (const p of paths) mock.objects.set(variantPath(p, 320), { buffer, type: 'image/webp' });
     let release!: () => void;
     const barrier = new Promise<void>((resolve) => {
       release = resolve;
     });
     mock.pause = () => barrier;
     try {
-      preparePublicThumbnails(paths, width);
-      preparePublicThumbnails(paths, width); // A second visitor must not create another worker pool.
+      preparePublicThumbnails(paths);
+      preparePublicThumbnails(paths); // A second visitor must not create another worker pool.
       await vi.waitFor(() => expect(mock.downloads).toHaveLength(2));
-      const foreground = readPhotoBytes(paths[0]!, width);
+      const foreground = readPhotoBytes(paths[0]!, 320);
       release();
       expect((await foreground)?.buffer.equals(buffer)).toBe(true);
       await vi.waitFor(() => expect(mock.downloads).toHaveLength(9));
       // Drain workers before resetting the mocked storage.
-      await Promise.all(paths.slice(0, 9).map((p) => readPhotoBytes(p, width)));
+      await Promise.all(paths.slice(0, 9).map((p) => readPhotoBytes(p, 320)));
       expect(new Set(mock.downloads).size).toBe(9);
-      expect(mock.downloads.every((p) => p.endsWith(`/${width}.webp`))).toBe(true);
+      expect(mock.downloads.every((p) => p.endsWith('/320.webp'))).toBe(true);
     } finally {
       release();
       for (const p of paths) forgetPhotoVariants(p);
