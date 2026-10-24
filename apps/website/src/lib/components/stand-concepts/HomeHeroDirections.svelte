@@ -15,6 +15,8 @@
   import FeaturedBacklight from './FeaturedBacklight.svelte';
   import { featuredAutoplay } from './featuredAutoplay';
   import { scrollCue } from './scrollCue';
+  import { featuredPhotoSizes } from './images';
+  import { scrollFrame, setScrollStyle } from './scrollFrame';
 
   const version = 5;
   let { homeHighlights }: { homeHighlights?: PublicHighlights } = $props();
@@ -38,52 +40,59 @@
   const background = heroBackgrounds[5];
   function anchorStart(node: HTMLElement) {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-    const measure = () => {
+    const task = scrollFrame(() => {
+      // Complete geometry reads before changing canvas styles or any label pivot.
       const bounds = node.getBoundingClientRect();
-      const side = 0;
-      node.style.setProperty('--v1-anchor-start', `${bounds.top + scrollY}px`);
-      node.style.setProperty('--v1-canvas-left', `${bounds.left - side}px`);
-      node.style.setProperty('--v1-canvas-width', `${bounds.width + side * 2}px`);
-      node.style.setProperty('--v1-canvas-height', `${bounds.height}px`);
-      const photo = node.querySelector<HTMLElement>('.hd-photo-stage');
-      if (photo) {
+      const writes: [HTMLElement, string, string][] = [
+        [node, '--v1-anchor-start', `${bounds.top + scrollY}px`],
+        [node, '--v1-canvas-left', `${bounds.left}px`],
+        [node, '--v1-canvas-width', `${bounds.width}px`],
+        [node, '--v1-canvas-height', `${bounds.height}px`],
+      ];
+      const offset = (plane: HTMLElement) => {
         let left = 0;
         let top = 0;
-        let element: HTMLElement | null = photo;
+        let element: HTMLElement | null = plane;
         while (element && element !== node) {
           left += element.offsetLeft;
           top += element.offsetTop;
           element = element.offsetParent as HTMLElement | null;
         }
-        node.style.setProperty('--v5-photo-left', `${left}px`);
-        node.style.setProperty('--v5-photo-top', `${top}px`);
-        node.style.setProperty('--v5-photo-width', `${photo.offsetWidth}px`);
-        node.style.setProperty('--v5-photo-height', `${photo.offsetHeight}px`);
+        return { left, top };
+      };
+      const photo = node.querySelector<HTMLElement>('.hd-photo-stage');
+      if (photo) {
+        const { left, top } = offset(photo);
+        const width = photo.offsetWidth;
+        const height = photo.offsetHeight;
+        writes.push(
+          [node, '--v5-photo-left', `${left}px`],
+          [node, '--v5-photo-top', `${top}px`],
+          [node, '--v5-photo-width', `${width}px`],
+          [node, '--v5-photo-height', `${height}px`],
+        );
         for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion')) {
-          let planeLeft = 0;
-          let planeTop = 0;
-          element = plane;
-          while (element && element !== node) {
-            planeLeft += element.offsetLeft;
-            planeTop += element.offsetTop;
-            element = element.offsetParent as HTMLElement | null;
-          }
-          // Attached labels rotate around the photo's centre in layout coordinates.
-          // Measuring untransformed offsets avoids feeding animation back into layout.
-          plane.style.setProperty('--featured-pivot',
-            `${left + photo.offsetWidth / 2 - planeLeft}px ${top + photo.offsetHeight / 2 - planeTop}px`);
+          const position = offset(plane);
+          writes.push([plane, '--featured-pivot',
+            `${left + width / 2 - position.left}px ${top + height / 2 - position.top}px`]);
         }
       }
-      node.dataset.canvasPinned = String(!reduced.matches && CSS.supports('clip-path', 'inset(0)'));
-    };
+      const pinned = String(!reduced.matches && CSS.supports('clip-path', 'inset(0)'));
+      return () => {
+        for (const [target, name, value] of writes) setScrollStyle(target, name, value);
+        if (node.dataset.canvasPinned !== pinned) node.dataset.canvasPinned = pinned;
+      };
+    });
+    const measure = () => task.schedule();
     const resize = new ResizeObserver(measure);
     resize.observe(node);
     for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion')) resize.observe(plane);
     window.addEventListener('resize', measure);
     reduced.addEventListener('change', measure);
-    measure();
+    task.runNow(performance.now());
     return {
       destroy() {
+        task.cancel();
         resize.disconnect();
         window.removeEventListener('resize', measure);
         reduced.removeEventListener('change', measure);
@@ -115,9 +124,17 @@
 </script>
 
 <svelte:head>
+  <!-- Match each picture source exactly so preload discovery cannot download two variants. -->
+  <link rel="preload" as="image" type="image/avif" media="(max-width: 700px)"
+    imagesrcset={background.avifPortrait}
+    imagesizes="max(calc(55vw + 600px), 105.5vw, 94.95vh)" fetchpriority="high" />
+  <link rel="preload" as="image" type="image/avif" media="(min-width: 701px)"
+    imagesrcset={background.avifDesktop}
+    imagesizes="(max-width: 1050px) max(105.5vw, 158.25vh), max(105.5vw, 131.875vh)"
+    fetchpriority="high" />
   {#if firstImage}
     <link rel="preload" as="image" href={sizedPhoto(firstImage, 1600)}
-      imagesrcset={vehiclePhotoSet(firstImage)} imagesizes="(max-width: 700px) 100vw, 55vw"
+      imagesrcset={vehiclePhotoSet(firstImage)} imagesizes={featuredPhotoSizes}
       fetchpriority="high" />
   {/if}
 </svelte:head>

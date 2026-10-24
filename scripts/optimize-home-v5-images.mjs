@@ -11,7 +11,7 @@ const crops = JSON.parse(await readFile('apps/website/src/lib/sceneCrops.json', 
 await mkdir(destination, { recursive: true });
 await mkdir(audit, { recursive: true });
 const jobs = [
-  ['forest-wide', 'forest-ribbon-5472.webp', [1280, 1920, 2560, 3840, 5472]],
+  ['forest-wide', 'forest-ribbon-5472.webp', [1280, 1920, 2560, 2880, 3840, 5472]],
   ['forest-portrait', 'forest-ribbon-portrait-1920.webp', [640, 1080, 1280, 1920]],
   ['catalog-portrait', 'family-forest-ribbon-portrait-native.webp', [480, 810, 960, 1440, 2052]],
   ['curves-wide', 'family-curves-wide-5472.webp', [1280, 1920, 2560, 3840, 5472]],
@@ -25,9 +25,9 @@ const only = process.argv.find((arg) => arg.startsWith('--only='))?.slice(7);
 // Keep the visit sources at their previous quality: those are already enlarged
 // by the contact section, particularly its tall mobile composition.
 const encoding = {
-  'forest-wide': { webp: 88, avif: 65 },
-  'forest-portrait': { webp: 88, avif: 65 },
-  'catalog-portrait': { webp: 85, avif: 60 },
+  'forest-wide': { webp: 88, avif: 55 },
+  'forest-portrait': { webp: 88, avif: 55 },
+  'catalog-portrait': { webp: 85, avif: 55 },
   'curves-wide': { webp: 88, avif: 65 },
   'curves-portrait': { webp: 88, avif: 65 },
   'service-wide': { webp: 85, avif: 60 },
@@ -68,7 +68,7 @@ for (const [name, source, widths] of process.argv.includes('--module-only') ? []
       const bytes = await (
         format === 'webp'
           ? base.clone().webp({ quality: quality.webp, effort: 6, smartSubsample: true })
-          : base.clone().avif({ quality: quality.avif, effort: 5, chromaSubsampling: '4:4:4' })
+          : base.clone().avif({ quality: quality.avif, effort: 5, chromaSubsampling: ['forest-wide', 'forest-portrait', 'catalog-portrait'].includes(name) ? '4:2:0' : '4:4:4' })
       ).toBuffer();
       const file = `${destination}${name}-${width}.${format}`;
       await writeFile(file, bytes);
