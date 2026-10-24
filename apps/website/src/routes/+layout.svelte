@@ -16,8 +16,12 @@
     cancelNavigationThumbnails();
     if (!browser || type !== 'link' || !to || to.url.origin !== location.origin) return;
     const match = /^\/viaturas\/([^/]+)$/.exec(to.url.pathname);
-    if (match?.[1] && match[1].length <= 180 && slugPattern.test(match[1]))
-      warmNavigationThumbnails(match[1], innerWidth, devicePixelRatio);
+    if (match?.[1] && match[1].length <= 180 && slugPattern.test(match[1])) {
+      const card = [...document.querySelectorAll<HTMLAnchorElement>('a[data-photo-count]')]
+        .find(link => link.origin === location.origin && link.pathname === to.url.pathname);
+      const count = card ? Number(card.dataset.photoCount) : undefined;
+      warmNavigationThumbnails(match[1], innerWidth, devicePixelRatio, count);
+    }
   });
   afterNavigate(({ type, to }) => { if (to) anchors?.afterNavigate(type, to.url); });
   import { comparisonContext, createComparison, COMPARISON_KEY } from '$lib/comparison';

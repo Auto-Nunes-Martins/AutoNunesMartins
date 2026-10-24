@@ -1497,6 +1497,7 @@
     {#if vehicle}
       <div class="card-photo">
         <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
+          data-photo-count={'photoCount' in vehicle ? vehicle.photoCount : undefined}
           ><img
             use:coverPhotoSizes
             use:vehiclePhoto={{
@@ -1519,6 +1520,7 @@
       <div class="card-body">
         <div class="card-info">
           <a class="card-detail-link" href={'href' in vehicle ? vehicle.href : '/viaturas'}
+            data-photo-count={'photoCount' in vehicle ? vehicle.photoCount : undefined}
             ><h3>{vehicle.brand} {vehicle.model}</h3>
             {#if 'version' in vehicle && vehicle.version}<span class="card-version"
                 >{vehicle.version}</span

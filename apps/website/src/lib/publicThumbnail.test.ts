@@ -88,3 +88,39 @@ it('falls back without retaining permission when the access request fails', asyn
   );
   module.cancelNavigationThumbnails();
 });
+
+it('uses a card count only to schedule downloads and still rejects reuse when arrival authorization fails', async () => {
+  const releases: Array<() => void> = [];
+  const request = vi.fn(async (url: string) => {
+    if (url.endsWith('/access')) return new Response(null, { status: 404 });
+    const index = Number(url.match(/photos\/(\d+)/)![1]);
+    await new Promise<void>((resolve) => releases.push(resolve));
+    // The card may be stale: a removed image must not be retained.
+    return index === 1 ? new Response(null, { status: 404 }) : image(index);
+  });
+  vi.stubGlobal('fetch', request);
+  const module = await import('./publicThumbnail');
+  module.warmNavigationThumbnails('car-abcdef123456', 390, 3, 2);
+  await vi.waitFor(() => expect(releases).toHaveLength(2));
+  expect(
+    request.mock.calls.every(([url]) => url.includes('/photos/') && !url.endsWith('/access')),
+  ).toBe(true);
+  const session = module.createThumbnailSession('car-abcdef123456');
+  session.attach();
+  await expect(session.access()).rejects.toThrow('Photos unavailable');
+  releases.forEach((resolve) => resolve());
+  await session.prepared(1);
+  expect(request.mock.calls.filter(([url]) => url.endsWith('/access'))).toHaveLength(1);
+  session.detach();
+  module.cancelNavigationThumbnails();
+});
+
+it.each([-1, 21, 1.5, NaN])('discovers a safe count for an invalid hint %s', async (count) => {
+  const request = vi.fn().mockResolvedValue(Response.json({ versions: [] }));
+  vi.stubGlobal('fetch', request);
+  const module = await import('./publicThumbnail');
+  module.warmNavigationThumbnails('car-abcdef123456', 1200, 1, count);
+  await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+  expect(request.mock.calls[0]?.[0]).toContain('/photos/access');
+  module.cancelNavigationThumbnails();
+});

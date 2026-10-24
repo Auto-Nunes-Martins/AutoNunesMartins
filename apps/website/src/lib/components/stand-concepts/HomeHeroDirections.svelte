@@ -128,6 +128,7 @@
           class="hd-photo"
           class:hd-photo-failed={failed}
           href={publicHref(car.slug)}
+          data-photo-count={car.photos.length}
           aria-label={`Conhecer ${car.brand} ${car.model}`}
         >
           <FeaturedPhoto
@@ -144,7 +145,7 @@
       <div class="hd-caption" id="hd-vehicle-caption">
         <div class="hd-identity">
           <span class="hd-brand">{car.brand}</span>
-          <h2><a href={publicHref(car.slug)}>{car.model}</a></h2>
+          <h2><a href={publicHref(car.slug)} data-photo-count={car.photos.length}>{car.model}</a></h2>
           <p>
             {car.year} <span>·</span>
             {new Intl.NumberFormat('pt-PT').format(car.mileage)} km <span>·</span>
@@ -155,6 +156,7 @@
           <strong><FeaturedPriceWave value={publicPrice(car.price)} /></strong
           >{#if car.availability === 'RESERVED'}<span>Reservada</span>{/if}<a
             href={publicHref(car.slug)}
+            data-photo-count={car.photos.length}
             >Conhecer viatura <ArrowUpRight size={15} aria-hidden="true" /></a
           >
         </div>

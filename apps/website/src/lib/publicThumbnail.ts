@@ -24,7 +24,12 @@ function photoVersions(data: unknown): string[] {
 }
 
 /** Called only for an actual link navigation, never hover, focus or intersection. */
-export function warmNavigationThumbnails(slug: string, viewport: number, density: number) {
+export function warmNavigationThumbnails(
+  slug: string,
+  viewport: number,
+  density: number,
+  count?: number,
+) {
   cancelNavigationThumbnails();
   const width = navigationThumbnailWidth(viewport, density);
   if (width > 800) return; // Keep native responsive delivery for unusually dense screens.
@@ -32,20 +37,29 @@ export function warmNavigationThumbnails(slug: string, viewport: number, density
   const work: NavigationWarmup = { slug, controller, ready: Promise.resolve(), photos: new Map() };
   navigationWarmup = work;
   const deadline = setTimeout(() => controller.abort(), 8000);
-  work.ready = fetch(`/viaturas/${slug}/photos/access`, {
-    cache: 'no-store',
-    credentials: 'omit',
-    signal: controller.signal,
-  })
-    .then(async (response) => {
-      if (!response.ok) throw Error('Photos unavailable');
-      const versions = photoVersions(await response.json());
+  // A public card's count is only a scheduling hint, never permission. Every
+  // image request is authorized by the backend and arrival access remains fresh.
+  // On revisits, discover current identities first so retained pixels can avoid
+  // redundant downloads. The count shortcut targets a first visit only.
+  const knownCount = !available(slug) && Number.isInteger(count) && count! >= 0 && count! <= 20;
+  const discovery = knownCount
+    ? Promise.resolve<string[] | undefined>(undefined)
+    : fetch(`/viaturas/${slug}/photos/access`, {
+        cache: 'no-store',
+        credentials: 'omit',
+        signal: controller.signal,
+      }).then(async (response) => {
+        if (!response.ok) throw Error('Photos unavailable');
+        return photoVersions(await response.json());
+      });
+  work.ready = discovery
+    .then(async (versions) => {
       if (controller.signal.aborted) return;
       // Each image still performs its own live authorization. This first query
       // discovers the count/identities; it is not reused as permission on arrival.
       let next = 0;
       const finish: Array<() => void> = [];
-      for (let index = 0; index < Math.min(9, versions.length); index++) {
+      for (let index = 0; index < Math.min(9, knownCount ? count! : versions!.length); index++) {
         work.photos.set(
           index,
           new Promise<void>((resolve) => {
@@ -57,7 +71,7 @@ export function warmNavigationThumbnails(slug: string, viewport: number, density
         while (next < finish.length && !controller.signal.aborted) {
           const index = next++;
           try {
-            const cached = entries.get(`${versions[index]}/${width}`);
+            const cached = versions ? entries.get(`${versions[index]}/${width}`) : undefined;
             if (cached && cached.used > Date.now() - MAX_AGE) continue;
             const image = await fetch(`/viaturas/${slug}/photos/${index}?w=${width}`, {
               cache: 'no-cache',
