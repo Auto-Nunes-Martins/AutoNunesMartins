@@ -36,7 +36,6 @@ test('fast relay keeps authorization, cache validation, bytes, bounds and creden
       'content-type': mode === 'invalid' ? 'text/html' : 'image/webp',
       'content-length': mode === 'oversize' ? 21 * 1024 * 1024 : bytes.length,
       etag: '"photo"', 'x-photo-version': 'a'.repeat(64), 'x-photo-cache-policy': 'shared-v1',
-      'x-photo-warmup': 'requested-v1',
       'server-timing': mode === 'metadata' ? 'database;desc="private"' : 'photo-check;dur=24.0',
       'set-cookie': 'secret=not-for-browser', 'x-private': 'private',
     });
@@ -65,7 +64,6 @@ test('fast relay keeps authorization, cache validation, bytes, bounds and creden
     const photo = await request(path, { cookie: 'crm=private', authorization: 'Bearer private' });
     assert.equal(photo.status, 200); assert.deepEqual(photo.bytes, bytes);
     assert.equal(photo.headers['x-photo-delivery'], 'gateway-v2');
-    assert.equal(photo.headers['x-photo-warmup'], 'requested-v1');
     assert.equal(photo.headers['cache-control'], 'private, no-cache, max-age=0, must-revalidate');
     assert.equal(photo.headers['set-cookie'], undefined); assert.equal(photo.headers['x-private'], undefined);
     assert.equal(photo.headers['server-timing'], 'photo-check;dur=24.0');

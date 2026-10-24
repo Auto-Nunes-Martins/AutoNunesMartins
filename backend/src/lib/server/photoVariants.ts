@@ -36,7 +36,7 @@ const manifestReads = new Map<string, Promise<VariantManifest | null>>();
 export function forgetPhotoVariants(path: string) {
   manifests.delete(path);
   manifestReads.delete(path);
-  for (const key of thumbnailWarmup.keys()) if (key.startsWith(path + '|')) thumbnailWarmup.delete(key);
+  thumbnailWarmup.delete(path);
   for (const key of photoReads.keys()) if (key.startsWith(path + '|')) photoReads.delete(key);
   bytesCache.forget(path);
 }
@@ -384,27 +384,27 @@ async function inspectDerivative(buffer: Buffer, width: number, decode = false) 
   if (decode) await image.timeout({ seconds: 20 }).stats();
 }
 
-// Speculation is bounded process-wide (not two downloads per visitor). Only the
-// requested thumbnail width is warmed, never an assumed width during page load.
+// Speculation is bounded process-wide (not two downloads per visitor). The base
+// 320px thumbnail is warmed; responsive requests retain every larger resolution.
 // Never warm the master or the large gallery, nor wait for this to send page data.
-const thumbnailWarmup = new Map<string, {path: string; width: 320 | 384; until: number}>();
+const thumbnailWarmup = new Map<string, number>();
 let warming = 0;
-export function preparePublicThumbnails(approved: string[], width: 320 | 384 = 320) {
+export function preparePublicThumbnails(approved: string[]) {
   for (const path of approved.slice(0, 9)) {
-    const key = path + '|' + width;
-    if (bytesCache.get(key, false) || photoReads.has(key) || thumbnailWarmup.has(key)) continue;
+    const key = path + '|320';
+    if (bytesCache.get(key, false) || photoReads.has(key) || thumbnailWarmup.has(path)) continue;
     if (thumbnailWarmup.size >= 36) break;
-    thumbnailWarmup.set(key, {path, width, until: Date.now() + 5_000});
+    thumbnailWarmup.set(path, Date.now() + 5_000);
   }
   drainThumbnailWarmup();
 }
 function drainThumbnailWarmup() {
   while (warming < 2 && thumbnailWarmup.size) {
-    const [key, {path, width, until}] = thumbnailWarmup.entries().next().value!;
-    thumbnailWarmup.delete(key);
+    const [path, until] = thumbnailWarmup.entries().next().value!;
+    thumbnailWarmup.delete(path);
     if (until <= Date.now()) continue;
     warming++;
-    void readPixels(path, width, undefined, true)
+    void readPixels(path, 320, undefined, true)
       .catch(() => null)
       .finally(() => {
         warming--;
