@@ -183,7 +183,7 @@
         </div>
         <div class="hd-price">
           <div class="hd-price-motion"><div class="hd-idle-plane">
-            <strong><FeaturedPriceWave value={publicPrice(car.price)} /></strong>
+            <strong><FeaturedPriceWave value={publicPrice(car.price)} vehicle={car.slug} /></strong>
           </div></div>
           {#if car.availability === 'RESERVED'}<span>Reservada</span>{/if}<a
             href={publicHref(car.slug)}

@@ -1,11 +1,11 @@
 <script lang="ts">
   import { priceEmphasis } from './priceEmphasis';
-  let { value }: { value: string } = $props();
+  let { value, vehicle }: { value: string; vehicle: string } = $props();
 </script>
 
 <span class="featured-price">
   <span class="readable-price">{value}</span><span class="visual-price" aria-hidden="true"
-    ><span class="price-sizer">{value}</span><span class="price-amount" use:priceEmphasis>{value}</span></span
+    ><span class="price-sizer">{value}</span><span class="price-amount" use:priceEmphasis={vehicle}>{value}</span></span
   >
 </span>
 
