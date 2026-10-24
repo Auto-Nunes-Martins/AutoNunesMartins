@@ -3,6 +3,7 @@ import sharp from 'sharp';
 const mock = vi.hoisted(() => ({
   objects: new Map<string, { buffer: Buffer; type: string }>(),
   failWidth: 0,
+  unavailable: false,
   uploads: [] as string[],
   downloads: [] as string[],
 }));
@@ -13,6 +14,7 @@ vi.mock('../data/storage.js', () => ({
       from: () => ({
         download: async (path: string) => {
           mock.downloads.push(path);
+          if (mock.unavailable) return { data: null, error: { statusCode: 503 } };
           const o = mock.objects.get(path);
           return o
             ? { data: new Blob([new Uint8Array(o.buffer)], { type: o.type }), error: null }
@@ -47,9 +49,86 @@ beforeEach(() => {
   mock.uploads = [];
   mock.downloads = [];
   mock.failWidth = 0;
+  mock.unavailable = false;
   forgetPhotoVariants(path);
 });
 describe('private reusable photo variants', () => {
+  it('reads an exact derivative without downloading its manifest and preserves its bytes', async () => {
+    const buffer = await sharp({
+      create: { width: 320, height: 200, channels: 3, background: 'blue' },
+    })
+      .webp()
+      .toBuffer();
+    mock.objects.set(variantPath(path, 320), { buffer, type: 'image/webp' });
+    const photo = await readPhotoBytes(path, 320);
+    expect(photo?.buffer.equals(buffer)).toBe(true);
+    expect(mock.downloads).toEqual([variantPath(path, 320)]);
+  });
+  it('falls back once for a legacy photo without probing other widths or the manifest', async () => {
+    const buffer = Buffer.from('legacy-master');
+    mock.objects.set(path, { buffer, type: 'image/jpeg' });
+    expect((await readPhotoBytes(path, 320))?.buffer.equals(buffer)).toBe(true);
+    expect(mock.downloads).toEqual([variantPath(path, 320), path]);
+  });
+  it('does not amplify a temporary storage failure into another download', async () => {
+    mock.unavailable = true;
+    expect(await readPhotoBytes(path, 320)).toBeNull();
+    expect(mock.downloads).toEqual([variantPath(path, 320)]);
+  });
+  it.each(['corrupt', 'wrong-width', 'wrong-type'])(
+    'rejects a %s derivative and uses the master',
+    async (kind) => {
+      const master = Buffer.from('master-fallback');
+      const candidate =
+        kind === 'corrupt'
+          ? Buffer.from('broken-webp')
+          : await sharp({
+              create: {
+                width: kind === 'wrong-width' ? 384 : 320,
+                height: 200,
+                channels: 3,
+                background: 'red',
+              },
+            })
+              .webp()
+              .toBuffer();
+      mock.objects.set(path, { buffer: master, type: 'image/jpeg' });
+      mock.objects.set(variantPath(path, 320), {
+        buffer: candidate,
+        type: kind === 'wrong-type' ? 'text/plain' : 'image/webp',
+      });
+      expect((await readPhotoBytes(path, 320))?.buffer.equals(master)).toBe(true);
+      expect(mock.downloads).toEqual([variantPath(path, 320), path]);
+    },
+  );
+  it('serves a completed derivative after an interrupted batch and falls back for its missing width', async () => {
+    const input = await sharp({
+      create: { width: 1700, height: 1000, channels: 3, background: 'green' },
+    })
+      .jpeg()
+      .toBuffer();
+    mock.objects.set(path, { buffer: input, type: 'image/jpeg' });
+    mock.failWidth = 800;
+    await expect(ensurePhotoVariants(path, input)).rejects.toThrow();
+    forgetPhotoVariants(path);
+    mock.downloads = [];
+    const small = await readPhotoBytes(path, 320);
+    expect((await sharp(small!.buffer).metadata()).width).toBe(320);
+    expect((await readPhotoBytes(path, 800))?.buffer.equals(input)).toBe(true);
+    expect(mock.downloads).toEqual([variantPath(path, 320), variantPath(path, 800), path]);
+  });
+  it('uses a known small master without making a doomed derivative request', async () => {
+    const input = await sharp({
+      create: { width: 200, height: 150, channels: 3, background: 'green' },
+    })
+      .jpeg()
+      .toBuffer();
+    mock.objects.set(path, { buffer: input, type: 'image/jpeg' });
+    await ensurePhotoVariants(path, input);
+    mock.downloads = [];
+    expect((await readPhotoBytes(path, 320))?.buffer.equals(input)).toBe(true);
+    expect(mock.downloads).toEqual([path]);
+  });
   it('downloads one pixel file for concurrent requests and retains the warm result', async () => {
     const buffer = Buffer.from('shared-photo');
     mock.objects.set(path, { buffer, type: 'image/jpeg' });

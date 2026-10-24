@@ -176,7 +176,7 @@ export async function buildPhotoVariants(
   }
   return { manifest, files };
 }
-/** Publish the manifest last. Interrupted runs remain retryable; originals/DB stay untouched. */
+/** Publish the manifest last to track complete batches. Individually valid derivatives are reusable. */
 export async function ensurePhotoVariants(path: string, input?: Buffer) {
   const bucket = getSupabase().storage.from(getBucketName());
   const existing = await readVariantManifest(path);
@@ -273,13 +273,52 @@ async function loadPhotoBytes(
 ): Promise<PhotoBytes | null> {
   const key = path + '|' + (width ?? 'original');
   const manifestStart = performance.now();
-  let chosen = width ? await preferredVariantPath(path, width) : path;
+  const thumbnail = width !== undefined && width <= 800;
+  // Requested widths have deterministic private paths. A cold read need not download
+  // the manifest first. Reuse a known manifest when present (including small masters).
+  const known = manifests.get(path);
+  const current = known && known.until > Date.now() ? known : undefined;
+  const part = width && current?.value?.variants.find((variant) => variant.width >= width);
+  let chosen = width
+    ? current
+      ? part
+        ? variantPath(path, part.width)
+        : path
+      : thumbnail
+        ? variantPath(path, width)
+        : await preferredVariantPath(path, width)
+    : path;
   if (width) timing?.('photo-manifest', performance.now() - manifestStart);
   const storageStart = performance.now();
   const bucket = getSupabase().storage.from(getBucketName());
   let result = await bucket.download(chosen);
-  if ((result.error || !result.data) && chosen !== path) {
+  let derivative: Buffer | undefined;
+  if (thumbnail && !result.error && result.data && chosen !== path) {
+    try {
+      if (result.data.size > MAX_UPLOAD_BYTES || result.data.type !== 'image/webp')
+        throw new Error('Invalid derivative');
+      derivative = Buffer.from(await result.data.arrayBuffer());
+      const image = sharp(derivative, { limitInputPixels: MAX_UPLOAD_PIXELS, failOn: 'warning' });
+      const metadata = await image.metadata();
+      if (
+        metadata.format !== 'webp' ||
+        metadata.width !== (part ? part.width : width) ||
+        !metadata.height ||
+        (metadata.pages ?? 1) !== 1
+      )
+        throw new Error('Invalid derivative');
+      // A complete, decodable file is usable even if generation of other widths
+      // was interrupted. Never send a truncated or mismatched candidate.
+      await image.stats();
+    } catch {
+      derivative = undefined;
+    }
+  }
+  const missing = thumbnail ? String(result.error?.statusCode) === '404' : !!result.error;
+  const invalidDerivative = !result.error && (!result.data || (thumbnail && !derivative));
+  if ((missing || invalidDerivative) && chosen !== path) {
     chosen = path;
+    derivative = undefined;
     result = await bucket.download(path);
   }
   if (
@@ -291,7 +330,7 @@ async function loadPhotoBytes(
     timing?.('photo-storage', performance.now() - storageStart);
     return null;
   }
-  const buffer = Buffer.from(await result.data.arrayBuffer()),
+  const buffer = derivative ?? Buffer.from(await result.data.arrayBuffer()),
     contentType = result.data.type;
   timing?.('photo-storage', performance.now() - storageStart);
   const etag = '"' + createHash('sha256').update(path).update(buffer).digest('hex') + '"';
