@@ -25,6 +25,8 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
     );
     // Numeric photo-stage diagnostics only; never forward arbitrary backend metadata.
     const timing = response.headers.get('server-timing');
+    if (response.headers.get('x-photo-cache-policy') === 'shared-v1')
+      headers['x-photo-cache-policy'] = 'shared-v1';
     if (
       timing &&
       timing.length <= 512 &&
@@ -50,6 +52,37 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
     const contentType = response.headers.get('content-type')?.split(';')[0] ?? '';
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType))
       return new Response(null, { status: 503, headers });
+    const length = response.headers.get('content-length');
+    // The authorized backend sends a complete, bounded Buffer with Content-Length.
+    // Forward its chunks without retaining a second full copy in the website.
+    if (length && /^\d+$/.test(length) && !response.headers.get('content-encoding')) {
+      const expected = Number(length);
+      if (expected > 20 * 1024 * 1024 || !response.body) {
+        await response.body?.cancel();
+        return new Response(null, { status: 503, headers });
+      }
+      let received = 0;
+      const body = response.body.pipeThrough(
+        new TransformStream<Uint8Array, Uint8Array>({
+          transform(chunk, controller) {
+            received += chunk.byteLength;
+            if (received > expected) throw new Error('Photo length exceeded');
+            controller.enqueue(chunk);
+          },
+          flush() {
+            if (received !== expected) throw new Error('Incomplete photo');
+          },
+        }),
+      );
+      return new Response(body, {
+        headers: {
+          ...headers,
+          'content-type': contentType,
+          'content-length': length,
+          'x-photo-delivery': 'stream-v1',
+        },
+      });
+    }
     const bytes = await response.arrayBuffer();
     if (bytes.byteLength > 20 * 1024 * 1024) return new Response(null, { status: 503, headers });
     return new Response(bytes, { headers: { ...headers, 'content-type': contentType } });

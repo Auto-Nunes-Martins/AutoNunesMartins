@@ -241,6 +241,7 @@ router.get(
         'X-Content-Type-Options': 'nosniff',
         'Cross-Origin-Resource-Policy': 'cross-origin',
         'X-Photo-Version': publicPhotoVersion(path),
+        'X-Photo-Cache-Policy': 'shared-v1',
       });
       if (width) {
         res.set({

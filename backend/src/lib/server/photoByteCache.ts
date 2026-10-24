@@ -1,5 +1,5 @@
-/** Pixel bytes only, never permissions. Separate LRU budgets protect thumbnails
- * from gallery churn without increasing the existing 12 MiB process budget. */
+/** Pixel bytes only, never permissions. Shared LRU capacity with a soft thumbnail
+ * reservation; the total retained pixel budget remains 12 MiB per process. */
 export type CachedPhoto = {
   until: number;
   buffer: Buffer;
@@ -7,10 +7,12 @@ export type CachedPhoto = {
   etag: string;
 };
 
-class PixelPool {
-  private entries = new Map<string, CachedPhoto>();
+export class PhotoByteCache {
+  private entries = new Map<string, CachedPhoto & { small: boolean }>();
   private bytes = 0;
-  constructor(private readonly budget: number) {}
+  private thumbnailBytes = 0;
+  private readonly budget = 12 * 1024 * 1024;
+  private readonly reservation = 4 * 1024 * 1024;
 
   get(key: string, touch = true) {
     const value = this.entries.get(key);
@@ -28,7 +30,10 @@ class PixelPool {
 
   private delete(key: string) {
     const value = this.entries.get(key);
-    if (value) this.bytes -= value.buffer.length;
+    if (value) {
+      this.bytes -= value.buffer.length;
+      if (value.small) this.thumbnailBytes -= value.buffer.length;
+    }
     this.entries.delete(key);
   }
 
@@ -36,39 +41,27 @@ class PixelPool {
     for (const key of this.entries.keys()) if (key.startsWith(path + '|')) this.delete(key);
   }
 
-  set(key: string, value: CachedPhoto) {
-    if (value.buffer.length > this.budget) return;
+  set(key: string, photo: CachedPhoto, width: number, isDerivative: boolean) {
+    if (photo.buffer.length > 2_000_000) return;
+    const small = isDerivative && width <= 800 && photo.buffer.length <= 512 * 1024;
+    const value = { ...photo, small, until: Date.now() + (small ? 10 * 60_000 : 60_000) };
     this.delete(key);
     for (const [id, entry] of this.entries) if (entry.until <= Date.now()) this.delete(id);
     while (
       this.entries.size &&
-      (this.bytes + value.buffer.length > this.budget || this.entries.size >= 512)
+      (this.bytes + value.buffer.length > this.budget || this.entries.size >= 1024)
     ) {
-      this.delete(this.entries.keys().next().value!);
+      // Do not evict a protected thumbnail for a gallery image. Capacity above
+      // the reservation is shared in LRU order, and either class can borrow it.
+      const victim = [...this.entries].find(
+        ([, entry]) =>
+          !entry.small || small || this.thumbnailBytes - entry.buffer.length >= this.reservation,
+      );
+      if (!victim) return;
+      this.delete(victim[0]);
     }
     this.entries.set(key, value);
     this.bytes += value.buffer.length;
-  }
-}
-
-export class PhotoByteCache {
-  private thumbnails = new PixelPool(4 * 1024 * 1024);
-  private gallery = new PixelPool(8 * 1024 * 1024);
-
-  get(key: string, touch = true) {
-    return this.thumbnails.get(key, touch) ?? this.gallery.get(key, touch);
-  }
-
-  forget(path: string) {
-    this.thumbnails.forget(path);
-    this.gallery.forget(path);
-  }
-
-  set(key: string, photo: CachedPhoto, width: number, isDerivative: boolean) {
-    if (photo.buffer.length > 2_000_000) return;
-    // A legacy full-size fallback must not consume the thumbnail reservation.
-    const small = isDerivative && width <= 800 && photo.buffer.length <= 512 * 1024;
-    const value = { ...photo, until: Date.now() + (small ? 10 * 60_000 : 60_000) };
-    (small ? this.thumbnails : this.gallery).set(key, value);
+    if (small) this.thumbnailBytes += value.buffer.length;
   }
 }

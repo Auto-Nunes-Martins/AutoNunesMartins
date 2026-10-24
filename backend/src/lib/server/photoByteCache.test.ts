@@ -33,7 +33,7 @@ it('protects thumbnails from gallery eviction and bounds the combined pixel stor
   for (let i = 0; i < 8; i++) cache.set(`thumb${i}|800`, photo(mib / 2), 800, true);
   cache.get('thumb0|800'); // Recently used survives the next thumbnail eviction.
   cache.set('thumb8|800', photo(mib / 2), 800, true);
-  expect(cache.get('thumb1|800')).toBeUndefined();
+  expect(cache.get('thumb1|800')).toBeDefined(); // Borrows unused gallery capacity.
   expect(cache.get('thumb0|800')).toBeDefined();
   for (let i = 0; i < 20; i++) cache.set(`large${i}|1600`, photo(mib), 1600, true);
   const thumbnails = Array.from({ length: 9 }, (_, i) => cache.get(`thumb${i}|800`));
@@ -41,6 +41,18 @@ it('protects thumbnails from gallery eviction and bounds the combined pixel stor
   expect(thumbnails.filter(Boolean)).toHaveLength(8);
   expect(large.filter(Boolean)).toHaveLength(8);
   expect([...thumbnails, ...large].reduce((n, p) => n + (p?.buffer.length ?? 0), 0)).toBe(12 * mib);
+});
+
+it('lets gallery responses borrow unused thumbnail capacity without exceeding the total', () => {
+  const cache = new PhotoByteCache();
+  const mib = 1024 * 1024;
+  for (let i = 0; i < 12; i++) cache.set(`gallery${i}|1600`, photo(mib), 1600, true);
+  expect(
+    Array.from({ length: 12 }, (_, i) => cache.get(`gallery${i}|1600`)).filter(Boolean),
+  ).toHaveLength(12);
+  cache.set('thumb|320', photo(mib / 2), 320, true);
+  expect(cache.get('gallery0|1600')).toBeUndefined();
+  expect(cache.get('thumb|320')).toBeDefined();
 });
 
 it('keeps original fallbacks out of the thumbnail reservation', () => {
