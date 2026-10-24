@@ -1,5 +1,5 @@
-/** A persistent clock independent of vehicle changes; font sizing keeps glyphs crisp. */
-export function priceEmphasis(node: HTMLElement) {
+/** One pulse per displayed vehicle change; font sizing keeps glyphs crisp. */
+export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   const feature = node.closest<HTMLElement>('.hd-feature');
   const slot = node.parentElement;
   if (!feature || !slot) return;
@@ -12,10 +12,9 @@ export function priceEmphasis(node: HTMLElement) {
   let destroyed = false;
   let target = 1;
   let base = parseFloat(getComputedStyle(slot).fontSize);
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  let vehicle = initialVehicle;
   let animation: Animation | undefined;
   const originalSize = node.style.fontSize;
-  const cancelTimer = () => { clearTimeout(timer); timer = undefined; };
   const canAnimate = () => {
     const bounds = feature.getBoundingClientRect();
     return entered && visible && !document.hidden && !reduced.matches &&
@@ -43,20 +42,17 @@ export function priceEmphasis(node: HTMLElement) {
       remember(next);
     }
   };
-  const schedule = () => {
-    if (timer !== undefined || !canAnimate() || interacting()) return;
-    timer = setTimeout(() => {
-      timer = undefined;
-      if (destroyed || !canAnimate() || interacting()) return;
-      const next = node.animate([
-        { fontSize: `${base}px`, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)' },
-        { fontSize: `${base * 1.06}px`, offset: 0.32, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' },
-        { fontSize: `${base}px` },
-      ], { duration: 650 });
-      next.id = 'price-idle-pulse';
-      remember(next);
-      schedule();
-    }, 5000);
+  const pulse = () => {
+    if (!canAnimate()) return;
+    animation?.cancel();
+    const resting = base * target;
+    const next = node.animate([
+      { fontSize: `${resting}px`, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)' },
+      { fontSize: `${resting * 1.06}px`, offset: 0.32, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' },
+      { fontSize: `${resting}px` },
+    ], { duration: 650 });
+    next.id = 'price-vehicle-change';
+    remember(next);
   };
   const sync = () => {
     if (destroyed) return;
@@ -64,8 +60,6 @@ export function priceEmphasis(node: HTMLElement) {
     const active = allowed && interacting();
     const next = active ? 1.045 : 1;
     if (!allowed || target !== next) setSize(next, allowed ? (active ? 220 : 260) : 0);
-    if (allowed && !active) schedule();
-    else cancelTimer();
   };
   const afterInput = () => queueMicrotask(sync);
   const enter = (event: PointerEvent) => {
@@ -102,9 +96,14 @@ export function priceEmphasis(node: HTMLElement) {
   pointer.addEventListener('change', sync);
   sync();
   return {
+    update(nextVehicle: string) {
+      if (destroyed || nextVehicle === vehicle) return;
+      vehicle = nextVehicle;
+      sync();
+      pulse();
+    },
     destroy() {
       destroyed = true;
-      cancelTimer();
       animation?.cancel();
       observer.disconnect();
       resize.disconnect();
