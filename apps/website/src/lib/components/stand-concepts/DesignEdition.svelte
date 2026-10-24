@@ -717,7 +717,7 @@
   {:else if car}
     <main class="vehicle-page">
       {#if publicVehicle}<div class="detail-top-actions">
-          <OrbitBackLink /><VehicleShareButton
+          <OrbitBackLink useHistory /><VehicleShareButton
             {...vehicleShareData(publicVehicle, $page.url.origin)}
           />
         </div>{/if}

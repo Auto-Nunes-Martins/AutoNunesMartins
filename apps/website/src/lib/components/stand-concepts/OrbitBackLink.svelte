@@ -1,9 +1,32 @@
 <script lang="ts">
   import { ArrowLeft } from 'lucide-svelte';
-  let { href = '/viaturas', label = 'Voltar' }: { href?: string; label?: string } = $props();
+  let {
+    href = '/viaturas',
+    label = 'Voltar',
+    useHistory = false,
+  }: { href?: string; label?: string; useHistory?: boolean } = $props();
+
+  function goBack(event: MouseEvent) {
+    if (
+      !useHistory ||
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey ||
+      window.history.length <= 1
+    )
+      return;
+
+    event.preventDefault();
+    window.history.back();
+  }
 </script>
 
-<a class="orbit-back-link" {href}><ArrowLeft size={16} aria-hidden="true" />{label}</a>
+<a class="orbit-back-link" {href} onclick={goBack}
+  ><ArrowLeft size={16} aria-hidden="true" />{label}</a
+>
 
 <style>
   a {

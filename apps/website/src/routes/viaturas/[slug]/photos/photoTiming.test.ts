@@ -9,6 +9,65 @@ const read = () =>
     request: new Request('http://localhost/photo'),
   } as Parameters<typeof GET>[0]);
 afterEach(() => vi.resetAllMocks());
+
+it('delivers the first chunk before the backend body finishes, preserving bytes', async () => {
+  let source!: ReadableStreamDefaultController<Uint8Array>;
+  mock.request.mockResolvedValue(
+    new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          source = controller;
+        },
+      }),
+      { headers: { 'content-type': 'image/webp', 'content-length': '6' } },
+    ),
+  );
+  const result = await read();
+  expect(result.headers.get('x-photo-delivery')).toBe('stream-v1');
+  const reader = result.body!.getReader();
+  source.enqueue(new TextEncoder().encode('abc'));
+  expect(new TextDecoder().decode((await reader.read()).value)).toBe('abc');
+  source.enqueue(new TextEncoder().encode('def'));
+  source.close();
+  expect(new TextDecoder().decode((await reader.read()).value)).toBe('def');
+  expect((await reader.read()).done).toBe(true);
+});
+
+it.each(['2', '8'])(
+  'fails the stream when actual bytes differ from declared length %s',
+  async (length) => {
+    mock.request.mockResolvedValue(
+      new Response('abcdef', {
+        headers: { 'content-type': 'image/webp', 'content-length': length },
+      }),
+    );
+    const result = await read();
+    await expect(result.arrayBuffer()).rejects.toThrow();
+  },
+);
+
+it('rejects an oversized stream before forwarding any bytes', async () => {
+  const cancel = vi.fn();
+  mock.request.mockResolvedValue(
+    new Response(new ReadableStream({ cancel }), {
+      headers: { 'content-type': 'image/webp', 'content-length': String(21 * 1024 * 1024) },
+    }),
+  );
+  expect((await read()).status).toBe(503);
+  expect(cancel).toHaveBeenCalled();
+});
+
+it('cancels upstream delivery when the browser cancels', async () => {
+  const cancel = vi.fn();
+  mock.request.mockResolvedValue(
+    new Response(new ReadableStream({ cancel }), {
+      headers: { 'content-type': 'image/webp', 'content-length': '6' },
+    }),
+  );
+  const result = await read();
+  await result.body!.cancel();
+  await vi.waitFor(() => expect(cancel).toHaveBeenCalled());
+});
 describe('public photo diagnostics', () => {
   it.each([200, 304])(
     'preserves numeric timings on %i without changing cache policy or image bytes',
