@@ -1,5 +1,9 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
-import { isPhotoWidth, readPhotoBytes } from '../lib/server/photoVariants.js';
+import {
+  isPhotoWidth,
+  readPhotoBytes,
+  preparePublicThumbnails,
+} from '../lib/server/photoVariants.js';
 import { readPublicHighlights } from '../lib/server/homepageHighlights.js';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -153,7 +157,7 @@ router.get(
       return;
     }
     try {
-      const vehicle = await getPublicVehicle(prisma, slug.data);
+      const vehicle = await getPublicVehicle(prisma, slug.data, preparePublicThumbnails);
       if (!vehicle) {
         const unavailableVehicle = await readUnavailableVehicle(prisma, slug.data);
         res.status(404).json({

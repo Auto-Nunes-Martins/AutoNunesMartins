@@ -31,6 +31,7 @@ vi.mock('../lib/data/storage.js', () => ({
 vi.mock('../middleware/clerk.js', () => ({ requireUser: mocks.auth }));
 
 import router from './publicVehicles.js';
+import { forgetPhotoVariants, readPhotoBytes, variantPath } from '../lib/server/photoVariants.js';
 import publicationRouter from './vehicleWebPublication.js';
 import {
   publicVehicleDto,
@@ -359,6 +360,33 @@ describe('public HTTP responses never disclose private inventory', () => {
     );
     mocks.db.vehicle.findFirst.mockResolvedValue(null);
     expect((await fetch(`${base}/api/public/vehicles/${slug}`)).status).toBe(404);
+  });
+  it('responds with detail while thumbnails warm and still revokes subsequent image requests', async () => {
+    const warmPhoto = `${id}/12345678-1234-1234-1234-123456789abe.jpg`;
+    mocks.db.vehicle.findFirst.mockResolvedValue({
+      ...fixture(),
+      photos: [warmPhoto],
+      publicPhotoPaths: [warmPhoto],
+    });
+    let finish!: (value: { data: null; error: { statusCode: number } }) => void;
+    const storage = new Promise<{ data: null; error: { statusCode: number } }>((resolve) => {
+      finish = resolve;
+    });
+    mocks.download.mockReturnValue(storage);
+    try {
+      // This would hang if rendering awaited the speculative Storage request.
+      const detail = await fetch(`${base}/api/public/vehicles/${slug}`);
+      expect(detail.status).toBe(200);
+      expect(await detail.text()).not.toContain(warmPhoto);
+      expect(mocks.download).toHaveBeenCalledWith(variantPath(warmPhoto, 320));
+      mocks.db.vehicle.findFirst.mockResolvedValue(null);
+      expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`)).status).toBe(404);
+      expect(mocks.download).toHaveBeenCalledTimes(1);
+    } finally {
+      finish({ data: null, error: { statusCode: 404 } });
+      await readPhotoBytes(warmPhoto, 320);
+      forgetPhotoVariants(warmPhoto);
+    }
   });
   it.each(['SOLD', 'DELIVERED', 'DOCS_PENDING', 'DRAFT'])(
     'refuses accidental over-selection of %s vehicles',
