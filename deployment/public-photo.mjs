@@ -1,12 +1,19 @@
 import { Transform } from 'node:stream';
+import { isPublicPhotoVersion, REVALIDATE_PUBLIC_PHOTO } from '../shared/publicPhotoCache.mjs';
 
 // Keep the existing public URL/cache identity. Only the photo GET/HEAD fast path
 // is relayed; invalid routes, originals and all writes still reach SvelteKit.
 export function photoBackendPath(method, url) {
   if (!['GET', 'HEAD'].includes(method)) return null;
-  const match = /^\/viaturas\/([a-z0-9]+(?:-[a-z0-9]+)*-[a-f0-9]{12,64})\/photos\/(\d|1\d)\?w=(320|384|800|1280|1600|2560)$/.exec(url);
+  const [pathname, query = ''] = url.split('?');
+  const match = /^\/viaturas\/([a-z0-9]+(?:-[a-z0-9]+)*-[a-f0-9]{12,64})\/photos\/(\d|1\d)$/.exec(pathname);
   if (!match || match[1].length > 180) return null;
-  return `/api/public/vehicles/${match[1]}/photos/${match[2]}?w=${match[3]}`;
+  const params = new URLSearchParams(query), width = params.get('w'), version = params.get('v');
+  if (![...params.keys()].every(key => key === 'w' || key === 'v') ||
+    params.getAll('w').length !== 1 || params.getAll('v').length > 1 ||
+    !/^(320|384|800|1280|1600|2560)$/.test(width || '') ||
+    (version !== null && !isPublicPhotoVersion(version))) return null;
+  return `/api/public/vehicles/${match[1]}/photos/${match[2]}?w=${width}${version ? '&v=' + version : ''}`;
 }
 
 export function relayPublicPhoto(req, res, reply, commonHeaders = {}) {
@@ -22,6 +29,8 @@ export function relayPublicPhoto(req, res, reply, commonHeaders = {}) {
     res.end();
   };
   if (![200, 304].includes(reply.statusCode)) return reject();
+  const requestedVersion = new URL(req.url, 'http://gateway.invalid').searchParams.get('v');
+  if (requestedVersion && requestedVersion !== reply.headers['x-photo-version']) return reject();
   const type = reply.headers['content-type']?.split(';')[0];
   const length = reply.headers['content-length'];
   if (reply.statusCode === 200 && (
@@ -29,7 +38,7 @@ export function relayPublicPhoto(req, res, reply, commonHeaders = {}) {
     !/^\d+$/.test(length || '') || Number(length) > 20 * 1024 * 1024 ||
     reply.headers['content-encoding']
   )) return reject();
-  headers['cache-control'] = 'private, no-cache, max-age=0, must-revalidate';
+  headers['cache-control'] = REVALIDATE_PUBLIC_PHOTO;
   if (reply.headers.etag) headers.etag = reply.headers.etag;
   if (/^[a-f0-9]{64}$/.test(reply.headers['x-photo-version'] || ''))
     headers['x-photo-version'] = reply.headers['x-photo-version'];

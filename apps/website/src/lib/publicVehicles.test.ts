@@ -7,6 +7,7 @@ import {
   publicCard,
   publicCatalogSeo,
   publicPrice,
+  publicPhoto,
 } from './publicVehicles';
 
 export const vehicle = {
@@ -24,6 +25,15 @@ export const vehicle = {
   photos: ['/api/public/vehicles/bmw-serie-1-2019-012345abcdef/photos/0'],
 };
 describe('Public website projection', () => {
+  it('uses fresh approved identities for the photo URL while keeping the vehicle address', () => {
+    const first = publicVehicleSchema.parse({ ...vehicle, photos: [vehicle.photos[0] + '?v=' + 'a'.repeat(64)] });
+    const replaced = publicVehicleSchema.parse({ ...vehicle, photos: [vehicle.photos[0] + '?v=' + 'b'.repeat(64)] });
+    expect(publicPhoto(first, 0)).toBe(`/viaturas/${vehicle.slug}/photos/0?v=${'a'.repeat(64)}`);
+    expect(publicCard(first).image).not.toBe(publicCard(replaced).image);
+    expect(publicCard(first).href).toBe(publicCard(replaced).href);
+    for (const suffix of ['?v=bad', '?v=' + 'a'.repeat(64) + '&token=secret', '?v=' + 'a'.repeat(64) + '&v=' + 'b'.repeat(64)])
+      expect(publicVehicleSchema.safeParse({ ...vehicle, photos: [vehicle.photos[0] + suffix] }).success).toBe(false);
+  });
   it('keeps explicit version separate without guessing from existing model names', () => {
     const existing = publicCard(
       publicVehicleSchema.parse({ ...vehicle, model: 'A3 1.6 TDI S-line' }),

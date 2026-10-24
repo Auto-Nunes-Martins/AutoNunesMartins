@@ -12,9 +12,12 @@ const close = server => new Promise(resolve => { server.close(resolve); server.c
 test('only exact public photo reads qualify, preserving legacy/invalid handling', () => {
   assert.equal(photoBackendPath('GET', path), `/api/public/vehicles/${slug}/photos/0?w=320`);
   assert.equal(photoBackendPath('HEAD', path), `/api/public/vehicles/${slug}/photos/0?w=320`);
+  assert.equal(photoBackendPath('GET', path + '&v=' + 'a'.repeat(64)), `/api/public/vehicles/${slug}/photos/0?w=320&v=${'a'.repeat(64)}`);
+  assert.equal(photoBackendPath('GET', path.replace('?w=320', '?v=' + 'a'.repeat(64) + '&w=320')), `/api/public/vehicles/${slug}/photos/0?w=320&v=${'a'.repeat(64)}`);
   for (const candidate of [path.replace('320', '999'), path + '&token=x', path.replace('/0?', '/20?'),
     path.replace(slug, 'invalid'), path.replace('viaturas', 'crm'), path.replace('?w=320', ''),
-    path.replace('/photos/', '/%2e%2e/photos/')]) assert.equal(photoBackendPath('GET', candidate), null);
+    path.replace('/photos/', '/%2e%2e/photos/'), path + '&v=bad', path + '&w=320',
+    path + '&v=' + 'a'.repeat(64) + '&v=' + 'b'.repeat(64)]) assert.equal(photoBackendPath('GET', candidate), null);
   assert.equal(photoBackendPath('POST', path), null);
 });
 
@@ -30,7 +33,7 @@ test('fast relay keeps authorization, cache validation, bytes, bounds and creden
     if (mode === 'error') { res.writeHead(500); res.end('private error'); return; }
     if (mode === 'redirect') { res.writeHead(302, { location: 'https://example.invalid' }); res.end(); return; }
     if (req.headers['if-none-match'] === '"photo"') {
-      res.writeHead(304, { etag: '"photo"' }); res.end(); return;
+      res.writeHead(304, { etag: '"photo"', 'x-photo-version': 'a'.repeat(64) }); res.end(); return;
     }
     res.writeHead(200, {
       'content-type': mode === 'invalid' ? 'text/html' : 'image/webp',
@@ -72,10 +75,17 @@ test('fast relay keeps authorization, cache validation, bytes, bounds and creden
     const unchanged = await request(path, { 'if-none-match': '"photo"' });
     assert.equal(unchanged.status, 304); assert.equal(unchanged.bytes.length, 0);
     assert.equal(calls, 2); // Every request still reaches the authorization route.
+    const versioned = path + '&v=' + 'a'.repeat(64);
+    assert.equal((await request(versioned)).headers['cache-control'], 'private, no-cache, max-age=0, must-revalidate');
+    const valid304 = await request(versioned, { 'if-none-match': '"photo"' });
+    assert.equal(valid304.status, 304);
+    assert.equal(valid304.headers['cache-control'], 'private, no-cache, max-age=0, must-revalidate');
+    assert.equal((await request(path + '&v=' + 'b'.repeat(64))).status, 503);
     mode = 'revoked';
     const revoked = await request(path, { 'if-none-match': '"photo"' });
     assert.equal(revoked.status, 404); assert.equal(revoked.bytes.length, 0);
     assert.equal(revoked.headers['cache-control'], 'no-store');
+    assert.equal((await request(versioned)).headers['cache-control'], 'no-store');
     for (mode of ['error', 'redirect', 'oversize', 'invalid']) {
       const response = await request(); assert.equal(response.status, 503); assert.equal(response.bytes.length, 0);
       assert.equal(response.headers.location, undefined);

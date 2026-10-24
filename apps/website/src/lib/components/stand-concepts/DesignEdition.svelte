@@ -3,6 +3,9 @@
   let galleryOpen = $state(false);
   let mainPhotoLoading = $state(true);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
+  import { publicGalleryPhoto } from '$lib/publicGalleryPhoto';
+  import { createPublicGallerySession } from '$lib/publicGallerySession';
+  import { publicPhotoVersions } from '$lib/publicVehicles';
   import { followThumbnail } from '$lib/thumbnailFollow';
   import { dragThumbnailStrip } from '$lib/dragThumbnailStrip';
   import { thumbnailNavigation } from '$lib/thumbnailNavigation';
@@ -36,7 +39,7 @@
   import orbitFont600 from '@fontsource/inter/files/inter-latin-600-normal.woff2?url';
   import orbitTitleFont from '@fontsource/barlow/files/barlow-latin-600-normal.woff2?url';
   import orbitTitleItalic from '@fontsource/barlow/files/barlow-latin-600-italic.woff2?url';
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { usePublicTheme } from '$lib/publicTheme';
   import {
     emptyStock,
@@ -181,8 +184,10 @@
     homeHighlights?: PublicHighlights;
   } = $props();
   const thumbnailSession = $derived(
-    publicVehicle ? createThumbnailSession(publicVehicle.slug) : undefined,
+    publicVehicle ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle)) : undefined,
   );
+  const viewerThumbnailSession = $derived(galleryOpen && publicVehicle
+    ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle) ?? [], true) : undefined);
   const car = $derived(
     publicVehicle
       ? {
@@ -197,7 +202,7 @@
           category: publicVehicle.specifications?.category ?? '',
           price: publicVehicle.price === null ? Number.NaN : Number(publicVehicle.price),
           image: publicVehicle.photos.length
-            ? publicPhoto(publicVehicle.slug, 0)
+            ? publicPhoto(publicVehicle, 0)
             : catalogPlaceholder,
         }
       : catalogCars.find((item) => item.id === id),
@@ -240,7 +245,7 @@
           model: item.model,
           year: item.year,
           price: item.price,
-          image: item.photos.length ? publicPhoto(item.slug, 0) : catalogPlaceholder,
+          image: item.photos.length ? publicPhoto(item, 0) : catalogPlaceholder,
         }))
       : car
         ? cars
@@ -280,6 +285,34 @@
   let contactName = $state<HTMLInputElement>();
   let confirmationHeading = $state<HTMLHeadingElement>();
   let galleryDialog: HTMLDialogElement;
+  let preparingViewer = false;
+  const preparedViewerThumbnails = new Set<number>();
+  let finishViewerPreparation: (() => void) | undefined;
+  function viewerThumbnailReady(index: number) {
+    preparedViewerThumbnails.add(index);
+    if (preparedViewerThumbnails.size >= galleryPhotoCount + 1) finishViewerPreparation?.();
+  }
+  async function openGallery() {
+    if (preparingViewer || galleryOpen) return;
+    preparingViewer = true;
+    preparedViewerThumbnails.clear();
+    const prepared = new Promise<void>(resolve => { finishViewerPreparation = resolve; });
+    galleryOpen = true;
+    await tick();
+    // Prepare existing local thumbnails together while the dialog is still closed.
+    if (publicVehicle?.photos.length) await prepared;
+    preparingViewer = false;
+    if (galleryOpen) galleryDialog.showModal();
+  }
+  const gallerySession = $derived(publicVehicle?.photos.length ? createPublicGallerySession(publicVehicle) : undefined);
+  // SSR starts the first photo. Thereafter the action alone owns image sources,
+  // so Svelte never assigns a network URL before a cache-only gallery revisit.
+  const initialMainPhoto = untrack(() => ({
+    src: publicVehicle?.photos.length
+      ? sizedPhoto(publicPhoto(publicVehicle, 0), 1600)
+      : car ? photo(car.image, 2000) : undefined,
+    srcset: publicVehicle?.photos.length ? vehiclePhotoSet(publicPhoto(publicVehicle, 0)) : undefined,
+  }));
   let sent = $state(false);
   let sending = $state(false);
   let contactError = $state('');
@@ -411,7 +444,7 @@
     title={vehicleSeo(publicVehicle).title}
     description={vehicleSeo(publicVehicle).description}
     canonical={publicVehicleCanonical(publicVehicle, $page.url.origin)}
-    image={publicVehicle.photos.length ? publicPhoto(publicVehicle.slug, 0) : undefined}
+    image={publicVehicle.photos.length ? publicPhoto(publicVehicle, 0) : undefined}
     imageAlt={publicVehicle.photos.length
       ? `${publicVehicle.brand} ${publicVehicle.model} (${publicVehicle.year}) — fotografia publicada`
       : undefined}
@@ -440,8 +473,8 @@
         <link
           rel="preload"
           as="image"
-          href={sizedPhoto(publicPhoto(publicVehicle.slug, i), 320)}
-          imagesrcset={vehiclePhotoSet(publicPhoto(publicVehicle.slug, i))}
+          href={sizedPhoto(publicPhoto(publicVehicle, i), 320)}
+          imagesrcset={vehiclePhotoSet(publicPhoto(publicVehicle, i))}
           imagesizes="(max-width:701px) 112px, 128px"
           fetchpriority="low"
         />
@@ -761,29 +794,23 @@
                 class:contact-slide={isContactSlide}
                 aria-busy={mainPhotoLoading}
                 type="button"
-                onclick={() => {
-                  galleryOpen = true;
-                  galleryDialog.showModal();
-                }}
+                onclick={openGallery}
                 disabled={!!publicVehicle && (!publicVehicle.photos.length || isContactSlide)}
                 ><img
                   use:coverPhotoSizes
-                  use:vehiclePhoto={{
+                  use:publicGalleryPhoto={{
+                    session: gallerySession,
                     src: publicVehicle?.photos.length
-                      ? sizedPhoto(publicPhoto(publicVehicle.slug, galleryPhotoIndex), 1600)
+                      ? sizedPhoto(publicPhoto(publicVehicle, galleryPhotoIndex), 1600)
                       : photo(car.image, 2000),
                     srcset: publicVehicle?.photos.length
-                      ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, galleryPhotoIndex))
+                      ? vehiclePhotoSet(publicPhoto(publicVehicle, galleryPhotoIndex))
                       : undefined,
                     fade: true,
                     onLoading: (loading) => (mainPhotoLoading = loading),
                   }}
-                  src={publicVehicle?.photos.length
-                    ? sizedPhoto(publicPhoto(publicVehicle.slug, galleryPhotoIndex), 1600)
-                    : photo(car.image, 2000)}
-                  srcset={publicVehicle?.photos.length
-                    ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, galleryPhotoIndex))
-                    : undefined}
+                  src={initialMainPhoto.src}
+                  srcset={initialMainPhoto.srcset}
                   sizes="(max-width: 701px) 100vw, (max-width: 1050px) 60vw, (min-width: 1920px) 1050px, 66vw"
                   fetchpriority="high"
                   alt={isContactSlide
@@ -866,14 +893,14 @@
                         ><img
                           {...thumbnailAttrs(
                             thumbnailSession!,
-                            sizedPhoto(publicPhoto(publicVehicle.slug, i), 320),
-                            vehiclePhotoSet(publicPhoto(publicVehicle.slug, i)),
+                            sizedPhoto(publicPhoto(publicVehicle, i), 320),
+                            vehiclePhotoSet(publicPhoto(publicVehicle, i)),
                           )}
                           use:publicThumbnail={{
                             session: thumbnailSession!,
                             index: i,
-                            src: sizedPhoto(publicPhoto(publicVehicle.slug, i), 320),
-                            srcset: vehiclePhotoSet(publicPhoto(publicVehicle.slug, i)),
+                            src: sizedPhoto(publicPhoto(publicVehicle, i), 320),
+                            srcset: vehiclePhotoSet(publicPhoto(publicVehicle, i)),
                             sizes: '(max-width:701px) 112px, 128px',
                           }}
                           sizes="(max-width:701px) 112px, 128px"
@@ -889,7 +916,7 @@
                       aria-pressed={isContactSlide}
                       onclick={() => (zoom = galleryPhotoCount)}
                       ><img
-                        src={sizedPhoto(publicPhoto(publicVehicle.slug, 0), 320)}
+                        src={sizedPhoto(publicPhoto(publicVehicle, 0), 320)}
                         alt=""
                         loading="lazy"
                       /><ArrowUpRight size={24} aria-hidden="true" /><span>Fale connosco</span
@@ -1036,17 +1063,17 @@
               use:coverPhotoSizes
               use:vehiclePhoto={{
                 src: publicVehicle
-                  ? sizedPhoto(publicPhoto(publicVehicle.slug, 0), 1600)
+                  ? sizedPhoto(publicPhoto(publicVehicle, 0), 1600)
                   : photo(car.image, 1800),
                 srcset: publicVehicle
-                  ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, 0))
+                  ? vehiclePhotoSet(publicPhoto(publicVehicle, 0))
                   : undefined,
               }}
               src={publicVehicle
-                ? sizedPhoto(publicPhoto(publicVehicle.slug, 0), 1600)
+                ? sizedPhoto(publicPhoto(publicVehicle, 0), 1600)
                 : photo(car.image, 1800)}
               srcset={publicVehicle
-                ? vehiclePhotoSet(publicPhoto(publicVehicle.slug, 0))
+                ? vehiclePhotoSet(publicPhoto(publicVehicle, 0))
                 : undefined}
               sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw"
               alt=""
@@ -1376,7 +1403,7 @@
   <dialog
     bind:this={galleryDialog}
     use:galleryBackdrop
-    onclose={() => (galleryOpen = false)}
+    onclose={() => { galleryOpen = false; finishViewerPreparation?.(); }}
     class="gallery-dialog"
     aria-labelledby="gallery-caption"
     onkeydown={galleryKeydown}
@@ -1386,8 +1413,8 @@
         {#if isContactSlide && publicVehicle}
           <div class="viewer-contact">
             <img
-              use:vehiclePhoto={{ src: publicPhoto(publicVehicle.slug, 0) }}
-              src={publicPhoto(publicVehicle.slug, 0)}
+              use:publicGalleryPhoto={{ src: publicPhoto(publicVehicle, 0), session: gallerySession }}
+              draggable={false}
               alt=""
             />
             <GalleryContactSlide
@@ -1398,14 +1425,14 @@
             />
           </div>
         {:else}<img
-            use:vehiclePhoto={{
+            use:publicGalleryPhoto={{
+              session: gallerySession,
               src: publicVehicle?.photos.length
-                ? publicPhoto(publicVehicle.slug, zoom)
+                ? publicPhoto(publicVehicle, zoom)
                 : photo(car.image, 2400),
             }}
-            src={publicVehicle?.photos.length
-              ? publicPhoto(publicVehicle.slug, zoom)
-              : photo(car.image, 2400)}
+            src={publicVehicle?.photos.length ? undefined : photo(car.image, 2400)}
+            draggable={false}
             alt={`${car.brand} ${car.model}${publicVehicle ? '' : ' — fotografia ilustrativa'}`}
           />{/if}
         <div class="viewer-controls">
@@ -1459,10 +1486,18 @@
               onclick={() => (zoom = i)}
             >
               <img
-                use:vehiclePhoto={{ src: sizedPhoto(publicPhoto(publicVehicle.slug, i), 320) }}
-                src={sizedPhoto(publicPhoto(publicVehicle.slug, i), 320)}
+                {...thumbnailAttrs(viewerThumbnailSession!, sizedPhoto(publicPhoto(publicVehicle, i), 320))}
+                use:publicThumbnail={{
+                  session: viewerThumbnailSession!, index: i,
+                  src: sizedPhoto(publicPhoto(publicVehicle, i), 320),
+                  srcset: vehiclePhotoSet(publicPhoto(publicVehicle, i)),
+                  sizes: '(max-width:600px) 64px, 80px',
+                  onReady: () => viewerThumbnailReady(i),
+                  minimumWidth: 80,
+                }}
+                draggable={false}
                 alt=""
-                loading="lazy"
+                loading="eager"
               />
             </button>
           {/each}
@@ -1473,7 +1508,12 @@
             aria-pressed={isContactSlide}
             onclick={() => (zoom = galleryPhotoCount)}
           >
-            <img src={sizedPhoto(publicPhoto(publicVehicle.slug, 0), 320)} alt="" loading="lazy" />
+            <img {...thumbnailAttrs(viewerThumbnailSession!, sizedPhoto(publicPhoto(publicVehicle, 0), 320))}
+              use:publicThumbnail={{ session: viewerThumbnailSession!, index: 0,
+                src: sizedPhoto(publicPhoto(publicVehicle, 0), 320),
+                sizes: '(max-width:600px) 64px, 80px',
+                onReady: () => viewerThumbnailReady(galleryPhotoCount), minimumWidth: 80 }}
+              draggable={false} alt="" loading="eager" />
             <span>Fale connosco</span>
           </button>
         </div>

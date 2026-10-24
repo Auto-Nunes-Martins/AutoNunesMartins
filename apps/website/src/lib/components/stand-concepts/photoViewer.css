@@ -28,6 +28,8 @@ html:has(dialog.gallery-dialog[open]) {
   position: relative;
   min-height: 0;
   padding: 0 64px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .design.orbit .gallery-dialog::backdrop {
   background: rgb(8 8 12 / 62%);
@@ -41,6 +43,7 @@ html:has(dialog.gallery-dialog[open]) {
   max-height: 100%;
   object-fit: contain;
   margin: auto;
+  -webkit-user-drag: none;
 }
 .design.orbit .gallery-dialog .viewer-contact {
   position: relative;
@@ -101,6 +104,8 @@ html:has(dialog.gallery-dialog[open]) {
   padding: 4px;
   scrollbar-width: thin;
   scrollbar-color: #ffffff70 transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .design.orbit .gallery-dialog .viewer-thumbnails button {
   position: relative;

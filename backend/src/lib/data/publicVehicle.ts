@@ -100,9 +100,10 @@ export function publicVehicleDto(row: PublicRow) {
     transmission: row.publicTransmission,
     specifications: publicSpecificationsSchema.safeParse(row.publicSpecifications ?? {}).data ?? {},
     availability: row.status,
-    // Storage paths/tokens/URLs stay on the server. Each request checks approval.
+    // Immutable upload identities invalidate browser cache after replacement/reorder.
+    // Storage paths/tokens stay private; every request reaching the server checks approval.
     photos: approvedPaths(row).map(
-      (_, index) => `/api/public/vehicles/${row.publicSlug}/photos/${index}`,
+      (path, index) => `/api/public/vehicles/${row.publicSlug}/photos/${index}?v=${publicPhotoVersion(path)}`,
     ),
   };
 }
