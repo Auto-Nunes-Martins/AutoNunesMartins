@@ -75,7 +75,9 @@ export function warmNavigationThumbnails(slug: string, viewport: number, density
           }
         }
       };
-      void Promise.all(Array.from({ length: 3 }, worker)).finally(() => {
+      // Nine small thumbnails in two waves, rather than three. Keep the total
+      // bounded and leave the principal photograph on its native high priority.
+      void Promise.all(Array.from({ length: 6 }, worker)).finally(() => {
         for (const resolve of finish) resolve();
         clearTimeout(deadline);
         if (navigationWarmup === work) navigationWarmup = undefined;

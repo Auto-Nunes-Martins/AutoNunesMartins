@@ -19,7 +19,7 @@ it('selects a thumbnail matching the same responsive sizes without reducing dens
   expect(navigationThumbnailWidth(1400, 8)).toBe(1280);
 });
 
-it('starts only explicitly, limits work to nine photos and three concurrent downloads, then reuses pixels with fresh access', async () => {
+it('starts only explicitly, limits work to nine photos and six concurrent downloads, then reuses pixels with fresh access', async () => {
   const releases: Array<() => void> = [];
   let current = 0,
     peak = 0;
@@ -36,19 +36,19 @@ it('starts only explicitly, limits work to nine photos and three concurrent down
   const module = await import('./publicThumbnail');
   expect(request).not.toHaveBeenCalled();
   module.warmNavigationThumbnails('car-abcdef123456', 390, 3);
-  await vi.waitFor(() => expect(releases).toHaveLength(3));
+  await vi.waitFor(() => expect(releases).toHaveLength(6));
   const session = module.createThumbnailSession('car-abcdef123456');
   expect(session.hasPixels()).toBe(true);
   session.attach();
   await session.access();
   expect(request.mock.calls.filter(([url]) => url.endsWith('/access'))).toHaveLength(2);
-  for (const count of [6, 9]) {
+  for (const count of [9]) {
     releases.forEach((resolve) => resolve());
     await vi.waitFor(() => expect(releases).toHaveLength(count));
   }
   releases.forEach((resolve) => resolve());
   await session.prepared(8);
-  expect(peak).toBe(3);
+  expect(peak).toBe(6);
   const urls = request.mock.calls.map(([url]) => url).filter((url) => !url.endsWith('/access'));
   expect(urls).toHaveLength(9);
   expect(urls.every((url) => url.endsWith('?w=384'))).toBe(true);
@@ -70,12 +70,12 @@ it('cancels abandoned navigation without starting queued photos or retaining inc
   vi.stubGlobal('fetch', request);
   const module = await import('./publicThumbnail');
   module.warmNavigationThumbnails('car-abcdef123456', 1200, 1);
-  await vi.waitFor(() => expect(signals).toHaveLength(3));
+  await vi.waitFor(() => expect(signals).toHaveLength(6));
   const session = module.createThumbnailSession('car-abcdef123456');
   module.cancelNavigationThumbnails();
   await session.prepared(8);
   expect(signals.every((signal) => signal.aborted)).toBe(true);
-  expect(request).toHaveBeenCalledTimes(4);
+  expect(request).toHaveBeenCalledTimes(7);
   expect(module.createThumbnailSession('car-abcdef123456').hasPixels()).toBe(false);
 });
 
