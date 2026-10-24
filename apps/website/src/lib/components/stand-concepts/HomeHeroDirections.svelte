@@ -140,7 +140,7 @@
     {#snippet featuredContent()}
       <div class="hd-feature-top">
         <div class="hd-label-motion"><div class="hd-idle-plane"><span class="hd-eyebrow"
-          >Em destaque<span class="hd-label-glint" aria-hidden="true">Em destaque</span></span
+          >Em destaque</span
         ></div></div><span class="hd-edition" aria-hidden="true"
           >{String(displayedIndex + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span
         >
