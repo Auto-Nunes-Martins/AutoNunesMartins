@@ -1,4 +1,5 @@
 import express from 'express';
+import sharp from 'sharp';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { readFileSync } from 'node:fs';
@@ -17,14 +18,14 @@ const mocks = vi.hoisted(() => ({
       update: vi.fn(),
     },
     activityLog: { create: vi.fn() },
-    vehiclePhotoDimensions: { findMany: vi.fn() },
+    vehiclePhotoDimensions: { findMany: vi.fn(), createMany: vi.fn() },
     $transaction: vi.fn(),
   },
   download: vi.fn(),
   auth: vi.fn(),
 }));
 vi.mock('../db.js', () => ({ prisma: mocks.db }));
-vi.mock('../logger.js', () => ({ logger: { error: vi.fn() } }));
+vi.mock('../logger.js', () => ({ logger: { error: vi.fn(), warn: vi.fn() } }));
 vi.mock('../lib/data/storage.js', () => ({
   getBucketName: () => 'private-vehicle-photos',
   getSupabase: () => ({ storage: { from: () => ({ download: mocks.download }) } }),
@@ -90,8 +91,10 @@ const publication = {
 const db = mocks.db as unknown as PrismaClient;
 let server: Server;
 let base: string;
+let photoBytes: Buffer;
 
 beforeAll(async () => {
+  photoBytes = await sharp({ create: { width: 48, height: 32, channels: 3, background: '#428a91' } }).jpeg().toBuffer();
   const app = express();
   app.use(express.json());
   app.use('/api/public/vehicles', router);
@@ -135,7 +138,7 @@ beforeEach(() => {
     _max: { year: 2019, mileage: 75000, publicPrice: new Prisma.Decimal('21900.25') },
   });
   mocks.download.mockResolvedValue({
-    data: new Blob(['image'], { type: 'image/jpeg' }),
+    data: new Blob([new Uint8Array(photoBytes)], { type: 'image/jpeg' }),
     error: null,
   });
   mocks.auth.mockImplementation((_req, res) => res.status(401).json({ error: 'Unauthorized' }));
@@ -506,7 +509,7 @@ describe('private photo storage boundary', () => {
       expect(mocks.db.vehicle.findFirst).toHaveBeenCalledTimes(2);
       expect(mocks.download).toHaveBeenCalledTimes(1);
     } finally {
-      finish({ data: new Blob(['image'], { type: 'image/jpeg' }), error: null });
+      finish({ data: new Blob([new Uint8Array(photoBytes)], { type: 'image/jpeg' }), error: null });
     }
     expect((await first).status).toBe(200);
   });
@@ -757,6 +760,18 @@ describe('explicit publication and stable unique slugs', () => {
       publicTransmission: 'MANUAL',
     });
     expect(mocks.db.activityLog.create).toHaveBeenCalled();
+  });
+  it('prepares legacy dimensions before entering the approval transaction', async () => {
+    forgetPhotoVariants(photo);
+    const manifest = { version: 1, encodingVersion: 2, sourceHash: 'a'.repeat(64), width: 1600, height: 900, variants: [] };
+    const encoded = Buffer.from(JSON.stringify(manifest)).toString('base64');
+    const sidecar = await sharp({ create: { width: 1, height: 1, channels: 3, background: '#fff' } }).webp().withXmp(`<anm:manifest>${encoded}</anm:manifest>`).toBuffer();
+    mocks.download.mockResolvedValue({ data: new Blob([new Uint8Array(sidecar)], { type: 'image/webp' }), error: null });
+    mocks.db.vehiclePhotoDimensions.createMany.mockResolvedValue({ count: 1 });
+    await setWebPublication(db, id, publication, 'admin-id');
+    expect(mocks.db.vehiclePhotoDimensions.createMany).toHaveBeenCalledWith({ data: [{ version: publicPhotoVersion(photo), vehicleId: id, width: 1600, height: 900, sourceHash: manifest.sourceHash }], skipDuplicates: true });
+    expect(mocks.db.vehiclePhotoDimensions.createMany.mock.invocationCallOrder[0]).toBeLessThan(mocks.db.$transaction.mock.invocationCallOrder[0]!);
+    expect(mocks.db.vehicle.update.mock.calls[0]?.[0].data.publicPhotoPaths).toEqual([photo]);
   });
   it('preserves the slug through title changes, unpublishing and republication', async () => {
     mocks.db.vehicle.findUnique.mockResolvedValue({

@@ -1,14 +1,16 @@
 import type { PrismaClient } from '@prisma/client';
 import { publicVehicleWhere, approvedPaths } from '../data/publicVehicle.js';
 import { dimensionsTableMissing, persistPhotoDimensions, photoDimensionVersion } from '../data/photoDimensions.js';
+import { isApprovedPhotoPath } from '../domain/publicVehicle.js';
 
-type Options = { apply: boolean; limit: number; batchSize: number; concurrency: number; after?: string };
+type Options = { apply: boolean; limit: number; batchSize: number; concurrency: number; after?: string; includePrivate?: boolean };
 type Manifest = { width: number; height: number; sourceHash: string };
 type Db = Pick<PrismaClient, 'vehicle' | 'vehiclePhotoDimensions'>;
 
 /** Bounded sidecar reads only. Never downloads originals or generates/replaces derivatives. */
 export async function backfillPhotoDimensions(db: Db, readManifest: (path: string) => Promise<Manifest | null>, options: Options) {
   const { apply, limit, batchSize, concurrency } = options;
+  const scope = options.includePrivate ? {} : publicVehicleWhere();
   if (![limit, batchSize, concurrency].every(Number.isSafeInteger) || limit < 1 || limit > 1000 ||
       batchSize < 1 || batchSize > 50 || concurrency < 1 || concurrency > 4) throw Error('Invalid backfill limits');
   // Fail before storage reads when --apply was requested before the migration.
@@ -16,11 +18,11 @@ export async function backfillPhotoDimensions(db: Db, readManifest: (path: strin
   const report = { mode: apply ? 'apply' : 'dry-run', vehicles: 0, photos: 0, existing: 0, available: 0, created: 0, missing: 0, removed: 0, failed: 0, nextCursor: options.after ?? null as string | null };
   while (report.vehicles < limit) {
     const rows = await db.vehicle.findMany({
-      where: { ...publicVehicleWhere(), ...(report.nextCursor ? { id: { gt: report.nextCursor } } : {}) },
+      where: { ...scope, ...(report.nextCursor ? { id: { gt: report.nextCursor } } : {}) },
       select: { id: true, photos: true, publicPhotoPaths: true }, orderBy: { id: 'asc' }, take: Math.min(batchSize, limit - report.vehicles),
     });
     if (!rows.length) break;
-    const photos = rows.flatMap(row => approvedPaths(row).map(path => ({ vehicleId: row.id, path, version: photoDimensionVersion(path) })));
+    const photos = rows.flatMap(row => (options.includePrivate ? [...new Set(row.photos)].filter(path => isApprovedPhotoPath(row.id, path)) : approvedPaths(row)).map(path => ({ vehicleId: row.id, path, version: photoDimensionVersion(path) })));
     let existing: { version: string }[] = [];
     try { existing = await db.vehiclePhotoDimensions.findMany({ where: { version: { in: photos.map(p => p.version) } }, select: { version: true } }); }
     catch (error) { if (apply || !dimensionsTableMissing(error)) throw error; }
@@ -37,7 +39,7 @@ export async function backfillPhotoDimensions(db: Db, readManifest: (path: strin
           if (!manifest) { report.missing++; continue; }
           report.available++;
           if (apply) {
-            const current = await db.vehicle.findFirst({ where: { ...publicVehicleWhere(), id: photo.vehicleId, photos: { has: photo.path }, publicPhotoPaths: { has: photo.path } }, select: { id: true } });
+            const current = await db.vehicle.findFirst({ where: { ...scope, id: photo.vehicleId, photos: { has: photo.path }, ...(!options.includePrivate ? { publicPhotoPaths: { has: photo.path } } : {}) }, select: { id: true } });
             if (!current) { report.removed++; continue; }
             if (await persistPhotoDimensions(db, photo.vehicleId, photo.path, manifest)) report.created++;
           }

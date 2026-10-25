@@ -4,6 +4,7 @@ import { getSupabase, getBucketName } from '../data/storage.js';
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_PIXELS } from './photoOptimization.js';
 import { vehiclePhotoWidths } from '@anm/types/photoWidths';
 import { PhotoByteCache, type CachedPhoto } from './photoByteCache.js';
+import { sanitizePhotoMetadata } from './photoMetadata.js';
 
 export const PHOTO_WIDTHS = vehiclePhotoWidths;
 // Schema/paths remain compatible; existing derivatives are regenerated from their master.
@@ -338,8 +339,14 @@ async function loadPhotoBytes(
     timing?.('photo-storage', performance.now() - storageStart);
     return null;
   }
-  const buffer = derivative ?? Buffer.from(await result.data.arrayBuffer()),
-    contentType = result.data.type;
+  let buffer = derivative ?? Buffer.from(await result.data.arrayBuffer());
+  // Legacy masters stay immutable in storage. Public zoom/fallback receives a lossless
+  // metadata-filtered representation; its ETag is calculated from the delivered bytes.
+  if (chosen === path) {
+    try { buffer = await sanitizePhotoMetadata(buffer); }
+    catch { return null; }
+  }
+  const contentType = result.data.type;
   timing?.('photo-storage', performance.now() - storageStart);
   const etag = '"' + createHash('sha256').update(path).update(buffer).digest('hex') + '"';
   const value = { until: Date.now() + 60_000, buffer, contentType, etag };

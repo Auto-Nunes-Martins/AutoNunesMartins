@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   createSignedReadUrl: vi.fn(),
   signedPhotos: vi.fn(),
   upload: vi.fn(),
+  download: vi.fn(),
   logger: { error: vi.fn() },
   ensureVariants: vi.fn(),
   vehiclePhotoDimensions: { createMany: vi.fn(), deleteMany: vi.fn() },
@@ -28,7 +29,7 @@ vi.mock('../lib/data/storage.js', () => ({
   createSignedReadUrl: mocks.createSignedReadUrl,
   signedPhotos: mocks.signedPhotos,
   getBucketName: () => 'photos',
-  getSupabase: () => ({ storage: { from: () => ({ upload: mocks.upload }) } }),
+  getSupabase: () => ({ storage: { from: () => ({ upload: mocks.upload, download: mocks.download }) } }),
 }));
 import router from './vehiclePhotos.js';
 import { errorHandler } from '../middleware/errorHandler.js';
@@ -265,6 +266,17 @@ const remove = (photo: string) =>
   });
 
 describe('photo HTTP contract and storage boundary', () => {
+  it.each([false, true])('retries an old staged upload only when cleaned image bytes match (different pixels: %s)', async different => {
+    const stored = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } }).jpeg().withMetadata().withExifMerge({ IFD0: { Artist: 'PRIVATE_ARTIST' } }).toBuffer();
+    const input = different ? await sharp({ create: { width: 30, height: 20, channels: 3, background: 'blue' } }).jpeg().toBuffer() : stored;
+    mocks.upload.mockResolvedValue({ error: { message: 'already exists' } });
+    mocks.download.mockResolvedValue({ data: new Blob([new Uint8Array(stored)], { type: 'image/jpeg' }), error: null });
+    const response = await fetch(base, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-edit-stage': 'true', 'x-upload-id': '12345678-1234-4234-8234-123456789abc' }, body: input });
+    expect(response.status).toBe(different ? 502 : 201);
+    if (different) expect(mocks.ensureVariants).not.toHaveBeenCalled();
+    else expect(mocks.ensureVariants).toHaveBeenCalledWith(`${id}/12345678-1234-4234-8234-123456789abc.jpg`, stored);
+    expect(rows.get(id)).toEqual([a, b]); expect(publicRows.get(id)).toEqual([a, b]);
+  });
   it.each([2, 20])(
     'prepares a private edit upload without associating/approving it, even with %i existing photos',
     async (count) => {

@@ -2,6 +2,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js';
 import { ensurePhotoVariants } from '../lib/server/photoVariants.js';
 import { persistPhotoDimensions, removePhotoDimensions } from '../lib/data/photoDimensions.js';
 import { logger } from '../logger.js';
+import { sanitizePhotoMetadata } from '../lib/server/photoMetadata.js';
 import express from 'express';
 import {
   optimizePhoto,
@@ -87,18 +88,23 @@ router.post('/', requireUser, (req, res, next) => {
       if (photo.buffer.length > MAX_OUTPUT_BYTES)
         throw new PhotoUploadError(422, 'A fotografia otimizada excede o limite de 2 MB.');
       const path = vehicleId + '/' + (uploadId ?? randomUUID()) + '.' + photo.extension;
+      let storedMaster = photo.buffer;
       const { error } = await getSupabase()
         .storage.from(getBucketName())
         .upload(path, photo.buffer, { contentType: photo.contentType, upsert: false });
       if (error && uploadId) {
         // A retry can reuse this exact immutable private object, without associating it.
         const previous = await getSupabase().storage.from(getBucketName()).download(path);
-        if (previous.error || !previous.data || previous.data.size > MAX_OUTPUT_BYTES ||
-          createHash('sha256').update(Buffer.from(await previous.data.arrayBuffer())).digest('hex') !== createHash('sha256').update(photo.buffer).digest('hex'))
+        if (previous.error || !previous.data || previous.data.size > MAX_OUTPUT_BYTES)
+          throw new PhotoUploadError(502, 'Não foi possível preparar a fotografia.');
+        storedMaster = Buffer.from(await previous.data.arrayBuffer());
+        // A staged upload created before metadata filtering may be retried after deploy.
+        // Compare the cleaned representation, but keep its immutable stored identity/hash.
+        if (createHash('sha256').update(await sanitizePhotoMetadata(storedMaster)).digest('hex') !== createHash('sha256').update(photo.buffer).digest('hex'))
           throw new PhotoUploadError(502, 'Não foi possível preparar a fotografia.');
       } else if (error) throw new PhotoUploadError(502, 'Não foi possível guardar a fotografia.');
       try {
-        const { manifest } = await ensurePhotoVariants(path,photo.buffer);
+        const { manifest } = await ensurePhotoVariants(path,storedMaster);
         await persistPhotoDimensions(prisma, vehicleId, path, manifest);
       }
       catch { throw new PhotoUploadError(502,'Não foi possível preparar os tamanhos da fotografia. Tente guardar novamente.'); }

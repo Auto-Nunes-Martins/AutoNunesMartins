@@ -5,7 +5,9 @@ const mocked = vi.hoisted(() => ({
   publication: vi.fn(),
   lock: vi.fn(),
   download: vi.fn(),
+  dimensions: vi.fn(),
 }));
+vi.mock('./preparePhotoDimensions.js', () => ({ preparePhotoDimensions: mocked.dimensions }));
 vi.mock('../../db.js', () => ({ prisma: {} }));
 vi.mock('./saleFinancials.js', () => ({ saleMutation: mocked.work, lockVehicle: mocked.lock }));
 vi.mock('./vehicleService.js', () => ({
@@ -125,6 +127,8 @@ describe('single vehicle edit transaction', () => {
     value.photos = [b, a];
     await saveVehicleEdit(id, value, actor);
     expect(mocked.work).toHaveBeenCalledTimes(1);
+    expect(mocked.dimensions).toHaveBeenCalledWith({}, id, [b]);
+    expect(mocked.dimensions.mock.invocationCallOrder[0]).toBeLessThan(mocked.work.mock.invocationCallOrder[0]!);
     expect(row.brand).toBe('Nova marca');
     expect(row.photos).toEqual([b, a]);
     expect(row.publicPhotoPaths).toEqual([b]);

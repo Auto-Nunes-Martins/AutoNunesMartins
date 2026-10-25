@@ -63,4 +63,12 @@ describe('bounded dimensions backfill', () => {
     expect(result).toMatchObject({ failed: 6, nextCursor: 'previous' });
     expect(db.vehicle.findMany).toHaveBeenCalledTimes(1);
   });
+  it('includes owned private photos only with explicit opt-in and never updates publication', async () => {
+    const { db } = fixture(), read = vi.fn(async () => manifest);
+    db.vehicle.findMany.mockResolvedValueOnce([{ id, photos: [paths[0], 'other/foreign.jpg'], publicPhotoPaths: [] }]).mockResolvedValue([]);
+    const result = await backfillPhotoDimensions(db, read, { ...options, apply: true, includePrivate: true });
+    expect(result).toMatchObject({ photos: 1, created: 1 });
+    expect(read).toHaveBeenCalledWith(paths[0]);
+    expect(db.vehicle.findFirst.mock.calls[0][0].where).toEqual({ id, photos: { has: paths[0] } });
+  });
 });
