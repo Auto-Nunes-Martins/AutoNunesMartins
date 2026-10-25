@@ -14,7 +14,10 @@ const mocks = vi.hoisted(() => ({
   signedPhotos: vi.fn(),
   upload: vi.fn(),
   logger: { error: vi.fn() },
+  ensureVariants: vi.fn(),
+  vehiclePhotoDimensions: { createMany: vi.fn(), deleteMany: vi.fn() },
 }));
+vi.mock('../lib/server/photoVariants.js', () => ({ ensurePhotoVariants: mocks.ensureVariants }));
 vi.mock('../db.js', () => ({ prisma: mocks }));
 vi.mock('../logger.js', () => ({ logger: mocks.logger }));
 vi.mock('../middleware/clerk.js', () => ({
@@ -31,7 +34,7 @@ import router from './vehiclePhotos.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 import { MAX_PHOTOS, mutateVehiclePhotos } from '../lib/server/vehiclePhotoService.js';
 
-const id = 'vehicle';
+const id = 'clabcdefghijklmnopqrstuvw';
 const a = `${id}/a.jpg`,
   b = `${id}/b.jpg`,
   c = `${id}/c.jpg`,
@@ -58,6 +61,9 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.ensureVariants.mockResolvedValue({ manifest: { width: 30, height: 20, sourceHash: 'a'.repeat(64) } });
+  mocks.vehiclePhotoDimensions.createMany.mockResolvedValue({ count: 1 });
+  mocks.vehiclePhotoDimensions.deleteMany.mockResolvedValue({ count: 1 });
   mocks.$transaction.mockImplementation(async (work) => work(mocks));
   rows.clear();
   publicRows.clear();
@@ -303,8 +309,12 @@ describe('photo HTTP contract and storage boundary', () => {
     expect(response.status).toBe(201);
     const data = await response.json();
     expect(data.photos.slice(0, 2)).toEqual([a, b]);
-    expect(data.photos[2]).toMatch(/^vehicle\/.*\.jpg$/);
+    expect(data.photos[2]).toMatch(new RegExp(`^${id}/.*\\.jpg$`));
     expect(publicRows.get(id)).toEqual([a, b]);
+    expect(mocks.vehiclePhotoDimensions.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ vehicleId: id, width: 30, height: 20, version: expect.stringMatching(/^[a-f0-9]{64}$/) })],
+      skipDuplicates: true,
+    });
     expect(mocks.upload).toHaveBeenCalledWith(data.photos[2], input, {
       contentType: 'image/jpeg',
       upsert: false,

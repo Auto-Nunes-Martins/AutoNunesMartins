@@ -1,4 +1,5 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
+import { withCoverPhotoDimensions } from '../lib/data/photoDimensions.js';
 import {
   isPhotoWidth,
   readPhotoBytes,
@@ -41,7 +42,9 @@ router.get(
       return;
     }
     try {
-      res.json(await listPublicVehicles(prisma, query.data));
+      const result = await listPublicVehicles(prisma, query.data);
+      result.items = await withCoverPhotoDimensions(prisma, result.items);
+      res.json(result);
     } catch {
       logger.error('Public vehicle listing unavailable');
       res.status(503).json({ error: 'Public catalogue temporarily unavailable' });
@@ -80,7 +83,10 @@ router.get(
       return;
     }
     try {
-      res.json({ items: await getPublicSelection(prisma, parsed.data) });
+      const items = await getPublicSelection(prisma, parsed.data);
+      const vehicles = await withCoverPhotoDimensions(prisma, items.flatMap(item => item.vehicle ? [item.vehicle] : []));
+      const bySlug = new Map(vehicles.map(vehicle => [vehicle.slug, vehicle]));
+      res.json({ items: items.map(item => ({ ...item, vehicle: item.vehicle ? bySlug.get(item.vehicle.slug) : null })) });
     } catch {
       logger.error('Public selection unavailable');
       res.status(503).json({ error: 'Selection unavailable' });
@@ -114,7 +120,7 @@ router.get(
         res.status(404).json({ error: 'Vehicle not found' });
         return;
       }
-      res.json(items);
+      res.json(await withCoverPhotoDimensions(prisma, items));
     } catch {
       logger.error('Related public vehicles unavailable');
       res.status(503).json({ error: 'Related vehicles temporarily unavailable' });

@@ -46,6 +46,7 @@ model Vehicle {
   soldDate        DateTime?
   description     String?       @db.Text
   photos          String[]      @default([])
+  photoDimensions VehiclePhotoDimensions[]
   pendingDocFlags Json          @default("{\"financing\":false,\"imt\":false,\"registration\":false,\"docs\":false}")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -75,6 +76,19 @@ model Vehicle {
   @@index([brand, model])
   @@index([acquisitionDate])
   @@index([webPublished, status])
+}
+
+/// Derived metadata only; never grants permission to publish a photograph.
+model VehiclePhotoDimensions {
+  version    String   @id @db.VarChar(64)
+  vehicleId  String
+  width      Int
+  height     Int
+  sourceHash String   @db.VarChar(64)
+  createdAt  DateTime @default(now())
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
 }
 
 enum PublicTransmission {

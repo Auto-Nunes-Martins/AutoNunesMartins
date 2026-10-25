@@ -29,6 +29,12 @@ export const publicVehicleSchema = z
     specifications: publicSpecificationsSchema.optional(),
     availability: z.enum(['AVAILABLE', 'RESERVED']),
     photos: z.array(z.string()).max(20),
+    // Optional during rolling deployment/backfill. Never trust a dimension for another version.
+    coverPhotoDimensions: z.object({
+      version: z.string().regex(/^[a-f0-9]{64}$/),
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+    }).refine(value => value.width * value.height <= 24_000_000).nullable().optional().catch(undefined),
   })
   .superRefine((v, ctx) => {
     if (v.photos.some((path, i) => {
@@ -115,6 +121,8 @@ export function publicCard(vehicle: PublicVehicle) {
     category: vehicle.availability === 'RESERVED' ? 'Reservada' : '',
     href: publicHref(vehicle.slug),
     photoCount: vehicle.photos.length,
+    photoDimensions: vehicle.coverPhotoDimensions?.version === vehicle.photos[0]?.match(/\?v=([a-f0-9]{64})$/)?.[1]
+      ? vehicle.coverPhotoDimensions : undefined,
     approved: true as const,
   };
 }

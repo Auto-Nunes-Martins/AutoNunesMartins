@@ -26,6 +26,7 @@ import { saveVehicleEdit, vehicleEditSchema } from '../lib/server/vehicleEditSer
 import { WebPublicationError } from '../lib/server/webPublicationService.js';
 import { deleteObjects } from '../lib/data/storage.js';
 import { readCrmList } from '../lib/data/crmListCache.js';
+import { removePhotoDimensions } from '../lib/data/photoDimensions.js';
 
 const router = Router();
 
@@ -37,6 +38,8 @@ router.put('/:id/edit', requireUser, asyncHandler(async (req: AuthedRequest, res
   try {
     const result = await saveVehicleEdit(param(req, 'id'), parsed.data, { actorId: req.user.id, actorName: req.user.name });
     // Database references and public approval have already been revoked atomically.
+    try { await removePhotoDimensions(prisma, result.removedPhotos); }
+    catch { logger.error('Unreferenced photo dimensions cleanup failed after vehicle edit'); }
     if (result.removedPhotos.length) try { await deleteObjects(result.removedPhotos); }
     catch { logger.error('Unreferenced photo cleanup failed after vehicle edit'); }
     res.json({ ok: true });
