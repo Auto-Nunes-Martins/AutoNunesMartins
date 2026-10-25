@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
       update: vi.fn(),
     },
     activityLog: { create: vi.fn() },
+    vehiclePhotoDimensions: { findMany: vi.fn() },
     $transaction: vi.fn(),
   },
   download: vi.fn(),
@@ -110,6 +111,7 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.db.vehiclePhotoDimensions.findMany.mockResolvedValue([]);
   mocks.db.$transaction.mockImplementation(async (fn) => fn(mocks.db));
   mocks.db.vehicle.findMany.mockResolvedValue([fixture()]);
   mocks.db.vehicle.findFirst.mockResolvedValue(fixture());
@@ -140,6 +142,17 @@ beforeEach(() => {
 });
 
 describe('public query validation and search boundary', () => {
+  it('adds dimensions only for an approved current cover, without reading storage or leaking private metadata', async () => {
+    mocks.db.vehiclePhotoDimensions.findMany.mockResolvedValue([{ version: publicPhotoVersion(photo), width: 1600, height: 900, sourceHash: 'PRIVATE', vehicleId: id }]);
+    const response = await fetch(base + '/api/public/vehicles');
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.items[0].coverPhotoDimensions).toEqual({ version: publicPhotoVersion(photo), width: 1600, height: 900 });
+    expect(JSON.stringify(body)).not.toContain('PRIVATE');
+    expect(JSON.stringify(body)).not.toContain(photo);
+    expect(mocks.download).not.toHaveBeenCalled();
+    expect(mocks.db.vehiclePhotoDimensions.findMany).toHaveBeenCalledTimes(1);
+  });
   it('accepts the Orbit filters, translates labels and bounds pagination', () => {
     const q = publicVehicleQuerySchema.parse({
       q: '  Série 1  ',

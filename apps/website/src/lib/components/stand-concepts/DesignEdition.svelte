@@ -65,7 +65,7 @@
     Fuel,
   } from 'lucide-svelte';
   import { cars, photo, eur, number } from './data';
-  import { responsivePhoto, cardImageSizes } from './images';
+  import { responsivePhoto, cardImageSizes, publicCardImageSizes } from './images';
   import { coverPhotoSizes } from '$lib/coverPhotoSizes';
   import { designMotion, entrance, conditionalEntrance } from './designMotion';
   import OrbitPerspective from './OrbitPerspective.svelte';
@@ -1537,7 +1537,7 @@
             }}
             src={photo(vehicle.image, 1100)}
             srcset={responsivePhoto(vehicle.image, 1600)}
-            sizes={cardImageSizes}
+            sizes={'approved' in vehicle ? publicCardImageSizes(vehicle.photoDimensions, catalog) : cardImageSizes}
             alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
             loading="lazy"
           />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span

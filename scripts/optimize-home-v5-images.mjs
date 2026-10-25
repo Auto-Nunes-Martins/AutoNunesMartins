@@ -12,7 +12,9 @@ await mkdir(destination, { recursive: true });
 await mkdir(audit, { recursive: true });
 const jobs = [
   ['forest-wide', 'forest-ribbon-5472.webp', [1280, 1920, 2560, 2880, 3840, 5472]],
-  ['forest-portrait', 'forest-ribbon-portrait-1920.webp', [640, 1080, 1280, 1920]],
+  // Intermediate mobile densities should not jump straight from 1280 to 1920.
+  // Keep the original framing/encoding quality and let sizes + DPR select the source.
+  ['forest-portrait', 'forest-ribbon-portrait-1920.webp', [640, 1080, 1280, 1440, 1600, 1792, 1920]],
   ['catalog-portrait', 'family-forest-ribbon-portrait-native.webp', [480, 810, 960, 1440, 2052]],
   ['curves-wide', 'family-curves-wide-5472.webp', [1280, 1920, 2560, 3840, 5472]],
   ['curves-portrait', 'family-family-curves-portrait-native.webp', [640, 1080, 1280, 1920, 2736]],

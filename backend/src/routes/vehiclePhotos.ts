@@ -1,5 +1,7 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { ensurePhotoVariants } from '../lib/server/photoVariants.js';
+import { persistPhotoDimensions, removePhotoDimensions } from '../lib/data/photoDimensions.js';
+import { logger } from '../logger.js';
 import express from 'express';
 import {
   optimizePhoto,
@@ -95,7 +97,10 @@ router.post('/', requireUser, (req, res, next) => {
           createHash('sha256').update(Buffer.from(await previous.data.arrayBuffer())).digest('hex') !== createHash('sha256').update(photo.buffer).digest('hex'))
           throw new PhotoUploadError(502, 'Não foi possível preparar a fotografia.');
       } else if (error) throw new PhotoUploadError(502, 'Não foi possível guardar a fotografia.');
-      try { await ensurePhotoVariants(path,photo.buffer); }
+      try {
+        const { manifest } = await ensurePhotoVariants(path,photo.buffer);
+        await persistPhotoDimensions(prisma, vehicleId, path, manifest);
+      }
       catch { throw new PhotoUploadError(502,'Não foi possível preparar os tamanhos da fotografia. Tente guardar novamente.'); }
       if (staged) {
         res.status(201).json({ path, staged: true, bytes: photo.buffer.length, optimized: photo.optimized });
@@ -113,7 +118,10 @@ router.post('/', requireUser, (req, res, next) => {
             where: { id: vehicleId },
             select: { photos: true },
           });
-          if (!current?.photos.includes(path)) await deleteObjects([path]);
+          if (!current?.photos.includes(path)) {
+            await deleteObjects([path]);
+            await removePhotoDimensions(prisma, [path]);
+          }
         } catch {
           /* orphan cleanup is preferable to deleting a referenced photo */
         }
@@ -167,6 +175,9 @@ router.delete(
     const photoPath = decodeURIComponent(param(req, 'photoPath'));
 
     await mutateVehiclePhotos(prisma, vehicleId, { type: 'remove', path: photoPath });
+
+    try { await removePhotoDimensions(prisma, [photoPath]); }
+    catch { logger.error('Unreferenced photo dimensions cleanup failed'); }
 
     try {
       await deleteObjects([photoPath]);
