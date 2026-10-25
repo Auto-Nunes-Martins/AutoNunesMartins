@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import { descriptionText } from '@anm/types/richDescription';
 import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { emitActivity } from '../data/activity.js';
+import { preparePhotoDimensions } from './preparePhotoDimensions.js';
 import {
   isApprovedPhotoPath,
   makePublicSlug,
@@ -26,6 +27,7 @@ export async function setWebPublication(
   input: WebPublication,
   actorId: string | null,
 ) {
+  if (input.published) await preparePhotoDimensions(db, id, input.photoPaths);
   let suffixIndex = 0;
   // A concurrent first publication must re-read a winning persisted slug,
   // never overwrite it using an earlier snapshot of the vehicle's title.

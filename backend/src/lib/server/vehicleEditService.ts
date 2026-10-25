@@ -14,6 +14,7 @@ import { getBucketName, getSupabase } from '../data/storage.js';
 import sharp from 'sharp';
 import { MAX_OUTPUT_BYTES, MAX_UPLOAD_PIXELS } from './photoOptimization.js';
 import { prisma } from '../../db.js';
+import { preparePhotoDimensions } from './preparePhotoDimensions.js';
 
 export const vehicleEditSchema = z
   .object({
@@ -95,6 +96,7 @@ export async function saveVehicleEdit(
     )
       throw new VehicleStateConflict('Fotografia preparada inválida.', 409, 'photos');
   }
+  await preparePhotoDimensions(prisma, id, input.publication?.photoPaths ?? input.photos);
   for (const suffixLength of SLUG_SUFFIX_LENGTHS) {
     try {
       return await saleMutation(async (tx) => {

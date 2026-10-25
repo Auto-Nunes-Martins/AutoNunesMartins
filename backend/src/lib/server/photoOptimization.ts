@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { sanitizePhotoMetadata } from './photoMetadata.js';
 
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 export const MAX_UPLOAD_PIXELS = 24_000_000;
@@ -56,7 +57,7 @@ export async function optimizePhoto(input: Buffer) {
       // Decode once to reject truncated/corrupt inputs even on the passthrough path.
       await image.timeout({ seconds: 15 }).stats();
       return {
-        buffer: input,
+        buffer: await sanitizePhotoMetadata(input),
         contentType: `image/${meta.format}`,
         extension: meta.format === 'jpeg' ? 'jpg' : meta.format!,
         optimized: false,

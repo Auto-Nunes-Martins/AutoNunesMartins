@@ -12,8 +12,9 @@ derivatives; production imports only the chosen composition.
 - 384 accommodates a 112 CSS-pixel thumbnail on a DPR-3 display without jumping to 800.
   1280 accommodates typical mobile cards and featured photographs at high density.
 - WebP derivatives use quality 90, effort 6 and smart subsampling. The previous recipe
-  used quality 94 and effort 3. Existing upload admission, master optimization, original
-  zoom delivery, live authorization and private/no-cache response policies are retained.
+  used quality 94 and effort 3. Upload admission and pixel-compression policy are retained;
+  new passthrough uploads and public original/zoom responses now remove private metadata
+  without re-encoding pixels. Live authorization and private/no-cache policies remain.
 - Derivatives are generated directly from each stored master, never from another derivative.
   No image is enlarged. Requests above the master's available derivatives retain the
   original fallback, so a requested width is not a promise that a small master has that width.
@@ -48,10 +49,18 @@ When these are appropriate for the display density, they avoid the previous jump
 
 ## Homepage backgrounds
 
-`scripts/optimize-home-v5-images.mjs` creates AVIF quality 70 (4:4:4) and WebP quality 90
-fallbacks without changing crops, focus points or CSS colour treatment. It covers the
+`scripts/optimize-home-v5-images.mjs` uses per-asset settings: forest AVIF 55/WebP 88,
+catalogue AVIF 45/WebP 85, curves AVIF 65/WebP 88, service AVIF 60/WebP 85;
+remaining assets default to AVIF 70/WebP 90. AVIF effort is 5, with 4:2:0 for forest/catalogue
+and 4:4:4 otherwise; WebP effort is 6 with smart subsampling. Crops, focus points and CSS
+colour treatment are preserved. It covers the
 hero, discovery card, services, editorial pause and contact ending. The approved service
 photograph is now served locally, retaining its existing position and grayscale treatment.
+
+The forest portrait set additionally contains 1440, 1600 and 1792px candidates. These
+decorative assets are a separate pipeline and do not extend the vehicle-photo width allowlist.
+See [mobile measurements](../mobile-homepage-performance.md) and the current
+[vehicle-photo policy](../photo-variants.md).
 
 `coverImageSizes` measures the required object-fit cover width, including tall portrait
 crops. It leaves device pixel density to the browser. Lazy backgrounds receive their

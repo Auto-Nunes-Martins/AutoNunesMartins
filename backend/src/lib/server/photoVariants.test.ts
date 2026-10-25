@@ -1,5 +1,8 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import sharp from 'sharp';
+// These tests isolate cache/storage behaviour with synthetic byte strings.
+// Real container sanitization and public fallback are covered in photoDeliveryMetadata.test.ts.
+vi.mock('./photoMetadata.js', () => ({ sanitizePhotoMetadata: async (input: Buffer) => input }));
 const mock = vi.hoisted(() => ({
   objects: new Map<string, { buffer: Buffer; type: string }>(),
   failWidth: 0,
