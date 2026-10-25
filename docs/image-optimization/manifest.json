@@ -19,6 +19,22 @@
     },
     {
       "source": "apps/website/static/logo-transparent.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-light-240.webp",
+      "originalBytes": 406094,
+      "bytes": 14324,
+      "width": 240,
+      "height": 107,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent.png",
       "output": "apps/website/src/lib/assets/optimized/logo-light-360.webp",
       "originalBytes": 406094,
       "bytes": 26312,
@@ -152,6 +168,22 @@
       "bytes": 8080,
       "width": 180,
       "height": 80,
+      "alpha": true,
+      "format": "webp",
+      "options": {
+        "lossless": true,
+        "effort": 6
+      },
+      "visibleMeanError": 0,
+      "alphaMeanError": 0
+    },
+    {
+      "source": "apps/website/static/logo-transparent-white-v3.png",
+      "output": "apps/website/src/lib/assets/optimized/logo-dark-240.webp",
+      "originalBytes": 244158,
+      "bytes": 11920,
+      "width": 240,
+      "height": 107,
       "alpha": true,
       "format": "webp",
       "options": {

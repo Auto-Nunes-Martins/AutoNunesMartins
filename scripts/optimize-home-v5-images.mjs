@@ -27,7 +27,8 @@ const only = process.argv.find((arg) => arg.startsWith('--only='))?.slice(7);
 const encoding = {
   'forest-wide': { webp: 88, avif: 55 },
   'forest-portrait': { webp: 88, avif: 55 },
-  'catalog-portrait': { webp: 85, avif: 55 },
+  // This portrait is presented behind the existing 1.6px blur; compare at its rendered size.
+  'catalog-portrait': { webp: 85, avif: 45 },
   'curves-wide': { webp: 88, avif: 65 },
   'curves-portrait': { webp: 88, avif: 65 },
   'service-wide': { webp: 85, avif: 60 },

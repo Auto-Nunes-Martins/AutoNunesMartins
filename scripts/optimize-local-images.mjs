@@ -23,7 +23,7 @@ async function derivative(source, output, width, format, options) {
   records.push({ source, output, originalBytes: input.length, bytes: bytes.length, width: metadata.width, height: metadata.height, alpha: metadata.hasAlpha, format, options, visibleMeanError: +(error / Math.max(1, samples)).toFixed(3), alphaMeanError: +(alphaError / (decoded.length / 4)).toFixed(3) });
   return output;
 }
-const widthSet = [180, 360, 720, 1200, 1881];
+const widthSet = [180, 240, 360, 720, 1200, 1881];
 for (const [tone, file] of [['light', 'logo-transparent.png'], ['dark', 'logo-transparent-white-v3.png']]) {
   const source = `apps/website/static/${file}`;
   for (const width of widthSet) await derivative(source, `${website}/logo-${tone}-${width}.webp`, width, 'webp', { lossless: true, effort: 6 });
