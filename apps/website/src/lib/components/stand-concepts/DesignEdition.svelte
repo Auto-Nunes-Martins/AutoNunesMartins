@@ -5,6 +5,7 @@
   let galleryOpen = $state(false);
   let mainPhotoLoading = $state(true);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
+  import { homePhotoPlaceholder, homePhotoPriority } from '$lib/homePhotoPriority';
   import { publicPhotoVersions } from '$lib/publicVehicles';
   import UnavailableVehiclePanel from './UnavailableVehiclePanel.svelte';
   import MissingVehiclePanel from './MissingVehiclePanel.svelte';
@@ -488,7 +489,9 @@
   <link rel="preload" href={orbitFont500} as="font" type="font/woff2" crossorigin="anonymous" />
   <link rel="preload" href={orbitFont600} as="font" type="font/woff2" crossorigin="anonymous" />
   <link rel="preload" href={orbitTitleFont} as="font" type="font/woff2" crossorigin="anonymous" />
-  <link rel="preload" href={orbitTitleItalic} as="font" type="font/woff2" crossorigin="anonymous" />
+  {#if favorites || compare || about || id || catalog || privacy || publicVehicle || errorStatus}
+    <link rel="preload" href={orbitTitleItalic} as="font" type="font/woff2" crossorigin="anonymous" />
+  {/if}
   {#if !favorites && !compare && !about && !catalog && !privacy && !publicVehicle && !errorStatus}<title
       >{car
         ? `${car.brand} ${car.model} — Auto Nunes Martins`
@@ -1526,10 +1529,15 @@
     use:conditionalEntrance={vehicle && animate ? (index % 2) * 110 : false}
   >
     {#if vehicle}
+      {@const waitingPhoto = !favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle && !errorStatus && 'approved' in vehicle
+        ? homePhotoPlaceholder(vehicle.photoDimensions) : undefined}
       <div class="card-photo">
         <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
           data-photo-count={'photoCount' in vehicle ? vehicle.photoCount : undefined}
-          ><img
+          ><picture use:homePhotoPriority>
+          {#if waitingPhoto}<source data-home-photo-priority
+            media="(max-width: 700px) and (scripting: enabled)" srcset={waitingPhoto} />{/if}
+          <img
             use:coverPhotoSizes
             use:vehiclePhoto={{
               src: photo(vehicle.image, 1100),
@@ -1537,10 +1545,11 @@
             }}
             src={photo(vehicle.image, 1100)}
             srcset={responsivePhoto(vehicle.image, 1600)}
-            sizes={'approved' in vehicle ? publicCardImageSizes(vehicle.photoDimensions, catalog) : cardImageSizes}
+            sizes={'approved' in vehicle ? publicCardImageSizes(vehicle.photoDimensions, catalog, favorites) : cardImageSizes}
+            fetchpriority={catalog || favorites ? undefined : 'low'}
             alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
             loading="lazy"
-          />{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
+          /></picture>{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
             class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
           ></a
         >

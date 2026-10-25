@@ -17,6 +17,8 @@
   import { scrollCue } from './scrollCue';
   import { featuredPhotoSizes } from './images';
   import { scrollFrame, setScrollStyle } from './scrollFrame';
+  import { mobileHeroImages } from '$lib/mobileHeroImages';
+  import { narrowHeroMedia, compactHeroMedia, fullHeroMedia, narrowHeroSizes, compactHeroSizes, portraitHeroSizes } from './mobileHero';
 
   const version = 5;
   let { homeHighlights }: { homeHighlights?: PublicHighlights } = $props();
@@ -125,9 +127,15 @@
 
 <svelte:head>
   <!-- Match each picture source exactly so preload discovery cannot download two variants. -->
-  <link rel="preload" as="image" type="image/avif" media="(max-width: 700px)"
+  {#if car}
+    <link rel="preload" as="image" type="image/avif" media={narrowHeroMedia}
+      imagesrcset={mobileHeroImages[1200].avif} imagesizes={narrowHeroSizes} fetchpriority="high" />
+    <link rel="preload" as="image" type="image/avif" media={compactHeroMedia}
+      imagesrcset={mobileHeroImages[1440].avif} imagesizes={compactHeroSizes} fetchpriority="high" />
+  {/if}
+  <link rel="preload" as="image" type="image/avif" media={car ? fullHeroMedia : '(max-width: 700px)'}
     imagesrcset={background.avifPortrait}
-    imagesizes="max(calc(55vw + 600px), 105.5vw, 94.95vh)" fetchpriority="high" />
+    imagesizes={portraitHeroSizes} fetchpriority="high" />
   <link rel="preload" as="image" type="image/avif" media="(min-width: 701px)"
     imagesrcset={background.avifDesktop}
     imagesizes="(max-width: 1050px) max(105.5vw, 158.25vh), max(105.5vw, 131.875vh)"
@@ -289,16 +297,22 @@
          maximum 1.055 scale, without measuring its changing transformed bounds.
          The portrait also covers the stacked content on short phone screens. -->
     <picture>
+      {#if car}
+        <source type="image/avif" media={narrowHeroMedia} srcset={mobileHeroImages[1200].avif} sizes={narrowHeroSizes} />
+        <source type="image/webp" media={narrowHeroMedia} srcset={mobileHeroImages[1200].webp} sizes={narrowHeroSizes} />
+        <source type="image/avif" media={compactHeroMedia} srcset={mobileHeroImages[1440].avif} sizes={compactHeroSizes} />
+        <source type="image/webp" media={compactHeroMedia} srcset={mobileHeroImages[1440].webp} sizes={compactHeroSizes} />
+      {/if}
       <source
         type="image/avif"
         media="(max-width: 700px)"
         srcset={background.avifPortrait}
-        sizes="max(calc(55vw + 600px), 105.5vw, 94.95vh)"
+        sizes={portraitHeroSizes}
       />
       <source
         media="(max-width: 700px)"
         srcset={background.portrait}
-        sizes="max(calc(55vw + 600px), 105.5vw, 94.95vh)"
+        sizes={portraitHeroSizes}
       />
       <source
         type="image/avif"

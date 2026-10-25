@@ -1,7 +1,7 @@
 // Parser-blocking, public-only startup: preserve reload position before first paint.
 // Keep scene formulas aligned with scrollTiming.ts; no auth or private API access.
 
-// app.html sets the document palette inline before loading this file.
+// app.html sets the document palette before this bundled script is inlined.
 // CSS uses that document state, independently of the SSR component's class.
 
 // Restoring a document is not a user-requested smooth scroll.
@@ -39,6 +39,52 @@ if (
     cancelRestore();
   }, 5000);
 }
+
+// Native lazy loading can start several large stock photos while the hero is loading.
+// Keep the real img URLs in SSR. Only offscreen mobile-home pictures wait, and any
+// scroll/resize, nearby intersection, hero completion or hero failure releases them.
+window.initializeHomePhotoPriority = function (scope) {
+  (scope || document).querySelectorAll('source[data-home-photo-priority]').forEach(function (source) {
+    if (source.dataset.priorityWatching || source.media === 'not all') return;
+    source.dataset.priorityWatching = 'true';
+    var picture = source.parentElement;
+    var hero = document.querySelector('.hd-landscape img');
+    var observer;
+    var initialWidth = innerWidth;
+    var initialHeight = innerHeight;
+    var initialScroll = scrollY;
+    var viewportChanged = function () {
+      // Chrome can emit initial resize/scroll events without a viewport change.
+      if (scrollY !== initialScroll || innerWidth !== initialWidth || innerHeight !== initialHeight) release();
+    };
+    var release = function () {
+      source.media = 'not all';
+      if (observer) observer.disconnect();
+      if (hero) {
+        hero.removeEventListener('load', release);
+        hero.removeEventListener('error', release);
+      }
+      removeEventListener('scroll', viewportChanged);
+      removeEventListener('resize', viewportChanged);
+      delete source._releaseHomePhoto;
+    };
+    source._releaseHomePhoto = release;
+    if (!matchMedia('(max-width: 700px)').matches || scrollY > 0 || !hero || hero.complete ||
+        picture.parentElement.getBoundingClientRect().top < innerHeight + 400 ||
+        typeof IntersectionObserver === 'undefined') {
+      release();
+      return;
+    }
+    observer = new IntersectionObserver(function (entries) {
+      if (entries.some(function (entry) { return entry.isIntersecting; })) release();
+    }, { rootMargin: '400px' });
+    observer.observe(picture.parentElement);
+    hero.addEventListener('load', release, { once: true });
+    hero.addEventListener('error', release, { once: true });
+    addEventListener('scroll', viewportChanged, { passive: true });
+    addEventListener('resize', viewportChanged, { passive: true });
+  });
+};
 
 window.initializeOrbitDocument = function () {
   // The full SSR layout exists here, before the first paint and framework hydration.
@@ -97,7 +143,7 @@ window.initializeOrbitDocument = function () {
     if (orbitHero && orbitRoot.classList.contains('orbit-home')) {
       // Same distance-based arrival as compactNavProgress; no first-paint flash on reload.
       var navDistance = Math.max(100, Math.min(180, innerHeight * 0.18));
-      var navStart = Math.max(
+      var navStart = scrollY < 100 ? 100 : Math.max(
         100,
         orbitHero.getBoundingClientRect().bottom + scrollY - navDistance,
       );
@@ -122,6 +168,11 @@ window.initializeOrbitDocument = function () {
         return clampOrbit((n - a) / (b - a));
       };
       orbitRoot.classList.add('motion-on');
+      // Read every scene before writing its pose: avoid layout flushes between scenes.
+      var sceneWrites = [];
+      var setSceneStyle = function (node, name, value) {
+        sceneWrites.push([node, name, value]);
+      };
       orbitRoot.querySelectorAll('[data-scene]').forEach(function (scene) {
         var bounds = scene.getBoundingClientRect();
         if (bounds.bottom < -50 || bounds.top > innerHeight + 50) return;
@@ -144,11 +195,11 @@ window.initializeOrbitDocument = function () {
           var accentPinTop = Math.max(0, (innerHeight - heroHeight) / 2);
           var accentTop = bounds.top + (innerWidth > 1050 ? scrollY : 0);
           var accentTravel = Math.min(accentRange, Math.max(0, accentPinTop - accentTop));
-          scene.style.setProperty(
+          setSceneStyle(scene,
             '--accent-stage-shift',
             bounds.top + accentTravel - heroBounds.top + 'px',
           );
-          scene.style.setProperty(
+          setSceneStyle(scene,
             '--accent-progress',
             accentRange > 1 ? clampOrbit((accentPinTop - accentTop) / accentRange) : 0,
           );
@@ -160,24 +211,24 @@ window.initializeOrbitDocument = function () {
           var travel = Math.max(1, Math.min(heroHeight * 0.75, innerHeight * 0.6));
           progress = resting + (1 - resting) * clampOrbit((documentTop - bounds.top) / travel);
         }
-        scene.style.setProperty('--p', progress);
-        scene.style.setProperty(
+        setSceneStyle(scene, '--p', progress);
+        setSceneStyle(scene,
           '--through',
           clampOrbit((innerHeight - bounds.top) / Math.max(1, innerHeight + bounds.height)),
         );
-        scene.style.setProperty(
+        setSceneStyle(scene,
           '--enter',
           clampOrbit((innerHeight * 0.82 - bounds.top) / Math.max(1, innerHeight * 0.52)),
         );
-        scene.style.setProperty('--stage-a', chapterOrbit(progress, 0, 0.88));
-        scene.style.setProperty('--stage-b', chapterOrbit(progress, 0.1, 1));
+        setSceneStyle(scene, '--stage-a', chapterOrbit(progress, 0, 0.88));
+        setSceneStyle(scene, '--stage-b', chapterOrbit(progress, 0.1, 1));
         if (scene.hasAttribute('data-approach')) {
           var target = scene.querySelector('[data-approach-target]');
           var rect = target ? target.getBoundingClientRect() : bounds;
           var denominator = Math.max(1, innerHeight * 0.44 + rect.height / 2);
           var approach = clampOrbit((innerHeight * 0.94 - rect.top) / denominator);
-          scene.style.setProperty('--approach', approach);
-          scene.style.setProperty(
+          setSceneStyle(scene, '--approach', approach);
+          setSceneStyle(scene,
             '--scan',
             clampOrbit(
               (innerHeight * 0.94 -
@@ -186,15 +237,17 @@ window.initializeOrbitDocument = function () {
                 denominator,
             ),
           );
-          scene.style.setProperty('--reveal-a', chapterOrbit(approach, 0.06, 0.58));
-          scene.style.setProperty('--reveal-b', chapterOrbit(approach, 0.28, 0.83));
-          scene.style.setProperty('--reveal-c', chapterOrbit(approach, 0.5, 1));
+          setSceneStyle(scene, '--reveal-a', chapterOrbit(approach, 0.06, 0.58));
+          setSceneStyle(scene, '--reveal-b', chapterOrbit(approach, 0.28, 0.83));
+          setSceneStyle(scene, '--reveal-c', chapterOrbit(approach, 0.5, 1));
         }
       });
-      orbitRoot.style.setProperty(
+      setSceneStyle(orbitRoot,
         '--reading',
         clampOrbit(scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight)),
       );
+      sceneWrites.forEach(function (write) { write[0].style.setProperty(write[1], write[2]); });
     }
   }
+  window.initializeHomePhotoPriority();
 };

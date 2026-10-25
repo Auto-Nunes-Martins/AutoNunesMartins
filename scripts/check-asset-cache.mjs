@@ -77,7 +77,6 @@ try {
     const outputRoot = `apps/${app}/build/client${prefix}/_app/immutable/assets`;
     // Original PNG/JPEG sources are retained but no longer imported by the UI.
     const sources = fs.readdirSync(sourceRoot, { recursive: true }).map(file => path.join(sourceRoot, file)).filter(file => fs.statSync(file).isFile() && (file.includes(`${path.sep}optimized${path.sep}`) || file.includes(`${path.sep}favicon${path.sep}`) || file.endsWith('.svg')));
-    if (app === 'website') sources.push('apps/website/assets/orbit-startup.js');
     const outputs = fs.readdirSync(outputRoot);
     for (const source of sources) {
       if (source.endsWith('.svg')) {
@@ -113,8 +112,8 @@ try {
       assert(!html.includes('%anm.startup%'), 'startup template resolved');
       assert(!/(?:src|href)=["'][^"']*\/(?:logo-transparent(?:-white-v3)?\.png|catalog-placeholder\.svg|orbit-startup\.js)/.test(html), `no fixed UI assets: ${url}`);
       if (!url.startsWith('/crm')) {
-        assert.match(html, /<script src="\/_app\/immutable\/assets\/orbit-startup\.[\w-]+\.js"><\/script>/);
-        assert(html.indexOf('orbit-startup.') < html.indexOf('<body'), 'classic startup stays parser blocking in head');
+        assert.match(html, /<script id="orbit-startup">[\s\S]*?window\.initializeOrbitDocument/);
+        assert(html.indexOf('id="orbit-startup"') < html.indexOf('<body'), 'classic startup stays parser blocking in head without a network request');
       }
       if (!url.startsWith('/crm')) {
         const icons = [...html.matchAll(/<link\b[^>]*rel="(?:icon|apple-touch-icon)"[^>]*>/g)].map(match => match[0]);

@@ -24,7 +24,7 @@
     {/if}
     <div class="top">
       <a class="brand" href="/" aria-label="Auto Nunes Martins — início">
-        <img src={logoDark} srcset={logoDarkSrcset} sizes="132px" alt={standContact.name} width="180" height="80" />
+        <img src={logoDark} srcset={logoDarkSrcset} sizes="132px" alt={standContact.name} width="180" height="80" loading="lazy" />
       </a>
       <nav aria-label="Navegação do rodapé">
         <a href="/viaturas">Viaturas</a>
