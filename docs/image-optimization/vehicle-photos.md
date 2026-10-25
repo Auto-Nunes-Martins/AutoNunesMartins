@@ -11,14 +11,14 @@ derivatives; production imports only the chosen composition.
   320, 384, 800, 1280, 1600 and 2560 CSS source-width descriptors.
 - 384 accommodates a 112 CSS-pixel thumbnail on a DPR-3 display without jumping to 800.
   1280 accommodates typical mobile cards and featured photographs at high density.
-- WebP derivatives use quality 90, effort 6 and smart subsampling. The previous recipe
-  used quality 94 and effort 3. Upload admission and pixel-compression policy are retained;
+- WebP derivatives use quality 84, effort 6 and smart subsampling. Earlier recipes
+  used quality 94/effort 3 and quality 90/effort 6. Upload admission and master policy are retained;
   new passthrough uploads and public original/zoom responses now remove private metadata
   without re-encoding pixels. Live authorization and private/no-cache policies remain.
 - Derivatives are generated directly from each stored master, never from another derivative.
   No image is enlarged. Requests above the master's available derivatives retain the
   original fallback, so a requested width is not a promise that a small master has that width.
-- The manifest schema and namespace stay compatible. `encodingVersion: 2` distinguishes
+- The manifest schema and namespace stay compatible. `encodingVersion: 3` distinguishes
   this recipe, so a complete old manifest is regenerated rather than incorrectly reused.
   Derivative uploads finish before the manifest is published. Masters and vehicle rows
   are never replaced by the backfill.
@@ -29,6 +29,15 @@ state remained unchanged. Detailed reports are local, under
 `artifacts/vehicle-photo-compression/`, and are not deployment assets.
 
 ## Measurements and visual review
+
+The current version-3 review on 25 October used the actual private inventory and
+updated all 51 associated photos / 233 derivatives: 31,864,450 → 23,756,646 bytes
+(25.4% less). Ten representative sources, native detail crops, quality comparisons
+and 24 local browser comparisons informed the choice. Existing masters and database
+state were verified unchanged. New CRM uploads use the same backend derivative recipe;
+the browser does not compress uploads. See the [complete report](../vehicle-photo-compression-2026-10-25.md).
+
+The measurements below preserve the earlier version-2 comparison for historical context.
 
 Six public vehicle cover photographs were used for comparisons. The audit renders
 normal display sizes and original-pixel crops of headlights, grilles, paint and tyres.
