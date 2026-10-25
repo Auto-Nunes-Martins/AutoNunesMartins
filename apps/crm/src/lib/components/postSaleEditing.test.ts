@@ -31,6 +31,7 @@ const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), {
   Button,
   DateInput,
   VehicleSpecGlyph: DateIcon,
+  untrack: (fn: () => unknown) => fn(),
 });
 const Empty = component('<span></span>');
 const Panel = component('<script>let {children} = $props();</script>{@render children?.()}');

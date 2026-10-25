@@ -9,7 +9,7 @@
     showFormErrors,
     showInvalidFormFields,
   } from '$lib/forms/formFeedback';
-  import { tick, type Snippet } from 'svelte';
+  import { tick, untrack, type Snippet } from 'svelte';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import Button from '$lib/components/common/Button.svelte';
@@ -101,23 +101,43 @@
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const defaultAcquisitionDate = $derived(initial.acquisitionDate ?? today);
-
+  function draftFromInitial(value: Initial) {
+    return {
+      brand: value.brand ?? '',
+      model: value.model ?? '',
+      year: value.year ?? undefined,
+      fuel: value.fuel ?? '',
+      mileage: value.mileage ?? undefined,
+      vin: value.vin ?? '',
+      licensePlate: value.licensePlate ?? '',
+      purchasePrice: value.purchasePrice ?? '',
+      salePrice: value.salePrice ?? '',
+      status: value.status ?? 'AVAILABLE',
+      acquisitionDate: value.acquisitionDate ?? today,
+      description: value.description ?? '',
+      pendingDocFlags: {
+        financing: false,
+        imt: false,
+        registration: false,
+        docs: false,
+        ...value.pendingDocFlags,
+      },
+    };
+  }
+  // Keep the working values separate from the saved props through reactive updates.
+  let draft = $state(untrack(() => draftFromInitial(initial)));
+  $effect(() => {
+    draft = draftFromInitial(initial);
+  });
   // Format only on blur: editing the middle must preserve the caret.
-  const initialPlate = () => initial.licensePlate ?? '';
-  let licensePlateInput = $state(initialPlate());
-  function onPlateInput(e: Event) {
-    licensePlateInput = (e.currentTarget as HTMLInputElement).value;
-  }
   function onPlateBlur(e: FocusEvent) {
-    const el = e.currentTarget as HTMLInputElement;
-    const compact = el.value.replace(/[\s-]/g, '').toUpperCase();
-    licensePlateInput = compact.length === 6
-      ? `${compact.slice(0, 2)}-${compact.slice(2, 4)}-${compact.slice(4)}`
-      : el.value.toUpperCase();
-    el.value = licensePlateInput;
+    const compact = draft.licensePlate.replace(/[\s-]/g, '').toUpperCase();
+    draft.licensePlate =
+      compact.length === 6
+        ? `${compact.slice(0, 2)}-${compact.slice(2, 4)}-${compact.slice(4)}`
+        : draft.licensePlate.toUpperCase();
+    (e.currentTarget as HTMLInputElement).value = draft.licensePlate;
   }
-
 </script>
 
 <div class="space-y-6">
@@ -207,7 +227,7 @@
             name="brand"
             type="text"
             required
-            value={initial.brand ?? ''}
+            bind:value={draft.brand}
             placeholder="Dacia"
             class={inputClass()}
             style="border-radius: var(--radius-btn);"
@@ -219,7 +239,7 @@
             name="model"
             type="text"
             required
-            value={initial.model ?? ''}
+            bind:value={draft.model}
             placeholder="Jogger"
             class={inputClass()}
             style="border-radius: var(--radius-btn);"
@@ -233,7 +253,7 @@
             type="text"
             maxlength="17"
             minlength="17"
-            value={initial.vin ?? ''}
+            bind:value={draft.vin}
             placeholder="WAUZZZ8K9CA000000"
             class="{inputClass()} font-mono tracking-wider uppercase"
             style="border-radius: var(--radius-btn); text-transform: uppercase;"
@@ -253,8 +273,7 @@
             maxlength="10"
             autocomplete="off"
             spellcheck="false"
-            value={licensePlateInput}
-            oninput={onPlateInput}
+            bind:value={draft.licensePlate}
             onblur={onPlateBlur}
             placeholder="AA-00-AA"
             class="{inputClass()} font-mono tracking-[0.18em] uppercase"
@@ -272,7 +291,7 @@
             min="1950"
             max={new Date().getFullYear() + 1}
             required
-            value={initial.year ?? ''}
+            bind:value={draft.year}
             placeholder={String(new Date().getFullYear())}
             class={inputClass()}
             style="border-radius: var(--radius-btn);"
@@ -285,7 +304,7 @@
           <select
             name="fuel"
             required
-            value={initial.fuel ?? ''}
+            bind:value={draft.fuel}
             class={inputClass()}
             style="border-radius: var(--radius-btn);"
           >
@@ -305,7 +324,7 @@
             min="0"
             max="2000000"
             required
-            value={initial.mileage ?? ''}
+            bind:value={draft.mileage}
             placeholder="67000"
             class="{inputClass()} tabular-nums"
             style="border-radius: var(--radius-btn);"
@@ -329,7 +348,7 @@
           {:else}
             <select
               name="status"
-              value={initial.status ?? 'AVAILABLE'}
+              bind:value={draft.status}
               class={inputClass()}
               style="border-radius: var(--radius-btn);"
             >
@@ -351,7 +370,7 @@
             step="0.01"
             min="0"
             required
-            value={initial.purchasePrice ?? ''}
+            bind:value={draft.purchasePrice}
             placeholder="14000.00"
             class="{inputClass()} tabular-nums"
             style="border-radius: var(--radius-btn);"
@@ -367,7 +386,7 @@
             type="number"
             step="0.01"
             min="0"
-            value={initial.salePrice ?? ''}
+            bind:value={draft.salePrice}
             placeholder="17950.00"
             class="{inputClass()} tabular-nums"
             style="border-radius: var(--radius-btn);"
@@ -378,7 +397,7 @@
           <DateInput
             name="acquisitionDate"
             required
-            value={defaultAcquisitionDate}
+            bind:value={draft.acquisitionDate}
             class={inputClass()}
             style="border-radius: var(--radius-btn);"
           />
@@ -402,7 +421,7 @@
           placeholder="Histórico de manutenção, extras, observações…"
           class="px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
           style="border-radius: var(--radius-btn);"
-          value={initial.description ?? ''}
+          bind:value={draft.description}
         ></textarea>
       </label>
 
@@ -416,9 +435,7 @@
                 type="checkbox"
                 name={'pendingDocFlags.' + flag.key}
                 value="true"
-                checked={initial.pendingDocFlags?.[
-                  flag.key as keyof typeof initial.pendingDocFlags
-                ] ?? false}
+                bind:checked={draft.pendingDocFlags[flag.key as keyof typeof draft.pendingDocFlags]}
               />
               <span class="document-copy"
                 ><strong>{flag.label}</strong><span class="document-clear">Sem pendência</span><span
