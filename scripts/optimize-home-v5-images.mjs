@@ -11,7 +11,8 @@ const crops = JSON.parse(await readFile('apps/website/src/lib/sceneCrops.json', 
 await mkdir(destination, { recursive: true });
 await mkdir(audit, { recursive: true });
 const jobs = [
-  ['forest-wide', 'forest-ribbon-5472.webp', [1280, 1920, 2560, 2880, 3840, 5472]],
+  // Include the approved entry zoom at common desktop DPRs without large jumps.
+  ['forest-wide', 'forest-ribbon-5472.webp', [1280, 1920, 2304, 2560, 2688, 2880, 3072, 3840, 4096, 5472]],
   // Intermediate mobile densities should not jump straight from 1280 to 1920.
   // Keep the original framing/encoding quality and let sizes + DPR select the source.
   ['forest-portrait', 'forest-ribbon-portrait-1920.webp', [640, 1080, 1280, 1440, 1600, 1792, 1920]],

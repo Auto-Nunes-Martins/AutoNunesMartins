@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import startupUrl from '../assets/orbit-startup.js?url&no-inline';
+import startupScript from '../assets/orbit-startup.js?raw';
 
 // Public app only: deliberately no session provider, auth middleware or CRM credentials.
 export const handle: Handle = async ({ event, resolve }) => {
@@ -10,9 +10,10 @@ export const handle: Handle = async ({ event, resolve }) => {
     event.cookies.delete('anm-orbit-theme', { path: '/' });
   }
   const response = await resolve(event, {
-    // Keep this a classic, parser-blocking script: scroll/theme restoration must
-    // run before SSR markup is painted, rather than waiting for hydration.
-    transformPageChunk: ({ html }) => html.replace('%anm.startup%', startupUrl),
+    // Same parser-time restoration, without a blocking network round trip on first visit.
+    // This is bundled application code, never request/user content.
+    transformPageChunk: ({ html }) =>
+      html.replace('%anm.startup%', () => startupScript.replace(/<\/script/gi, '<\\/script')),
   });
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');

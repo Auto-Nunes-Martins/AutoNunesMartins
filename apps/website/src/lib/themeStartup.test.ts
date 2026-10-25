@@ -26,7 +26,7 @@ describe('theme before the first painted frame', () => {
         querySelector: () => ({
           setAttribute: (_name: string, value: string) => (metadata = value),
         }),
-        querySelectorAll: () => [
+        querySelectorAll: (selector: string) => selector === '.design.orbit' ? [
           {
             classList: { toggle: (_name: string, value: boolean) => (darkClass = value) },
             querySelectorAll: (selector: string) => selector === '[data-theme-logo]' ? [{
@@ -37,7 +37,7 @@ describe('theme before the first painted frame', () => {
               setAttribute: (name: string, value: string) => { if (name === 'src') logoSource = value; else if (name === 'srcset') logoSet = value; },
             }] : [],
           },
-        ],
+        ] : [],
       },
     };
     runInNewContext(themeBoot, context);

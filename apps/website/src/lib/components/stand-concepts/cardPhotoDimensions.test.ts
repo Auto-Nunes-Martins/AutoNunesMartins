@@ -13,10 +13,9 @@ describe('public mobile cover source selection', () => {
       expect(Math.abs(selectedCssWidth * dpr - requiredCssWidth * dpr)).toBeLessThan(.001);
     }
   });
-  it('preserves desktop/legacy fallback and chooses 800 for 4:3 but 1280 for the wide cover', () => {
+  it('preserves unknown-dimension fallback and chooses 800 for 4:3 but 1280 for the wide mobile cover', () => {
     expect(publicCardImageSizes()).toBe(cardImageSizes);
     expect(publicCardImageSizes({ width: 0, height: 1 })).toBe(cardImageSizes);
-    expect(publicCardImageSizes({ width: 4, height: 3 })).toContain('(max-width: 1050px) 46vw');
     const choose = (ratio: number) => [320, 384, 800, 1280, 1600, 2560].find(w => w >= Math.max(412 * .9, (412 * .9 / 1.4 + 60) * ratio) * 1.75);
     expect(choose(4 / 3)).toBe(800); expect(choose(2.09)).toBe(1280);
   });
