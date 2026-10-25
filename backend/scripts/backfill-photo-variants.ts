@@ -41,6 +41,8 @@ const report = {
   reused: 0,
   failed: 0,
   skipped: 0,
+  beforeVariantBytes: 0,
+  afterVariantBytes: 0,
   vehicleStateUnchanged: null as boolean | null,
   items: [] as Record<string, unknown>[],
 };
@@ -62,12 +64,17 @@ try {
     webPublished: true,
     publicSlug: true,
     updatedAt: true,
+    purchasePrice: true,
+    salePrice: true,
+    publicPrice: true,
+    status: true,
   } as const;
   const vehicles = await prisma.vehicle.findMany({ select, orderBy: { id: 'asc' } });
   report.vehicles = vehicles.length;
   const before = digest(vehicles);
   const photos = vehicles.flatMap((v) => v.photos.map((path) => ({ id: v.id, path })));
   report.photos = photos.length;
+  if (photos.length > 2000) throw new Error('Inventory exceeds bounded backfill size');
   await save();
   for (const { id, path } of photos) {
     if (stopping) break;
@@ -94,6 +101,16 @@ try {
       continue;
     }
     try {
+      // Do not recreate derivatives after a concurrent photo removal/move.
+      const owner = await prisma.vehicle.findUnique({ where: { id }, select: { photos: true } });
+      if (!owner?.photos.includes(path)) {
+        report.skipped++;
+        report.items.push({ key, status: 'skipped', reason: 'photo no longer belongs to vehicle' });
+        await save();
+        continue;
+      }
+      const beforeManifest = await readVariantManifest(path);
+      report.beforeVariantBytes += (beforeManifest?.variants ?? []).reduce((sum, part) => sum + part.bytes, 0);
       const master = await bucket.download(path);
       if (master.error || !master.data || master.data.size > 20 * 1024 * 1024)
         throw new Error('Master unavailable or oversized');
@@ -108,6 +125,7 @@ try {
       )
         throw new Error('Master verification failed');
       report.created += result.created;
+      report.afterVariantBytes += result.manifest.variants.reduce((sum, part) => sum + part.bytes, 0);
       if (result.reused) report.reused++;
       report.items.push({
         key,

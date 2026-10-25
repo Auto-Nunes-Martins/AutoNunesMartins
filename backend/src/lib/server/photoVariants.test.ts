@@ -387,14 +387,14 @@ describe('private reusable photo variants', () => {
     expect(await preferredVariantPath(path, 1074)).toBe(variantPath(path, 1280));
     expect(mock.objects.get(path)!.buffer.equals(input)).toBe(true);
   });
-  it('upgrades complete older recipes rather than silently reusing their compression', async () => {
+  it.each([undefined, 1, 2])('upgrades complete recipe %s rather than silently reusing its compression', async (encodingVersion) => {
     const input = await sharp({
       create: { width: 1000, height: 700, channels: 3, background: '#385b61' },
     })
       .jpeg()
       .toBuffer();
     const built = await ensurePhotoVariants(path, input);
-    const old = { ...built.manifest, encodingVersion: undefined };
+    const old = { ...built.manifest, encodingVersion };
     const encoded = Buffer.from(JSON.stringify(old)).toString('base64');
     const sidecar = await sharp({
       create: { width: 1, height: 1, channels: 3, background: '#fff' },
@@ -410,5 +410,37 @@ describe('private reusable photo variants', () => {
     expect(upgraded.reused).toBe(false);
     expect(upgraded.manifest.encodingVersion).toBe(PHOTO_ENCODING_VERSION);
     expect(mock.uploads.at(-1)).toBe(manifestPath(path));
+    const uploads = mock.uploads.length;
+    forgetPhotoVariants(path);
+    expect((await ensurePhotoVariants(path, input)).reused).toBe(true);
+    expect(mock.uploads).toHaveLength(uploads);
+  });
+
+  it('reduces transfer of detailed photos while keeping the decoded derivative close to the legacy recipe', async () => {
+    const width = 1400, height = 1000;
+    const pixels = Buffer.alloc(width * height * 3);
+    let seed = 123456;
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      const noise = (seed >>> 24) / 12;
+      const i = (y * width + x) * 3;
+      pixels[i] = 95 + Math.sin(x / 13) * 45 + noise;
+      pixels[i + 1] = 80 + Math.sin(y / 19) * 55 + noise;
+      pixels[i + 2] = 65 + Math.sin((x + y) / 31) * 45 + noise;
+    }
+    const input = await sharp(pixels, { raw: { width, height, channels: 3 } }).png().toBuffer();
+    const result = await buildPhotoVariants(input);
+    const current = result.files.find(file => file.width === 800)!.buffer;
+    const legacy = await sharp(input).resize({ width: 800 }).webp({ quality: 90, effort: 6, smartSubsample: true }).toBuffer();
+    expect(current.length).toBeLessThan(legacy.length * 0.9);
+    const a = await sharp(current).removeAlpha().raw().toBuffer();
+    const b = await sharp(legacy).removeAlpha().raw().toBuffer();
+    let difference = 0;
+    for (let i = 0; i < a.length; i++) difference += Math.abs(a[i]! - b[i]!);
+    expect(difference / a.length).toBeLessThan(4);
+    const metadata = await sharp(current).metadata();
+    expect(metadata.width).toBe(800);
+    expect(metadata.exif).toBeUndefined();
+    expect(metadata.xmp).toBeUndefined();
   });
 });

@@ -8,7 +8,7 @@ import { sanitizePhotoMetadata } from './photoMetadata.js';
 
 export const PHOTO_WIDTHS = vehiclePhotoWidths;
 // Schema/paths remain compatible; existing derivatives are regenerated from their master.
-export const PHOTO_ENCODING_VERSION = 2;
+export const PHOTO_ENCODING_VERSION = 3;
 export type PhotoWidth = (typeof PHOTO_WIDTHS)[number];
 export type VariantManifest = {
   version: 1;
@@ -171,7 +171,7 @@ export async function buildPhotoVariants(
     const { data, info } = await sharp(input, options)
       .rotate()
       .resize({ width: target, withoutEnlargement: true })
-      .webp({ quality: 90, effort: 6, smartSubsample: true })
+      .webp({ quality: 84, effort: 6, smartSubsample: true })
       .timeout({ seconds: 20 })
       .toBuffer({ resolveWithObject: true });
     // Pay for a full integrity decode once, before publishing the derivative.
