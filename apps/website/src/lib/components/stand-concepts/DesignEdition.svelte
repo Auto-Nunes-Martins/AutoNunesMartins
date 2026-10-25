@@ -1,23 +1,13 @@
 <script lang="ts">
   import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
+  import type { Snippet } from 'svelte';
+  import type { VehicleDetailRuntime } from '$lib/vehicleDetailRuntime';
   let galleryOpen = $state(false);
   let mainPhotoLoading = $state(true);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
-  import { publicGalleryPhoto } from '$lib/publicGalleryPhoto';
-  import { createPublicGallerySession } from '$lib/publicGallerySession';
   import { publicPhotoVersions } from '$lib/publicVehicles';
-  import { followThumbnail } from '$lib/thumbnailFollow';
-  import { dragThumbnailStrip } from '$lib/dragThumbnailStrip';
-  import { thumbnailNavigation } from '$lib/thumbnailNavigation';
-  import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from '$lib/publicThumbnail';
-  import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
-  import { galleryBackdrop } from '../../../../../../shared/ui/galleryBackdrop';
-  import RichDescription from '../../../../../../shared/ui/RichDescription.svelte';
   import UnavailableVehiclePanel from './UnavailableVehiclePanel.svelte';
-  import OrbitBackLink from './OrbitBackLink.svelte';
   import MissingVehiclePanel from './MissingVehiclePanel.svelte';
-  import { descriptionText } from '@anm/types/richDescription';
-  import './photoViewer.css';
   import {
     logoLight,
     logoDark,
@@ -49,13 +39,6 @@
     type PublicCard,
   } from '$lib/publicVehicles';
   import { page } from '$app/stores';
-  import {
-    publicVehicleCanonical,
-    vehicleJsonLdScript,
-    vehicleBreadcrumbItems,
-    vehicleBreadcrumbJsonLdScript,
-  } from '$lib/vehicleStructuredData';
-  import { vehicleSeo } from '$lib/vehicleSeo';
   import { publicPhoto, publicHref, fuelLabels, transmissionLabels } from '$lib/publicVehicles';
   import DiscoverVehicles from './DiscoverVehicles.svelte';
   import { hybridNav } from './hybridNav';
@@ -88,9 +71,7 @@
   import OrbitPerspective from './OrbitPerspective.svelte';
   import OrbitFaq from './OrbitFaq.svelte';
   import OrbitAccordion from './OrbitAccordion.svelte';
-  import PublicVehicleStory from './PublicVehicleStory.svelte';
   import VehicleSpecIcon from '../VehicleSpecIcon.svelte';
-  import GalleryContactSlide from '../GalleryContactSlide.svelte';
   import CabinReveal from './CabinReveal.svelte';
   import ServiceBannerProposals from './ServiceBannerProposals.svelte';
   import OrbitStats from './OrbitStats.svelte';
@@ -106,17 +87,8 @@
   import FormSelectField from './FormSelectField.svelte';
   import OrbitReviews from './OrbitReviews.svelte';
   import { standContact } from './standContact';
-  import OrbitCatalog from './OrbitCatalog.svelte';
-  import RelatedCarousel from './RelatedCarousel.svelte';
   import OrbitSelect from './OrbitSelect.svelte';
-  import OrbitPrivacy from './OrbitPrivacy.svelte';
-  import LegalInformation from '../LegalInformation.svelte';
-  import OrbitAbout from './OrbitAbout.svelte';
-  import OrbitComparison from './OrbitComparison.svelte';
-  import OrbitFavorites from './OrbitFavorites.svelte';
   import FavoriteButton from '../FavoriteButton.svelte';
-  import VehicleShareButton from '../VehicleShareButton.svelte';
-  import { vehicleShareData } from '$lib/vehicleShare';
   import { useFavorites } from '$lib/favorites';
   const { ids: favoriteIds } = useFavorites();
   import CompareButton from '../CompareButton.svelte';
@@ -149,7 +121,6 @@
   import { sortOptions } from './catalog';
   import './orbitRhythm.css';
   import './orbitInitialLight.css';
-  import './orbitDetail.css';
   import './navAddress.css';
   import './orbitLightTheme.css';
   let {
@@ -167,6 +138,8 @@
     errorStatus,
     unavailableVehicle,
     homeHighlights,
+    routeContent,
+    galleryRuntime,
   }: {
     id?: string;
     catalog?: boolean;
@@ -182,7 +155,33 @@
     errorStatus?: number;
     unavailableVehicle?: UnavailableVehicle;
     homeHighlights?: PublicHighlights;
+    routeContent?: Snippet<[{ card: Snippet<[PublicCard | null, number]>; contact: (message?: string) => Promise<void> }]>;
+    galleryRuntime?: VehicleDetailRuntime;
   } = $props();
+  // Detail routes provide their runtime before SSR; the homepage never imports it.
+  const GalleryContactSlide = $derived(galleryRuntime?.GalleryContactSlide!);
+  const RelatedCarousel = $derived(galleryRuntime?.RelatedCarousel!);
+  const RichDescription = $derived(galleryRuntime?.RichDescription!);
+  const VehicleShareButton = $derived(galleryRuntime?.VehicleShareButton!);
+  const PublicVehicleStory = $derived(galleryRuntime?.PublicVehicleStory!);
+  const OrbitBackLink = $derived(galleryRuntime?.OrbitBackLink!);
+  const publicVehicleCanonical = (...args: Parameters<VehicleDetailRuntime['publicVehicleCanonical']>) => galleryRuntime!.publicVehicleCanonical(...args);
+  const vehicleJsonLdScript = (...args: Parameters<VehicleDetailRuntime['vehicleJsonLdScript']>) => galleryRuntime!.vehicleJsonLdScript(...args);
+  const vehicleBreadcrumbItems = (...args: Parameters<VehicleDetailRuntime['vehicleBreadcrumbItems']>) => galleryRuntime!.vehicleBreadcrumbItems(...args);
+  const vehicleBreadcrumbJsonLdScript = (...args: Parameters<VehicleDetailRuntime['vehicleBreadcrumbJsonLdScript']>) => galleryRuntime!.vehicleBreadcrumbJsonLdScript(...args);
+  const descriptionText = (...args: Parameters<VehicleDetailRuntime['descriptionText']>) => galleryRuntime!.descriptionText(...args);
+  const vehicleSeo = (...args: Parameters<VehicleDetailRuntime['vehicleSeo']>) => galleryRuntime!.vehicleSeo(...args);
+  const vehicleShareData = (...args: Parameters<VehicleDetailRuntime['vehicleShareData']>) => galleryRuntime!.vehicleShareData(...args);
+  const publicGalleryPhoto = (...args: Parameters<VehicleDetailRuntime['publicGalleryPhoto']>) => galleryRuntime!.publicGalleryPhoto(...args);
+  const createPublicGallerySession = (...args: Parameters<VehicleDetailRuntime['createPublicGallerySession']>) => galleryRuntime!.createPublicGallerySession(...args);
+  const followThumbnail = (...args: Parameters<VehicleDetailRuntime['followThumbnail']>) => galleryRuntime!.followThumbnail(...args);
+  const dragThumbnailStrip = (...args: Parameters<VehicleDetailRuntime['dragThumbnailStrip']>) => galleryRuntime!.dragThumbnailStrip(...args);
+  const thumbnailNavigation = (...args: Parameters<VehicleDetailRuntime['thumbnailNavigation']>) => galleryRuntime!.thumbnailNavigation(...args);
+  const createThumbnailSession = (...args: Parameters<VehicleDetailRuntime['createThumbnailSession']>) => galleryRuntime!.createThumbnailSession(...args);
+  const publicThumbnail = (...args: Parameters<VehicleDetailRuntime['publicThumbnail']>) => galleryRuntime!.publicThumbnail(...args);
+  const thumbnailAttrs = (...args: Parameters<VehicleDetailRuntime['thumbnailAttrs']>) => galleryRuntime!.thumbnailAttrs(...args);
+  const trapDialogTab = (...args: Parameters<VehicleDetailRuntime['trapDialogTab']>) => galleryRuntime!.trapDialogTab(...args);
+  const galleryBackdrop = (...args: Parameters<VehicleDetailRuntime['galleryBackdrop']>) => galleryRuntime?.galleryBackdrop(...args);
   const thumbnailSession = $derived(
     publicVehicle ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle)) : undefined,
   );
@@ -601,7 +600,7 @@
         data-theme-logo
         src={isDark ? logoDark : logoLight}
         srcset={isDark ? logoDarkSrcset : logoLightSrcset}
-        sizes="(max-width: 700px) 128px, 180px"
+        sizes="(max-width: 700px) 96px, 145px"
         alt="Auto Nunes Martins — início"
         width="180"
         height="80"
@@ -727,16 +726,8 @@
         </div>
       {/if}
     </main>
-  {:else if favorites}
-    <OrbitFavorites card={vehicleCard} />
-  {:else if compare}
-    <OrbitComparison />
-  {:else if catalog}
-    <OrbitCatalog card={vehicleCard} {stock} {brandDirectory} />
-  {:else if privacy}
-    {#if legalInformation}<LegalInformation />{:else}<OrbitPrivacy />{/if}
-  {:else if about}
-    <OrbitAbout onContact={() => contact()} />
+  {:else if favorites || compare || catalog || privacy || about}
+    {@render routeContent?.({ card: vehicleCard, contact })}
   {:else if id && !car}
     <main class="not-found">
       <p class="kicker">DESVIO DE PERCURSO</p>

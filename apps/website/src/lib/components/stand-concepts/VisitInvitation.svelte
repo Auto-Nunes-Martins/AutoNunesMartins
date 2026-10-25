@@ -93,7 +93,7 @@
     </div>
     <div class="visit-ticket">
       <div class="ticket-top">
-        <img src={logoSrc} srcset={logoSrcset} sizes="220px" alt="Auto Nunes Martins" width="145" height="64" /><span
+        <img src={logoSrc} srcset={logoSrcset} sizes={compactComparison ? '106px' : '(max-width: 700px) 116px, (max-width: 1100px) 125px, 145px'} alt="Auto Nunes Martins" width="145" height="64" /><span
           >CONVITE<br />PARA CONVERSAR</span
         >
       </div>

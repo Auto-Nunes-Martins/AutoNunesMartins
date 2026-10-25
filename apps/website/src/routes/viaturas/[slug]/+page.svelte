@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { vehicleDetailRuntime } from '$lib/vehicleDetailRuntime';
   import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
 </script>
 
-<DesignEdition publicVehicle={data.vehicle} relatedVehicles={data.relatedVehicles} />
+<DesignEdition publicVehicle={data.vehicle} relatedVehicles={data.relatedVehicles} galleryRuntime={vehicleDetailRuntime} />
