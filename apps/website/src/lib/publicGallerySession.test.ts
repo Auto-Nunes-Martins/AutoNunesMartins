@@ -26,8 +26,8 @@ it('downloads once, shares pending work and retains bytes without an expiry time
   const copy = await first;
   expect(copy?.blob.size).toBe(6);
   expect(fetcher).toHaveBeenCalledTimes(1);
-  expect(fetcher.mock.calls[0]![0].href).toBe('http://localhost' + src + '&w=2560');
-  expect(fetcher.mock.calls[0]![1].cache).toBe('no-store');
+  expect(fetcher.mock.calls[0]![0].href).toBe('http://localhost' + src + '&w=1600');
+  expect(fetcher.mock.calls[0]![1].cache).toBe('only-if-cached');
   vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 10 * 365 * 86400000);
   expect(await session.read(src)).toBe(copy);
   expect(fetcher).toHaveBeenCalledTimes(1);
@@ -85,4 +85,35 @@ it('uses the newly supplied identity on a new visit instead of the old photo byt
   expect(fetcher).toHaveBeenCalledTimes(2);
   expect(fetcher.mock.calls[1]![0].href).toContain('v=' + nextVersion);
   next.detach();
+});
+
+it('makes one authorized fixed-width download after a browser cache miss, then never retries it', async () => {
+  const { session, fetcher } = setup();
+  fetcher.mockResolvedValueOnce(new Response(null, { status: 504 }));
+  const copy = await session.read(src);
+  expect(copy?.blob.size).toBe(6);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(fetcher.mock.calls[1]![0].href).toBe('http://localhost' + src + '&w=1600');
+  expect(fetcher.mock.calls[1]![1].cache).toBe('no-store');
+  expect(await session.read(src)).toBe(copy);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  session.detach();
+});
+
+it('shares warmed thumbnail bytes with the gallery only for the freshly approved identity', async () => {
+  const { session, fetcher } = setup();
+  const { warmNavigationThumbnails, createThumbnailSession, cancelNavigationThumbnails } = await import('./publicThumbnail');
+  fetcher.mockImplementation(async (url: string) => String(url).endsWith('/access')
+    ? Response.json({ versions: [version] })
+    : new Response(new Blob(['shared pixels'], { type: 'image/webp' }), {
+      headers: { 'content-type': 'image/webp', 'x-photo-version': version },
+    }));
+  warmNavigationThumbnails(slug, 390, 3, 1);
+  await createThumbnailSession(slug).prepared(0);
+  const count = fetcher.mock.calls.length;
+  expect(await (await session.read(src))?.blob.text()).toBe('shared pixels');
+  expect(await session.read(src.replace(version, 'f'.repeat(64)))).toBeUndefined();
+  expect(fetcher).toHaveBeenCalledTimes(count);
+  session.detach();
+  cancelNavigationThumbnails();
 });

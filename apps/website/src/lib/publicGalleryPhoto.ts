@@ -55,13 +55,14 @@ export function publicGalleryPhoto(node: HTMLImageElement, initial: Source): {
   async function show(first = false) {
     if (!session) return;
     const version = ++revision, current = source;
-    current.onLoading?.(true);
+    const retained = session.hasCopy?.(current.src) ?? false;
+    current.onLoading?.(!retained);
     const copy = await session.read(current.src, first && node.getAttribute('src') ? seed : undefined);
     if (!alive || version !== revision) return;
     if (!copy) { blank(); return; }
     node.style.visibility = '';
     const next = { src: copy.url, fade: current.fade, onLoading: (value: boolean) => {
-      if (alive && version === revision) current.onLoading?.(value);
+      if (alive && version === revision) current.onLoading?.(retained ? false : value);
     } };
     if (renderer) renderer.update(next);
     else {
