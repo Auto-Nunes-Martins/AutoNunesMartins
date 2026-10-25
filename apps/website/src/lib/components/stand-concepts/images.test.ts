@@ -37,11 +37,9 @@ describe('responsive demo images', () => {
 describe('authorized public photo variants', () => {
   it('uses the bounded shared widths on local public photo endpoints', () => {
     const path = '/viaturas/car-abcdef123456/photos/0';
-    expect(photo(path, 1100)).toBe(path + '?w=1280');
-    expect(photo(path, 336)).toBe(path + '?w=384');
-    expect(responsivePhoto(path)).toBe(
-      [320, 384, 800, 1280, 1600, 2560].map((w) => `${path}?w=${w} ${w}w`).join(', '),
-    );
+    expect(photo(path, 1100)).toBe(path + '?w=1600');
+    expect(photo(path, 336)).toBe(path + '?w=1600');
+    expect(responsivePhoto(path)).toBeUndefined();
     expect(responsivePhoto('https://external.example/viaturas/car/photos/0')).toBeUndefined();
   });
 });

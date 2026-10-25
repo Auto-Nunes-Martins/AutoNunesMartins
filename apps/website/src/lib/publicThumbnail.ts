@@ -1,5 +1,5 @@
 import { catalogPlaceholder } from './localAssets';
-import { nearestPhotoWidth } from './vehiclePhotoSources';
+import { publicPhotoWidth } from './vehiclePhotoSources';
 
 type NavigationWarmup = {
   slug: string;
@@ -9,8 +9,7 @@ type NavigationWarmup = {
 };
 let navigationWarmup: NavigationWarmup | undefined;
 
-export const navigationThumbnailWidth = (viewport: number, density: number) =>
-  nearestPhotoWidth((viewport <= 701 ? 112 : 128) * Math.max(1, density || 1));
+export const navigationThumbnailWidth = (_viewport: number, _density: number) => publicPhotoWidth;
 
 function photoVersions(data: unknown): string[] {
   const versions = (data as { versions?: unknown })?.versions;
@@ -28,30 +27,24 @@ export function warmNavigationThumbnails(
   slug: string,
   viewport: number,
   density: number,
-  count?: number,
+  _count?: number,
 ) {
   cancelNavigationThumbnails();
   const width = navigationThumbnailWidth(viewport, density);
-  if (width > 800) return; // Keep native responsive delivery for unusually dense screens.
   const controller = new AbortController();
   const work: NavigationWarmup = { slug, controller, ready: Promise.resolve(), photos: new Map() };
   navigationWarmup = work;
   const deadline = setTimeout(() => controller.abort(), 8000);
-  // A public card's count is only a scheduling hint, never permission. Every
-  // image request is authorized by the backend and arrival access remains fresh.
-  // On revisits, discover current identities first so retained pixels can avoid
-  // redundant downloads. The count shortcut targets a first visit only.
-  const knownCount = !available(slug) && Number.isInteger(count) && count! >= 0 && count! <= 20;
-  const discovery = knownCount
-    ? Promise.resolve<string[] | undefined>(undefined)
-    : fetch(`/viaturas/${slug}/photos/access`, {
-        cache: 'no-store',
-        credentials: 'omit',
-        signal: controller.signal,
-      }).then(async (response) => {
-        if (!response.ok) throw Error('Photos unavailable');
-        return photoVersions(await response.json());
-      });
+  // Always discover current versions: unversioned warmups would duplicate the
+  // canonical card/detail URL even when they return identical pixels.
+  const discovery = fetch(`/viaturas/${slug}/photos/access`, {
+    cache: 'no-store',
+    credentials: 'omit',
+    signal: controller.signal,
+  }).then(async (response) => {
+    if (!response.ok) throw Error('Photos unavailable');
+    return photoVersions(await response.json());
+  });
   work.ready = discovery
     .then(async (versions) => {
       if (controller.signal.aborted) return;
@@ -59,7 +52,7 @@ export function warmNavigationThumbnails(
       // discovers the count/identities; it is not reused as permission on arrival.
       let next = 0;
       const finish: Array<() => void> = [];
-      for (let index = 0; index < Math.min(9, knownCount ? count! : versions!.length); index++) {
+      for (let index = 0; index < Math.min(9, versions.length); index++) {
         work.photos.set(
           index,
           new Promise<void>((resolve) => {
@@ -71,10 +64,10 @@ export function warmNavigationThumbnails(
         while (next < finish.length && !controller.signal.aborted) {
           const index = next++;
           try {
-            const cached = versions ? entries.get(`${versions[index]}/${width}`) : undefined;
+            const cached = entries.get(`${versions[index]}/${width}`);
             if (cached && cached.used > Date.now() - MAX_AGE) continue;
-            const version = versions?.[index];
-            const image = await fetch(`/viaturas/${slug}/photos/${index}?w=${width}${version ? '&v=' + version : ''}`, {
+            const version = versions[index];
+            const image = await fetch(`/viaturas/${slug}/photos/${index}?v=${version}&w=${width}`, {
               cache: 'default',
               credentials: 'omit',
               signal: controller.signal,
@@ -90,7 +83,7 @@ export function warmNavigationThumbnails(
           }
         }
       };
-      // Nine small thumbnails in two waves, rather than three. Keep the total
+      // Nine photographs in two waves. Keep the total
       // bounded and leave the principal photograph on its native high priority.
       void Promise.all(Array.from({ length: 6 }, worker)).finally(() => {
         for (const resolve of finish) resolve();
@@ -110,7 +103,7 @@ export function cancelNavigationThumbnails() {
 }
 
 // Exact public thumbnail bytes, in this document only; no cached authorization or persistent store.
-const MAX_BYTES = 4 * 1024 * 1024,
+const MAX_BYTES = 64 * 1024 * 1024,
   MAX_ENTRIES = 120,
   MAX_AGE = 10 * 60 * 1000;
 type Entry = {
@@ -120,13 +113,14 @@ type Entry = {
   slug: string;
   used: number;
   blobUrl: string;
+  blob: Blob;
   refs: number;
 };
 const entries = new Map<string, Entry>();
 const available = (slug: string) =>
   [...entries.values()].some((e) => e.slug === slug && (e.refs > 0 || e.used > Date.now() - MAX_AGE));
 function remember(slug: string, version: string, width: number, blob: Blob) {
-  if (blob.size > 800_000 || !['image/webp', 'image/jpeg', 'image/png'].includes(blob.type)) return;
+  if (blob.size > 20 * 1024 * 1024 || !['image/webp', 'image/jpeg', 'image/png'].includes(blob.type)) return;
   const key = `${version}/${width}`,
     previous = entries.get(key);
   if (previous) {
@@ -156,7 +150,17 @@ function remember(slug: string, version: string, width: number, blob: Blob) {
     used: Date.now(),
     refs: 0,
     blobUrl: URL.createObjectURL(blob),
+    blob,
   });
+}
+
+/** Pixels only; callers must already hold this visit's freshly approved version. */
+export async function retainedPublicPhoto(slug: string, index: number, version: string) {
+  const warming = navigationWarmup?.slug === slug ? navigationWarmup : undefined;
+  await warming?.ready;
+  await warming?.photos.get(index);
+  const entry = entries.get(`${version}/${publicPhotoWidth}`);
+  return entry && (entry.refs > 0 || entry.used > Date.now() - MAX_AGE) ? entry.blob : undefined;
 }
 
 /** One fresh permission snapshot per gallery; requests never reuse approval from an earlier visit. */
@@ -265,7 +269,7 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       width = Number(url.searchParams.get('w'));
     if (
       url.origin !== location.origin ||
-      ![320, 384, 800].includes(width) ||
+      width !== publicPhotoWidth ||
       !url.pathname.endsWith(`/photos/${source.index}`)
     )
       return;
@@ -310,7 +314,7 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       const versions = await source.session.access();
       await source.session.prepared(source.index);
       if (!alive || token !== revision) return;
-      const needed = Math.max(node.getBoundingClientRect().width, source.minimumWidth ?? 0) * devicePixelRatio;
+      const needed = publicPhotoWidth;
       const entry = [...entries.values()]
         .filter(
           (e) =>
@@ -338,14 +342,8 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       if (alive && token === revision) native();
     }
   }
-  function resize() {
-    if (lease && node.getBoundingClientRect().width * devicePixelRatio > lease.width) native();
-  }
   node.addEventListener('load', loaded);
   node.addEventListener('error', error);
-  const observer = new ResizeObserver(resize);
-  observer.observe(node);
-  window.addEventListener('resize', resize);
   void start();
   return {
     update(next: Source) {
@@ -368,8 +366,6 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       ++revision;
       source.session.detach();
       unpin();
-      observer.disconnect();
-      window.removeEventListener('resize', resize);
       node.removeEventListener('load', loaded);
       node.removeEventListener('error', error);
     },

@@ -13,6 +13,19 @@ class Image extends EventTarget {
 }
 afterEach(() => vi.restoreAllMocks());
 
+it('does not flash loading while decoding a photograph already retained in this visit', async () => {
+  const node = new Image();
+  const loading = vi.fn();
+  const session = { attach: vi.fn(), detach: vi.fn(), discard: vi.fn(), hasCopy: vi.fn().mockReturnValue(true), read: vi.fn().mockResolvedValue({ url: 'blob:copy' }) } as unknown as PublicGallerySession;
+  const action = publicGalleryPhoto(node as unknown as HTMLImageElement, { src: '/photo/1', session, onLoading: loading });
+  await Promise.resolve(); await Promise.resolve();
+  action.update({ src: '/photo/2', session, onLoading: loading });
+  await Promise.resolve(); await Promise.resolve();
+  expect(loading).toHaveBeenCalled();
+  expect(loading.mock.calls.every(([value]) => value === false)).toBe(true);
+  action.destroy();
+});
+
 it('keeps loading through acquisition/decode and blanks a later local miss without assigning a network URL', async () => {
   const node = new Image();
   let finish!: (value: { url: string }) => void;

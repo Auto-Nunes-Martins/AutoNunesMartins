@@ -23,12 +23,12 @@ it('gives the viewer a cache-only session using identities already supplied by t
   session.detach();
 });
 
-it('selects a thumbnail matching the same responsive sizes without reducing dense-screen resolution', async () => {
+it('selects the same principal file at every viewport and density', async () => {
   const { navigationThumbnailWidth } = await import('./publicThumbnail');
-  expect(navigationThumbnailWidth(1400, 1)).toBe(320);
-  expect(navigationThumbnailWidth(390, 3)).toBe(384);
-  expect(navigationThumbnailWidth(1400, 4)).toBe(800);
-  expect(navigationThumbnailWidth(1400, 8)).toBe(1280);
+  expect(navigationThumbnailWidth(1400, 1)).toBe(1600);
+  expect(navigationThumbnailWidth(390, 3)).toBe(1600);
+  expect(navigationThumbnailWidth(1400, 4)).toBe(1600);
+  expect(navigationThumbnailWidth(1400, 8)).toBe(1600);
 });
 
 it('starts only explicitly, limits work to nine photos and six concurrent downloads, then reuses pixels with fresh access', async () => {
@@ -63,7 +63,7 @@ it('starts only explicitly, limits work to nine photos and six concurrent downlo
   expect(peak).toBe(6);
   const urls = request.mock.calls.map(([url]) => url).filter((url) => !url.endsWith('/access'));
   expect(urls).toHaveLength(9);
-  expect(urls.every((url) => new URL(url, 'http://localhost').searchParams.get('w') === '384')).toBe(true);
+  expect(urls.every((url) => /\?v=[a-f0-9]{64}&w=1600$/.test(url))).toBe(true);
   expect(module.createThumbnailSession('car-abcdef123456').hasPixels()).toBe(true);
   session.detach();
   module.cancelNavigationThumbnails();
@@ -101,28 +101,16 @@ it('falls back without retaining permission when the access request fails', asyn
   module.cancelNavigationThumbnails();
 });
 
-it('uses a card count only to schedule downloads and still rejects reuse when arrival authorization fails', async () => {
-  const releases: Array<() => void> = [];
-  const request = vi.fn(async (url: string) => {
-    if (url.endsWith('/access')) return new Response(null, { status: 404 });
-    const index = Number(url.match(/photos\/(\d+)/)![1]);
-    await new Promise<void>((resolve) => releases.push(resolve));
-    // The card may be stale: a removed image must not be retained.
-    return index === 1 ? new Response(null, { status: 404 }) : image(index);
-  });
+it('does not download from a stale card count when current access fails', async () => {
+  const request = vi.fn(async (_url: string) => new Response(null, { status: 404 }));
   vi.stubGlobal('fetch', request);
   const module = await import('./publicThumbnail');
   module.warmNavigationThumbnails('car-abcdef123456', 390, 3, 2);
-  await vi.waitFor(() => expect(releases).toHaveLength(2));
-  expect(
-    request.mock.calls.every(([url]) => url.includes('/photos/') && !url.endsWith('/access')),
-  ).toBe(true);
+  await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
   const session = module.createThumbnailSession('car-abcdef123456');
   session.attach();
   await expect(session.access()).rejects.toThrow('Photos unavailable');
-  releases.forEach((resolve) => resolve());
-  await session.prepared(1);
-  expect(request.mock.calls.filter(([url]) => url.endsWith('/access'))).toHaveLength(1);
+  expect(request.mock.calls.every(([url]) => String(url).endsWith('/photos/access'))).toBe(true);
   session.detach();
   module.cancelNavigationThumbnails();
 });
