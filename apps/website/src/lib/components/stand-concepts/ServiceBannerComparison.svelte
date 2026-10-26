@@ -68,7 +68,7 @@
     class="service-versions"
     id="service-background-versions"
     class:expanded={versions.length > 4}
-    class:nine={versions.length === 9}
+    class:many={versions.length > 8}
     bind:this={controls}
     role="group"
     aria-label="Escolher imagem do banner de serviços"
@@ -80,12 +80,15 @@
         class:selected={selectedVersion === version}
         class:loading={pendingVersion === version}
         aria-pressed={selectedVersion === version}
-        onclick={() => choose(version)}>Versão {version + 1}</button
+        onclick={() => choose(version)}
+        >Versão {version === 0 ? 1 : serviceBannerAlternatives[version - 1]!.version}</button
       >
     {/each}
   </div>
   <p class="status" role="status" aria-live="polite">
-    {pendingVersion !== null ? `A carregar versão ${pendingVersion + 1}.` : ''}
+    {pendingVersion !== null
+      ? `A carregar versão ${pendingVersion === 0 ? 1 : serviceBannerAlternatives[pendingVersion - 1]!.version}.`
+      : ''}
   </p>
   {#if error}<p class="version-error" role="status">{error}</p>{/if}
   <ServiceBannerProposals {onContact} {background} />
@@ -166,9 +169,9 @@
     }
   }
   @media (max-width: 700px) {
-    .service-versions.nine {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin-top: max(0px, calc(var(--orbit-space-section, 86px) - 152px));
+    .service-versions.many {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: max(0px, calc(var(--orbit-space-section, 86px) - 252px));
     }
   }
 </style>
