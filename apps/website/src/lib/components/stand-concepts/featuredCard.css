@@ -148,6 +148,11 @@
   letter-spacing: -0.055em;
 }
 @media (max-width: 700px) {
+  .hd-root[data-featured-card] .hd-feature::before {
+    top: auto;
+    bottom: -20px;
+    transform: scaleY(-1);
+  }
   .hd-root[data-featured-card] .hd-feature::after {
     bottom: -20px;
   }

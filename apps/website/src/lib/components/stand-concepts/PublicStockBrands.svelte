@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowUpRight, Pause, Play } from 'lucide-svelte';
+  import { ArrowUpRight } from 'lucide-svelte';
   import { catalogBrandLinks, type PublicBrandDirectory } from '$lib/catalogBrandLinks';
   import { brandLogo } from '$lib/brandLogos';
   import { brandMarquee } from '$lib/brandMarquee';
@@ -8,7 +8,6 @@
     context = 'home',
   }: { directory: PublicBrandDirectory; context?: 'home' | 'catalog' } = $props();
   const links = $derived(directory.status === 'ready' ? catalogBrandLinks(directory.brands) : []);
-  let marqueePaused = $state(false);
 </script>
 
 <section
@@ -19,21 +18,9 @@
   <div class="brands-heading">
     <h2>Explorar por marca.</h2>
     {#if context === 'home'}<p>Marcas com viaturas disponíveis.</p>{/if}
-    {#if links.length > 1}<button
-        class="brand-motion-toggle"
-        type="button"
-        aria-label={marqueePaused ? 'Retomar movimento das marcas' : 'Pausar movimento das marcas'}
-        aria-pressed={marqueePaused}
-        onclick={() => (marqueePaused = !marqueePaused)}
-      >
-        {#if marqueePaused}<Play size={14} aria-hidden="true" />{:else}<Pause
-            size={14}
-            aria-hidden="true"
-          />{/if}
-      </button>{/if}
   </div>
   {#if links.length}
-    <nav aria-label="Marcas do catálogo" use:brandMarquee={{ paused: marqueePaused }}>
+    <nav aria-label="Marcas do catálogo" use:brandMarquee>
       <div class="brand-track">
         {#each [false, true] as duplicate}
           <ul
@@ -91,9 +78,6 @@
     justify-content: space-between;
     gap: 16px 32px;
     margin-bottom: 24px;
-  }
-  .brand-motion-toggle {
-    display: none;
   }
   h2,
   p {
@@ -232,26 +216,6 @@
     .brands-heading {
       display: block;
       margin-bottom: 16px;
-      padding-right: 52px;
-    }
-    .brand-motion-toggle {
-      position: absolute;
-      top: 0;
-      right: 0;
-      display: grid;
-      place-items: center;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      background: transparent;
-      color: var(--text);
-      cursor: pointer;
-    }
-    .brand-motion-toggle:focus-visible {
-      outline: 2px solid var(--red);
-      outline-offset: 3px;
     }
     .brands-heading p {
       margin-top: 10px;
@@ -326,12 +290,6 @@
     }
     nav:global([data-brand-loop]) .duplicate {
       display: none;
-    }
-    .brand-motion-toggle {
-      display: none;
-    }
-    .brands-heading {
-      padding-right: 0;
     }
   }
   .catalog-context {
