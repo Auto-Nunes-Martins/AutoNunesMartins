@@ -124,6 +124,7 @@
   import './orbitInitialLight.css';
   import './navAddress.css';
   import './orbitLightTheme.css';
+  import './orbitMobileRhythm.css';
   let {
     id,
     catalog = false,

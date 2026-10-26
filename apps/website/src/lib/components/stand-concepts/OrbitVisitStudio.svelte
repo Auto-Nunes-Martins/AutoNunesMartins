@@ -119,6 +119,9 @@
   </div>
   <div class="studio-inner">
     <div class="visit-copy">
+      {#if background}
+        <div class="mobile-body-photo" aria-hidden="true"><ScenePhotograph {background} /></div>
+      {/if}
       <div class="visit-heading">
         <div class="heading-line">
           <OrbitVisitLabel />
@@ -286,6 +289,9 @@
     {#if formTreatment === 'original'}
       {#if formDivider}
         <div class="original-form-divider">
+          {#if background}
+            <div class="mobile-body-photo" aria-hidden="true"><ScenePhotograph {background} /></div>
+          {/if}
           <OrbitVisitOriginalForm id={`${id}-form`} {showDemoNote} />
         </div>
       {:else}
@@ -389,6 +395,9 @@
 </section>
 
 <style>
+  .mobile-body-photo {
+    display: none;
+  }
   .visit-studio.landscape-window {
     /* Keep the reserved border geometry without a bright rule at the photo edge. */
     border-block-color: transparent;

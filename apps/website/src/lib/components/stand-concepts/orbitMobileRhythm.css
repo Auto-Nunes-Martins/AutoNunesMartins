@@ -1,0 +1,216 @@
+/* The homepage reads as one sequence on a phone. Keep these overrides together
+ * so adjacent chapters share a scale instead of accumulating desktop spacing.
+ * The approved hero and all layouts above 700px retain their own geometry. */
+@media (max-width: 700px) {
+  .design.orbit.orbit-home {
+    --orbit-space-section: 48px;
+    --orbit-space-arrival: 48px;
+    --orbit-space-heading: 24px;
+    --orbit-title-section: clamp(30px, 8.8vw, 36px);
+    --orbit-title-bridge: clamp(28px, 8vw, 32px);
+  }
+
+  .design.orbit.orbit-home .home-brands {
+    display: none;
+  }
+
+  .design.orbit.orbit-home .about {
+    margin-top: 48px;
+    padding-block: 40px;
+    gap: 24px;
+    border-top-color: var(--line);
+  }
+  .design.orbit.orbit-home .about-content > p {
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  .design.orbit.orbit-home .about-content > p.muted {
+    font-size: 14px;
+    line-height: 1.7;
+    margin-top: 16px;
+  }
+  .design.orbit.orbit-home .about-signature {
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+
+  .design.orbit.orbit-home .cabin-reveal {
+    padding-block: 40px;
+  }
+  .design.orbit.orbit-home .cabin-heading {
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .design.orbit.orbit-home .cabin-stage {
+    height: clamp(240px, 65vw, 340px);
+  }
+  .design.orbit.orbit-home .cabin-caption {
+    padding-top: 20px;
+    gap: 24px;
+  }
+  .design.orbit.orbit-home .cabin-description {
+    min-height: 0;
+  }
+  .design.orbit.orbit-home .cabin-description h3 {
+    font-size: 21px;
+    line-height: 1.25;
+  }
+  .design.orbit.orbit-home .cabin-tabs button {
+    display: grid;
+    grid-template-columns: max-content;
+    justify-content: start;
+    justify-self: center;
+    padding-inline: 0;
+    text-align: left;
+  }
+  .design.orbit.orbit-home .cabin-tabs button::before {
+    left: 0;
+    translate: 0;
+  }
+
+  .design.orbit.orbit-home .service-versions {
+    margin-block: 0 16px;
+  }
+  .design.orbit.orbit-home .service-banner {
+    border-block: 1px solid var(--line);
+  }
+  .design.orbit.orbit-home .banner-content {
+    padding-block: 32px;
+    gap: 28px;
+  }
+  .design.orbit.orbit-home .banner-logo {
+    width: min(72%, 210px);
+    margin-block: 20px;
+  }
+  .design.orbit.orbit-home .brand-caption {
+    font-size: 22px;
+    line-height: 1.25;
+  }
+  .design.orbit.orbit-home .brand-note {
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  .design.orbit.orbit-home .brand-contact {
+    margin-top: 16px;
+  }
+  .design.orbit.orbit-home .services-heading {
+    margin-bottom: 12px;
+  }
+  .design.orbit.orbit-home .service-row {
+    padding-block: 12px;
+    gap: 12px;
+  }
+  .design.orbit.orbit-home .service-description {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .design.orbit.orbit-home .perspective-inner {
+    padding-block: 40px;
+    gap: 20px;
+  }
+  .design.orbit.orbit-home .home-choice-group {
+    padding-top: 0;
+  }
+  .design.orbit.orbit-home .home-choice-group .next-steps {
+    margin-block: 0;
+    padding-block: 48px 0;
+    gap: 24px;
+  }
+  .design.orbit.orbit-home .next-steps h2 {
+    font-size: var(--orbit-title-section);
+    margin-top: 12px;
+  }
+  .design.orbit.orbit-home .next-steps .intro-note {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .design.orbit.orbit-home .home-choice-group .reviews {
+    padding-block: 48px 0;
+  }
+  .design.orbit.orbit-home .reviews h2 {
+    font-size: var(--orbit-title-section);
+  }
+  .design.orbit.orbit-home .home-choice-group + .editorial-pause {
+    margin-top: 48px;
+  }
+  .design.orbit.orbit-home .pause-inner {
+    padding-block: 40px;
+    gap: 24px;
+  }
+  .design.orbit.orbit-home .editorial-pause h2 {
+    font-size: var(--orbit-title-bridge);
+  }
+
+  .design.orbit.orbit-home .visit-invitation {
+    padding-block: 48px 0;
+    gap: 24px;
+  }
+  .design.orbit.orbit-home .invitation-copy .eyebrow {
+    margin-bottom: 16px;
+  }
+  .design.orbit.orbit-home .invitation-intro {
+    margin-block: 16px 20px;
+  }
+  .design.orbit.orbit-home .visit-invitation:not(.compact-comparison) .invitation-scene {
+    height: auto;
+    padding-block: 56px;
+  }
+  .design.orbit.orbit-home .visit-invitation:not(.compact-comparison) .visit-ticket {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+  .design.orbit.orbit-home .visit-invitation:not(.compact-comparison) .ticket-main {
+    min-height: 156px;
+    padding-top: 24px;
+  }
+  .design.orbit.orbit-home .home-choice-after-visit {
+    padding-block: 24px 48px;
+  }
+  .design.orbit.orbit-home .choice-guide h2 {
+    font-size: 26px;
+  }
+  .design.orbit.orbit-home .faq-heading {
+    margin-bottom: 24px;
+  }
+  .design.orbit.orbit-home .orbit-faq h2 {
+    max-width: none;
+  }
+  .design.orbit.orbit-home .visit-studio.has-form-divider .studio-inner {
+    --column-gap: 40px;
+    gap: 40px;
+  }
+  .design.orbit.orbit-home .visit-heading h2 {
+    font-size: var(--orbit-title-section);
+    line-height: 1.12;
+  }
+  .design.orbit.orbit-home .visit-studio .visit-copy,
+  .design.orbit.orbit-home .visit-studio .original-form-divider {
+    position: relative;
+    isolation: isolate;
+  }
+  .design.orbit.orbit-home .visit-studio .mobile-body-photo {
+    display: block;
+    position: absolute;
+    inset: -20px -5.5555556%;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    mask-image: linear-gradient(transparent, #000 32px, #000 calc(100% - 32px), transparent);
+  }
+  .design.orbit.orbit-home .visit-copy > .mobile-body-photo {
+    top: 240px;
+  }
+  .design.orbit.orbit-home .mobile-body-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #101114b8, #10111491 60%, #101114a6);
+  }
+}
+
+@media (max-width: 700px) and (prefers-reduced-motion: no-preference) {
+  .design.orbit.orbit-home .visit-invitation:not(.compact-comparison) .visit-ticket {
+    transform: translateY(calc(10px - var(--approach) * 16px))
+      rotate(calc(2deg - var(--approach) * 4deg));
+  }
+}
