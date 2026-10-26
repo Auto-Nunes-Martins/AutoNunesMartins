@@ -1397,8 +1397,8 @@
       padding-top: 0;
     }
     .has-form-divider .studio-inner {
-      --column-gap: 48px;
-      gap: 48px;
+      --column-gap: 40px;
+      gap: 40px;
     }
     .visit-heading {
       position: relative;
@@ -1413,8 +1413,8 @@
     }
     .visit-heading h2 {
       margin-top: 14px;
-      font-size: clamp(32px, 9.2vw, 40px);
-      line-height: 1.06;
+      font-size: clamp(30px, 8.8vw, 36px);
+      line-height: 1.12;
       max-width: 12ch;
     }
     .channels {
@@ -1426,6 +1426,29 @@
       align-items: center;
       min-height: 44px;
       max-width: 100%;
+    }
+    .visit-copy,
+    .original-form-divider {
+      position: relative;
+      isolation: isolate;
+    }
+    .mobile-body-photo {
+      display: block;
+      position: absolute;
+      inset: -20px -5.5555556%;
+      z-index: -1;
+      pointer-events: none;
+      overflow: hidden;
+      mask-image: linear-gradient(transparent, #000 32px, #000 calc(100% - 32px), transparent);
+    }
+    .visit-copy > .mobile-body-photo {
+      top: 240px;
+    }
+    .mobile-body-photo::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, #101114b8, #10111491 60%, #101114a6);
     }
   }
 </style>

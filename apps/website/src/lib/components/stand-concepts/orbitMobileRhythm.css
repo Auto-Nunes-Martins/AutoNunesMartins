@@ -175,37 +175,6 @@
   .design.orbit.orbit-home .orbit-faq h2 {
     max-width: none;
   }
-  .design.orbit.orbit-home .visit-studio.has-form-divider .studio-inner {
-    --column-gap: 40px;
-    gap: 40px;
-  }
-  .design.orbit.orbit-home .visit-heading h2 {
-    font-size: var(--orbit-title-section);
-    line-height: 1.12;
-  }
-  .design.orbit.orbit-home .visit-studio .visit-copy,
-  .design.orbit.orbit-home .visit-studio .original-form-divider {
-    position: relative;
-    isolation: isolate;
-  }
-  .design.orbit.orbit-home .visit-studio .mobile-body-photo {
-    display: block;
-    position: absolute;
-    inset: -20px -5.5555556%;
-    z-index: -1;
-    pointer-events: none;
-    overflow: hidden;
-    mask-image: linear-gradient(transparent, #000 32px, #000 calc(100% - 32px), transparent);
-  }
-  .design.orbit.orbit-home .visit-copy > .mobile-body-photo {
-    top: 240px;
-  }
-  .design.orbit.orbit-home .mobile-body-photo::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, #101114b8, #10111491 60%, #101114a6);
-  }
 }
 
 @media (max-width: 700px) and (prefers-reduced-motion: no-preference) {

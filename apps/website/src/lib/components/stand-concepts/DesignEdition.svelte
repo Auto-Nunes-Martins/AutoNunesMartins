@@ -1358,7 +1358,7 @@
     />
   {/if}
 
-  <OrbitPageEnding onContact={() => contact()} background={homeVisualFamily?.visit} />
+  <OrbitPageEnding onContact={() => contact()} />
 
   <dialog
     bind:this={contactDialog}
