@@ -57,3 +57,6 @@ deployment/build.json
 
 # Local standalone tooling repository; not an application workspace
 /ui-ux-pro-max-skill/
+
+# Local diagnostic screenshots, reports and experiments
+/artifacts/
