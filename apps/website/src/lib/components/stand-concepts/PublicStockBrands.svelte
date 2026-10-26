@@ -237,8 +237,8 @@
     ul {
       display: flex;
       width: max-content;
-      gap: 20px;
-      padding: 0 20px 0 0;
+      gap: 12px;
+      padding: 0 12px 0 0;
     }
     .duplicate {
       display: none;
@@ -247,8 +247,8 @@
       display: flex;
     }
     li {
-      flex: 0 0 104px;
-      width: 104px;
+      flex: 0 0 96px;
+      width: 96px;
       scroll-snap-align: start;
     }
     li a {
