@@ -165,3 +165,33 @@ it('respects disabled updates and restores styles/listeners on destruction', () 
   swipe(240, 100);
   expect(next).not.toHaveBeenCalled();
 });
+
+it('locks an early horizontal intent, follows the finger and tolerates later vertical drift', () => {
+  const { action, pointer, next, previous } = setup();
+  const drag = vi.fn();
+  action.update({ enabled: true, next, previous, drag });
+  pointer('pointerdown', 240, 100);
+  expect(pointer('pointermove', 231, 106).defaultPrevented).toBe(true);
+  expect(drag).toHaveBeenLastCalledWith(-9);
+  pointer('pointermove', 160, 210);
+  pointer('pointerup', 160, 210);
+  expect(next).toHaveBeenCalledOnce();
+  expect(drag).toHaveBeenLastCalledWith(undefined);
+});
+
+it('returns the dragged rail to rest when pinch or pointer cancellation takes over', () => {
+  const { action, pointer, next, previous } = setup();
+  const drag = vi.fn();
+  action.update({ enabled: true, next, previous, drag });
+  pointer('pointerdown', 240, 100);
+  pointer('pointermove', 200, 100);
+  pointer('pointerdown', 280, 100, { pointerId: 2 });
+  expect(drag).toHaveBeenLastCalledWith(undefined);
+  pointer('pointerup', 200, 100);
+  pointer('pointerup', 280, 100, { pointerId: 2 });
+  pointer('pointerdown', 240, 100);
+  pointer('pointermove', 200, 100);
+  pointer('pointercancel', 200, 100);
+  expect(drag).toHaveBeenLastCalledWith(undefined);
+  expect(next).not.toHaveBeenCalled();
+});

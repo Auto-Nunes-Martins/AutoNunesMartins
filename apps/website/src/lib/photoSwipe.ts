@@ -1,4 +1,9 @@
-type Options = { enabled: boolean; previous: () => void; next: () => void };
+type Options = {
+  enabled: boolean;
+  previous: () => void;
+  next: () => void;
+  drag?: (offset: number | undefined) => void;
+};
 
 /** One deliberate touch gesture changes one photo; native vertical scroll and pinch remain available. */
 export function photoSwipe(node: HTMLElement, initial: Options) {
@@ -20,8 +25,12 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     if (node.hasPointerCapture?.(id)) node.releasePointerCapture(id);
   }
   function reset() {
-    if (gesture) release(gesture.id);
+    if (gesture) {
+      if (gesture.horizontal) suppressClickUntil = Date.now() + 450;
+      release(gesture.id);
+    }
     gesture = undefined;
+    options.drag?.(undefined);
   }
   function syncZoom() {
     reset();
@@ -48,8 +57,8 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     const dx = event.clientX - gesture.x,
       dy = event.clientY - gesture.y;
     if (!gesture.horizontal) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 12) return;
-      if (Math.abs(dx) < Math.abs(dy) * 1.25) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
+      if (Math.abs(dx) <= Math.abs(dy)) {
         reset();
         return;
       }
@@ -57,6 +66,7 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
       node.setPointerCapture?.(event.pointerId);
     }
     if (event.cancelable) event.preventDefault();
+    options.drag?.(dx);
   }
   function up(event: PointerEvent) {
     pointers.delete(event.pointerId);
@@ -66,16 +76,9 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     if (!current.horizontal) return;
     // The following synthetic tap must not open/close the viewer after a drag.
     suppressClickUntil = Date.now() + 450;
-    const dx = event.clientX - current.x,
-      dy = event.clientY - current.y;
+    const dx = event.clientX - current.x;
     const threshold = Math.max(36, Math.min(72, node.clientWidth * 0.12));
-    if (
-      !options.enabled ||
-      zoomed() ||
-      Math.abs(dx) < threshold ||
-      Math.abs(dx) < Math.abs(dy) * 1.25
-    )
-      return;
+    if (!options.enabled || zoomed() || Math.abs(dx) < threshold) return;
     if (dx < 0) options.next();
     else options.previous();
   }

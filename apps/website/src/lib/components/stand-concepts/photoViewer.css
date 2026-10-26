@@ -150,6 +150,13 @@ html:has(dialog.gallery-dialog[open]) {
   outline: 2px solid white;
   outline-offset: 3px;
 }
+/* Programmatic dialog focus/restoration can inherit :focus-visible after touch.
+   Keep focus in place; keyboard input immediately restores its visible ring. */
+.design.orbit.gallery-pointer-focus .gallery-dialog button:focus-visible,
+.design.orbit.gallery-pointer-focus .vehicle-photo:focus-visible,
+.design.orbit.gallery-pointer-focus .photo-rail button:focus-visible {
+  outline: none;
+}
 @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .design.orbit .gallery-dialog {
     inset: 0;
@@ -196,15 +203,33 @@ html:has(dialog.gallery-dialog[open]) {
 @media (max-height: 500px) and (pointer: coarse) {
   .design.orbit .gallery-dialog[open] {
     gap: 4px;
+    grid-template-columns: minmax(0, 1fr) 68px;
+    grid-template-rows: minmax(0, 1fr) auto;
   }
   .design.orbit .gallery-dialog .viewer-stage {
     padding-top: 0;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .design.orbit .gallery-dialog #gallery-caption {
+    grid-column: 1;
+    grid-row: 2;
   }
   .design.orbit .gallery-dialog .viewer-thumbnails {
-    padding-block: 2px;
+    grid-column: 2;
+    grid-row: 1 / -1;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 2px;
+  }
+  .design.orbit .gallery-dialog .viewer-thumbnails button:first-child,
+  .design.orbit .gallery-dialog .viewer-thumbnails button:last-child {
+    margin-inline: 0;
   }
   .design.orbit .gallery-dialog .viewer-thumbnails button {
-    flex-basis: 68px;
+    flex: 0 0 48px;
+    width: 64px;
     height: 48px;
   }
 }

@@ -3,6 +3,7 @@
   import type { Snippet } from 'svelte';
   import type { VehicleDetailRuntime } from '$lib/vehicleDetailRuntime';
   let galleryOpen = $state(false);
+  let galleryPointerFocus = $state(false);
   let mainPhotoLoading = $state(true);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
   import { homePhotoPlaceholder, homePhotoPriority } from '$lib/homePhotoPriority';
@@ -344,6 +345,8 @@
   let contactError = $state('');
   let reason = $state('Gostava de saber mais.');
   let zoom = $state(0);
+  let mainPhotoDrag = $state<number>();
+  let viewerPhotoDrag = $state<number>();
   const galleryPhotoCount = $derived(publicVehicle?.photos.length ?? 0);
   const galleryCount = $derived(
     publicVehicle ? (galleryPhotoCount ? galleryPhotoCount + 1 : 0) : car ? 1 : 0,
@@ -541,11 +544,19 @@
     />{/if}</svelte:head
 >
 
+<svelte:window
+  onpointerdown={() => (galleryPointerFocus = true)}
+  onkeydown={(event) => {
+    if (!event.metaKey && !event.ctrlKey && !event.altKey) galleryPointerFocus = false;
+  }}
+/>
+
 <div
   id={!favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle
     ? 'inicio'
     : undefined}
   class="design orbit"
+  class:gallery-pointer-focus={galleryPointerFocus}
   class:orbit-home={!favorites &&
     !compare &&
     !about &&
@@ -818,6 +829,7 @@
                 enabled: !!publicVehicle && galleryCount > 1,
                 previous: () => stepGallery(-1),
                 next: () => stepGallery(1),
+                drag: (offset) => (mainPhotoDrag = offset),
               }}
               role="group"
               aria-label="Galeria de fotografias"
@@ -833,6 +845,7 @@
                     vehicle={publicVehicle}
                     session={gallerySession}
                     index={zoom}
+                    drag={mainPhotoDrag}
                     onOpen={openGallery}
                     onContact={() =>
                       contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`)}
@@ -1467,6 +1480,7 @@
           enabled: !!publicVehicle && galleryCount > 1,
           previous: () => stepGallery(-1),
           next: () => stepGallery(1),
+          drag: (offset) => (viewerPhotoDrag = offset),
         }}
       >
         {#if publicVehicle?.photos.length}
@@ -1474,6 +1488,7 @@
             vehicle={publicVehicle}
             session={gallerySession}
             index={zoom}
+            drag={viewerPhotoDrag}
             fullscreen
             onContact={() => {
               galleryDialog.close();
@@ -2461,6 +2476,7 @@
   .card-image {
     display: block;
     position: relative;
+    isolation: isolate;
     aspect-ratio: 1.5;
     overflow: hidden;
     background: var(--surface);
@@ -2490,6 +2506,7 @@
   }
   .card-arrow {
     position: absolute;
+    z-index: 1;
     bottom: 16px;
     right: 16px;
     background: #fff;

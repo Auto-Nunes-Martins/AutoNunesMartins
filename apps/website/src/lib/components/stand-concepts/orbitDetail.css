@@ -39,8 +39,13 @@
 }
 
 .detail-top-actions .vehicle-share {
+  margin-inline-start: auto;
   text-align: right;
   max-width: 50%;
+}
+.detail-top-actions .vehicle-share .share-label {
+  width: auto;
+  text-align: right;
 }
 .detail-top-actions .vehicle-share button {
   background: transparent;
@@ -896,4 +901,29 @@
 .design.orbit.orbit-detail.public-detail .vehicle-photo > img {
   transform: none;
   transition: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .design.orbit.orbit-detail.public-detail .vehicle-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-layout > .purchase {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-gallery {
+    margin-inline: 0;
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo {
+    aspect-ratio: auto;
+    height: calc(100dvh - 32px);
+    max-height: none;
+    background: #0b0c0e;
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo .photo-rail img {
+    object-fit: contain;
+  }
 }

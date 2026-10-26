@@ -119,3 +119,32 @@ it('does no new work for unchanged selection and tears down the active animation
   expect(moves[0]!.cancel).toHaveBeenCalledOnce();
   expect(disconnect).toHaveBeenCalledOnce();
 });
+
+it('follows a drag and settles from its visible offset, including a cancelled short swipe', () => {
+  const { node, action } = setup(2);
+  action.update({ index: 2, count: 12, drag: -42 });
+  expect(node.style.transform).toBe('translate3d(calc(-200% + -42px), 0, 0)');
+  expect(node.animate).not.toHaveBeenCalled();
+  action.update({ index: 2, count: 12 });
+  expect(node.animate).toHaveBeenLastCalledWith(
+    [
+      { transform: 'translate3d(calc(-200% + -42px), 0, 0)' },
+      { transform: 'translate3d(-200%, 0, 0)' },
+    ],
+    expect.objectContaining({ duration: 220 }),
+  );
+});
+
+it('resists dragging beyond the first or last slide and settles onto the next photo', () => {
+  const { node, action } = setup();
+  action.update({ index: 0, count: 12, drag: 100 });
+  expect(node.style.transform).toBe('translate3d(calc(0% + 20px), 0, 0)');
+  action.update({ index: 0, count: 12, drag: -90 });
+  action.update({ index: 1, count: 12 });
+  expect(node.animate.mock.calls[0]?.[0]).toEqual([
+    { transform: 'translate3d(calc(0% + -90px), 0, 0)' },
+    { transform: 'translate3d(-100%, 0, 0)' },
+  ]);
+  action.update({ index: 11, count: 12, drag: -100 });
+  expect(node.style.transform).toBe('translate3d(calc(-1100% + -20px), 0, 0)');
+});

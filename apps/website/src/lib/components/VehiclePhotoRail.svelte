@@ -12,6 +12,7 @@
     vehicle,
     session,
     index,
+    drag,
     fullscreen = false,
     onOpen,
     onContact,
@@ -20,6 +21,7 @@
     vehicle: PublicVehicle;
     session: PublicGallerySession | undefined;
     index: number;
+    drag?: number;
     fullscreen?: boolean;
     onOpen?: () => void;
     onContact: () => void;
@@ -44,7 +46,7 @@
   <div
     class="photo-rail-track"
     style:transform={`translate3d(${-initialIndex * 100}%, 0, 0)`}
-    use:photoRail={{ index, count: sources.length + 1 }}
+    use:photoRail={{ index, count: sources.length + 1, drag }}
   >
     {#each sources as src, i (src)}
       <div class="photo-rail-slide" aria-hidden={i !== index} inert={i !== index}>

@@ -527,7 +527,15 @@
       display: flex;
     }
     article {
-      width: min(82vw, 340px);
+      width: min(78vw, 316px);
+      padding: 20px 18px;
+    }
+    .review-header {
+      margin-bottom: 12px;
+    }
+    .review-copy {
+      font-size: 14px;
+      line-height: 1.7;
     }
     .review-ending {
       white-space: normal;

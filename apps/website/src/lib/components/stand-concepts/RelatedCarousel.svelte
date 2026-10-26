@@ -19,14 +19,6 @@
   let viewport: HTMLDivElement = $state(null!);
   let track: HTMLDivElement = $state(null!);
   let animation: Animation | undefined;
-  let cardFades: Animation[] = [];
-  function clearCardFades() {
-    for (const fade of cardFades) fade.cancel();
-    cardFades = [];
-    track
-      ?.querySelectorAll<HTMLElement>('.slide')
-      .forEach((slide) => slide.style.removeProperty('opacity'));
-  }
   let movementDuration = $state(360);
   let movementEasing = $state('cubic-bezier(.22,.61,.36,1)');
   // Keep rapid navigation sequential, with at most three pending movements.
@@ -89,29 +81,7 @@
       document.activeElement instanceof HTMLElement && track.contains(document.activeElement)
         ? document.activeElement
         : null;
-    const bounds = viewport.getBoundingClientRect(),
-      displacement = base() - direction * step - from;
     const duration = reduced ? 0 : direction === 0 ? 160 : movementDuration;
-    if (direction && !reduced) {
-      for (const slide of track.querySelectorAll<HTMLElement>('.slide:not(.ghost)')) {
-        const box = slide.getBoundingClientRect();
-        const visible = box.right > bounds.left && box.left < bounds.right;
-        const leaves =
-          box.right + displacement <= bounds.left + 1 ||
-          box.left + displacement >= bounds.right - 1;
-        if (visible && leaves)
-          cardFades.push(
-            slide.animate(
-              [
-                { opacity: Number(getComputedStyle(slide).opacity), offset: 0 },
-                { opacity: Number(getComputedStyle(slide).opacity), offset: 0.6 },
-                { opacity: 0, offset: 1 },
-              ],
-              { duration, easing: movementEasing, fill: 'forwards' },
-            ),
-          );
-      }
-    }
     animation = track.animate(
       [
         { transform: `translateX(${from}px)` },
@@ -126,7 +96,6 @@
       await tick();
       reset();
       animation.cancel();
-      clearCardFades();
       if (
         focused &&
         (document.activeElement === focused || document.activeElement === document.body)
@@ -197,12 +166,6 @@
     event.preventDefault();
     const limit = (items.length - 1) * step;
     pointer.delta = Math.max(-limit, Math.min(limit, dx));
-    const outgoing = track.querySelector<HTMLElement>('.slide:not(.ghost)');
-    if (outgoing)
-      outgoing.style.opacity =
-        pointer.delta < 0
-          ? String(Math.max(0, Math.min(1, (step + pointer.delta) / (step * 0.35))))
-          : '';
     track.style.transform = `translateX(${base() + pointer.delta}px)`;
     suppressClick = true;
   }
@@ -222,7 +185,6 @@
   function cancel() {
     pointer = undefined;
     suppressClick = false;
-    clearCardFades();
     reset();
   }
   function click(event: MouseEvent) {
@@ -261,7 +223,6 @@
     const measure = async () => {
       ++generation;
       animation?.cancel();
-      clearCardFades();
       pending.length = 0;
       requestedPosition = undefined;
       busy = false;
@@ -292,7 +253,6 @@
       pending.length = 0;
       requestedPosition = undefined;
       animation?.cancel();
-      clearCardFades();
       observer.disconnect();
       media.removeEventListener('change', preference);
     };
@@ -457,7 +417,7 @@
   }
   .looping .viewport {
     margin-inline: 0;
-    padding-inline: 0;
+    padding-inline: 4px;
   }
   .integrated-controls {
     position: absolute;
@@ -465,7 +425,7 @@
     inset: 0;
     pointer-events: none;
   }
-  /* The viewport's 16px padding is offset by its -12px outer margin. */
+  /* Keep controls aligned with the small inset around the card outline. */
   .integrated-controls button {
     position: absolute;
     top: calc(
