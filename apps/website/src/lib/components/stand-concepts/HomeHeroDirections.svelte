@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowUpRight, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-svelte';
+  import { ArrowUpRight, ArrowDown } from 'lucide-svelte';
+  import { photoSwipe } from '$lib/photoSwipe';
   import type { PublicHighlights } from '$lib/homepageHighlights';
   import { publicPhoto, publicHref, publicPrice, fuelLabels } from '$lib/publicVehicles';
   import FeaturedPhoto from './FeaturedPhoto.svelte';
@@ -79,6 +80,11 @@
           [node, '--v5-photo-top', `${top}px`],
           [node, '--v5-photo-width', `${width}px`],
           [node, '--v5-photo-height', `${height}px`],
+          [
+            node,
+            '--v5-feature-height',
+            `${node.querySelector<HTMLElement>('.hd-feature')?.offsetHeight ?? height}px`,
+          ],
         );
         for (const plane of node.querySelectorAll<HTMLElement>(
           '.hd-price-motion, .hd-label-motion',
@@ -224,6 +230,7 @@
       {#snippet photograph()}
         <a
           class="hd-photo"
+          data-swipe-surface
           class:hd-photo-failed={failed}
           href={publicHref(car.slug)}
           data-photo-count={car.photos.length}
@@ -239,7 +246,14 @@
           />
         </a>
       {/snippet}
-      <div class="hd-photo-stage">
+      <div
+        class="hd-photo-stage"
+        use:photoSwipe={{
+          enabled: items.length > 1 && index === displayedIndex,
+          previous: () => select(displayedIndex - 1),
+          next: () => select(displayedIndex + 1),
+        }}
+      >
         <div class="hd-photo-motion"><div class="hd-idle-plane">{@render photograph()}</div></div>
         <div class="hd-photo-ui">{@render photoDetails()}</div>
         {#if items.length > 1}
@@ -328,14 +342,6 @@
       </div>
       {#if items.length > 1}
         <div class="hd-controls" role="group" aria-label="Navegar pelos destaques">
-          <button
-            type="button"
-            aria-label="Destaque anterior"
-            aria-controls="hd-vehicle-caption"
-            disabled={index !== displayedIndex}
-            onclick={() => select(index - 1)}
-            onkeydown={keyboard}><ArrowLeft size={17} aria-hidden="true" /></button
-          >
           <div class="hd-progress">
             {#each items as item, position}
               <button
@@ -350,14 +356,6 @@
               </button>
             {/each}
           </div>
-          <button
-            type="button"
-            aria-label="Destaque seguinte"
-            aria-controls="hd-vehicle-caption"
-            disabled={index !== displayedIndex}
-            onclick={() => select(index + 1)}
-            onkeydown={keyboard}><ArrowRight size={17} aria-hidden="true" /></button
-          >
         </div>
       {/if}
       <span

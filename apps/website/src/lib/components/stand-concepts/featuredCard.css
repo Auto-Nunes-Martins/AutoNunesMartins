@@ -1,5 +1,41 @@
 @import './frameCorners.css';
 
+.hd-root[data-featured-card] {
+  --v5-frame-height-saved: calc(var(--v5-feature-height, 0px) * 0.038808);
+}
+.hd-root[data-featured-card] .hd-feature {
+  scale: 0.98 0.941192;
+  margin-bottom: calc(-1 * var(--v5-frame-height-saved));
+}
+@media (min-width: 701px) {
+  .hd-root.hd-1[data-featured-card],
+  .hd-root.hd-1[data-featured-card] .hd-composition {
+    min-height: calc(min(680px, 80svh) - var(--v5-frame-height-saved));
+  }
+}
+
+.hd-root[data-featured-card] .hd-feature::after {
+  bottom: -28px;
+}
+
+.hd-root[data-featured-card] h1 {
+  position: relative;
+  isolation: isolate;
+  font-weight: 500;
+  -webkit-text-stroke: 0.15px currentColor;
+}
+.hd-root[data-featured-card] h1 em {
+  font-weight: 400;
+}
+.hd-root[data-featured-card] h1::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -18px -28px;
+  background: radial-gradient(ellipse at 42% 50%, #080a0c59 25%, transparent 75%);
+  pointer-events: none;
+}
+
 [data-featured-card] :is(.hd-photo-prev, .hd-photo-next) {
   position: absolute;
   z-index: 3;
@@ -12,20 +48,20 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: rgb(255 255 255 / 38%);
+  color: inherit;
   cursor: pointer;
 }
 [data-featured-card] .hd-photo-prev {
-  left: -52px;
+  left: -56px;
 }
 [data-featured-card] .hd-photo-next {
-  right: -52px;
+  right: -56px;
 }
 [data-featured-card] :is(.hd-photo-prev, .hd-photo-next):hover {
-  color: rgb(255 255 255 / 68%);
+  color: inherit;
 }
 [data-featured-card] :is(.hd-photo-prev, .hd-photo-next):focus-visible {
-  color: rgb(255 255 255 / 85%);
+  color: inherit;
 }
 [data-featured-card] :is(.hd-photo-prev, .hd-photo-next):focus-visible {
   outline: none;
@@ -33,15 +69,9 @@
 [data-featured-card] :is(.hd-photo-prev, .hd-photo-next):focus-visible svg {
   filter: drop-shadow(0 0 3px #fff);
 }
-[data-featured-card] .hd-photo-stage:has(.hd-photo-next) {
-  margin-inline: 36px;
-}
 @media (max-width: 700px) {
   [data-featured-card] :is(.hd-photo-prev, .hd-photo-next) {
     display: none;
-  }
-  [data-featured-card] .hd-photo-stage:has(.hd-photo-next) {
-    margin-inline: 0;
   }
 }
 
@@ -82,11 +112,34 @@
 .hd-root[data-featured-card] .hd-photo {
   background: transparent;
 }
+.hd-root[data-featured-card] .hd-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 0 #ffffff48,
+    inset 1px 0 0 #ffffff30,
+    inset 0 -1px 0 #00000028,
+    inset -1px 0 0 #00000028;
+  pointer-events: none;
+}
 .hd-root[data-featured-card] .hd-caption {
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 28px;
   min-height: 110px;
+}
+.hd-root[data-featured-card] .hd-caption::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -4px -16px -10px;
+  background: linear-gradient(90deg, transparent, #080a0c80 12%, #080a0c80 88%, transparent);
+  mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+  pointer-events: none;
 }
 .hd-root[data-featured-card] .hd-price strong {
   font-size: clamp(30px, 2.8vw, 42px);
@@ -95,6 +148,9 @@
   letter-spacing: -0.055em;
 }
 @media (max-width: 700px) {
+  .hd-root[data-featured-card] .hd-feature::after {
+    bottom: -20px;
+  }
   .hd-root[data-featured-card] .hd-caption {
     grid-template-columns: minmax(0, 1fr) auto;
     min-height: 92px;
@@ -217,9 +273,9 @@
         calc(6px * (cos(var(--v5-float-phase)) - 1) + 0.8px * sin(calc(2 * var(--v5-float-phase)))),
         calc(4px * (1 - cos(var(--v5-float-phase))))
       )
-      rotateX(calc(0.6deg * (sin(calc(var(--v5-float-phase) + 60deg)) - sin(60deg))))
-      rotateY(calc(1.4deg * sin(var(--v5-float-phase))))
-      rotateZ(calc(0.2deg * sin(calc(2 * var(--v5-float-phase)))));
+      rotateX(calc(0.24deg * (sin(calc(var(--v5-float-phase) + 60deg)) - sin(60deg))))
+      rotateY(calc(0.5deg * sin(var(--v5-float-phase))))
+      rotateZ(calc(0.06deg * sin(calc(2 * var(--v5-float-phase)))));
   }
   [data-featured-card] .hd-feature[data-idle-paused='true'] .hd-idle-plane {
     animation-play-state: paused;
