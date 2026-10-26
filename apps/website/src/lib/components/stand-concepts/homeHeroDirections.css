@@ -314,6 +314,10 @@
   z-index: 3;
   padding-block: 10px;
 }
+.hd-root .hd-scroll:is(:hover, :focus-visible) > span {
+  text-decoration: underline solid #fff 1px;
+  text-underline-offset: 4px;
+}
 .hd-root .hd-sr {
   position: absolute;
   width: 1px;
