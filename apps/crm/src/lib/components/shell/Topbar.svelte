@@ -188,6 +188,20 @@
   .topbar {
     container-type: inline-size;
   }
+  .tb-search-expanded > :global(.gs-root) {
+    max-width: none;
+    margin-inline: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tb-search-expanded {
+      transform-origin: right center;
+      animation: search-expand 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
+    }
+    @keyframes search-expand {
+      from { opacity: 0; transform: translateX(8px) scaleX(0.94); }
+      to { opacity: 1; transform: none; }
+    }
+  }
   /* Reserve one label column across routes; text length cannot move search. */
   .tb-breadcrumbs { flex: 0 0 clamp(180px, 22cqw, 280px); min-width: 0; }
   .crumb-trail { min-width: 0; overflow: hidden; white-space: nowrap; }

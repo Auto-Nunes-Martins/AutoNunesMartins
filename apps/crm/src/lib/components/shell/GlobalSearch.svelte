@@ -84,7 +84,7 @@
   });
   onDestroy(cancelRequest);
 </script>
-<div bind:this={containerEl} class="relative flex-1 max-w-[540px] mx-2" onfocusout={event => { if (event.relatedTarget instanceof Node && !containerEl.contains(event.relatedTarget)) close(); }}>
+<div bind:this={containerEl} class="gs-root relative flex-1 min-w-0 max-w-[540px] mx-2" onfocusout={event => { if (event.relatedTarget instanceof Node && !containerEl.contains(event.relatedTarget)) close(); }}>
   <div class="gs-input-shell border rounded-xs" class:is-open={open}>
     <BrandSearch class="h-4 w-4 text-[var(--color-text-faint)] flex-shrink-0" />
     <input bind:this={inputEl} bind:value={query} oninput={onInput} onclick={() => open = true} onfocus={() => { open = true; if (needle) void search(needle); }} onkeydown={keydown}
@@ -93,7 +93,7 @@
       placeholder="Pesquisar viaturas, clientes, tarefas…" class="flex-1 min-w-0 bg-transparent px-3 text-[13px] outline-none placeholder:text-[var(--color-text-faint)]"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Pesquisar" />
     {#if loading}<span class="gs-spinner" aria-hidden="true"></span>{/if}
-    {#if query}<button type="button" onclick={clear} class="p-2" aria-label="Limpar pesquisa"><X size={16} aria-hidden="true" /></button>{:else}<kbd class="gs-kbd-hint">⌘K</kbd>{/if}
+    {#if query}<button type="button" onclick={clear} class="gs-clear" aria-label="Limpar pesquisa"><X size={16} aria-hidden="true" /></button>{:else}<kbd class="gs-kbd-hint">⌘K</kbd>{/if}
   </div>
   {#if open}
     <div class="gs-dropdown" style="border-radius:var(--radius-card)">
@@ -132,6 +132,18 @@
     background: rgba(255, 255, 255, 0.02);
     transition: border-color 0.12s;
   }
+  .gs-root {
+    min-width: 0;
+  }
+  .gs-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 44px;
+    min-height: 44px;
+    padding: 0;
+    margin-right: -8px;
+  }
   .gs-input-shell:hover,
   .gs-input-shell.is-open {
     border-color: var(--color-border-strong);
@@ -147,6 +159,11 @@
   .gs-input-shell input {
     appearance: textfield;
     -moz-appearance: textfield;
+  }
+  @media (pointer: coarse) {
+    .gs-input-shell input {
+      font-size: 16px;
+    }
   }
 
   .gs-spinner {

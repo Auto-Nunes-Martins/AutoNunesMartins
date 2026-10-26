@@ -141,6 +141,9 @@
   let panelEl = $state<HTMLDivElement | null>(null);
   let bubbleEl = $state<HTMLButtonElement | null>(null);
   let titleInput = $state<HTMLInputElement | null>(null);
+  let opener: HTMLElement | null = null;
+  let keyboardInset = $state(0);
+  let dragPanelHeight = 380;
 
   // ─── Drag-to-open / drag-to-close (mobile) ─────────────────────────────
   // Native bottom-sheet feel: drag up from the bubble to reveal, drag down
@@ -167,7 +170,7 @@
   // to [0, 100].
   const mobileClipPct = $derived.by(() => {
     const base = isOpen ? 0 : 100;
-    const pct = base + (dragDelta / PANEL_PX) * 100;
+    const pct = base + (dragDelta / dragPanelHeight) * 100;
     return Math.min(100, Math.max(0, pct));
   });
 
@@ -233,7 +236,9 @@
   async function loadUsers() {
     if (usersLoaded) return;
     try {
-      const res = await sessionFetch(crmPath('/api/users'), { headers: { accept: 'application/json' } });
+      const res = await sessionFetch(crmPath('/api/users'), {
+        headers: { accept: 'application/json' },
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { items: TaskAssignee[] };
       users = data.items ?? [];
@@ -251,16 +256,29 @@
   // (bubble click, bottom-nav "+", drag-snap, Escape, etc.).
   $effect(() => {
     if (isOpen) {
+      if (!panelEl?.contains(document.activeElement))
+        opener = document.activeElement as HTMLElement;
       void loadUsers();
       if (!isMobile) {
         void tick().then(() => titleInput?.focus());
+      } else {
+        void tick().then(() => panelEl?.focus({ preventScroll: true }));
       }
     }
+  });
+  $effect(() => {
+    if (!isOpen || !isMobile) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
   });
 
   // ─── Drag handlers ─────────────────────────────────────────────────────
   function startDrag(origin: 'bubble' | 'header', e: PointerEvent) {
     if (!isMobile) return;
+    dragPanelHeight = panelEl?.getBoundingClientRect().height || PANEL_PX;
     // Let form fields and inner buttons handle their own taps.
     const tgt = e.target as HTMLElement;
     if (
@@ -320,7 +338,8 @@
   function close() {
     const restore = panelEl?.contains(document.activeElement);
     quickTask.close();
-    if (restore) void tick().then(() => bubbleEl?.focus({ preventScroll: true }));
+    if (restore)
+      void tick().then(() => (isMobile ? opener : bubbleEl)?.focus({ preventScroll: true }));
   }
 
   async function handleSubmit(e?: Event) {
@@ -410,17 +429,56 @@
     }
   }
 
+  function isOwnedDatePopup(target: EventTarget | null) {
+    const popup = target instanceof Element ? target.closest('.crm-date-popover') : null;
+    return (
+      !!popup &&
+      [...(panelEl?.querySelectorAll('[aria-controls]') ?? [])].some(
+        (control) => control.getAttribute('aria-controls') === popup.id,
+      )
+    );
+  }
   function onDocClick(e: MouseEvent) {
     if (!isOpen) return;
     // An optimistic advance can remove the clicked row before this listener runs.
     // The original event path still identifies the click as inside the panel.
     const path = e.composedPath();
-    if ((panelEl && path.includes(panelEl)) || (bubbleEl && path.includes(bubbleEl))) return;
+    if (
+      (panelEl && path.includes(panelEl)) ||
+      (bubbleEl && path.includes(bubbleEl)) ||
+      isOwnedDatePopup(e.target)
+    )
+      return;
     close();
   }
 
   function onKey(e: KeyboardEvent) {
+    if (e.defaultPrevented || isOwnedDatePopup(e.target)) return;
     if (e.key === 'Escape' && isOpen) close();
+    if (e.key === 'Tab' && isOpen && isMobile && panelEl) {
+      const controls = [
+        ...panelEl.querySelectorAll<HTMLElement>(
+          'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),[tabindex="0"]',
+        ),
+      ].filter((node) => node.getClientRects().length > 0);
+      const first = controls[0],
+        last = controls.at(-1);
+      if (
+        e.shiftKey &&
+        (document.activeElement === first ||
+          !controls.includes(document.activeElement as HTMLElement))
+      ) {
+        e.preventDefault();
+        last?.focus();
+      } else if (
+        !e.shiftKey &&
+        (document.activeElement === last ||
+          !controls.includes(document.activeElement as HTMLElement))
+      ) {
+        e.preventDefault();
+        first?.focus();
+      }
+    }
   }
 
   onMount(() => {
@@ -430,7 +488,21 @@
     isMobile = mq.matches;
     const onMQ = (ev: MediaQueryListEvent) => (isMobile = ev.matches);
     mq.addEventListener('change', onMQ);
-    return () => mq.removeEventListener('change', onMQ);
+    const viewport = window.visualViewport;
+    const syncKeyboard = () => {
+      keyboardInset =
+        viewport && viewport.scale === 1
+          ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+          : 0;
+    };
+    viewport?.addEventListener('resize', syncKeyboard);
+    viewport?.addEventListener('scroll', syncKeyboard);
+    syncKeyboard();
+    return () => {
+      mq.removeEventListener('change', onMQ);
+      viewport?.removeEventListener('resize', syncKeyboard);
+      viewport?.removeEventListener('scroll', syncKeyboard);
+    };
   });
 
   onDestroy(() => {
@@ -524,14 +596,14 @@
           class="qt-input"
           disabled={creating}
         />
-        <button
-          type="submit"
-          class="qt-submit"
-          disabled={creating || !title.trim()}
-          aria-label="Criar tarefa"
-        >
-          <Plus class="h-4 w-4" />
-        </button>
+        {#if !isMobile}<button
+            type="submit"
+            class="qt-submit"
+            disabled={creating || !title.trim()}
+            aria-label="Criar tarefa"
+          >
+            <Plus class="h-4 w-4" />
+          </button>{/if}
       </div>
 
       <div class="qt-form-row">
@@ -578,7 +650,6 @@
           >
             <Calendar class="h-3 w-3" />
             <DateInput
-
               bind:value={customDate}
               oninput={() => {
                 dueChoice = customDate ? 'custom' : 'none';
@@ -604,6 +675,11 @@
           </select>
         </div>
       </div>
+      {#if isMobile}
+        <button type="submit" class="qt-create" disabled={creating || !title.trim()}>
+          <Plus size={18} aria-hidden="true" />{creating ? 'A criar…' : 'Criar tarefa'}
+        </button>
+      {/if}
     </form>
 
     <!-- ─── List (DESKTOP ONLY) ──────────────────────────────────────────
@@ -702,15 +778,13 @@
     {/if}
 
     <footer class="qt-footer">
-      {#if !isMobile}
-        <a href={crmPath('/tarefas')} onclick={close} class="qt-footer-link">
-          Ver todas
-          <ChevronRight class="h-3 w-3" />
-        </a>
-      {/if}
+      <a href={crmPath('/tarefas')} onclick={close} class="qt-footer-link">
+        Ver todas
+        <ChevronRight class="h-3 w-3" />
+      </a>
       <a href={crmPath('/tarefas/nova')} onclick={close} class="qt-footer-link qt-footer-secondary">
         <Plus class="h-3 w-3" />
-        Tarefa completa
+        {isMobile ? 'Mais detalhes' : 'Tarefa completa'}
       </a>
     </footer>
   {/snippet}
@@ -729,11 +803,14 @@
         : ''}"
       role="dialog"
       aria-label="Tarefas rápidas"
+      aria-modal="true"
+      tabindex="-1"
       aria-hidden={!isOpen && !isDragging}
       inert={!isOpen}
-      style="clip-path: inset({mobileClipPct}% 0 0 0); transition: {isDragging
+      style:--qt-keyboard-inset={`${keyboardInset}px`}
+      style="transform: translate3d(0, {mobileClipPct}%, 0); transition: {isDragging
         ? 'none'
-        : 'clip-path 360ms cubic-bezier(0.32, 0.72, 0, 1)'};"
+        : 'transform 360ms cubic-bezier(0.32, 0.72, 0, 1)'};"
     >
       {@render panelBody()}
     </div>
@@ -826,7 +903,8 @@
     top: 0;
     left: 0;
     right: 0;
-    bottom: calc(56px + env(safe-area-inset-bottom, 0));
+    bottom: 0;
+    touch-action: none;
     z-index: 45;
     background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(3px);
@@ -882,11 +960,12 @@
     right: 0;
     top: auto;
     width: auto;
-    bottom: calc(56px + env(safe-area-inset-bottom, 0));
+    bottom: var(--qt-keyboard-inset, 0px);
     /* Mobile: content-fit height, since the list isn't rendered there. */
     height: auto;
-    max-height: 78vh;
-    border-radius: 0;
+    max-height: calc(100dvh - var(--qt-keyboard-inset, 0px) - 24px);
+    border-radius: 20px 20px 0 0;
+    will-change: auto;
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
@@ -1464,7 +1543,93 @@
     border-color: var(--color-red);
   }
 
+  @media (max-width: 767px) {
+    .qt-panel.is-mobile .qt-header {
+      flex: none;
+      min-height: 80px;
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .qt-panel.is-mobile .qt-header h3 {
+      font-size: 21px;
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+    .qt-panel.is-mobile .qt-close {
+      width: 44px;
+      height: 44px;
+    }
+    .qt-panel.is-mobile .qt-add {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 20px;
+      gap: 20px;
+    }
+    .qt-panel.is-mobile .qt-input,
+    .qt-panel.is-mobile .qt-assignee {
+      min-width: 0;
+      height: 48px;
+      font-size: 16px;
+    }
+    .qt-panel.is-mobile :global(input) {
+      font-size: 16px;
+    }
+    .qt-panel.is-mobile .qt-form-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+    .qt-panel.is-mobile .qt-form-label {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+    }
+    .qt-panel.is-mobile .qt-chips {
+      gap: 8px;
+    }
+    .qt-panel.is-mobile .qt-chip {
+      flex: 1 0 calc(50% - 4px);
+      min-height: 44px;
+      justify-content: center;
+      padding: 8px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .qt-create {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 48px;
+      border: 0;
+      border-radius: var(--radius-btn);
+      background: var(--color-red);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .qt-create:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .qt-panel.is-mobile .qt-footer {
+      flex: none;
+      padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+    .qt-panel.is-mobile .qt-footer-link {
+      min-height: 44px;
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
+    .qt-panel.is-mobile,
+    .qt-backdrop {
+      transition: none !important;
+    }
     .qt-bubble,
     .qt-chip,
     .qt-row,

@@ -56,6 +56,7 @@
       }),
   );
   const visible = $derived(ordered.slice(0, 4));
+  const overdueCount = $derived(ordered.filter((task) => task.isOverdue).length);
   function dueLabel(task: TodayTaskRow) {
     if (!task.dueDate) return task.status === 'IN_PROGRESS' ? 'Em curso' : 'Sem prazo';
     const date =
@@ -138,11 +139,13 @@
       >
         <RotateCcw size={14} aria-hidden="true" />
       </button>
-      <a class="all-tasks" href={crmPath('/tarefas')}
-        >Ver todas <ArrowUpRight size={13} aria-hidden="true" /></a
-      >
     {/snippet}
   </PanelHeader>
+  <div class="task-summary">
+    <span>{busy ? 'A atualizar…' : `${ordered.length} por tratar`}</span>
+    {#if !busy && overdueCount > 0}<span class="overdue-summary">{overdueCount} em atraso</span>
+    {:else}<span>Minhas e gerais</span>{/if}
+  </div>
   <div
     class="task-content"
     role="region"
@@ -168,9 +171,9 @@
       </div>
     {:else if !visible.length}
       <div class="task-empty">
+        <CheckSquare size={24} aria-hidden="true" />
         <p class="empty-title">Sem tarefas a pedir atenção.</p>
         <p>As suas tarefas e as gerais estão em dia.</p>
-        <a href={crmPath('/tarefas')}>Abrir lista completa</a>
       </div>
     {:else}
       <ul class="task-list">
@@ -178,21 +181,22 @@
           {@const priority = taskPriority(task.priority)}
           {@const canComplete =
             !!currentUserId && (!task.assignee || task.assignee.id === currentUserId)}
-          <li class="task-item" class:is-saving={pendingId === task.id}>
+          <li
+            class="task-item"
+            class:is-saving={pendingId === task.id}
+            style:--task-priority={priority.color}
+          >
             <a class="task-copy" href={crmPath(`/tarefas/${task.id}/editar`)} title={task.title}>
               <span class="task-title">{task.title}</span>
               <span
                 class="task-meta"
                 title={`${task.dueDate ? formatDate(task.dueDate) : 'Sem prazo'} · ${task.assignee?.name ?? 'Geral'}`}
               >
-                <span class:overdue={task.isOverdue}>{dueLabel(task)}</span>
-                <span class="meta-separator" aria-hidden="true">·</span>
-                <span>{task.assignee?.name ?? 'Geral'}</span>
-                {#if task.priority === 'URGENT' || task.priority === 'HIGH'}
-                  <span class="meta-separator" aria-hidden="true">·</span><span class="priority"
-                    >{priority.label}</span
-                  >
-                {/if}
+                <span class="due" class:overdue={task.isOverdue}>{dueLabel(task)}</span>
+                <span class="priority" style:color={priority.color}>{priority.label}</span>
+              </span>
+              <span class="task-owner">
+                {task.assignee?.name ?? 'Geral'}
                 {#if task.status === 'IN_PROGRESS' && task.dueDate}
                   <span class="meta-separator" aria-hidden="true">·</span><span
                     >{TASK_STATUS_LABELS.IN_PROGRESS}</span
@@ -218,6 +222,14 @@
       </ul>
     {/if}
   </div>
+  <footer class="task-footer">
+    {#if ordered.length > visible.length}<span
+        >{visible.length} de {ordered.length} nesta lista</span
+      >{/if}
+    <a class="all-tasks" href={crmPath('/tarefas')}
+      >Ver todas <ArrowUpRight size={14} aria-hidden="true" /></a
+    >
+  </footer>
   {#if actionError}<p class="action-error" role="alert">{actionError}</p>{/if}
   <span class="sr-only" role="status" aria-live="polite">{announcement}</span>
 </Panel>
@@ -244,11 +256,12 @@
     color: var(--color-text);
   }
   .task-content {
-    height: 240px;
-    overflow: auto;
+    padding: 12px;
     outline-offset: -2px;
   }
   .task-list {
+    display: grid;
+    gap: 8px;
     list-style: none;
     padding: 0;
     margin: 0;
@@ -257,12 +270,15 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    height: 60px;
-    padding: 5px 16px;
-    border-bottom: 1px solid var(--color-border);
+    min-height: 104px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--task-priority, var(--color-border));
+    border-radius: var(--radius-btn);
+    background: color-mix(in srgb, var(--color-bg-2) 40%, transparent);
   }
   .task-item:last-child {
-    border-bottom: 0;
+    border-bottom: 1px solid var(--color-border);
   }
   .task-copy {
     flex: 1;
@@ -276,32 +292,48 @@
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
-    font-size: 13px;
-    line-height: 18px;
-    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
     overflow-wrap: anywhere;
   }
   .task-meta {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
     color: var(--color-text-muted);
     font-size: 11px;
-    line-height: 14px;
+    line-height: 18px;
+  }
+  .due {
+    padding: 1px 7px;
+    border-radius: 3px;
+    background: var(--color-bg-2);
+    color: var(--color-text);
+  }
+  .task-owner {
+    display: block;
+    margin-top: 5px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    line-height: 16px;
+    overflow-wrap: anywhere;
   }
   .meta-separator {
     padding-inline: 4px;
     color: var(--color-text-faint);
   }
   .task-meta .overdue {
-    color: var(--color-red);
+    color: var(--color-priority-urgent);
+    background: color-mix(in srgb, var(--color-priority-urgent) 12%, transparent);
   }
   .priority {
     font-weight: 600;
   }
   .complete-task {
-    width: 40px;
+    width: 44px;
     height: 44px;
     flex-shrink: 0;
     display: grid;
@@ -310,8 +342,8 @@
     cursor: pointer;
   }
   .check-target {
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
     border: 1px solid var(--color-border-strong);
     border-radius: 50%;
     display: grid;
@@ -327,12 +359,12 @@
     opacity: 0.55;
   }
   .task-empty {
-    height: 100%;
+    min-height: 160px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     padding: 20px;
     text-align: center;
     color: var(--color-text-muted);
@@ -345,10 +377,9 @@
   }
   .task-empty .empty-title {
     color: var(--color-text);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 500;
   }
-  .task-empty a,
   .task-empty button {
     display: inline-flex;
     align-items: center;
@@ -364,6 +395,36 @@
     font-size: 12px;
     line-height: 1.5;
     color: var(--color-red);
+  }
+  .task-summary,
+  .task-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-inline: 16px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .task-summary {
+    padding-block: 10px 0;
+  }
+  .overdue-summary {
+    color: var(--color-priority-urgent);
+  }
+  .task-footer {
+    min-height: 56px;
+    border-top: 1px solid var(--color-border);
+  }
+  .task-footer > span {
+    max-width: 24ch;
+  }
+  .all-tasks {
+    min-height: 44px;
+    color: var(--color-text);
+    margin-left: auto;
   }
   .pending-copy {
     flex: 1;
