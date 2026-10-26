@@ -86,9 +86,9 @@
       on a phone is rare enough to not warrant the row space.
     -->
     <div class="hidden md:flex items-center gap-2 flex-shrink-0">
-      <!-- Menu (sem default) — utilizador escolhe CSV ou PDF. O endpoint
-           /dashboard/export gera um snapshot executivo dos KPIs + agregados
-           dos últimos 12 meses + best sellers + alertas activos. -->
+      <!-- Export menu with no default format: the user selects CSV or PDF.
+           /dashboard/export produces an executive snapshot of KPIs and aggregates
+           for the last twelve months, top sellers and active alerts. -->
       <ExportMenu baseHref={crmPath("/dashboard/export")} />
       <a
         href={crmPath("/viaturas/nova")}
@@ -161,11 +161,7 @@
       <!-- Smart Alerts banner (renders only when there's something to alert about) -->
       <SmartAlertsBanner alerts={d.alerts} />
 
-      <!-- KPI row — values compact-formatted with smaller dim suffix.
-           5 cards on lg+; on mobile the 5th wraps to a half-width tile under
-           the others (2-2-1 grid). The Comissões card is only meaningful
-           once the dealer has registered a financing referral, so it shows
-           "—" until that happens rather than a misleading zero. -->
+      <!-- KPI values use compact formatting and a smaller suffix. Five cards appear on large screens; mobile uses a 2-2-1 grid. The commission card is meaningful only after a financing referral, showing an em dash until then instead of a misleading zero. -->
       {@const faturacao = formatCompactEUR(d.kpis.faturacaoMes.current)}
       {@const lucro = formatCompactEUR(d.kpis.lucroMes.current)}
       {@const comissoes = formatCompactEUR(d.kpis.comissoesMes.current)}

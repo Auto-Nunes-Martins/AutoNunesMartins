@@ -12,7 +12,7 @@ export interface VehicleListItem {
   fuel: Fuel;
   mileage: number;
   vin: string | null;
-  /** Portuguese license plate ("matrícula"), canonical "XX-XX-XX" or null. */
+  /** Portuguese license plate, canonical "XX-XX-XX" or null. */
   licensePlate: string | null;
   purchasePrice: string;
   salePrice: string | null;
@@ -91,7 +91,7 @@ export interface VehicleDetailResponse {
   } | null;
   /**
    * Set when this vehicle entered stock as a customer trade-in. Lets the
-   * detail page surface "Adquirido como retoma da venda X" with a link back
+   * detail page show the originating trade-in sale with a link back
    * to the originating sale. Null for vehicles purchased the regular way.
    */
   sourceTradeIn: {
@@ -177,9 +177,9 @@ export const vehiclesApi = {
     return apiJson(event, `/api/vehicles/${id}`, { method: 'DELETE' });
   },
   /**
-   * Promove uma viatura DRAFT a AVAILABLE. Usado pelo fluxo de "publicar"
-   * que carros entrados por retoma seguem antes de aparecerem como
-   * comercializáveis. Backend exige preço + descrição.
+   * Promote a DRAFT vehicle to AVAILABLE through the publication flow
+   * used for incoming trade-ins before they can be offered for sale.
+   * The backend requires a price and description.
    */
   publish(
     event: Ev,

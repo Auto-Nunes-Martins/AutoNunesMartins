@@ -65,7 +65,7 @@ router.get(
               { brand: { contains: needle, mode: 'insensitive' } },
               { model: { contains: needle, mode: 'insensitive' } },
               { vin: { contains: needle, mode: 'insensitive' } },
-              // Match matrícula both as typed and in the canonical dashed
+              // Match the license plate as typed and in canonical dashed
               // form — see buildVehicleWhere() for the same trick.
               { licensePlate: { contains: needle, mode: 'insensitive' } },
               ...(needle.length >= 3 && needle.length <= 6 && /^[\w-]+$/.test(needle)
@@ -125,7 +125,7 @@ router.get(
       const vHits: SearchHit[] = vehicles.map((v) => ({
         id: v.id,
         primary: `${v.brand} ${v.model}`,
-        // Prefer matrícula when set — it's how staff refer to a car day-to-day.
+        // Prefer the license plate when set; staff use it to identify cars daily.
         // VIN stays as a secondary fact when no plate is registered yet.
         secondary: `${v.year} · ${v.licensePlate ? `Matrícula ${v.licensePlate}` : `VIN ${v.vin}`} · ${v.status}`,
         href: `/viaturas/${v.id}`,

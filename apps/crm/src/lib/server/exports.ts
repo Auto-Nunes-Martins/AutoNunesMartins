@@ -1,17 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, PageSizes } from 'pdf-lib';
 
-/*
-  pdf-lib `StandardFonts.Helvetica` só suporta o conjunto WinAnsi (Windows-
-  1252). Qualquer caractere fora desse intervalo faz `drawText` lançar um
-  EncodingError, o que rebenta o export inteiro. Esta função sanitiza
-  strings antes de chegarem ao motor: mapeia os "offenders" mais comuns
-  para alternativas ASCII (Δ→D, →→->, ✓→OK, narrow-NBSP→space) e
-  substitui qualquer outro char fora-de-WinAnsi por '?' como fallback
-  seguro. Mantém intacto:
-    - ASCII básico
-    - Latin-1 (acentos pt-PT, ç, €, ºª, etc.)
-    - O subset 0x80-0x9F do Windows-1252 (em-dash, ellipsis, smart quotes)
-*/
+/* pdf-lib StandardFonts.Helvetica supports only WinAnsi (Windows-1252). Unsupported characters cause drawText to throw an EncodingError, breaking the export. Sanitize strings before rendering: map common unsupported characters to ASCII alternatives and replace other unsupported characters with ?. Preserve ASCII, supported Latin-1 accents and Windows-1252 punctuation. */
 const WINANSI_REPLACEMENTS: Record<string, string> = {
   'Δ': 'D',
   'δ': 'd',
@@ -26,12 +15,12 @@ const WINANSI_REPLACEMENTS: Record<string, string> = {
   '✗': 'X',
   '◯': 'o',
   '●': '*',
-  ' ': ' ', // NARROW NO-BREAK SPACE (Intl currency em alguns Nodes)
+  ' ': ' ', // NARROW NO-BREAK SPACE used by Intl currency formatting in some Node versions
   ' ': ' ', // THIN SPACE
 };
 
-// Subset de Windows-1252 acima de 0x7F que NÃO está em Latin-1 mas é
-// válido (smart quotes, em/en dash, ellipsis, euro, etc.).
+// Windows-1252 characters above 0x7F that are absent from Latin-1 but
+// valid for this encoding: smart quotes, dashes, ellipsis and euro.
 const WIN1252_EXTRAS = new Set<number>([
   0x152, 0x153, 0x160, 0x161, 0x178, 0x17D, 0x17E, 0x192, 0x2C6, 0x2DC,
   0x2013, 0x2014, 0x2018, 0x2019, 0x201A, 0x2039, 0x201C, 0x201D, 0x201E,
@@ -51,7 +40,7 @@ export function sanitizeForWinAnsi(s: string): string {
     if (code === 9 || code === 10 || code === 13) {
       out += ch;
     } else if (code >= 0x20 && code <= 0x7E) {
-      // ASCII imprimível
+      // Printable ASCII.
       out += ch;
     } else if (code >= 0xA0 && code <= 0xFF) {
       // Latin-1 supplement
@@ -60,8 +49,8 @@ export function sanitizeForWinAnsi(s: string): string {
       // Smart quotes, ellipsis, em/en dash, euro, etc.
       out += ch;
     } else {
-      // Qualquer outro: fallback seguro. '?' é universal e indica
-      // ausência visivelmente em vez de quebrar o PDF inteiro.
+      // Use a safe fallback for all other characters. '?' is universal and
+      // visibly indicates a missing character instead of breaking the PDF.
       out += '?';
     }
   }

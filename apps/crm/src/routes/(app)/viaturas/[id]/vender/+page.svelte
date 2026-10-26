@@ -123,14 +123,14 @@
   let tradeInPlate = $state('');
   let tradeInVin = $state('');
   let tradeInAllowance = $state('');
-  // STOCK → carro entra no inventário (cria Vehicle nova, requer VIN).
-  // SCRAP → carro vai para abate/desmanche, nunca entra no stock.
+  // STOCK adds the car to inventory, creating a Vehicle that requires a VIN.
+  // SCRAP sends the car for dismantling and never adds it to inventory.
   let tradeInDisposition = $state<'STOCK' | 'SCRAP'>('STOCK');
   let tradeInNotes = $state('');
-  // ─── Field-level errors devolvidos pelo backend ──────────────────────
-  // Preenchidos quando o servidor responde com 409 + `field` (ex.: VIN
-  // duplicado). Limpos no oninput do respetivo input para o aviso
-  // desaparecer assim que o utilizador começa a corrigir.
+  // Field-level errors returned by the backend.
+  // Set when the server responds with 409 and a field, such as a duplicate
+  // VIN. Clear on input in the corresponding field so the warning
+  // disappears as soon as the user starts correcting the value.
   let tradeInVinError = $state<string | null>(null);
   let tradeInPlateError = $state<string | null>(null);
   let submitting = $state(false);
@@ -176,9 +176,9 @@
         profit: commission.toFixed(2),
       };
     }
-    // Trade-in NÃO entra na margem nem no IVA — é uma compra separada que
-    // cria um carro novo no stock a custo = allowance. Aqui só importa a
-    // margem da venda do carro do stand (ver computeSaleFigures backend).
+    // A trade-in does NOT affect margin or VAT: it is a separate purchase
+    // creating a stock vehicle with cost equal to the allowance. Only the
+    // dealer vehicle sale margin matters here (see backend computeSaleFigures).
     const margin = price - purchase - expensesTotal;
     if (margin <= 0 || buyerType === 'COMERCIANTE') {
       const profit = margin + commission;
@@ -309,12 +309,12 @@
             await goto(crmPath(`/viaturas/${v.id}`), { invalidateAll: true });
             return;
           } else if (result.type === 'failure') {
-            // Preserve os campos locais ao aplicar a falha sem repor o formulário.
+            // Preserve local fields when applying a failure; do not reset the form.
             const data = result.data as import('$lib/forms/formFeedback').FormFailure | undefined;
             showFormErrors(formElement, data);
             toast.error(data?.error ?? 'Falha ao registar.');
-            // Marca o input com erro inline quando o backend identifica qual
-            // foi o campo que colidiu (VIN ou matrícula duplicada).
+            // Mark an input with an inline error when the backend identifies
+            // the conflicting field, such as a duplicate VIN or license plate.
             if (data?.field === 'tradeIn.vin') {
               tradeInVinError = data.error ?? 'VIN duplicado.';
             }
@@ -456,12 +456,7 @@
       <Panel>
         <PanelHeader icon={Tag} title="Detalhes da venda" />
         <div class="p-5 space-y-4">
-          <!--
-            Tipo de comprador. Particular usa o regime de margem 23/123
-            (IVA sai do lucro). Comerciante é uma venda B2B sem IVA
-            discriminado pelo vendedor — a margem inteira fica como lucro
-            real. O selector atualiza a pré-visualização em tempo real.
-          -->
+          <!-- Buyer type: private buyers use the 23/123 margin VAT scheme, paid from profit. Dealer sales are B2B with no itemized VAT, retaining the full margin as profit. The selector updates the preview immediately. -->
           <div class="flex flex-col">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
@@ -622,13 +617,7 @@
         </div>
       </Panel>
 
-      <!--
-        Retoma (trade-in). Off por defeito — só aparece quando o cliente
-        entrega um carro como parte do pagamento. O valor atribuído abate
-        ao preço de venda no cálculo de margem/IVA. STOCK cria uma
-        Viatura nova no inventário; SCRAP só regista o negócio sem
-        adicionar nada ao stock.
-      -->
+      <!-- Trade-in is disabled by default and appears only when the customer provides a car as part of payment. The allowance offsets the sale price in the margin/VAT calculation. STOCK creates a Vehicle in inventory; SCRAP records the deal without adding stock. -->
       <Panel>
         <PanelHeader
           icon={ArrowRightLeft}

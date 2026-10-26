@@ -73,7 +73,7 @@
         {formatDateLong(today)}
       </div>
     </div>
-    <!-- Export is desktop-only. Menu (sem default) — utilizador escolhe formato. -->
+    <!-- Desktop-only export menu; the user explicitly chooses the format. -->
     <div class="hidden md:flex items-center gap-2">
       <ExportMenu baseHref={crmPath('/financeiro/despesas/export')} extraQuery={$page.url.search} />
     </div>

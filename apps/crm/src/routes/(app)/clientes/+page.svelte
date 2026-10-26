@@ -55,8 +55,7 @@
       </div>
     </div>
     <div class="flex items-center gap-2 md:flex-shrink-0">
-      <!-- Export is desktop-only — rarely the primary action on a phone.
-           Menu (sem default) — o utilizador escolhe CSV ou PDF. -->
+      <!-- Desktop-only export is rarely the primary phone action. The user explicitly chooses CSV or PDF; there is no default. -->
       <div class="hidden md:inline-flex">
         <ExportMenu baseHref={crmPath('/clientes/export')} extraQuery={$page.url.search} />
       </div>

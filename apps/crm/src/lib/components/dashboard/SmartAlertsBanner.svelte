@@ -26,9 +26,9 @@
         label: `${alerts.remindersToday} lembrete${alerts.remindersToday === 1 ? '' : 's'} para hoje`,
         href: crmPath('/tarefas?attention=reminders'),
       },
-      // Rascunhos — viaturas que entraram no stock (tipicamente via retoma)
-      // mas ainda sem preço definido. Aparecem aqui como warning porque
-      // estão paradas à espera de uma decisão do dono para serem publicadas.
+      // Draft vehicles have entered stock, typically through a trade-in,
+      // but still have no price. Show a warning because they are waiting
+      // for the owner to decide on a price before publication.
       alerts.draftVehicles > 0 && {
         icon: Tag,
         label: `${alerts.draftVehicles} viatura${alerts.draftVehicles === 1 ? '' : 's'} em rascunho — preço por definir`,

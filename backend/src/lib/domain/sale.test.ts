@@ -183,20 +183,20 @@ describe('computeSaleFigures (PT margin scheme)', () => {
   // that tries to abate the allowance again gets caught.
   describe('trade-in does not affect margin/VAT', () => {
     it('matches a pure-cash sale: trade-in is a parallel transaction, not a discount', () => {
-      // Cliente: 15.000 €, viatura comprada por 10.000 €.
-      // Caso A: pagamento integral em dinheiro.
-      // Caso B: 11.000 € em dinheiro + 4.000 € em retoma.
-      // Ambos os casos devem dar a MESMA margem/IVA/lucro porque a retoma
-      // é uma compra separada que entra no stock a 4.000 € e só dá P&L na
-      // próxima venda. A função não recebe sequer o valor da retoma.
+      // Customer pays EUR 15,000 for a vehicle bought for EUR 10,000.
+      // Case A: full cash payment.
+      // Case B: EUR 11,000 cash plus a EUR 4,000 trade-in.
+      // Both cases must produce the SAME margin, VAT and profit: the trade-in
+      // is a separate purchase entering stock at EUR 4,000, affecting P&L only
+      // when it is sold. This function does not receive the trade-in value.
       const cash = computeSaleFigures({
         salePrice: 15000,
         purchasePrice: 10000,
         expensesTotal: 0,
       });
-      // Mesma chamada — não há parâmetro `tradeInAllowance` a passar.
-      // Esta segunda invocação só existe para documentar que não há
-      // mudança nos números esperados quando há retoma envolvida.
+      // Same call: there is no tradeInAllowance parameter to pass.
+      // This second invocation documents that the expected figures do not
+      // change when a trade-in is involved.
       const withTradeIn = computeSaleFigures({
         salePrice: 15000,
         purchasePrice: 10000,

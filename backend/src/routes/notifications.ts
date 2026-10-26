@@ -26,7 +26,7 @@ interface Payload {
     stockAged: number;
     tasksDueOrOverdue: number;
     remindersToday: number;
-    /** Viaturas em DRAFT — preço por definir (ver dashboardService.SmartAlerts). */
+    /** DRAFT vehicles awaiting a price (see dashboardService.SmartAlerts). */
     draftVehicles: number;
   };
   total: number;

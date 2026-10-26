@@ -70,7 +70,7 @@ export async function createVehicle(
         fuel: data.fuel,
         mileage: data.mileage,
         vin: data.vin ?? null,
-        // Matrícula already canonicalized by `licensePlatePtSchema` to
+        // The license plate has already been normalized by licensePlatePtSchema to
         // "XX-XX-XX" form; null when the user didn't enter one.
         licensePlate: data.licensePlate ?? null,
         purchasePrice: data.purchasePrice,
@@ -152,7 +152,7 @@ export async function updateVehicleInTransaction(
   if (data.fuel !== undefined) updateData.fuel = data.fuel;
   if (data.mileage !== undefined) updateData.mileage = data.mileage;
   if (data.vin !== undefined) updateData.vin = data.vin;
-  // Pass null through explicitly so "clear matrícula" is possible — but
+  // Pass null through explicitly to allow clearing the license plate, but
   // only when the caller submits an explicit empty string. The schema's
   // preprocess maps "" → undefined, so this branch is reached only with
   // an actual value (already canonicalized by Zod).
@@ -215,11 +215,11 @@ export async function updateVehicleInTransaction(
 }
 
 /**
- * Promove uma viatura DRAFT a AVAILABLE. Define o preço de venda e a
- * descrição (ambos obrigatórios) numa única transação que também emite
- * o evento VEHICLE_STATUS_CHANGED para a timeline. Falha cedo se a
- * viatura não estiver em DRAFT — não há outro caminho para AVAILABLE
- * que precise deste endpoint (o /editar genérico cobre o resto).
+ * Promote a DRAFT vehicle to AVAILABLE. Set its sale price and
+ * required description in one transaction, which also emits
+ * VEHICLE_STATUS_CHANGED for the timeline. Fail early if the
+ * vehicle is not DRAFT; no other transition to AVAILABLE needs
+ * this endpoint because the generic /editar flow covers the rest.
  */
 export class VehicleNotDraft extends Error {
   constructor(
@@ -295,7 +295,7 @@ export async function getVehicleWithProfit(id: string) {
     .reduce((total, expense) => total.plus(expense.amount.toString()), new Decimal(0))
     .toString();
   // If a Sale row exists, project figures using its persisted commission
-  // so the "projeção" view matches what the sale actually pays out. If
+  // so the projection view matches the actual sale proceeds. If
   // there's no sale yet, commission is unknown — projection uses 0.
   const recordedPrice = vehicle.sale?.salePrice ?? vehicle.salePrice;
   const figures =

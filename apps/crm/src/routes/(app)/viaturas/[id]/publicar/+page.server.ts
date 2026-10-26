@@ -56,7 +56,7 @@ export const actions: Actions = {
       }
       throw err;
     }
-    // Volta ao detalhe da viatura — agora já AVAILABLE.
+    // Return to vehicle details, now in AVAILABLE status.
     throw redirect(303, crmPath(`/viaturas/${event.params.id}`));
   },
 };

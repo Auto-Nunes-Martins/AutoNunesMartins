@@ -257,9 +257,9 @@
             </a>
           {/if}
           {#if data.alerts.draftVehicles > 0}
-            <!-- Rascunhos: mesmo padrão visual que os outros 3 alertas
-                 (ícone+separador vermelho) para a sino manter coesão.
-                 O destaque laranja vive na página destino (/viaturas). -->
+            <!-- Drafts use the same visual pattern as the other three alerts,
+                 including an icon and red separator for a consistent notification bell.
+                 The orange highlight belongs on the destination page, /viaturas. -->
             <a
               href={crmPath('/viaturas')}
               onclick={closeOnNavigation}

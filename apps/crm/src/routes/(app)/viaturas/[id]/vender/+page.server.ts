@@ -132,9 +132,9 @@ export const actions: Actions = {
       return { id };
     } catch (err) {
       if (err instanceof ApiError) {
-        // Propaga o `field` quando o backend identifica uma colisão num
-        // input específico da retoma (VIN ou matrícula). A UI usa isto
-        // para pintar o input vermelho sem limpar o resto do formulário.
+        // Forward field when the backend identifies a conflict in a specific
+        // trade-in input, such as VIN or license plate. The UI uses this to
+        // highlight that input without clearing the rest of the form.
         const body = err.body as {
           error?: string;
           field?: string;

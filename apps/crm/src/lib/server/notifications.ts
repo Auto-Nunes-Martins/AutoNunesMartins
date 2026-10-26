@@ -6,7 +6,7 @@ export interface NotificationsPayload {
     stockAged: number;
     tasksDueOrOverdue: number;
     remindersToday: number;
-    /** Viaturas em DRAFT — preço por definir. */
+    /** DRAFT vehicles awaiting a price. */
     draftVehicles: number;
   };
   total: number;

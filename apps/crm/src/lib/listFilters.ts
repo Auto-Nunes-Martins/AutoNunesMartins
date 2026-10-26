@@ -38,9 +38,9 @@ export function vehiclesFilters(url: URL): VehicleListParams {
     pageSize: 25,
     sortBy: (sp.get('sortBy') as VehicleListParams['sortBy']) ?? 'createdAt',
     sortDir: sp.get('sortDir') === 'asc' ? 'asc' : 'desc',
-    // DRAFTs (rascunhos) têm uma secção dedicada em destaque acima da
-    // tabela principal — escondemo-los aqui para não duplicar. `pickStatus`
-    // já não devolve DRAFT, por isso este `notStatus` está sempre activo.
+    // Drafts have a dedicated highlighted section above the main table,
+    // so exclude them here to avoid duplicates. pickStatus no longer
+    // returns DRAFT, so this notStatus filter is always active.
     notStatus: 'DRAFT',
   };
   return params;

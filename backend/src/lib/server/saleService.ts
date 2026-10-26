@@ -579,7 +579,7 @@ export async function getSaleById(id: string) {
           status: true,
           // When the sold vehicle came into stock as a trade-in itself,
           // expose the originating sale's realProfit so the UI can render
-          // the consolidated profit ("este negócio + venda original").
+          // the consolidated profit of this deal and the original sale.
           sourceTradeIn: {
             select: {
               id: true,

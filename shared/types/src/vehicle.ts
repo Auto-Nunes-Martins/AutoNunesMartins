@@ -13,7 +13,7 @@ export type PendingDocFlags = z.infer<typeof pendingDocFlagsSchema>;
 const CURRENT_YEAR = new Date().getFullYear();
 
 /**
- * Portuguese license plate ("matrícula") — six alphanumeric chars in one of
+ * Portuguese license plate: six alphanumeric characters in one of
  * three historical formats:
  *   • 00-00-AA   (1992 – 2005)
  *   • 00-AA-00   (2005 – 2020)

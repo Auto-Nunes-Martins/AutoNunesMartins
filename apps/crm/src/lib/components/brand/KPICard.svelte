@@ -72,10 +72,7 @@
           <BrandDown class="h-3 w-3" />
         {/if}
         <span class="tabular-nums">{positive ? '+' : ''}{deltaPct.toFixed(1)}%</span>
-        <!-- "vs. mês anterior" caption is desktop-only — at 2-col square
-             tiles on mobile it would wrap onto a second line and break the
-             tight delta-row rhythm. The arrow + percentage carries the
-             signal alone. -->
+        <!-- Show the previous-month comparison caption only on desktop; it would wrap on two-column square mobile tiles and disrupt the delta row. The arrow and percentage convey the comparison on their own. -->
         <span
           class="hidden md:inline font-mono text-[11px] font-normal text-[var(--color-text-faint)] ml-1.5"
         >

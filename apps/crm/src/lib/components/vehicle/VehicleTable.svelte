@@ -81,8 +81,7 @@
               </div>
               <StatusBadge status={v.status} />
             </div>
-            <!-- Prefer matrícula on mobile cards (the user-facing id); fall
-               back to VIN if the plate hasn't been registered yet. -->
+            <!-- Prefer the user-facing license plate on mobile cards; fall back to VIN if it has not been registered. -->
             <div
               class="font-mono text-[10px] tracking-[0.04em] text-[var(--color-text-faint)] truncate mt-0.5"
             >

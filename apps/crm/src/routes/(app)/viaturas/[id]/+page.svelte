@@ -66,7 +66,7 @@
       <div class="mb-2 flex flex-wrap items-center gap-2">
         <StatusBadge status={v.status} />
         {#if v.licensePlate}
-          <!-- Stylized PT-plate chip — blue prefix mirrors a real matrícula. -->
+          <!-- Stylized Portuguese license plate with the authentic blue prefix. -->
           <span
             class="inline-flex items-center font-mono text-[10px] uppercase tracking-[0.18em] border border-[var(--color-border-strong)] overflow-hidden"
             style="border-radius: 3px;"
@@ -135,12 +135,7 @@
     </div>
   </div>
 
-  <!--
-    DRAFT banner — viatura existe no inventário mas ainda não está pronta
-    para venda (preço por definir). Aparece SEMPRE em primeiro lugar para
-    o vendedor não esquecer este passo. O CTA leva ao fluxo dedicado de
-    publicação que pede preço + descrição.
-  -->
+  <!-- The DRAFT banner always appears first for an inventory vehicle that is not ready for sale because its price is missing. The CTA opens the publication flow, which requires a price and description. -->
   {#if v.status === 'DRAFT'}
     <a
       href={crmPath(`/viaturas/nova?viatura=${v.id}`)}

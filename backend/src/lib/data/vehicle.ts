@@ -28,10 +28,10 @@ export function buildVehicleWhere(
   if (filter.status) {
     where.status = filter.status;
   } else if (filter.notStatus) {
-    // Exclui um único estado quando o positivo não está definido. Caso
-    // típico: a página /viaturas pede notStatus=DRAFT para a tabela
-    // principal não duplicar os carros que aparecem na secção destacada
-    // de "Rascunhos" no topo.
+    // Exclude one state when no positive status filter is set. For example,
+    // /viaturas requests notStatus=DRAFT so the main table does not
+    // duplicate vehicles already shown in the highlighted drafts section
+    // at the top of the page.
     where.status = { notIn: [filter.notStatus, 'RETURNED'] };
   }
   if (filter.yearMin !== undefined || filter.yearMax !== undefined) {
@@ -122,7 +122,7 @@ export async function getVehicleById(tx: TxClient, id: string) {
           customer: { select: { id: true, name: true, nif: true } },
         },
       },
-      // Surfaces "Adquirido como retoma da venda X" on the vehicle detail
+      // Show the originating trade-in sale on the vehicle detail
       // page. Includes the parent sale so the page can deep-link without a
       // second round trip.
       sourceTradeIn: {

@@ -65,7 +65,7 @@
     </p>
   </div>
 
-  <!-- Aparência -->
+  <!-- Appearance -->
   <Panel>
     <PanelHeader icon={Palette} title="Aparência" />
     <div class="p-5 flex flex-wrap items-center justify-between gap-4">
@@ -106,7 +106,7 @@
     </div>
   </Panel>
 
-  <!-- Painel · Definições -->
+  <!-- Dashboard settings -->
   <Panel>
     <PanelHeader icon={SettingsIcon} title="Painel" />
     {#if data.error}

@@ -90,10 +90,10 @@ export interface SmartAlerts {
   tasksDueOrOverdue: number;
   remindersToday: number;
   /**
-   * Viaturas em estado DRAFT — entraram no inventário (tipicamente via
-   * retoma) mas ainda não têm preço definido, pelo que não aparecem
-   * disponíveis. Surface no banner do dashboard + sino de notificações
-   * para o dono não esquecer que tem carros parados à espera de preço.
+   * DRAFT vehicles have entered inventory, typically through a trade-in,
+   * but do not have a price yet and are not shown as available.
+   * Show them in the dashboard banner and notification bell so the owner
+   * does not overlook vehicles awaiting a price.
    */
   draftVehicles: number;
 }

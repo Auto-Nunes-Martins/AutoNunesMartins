@@ -34,10 +34,10 @@ export const load = (event: RequestEvent) => {
     }),
   );
 
-  // Fetch DRAFTs em paralelo, no-pagination (cap a 100 — para um stand
-  // pequeno é mais do que suficiente). Mostrados em secção destacada
-  // entre os filtros e a tabela principal para o vendedor não esquecer
-  // que tem viaturas por publicar.
+  // Fetch drafts in parallel without pagination, capped at 100 rows,
+  // which is sufficient for a small dealership. Show them in a highlighted
+  // section between the filters and main table so staff do not overlook
+  // vehicles awaiting publication.
   const draftsPromise: Promise<VehicleListStream> =
     params.status || params.agedStock
       ? Promise.resolve({ items: [], total: 0, page: 1, pageSize: 100, totalPages: 0 })

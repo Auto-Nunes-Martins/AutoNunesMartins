@@ -1,31 +1,31 @@
 <script lang="ts">
   /*
-    Botão "Exportar" com dropdown CSV/PDF. Substitui os antigos `<Button>` que
-    apontavam diretamente para `?format=csv` — agora o utilizador escolhe
-    explicitamente o formato e nunca se exporta nada por default. Pequeno
-    chevron sinaliza que abre um menu.
+    Export button with a CSV/PDF dropdown, replacing the previous Button links
+    that pointed directly to ?format=csv. Users now choose a format
+    explicitly, with no default export. A small chevron indicates that
+    the button opens a menu.
 
-    Cada item do menu navega para `{baseHref}?format={csv|pdf}&{extraQuery}`,
-    preservando os filtros da página actual quando o caller passa `extraQuery`
-    (tipicamente `$page.url.search`).
+    Each menu item opens {baseHref}?format={csv|pdf}&{extraQuery},
+    preserving current page filters supplied through extraQuery
+    (typically $page.url.search).
   */
   import { onMount, onDestroy, tick } from 'svelte';
   import { ChevronDown, Download, FileSpreadsheet, FileText } from 'lucide-svelte';
 
   interface Props {
-    /** URL base do endpoint de export (sem query string). */
+    /** Export endpoint base URL without a query string. */
     baseHref: string;
     /**
-     * Query string adicional a preservar (filtros da página actual). Pode
-     * vir com ou sem `?`/`&` à cabeça — é normalizado internamente.
+     * Additional query string retaining the current page filters. It may
+     * start with ? or &; the prefix is normalized internally.
      */
     extraQuery?: string;
     /**
-     * Altura do botão. `md` (default) bate com o `<Button size="md">` que
-     * usávamos antes; `sm` para sítios mais densos.
+     * Button height: md matches the previous Button size="md", while
+     * sm is intended for denser layouts.
      */
     size?: 'sm' | 'md';
-    /** Classes adicionais aplicadas ao botão. */
+    /** Additional classes applied to the button. */
     class?: string;
   }
 
@@ -47,8 +47,8 @@
     isOpen = false;
   }
 
-  // Constrói o href final juntando `?format=…` ao baseHref e — quando o
-  // caller passou filtros — anexando-os como pares `&k=v` adicionais.
+  // Build the final href by adding ?format=... to baseHref and appending
+  // caller-provided filters as additional &k=v pairs.
   function buildHref(format: 'csv' | 'pdf'): string {
     const tail = extraQuery.replace(/^[?&]+/, '');
     return tail ? `${baseHref}?format=${format}&${tail}` : `${baseHref}?format=${format}`;
@@ -97,8 +97,8 @@
     }
   });
 
-  // Estilo do botão (mesma receita visual que `<Button variant="outline">`)
-  // para o menu encaixar onde quer que estivesse o botão antigo.
+  // Match the visual styling of Button variant="outline" so the menu
+  // fits wherever the previous button appeared.
   const sizeClass = $derived(
     size === 'sm' ? 'h-9 px-3 text-[12px]' : 'h-[38px] px-[18px] text-[13px]',
   );
@@ -125,11 +125,7 @@
   </button>
 
   {#if isOpen}
-    <!--
-      Painel ancorado ao botão. `min-w-full` garante que nunca fica mais
-      estreito que o botão; `right-0` alinha à direita (consistente com os
-      botões de export que costumam estar no canto direito da page-head).
-    -->
+    <!-- Anchor the menu to the button. min-w-full prevents it from becoming narrower than the button; right-0 aligns it with the export controls in the page header. -->
     <div
       bind:this={menuEl}
       role="menu"

@@ -149,10 +149,7 @@
         <BrandSearch class="h-4 w-4" />
       </button>
 
-      <!-- Theme toggle: desktop only. Theme lives inside the sidebar drawer
-           on mobile via the user-footer (future). O export ficava aqui mas
-           foi removido — cada secção tem o seu próprio ExportMenu, o do
-           topbar nunca chegou a estar ligado a nenhum endpoint. -->
+      <!-- Show the theme toggle on desktop; mobile uses the sidebar drawer. Export actions belong to each section rather than the topbar, whose former control was never connected to an endpoint. -->
       <div class="tb-theme">
         <ThemeToggle size={44} />
       </div>

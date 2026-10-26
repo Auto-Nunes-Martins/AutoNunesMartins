@@ -9,8 +9,8 @@ export const VehicleStatusEnum = z.enum([
   'SOLD',
   'DELIVERED',
   'DOCS_PENDING',
-  // "Rascunho" — em inventário mas ainda não comercializável (preço por
-  // definir). Tipicamente criado quando entra uma retoma STOCK.
+  // Draft: in inventory but not yet available for sale because its price
+  // is missing. Typically created when a STOCK trade-in arrives.
   'DRAFT',
   'RETURNED',
 ]);

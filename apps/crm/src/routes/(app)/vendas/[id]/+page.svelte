@@ -45,7 +45,7 @@
   const c = $derived(s.customer);
   const t = $derived(s.tradeIn);
   // True when this sale captured a manual extra commission (e.g. financing
-  // referral). Drives the optional Comissão column in the profit summary.
+  // referral). Drives the optional commission column in the profit summary.
   const hasCommission = $derived(Number(s.commission ?? '0') > 0);
   // Localized labels for the trade-in fuel chip — mirrors the vehicle
   // detail page's mapping so the wording stays consistent.
@@ -215,13 +215,7 @@
     </div>
   </Panel>
 
-  <!--
-    Lucro consolidado da retoma. Só aparece quando o carro VENDIDO entrou no
-    stock como retoma duma venda anterior. Mostra o ciclo completo: lucro
-    original (que ficou parcialmente em forma de carro) + lucro desta venda
-    = total efetivo do par de negócios. Responde diretamente à pergunta
-    "valeu a pena ter aceitado essa retoma?".
-  -->
+  <!-- Consolidated trade-in profit appears only when the sold car originally entered stock as a trade-in. It combines the original deal profit, partly retained as the car, with this sale profit to show the effective result of both deals. -->
   {#if v.sourceTradeIn && !s.cancelledAt && !v.sourceTradeIn.sale.cancelledAt}
     {@const origin = v.sourceTradeIn}
     {@const originalProfit = Number(origin.sale.realProfit)}
@@ -330,12 +324,7 @@
     </Panel>
   </div>
 
-  <!--
-    Retoma. Only rendered when this sale captured a trade-in. Shows the
-    abated value (already reflected in the Margem · IVA panel above) and
-    the disposition. STOCK includes a deep-link to the freshly-created
-    Vehicle row so the dealer can follow the second deal through to sale.
-  -->
+  <!-- Show a trade-in only when this sale includes one, including its allowance and disposition. STOCK links to the new Vehicle so staff can follow the second deal through to sale. -->
   {#if t}
     <Panel>
       <PanelHeader
@@ -500,14 +489,7 @@
       </form>
     </Panel>
   {/if}
-  <!--
-    Timeline / Histórico do negócio
-    Cronologia da venda + da viatura ligada. Carrega via stream para não
-    bloquear o resto da página: enquanto o ActivityLog vem, mostra um
-    skeleton; quando chega, agrupa por dia e desenha o mesmo layout
-    icon + accent line + texto + autor + tempo relativo que /atividade usa.
-    O `meta` do header indica a contagem total de eventos no scope.
-  -->
+  <!-- Deal timeline: stream events for the sale and linked vehicle without blocking the rest of the page. Show a skeleton while ActivityLog loads, then group entries by day using the activity page layout with icon, accent line, text, author and relative time. Header metadata shows the event count in scope. -->
   <Panel>
     {#await data.timeline}
       <PanelHeader icon={Activity} title="Histórico do negócio" />

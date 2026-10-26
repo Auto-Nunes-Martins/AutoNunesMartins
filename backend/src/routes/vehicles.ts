@@ -206,8 +206,8 @@ router.patch(
 
 const publishSchema = z.object({
   salePrice: moneySchema,
-  // Descrição obrigatória na publicação (decisão do utilizador). O input
-  // tem max 2000 chars como no /editar para manter o contrato consistente.
+  // Publication requires a description, as requested by the owner. The input
+  // uses the same 2000-character limit as /editar for a consistent contract.
   description: z.string().trim().min(1, 'Descrição obrigatória').max(2000),
 });
 

@@ -340,7 +340,7 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <!-- Menu (sem default) — utilizador escolhe CSV ou PDF. -->
+      <!-- Export menu with explicit CSV or PDF selection and no default. -->
       <div class="hidden md:inline-flex">
         <ExportMenu baseHref={crmPath('/tarefas/export')} extraQuery={$page.url.search} />
       </div>

@@ -11,20 +11,7 @@ import {
 import { dashboardApi, type DashboardPayload } from '$lib/server/dashboard';
 import { buildCsv, sanitizeForWinAnsi } from '$lib/server/exports';
 
-/*
-  Resumo executivo do dashboard.
-
-    CSV — agregados mensais dos últimos 12 meses (Mês, Vendas, Faturação,
-          Lucro, Comissões, Margem %) + linha "TOTAL 12M". Lucro/comissões/
-          margem só ficam preenchidos para os últimos 6 meses (limite das
-          sparklines).
-
-    PDF — uma página A4 landscape com layout visual idêntico em espírito ao
-          dashboard online: header brand, fila de KPI cards com sparklines,
-          bar chart das vendas dos últimos 12 meses, horizontal bars dos
-          best sellers, e strip de alertas em baixo. Tudo desenhado com
-          primitivas do pdf-lib — nada de tabelas em texto puro.
-*/
+/* Executive dashboard summary. CSV contains monthly aggregates for the last twelve months, plus a TOTAL 12M row; profit, commission and margin cover only the latest six months, matching the sparkline limit. The A4 landscape PDF mirrors the dashboard with branding, KPI cards and sparklines, twelve-month sales bars, top-seller bars and an alert strip, drawn with pdf-lib primitives. */
 
 const FMT_EUR = new Intl.NumberFormat('pt-PT', {
   style: 'currency',
@@ -37,8 +24,8 @@ function fmtEur(n: number | string): string {
   return FMT_EUR.format(typeof n === 'string' ? Number(n) : n);
 }
 
-// Compact EUR para os KPI cards onde o espaço é apertado: 12 850 → "12,8k €"
-// e 1 250 000 → "1,3M €". Numbers pequenos ficam com o formato normal.
+// Compact EUR formatting for narrow KPI cards: 12,850 becomes 12.8k EUR.
+// Values such as 1,250,000 become 1.3M EUR; small values keep normal formatting.
 function fmtEurCompact(s: string | number): string {
   const n = typeof s === 'string' ? Number(s) : s;
   if (!Number.isFinite(n)) return '—';
@@ -71,8 +58,8 @@ export const GET: RequestHandler = async (event) => {
     const sparkCommission = data.kpis.sparklines.comissoes;
     const sparkMargin = data.kpis.sparklines.margem;
 
-    // Sparklines têm os últimos 6 meses → offset para os mapear na lista
-    // de 12. Os primeiros 6 meses ficam em branco (não temos profit/etc.).
+    // Sparklines contain the last six months; offset them into the
+    // twelve-month series, leaving the first six months blank.
     const profitAt = (i: number): number | null => {
       const off = i - (months.length - sparkProfit.length);
       return off >= 0 ? (sparkProfit[off] ?? null) : null;
@@ -134,8 +121,8 @@ export const GET: RequestHandler = async (event) => {
 // PDF generation — visual one-page snapshot
 // ════════════════════════════════════════════════════════════════════════
 
-// Paleta mapeada a partir das CSS variables do dashboard. Mantemos contraste
-// suficiente para impressão a P&B sem perder a hierarquia visual a cores.
+// Palette mapped from dashboard CSS variables, retaining sufficient
+// contrast for monochrome printing and the hierarchy of the color view.
 const C = {
   brand: rgb(0.89, 0.024, 0.075), // --color-red
   success: rgb(0.13, 0.77, 0.37), // --color-success
@@ -154,8 +141,8 @@ interface Fonts {
   bold: PDFFont;
 }
 
-// Helper que sanitiza sempre — proteção contra qualquer caractere fora do
-// WinAnsi que possa surgir nos dados do utilizador (marcas, modelos, etc.).
+// Always sanitize to protect against characters outside WinAnsi
+// appearing in user data, such as vehicle brands or models.
 function txt(page: PDFPage, s: string, opts: Parameters<PDFPage['drawText']>[1]): void {
   page.drawText(sanitizeForWinAnsi(s), opts);
 }
@@ -200,8 +187,8 @@ async function buildDashboardPdf(data: DashboardPayload): Promise<Uint8Array> {
   });
 
   // ─── KPI cards row ───────────────────────────────────────────────────
-  // 5 cards lado a lado, cada um com: label, valor grande, delta vs mês
-  // anterior (verde/vermelho), e sparkline dos últimos 6 meses.
+  // Five cards in a row, each with a label, large value, change from the
+  // previous month and a sparkline of the last six months.
   const kpiTop = H - 60 - 16; // 16pt de gap após o header
   const kpiH = 100;
   const kpiGap = 8;
@@ -262,11 +249,11 @@ async function buildDashboardPdf(data: DashboardPayload): Promise<Uint8Array> {
   }
 
   // ─── Charts row ─────────────────────────────────────────────────────
-  // Left (60%): vendas por mês — bar chart 12 meses
+  // Left 60%: monthly sales in a twelve-month bar chart.
   // Right (40%): mais vendidos — horizontal bars
   const chartsTop = kpiTop - kpiH - 16;
-  // chartsH calculado para preencher o espaço entre KPI cards e a strip de
-  // alertas (60pt no rodapé + 24pt de margem inferior + 16pt de gap).
+  // chartsH fills the space between the KPI cards and alert strip,
+  // allowing a 60pt footer, 24pt bottom margin and 16pt gap.
   const chartsH = chartsTop - (margin + 60 + 16);
   const innerGap = 12;
   const leftW = (W - margin * 2 - innerGap) * 0.6;
@@ -294,7 +281,7 @@ async function buildDashboardPdf(data: DashboardPayload): Promise<Uint8Array> {
     fonts,
   );
 
-  // ─── Alerts strip (rodapé) ──────────────────────────────────────────
+  // Alerts strip in the footer.
   drawAlertsStrip(
     page,
     margin,
@@ -325,7 +312,7 @@ function drawKpiCard(
   },
   fonts: Fonts,
 ): void {
-  // Cartão com borda subtil
+  // Card with a subtle border.
   page.drawRectangle({
     x,
     y,
@@ -374,7 +361,7 @@ function drawKpiCard(
     color: C.textFaint,
   });
 
-  // Sparkline (linha) na parte de baixo do cartão
+  // Sparkline at the bottom of the card.
   drawSparkline(
     page,
     x + 8,
@@ -397,8 +384,8 @@ function drawSparkline(
   color: RGB,
 ): void {
   if (values.length === 0) return;
-  // Trata a linha de baseline subtil para o sparkline "respirar" mesmo
-  // quando todos os valores são zero.
+  // Keep a subtle baseline so the sparkline remains visually readable
+  // even when all values are zero.
   page.drawLine({
     start: { x, y },
     end: { x: x + w, y },
@@ -428,7 +415,7 @@ function drawSparkline(
       color,
     });
   }
-  // Marcadores nos pontos para destacar
+  // Highlight the data points with markers.
   for (let i = 0; i < values.length; i++) {
     page.drawCircle({
       x: x + i * step,
@@ -439,7 +426,7 @@ function drawSparkline(
   }
 }
 
-// ─── Monthly bar chart (vendas + faturação) ────────────────────────────
+// Monthly bar chart: sales and revenue.
 function drawMonthlyBarChart(
   page: PDFPage,
   x: number,
@@ -451,7 +438,7 @@ function drawMonthlyBarChart(
   revenue: number[],
   fonts: Fonts,
 ): void {
-  // Cartão exterior
+  // Outer card.
   page.drawRectangle({
     x,
     y,
@@ -460,7 +447,7 @@ function drawMonthlyBarChart(
     borderColor: C.border,
     borderWidth: 0.6,
   });
-  // Título
+  // Title.
   txt(page, 'VENDAS POR MÊS · ÚLTIMOS 12', {
     x: x + 10,
     y: y + h - 14,
@@ -468,7 +455,7 @@ function drawMonthlyBarChart(
     font: fonts.bold,
     color: C.textMuted,
   });
-  // Legend (dois indicadores: vendas em barras + faturação como linha)
+  // Legend: sales as bars and revenue as a line.
   txt(page, 'Vendas (un.)', {
     x: x + w - 180,
     y: y + h - 14,
@@ -497,7 +484,7 @@ function drawMonthlyBarChart(
     color: C.success,
   });
 
-  // Área do gráfico (após espaço para título e labels)
+  // Chart area after reserving space for the title and labels.
   const padTop = 24;
   const padBottom = 28; // labels mensais
   const padLeft = 32;
@@ -521,7 +508,7 @@ function drawMonthlyBarChart(
     color: C.textFaint,
   });
 
-  // Y-axis ticks (escala automática 4 ticks)
+  // Y-axis with four automatically scaled ticks.
   const maxSold = Math.max(...sold, 1);
   const niceMax = niceCeil(maxSold);
   const ticks = 4;
@@ -543,7 +530,7 @@ function drawMonthlyBarChart(
     });
   }
 
-  // Bars (vendas) + line (faturação)
+  // Sales bars and revenue line.
   const groupW = chartW / months.length;
   const barW = Math.min(groupW * 0.6, 24);
   const barGap = (groupW - barW) / 2;
@@ -560,7 +547,7 @@ function drawMonthlyBarChart(
       height: bh,
       color: C.brand,
     });
-    // Valor em cima da barra (quando há espaço)
+    // Value above the bar when space allows.
     if (v > 0 && bh > 8) {
       const lbl = String(v);
       const lblW = fonts.font.widthOfTextAtSize(lbl, 6);
@@ -584,7 +571,7 @@ function drawMonthlyBarChart(
     });
   }
 
-  // Faturação: linha sobreposta (escala separada, alinha ao topo do chart)
+  // Revenue overlay with its own scale, aligned to the chart top.
   const maxRevenue = Math.max(...revenue, 1);
   const niceMaxR = niceCeil(maxRevenue);
   for (let i = 0; i < months.length - 1; i++) {
@@ -609,8 +596,8 @@ function drawMonthlyBarChart(
   }
 }
 
-// niceCeil — arredonda um número para o "tick" superior agradável (10, 20,
-// 50, 100…) para o eixo Y do bar chart ficar limpo.
+// niceCeil rounds up to a readable tick value, such as 10, 20,
+// 50 or 100, keeping the bar chart Y-axis readable.
 function niceCeil(v: number): number {
   if (v <= 0) return 1;
   const mag = Math.pow(10, Math.floor(Math.log10(v)));
@@ -775,7 +762,7 @@ function drawAlertsStrip(
       font: fonts.bold,
       color: C.textMuted,
     });
-    // Número grande
+    // Large value.
     txt(page, String(item.count), {
       x: ix,
       y: y + 10,
@@ -783,7 +770,7 @@ function drawAlertsStrip(
       font: fonts.bold,
       color: valueColor,
     });
-    // Suffix à direita do número
+    // Suffix to the right of the value.
     const numW = fonts.bold.widthOfTextAtSize(String(item.count), 20);
     txt(page, item.suffix, {
       x: ix + numW + 6,

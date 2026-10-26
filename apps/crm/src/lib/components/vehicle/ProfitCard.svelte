@@ -82,11 +82,7 @@
     </div>
   </div>
 
-  <!--
-    Bottom row: IVA, optional Comissão, Lucro Real. The commission column
-    only renders when there's a value to show, so cash sales keep their
-    cleaner 2-column layout.
-  -->
+  <!-- Bottom row: VAT, optional commission and real profit. Show the commission column only when it has a value so cash sales retain the cleaner two-column layout. -->
   <div
     class="grid {hasCommission ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'} px-5 pb-5 gap-4 pt-1"
   >

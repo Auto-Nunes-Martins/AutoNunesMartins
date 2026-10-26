@@ -8,8 +8,8 @@ export default defineConfig({
   // Bundle the CRM SDK from its own dependency tree rather than resolving hoisted backend SDKs at runtime.
   ssr: { noExternal: ['@clerk/backend', '@clerk/shared'] },
   server: {
-    // PORT é definido por ferramentas que precisam de atribuir uma porta
-    // livre (ex.: preview do Claude Code); sem ela mantém-se a 5173.
+    // Tools may set PORT when they need to allocate a free development
+    // port; otherwise use the default configured below.
     port: Number(process.env.PORT) || 5174,
     strictPort: true,
   },

@@ -57,8 +57,8 @@
   );
   const today = new Date();
 
-  // Conta dias desde a aquisição (para o utilizador ver há quanto tempo
-  // o carro está em rascunho — quanto mais tempo, mais urgente publicar).
+  // Count days since acquisition so users can see how long a vehicle
+  // has remained a draft; longer delays make publication more urgent.
   function daysSince(iso: string): number {
     const ms = Date.now() - new Date(iso).getTime();
     return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
@@ -104,13 +104,7 @@
     </div>
   </Panel>
 
-  <!--
-    Rascunhos. Usa o `Panel` standard (fundo neutro consistente com o
-    resto da app); o laranja é só ACENTO: stripe vertical à esquerda
-    (4px), ícone do header e botão CTA. Idade > 5 dias fica laranja
-    como sinal de urgência subtil. Só renderiza quando há rascunhos —
-    sem rascunhos, página fica limpa.
-  -->
+  <!-- Drafts use the standard neutral Panel surface. Orange is only an accent on the 4px left stripe, header icon and CTA. Drafts older than five days receive a subtle urgency highlight. Render this section only when drafts exist. -->
   {#await $draftsView.value ?? data.drafts then drafts}
     {#if drafts._error}
       <Panel>{@render loadFailure('Não foi possível carregar os rascunhos.', drafts._status)}</Panel

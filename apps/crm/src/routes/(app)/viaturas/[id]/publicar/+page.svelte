@@ -18,16 +18,16 @@
   let { data }: Props = $props();
   const v = $derived(data.vehicle);
 
-  // Pre-popula com a descrição atual da viatura (se já existir alguma
-  // — pode vir das notas da retoma) para o vendedor poder editar em vez
-  // de partir do zero.
+  // Prefill the current vehicle description when one exists, including
+  // descriptions inherited from trade-in notes, so staff can edit it
+  // instead of starting from scratch.
   let salePriceInput = $state('');
   let descriptionInput = $state(untrack(() => data.vehicle.description ?? ''));
   let submitting = $state(false);
 
-  // Margem projetada — mostra ao vendedor o que vai ganhar nesta venda
-  // se publicar pelo preço que está a digitar. Igual à fórmula que o
-  // /vender já usa, mas só com este preço (sem comissão nem buyerType).
+  // Projected margin shows staff the expected profit from this sale
+  // at the entered publication price. Use the same formula as the
+  // /vender flow, with only this price and no commission or buyerType.
   const projectedMargin = $derived.by(() => {
     const price = Number(salePriceInput);
     const purchase = Number(v.purchasePrice);
@@ -119,7 +119,7 @@
     }}
     class="grid grid-cols-1 lg:grid-cols-12 gap-6"
   >
-    <!-- LEFT: campos para publicar -->
+    <!-- LEFT: publication fields -->
     <div class="lg:col-span-7">
       <Panel>
         <PanelHeader icon={Tag} title="Definir preço e descrição" />
@@ -177,7 +177,7 @@
       </Panel>
     </div>
 
-    <!-- RIGHT: projeção de margem (igual lógica do /vender mas só info) -->
+    <!-- RIGHT: margin preview, using the /vender logic for information only -->
     <div class="lg:col-span-5">
       <Panel>
         <PanelHeader icon={Check} title="Projeção de margem" meta="REGIME MARGEM 23/123" />

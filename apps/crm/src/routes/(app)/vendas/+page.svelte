@@ -91,8 +91,7 @@
         {/await}
       </div>
     </div>
-    <!-- Export is desktop-only; preserves the current filter set via the
-         existing query string. Menu (sem default) — utilizador escolhe formato. -->
+    <!-- Desktop-only export preserves the current filters through the existing query string. The user explicitly chooses the format; there is no default. -->
     <div class="hidden md:flex items-center gap-2">
       <ExportMenu baseHref={crmPath('/vendas/export')} extraQuery={$page.url.search} />
     </div>
