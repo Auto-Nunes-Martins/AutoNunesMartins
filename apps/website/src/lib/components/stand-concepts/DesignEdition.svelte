@@ -386,7 +386,7 @@
   const selected = $derived.by(() => {
     const matches = homeCars.filter(
       (car) =>
-        (!homeBrand || car.brand === homeBrand) && (!homeYear || car.year === Number(homeYear)),
+        (!homeBrand || car.brand === homeBrand) && (!homeYear || car.year >= Number(homeYear)),
     );
     matches.sort((a, b) =>
       homeOrder === 'preco_asc'
@@ -1202,7 +1202,7 @@
               />
               <OrbitSelect
                 id="home-year"
-                label="Ano"
+                label="Ano mínimo"
                 value={homeYear}
                 options={[
                   { value: '', label: 'Todos os anos' },

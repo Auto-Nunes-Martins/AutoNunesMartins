@@ -316,18 +316,13 @@
             >
             <OrbitSelect
               id="catalog-year"
-              label="Ano"
+              label="Ano mínimo"
               name="ano_min"
               value={formParams.get('ano_min') ?? ''}
               disabled={busy}
               options={[{ value: '', label: 'Todos os anos' }, ...years]}
               onChange={(value) => update('ano_min', value)}
             />
-            {#if formParams.get('ano_min')}<input
-                type="hidden"
-                name="ano_max"
-                value={formParams.get('ano_min')}
-              />{/if}
             {#if inputErrors.length}<div id="catalog-input-errors" class="range-note" role="alert">
                 {#each inputErrors as error}<p>{error}</p>{/each}
                 <p>Corrija os campos para atualizar os resultados.</p>
