@@ -12,7 +12,24 @@
   import { homeV5Images } from '$lib/homeV5Images';
   import { coverImageSizes } from '$lib/coverImageSizes';
 
-  let { onContact }: { onContact: (message?: string) => void } = $props();
+  let {
+    onContact,
+    id = 'propostas-servicos',
+    titleId = 'home-services-title',
+    background,
+  }: {
+    onContact: (message?: string) => void;
+    id?: string;
+    titleId?: string;
+    background?: {
+      src: string;
+      srcset?: string;
+      avif?: string;
+      width: number;
+      height: number;
+      mobileFocus?: string;
+    };
+  } = $props();
 
   const services = [
     {
@@ -46,14 +63,15 @@
       copy: 'A conversa continua também depois da compra.',
     },
   ];
-  const interiorPhoto = homeV5Images['service-wide'];
+  const interiorPhoto = $derived(background ?? homeV5Images['service-wide']);
 </script>
 
-<div class="home-services" id="propostas-servicos">
+<div class="home-services" {id}>
   <section
     class="service-banner essential"
-    aria-labelledby="home-services-title"
+    aria-labelledby={titleId}
     data-service-proposal="1"
+    style:--service-mobile-focus={background?.mobileFocus}
   >
     <picture
       use:coverImageSizes={{
@@ -92,13 +110,13 @@
           class="brand-contact"
           onclick={() => onContact('Gostava de saber mais sobre os vossos serviços.')}
         >
-          Vamos conversar <ArrowUpRight size={17} aria-hidden="true" />
+          Vamos conversar <ArrowUpRight size={18} aria-hidden="true" />
         </button>
       </div>
       <div class="services-column">
         <div class="services-heading">
           <span class="heading-rule" aria-hidden="true"></span>
-          <h2 id="home-services-title">Os nossos serviços</h2>
+          <h2 id={titleId}>Os nossos serviços</h2>
         </div>
         <div class="service-list">
           {#each services as service}
@@ -224,13 +242,40 @@
     margin-top: 12px;
   }
   .brand-contact {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 28px;
+    gap: 24px;
     margin-top: 28px;
-    padding: 0 0 10px;
+    min-height: 44px;
+    padding: 12px 0;
     border-bottom: 1px solid #ffffff50;
-    font-size: 11px;
+    font-size: 12px;
+  }
+  .brand-contact::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 1px;
+    background: var(--red, #e30613);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 420ms ease;
+    pointer-events: none;
+  }
+  .brand-contact :global(svg) {
+    transition: transform 220ms;
+  }
+  .brand-contact:is(:hover, :focus-visible)::after {
+    clip-path: inset(0 0 0 0);
+  }
+  .brand-contact:is(:hover, :focus-visible) :global(svg) {
+    transform: translate(3px, -3px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brand-contact::after,
+    .brand-contact :global(svg) {
+      transition: none;
+    }
   }
   .services-column {
     min-width: 0;
@@ -305,13 +350,7 @@
   .service-banner .service-row:focus-visible .service-icon {
     color: var(--red, #e30613);
   }
-  .service-banner .brand-contact:focus-visible {
-    border-color: var(--red, #e30613);
-  }
   @media (hover: hover) {
-    .brand-contact:hover {
-      border-color: var(--red, #e30613);
-    }
     .service-row:hover .service-title {
       color: #fff;
       text-decoration: underline;
@@ -323,8 +362,7 @@
     }
   }
   @media (prefers-reduced-motion: no-preference) {
-    .service-icon,
-    .brand-contact {
+    .service-icon {
       transition:
         color 180ms ease,
         border-color 180ms ease;
@@ -393,7 +431,7 @@
       width: 12px;
     }
     .banner-background {
-      object-position: 35% 50%;
+      object-position: var(--service-mobile-focus, 35% 50%);
     }
     .service-banner::before {
       background: linear-gradient(180deg, #07090c80, #07090ce0 43%, #07090cf0);
