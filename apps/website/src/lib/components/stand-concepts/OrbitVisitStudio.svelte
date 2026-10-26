@@ -639,6 +639,9 @@
     min-height: 30px;
     margin-top: 8px;
   }
+  .map-link > :global(svg) {
+    transition: color 180ms ease;
+  }
   .contact-details {
     display: grid;
     grid-template-columns: 1fr 1.1fr;
@@ -745,6 +748,9 @@
   .email-action {
     gap: 12px;
   }
+  .email-action > :global(svg) {
+    color: #fff;
+  }
   .original-tone .call-action {
     background: #fff;
     border-color: #fff;
@@ -764,7 +770,6 @@
   }
   .email-action:focus-visible > :global(svg) {
     transform: translate(3px, -3px);
-    color: #e30613;
   }
   @media (hover: hover) {
     .call-action:hover .action-arrow :global(svg) {
@@ -775,6 +780,8 @@
     }
     .email-action:hover > :global(svg) {
       transform: translate(3px, -3px);
+    }
+    .map-link:hover > :global(svg) {
       color: #e30613;
     }
   }
@@ -1356,8 +1363,12 @@
   @media (prefers-reduced-motion: reduce) {
     .email-action::after,
     .email-action > :global(svg),
+    .email-action:is(:hover, :focus-visible) > :global(svg),
+    .map-link > :global(svg),
     .call-action .action-arrow :global(svg),
-    .send-button :global(svg) {
+    .call-action:is(:hover, :focus-visible) .action-arrow :global(svg),
+    .send-button :global(svg),
+    .send-button:not(:disabled):is(:hover, :focus-visible) :global(svg) {
       transition: none;
       transform: none;
     }
