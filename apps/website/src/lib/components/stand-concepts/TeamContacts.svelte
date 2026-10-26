@@ -204,7 +204,45 @@
     color: var(--muted);
   }
   .invitation a {
-    border-bottom: 1px solid var(--red);
+    position: relative;
+    color: var(--text);
+    border-bottom: 1px solid #ffffff50;
+  }
+  .invitation a::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 1px;
+    background: var(--red);
+    clip-path: inset(0 100% 0 0);
+    pointer-events: none;
+    transition: clip-path 420ms ease;
+  }
+  .invitation a :global(svg) {
+    transition: transform 220ms ease;
+  }
+  .invitation a:focus-visible::after {
+    clip-path: inset(0);
+  }
+  .invitation a:focus-visible :global(svg) {
+    transform: translate(3px, -3px);
+  }
+  @media (hover: hover) {
+    .invitation a:hover::after {
+      clip-path: inset(0);
+    }
+    .invitation a:hover :global(svg) {
+      transform: translate(3px, -3px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .invitation a::after,
+    .invitation a :global(svg),
+    .invitation a:hover :global(svg),
+    .invitation a:focus-visible :global(svg) {
+      transition: none;
+      transform: none;
+    }
   }
   @media (prefers-reduced-motion: no-preference) {
     a {
