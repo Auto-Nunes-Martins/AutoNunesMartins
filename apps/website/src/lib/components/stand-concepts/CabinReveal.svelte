@@ -591,21 +591,37 @@
     .cabin-caption {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 24px;
       padding-top: 20px;
     }
     .cabin-tabs {
       width: 100%;
-      flex-direction: column;
-      gap: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
     }
     .cabin-tabs button {
-      gap: 7px;
-      min-height: 48px;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      min-height: 64px;
+      padding: 8px 2px 12px;
       font-size: 12px;
+      text-align: center;
+    }
+    .cabin-tabs button > span {
+      flex-basis: auto;
+    }
+    .cabin-tabs button::before {
+      top: auto;
+      bottom: 0;
+      left: 50%;
+      translate: -50% 0;
+      width: 24px;
+      height: 2px;
     }
     .cabin-tabs button.active {
-      font-size: 17px;
+      font-size: 12px;
     }
     .cabin-description {
       min-height: 90px;

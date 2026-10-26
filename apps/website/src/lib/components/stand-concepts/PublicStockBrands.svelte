@@ -211,7 +211,7 @@
   }
   @media (max-width: 700px) {
     .stock-brands {
-      padding-top: 24px;
+      display: none;
     }
     .brands-heading {
       display: block;

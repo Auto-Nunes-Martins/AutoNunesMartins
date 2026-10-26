@@ -3,6 +3,7 @@
   import { reviewExcerpt } from './reviewExcerpt';
   import { reviewExpansion } from './reviewExpansion';
   import { reviewRevealOffset } from './reviewPosition';
+  import { brandMarquee } from '$lib/brandMarquee';
 
   let section: HTMLElement;
   let visible = false;
@@ -25,6 +26,13 @@
       bounds.right,
       inset,
     );
+    if (matchMedia('(max-width: 700px)').matches) {
+      viewport.scrollBy({
+        left: -shift,
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      });
+      return;
+    }
     const current = parseFloat(getComputedStyle(track).translate) || 0;
     track.style.translate = `${current + shift}px`;
   }
@@ -63,7 +71,7 @@
     document.addEventListener('visibilitychange', updateVisibility);
     const resize = () => {
       ++interaction;
-      if (innerWidth > 1100) {
+      if (innerWidth > 1100 || innerWidth <= 700) {
         track.style.translate = '0px';
         activeCopies = [];
         readingCard = null;
@@ -99,7 +107,11 @@
 
 <section class="reviews" bind:this={section} aria-labelledby="reviews-heading">
   <div class="heading"><h2 id="reviews-heading">Quem veio, conta.</h2></div>
-  <div class="review-viewport" bind:this={viewport}>
+  <div
+    class="review-viewport"
+    bind:this={viewport}
+    use:brandMarquee={{ paused: expandedReviews.length > 0 }}
+  >
     <div
       id="reviews-track"
       class="review-track"
@@ -108,7 +120,7 @@
       class:paused={!visible || !pageVisible || expandedReviews.length > 0}
     >
       {#each [false, true] as duplicate}
-        <div class="review-grid" class:duplicate>
+        <div class="review-grid" class:duplicate data-brand-primary={!duplicate ? true : undefined}>
           {#each examples as review, index}
             {@const preview = reviewExcerpt(review.text)}
             {@const expanded = expandedReviews.includes(index)}
@@ -496,6 +508,24 @@
     }
   }
   @media (max-width: 700px) {
+    .review-viewport {
+      overflow-x: auto;
+      scroll-padding-inline: var(--edge-fade);
+      scrollbar-width: none;
+    }
+    .review-viewport::-webkit-scrollbar {
+      display: none;
+    }
+    .review-track {
+      animation: none;
+      transition: none;
+    }
+    .duplicate {
+      display: none;
+    }
+    .review-viewport:global([data-brand-loop='true']) .duplicate {
+      display: flex;
+    }
     article {
       width: min(82vw, 340px);
     }
