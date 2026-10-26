@@ -162,7 +162,7 @@
     galleryRuntime?: VehicleDetailRuntime;
   } = $props();
   // Detail routes provide their runtime before SSR; the homepage never imports it.
-  const GalleryContactSlide = $derived(galleryRuntime?.GalleryContactSlide!);
+  const VehiclePhotoRail = $derived(galleryRuntime?.VehiclePhotoRail!);
   const RelatedCarousel = $derived(galleryRuntime?.RelatedCarousel!);
   const RichDescription = $derived(galleryRuntime?.RichDescription!);
   const VehicleShareButton = $derived(galleryRuntime?.VehicleShareButton!);
@@ -822,54 +822,70 @@
               aria-label="Galeria de fotografias"
               onkeydown={galleryKeydown}
             >
-              <button
-                class="vehicle-photo"
-                data-swipe-surface
-                class:contact-slide={isContactSlide}
-                aria-busy={mainPhotoLoading}
-                type="button"
-                onclick={openGallery}
-                disabled={!!publicVehicle && (!publicVehicle.photos.length || isContactSlide)}
-                ><img
-                  use:coverPhotoSizes
-                  use:publicGalleryPhoto={{
-                    session: gallerySession,
-                    src: publicVehicle?.photos.length
-                      ? sizedPhoto(publicPhoto(publicVehicle, galleryPhotoIndex), 1600)
-                      : photo(car.image, 2000),
-                    srcset: publicVehicle?.photos.length
-                      ? vehiclePhotoSet(publicPhoto(publicVehicle, galleryPhotoIndex))
-                      : undefined,
-                    fade: true,
-                    onLoading: (loading) => (mainPhotoLoading = loading),
-                  }}
-                  src={initialMainPhoto.src}
-                  srcset={initialMainPhoto.srcset}
-                  sizes="(max-width: 701px) 100vw, (max-width: 1050px) 60vw, (min-width: 1920px) 1050px, 66vw"
-                  fetchpriority="high"
-                  alt={isContactSlide
-                    ? ''
-                    : `${publicVehicle && !publicVehicle.photos.length ? '' : 'Ampliar fotografia: '}${car.brand} ${car.model} — ${publicVehicle ? (publicVehicle.photos.length ? 'fotografia ' + (zoom + 1) : 'imagem indisponível') : 'imagem ilustrativa'}`}
-                  style={publicVehicle
-                    ? '--zoom:1;object-position:center'
-                    : `--zoom:${zoom === 0 ? 1 : 1.32};object-position:${zoom === 1 ? '25%' : zoom === 2 ? '75%' : '50%'} center`}
-                /><span class="photo-counter" aria-hidden={isContactSlide}
-                  >{publicVehicle
-                    ? publicVehicle.photos.length
-                      ? zoom + 1 + ' / ' + publicVehicle.photos.length
-                      : 'SEM FOTOGRAFIA'
-                    : '01 / 01'} <span>{publicVehicle ? '' : 'FOTOGRAFIA ILUSTRATIVA'}</span></span
-                ></button
-              >
+              {#if publicVehicle?.photos.length}
+                <div
+                  class="vehicle-photo"
+                  class:contact-slide={isContactSlide}
+                  aria-busy={mainPhotoLoading}
+                >
+                  <VehiclePhotoRail
+                    vehicle={publicVehicle}
+                    session={gallerySession}
+                    index={zoom}
+                    onOpen={openGallery}
+                    onContact={() =>
+                      contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`)}
+                    onLoading={(loading) => (mainPhotoLoading = loading)}
+                  />
+                  <span class="photo-counter" aria-hidden={isContactSlide}
+                    >{zoom + 1} / {publicVehicle.photos.length}</span
+                  >
+                </div>
+              {:else}<button
+                  class="vehicle-photo"
+                  data-swipe-surface
+                  class:contact-slide={isContactSlide}
+                  aria-busy={mainPhotoLoading}
+                  type="button"
+                  onclick={openGallery}
+                  disabled={!!publicVehicle && (!publicVehicle.photos.length || isContactSlide)}
+                  ><img
+                    use:coverPhotoSizes
+                    use:publicGalleryPhoto={{
+                      session: gallerySession,
+                      src: publicVehicle?.photos.length
+                        ? sizedPhoto(publicPhoto(publicVehicle, galleryPhotoIndex), 1600)
+                        : photo(car.image, 2000),
+                      srcset: publicVehicle?.photos.length
+                        ? vehiclePhotoSet(publicPhoto(publicVehicle, galleryPhotoIndex))
+                        : undefined,
+                      fade: true,
+                      onLoading: (loading) => (mainPhotoLoading = loading),
+                    }}
+                    src={initialMainPhoto.src}
+                    srcset={initialMainPhoto.srcset}
+                    sizes="(max-width: 701px) 100vw, (max-width: 1050px) 60vw, (min-width: 1920px) 1050px, 66vw"
+                    fetchpriority="high"
+                    alt={isContactSlide
+                      ? ''
+                      : `${publicVehicle && !publicVehicle.photos.length ? '' : 'Ampliar fotografia: '}${car.brand} ${car.model} — ${publicVehicle ? (publicVehicle.photos.length ? 'fotografia ' + (zoom + 1) : 'imagem indisponível') : 'imagem ilustrativa'}`}
+                    style={publicVehicle
+                      ? '--zoom:1;object-position:center'
+                      : `--zoom:${zoom === 0 ? 1 : 1.32};object-position:${zoom === 1 ? '25%' : zoom === 2 ? '75%' : '50%'} center`}
+                  /><span class="photo-counter" aria-hidden={isContactSlide}
+                    >{publicVehicle
+                      ? publicVehicle.photos.length
+                        ? zoom + 1 + ' / ' + publicVehicle.photos.length
+                        : 'SEM FOTOGRAFIA'
+                      : '01 / 01'}
+                    <span>{publicVehicle ? '' : 'FOTOGRAFIA ILUSTRATIVA'}</span></span
+                  ></button
+                >{/if}
               {#if mainPhotoLoading}<span
                   class="main-photo-loading"
                   role="status"
                   aria-label="A carregar fotografia"><span aria-hidden="true"></span></span
                 >{/if}
-              {#if isContactSlide}<GalleryContactSlide
-                  onContact={() =>
-                    contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`)}
-                />{/if}
               {#if publicVehicle && !isContactSlide}
                 <div class="detail-photo-favorite">
                   <FavoriteButton
@@ -1452,23 +1468,17 @@
           next: () => stepGallery(1),
         }}
       >
-        {#if isContactSlide && publicVehicle}
-          <div class="viewer-contact">
-            <img
-              use:publicGalleryPhoto={{
-                src: publicPhoto(publicVehicle, 0),
-                session: gallerySession,
-              }}
-              draggable={false}
-              alt=""
-            />
-            <GalleryContactSlide
-              onContact={() => {
-                galleryDialog.close();
-                contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`);
-              }}
-            />
-          </div>
+        {#if publicVehicle?.photos.length}
+          <VehiclePhotoRail
+            vehicle={publicVehicle}
+            session={gallerySession}
+            index={zoom}
+            fullscreen
+            onContact={() => {
+              galleryDialog.close();
+              contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`);
+            }}
+          />
         {:else}<img
             use:publicGalleryPhoto={{
               session: gallerySession,

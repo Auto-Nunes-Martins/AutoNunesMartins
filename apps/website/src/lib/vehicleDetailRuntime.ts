@@ -10,6 +10,7 @@ import { descriptionText } from '@anm/types/richDescription';
 import OrbitBackLink from './components/stand-concepts/OrbitBackLink.svelte';
 import PublicVehicleStory from './components/stand-concepts/PublicVehicleStory.svelte';
 import VehicleShareButton from './components/VehicleShareButton.svelte';
+import VehiclePhotoRail from './components/VehiclePhotoRail.svelte';
 import RichDescription from './components/VehicleDescription.svelte';
 import RelatedCarousel from './components/stand-concepts/RelatedCarousel.svelte';
 import GalleryContactSlide from './components/GalleryContactSlide.svelte';
@@ -31,6 +32,7 @@ export const vehicleDetailRuntime = {
   RelatedCarousel,
   RichDescription,
   VehicleShareButton,
+  VehiclePhotoRail,
   PublicVehicleStory,
   OrbitBackLink,
   publicVehicleCanonical,
