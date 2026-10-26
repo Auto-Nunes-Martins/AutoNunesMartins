@@ -1,12 +1,12 @@
 import { scrollFrame, setScrollStyle } from './scrollFrame';
 
-export function perspectiveMotion(section: HTMLElement, grouped: boolean) {
+export function perspectiveMotion(section: HTMLElement) {
   const heading = section.querySelector('h2')!;
   const underline = section.querySelector('em')!;
   const lineWindow = section.querySelector<HTMLElement>('.line-window')!;
   const fragments = [...section.querySelectorAll<HTMLElement>('.read-a, .read-b, em')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let nearby = !grouped;
+  let nearby = false;
   const smooth = (value: number) => {
     const p = Math.min(1, Math.max(0, value));
     return p * p * (3 - 2 * p);
@@ -50,14 +50,17 @@ export function perspectiveMotion(section: HTMLElement, grouped: boolean) {
   const schedule = () => {
     if (nearby) draw.schedule();
   };
-  // The homepage phrase need not force style/layout on every distant scroll.
+  // Editorial text need not force style/layout on every distant scroll.
   // Activate before it can be seen so the existing light is already in place.
-  const proximity = grouped ? new IntersectionObserver(([entry]) => {
-    nearby = !!entry?.isIntersecting;
-    if (nearby) schedule();
-    else draw.cancel();
-  }, { rootMargin: '400px 0px' }) : undefined;
-  proximity?.observe(section);
+  const proximity = new IntersectionObserver(
+    ([entry]) => {
+      nearby = !!entry?.isIntersecting;
+      if (nearby) schedule();
+      else draw.cancel();
+    },
+    { rootMargin: '400px 0px' },
+  );
+  proximity.observe(section);
   const resize = new ResizeObserver(schedule);
   resize.observe(heading);
   window.addEventListener('scroll', schedule, { passive: true });
@@ -67,7 +70,7 @@ export function perspectiveMotion(section: HTMLElement, grouped: boolean) {
   return () => {
     draw.cancel();
     resize.disconnect();
-    proximity?.disconnect();
+    proximity.disconnect();
     window.removeEventListener('scroll', schedule);
     window.removeEventListener('resize', schedule);
     reduced.removeEventListener('change', schedule);

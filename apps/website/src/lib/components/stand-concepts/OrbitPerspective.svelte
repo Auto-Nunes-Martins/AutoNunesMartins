@@ -18,7 +18,7 @@
     grouped?: boolean;
   } = $props();
   let section: HTMLElement;
-  onMount(() => perspectiveMotion(section, grouped));
+  onMount(() => perspectiveMotion(section));
 </script>
 
 <section
