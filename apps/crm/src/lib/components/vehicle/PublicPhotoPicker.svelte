@@ -129,8 +129,12 @@
   }
   function photoCardGesture(node: HTMLElement, path: string) {
     let start: { x: number; y: number } | undefined;
+    let touchPointer = false;
+    let touchClickHandled = false;
     const down = (event: PointerEvent) => {
       suppressSelectionClick = false;
+      touchPointer = event.pointerType === 'touch' || event.pointerType === 'pen';
+      touchClickHandled = false;
       start = { x: event.clientX, y: event.clientY };
     };
     const move = (event: PointerEvent) => {
@@ -139,7 +143,14 @@
     };
     const click = (event: MouseEvent) => {
       if ((event.target as Element).closest('button, input, a')) return;
-      if (!suppressSelectionClick && !dragging && !pending) selectPhoto(path);
+      const keyboard = event instanceof MouseEvent && event.detail === 0;
+      // The drag library synthesizes a click on touchend; some browsers also
+      // send a native click. Accept either, once per physical touch sequence.
+      if (touchPointer && touchClickHandled && !keyboard) return;
+      if (!suppressSelectionClick && !dragging && !pending) {
+        if (touchPointer && !keyboard) touchClickHandled = true;
+        selectPhoto(path);
+      }
     };
     node.addEventListener('pointerdown', down);
     node.addEventListener('pointermove', move);
