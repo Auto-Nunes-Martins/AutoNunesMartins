@@ -2,7 +2,6 @@ import { facade1, facade2 } from '$lib/localPhotos';
 
 export type TeamMember = {
   name: string;
-  role: string;
   text: string;
   phone: { display: string; international: string } | null;
   email: string | null;
@@ -12,7 +11,7 @@ export type TeamMember = {
 /** Editorial prototype. Verify the history, people and claims before publication. */
 export const aboutContent = {
   introduction:
-    'Somos um stand independente, em Lisboa. Ajudamos a escolher o próximo carro com informação clara, tempo para decidir e uma equipa por perto.',
+    'Somos um stand independente, em Castelo Branco. Ajudamos a escolher o próximo carro com informação clara, tempo para decidir e uma equipa por perto.',
   heroImage: {
     id: facade1.src,
     srcset: facade1.srcset,
@@ -31,7 +30,7 @@ export const aboutContent = {
     {
       year: '2011',
       title: 'O primeiro espaço.',
-      text: 'Um projeto familiar abre portas em Lisboa.',
+      text: 'Um projeto familiar abre portas em Castelo Branco.',
     },
     {
       year: '2017',
@@ -66,20 +65,22 @@ export const aboutContent = {
   },
   team: [
     {
-      name: 'Rui Nunes',
-      role: 'Seleção & gestão',
-      text: 'Conhece os automóveis e ajuda a perceber o que distingue cada escolha.',
-      phone: null,
-      email: 'rui.nunes@example.com',
-      exampleContact: true,
+      name: 'João Nunes',
+      text: '',
+      phone: { display: '964 243 323', international: '+351964243323' },
+      email: 'geral@autonunesmartins.pt',
     },
     {
-      name: 'Inês Martins',
-      role: 'Atendimento',
-      text: 'Recebe-o, ouve o que procura e dá espaço às suas perguntas.',
-      phone: null,
-      email: 'ines.martins@example.com',
-      exampleContact: true,
+      name: 'Diogo Nunes',
+      text: '',
+      phone: { display: '968 392 633', international: '+351968392633' },
+      email: 'diogomn99@gmail.com',
+    },
+    {
+      name: 'Alexandre Nunes',
+      text: '',
+      phone: { display: '966 955 140', international: '+351966955140' },
+      email: 'alex_nunes95@hotmail.com',
     },
   ] satisfies TeamMember[],
 };

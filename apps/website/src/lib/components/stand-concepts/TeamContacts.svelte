@@ -19,11 +19,14 @@
     {#each people as person (person.name)}
       <article class="person" aria-label={person.name}>
         <div class="identity">
-          <p class="role">{person.role}</p>
-          <h3><span class="first-name">{person.name.split(' ')[0]}</span>{' '}<span class="remaining-name">{person.name.split(' ').slice(1).join(' ')}</span></h3>
+          <h3>
+            <span class="first-name">{person.name.split(' ')[0]}</span>{' '}<span
+              class="remaining-name">{person.name.split(' ').slice(1).join(' ')}</span
+            >
+          </h3>
         </div>
         <div class="conversation">
-          <p class="description">{person.text}</p>
+          {#if person.text}<p class="description">{person.text}</p>{/if}
           {#if person.phone || person.email}
             <div class="contacts" role="group" aria-label={'Contactos de ' + person.name}>
               {#if person.phone}
@@ -62,8 +65,12 @@
 </section>
 
 <style>
-  .first-name { color: var(--red); }
-  .remaining-name { color: var(--text); }
+  .first-name {
+    color: var(--red);
+  }
+  .remaining-name {
+    color: var(--text);
+  }
   .team {
     width: var(--orbit-frame);
     max-width: var(--orbit-frame-max);
@@ -124,11 +131,6 @@
   .identity,
   .conversation {
     min-width: 0;
-  }
-  .role {
-    margin: 0 0 12px;
-    font-size: 12px;
-    color: var(--muted);
   }
   h3 {
     margin: 0;
@@ -223,9 +225,6 @@
       grid-template-columns: 1fr;
       gap: 16px;
       padding-block: 28px;
-    }
-    .role {
-      margin-bottom: 9px;
     }
     .description {
       font-size: 15px;
