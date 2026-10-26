@@ -1,25 +1,27 @@
 <script lang="ts">
   import { ArrowUpRight } from 'lucide-svelte';
-  import './frameCorners.css';
   import { photo } from './data';
   import { responsivePhoto } from './images';
   import OrbitVisitLabel from './OrbitVisitLabel.svelte';
   import ScenePhotograph from './ScenePhotograph.svelte';
   import type { SceneBackground } from './homeVisualFamilies';
-  let { onContact, background }: { onContact: (message: string) => void; background?: SceneBackground } = $props();
+  let {
+    onContact,
+    background,
+  }: { onContact: (message: string) => void; background?: SceneBackground } = $props();
 </script>
 
 <section id="proximo-passo" class="editorial-pause" aria-labelledby="editorial-pause-title">
   <div class="pause-landscape" aria-hidden="true">
     {#if background}<ScenePhotograph {background} />{:else}
-    <img
-      src={photo('photo-1576212767334-9e289e294c77', 2200)}
-      srcset={responsivePhoto('photo-1576212767334-9e289e294c77')}
-      sizes="(prefers-reduced-motion: reduce) 100vw, (max-aspect-ratio: 3/2) 150vh, 100vw"
-      alt=""
-      loading="lazy"
-      decoding="async"
-    />
+      <img
+        src={photo('photo-1576212767334-9e289e294c77', 2200)}
+        srcset={responsivePhoto('photo-1576212767334-9e289e294c77')}
+        sizes="(prefers-reduced-motion: reduce) 100vw, (max-aspect-ratio: 3/2) 150vh, 100vw"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
     {/if}
   </div>
   <div class="pause-inner">

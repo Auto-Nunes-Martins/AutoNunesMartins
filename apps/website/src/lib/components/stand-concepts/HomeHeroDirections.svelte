@@ -18,7 +18,14 @@
   import { featuredPhotoSizes } from './images';
   import { scrollFrame, setScrollStyle } from './scrollFrame';
   import { mobileHeroImages } from '$lib/mobileHeroImages';
-  import { narrowHeroMedia, compactHeroMedia, fullHeroMedia, narrowHeroSizes, compactHeroSizes, portraitHeroSizes } from './mobileHero';
+  import {
+    narrowHeroMedia,
+    compactHeroMedia,
+    fullHeroMedia,
+    narrowHeroSizes,
+    compactHeroSizes,
+    portraitHeroSizes,
+  } from './mobileHero';
 
   const version = 5;
   let { homeHighlights }: { homeHighlights?: PublicHighlights } = $props();
@@ -73,10 +80,15 @@
           [node, '--v5-photo-width', `${width}px`],
           [node, '--v5-photo-height', `${height}px`],
         );
-        for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion')) {
+        for (const plane of node.querySelectorAll<HTMLElement>(
+          '.hd-price-motion, .hd-label-motion',
+        )) {
           const position = offset(plane);
-          writes.push([plane, '--featured-pivot',
-            `${left + width / 2 - position.left}px ${top + height / 2 - position.top}px`]);
+          writes.push([
+            plane,
+            '--featured-pivot',
+            `${left + width / 2 - position.left}px ${top + height / 2 - position.top}px`,
+          ]);
         }
       }
       const pinned = String(!reduced.matches && CSS.supports('clip-path', 'inset(0)'));
@@ -88,7 +100,8 @@
     const measure = () => task.schedule();
     const resize = new ResizeObserver(measure);
     resize.observe(node);
-    for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion')) resize.observe(plane);
+    for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion'))
+      resize.observe(plane);
     window.addEventListener('resize', measure);
     reduced.addEventListener('change', measure);
     task.runNow(performance.now());
@@ -128,22 +141,52 @@
 <svelte:head>
   <!-- Match each picture source exactly so preload discovery cannot download two variants. -->
   {#if car}
-    <link rel="preload" as="image" type="image/avif" media={narrowHeroMedia}
-      imagesrcset={mobileHeroImages[1200].avif} imagesizes={narrowHeroSizes} fetchpriority="high" />
-    <link rel="preload" as="image" type="image/avif" media={compactHeroMedia}
-      imagesrcset={mobileHeroImages[1440].avif} imagesizes={compactHeroSizes} fetchpriority="high" />
+    <link
+      rel="preload"
+      as="image"
+      type="image/avif"
+      media={narrowHeroMedia}
+      imagesrcset={mobileHeroImages[1200].avif}
+      imagesizes={narrowHeroSizes}
+      fetchpriority="high"
+    />
+    <link
+      rel="preload"
+      as="image"
+      type="image/avif"
+      media={compactHeroMedia}
+      imagesrcset={mobileHeroImages[1440].avif}
+      imagesizes={compactHeroSizes}
+      fetchpriority="high"
+    />
   {/if}
-  <link rel="preload" as="image" type="image/avif" media={car ? fullHeroMedia : '(max-width: 700px)'}
+  <link
+    rel="preload"
+    as="image"
+    type="image/avif"
+    media={car ? fullHeroMedia : '(max-width: 700px)'}
     imagesrcset={background.avifPortrait}
-    imagesizes={portraitHeroSizes} fetchpriority="high" />
-  <link rel="preload" as="image" type="image/avif" media="(min-width: 701px)"
+    imagesizes={portraitHeroSizes}
+    fetchpriority="high"
+  />
+  <link
+    rel="preload"
+    as="image"
+    type="image/avif"
+    media="(min-width: 701px)"
     imagesrcset={background.avifDesktop}
     imagesizes="(max-width: 1050px) max(105.5vw, 158.25vh), max(105.5vw, 131.875vh)"
-    fetchpriority="high" />
+    fetchpriority="high"
+  />
   {#if firstImage}
-    <link rel="preload" as="image" href={sizedPhoto(firstImage, 1600)}
-      imagesrcset={vehiclePhotoSet(firstImage)} imagesizes={featuredPhotoSizes}
-      fetchpriority="high" />
+    <link
+      rel="preload"
+      as="image"
+      href={sizedPhoto(firstImage, 1600)}
+      imagesrcset={vehiclePhotoSet(firstImage)}
+      imagesizes={featuredPhotoSizes}
+      fetchpriority="high"
+    />
   {/if}
 </svelte:head>
 
@@ -165,17 +208,18 @@
   {#if car}
     {#snippet featuredContent()}
       <div class="hd-feature-top">
-        <div class="hd-label-motion"><div class="hd-idle-plane"><span class="hd-eyebrow"
-          >Em destaque</span
-        ></div></div><span class="hd-edition" aria-hidden="true"
-          >{String(displayedIndex + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span
+        <div class="hd-label-motion">
+          <div class="hd-idle-plane"><span class="hd-eyebrow">Em destaque</span></div>
+        </div>
+        <span class="hd-edition" aria-hidden="true"
+          >{String(displayedIndex + 1).padStart(2, '0')} / {String(items.length).padStart(
+            2,
+            '0',
+          )}</span
         >
       </div>
       {#snippet photoDetails()}
         {#if failed}<span class="hd-photo-note">Fotografia temporariamente indisponível</span>{/if}
-        <span class="hd-photo-arrow" aria-hidden="true"
-          ><ArrowUpRight size={22} strokeWidth={1.5} /></span
-        >
       {/snippet}
       {#snippet photograph()}
         <a
@@ -189,18 +233,78 @@
             source={image}
             alt={requested ? `${requested.vehicle.brand} ${requested.vehicle.model}` : ''}
             onfailure={(value) => (failed = value)}
-            ondisplay={(source) => { if (source === image) displayedIndex = index; }}
+            ondisplay={(source) => {
+              if (source === image) displayedIndex = index;
+            }}
           />
         </a>
       {/snippet}
       <div class="hd-photo-stage">
         <div class="hd-photo-motion"><div class="hd-idle-plane">{@render photograph()}</div></div>
         <div class="hd-photo-ui">{@render photoDetails()}</div>
+        {#if items.length > 1}
+          <button
+            class="hd-photo-prev"
+            type="button"
+            aria-label="Ver viatura em destaque anterior"
+            aria-controls="hd-vehicle-caption"
+            disabled={index !== displayedIndex}
+            onclick={() => select(displayedIndex - 1)}
+            onkeydown={keyboard}
+          >
+            <svg
+              class="featured-chevron"
+              viewBox="0 0 24 32"
+              width="36"
+              height="48"
+              fill="none"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                d="M16 5 8 16 16 27"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
+          </button>
+          <button
+            class="hd-photo-next"
+            type="button"
+            aria-label="Ver próxima viatura em destaque"
+            aria-controls="hd-vehicle-caption"
+            disabled={index !== displayedIndex}
+            onclick={() => select(displayedIndex + 1)}
+            onkeydown={keyboard}
+          >
+            <svg
+              class="featured-chevron"
+              viewBox="0 0 24 32"
+              width="36"
+              height="48"
+              fill="none"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                d="m8 5 8 11-8 11"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
+          </button>
+        {/if}
       </div>
       <div class="hd-caption" id="hd-vehicle-caption">
         <div class="hd-identity">
           <span class="hd-brand">{car.brand}</span>
-          <h2><a href={publicHref(car.slug)} data-photo-count={car.photos.length}>{car.model}</a></h2>
+          <h2>
+            <a href={publicHref(car.slug)} data-photo-count={car.photos.length}>{car.model}</a>
+          </h2>
           <p>
             {car.year} <span>·</span>
             {new Intl.NumberFormat('pt-PT').format(car.mileage)} km <span>·</span>
@@ -208,9 +312,13 @@
           </p>
         </div>
         <div class="hd-price">
-          <div class="hd-price-motion"><div class="hd-idle-plane">
-            <strong><FeaturedPriceWave value={publicPrice(car.price)} vehicle={car.slug} /></strong>
-          </div></div>
+          <div class="hd-price-motion">
+            <div class="hd-idle-plane">
+              <strong
+                ><FeaturedPriceWave value={publicPrice(car.price)} vehicle={car.slug} /></strong
+              >
+            </div>
+          </div>
           {#if car.availability === 'RESERVED'}<span>Reservada</span>{/if}<a
             href={publicHref(car.slug)}
             data-photo-count={car.photos.length}
@@ -224,14 +332,20 @@
             type="button"
             aria-label="Destaque anterior"
             aria-controls="hd-vehicle-caption"
+            disabled={index !== displayedIndex}
             onclick={() => select(index - 1)}
             onkeydown={keyboard}><ArrowLeft size={17} aria-hidden="true" /></button
           >
           <div class="hd-progress">
             {#each items as item, position}
-              <button type="button" aria-label={`Ver destaque ${position + 1}: ${item.vehicle.brand} ${item.vehicle.model}`}
-                aria-pressed={position === displayedIndex} aria-controls="hd-vehicle-caption"
-                onclick={() => select(position)} onkeydown={keyboard}>
+              <button
+                type="button"
+                aria-label={`Ver destaque ${position + 1}: ${item.vehicle.brand} ${item.vehicle.model}`}
+                aria-pressed={position === displayedIndex}
+                aria-controls="hd-vehicle-caption"
+                onclick={() => select(position)}
+                onkeydown={keyboard}
+              >
                 <span class:hd-current={position === displayedIndex} aria-hidden="true"></span>
               </button>
             {/each}
@@ -240,6 +354,7 @@
             type="button"
             aria-label="Destaque seguinte"
             aria-controls="hd-vehicle-caption"
+            disabled={index !== displayedIndex}
             onclick={() => select(index + 1)}
             onkeydown={keyboard}><ArrowRight size={17} aria-hidden="true" /></button
           >
@@ -262,7 +377,8 @@
       use:featuredAutoplay={{
         count: items.length,
         revision: selection,
-        next: () => select(index + 1, true),
+        ready: index === displayedIndex,
+        next: () => select(displayedIndex + 1, true),
       }}
       role="region"
       aria-label="Viaturas em destaque"
@@ -298,10 +414,30 @@
          The portrait also covers the stacked content on short phone screens. -->
     <picture>
       {#if car}
-        <source type="image/avif" media={narrowHeroMedia} srcset={mobileHeroImages[1200].avif} sizes={narrowHeroSizes} />
-        <source type="image/webp" media={narrowHeroMedia} srcset={mobileHeroImages[1200].webp} sizes={narrowHeroSizes} />
-        <source type="image/avif" media={compactHeroMedia} srcset={mobileHeroImages[1440].avif} sizes={compactHeroSizes} />
-        <source type="image/webp" media={compactHeroMedia} srcset={mobileHeroImages[1440].webp} sizes={compactHeroSizes} />
+        <source
+          type="image/avif"
+          media={narrowHeroMedia}
+          srcset={mobileHeroImages[1200].avif}
+          sizes={narrowHeroSizes}
+        />
+        <source
+          type="image/webp"
+          media={narrowHeroMedia}
+          srcset={mobileHeroImages[1200].webp}
+          sizes={narrowHeroSizes}
+        />
+        <source
+          type="image/avif"
+          media={compactHeroMedia}
+          srcset={mobileHeroImages[1440].avif}
+          sizes={compactHeroSizes}
+        />
+        <source
+          type="image/webp"
+          media={compactHeroMedia}
+          srcset={mobileHeroImages[1440].webp}
+          sizes={compactHeroSizes}
+        />
       {/if}
       <source
         type="image/avif"
@@ -309,11 +445,7 @@
         srcset={background.avifPortrait}
         sizes={portraitHeroSizes}
       />
-      <source
-        media="(max-width: 700px)"
-        srcset={background.portrait}
-        sizes={portraitHeroSizes}
-      />
+      <source media="(max-width: 700px)" srcset={background.portrait} sizes={portraitHeroSizes} />
       <source
         type="image/avif"
         srcset={background.avifDesktop}

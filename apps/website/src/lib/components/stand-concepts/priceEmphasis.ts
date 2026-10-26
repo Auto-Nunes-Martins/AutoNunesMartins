@@ -5,7 +5,7 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   if (!feature || !slot) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const pointer = matchMedia('(hover: hover) and (pointer: fine)');
-  const hoverTargets = [...feature.querySelectorAll<HTMLElement>('.hd-photo-stage, .hd-price-motion')];
+  const hoverTargets = [...feature.querySelectorAll<HTMLElement>('.hd-photo, .hd-price-motion')];
   let pointerInside = pointer.matches && hoverTargets.some((target) => target.matches(':hover'));
   let visible = false;
   let entered = feature.dataset.carouselEntered === 'true';
@@ -17,15 +17,24 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   const originalSize = node.style.fontSize;
   const canAnimate = () => {
     const bounds = feature.getBoundingClientRect();
-    return entered && visible && !document.hidden && !reduced.matches &&
-      bounds.bottom > 0 && bounds.top < innerHeight;
+    return (
+      entered &&
+      visible &&
+      !document.hidden &&
+      !reduced.matches &&
+      bounds.bottom > 0 &&
+      bounds.top < innerHeight
+    );
   };
-  const interacting = () => (pointer.matches && pointerInside) || !!feature.querySelector('.hd-photo:focus-visible');
+  const interacting = () =>
+    (pointer.matches && pointerInside) || !!feature.querySelector('.hd-photo:focus-visible');
   const remember = (next: Animation) => {
     animation = next;
-    void next.finished.then(() => {
-      if (animation === next) animation = undefined;
-    }).catch(() => undefined);
+    void next.finished
+      .then(() => {
+        if (animation === next) animation = undefined;
+      })
+      .catch(() => undefined);
   };
   const setSize = (scale: number, duration: number) => {
     const current = getComputedStyle(node).fontSize;
@@ -34,10 +43,10 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
     node.style.fontSize = `${base * scale}px`;
     target = scale;
     if (duration) {
-      const next = node.animate(
-        [{ fontSize: current }, { fontSize: node.style.fontSize }],
-        { duration, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)' },
-      );
+      const next = node.animate([{ fontSize: current }, { fontSize: node.style.fontSize }], {
+        duration,
+        easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)',
+      });
       next.id = 'price-interaction';
       remember(next);
     }
@@ -46,11 +55,18 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
     if (!canAnimate()) return;
     animation?.cancel();
     const resting = base * target;
-    const next = node.animate([
-      { fontSize: `${resting}px`, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)' },
-      { fontSize: `${resting * 1.06}px`, offset: 0.32, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' },
-      { fontSize: `${resting}px` },
-    ], { duration: 650 });
+    const next = node.animate(
+      [
+        { fontSize: `${resting}px`, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)' },
+        {
+          fontSize: `${resting * 1.06}px`,
+          offset: 0.32,
+          easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+        },
+        { fontSize: `${resting}px` },
+      ],
+      { duration: 650 },
+    );
     next.id = 'price-vehicle-change';
     remember(next);
   };
@@ -66,14 +82,23 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
     pointerInside = pointer.matches && event.pointerType !== 'touch';
     sync();
   };
-  const leave = () => { pointerInside = false; sync(); };
-  const observer = new IntersectionObserver(([entry]) => {
-    visible = !!entry?.isIntersecting && entry.intersectionRatio >= 0.5;
+  const leave = () => {
+    pointerInside = false;
     sync();
-  }, { threshold: [0, 0.5] });
+  };
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      visible = !!entry?.isIntersecting && entry.intersectionRatio >= 0.5;
+      sync();
+    },
+    { threshold: [0, 0.5] },
+  );
   const resize = new ResizeObserver(() => {
     const size = parseFloat(getComputedStyle(slot).fontSize);
-    if (Math.abs(size - base) > 0.01) { base = size; setSize(target, 0); }
+    if (Math.abs(size - base) > 0.01) {
+      base = size;
+      setSize(target, 0);
+    }
   });
   const intro = new MutationObserver(() => {
     if (feature.dataset.carouselEntered === 'true') {
@@ -84,7 +109,8 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   });
   observer.observe(feature);
   resize.observe(slot);
-  if (!entered) intro.observe(feature, { attributes: true, attributeFilter: ['data-carousel-entered'] });
+  if (!entered)
+    intro.observe(feature, { attributes: true, attributeFilter: ['data-carousel-entered'] });
   for (const target of hoverTargets) {
     target.addEventListener('pointerenter', enter);
     target.addEventListener('pointerleave', leave);

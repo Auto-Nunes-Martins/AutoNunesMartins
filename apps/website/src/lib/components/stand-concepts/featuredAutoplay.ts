@@ -1,6 +1,6 @@
 import { hasKeyboardFocus } from './featuredKeyboardFocus';
 
-type Options = { count: number; revision: number; next: () => void };
+type Options = { count: number; revision: number; ready: boolean; next: () => void };
 
 /** One full viewing interval after entry, each selection and every return to the card. */
 export function featuredAutoplay(node: HTMLElement, initial: Options) {
@@ -20,7 +20,9 @@ export function featuredAutoplay(node: HTMLElement, initial: Options) {
     if (destroyed) return;
     cancel();
     const image = node.querySelector<HTMLImageElement>('.hd-photo img');
-    const loaded = !!image?.complete && image.naturalWidth > 0;
+    // An already visible image can be loaded while the next one is still decoding.
+    // Wait for the requested entry to be displayed before starting its interval.
+    const loaded = options.ready && !!image?.complete && image.naturalWidth > 0;
     const interacting = (pointer.matches && pointerInside) || hasKeyboardFocus(node);
     const paused = !visible || document.hidden || interacting;
     node.dataset.presentationReady = String(entered && loaded);
@@ -31,13 +33,18 @@ export function featuredAutoplay(node: HTMLElement, initial: Options) {
       timer = setTimeout(() => {
         timer = undefined;
         const bounds = node.getBoundingClientRect();
-        if (!document.hidden && bounds.bottom > 0 && bounds.top < innerHeight &&
-            !(pointer.matches && pointerInside) && !hasKeyboardFocus(node)) {
+        if (
+          !document.hidden &&
+          bounds.bottom > 0 &&
+          bounds.top < innerHeight &&
+          !(pointer.matches && pointerInside) &&
+          !hasKeyboardFocus(node)
+        ) {
           options.next();
         } else {
           sync();
         }
-      }, 8000);
+      }, 4000);
     }
   };
   const afterInput = () => queueMicrotask(sync);
@@ -62,11 +69,16 @@ export function featuredAutoplay(node: HTMLElement, initial: Options) {
   );
   observer.observe(node);
   const entryAnimations = (element: Element | null) =>
-    element?.getAnimations().filter((animation) =>
-      'animationName' in animation && animation.effect?.getComputedTiming().iterations === 1,
-    ) ?? [];
+    element
+      ?.getAnimations()
+      .filter(
+        (animation) =>
+          'animationName' in animation && animation.effect?.getComputedTiming().iterations === 1,
+      ) ?? [];
   const cardEntries = entryAnimations(node);
-  const sceneEntries = entryAnimations(node.closest('.hd-root')?.querySelector('.hd-landscape picture') ?? null);
+  const sceneEntries = entryAnimations(
+    node.closest('.hd-root')?.querySelector('.hd-landscape picture') ?? null,
+  );
   const complete = (animations: Animation[]) =>
     Promise.all(animations.map((animation) => animation.finished.catch(() => {})));
   void complete(cardEntries).then(() => {

@@ -12,7 +12,8 @@ const image = (index: number) =>
   });
 
 it('gives the viewer a cache-only session using identities already supplied by this page', async () => {
-  const request = vi.fn(); vi.stubGlobal('fetch', request);
+  const request = vi.fn();
+  vi.stubGlobal('fetch', request);
   const module = await import('./publicThumbnail');
   const session = module.createThumbnailSession('car-abcdef123456', versions, true);
   session.attach();
@@ -31,7 +32,26 @@ it('selects the same principal file at every viewport and density', async () => 
   expect(navigationThumbnailWidth(1400, 8)).toBe(1600);
 });
 
-it('starts only explicitly, limits work to nine photos and six concurrent downloads, then reuses pixels with fresh access', async () => {
+it.each([390, 1400])(
+  'prepares every photo at viewport %s while retaining the same file identity',
+  async (viewport) => {
+    const request = vi.fn(async (url: string) =>
+      url.endsWith('/access')
+        ? Response.json({ versions })
+        : image(Number(url.match(/photos\/(\d+)/)![1])),
+    );
+    vi.stubGlobal('fetch', request);
+    const module = await import('./publicThumbnail');
+    module.warmNavigationThumbnails('car-abcdef123456', viewport, 3);
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(13));
+    const urls = request.mock.calls.map(([url]) => url).filter((url) => !url.endsWith('/access'));
+    expect(urls).toHaveLength(12);
+    expect(urls.every((url) => /photos\/\d+\?v=[a-f0-9]{64}&w=1600$/.test(url))).toBe(true);
+    module.cancelNavigationThumbnails();
+  },
+);
+
+it('starts only explicitly, queues all photos with six concurrent downloads, then reuses pixels with fresh access', async () => {
   const releases: Array<() => void> = [];
   let current = 0,
     peak = 0;
@@ -47,22 +67,22 @@ it('starts only explicitly, limits work to nine photos and six concurrent downlo
   vi.stubGlobal('fetch', request);
   const module = await import('./publicThumbnail');
   expect(request).not.toHaveBeenCalled();
-  module.warmNavigationThumbnails('car-abcdef123456', 390, 3);
+  module.warmNavigationThumbnails('car-abcdef123456', 1400, 1);
   await vi.waitFor(() => expect(releases).toHaveLength(6));
   const session = module.createThumbnailSession('car-abcdef123456');
   expect(session.hasPixels()).toBe(true);
   session.attach();
   await session.access();
   expect(request.mock.calls.filter(([url]) => url.endsWith('/access'))).toHaveLength(2);
-  for (const count of [9]) {
+  for (const count of [12]) {
     releases.forEach((resolve) => resolve());
     await vi.waitFor(() => expect(releases).toHaveLength(count));
   }
   releases.forEach((resolve) => resolve());
-  await session.prepared(8);
+  await session.prepared(11);
   expect(peak).toBe(6);
   const urls = request.mock.calls.map(([url]) => url).filter((url) => !url.endsWith('/access'));
-  expect(urls).toHaveLength(9);
+  expect(urls).toHaveLength(12);
   expect(urls.every((url) => /\?v=[a-f0-9]{64}&w=1600$/.test(url))).toBe(true);
   expect(module.createThumbnailSession('car-abcdef123456').hasPixels()).toBe(true);
   session.detach();

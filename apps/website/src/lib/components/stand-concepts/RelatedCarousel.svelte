@@ -315,7 +315,7 @@
         bind:this={viewport}
         tabindex={loops ? 0 : undefined}
         role="group"
-        aria-label="Sugestões; use as setas para navegar"
+        aria-label="Sugestões de viaturas; deslize ou use as teclas de seta para navegar"
         onkeydown={key}
         onpointerdown={down}
         onpointermove={drag}
@@ -576,6 +576,9 @@
     }
   }
   @media (max-width: 700px) {
+    .integrated-controls {
+      display: none;
+    }
     .carousel {
       --gap: 16px;
     }

@@ -52,7 +52,9 @@
   aria-labelledby={headingId}
 >
   <div class="invitation-copy">
-    <p class="eyebrow">{compactComparison ? 'PROPOSTA · CONVITE COMPACTO' : 'VENHA CONHECER DE PERTO'}</p>
+    <p class="eyebrow">
+      {compactComparison ? 'PROPOSTA · CONVITE COMPACTO' : 'VENHA CONHECER DE PERTO'}
+    </p>
     <h2 id={headingId}>Uma visita.<br /><span>À sua medida.</span></h2>
     <p class="invitation-intro">
       Uma boa escolha começa com uma boa conversa. Diga-nos o que o traz por cá.
@@ -64,7 +66,10 @@
           aria-pressed={choice === index}
           onclick={() => (choice = index)}
           ><span class="reason-index">0{index + 1}</span>{reason.label}<span class="reason-check"
-            >{#if choice === index}<Check size={15} aria-hidden="true" />{:else}<ArrowUpRight size={15} aria-hidden="true" />{/if}</span
+            >{#if choice === index}<Check size={15} aria-hidden="true" />{:else}<ArrowUpRight
+                size={15}
+                aria-hidden="true"
+              />{/if}</span
           ></button
         >
       {/each}
@@ -93,16 +98,28 @@
     </div>
     <div class="visit-ticket">
       <div class="ticket-top">
-        <img src={logoSrc} srcset={logoSrcset} sizes={compactComparison ? '106px' : '(max-width: 700px) 116px, (max-width: 1100px) 125px, 145px'} alt="Auto Nunes Martins" width="145" height="64" loading="lazy" /><span
-          >CONVITE<br />PARA CONVERSAR</span
-        >
+        <img
+          src={logoSrc}
+          srcset={logoSrcset}
+          sizes={compactComparison
+            ? '106px'
+            : '(max-width: 700px) 116px, (max-width: 1100px) 125px, 145px'}
+          alt="Auto Nunes Martins"
+          width="145"
+          height="64"
+          loading="lazy"
+        /><span>CONVITE<br />PARA CONVERSAR</span>
       </div>
       {#if compactComparison}
         <div class="compact-reasons" role="group" aria-label="Motivo da visita — proposta compacta">
           {#each reasons as reason, index}
-            <button type="button" class:chosen={choice === index}
-              aria-pressed={choice === index} aria-controls={`${headingId}-response`}
-              onclick={() => (choice = index)}>{reason.tab}</button>
+            <button
+              type="button"
+              class:chosen={choice === index}
+              aria-pressed={choice === index}
+              aria-controls={`${headingId}-response`}
+              onclick={() => (choice = index)}>{reason.tab}</button
+            >
           {/each}
         </div>
       {/if}
@@ -126,7 +143,11 @@
         <div><span>A SUA DISPONIBILIDADE</span><strong>Combinamos consigo.</strong></div>
         <ArrowUpRight size={25} aria-hidden="true" />
       </div>
-      <div class="ticket-end"><span>UMA CONVERSA DE CADA VEZ.</span><span>ANM ↗</span></div>
+      <div class="ticket-end">
+        <span>UMA CONVERSA DE CADA VEZ.</span><span
+          >ANM <ArrowUpRight size={12} aria-hidden="true" /></span
+        >
+      </div>
       <div class="ticket-scan-track" aria-hidden="true"><div class="ticket-scan"></div></div>
     </div>
     <span class="invitation-caption">O SEU PEDIDO COMEÇA AQUI. A VISITA FICA A COMBINAR.</span>
@@ -631,7 +652,9 @@
     .compact-comparison .ticket-end {
       display: none;
     }
-    .compact-comparison .invitation-intro { margin-bottom: 0; }
+    .compact-comparison .invitation-intro {
+      margin-bottom: 0;
+    }
     .compact-comparison .invitation-scene {
       height: auto;
       min-width: 0;
@@ -643,7 +666,9 @@
       padding: 22px;
       transform: none;
     }
-    .compact-comparison .ticket-top img { width: 106px; }
+    .compact-comparison .ticket-top img {
+      width: 106px;
+    }
     .compact-reasons {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -693,15 +718,27 @@
       color: #f6f4ef;
       font-size: 14px;
     }
-    .compact-cta:hover { background: #303033; }
-    .compact-reasons button:not(.chosen):hover { color: #171719; }
+    .compact-cta:hover {
+      background: #303033;
+    }
+    .compact-reasons button:not(.chosen):hover {
+      color: #171719;
+    }
   }
   @media (max-width: 360px) {
-    :global(.design.orbit-home) .compact-comparison .visit-ticket { padding: 18px; }
-    .compact-comparison .ticket-main { min-height: 198px; }
-    .compact-reasons button { font-size: 13px; }
+    :global(.design.orbit-home) .compact-comparison .visit-ticket {
+      padding: 18px;
+    }
+    .compact-comparison .ticket-main {
+      min-height: 198px;
+    }
+    .compact-reasons button {
+      font-size: 13px;
+    }
   }
   @media (prefers-reduced-motion: no-preference) {
-    .compact-comparison .ticket-message { animation-duration: 220ms; }
+    .compact-comparison .ticket-message {
+      animation-duration: 220ms;
+    }
   }
 </style>

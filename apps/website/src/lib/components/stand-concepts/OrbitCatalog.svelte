@@ -4,7 +4,7 @@
   import { tick, onDestroy } from 'svelte';
   import { page, navigating } from '$app/stores';
   import { goto, beforeNavigate } from '$app/navigation';
-  import { ArrowLeft, ArrowRight, SlidersHorizontal, X } from 'lucide-svelte';
+  import { ArrowLeft, ArrowRight, ArrowUpRight, SlidersHorizontal, X } from 'lucide-svelte';
   import {
     publicCard,
     publicCatalogSeo,
@@ -393,7 +393,7 @@
             vehicle,
             index,
           )}{:else}<div class="empty-state">
-            <span aria-hidden="true">↗</span>
+            <span aria-hidden="true"><ArrowUpRight size="1em" strokeWidth={1.5} /></span>
             <h3>
               {stock.status === 'unavailable'
                 ? 'Catálogo temporariamente indisponível.'

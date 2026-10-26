@@ -52,7 +52,7 @@ export function warmNavigationThumbnails(
       // discovers the count/identities; it is not reused as permission on arrival.
       let next = 0;
       const finish: Array<() => void> = [];
-      for (let index = 0; index < Math.min(9, versions.length); index++) {
+      for (let index = 0; index < versions.length; index++) {
         work.photos.set(
           index,
           new Promise<void>((resolve) => {
@@ -83,9 +83,8 @@ export function warmNavigationThumbnails(
           }
         }
       };
-      // Nine photographs in two waves. Keep the total
-      // bounded and leave the principal photograph on its native high priority.
-      void Promise.all(Array.from({ length: 6 }, worker)).finally(() => {
+      // Queue every approved photo, keeping at most six transfers in flight.
+      void Promise.all(Array.from({ length: Math.min(6, finish.length) }, worker)).finally(() => {
         for (const resolve of finish) resolve();
         clearTimeout(deadline);
         if (navigationWarmup === work) navigationWarmup = undefined;
@@ -118,9 +117,15 @@ type Entry = {
 };
 const entries = new Map<string, Entry>();
 const available = (slug: string) =>
-  [...entries.values()].some((e) => e.slug === slug && (e.refs > 0 || e.used > Date.now() - MAX_AGE));
+  [...entries.values()].some(
+    (e) => e.slug === slug && (e.refs > 0 || e.used > Date.now() - MAX_AGE),
+  );
 function remember(slug: string, version: string, width: number, blob: Blob) {
-  if (blob.size > 20 * 1024 * 1024 || !['image/webp', 'image/jpeg', 'image/png'].includes(blob.type)) return;
+  if (
+    blob.size > 20 * 1024 * 1024 ||
+    !['image/webp', 'image/jpeg', 'image/png'].includes(blob.type)
+  )
+    return;
   const key = `${version}/${width}`,
     previous = entries.get(key);
   if (previous) {
@@ -275,7 +280,11 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       return;
     try {
       // The native image just completed its own live authorization. Read those exact cached bytes.
-      const response = await fetch(url, { cache: 'only-if-cached', mode: 'same-origin', credentials: 'omit' });
+      const response = await fetch(url, {
+        cache: 'only-if-cached',
+        mode: 'same-origin',
+        credentials: 'omit',
+      });
       const version = response.headers.get('x-photo-version');
       if (
         !response.ok ||
@@ -290,7 +299,10 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       // Their viewer reuse has no expiry timer and cannot evict a navigable copy.
       if (alive && token === revision && !lease) {
         const entry = entries.get(`${version}/${width}`);
-        if (entry) { entry.refs++; lease = entry; }
+        if (entry) {
+          entry.refs++;
+          lease = entry;
+        }
       }
     } catch {
       /* Native delivery remains available when the browser cannot retain a response. */
@@ -335,7 +347,11 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       node.removeAttribute('srcset');
       node.src = entry.blobUrl;
       if (source.onReady) {
-        try { await node.decode(); } catch { /* Missing copies stay unavailable. */ }
+        try {
+          await node.decode();
+        } catch {
+          /* Missing copies stay unavailable. */
+        }
         if (alive && token === revision) source.onReady();
       }
     } catch {

@@ -44,13 +44,68 @@
 /* A quiet whole-link invitation; text and arrow never separate. */
 @media (prefers-reduced-motion: no-preference) {
   .hd-root.hd-1[data-photo-variant='5'] .hd-scroll {
-    animation: v5-scroll-cue 5800ms 1300ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+    /* A further subtle 4% easing of movement, preserving the 100ms lower rest. */
+    animation: v5-scroll-cue 2191ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
   }
-  .hd-root.hd-1[data-photo-variant='5'] .hd-scroll:is(:hover, :focus-visible, [data-cue-paused='true']) {
+  .hd-root.hd-1[data-photo-variant='5'] .hd-scroll[data-cue-paused='true'] {
     animation-play-state: paused;
   }
 }
 @keyframes v5-scroll-cue {
-  0%, 45%, 78%, 100% { transform: translateY(0); }
-  60% { transform: translateY(-10px); }
+  0%,
+  4.564126%,
+  100% {
+    transform: translateY(0);
+  }
+  47.968964% {
+    transform: translateY(-10px);
+  }
+}
+
+/* A compact mobile opening, with the car as the main visual anchor. */
+@media (max-width: 700px) {
+  .hd-root.hd-1[data-photo-variant='5'] .hd-composition {
+    padding-block: 20px 58px;
+    gap: 18px;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 10px 14px;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-eyebrow {
+    display: none;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] h1 {
+    grid-column: 1 / -1;
+    margin-top: 0;
+    font-size: clamp(30px, 8.2vw, 42px);
+    line-height: 1.07;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-copy > p {
+    margin-top: 0;
+    font-size: 11px;
+    line-height: 1.6;
+    max-width: 230px;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore {
+    margin-top: 0;
+    padding-block: 10px;
+    min-height: 44px;
+    gap: 10px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-photo {
+    aspect-ratio: 1.85;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-landscape::after {
+    background:
+      linear-gradient(180deg, #0b0c0e99, #0b0c0e45 48%, #0b0c0e88),
+      linear-gradient(90deg, #10111470, #1011142b);
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-scroll {
+    bottom: 14px;
+  }
 }

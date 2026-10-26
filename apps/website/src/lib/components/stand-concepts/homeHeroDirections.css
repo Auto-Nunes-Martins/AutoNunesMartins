@@ -111,13 +111,13 @@
   inset: auto 0 -1px;
   height: 1px;
   background: var(--red, #e30613);
-  transform: scaleX(0);
+  clip-path: inset(0 100% 0 0);
   transform-origin: left;
-  transition: transform 420ms ease;
+  transition: clip-path 420ms ease;
   pointer-events: none;
 }
 .hd-root .hd-copy > .hd-explore:is(:hover, :focus-visible)::after {
-  transform: scaleX(1);
+  clip-path: inset(0 0 0 0);
 }
 @media (prefers-reduced-motion: reduce) {
   .hd-root .hd-copy > .hd-explore::after {
@@ -278,7 +278,9 @@
   background: currentColor;
   opacity: 0.2;
   border-radius: 2px;
-  transition: opacity 250ms, transform 180ms ease;
+  transition:
+    opacity 250ms,
+    transform 180ms ease;
 }
 .hd-root .hd-progress button {
   flex: 1;
@@ -513,7 +515,9 @@
   .hd-1 .hd-photo {
     transition: box-shadow 500ms ease;
   }
-  .hd-1 .hd-feature:has(.hd-photo-stage:hover, .hd-price-motion:hover, .hd-photo:focus-visible) .hd-photo {
+  .hd-1
+    .hd-feature:has(.hd-photo:hover, .hd-price-motion:hover, .hd-photo:focus-visible)
+    .hd-photo {
     box-shadow: 0 24px 70px #07180e4d;
   }
 }
@@ -664,7 +668,9 @@
     margin-top: 8px;
   }
   .hd-root .hd-scroll {
-    left: 20px;
+    left: 50%;
+    translate: -50% 0;
+    gap: 8px;
     bottom: 20px;
   }
   .hd-root .hd-photo-arrow {

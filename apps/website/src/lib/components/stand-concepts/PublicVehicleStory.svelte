@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PublicVehicle } from '$lib/publicVehicles';
   import OrbitAccordion from './OrbitAccordion.svelte';
+  import { ArrowUpRight } from 'lucide-svelte';
 
   let { vehicle }: { vehicle: PublicVehicle } = $props();
   const equipment = $derived([
@@ -48,7 +49,9 @@
       <p class="eyebrow">A BORDO DESTA VIATURA</p>
       <h2 id="vehicle-equipment-title">Equipamento.</h2>
       <ul>
-        {#each equipment as item}<li><span aria-hidden="true">↗</span>{item}</li>{/each}
+        {#each equipment as item}<li>
+            <span aria-hidden="true"><ArrowUpRight size={14} strokeWidth={1.5} /></span>{item}
+          </li>{/each}
       </ul>
     </section>
   {/if}

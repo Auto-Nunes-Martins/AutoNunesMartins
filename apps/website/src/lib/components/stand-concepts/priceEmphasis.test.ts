@@ -1,8 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { priceEmphasis } from './priceEmphasis';
 
-beforeEach(() => { vi.useFakeTimers(); });
-afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  vi.clearAllTimers();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 function setup(reduce = false) {
   const reduced = Object.assign(new EventTarget(), { matches: reduce });
@@ -15,21 +21,44 @@ function setup(reduce = false) {
     getBoundingClientRect: () => ({ top: 0, bottom: 500 }),
   });
   const slot = {};
-  const animate = vi.fn(() => ({ id: '', finished: new Promise<void>(() => {}), cancel: vi.fn() }));
+  const animate = vi.fn((_frames: Keyframe[], _options: KeyframeAnimationOptions) => ({
+    id: '',
+    finished: new Promise<void>(() => {}),
+    cancel: vi.fn(),
+  }));
   const node = { closest: () => feature, parentElement: slot, style: { fontSize: '' }, animate };
   vi.stubGlobal('document', Object.assign(new EventTarget(), { hidden: false }));
   vi.stubGlobal('innerHeight', 900);
-  vi.stubGlobal('matchMedia', (query: string) => query.includes('reduced-motion') ? reduced : pointer);
+  vi.stubGlobal('matchMedia', (query: string) =>
+    query.includes('reduced-motion') ? reduced : pointer,
+  );
   vi.stubGlobal('getComputedStyle', (element: unknown) => ({
     fontSize: element === slot ? '40px' : node.style.fontSize || '40px',
   }));
-  vi.stubGlobal('IntersectionObserver', class {
-    constructor(private callback: (entries: unknown[]) => void) {}
-    observe() { this.callback([{ isIntersecting: true, intersectionRatio: 1 }]); }
-    disconnect() {}
-  });
-  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
-  vi.stubGlobal('MutationObserver', class { observe() {} disconnect() {} });
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      constructor(private callback: (entries: unknown[]) => void) {}
+      observe() {
+        this.callback([{ isIntersecting: true, intersectionRatio: 1 }]);
+      }
+      disconnect() {}
+    },
+  );
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
+  vi.stubGlobal(
+    'MutationObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
   const action = priceEmphasis(node as unknown as HTMLElement, 'first-car')!;
   return { action, animate, hover, node };
 }
@@ -48,6 +77,7 @@ describe('featured price emphasis', () => {
     action.update('second-car');
     expect(animate).toHaveBeenCalledTimes(1);
     expect(animate.mock.results[0]!.value.id).toBe('price-vehicle-change');
+    expect(animate.mock.calls[0]![1]).toEqual({ duration: 650 });
     action.update('second-car');
     vi.advanceTimersByTime(60_000);
     expect(animate).toHaveBeenCalledTimes(1);

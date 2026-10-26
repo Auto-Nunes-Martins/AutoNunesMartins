@@ -10,6 +10,7 @@ export function dragThumbnailStrip(node: HTMLElement) {
     velocity = 0,
     frame = 0;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
   function stop() {
     cancelAnimationFrame(frame);
     frame = 0;
@@ -78,6 +79,20 @@ export function dragThumbnailStrip(node: HTMLElement) {
     }
   }
   const preventDrag = (event: DragEvent) => event.preventDefault();
+  function wheel(event: WheelEvent) {
+    stop();
+    // On desktop the strip has no native wheel target: mixed vertical gestures
+    // must reach the page. Handle only intentional horizontal movement here.
+    if (!finePointer.matches || Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? node.clientWidth : 1;
+    const next = Math.max(
+      0,
+      Math.min(node.scrollWidth - node.clientWidth, node.scrollLeft + event.deltaX * unit),
+    );
+    if (next === node.scrollLeft) return;
+    event.preventDefault();
+    node.scrollLeft = next;
+  }
   node.addEventListener('pointerdown', down);
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', end);
@@ -85,7 +100,7 @@ export function dragThumbnailStrip(node: HTMLElement) {
   node.addEventListener('lostpointercapture', end);
   node.addEventListener('click', click, true);
   node.addEventListener('dragstart', preventDrag);
-  node.addEventListener('wheel', stop, { passive: true });
+  node.addEventListener('wheel', wheel, { passive: false });
   node.addEventListener('keydown', stop);
   node.addEventListener('thumbnail-scroll-interrupt', stop);
   reduced.addEventListener('change', stop);
@@ -100,7 +115,7 @@ export function dragThumbnailStrip(node: HTMLElement) {
       node.removeEventListener('click', click, true);
       node.removeEventListener('dragstart', preventDrag);
       node.classList.remove('is-dragging');
-      node.removeEventListener('wheel', stop);
+      node.removeEventListener('wheel', wheel);
       node.removeEventListener('keydown', stop);
       node.removeEventListener('thumbnail-scroll-interrupt', stop);
       reduced.removeEventListener('change', stop);

@@ -74,7 +74,7 @@
   import OrbitAccordion from './OrbitAccordion.svelte';
   import VehicleSpecIcon from '../VehicleSpecIcon.svelte';
   import CabinReveal from './CabinReveal.svelte';
-  import ServiceBannerProposals from './ServiceBannerProposals.svelte';
+  import ServiceBannerComparison from './ServiceBannerComparison.svelte';
   import OrbitStats from './OrbitStats.svelte';
   import PublicStockBrands from './PublicStockBrands.svelte';
   import type { PublicBrandDirectory } from '$lib/catalogBrandLinks';
@@ -156,7 +156,9 @@
     errorStatus?: number;
     unavailableVehicle?: UnavailableVehicle;
     homeHighlights?: PublicHighlights;
-    routeContent?: Snippet<[{ card: Snippet<[PublicCard | null, number]>; contact: (message?: string) => Promise<void> }]>;
+    routeContent?: Snippet<
+      [{ card: Snippet<[PublicCard | null, number]>; contact: (message?: string) => Promise<void> }]
+    >;
     galleryRuntime?: VehicleDetailRuntime;
   } = $props();
   // Detail routes provide their runtime before SSR; the homepage never imports it.
@@ -166,28 +168,57 @@
   const VehicleShareButton = $derived(galleryRuntime?.VehicleShareButton!);
   const PublicVehicleStory = $derived(galleryRuntime?.PublicVehicleStory!);
   const OrbitBackLink = $derived(galleryRuntime?.OrbitBackLink!);
-  const publicVehicleCanonical = (...args: Parameters<VehicleDetailRuntime['publicVehicleCanonical']>) => galleryRuntime!.publicVehicleCanonical(...args);
-  const vehicleJsonLdScript = (...args: Parameters<VehicleDetailRuntime['vehicleJsonLdScript']>) => galleryRuntime!.vehicleJsonLdScript(...args);
-  const vehicleBreadcrumbItems = (...args: Parameters<VehicleDetailRuntime['vehicleBreadcrumbItems']>) => galleryRuntime!.vehicleBreadcrumbItems(...args);
-  const vehicleBreadcrumbJsonLdScript = (...args: Parameters<VehicleDetailRuntime['vehicleBreadcrumbJsonLdScript']>) => galleryRuntime!.vehicleBreadcrumbJsonLdScript(...args);
-  const descriptionText = (...args: Parameters<VehicleDetailRuntime['descriptionText']>) => galleryRuntime!.descriptionText(...args);
-  const vehicleSeo = (...args: Parameters<VehicleDetailRuntime['vehicleSeo']>) => galleryRuntime!.vehicleSeo(...args);
-  const vehicleShareData = (...args: Parameters<VehicleDetailRuntime['vehicleShareData']>) => galleryRuntime!.vehicleShareData(...args);
-  const publicGalleryPhoto = (...args: Parameters<VehicleDetailRuntime['publicGalleryPhoto']>) => galleryRuntime!.publicGalleryPhoto(...args);
-  const createPublicGallerySession = (...args: Parameters<VehicleDetailRuntime['createPublicGallerySession']>) => galleryRuntime!.createPublicGallerySession(...args);
-  const followThumbnail = (...args: Parameters<VehicleDetailRuntime['followThumbnail']>) => galleryRuntime!.followThumbnail(...args);
-  const dragThumbnailStrip = (...args: Parameters<VehicleDetailRuntime['dragThumbnailStrip']>) => galleryRuntime!.dragThumbnailStrip(...args);
-  const thumbnailNavigation = (...args: Parameters<VehicleDetailRuntime['thumbnailNavigation']>) => galleryRuntime!.thumbnailNavigation(...args);
-  const createThumbnailSession = (...args: Parameters<VehicleDetailRuntime['createThumbnailSession']>) => galleryRuntime!.createThumbnailSession(...args);
-  const publicThumbnail = (...args: Parameters<VehicleDetailRuntime['publicThumbnail']>) => galleryRuntime!.publicThumbnail(...args);
-  const thumbnailAttrs = (...args: Parameters<VehicleDetailRuntime['thumbnailAttrs']>) => galleryRuntime!.thumbnailAttrs(...args);
-  const trapDialogTab = (...args: Parameters<VehicleDetailRuntime['trapDialogTab']>) => galleryRuntime!.trapDialogTab(...args);
-  const galleryBackdrop = (...args: Parameters<VehicleDetailRuntime['galleryBackdrop']>) => galleryRuntime?.galleryBackdrop(...args);
+  const publicVehicleCanonical = (
+    ...args: Parameters<VehicleDetailRuntime['publicVehicleCanonical']>
+  ) => galleryRuntime!.publicVehicleCanonical(...args);
+  const vehicleJsonLdScript = (...args: Parameters<VehicleDetailRuntime['vehicleJsonLdScript']>) =>
+    galleryRuntime!.vehicleJsonLdScript(...args);
+  const vehicleBreadcrumbItems = (
+    ...args: Parameters<VehicleDetailRuntime['vehicleBreadcrumbItems']>
+  ) => galleryRuntime!.vehicleBreadcrumbItems(...args);
+  const vehicleBreadcrumbJsonLdScript = (
+    ...args: Parameters<VehicleDetailRuntime['vehicleBreadcrumbJsonLdScript']>
+  ) => galleryRuntime!.vehicleBreadcrumbJsonLdScript(...args);
+  const descriptionText = (...args: Parameters<VehicleDetailRuntime['descriptionText']>) =>
+    galleryRuntime!.descriptionText(...args);
+  const vehicleSeo = (...args: Parameters<VehicleDetailRuntime['vehicleSeo']>) =>
+    galleryRuntime!.vehicleSeo(...args);
+  const vehicleShareData = (...args: Parameters<VehicleDetailRuntime['vehicleShareData']>) =>
+    galleryRuntime!.vehicleShareData(...args);
+  const publicGalleryPhoto = (...args: Parameters<VehicleDetailRuntime['publicGalleryPhoto']>) =>
+    galleryRuntime!.publicGalleryPhoto(...args);
+  const createPublicGallerySession = (
+    ...args: Parameters<VehicleDetailRuntime['createPublicGallerySession']>
+  ) => galleryRuntime!.createPublicGallerySession(...args);
+  const followThumbnail = (...args: Parameters<VehicleDetailRuntime['followThumbnail']>) =>
+    galleryRuntime!.followThumbnail(...args);
+  const dragThumbnailStrip = (...args: Parameters<VehicleDetailRuntime['dragThumbnailStrip']>) =>
+    galleryRuntime!.dragThumbnailStrip(...args);
+  const photoSwipe = (...args: Parameters<VehicleDetailRuntime['photoSwipe']>) =>
+    galleryRuntime?.photoSwipe(...args);
+  const thumbnailNavigation = (...args: Parameters<VehicleDetailRuntime['thumbnailNavigation']>) =>
+    galleryRuntime!.thumbnailNavigation(...args);
+  const createThumbnailSession = (
+    ...args: Parameters<VehicleDetailRuntime['createThumbnailSession']>
+  ) => galleryRuntime!.createThumbnailSession(...args);
+  const publicThumbnail = (...args: Parameters<VehicleDetailRuntime['publicThumbnail']>) =>
+    galleryRuntime!.publicThumbnail(...args);
+  const thumbnailAttrs = (...args: Parameters<VehicleDetailRuntime['thumbnailAttrs']>) =>
+    galleryRuntime!.thumbnailAttrs(...args);
+  const trapDialogTab = (...args: Parameters<VehicleDetailRuntime['trapDialogTab']>) =>
+    galleryRuntime!.trapDialogTab(...args);
+  const galleryBackdrop = (...args: Parameters<VehicleDetailRuntime['galleryBackdrop']>) =>
+    galleryRuntime?.galleryBackdrop(...args);
   const thumbnailSession = $derived(
-    publicVehicle ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle)) : undefined,
+    publicVehicle
+      ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle))
+      : undefined,
   );
-  const viewerThumbnailSession = $derived(galleryOpen && publicVehicle
-    ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle) ?? [], true) : undefined);
+  const viewerThumbnailSession = $derived(
+    galleryOpen && publicVehicle
+      ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle) ?? [])
+      : undefined,
+  );
   const car = $derived(
     publicVehicle
       ? {
@@ -201,9 +232,7 @@
           power: publicVehicle.specifications?.powerHp ?? 0,
           category: publicVehicle.specifications?.category ?? '',
           price: publicVehicle.price === null ? Number.NaN : Number(publicVehicle.price),
-          image: publicVehicle.photos.length
-            ? publicPhoto(publicVehicle, 0)
-            : catalogPlaceholder,
+          image: publicVehicle.photos.length ? publicPhoto(publicVehicle, 0) : catalogPlaceholder,
         }
       : catalogCars.find((item) => item.id === id),
   );
@@ -286,32 +315,28 @@
   let confirmationHeading = $state<HTMLHeadingElement>();
   let galleryDialog: HTMLDialogElement;
   let preparingViewer = false;
-  const preparedViewerThumbnails = new Set<number>();
-  let finishViewerPreparation: (() => void) | undefined;
-  function viewerThumbnailReady(index: number) {
-    preparedViewerThumbnails.add(index);
-    if (preparedViewerThumbnails.size >= galleryPhotoCount + 1) finishViewerPreparation?.();
-  }
   async function openGallery() {
     if (preparingViewer || galleryOpen) return;
     preparingViewer = true;
-    preparedViewerThumbnails.clear();
-    const prepared = new Promise<void>(resolve => { finishViewerPreparation = resolve; });
     galleryOpen = true;
     await tick();
-    // Prepare existing local thumbnails together while the dialog is still closed.
-    if (publicVehicle?.photos.length) await prepared;
     preparingViewer = false;
     if (galleryOpen) galleryDialog.showModal();
   }
-  const gallerySession = $derived(publicVehicle?.photos.length ? createPublicGallerySession(publicVehicle) : undefined);
+  const gallerySession = $derived(
+    publicVehicle?.photos.length ? createPublicGallerySession(publicVehicle) : undefined,
+  );
   // SSR starts the first photo. Thereafter the action alone owns image sources,
   // so Svelte never assigns a network URL before a cache-only gallery revisit.
   const initialMainPhoto = untrack(() => ({
     src: publicVehicle?.photos.length
       ? sizedPhoto(publicPhoto(publicVehicle, 0), 1600)
-      : car ? photo(car.image, 2000) : undefined,
-    srcset: publicVehicle?.photos.length ? vehiclePhotoSet(publicPhoto(publicVehicle, 0)) : undefined,
+      : car
+        ? photo(car.image, 2000)
+        : undefined,
+    srcset: publicVehicle?.photos.length
+      ? vehiclePhotoSet(publicPhoto(publicVehicle, 0))
+      : undefined,
   }));
   let sent = $state(false);
   let sending = $state(false);
@@ -326,6 +351,9 @@
     !!publicVehicle && galleryPhotoCount > 0 && zoom === galleryPhotoCount,
   );
   const galleryPhotoIndex = $derived(isContactSlide ? 0 : zoom);
+  function stepGallery(direction: number) {
+    if (publicVehicle) zoom = Math.max(0, Math.min(galleryCount - 1, zoom + direction));
+  }
   function galleryKeydown(event: KeyboardEvent) {
     trapDialogTab(event, galleryDialog);
     if (!publicVehicle || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
@@ -469,13 +497,13 @@
     {@html vehicleJsonLdScript(publicVehicle, $page.url.origin)}
     {@html vehicleBreadcrumbJsonLdScript(publicVehicle, $page.url.origin)}
     {#if !thumbnailSession?.hasPixels()}
-      {#each publicVehicle.photos.slice(0, 9) as _, i}
+      {#each publicVehicle.photos as _, i}
         <link
           rel="preload"
           as="image"
           href={sizedPhoto(publicPhoto(publicVehicle, i), 320)}
           imagesrcset={vehiclePhotoSet(publicPhoto(publicVehicle, i))}
-          imagesizes="(max-width:701px) 112px, 128px"
+          imagesizes="(max-width:700px) 88px, 128px"
           fetchpriority="low"
         />
       {/each}
@@ -490,7 +518,13 @@
   <link rel="preload" href={orbitFont600} as="font" type="font/woff2" crossorigin="anonymous" />
   <link rel="preload" href={orbitTitleFont} as="font" type="font/woff2" crossorigin="anonymous" />
   {#if favorites || compare || about || id || catalog || privacy || publicVehicle || errorStatus}
-    <link rel="preload" href={orbitTitleItalic} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link
+      rel="preload"
+      href={orbitTitleItalic}
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
   {/if}
   {#if !favorites && !compare && !about && !catalog && !privacy && !publicVehicle && !errorStatus}<title
       >{car
@@ -603,7 +637,7 @@
         data-theme-logo
         src={isDark ? logoDark : logoLight}
         srcset={isDark ? logoDarkSrcset : logoLightSrcset}
-        sizes="(max-width: 700px) 96px, 145px"
+        sizes="(max-width: 380px) 96px, (max-width: 700px) 120px, 145px"
         alt="Auto Nunes Martins — início"
         width="180"
         height="80"
@@ -779,12 +813,18 @@
             <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Arrow keys coordinate the gallery's focused buttons; explicit previous/next controls remain available.) -->
             <div
               class="vehicle-photo-stage"
+              use:photoSwipe={{
+                enabled: !!publicVehicle && galleryCount > 1,
+                previous: () => stepGallery(-1),
+                next: () => stepGallery(1),
+              }}
               role="group"
               aria-label="Galeria de fotografias"
               onkeydown={galleryKeydown}
             >
               <button
                 class="vehicle-photo"
+                data-swipe-surface
                 class:contact-slide={isContactSlide}
                 aria-busy={mainPhotoLoading}
                 type="button"
@@ -895,12 +935,12 @@
                             index: i,
                             src: sizedPhoto(publicPhoto(publicVehicle, i), 320),
                             srcset: vehiclePhotoSet(publicPhoto(publicVehicle, i)),
-                            sizes: '(max-width:701px) 112px, 128px',
+                            sizes: '(max-width:700px) 88px, 128px',
                           }}
-                          sizes="(max-width:701px) 112px, 128px"
+                          sizes="(max-width:700px) 88px, 128px"
                           alt=""
-                          loading={i < 9 ? 'eager' : 'lazy'}
-                          fetchpriority={i < 9 ? 'auto' : 'low'}
+                          loading="eager"
+                          fetchpriority="auto"
                         /><span>{i + 1}</span></button
                       >{/each}
                     <button
@@ -912,7 +952,7 @@
                       ><img
                         src={sizedPhoto(publicPhoto(publicVehicle, 0), 320)}
                         alt=""
-                        loading="lazy"
+                        loading="eager"
                       /><ArrowUpRight size={24} aria-hidden="true" /><span>Fale connosco</span
                       ></button
                     >
@@ -1059,16 +1099,12 @@
                 src: publicVehicle
                   ? sizedPhoto(publicPhoto(publicVehicle, 0), 1600)
                   : photo(car.image, 1800),
-                srcset: publicVehicle
-                  ? vehiclePhotoSet(publicPhoto(publicVehicle, 0))
-                  : undefined,
+                srcset: publicVehicle ? vehiclePhotoSet(publicPhoto(publicVehicle, 0)) : undefined,
               }}
               src={publicVehicle
                 ? sizedPhoto(publicPhoto(publicVehicle, 0), 1600)
                 : photo(car.image, 1800)}
-              srcset={publicVehicle
-                ? vehiclePhotoSet(publicPhoto(publicVehicle, 0))
-                : undefined}
+              srcset={publicVehicle ? vehiclePhotoSet(publicPhoto(publicVehicle, 0)) : undefined}
               sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw"
               alt=""
               loading="lazy"
@@ -1080,7 +1116,9 @@
                 >Vamos falar <ArrowUpRight size={18} aria-hidden="true" /></button
               >
             </div>
-            <span class="band-index" aria-hidden="true">↗</span>
+            <span class="band-index" aria-hidden="true"
+              ><ArrowUpRight size="1em" strokeWidth={1} /></span
+            >
           </section>
         {/if}
         {#if publicVehicle}<PublicVehicleStory vehicle={publicVehicle} />{/if}
@@ -1143,7 +1181,7 @@
         <div class="showroom-heading" use:entrance>
           <div>
             <h2>
-              O próximo pode estar aqui<span class="heading-period">.</span>
+              O seu próximo carro<span class="heading-period">.</span>
             </h2>
           </div>
         </div>
@@ -1234,7 +1272,7 @@
       </section>
 
       <CabinReveal />
-      <ServiceBannerProposals onContact={contact} />
+      <ServiceBannerComparison onContact={contact} />
       <OrbitPerspective
         grouped
         lead="A escolha certa"
@@ -1251,9 +1289,8 @@
 
   {#if $page.url.pathname !== '/' && !favorites && !compare && !about && !catalog && !privacy && !errorStatus}<section
       class="services"
-      aria-labelledby="services-title"
+      aria-label="Próximos passos"
     >
-      <p class="kicker" id="services-title">O CARRO É SÓ O INÍCIO.</p>
       <div>
         {#each [['01', 'Dar o próximo passo.', 'Conheça a viatura ao seu ritmo. Combine uma visita e esclareça as suas dúvidas.', 'Quero combinar uma visita.'], ['02', 'Mudar de companhia.', 'Tem uma viatura para retoma? Conte-nos um pouco sobre ela e sobre os seus planos.', 'Gostava de falar sobre uma retoma.'], ['03', 'Saber os detalhes.', 'Equipamento, documentação e condições: reúna a informação antes de decidir.', 'Gostava de esclarecer algumas dúvidas.']] as service, index}<article
             use:conditionalEntrance={car || publicVehicle ? false : index * 90}
@@ -1397,17 +1434,31 @@
   <dialog
     bind:this={galleryDialog}
     use:galleryBackdrop
-    onclose={() => { galleryOpen = false; finishViewerPreparation?.(); }}
+    onclose={() => {
+      galleryOpen = false;
+    }}
     class="gallery-dialog"
     aria-labelledby="gallery-caption"
     onkeydown={galleryKeydown}
   >
     {#if car && galleryOpen}
-      <div class="viewer-stage">
+      <div
+        class="viewer-stage"
+        role="group"
+        aria-label="Fotografias em ecrã inteiro"
+        use:photoSwipe={{
+          enabled: !!publicVehicle && galleryCount > 1,
+          previous: () => stepGallery(-1),
+          next: () => stepGallery(1),
+        }}
+      >
         {#if isContactSlide && publicVehicle}
           <div class="viewer-contact">
             <img
-              use:publicGalleryPhoto={{ src: publicPhoto(publicVehicle, 0), session: gallerySession }}
+              use:publicGalleryPhoto={{
+                src: publicPhoto(publicVehicle, 0),
+                session: gallerySession,
+              }}
               draggable={false}
               alt=""
             />
@@ -1480,13 +1531,16 @@
               onclick={() => (zoom = i)}
             >
               <img
-                {...thumbnailAttrs(viewerThumbnailSession!, sizedPhoto(publicPhoto(publicVehicle, i), 320))}
+                {...thumbnailAttrs(
+                  viewerThumbnailSession!,
+                  sizedPhoto(publicPhoto(publicVehicle, i), 320),
+                )}
                 use:publicThumbnail={{
-                  session: viewerThumbnailSession!, index: i,
+                  session: viewerThumbnailSession!,
+                  index: i,
                   src: sizedPhoto(publicPhoto(publicVehicle, i), 320),
                   srcset: vehiclePhotoSet(publicPhoto(publicVehicle, i)),
-                  sizes: '(max-width:600px) 64px, 80px',
-                  onReady: () => viewerThumbnailReady(i),
+                  sizes: '(max-width:700px) 76px, 80px',
                   minimumWidth: 80,
                 }}
                 draggable={false}
@@ -1502,12 +1556,22 @@
             aria-pressed={isContactSlide}
             onclick={() => (zoom = galleryPhotoCount)}
           >
-            <img {...thumbnailAttrs(viewerThumbnailSession!, sizedPhoto(publicPhoto(publicVehicle, 0), 320))}
-              use:publicThumbnail={{ session: viewerThumbnailSession!, index: 0,
+            <img
+              {...thumbnailAttrs(
+                viewerThumbnailSession!,
+                sizedPhoto(publicPhoto(publicVehicle, 0), 320),
+              )}
+              use:publicThumbnail={{
+                session: viewerThumbnailSession!,
+                index: 0,
                 src: sizedPhoto(publicPhoto(publicVehicle, 0), 320),
-                sizes: '(max-width:600px) 64px, 80px',
-                onReady: () => viewerThumbnailReady(galleryPhotoCount), minimumWidth: 80 }}
-              draggable={false} alt="" loading="eager" />
+                sizes: '(max-width:700px) 76px, 80px',
+                minimumWidth: 80,
+              }}
+              draggable={false}
+              alt=""
+              loading="eager"
+            />
             <span>Fale connosco</span>
           </button>
         </div>
@@ -1529,27 +1593,45 @@
     use:conditionalEntrance={vehicle && animate ? (index % 2) * 110 : false}
   >
     {#if vehicle}
-      {@const waitingPhoto = !favorites && !compare && !about && !id && !catalog && !privacy && !publicVehicle && !errorStatus && 'approved' in vehicle
-        ? homePhotoPlaceholder(vehicle.photoDimensions) : undefined}
+      {@const waitingPhoto =
+        !favorites &&
+        !compare &&
+        !about &&
+        !id &&
+        !catalog &&
+        !privacy &&
+        !publicVehicle &&
+        !errorStatus &&
+        'approved' in vehicle
+          ? homePhotoPlaceholder(vehicle.photoDimensions)
+          : undefined}
       <div class="card-photo">
-        <a class="card-image" href={'href' in vehicle ? vehicle.href : '/viaturas'}
+        <a
+          class="card-image"
+          href={'href' in vehicle ? vehicle.href : '/viaturas'}
           data-photo-count={'photoCount' in vehicle ? vehicle.photoCount : undefined}
           ><picture use:homePhotoPriority>
-          {#if waitingPhoto}<source data-home-photo-priority
-            media="(max-width: 700px) and (scripting: enabled)" srcset={waitingPhoto} />{/if}
-          <img
-            use:coverPhotoSizes
-            use:vehiclePhoto={{
-              src: photo(vehicle.image, 1100),
-              srcset: responsivePhoto(vehicle.image, 1600),
-            }}
-            src={photo(vehicle.image, 1100)}
-            srcset={responsivePhoto(vehicle.image, 1600)}
-            sizes={'approved' in vehicle ? publicCardImageSizes(vehicle.photoDimensions, catalog, favorites) : cardImageSizes}
-            fetchpriority={catalog || favorites ? undefined : 'low'}
-            alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
-            loading="lazy"
-          /></picture>{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
+            {#if waitingPhoto}<source
+                data-home-photo-priority
+                media="(max-width: 700px) and (scripting: enabled)"
+                srcset={waitingPhoto}
+              />{/if}
+            <img
+              use:coverPhotoSizes
+              use:vehiclePhoto={{
+                src: photo(vehicle.image, 1100),
+                srcset: responsivePhoto(vehicle.image, 1600),
+              }}
+              src={photo(vehicle.image, 1100)}
+              srcset={responsivePhoto(vehicle.image, 1600)}
+              sizes={'approved' in vehicle
+                ? publicCardImageSizes(vehicle.photoDimensions, catalog, favorites)
+                : cardImageSizes}
+              fetchpriority={catalog || favorites ? undefined : 'low'}
+              alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
+              loading="lazy"
+            /></picture
+          >{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
             class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
           ></a
         >
@@ -1559,7 +1641,9 @@
       </div>
       <div class="card-body">
         <div class="card-info">
-          <a class="card-detail-link" href={'href' in vehicle ? vehicle.href : '/viaturas'}
+          <a
+            class="card-detail-link"
+            href={'href' in vehicle ? vehicle.href : '/viaturas'}
             data-photo-count={'photoCount' in vehicle ? vehicle.photoCount : undefined}
             ><h3>{vehicle.brand} {vehicle.model}</h3>
             {#if 'version' in vehicle && vehicle.version}<span class="card-version"
@@ -1621,7 +1705,7 @@
 {/snippet}
 
 <style>
-  .design.orbit-home main :global(.home-services + .orbit-perspective) {
+  .design.orbit-home main :global(.home-services-comparison + .orbit-perspective) {
     margin-top: 0;
   }
   .home-choice-group {
@@ -1830,8 +1914,8 @@
       gap: 9px;
     }
     .design.orbit .stand-header .logo {
-      width: 96px;
-      flex-basis: 96px;
+      width: 120px;
+      flex-basis: 120px;
       padding: 0;
     }
     .design.orbit .stand-header .logo img {
@@ -1971,8 +2055,8 @@
       gap: 4px;
     }
     .design.orbit .stand-header .logo {
-      width: 78px;
-      flex-basis: 78px;
+      width: 96px;
+      flex-basis: 96px;
       padding: 0;
     }
     .design.orbit .stand-header .logo img {
@@ -2009,6 +2093,13 @@
     .home-basic-filters {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
+    }
+    .home-clear {
+      align-self: stretch;
+      justify-self: stretch;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
   .design.orbit-catalog,
@@ -2222,7 +2313,7 @@
       bottom: -9px;
       background: var(--red);
       opacity: 1;
-      transform: scaleX(0);
+      clip-path: inset(0 100% 0 0);
       transform-origin: left;
     }
     #stand-navigation > a[aria-current='page'] {
@@ -2230,21 +2321,21 @@
     }
     #stand-navigation > a[aria-current='page'] .nav-label::after {
       opacity: 0.7;
-      transform: scaleX(1);
+      clip-path: inset(0 0 0 0);
     }
     #stand-navigation > a:focus-visible .nav-label::after {
       opacity: 1;
-      transform: scaleX(1);
+      clip-path: inset(0 0 0 0);
     }
     @media (hover: hover) {
       #stand-navigation > a:hover .nav-label::after {
         opacity: 1;
-        transform: scaleX(1);
+        clip-path: inset(0 0 0 0);
       }
     }
     @media (prefers-reduced-motion: no-preference) {
       #stand-navigation .nav-label::after {
-        transition: transform 180ms ease-out;
+        transition: clip-path 180ms ease-out;
       }
     }
     #stand-navigation > a:focus-visible {
@@ -2517,9 +2608,6 @@
   }
   .services {
     padding: 20px 4% 90px;
-  }
-  .services > .kicker {
-    padding-bottom: 25px;
   }
   .services > div {
     display: grid;
@@ -4358,11 +4446,11 @@
     bottom: -3px;
     height: 1px;
     background: var(--red);
-    transform: scaleX(0);
+    clip-path: inset(0 100% 0 0);
     transform-origin: left;
   }
   .services button:focus-visible > .service-cta-label::after {
-    transform: scaleX(1);
+    clip-path: inset(0 0 0 0);
   }
   .services button :global(svg) {
     color: var(--text);
@@ -4372,7 +4460,7 @@
   }
   @media (hover: hover) {
     .services button:hover > .service-cta-label::after {
-      transform: scaleX(1);
+      clip-path: inset(0 0 0 0);
     }
     .services button:hover :global(svg) {
       rotate: 45deg;
@@ -4380,10 +4468,27 @@
   }
   @media (prefers-reduced-motion: no-preference) {
     .services button > .service-cta-label::after {
-      transition: transform 220ms ease;
+      transition: clip-path 220ms ease;
     }
     .services button :global(svg) {
       transition: rotate 220ms ease;
+    }
+  }
+
+  .contact-dialog form > button[type='submit'] :global(svg) {
+    transition: transform 220ms ease;
+  }
+  .contact-dialog form > button[type='submit']:not(:disabled):focus-visible :global(svg) {
+    transform: translate(3px, -3px);
+  }
+  @media (hover: hover) {
+    .contact-dialog form > button[type='submit']:not(:disabled):hover :global(svg) {
+      transform: translate(3px, -3px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .contact-dialog form > button[type='submit'] :global(svg) {
+      transition: none;
     }
   }
 </style>

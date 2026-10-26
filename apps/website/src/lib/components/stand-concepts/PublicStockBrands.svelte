@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { ArrowUpRight } from 'lucide-svelte';
+  import { ArrowUpRight, Pause, Play } from 'lucide-svelte';
   import { catalogBrandLinks, type PublicBrandDirectory } from '$lib/catalogBrandLinks';
   import { brandLogo } from '$lib/brandLogos';
-  import OrbitSelect from './OrbitSelect.svelte';
+  import { brandMarquee } from '$lib/brandMarquee';
   let {
     directory,
     context = 'home',
   }: { directory: PublicBrandDirectory; context?: 'home' | 'catalog' } = $props();
   const links = $derived(directory.status === 'ready' ? catalogBrandLinks(directory.brands) : []);
-  let selectedBrand = $state('');
+  let marqueePaused = $state(false);
 </script>
 
 <section
@@ -19,49 +19,56 @@
   <div class="brands-heading">
     <h2>Explorar por marca.</h2>
     {#if context === 'home'}<p>Marcas com viaturas disponíveis.</p>{/if}
+    {#if links.length > 1}<button
+        class="brand-motion-toggle"
+        type="button"
+        aria-label={marqueePaused ? 'Retomar movimento das marcas' : 'Pausar movimento das marcas'}
+        aria-pressed={marqueePaused}
+        onclick={() => (marqueePaused = !marqueePaused)}
+      >
+        {#if marqueePaused}<Play size={14} aria-hidden="true" />{:else}<Pause
+            size={14}
+            aria-hidden="true"
+          />{/if}
+      </button>{/if}
   </div>
   {#if links.length}
-    <nav aria-label="Marcas do catálogo">
-      <ul>
-        {#each links.slice(0, 6) as brand (brand.name)}
-          {@const logo = brandLogo(brand.name)}
-          <li>
-            <a href={brand.href} class:without-logo={!logo}>
-              {#if logo}<img
-                  class="brand-logo"
-                  class:wide-logo={['audi', 'dacia'].includes(brand.name.trim().toLowerCase())}
-                  src={logo}
-                  alt=""
-                  aria-hidden="true"
-                  width="72"
-                  height="44"
-                  loading="lazy"
-                  decoding="async"
-                />{/if}
-              <span class="brand-label"><span class="brand-name">{brand.name}</span></span>
-              <ArrowUpRight size={17} aria-hidden="true" />
-            </a>
-          </li>
+    <nav aria-label="Marcas do catálogo" use:brandMarquee={{ paused: marqueePaused }}>
+      <div class="brand-track">
+        {#each [false, true] as duplicate}
+          <ul
+            class:duplicate
+            data-brand-primary={!duplicate ? true : undefined}
+            aria-hidden={duplicate ? true : undefined}
+          >
+            {#each links as brand (brand.name)}
+              {@const logo = brandLogo(brand.name)}
+              <li>
+                <a
+                  href={brand.href}
+                  class:without-logo={!logo}
+                  tabindex={duplicate ? -1 : undefined}
+                >
+                  {#if logo}<img
+                      class="brand-logo"
+                      class:wide-logo={['audi', 'dacia'].includes(brand.name.trim().toLowerCase())}
+                      src={logo}
+                      alt=""
+                      aria-hidden="true"
+                      width="72"
+                      height="44"
+                      loading="lazy"
+                      decoding="async"
+                    />{/if}
+                  <span class="brand-label"><span class="brand-name">{brand.name}</span></span>
+                  <ArrowUpRight size={17} aria-hidden="true" />
+                </a>
+              </li>
+            {/each}
+          </ul>
         {/each}
-      </ul>
-    </nav>
-    <form class="mobile-brand-search" action="/viaturas" method="GET">
-      <div class="mobile-brand-control">
-        <OrbitSelect
-          id={`${context}-explore-brand`}
-          name="marca"
-          label="Escolher marca"
-          value={selectedBrand}
-          showBrandLogos
-          options={[
-            { value: '', label: 'Todas as marcas' },
-            ...links.map((brand) => ({ value: brand.name, label: brand.name })),
-          ]}
-          onChange={(value) => (selectedBrand = value)}
-        />
       </div>
-      <button type="submit">Explorar <ArrowUpRight size={16} aria-hidden="true" /></button>
-    </form>
+    </nav>
   {:else}
     <p class="empty">
       {directory.status === 'ready'
@@ -78,11 +85,15 @@
     padding-top: 32px;
   }
   .brands-heading {
+    position: relative;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 16px 32px;
     margin-bottom: 24px;
+  }
+  .brand-motion-toggle {
+    display: none;
   }
   h2,
   p {
@@ -107,8 +118,13 @@
     padding: 0;
     list-style: none;
   }
-  .mobile-brand-search {
+  .duplicate {
     display: none;
+  }
+  @media (min-width: 701px) {
+    li:nth-child(n + 7) {
+      display: none;
+    }
   }
   li {
     min-width: 0;
@@ -162,7 +178,7 @@
     inset: auto 0 -4px;
     height: 1px;
     background: var(--red);
-    transform: scaleX(0);
+    clip-path: inset(0 100% 0 0);
     transform-origin: left;
   }
   a :global(svg) {
@@ -173,7 +189,7 @@
     outline-offset: 4px;
   }
   a:focus-visible .brand-name::after {
-    transform: scaleX(1);
+    clip-path: inset(0 0 0 0);
   }
   a:focus-visible :global(svg) {
     rotate: 45deg;
@@ -188,7 +204,7 @@
   }
   @media (hover: hover) {
     a:hover .brand-name::after {
-      transform: scaleX(1);
+      clip-path: inset(0 0 0 0);
     }
     a:hover :global(svg) {
       rotate: 45deg;
@@ -201,7 +217,7 @@
   }
   @media (prefers-reduced-motion: no-preference) {
     .brand-name::after {
-      transition: transform 220ms ease;
+      transition: clip-path 220ms ease;
     }
     a :global(svg) {
       transition:
@@ -216,49 +232,87 @@
     .brands-heading {
       display: block;
       margin-bottom: 16px;
+      padding-right: 52px;
+    }
+    .brand-motion-toggle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .brand-motion-toggle:focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 3px;
     }
     .brands-heading p {
       margin-top: 10px;
     }
     nav {
+      display: block;
+      overflow-x: auto;
+      scroll-padding-inline: 4px;
+      padding: 6px 0 10px;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar {
       display: none;
     }
-    .mobile-brand-search {
+    .brand-track {
       display: flex;
-      align-items: flex-end;
-      gap: 12px;
+      width: max-content;
     }
-    .mobile-brand-control {
-      flex: 1;
-      min-width: 0;
+    ul {
+      display: flex;
+      width: max-content;
+      gap: 20px;
+      padding: 0 20px 0 0;
     }
-    .mobile-brand-control :global(.select-trigger) {
-      min-height: 48px;
-      font-size: 16px;
+    .duplicate {
+      display: none;
     }
-    .mobile-brand-search button {
-      display: inline-flex;
+    nav:global([data-brand-loop='true']) .duplicate {
+      display: flex;
+    }
+    li {
+      flex: 0 0 104px;
+      width: 104px;
+      scroll-snap-align: start;
+    }
+    li a {
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      min-height: 48px;
-      padding: 10px 12px;
+      gap: 12px;
+      min-height: 100px;
+      padding: 10px 4px;
       border: 0;
-      border-radius: 4px;
-      background: var(--red);
-      color: white;
-      font: inherit;
-      font-size: 14px;
-      cursor: pointer;
+      border-radius: 0;
+      background: transparent;
+      font-size: 12px;
     }
-    .mobile-brand-search > button:focus-visible {
-      outline: 2px solid var(--text);
-      outline-offset: 3px;
+    .brand-logo {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      justify-self: center;
+      height: 40px;
     }
-    @media (hover: hover) {
-      .mobile-brand-search button:hover {
-        background: #b80510;
-      }
+    .brand-label,
+    .without-logo .brand-label {
+      align-items: center;
+      text-align: center;
+    }
+    li a > :global(svg) {
+      display: none;
     }
     .empty a {
       display: flex;
@@ -266,13 +320,18 @@
       margin: 8px 0 0;
     }
   }
-  @media (max-width: 380px) {
-    ul {
-      column-gap: 16px;
+  @media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+    nav {
+      scroll-snap-type: x proximity;
     }
-    li a {
-      font-size: 14px;
-      column-gap: 6px;
+    nav:global([data-brand-loop]) .duplicate {
+      display: none;
+    }
+    .brand-motion-toggle {
+      display: none;
+    }
+    .brands-heading {
+      padding-right: 0;
     }
   }
   .catalog-context {

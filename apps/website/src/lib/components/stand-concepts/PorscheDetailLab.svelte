@@ -100,9 +100,7 @@
           power: publicVehicle.specifications?.powerHp ?? 0,
           category: publicVehicle.specifications?.category ?? '',
           price: publicVehicle.price === null ? Number.NaN : Number(publicVehicle.price),
-          image: publicVehicle.photos.length
-            ? publicPhoto(publicVehicle, 0)
-            : catalogPlaceholder,
+          image: publicVehicle.photos.length ? publicPhoto(publicVehicle, 0) : catalogPlaceholder,
         }
       : cars.find((item) => item.id === id),
   );
@@ -305,10 +303,7 @@
 <svelte:head>
   {#if publicVehicle}
     <title>{publicVehicle.brand} {publicVehicle.model} — Auto Nunes Martins</title>
-    <meta
-      name="description"
-      content={vehicleSeo(publicVehicle).description}
-    />
+    <meta name="description" content={vehicleSeo(publicVehicle).description} />
     <link rel="canonical" href={publicVehicleCanonical(publicVehicle, $page.url.origin)} />
     {@html vehicleJsonLdScript(publicVehicle, $page.url.origin)}
   {/if}
@@ -419,9 +414,7 @@
           ? 'Consulte a seleção atual de viaturas aprovadas para o website.'
           : 'Tente novamente mais tarde.'}
       </p>
-      <a class="pill" href="/viaturas"
-        >Voltar <ArrowUpRight size={18} aria-hidden="true" /></a
-      >
+      <a class="pill" href="/viaturas">Voltar <ArrowUpRight size={18} aria-hidden="true" /></a>
     </main>
   {:else if catalog}
     <OrbitCatalog card={vehicleCard} {stock} />
@@ -641,16 +634,12 @@
                 src: publicVehicle
                   ? sizedPhoto(publicPhoto(publicVehicle, 1), 1600)
                   : photo(car.image, 1800),
-                srcset: publicVehicle
-                  ? vehiclePhotoSet(publicPhoto(publicVehicle, 1))
-                  : undefined,
+                srcset: publicVehicle ? vehiclePhotoSet(publicPhoto(publicVehicle, 1)) : undefined,
               }}
               src={publicVehicle
                 ? sizedPhoto(publicPhoto(publicVehicle, 1), 1600)
                 : photo(car.image, 1800)}
-              srcset={publicVehicle
-                ? vehiclePhotoSet(publicPhoto(publicVehicle, 1))
-                : undefined}
+              srcset={publicVehicle ? vehiclePhotoSet(publicPhoto(publicVehicle, 1)) : undefined}
               sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw"
               alt=""
               loading="lazy"
@@ -662,7 +651,9 @@
                 >Vamos falar <ArrowUpRight size={18} aria-hidden="true" /></button
               >
             </div>
-            <span class="band-index" aria-hidden="true">↗</span>
+            <span class="band-index" aria-hidden="true"
+              ><ArrowUpRight size="1em" strokeWidth={1} /></span
+            >
           </section>
         {/if}
         {#if publicVehicle?.description}<section class="equipment public-description" use:entrance>
@@ -1595,7 +1586,7 @@
       transition: opacity 420ms ease;
     }
     .hero-index-track::after {
-      transition: transform 240ms ease;
+      transition: clip-path 240ms ease;
     }
   }
   @media (max-width: 700px) {
@@ -3884,11 +3875,11 @@
     bottom: -3px;
     height: 1px;
     background: var(--red);
-    transform: scaleX(0);
+    clip-path: inset(0 100% 0 0);
     transform-origin: left;
   }
   .services button:focus-visible > .service-cta-label::after {
-    transform: scaleX(1);
+    clip-path: inset(0 0 0 0);
   }
   .services button :global(svg) {
     color: var(--text);
@@ -3898,7 +3889,7 @@
   }
   @media (hover: hover) {
     .services button:hover > .service-cta-label::after {
-      transform: scaleX(1);
+      clip-path: inset(0 0 0 0);
     }
     .services button:hover :global(svg) {
       rotate: 45deg;
@@ -3906,7 +3897,7 @@
   }
   @media (prefers-reduced-motion: no-preference) {
     .services button > .service-cta-label::after {
-      transition: transform 220ms ease;
+      transition: clip-path 220ms ease;
     }
     .services button :global(svg) {
       transition: rotate 220ms ease;

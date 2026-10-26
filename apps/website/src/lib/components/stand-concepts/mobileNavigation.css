@@ -32,7 +32,7 @@
     transform: translateY(0);
     transition-delay: 0s;
   }
-.design .stand-header #stand-navigation > :is(a, button) {
+  .design .stand-header #stand-navigation > :is(a, button) {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -57,11 +57,15 @@
     transform: translateY(0);
   }
   .design .stand-header #stand-navigation > :is(a, button)::before,
-  .design .stand-header #stand-navigation > a::after { content: none; }
+  .design .stand-header #stand-navigation > a::after {
+    content: none;
+  }
   .design .stand-header #stand-navigation > :is(a, button):is(:hover, [aria-current='page']) {
     color: var(--text);
   }
-  .design .stand-header #stand-navigation .nav-label { position: relative; }
+  .design .stand-header #stand-navigation .nav-label {
+    position: relative;
+  }
   .design .stand-header #stand-navigation .nav-label::after {
     content: '';
     position: absolute;
@@ -71,17 +75,17 @@
     width: 100%;
     height: 2px;
     background: var(--red);
-    transform: scaleX(0);
+    clip-path: inset(0 100% 0 0);
     transform-origin: left;
     opacity: 1;
   }
   .design .stand-header #stand-navigation > a[aria-current='page'] .nav-label::after {
-    opacity: .7;
-    transform: scaleX(1);
+    opacity: 0.7;
+    clip-path: inset(0 0 0 0);
   }
   .design .stand-header #stand-navigation > a:is(:hover, :focus-visible) .nav-label::after {
     opacity: 1;
-    transform: scaleX(1);
+    clip-path: inset(0 0 0 0);
   }
   .design .stand-header #stand-navigation > :is(a, button):focus-visible {
     outline: 2px solid var(--text);
@@ -107,5 +111,7 @@
 }
 
 @media (max-width: 1000px) and (prefers-reduced-motion: no-preference) {
-  .design .stand-header #stand-navigation .nav-label::after { transition: transform 180ms ease-out; }
+  .design .stand-header #stand-navigation .nav-label::after {
+    transition: clip-path 180ms ease-out;
+  }
 }

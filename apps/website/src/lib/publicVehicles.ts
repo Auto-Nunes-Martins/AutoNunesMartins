@@ -30,17 +30,27 @@ export const publicVehicleSchema = z
     availability: z.enum(['AVAILABLE', 'RESERVED']),
     photos: z.array(z.string()).max(20),
     // Optional during rolling deployment/backfill. Never trust a dimension for another version.
-    coverPhotoDimensions: z.object({
-      version: z.string().regex(/^[a-f0-9]{64}$/),
-      width: z.number().int().positive(),
-      height: z.number().int().positive(),
-    }).refine(value => value.width * value.height <= 24_000_000).nullable().optional().catch(undefined),
+    coverPhotoDimensions: z
+      .object({
+        version: z.string().regex(/^[a-f0-9]{64}$/),
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+      })
+      .refine((value) => value.width * value.height <= 24_000_000)
+      .nullable()
+      .optional()
+      .catch(undefined),
   })
   .superRefine((v, ctx) => {
-    if (v.photos.some((path, i) => {
-      const base = `/api/public/vehicles/${v.slug}/photos/${i}`;
-      return path !== base && !(path.startsWith(base + '?v=') && /^[a-f0-9]{64}$/.test(path.slice(base.length + 3)));
-    })) {
+    if (
+      v.photos.some((path, i) => {
+        const base = `/api/public/vehicles/${v.slug}/photos/${i}`;
+        return (
+          path !== base &&
+          !(path.startsWith(base + '?v=') && /^[a-f0-9]{64}$/.test(path.slice(base.length + 3)))
+        );
+      })
+    ) {
       ctx.addIssue({ code: 'custom', path: ['photos'], message: 'Invalid public photo path' });
     }
   });
@@ -97,14 +107,19 @@ export const publicPrice = (value: string | number | null) =>
         maximumFractionDigits: 2,
       }).format(Number(value));
 export const publicHref = (slug: string) => `/viaturas/${slug}`;
-export function publicPhoto(vehicle: string | Pick<PublicVehicle, 'slug' | 'photos'>, index: number): string {
+export function publicPhoto(
+  vehicle: string | Pick<PublicVehicle, 'slug' | 'photos'>,
+  index: number,
+): string {
   if (typeof vehicle === 'string') return `${publicHref(vehicle)}/photos/${index}`;
-  return vehicle.photos[index]?.replace('/api/public/vehicles/', '/viaturas/')
-    ?? `${publicHref(vehicle.slug)}/photos/${index}`;
+  return (
+    vehicle.photos[index]?.replace('/api/public/vehicles/', '/viaturas/') ??
+    `${publicHref(vehicle.slug)}/photos/${index}`
+  );
 }
 /** Identities from this visit's fresh, no-store public vehicle response. */
 export function publicPhotoVersions(vehicle: Pick<PublicVehicle, 'photos'>): string[] | undefined {
-  const versions = vehicle.photos.map(path => path.match(/\?v=([a-f0-9]{64})$/)?.[1]);
+  const versions = vehicle.photos.map((path) => path.match(/\?v=([a-f0-9]{64})$/)?.[1]);
   return versions.every((version): version is string => !!version) ? versions : undefined;
 }
 export function publicCard(vehicle: PublicVehicle) {
@@ -121,8 +136,10 @@ export function publicCard(vehicle: PublicVehicle) {
     category: vehicle.availability === 'RESERVED' ? 'Reservada' : '',
     href: publicHref(vehicle.slug),
     photoCount: vehicle.photos.length,
-    photoDimensions: vehicle.coverPhotoDimensions?.version === vehicle.photos[0]?.match(/\?v=([a-f0-9]{64})$/)?.[1]
-      ? vehicle.coverPhotoDimensions : undefined,
+    photoDimensions:
+      vehicle.coverPhotoDimensions?.version === vehicle.photos[0]?.match(/\?v=([a-f0-9]{64})$/)?.[1]
+        ? vehicle.coverPhotoDimensions
+        : undefined,
     approved: true as const,
   };
 }
@@ -141,7 +158,7 @@ export function publicCatalogSeo(params: URLSearchParams, origin: string, stock:
         v.value.toLowerCase() === params.get('modelo')?.toLowerCase(),
     )?.value ?? '';
   const label = [brand, model].filter(Boolean).join(' ');
-  const heading = label ? `${label} usados` : 'Viaturas usadas';
+  const heading = label ? `${label} usados` : 'Viaturas';
   const canonical = new URL('/viaturas', origin);
   for (const key of [
     'q',

@@ -210,7 +210,9 @@
   padding-block: var(--orbit-space-page-start) var(--orbit-space-section);
 }
 @media (max-width: 700px) {
-  .design.orbit .not-found.known-unavailable { padding-top: 32px; }
+  .design.orbit .not-found.known-unavailable {
+    padding-top: 32px;
+  }
 }
 .design.orbit .not-found > p:not(.kicker) {
   color: var(--muted);
@@ -547,6 +549,10 @@
 
   .design.orbit-home .showroom-heading h2 {
     max-width: 15ch;
+  }
+
+  .design.orbit.orbit-home .showroom {
+    padding-top: 28px;
   }
 
   .design.orbit-home .about {

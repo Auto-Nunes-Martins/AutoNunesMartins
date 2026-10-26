@@ -46,13 +46,21 @@ Verificação adicional nos dois perfis: hashes SHA-256 iguais entre cartão/pri
 
 Bytes de corpos enviados pela fixture, sem overhead HTTP:
 
-| Percurso | Antes desktop | Foto única desktop | Antes mobile | Foto única mobile |
-|---|---:|---:|---:|---:|
-| Catálogo visível | 496 584 | 1 678 122 | 761 882 | 1 124 982 |
-| Entrada na ficha / miniaturas | 426 698 | 4 124 678 | 149 652 | 4 124 678 |
-| Fotos 2/3, rever 1/3 e avançar para 4 no viewer | 1 558 581 | 0 | 1 558 581 | 0 |
-| Regresso ao catálogo e à ficha | 0 | 0 | 0 | 0 |
+| Percurso                                        | Antes desktop | Foto única desktop | Antes mobile | Foto única mobile |
+| ----------------------------------------------- | ------------: | -----------------: | -----------: | ----------------: |
+| Catálogo visível                                |       496 584 |          1 678 122 |      761 882 |         1 124 982 |
+| Entrada na ficha / miniaturas                   |       426 698 |          4 124 678 |      149 652 |         4 124 678 |
+| Fotos 2/3, rever 1/3 e avançar para 4 no viewer |     1 558 581 |                  0 |    1 558 581 |                 0 |
+| Regresso ao catálogo e à ficha                  |             0 |                  0 |            0 |                 0 |
 
 O mobile carregou quatro cartões neste percurso; o desktop seis. Não comparar estes totais como se fossem o mesmo conjunto visível. Foto única: 16 pedidos de imagens ao servidor no desktop e 14 no mobile, incluindo **duas respostas 304** da primeira foto na entrada na ficha. Os restantes eram primeiros downloads de URLs distintos. As nove fotos da galeria usaram uma única largura solicitada, 1600. Abrir/reabrir fullscreen e rever fotos não gerou novos pedidos. A baseline fez 21/18 pedidos, respetivamente, incluindo revalidação no regresso à ficha.
 
 O custo inicial aumenta porque as miniaturas recebem ficheiros grandes. As fotos preparadas são depois reutilizadas pela principal e fullscreen. Não se promete melhoria geral de velocidade nem zero pedidos em toda a navegação. O proprietário autorizou avaliar este comportamento e pode pedir o rollback acima.
+
+## Ajuste posterior de agendamento mobile — 25 de outubro de 2026
+
+Por novo pedido do proprietário, o agendamento mobile passou de nove para três fotos preparadas inicialmente. Preloads da quarta à nona só são elegíveis em desktop; a preparação de navegação usa três até700px e nove acima. A ficha mobile atribui URLs às restantes miniaturas apenas quando intersectam a sua faixa horizontal. Na largura390px observada foram pedidas as primeiras quatro (três completas e a quarta parcialmente visível). Ao abrir fullscreen, só a quinta adicional, já visível nessa faixa, começou a carregar; ao deslizar para o fim foram pedidas as miniaturas que entraram no campo visível. O fullscreen mobile deixa de aguardar todas as miniaturas e pode obter as visíveis em falta com a autorização normal. O desktop mantém preparação de nove e reutilização cache-only do viewer. Mantidos versão, autorização, memória limitada, ficheiro único1600 e receita WebP84; não foram repostos candidatos responsivos. As medições da tabela acima são históricas da experiência anterior a este ajuste de agendamento, não novos totais medidos.
+
+## Política atual: todas as fotografias à entrada — 26 de outubro de 2026
+
+O proprietário revogou o lazy loading das fotografias da viatura e pediu todas logo à entrada, tanto em mobile como em desktop. Substituída a preparação limitada a três/nove por todas as versões aprovadas descobertas na consulta atual, com até seis transferências simultâneas. Todas têm preload e miniatura eager; retiradas a observação de visibilidade e a camada de adiamento mobile. O fullscreen abre imediatamente e reutiliza os pixels retidos, com fallback autorizado normal para uma fotografia ainda em falta. Mantidos ficheiro1600, versões, autorização atual, cache limitada e receita WebP84. Esta política substitui o ajuste mobile de três fotos descrito acima; as medições antigas permanecem históricas.

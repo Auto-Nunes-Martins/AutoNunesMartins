@@ -336,7 +336,7 @@
     padding-top: 0;
   }
   .design.orbit.orbit-detail .vehicle-photo {
-    aspect-ratio: 1.3;
+    aspect-ratio: 4 / 3;
     max-height: none;
   }
   .design.orbit.orbit-detail .photo-controls {
@@ -497,7 +497,8 @@
   gap: 8px;
   padding: 6px;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
   scrollbar-width: none;
   scrollbar-color: var(--detail-scroll-thumb) var(--detail-scroll-track);
   scrollbar-gutter: stable;
@@ -607,6 +608,14 @@
 .design.orbit.orbit-detail .detail-thumbnails button {
   flex: 0 0 112px;
   width: 112px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .design.orbit.orbit-detail .detail-thumbnails {
+    /* Avoid Chromium routing mixed vertical wheel input into the horizontal
+       scroller. Mouse drag/arrows and deliberate horizontal wheel remain active. */
+    overflow-x: hidden;
+    overscroll-behavior-x: auto;
+  }
 }
 .design.orbit.orbit-detail .vehicle-gallery:not(:has(.detail-thumbnails)) .vehicle-photo {
   padding-right: 0;
@@ -740,6 +749,7 @@
 
 /* Reading rhythm belongs only to the real vehicle's information column. */
 .design.orbit.orbit-detail.public-detail .services {
+  padding-top: 24px;
   padding-bottom: clamp(80px, 7vw, 112px);
 }
 .design.orbit.orbit-detail.public-detail .vehicle-layout > .detail-facts {
@@ -747,10 +757,12 @@
   gap: 40px;
 }
 .design.orbit.orbit-detail.public-detail .detail-facts dl {
-  column-gap: 40px;
+  column-gap: clamp(48px, 6vw, 96px);
 }
 .design.orbit.orbit-detail.public-detail .detail-facts dl > div {
-  gap: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
   padding-block: 24px;
 }
 .design.orbit.orbit-detail.public-detail .detail-facts dt {
@@ -764,6 +776,7 @@
   flex-shrink: 0;
 }
 .design.orbit.orbit-detail.public-detail .detail-facts dd {
+  text-align: left;
   font-size: 15px;
   line-height: 1.65;
   overflow-wrap: anywhere;
@@ -772,6 +785,7 @@
 /* Real vehicle mobile layout only; shared comparison/favorite behavior is untouched. */
 @media (max-width: 700px) {
   .design.orbit.orbit-detail.public-detail .services {
+    padding-top: 16px;
     padding-bottom: 64px;
   }
   .design.orbit.orbit-detail.public-detail .vehicle-layout > .detail-facts {
@@ -792,6 +806,17 @@
   }
   .design.orbit.orbit-detail.public-detail .detail-thumbnails {
     padding-inline: 5%;
+    gap: 8px;
+    margin-top: 8px;
+    padding-block: 2px;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-thumbnails button {
+    flex: 0 0 88px;
+    width: 88px;
+    min-height: 66px;
+  }
+  .design.orbit.orbit-detail.public-detail .thumbnail-step {
+    display: none;
   }
   .design.orbit.orbit-detail.public-detail .detail-favorite-desktop {
     display: none;
@@ -860,7 +885,9 @@
 }
 
 @media (max-width: 700px) {
-  .design.orbit.orbit-detail .detail-top-actions { padding-top: 32px; }
+  .design.orbit.orbit-detail .detail-top-actions {
+    padding-top: 32px;
+  }
 }
 .design.orbit.orbit-detail.public-detail .vehicle-photo > img {
   transform: none;

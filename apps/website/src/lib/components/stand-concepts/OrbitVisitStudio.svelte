@@ -96,57 +96,65 @@
   class:borderless-panels={borderlessPanels}
   class:harmonized-type={harmonizedTypography}
   class:family-theme={!!background?.theme}
-  style={background?.theme ? Object.entries(background.theme).map(([key, value]) => `--visit-${key}:${value}`).join(';') : undefined}
+  style={background?.theme
+    ? Object.entries(background.theme)
+        .map(([key, value]) => `--visit-${key}:${value}`)
+        .join(';')
+    : undefined}
   {id}
   aria-labelledby={`${id}-heading`}
 >
   <div class="studio-landscape" aria-hidden="true">
     {#if background}<ScenePhotograph {background} bounded />{:else}
-    <img
-      class="studio-photo"
-      src={photo('photo-1576212767334-9e289e294c77', backgroundTone === 'original' ? 2200 : 1280)}
-      srcset={responsivePhoto('photo-1576212767334-9e289e294c77')}
-      sizes="(prefers-reduced-motion: reduce) 100vw, (max-aspect-ratio: 3/2) 150vh, 100vw"
-      alt=""
-      loading="lazy"
-      decoding="async"
-    />
+      <img
+        class="studio-photo"
+        src={photo('photo-1576212767334-9e289e294c77', backgroundTone === 'original' ? 2200 : 1280)}
+        srcset={responsivePhoto('photo-1576212767334-9e289e294c77')}
+        sizes="(prefers-reduced-motion: reduce) 100vw, (max-aspect-ratio: 3/2) 150vh, 100vw"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
     {/if}
   </div>
   <div class="studio-inner">
     <div class="visit-copy">
-      <div class="heading-line">
-        <OrbitVisitLabel />
-        {#if compareBackgroundTones}
-          <button
-            class="background-toggle"
-            type="button"
-            role="switch"
-            aria-label={`${useReferenceTone ? 'Tom original' : 'Tom atual'} — usar tom original do fundo`}
-            aria-checked={useReferenceTone}
-            onclick={() => (useReferenceTone = !useReferenceTone)}
-          >
-            <span class="toggle-track" aria-hidden="true"><span></span></span>
-            {useReferenceTone ? 'Tom original' : 'Tom atual'}
-          </button>
-        {:else if comparison}<span class="comparison-label">{comparisonLabel}</span>{/if}
+      <div class="visit-heading">
+        <div class="heading-line">
+          <OrbitVisitLabel />
+          {#if compareBackgroundTones}
+            <button
+              class="background-toggle"
+              type="button"
+              role="switch"
+              aria-label={`${useReferenceTone ? 'Tom original' : 'Tom atual'} — usar tom original do fundo`}
+              aria-checked={useReferenceTone}
+              onclick={() => (useReferenceTone = !useReferenceTone)}
+            >
+              <span class="toggle-track" aria-hidden="true"><span></span></span>
+              {useReferenceTone ? 'Tom original' : 'Tom atual'}
+            </button>
+          {:else if comparison}<span class="comparison-label">{comparisonLabel}</span>{/if}
+        </div>
+        <h2 id={`${id}-heading`}>
+          Venha <span class="heading-tail">conhecer-nos<span class="period">.</span></span>
+        </h2>
       </div>
-      <h2 id={`${id}-heading`}>
-        Venha <span class="heading-tail">conhecer-nos<span class="period">.</span></span>
-      </h2>
 
       <div class="location" class:original-map={mapArtwork === 'original'}>
         {#if mapArtwork === 'original'}
-          {#if background?.theme}<span class="location-map" aria-hidden="true"><VisitMapArtwork {id} /></span>{:else}
-          <img
-            class="location-map"
-            src={locationMap}
-            alt=""
-            width="1728"
-            height="684"
-            loading="lazy"
-            decoding="async"
-          />
+          {#if background?.theme}<span class="location-map" aria-hidden="true"
+              ><VisitMapArtwork {id} /></span
+            >{:else}
+            <img
+              class="location-map"
+              src={locationMap}
+              alt=""
+              width="1728"
+              height="684"
+              loading="lazy"
+              decoding="async"
+            />
           {/if}
         {:else}
           <svg
@@ -196,6 +204,18 @@
               >
             </a>
           {/if}
+          {#if contact.additionalAddress}
+            <address>{contact.additionalAddress}</address>
+            <a
+              class="map-link"
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.additionalAddress.replace(/\n/g, ', '))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Abrir no mapa <ArrowUpRight size={16} aria-hidden="true" />
+              <span class="sr-only">(abre num novo separador)</span>
+            </a>
+          {/if}
         </div>
       </div>
 
@@ -208,6 +228,11 @@
                 href={`tel:${contact.phone.international}`}
                 aria-describedby={demoId}>{contact.phone.display}</a
               >{:else}<p>Por confirmar.</p>{/if}
+            {#if contact.additionalPhone}<a
+                class="contact-value"
+                href={`tel:${contact.additionalPhone.international}`}
+                >{contact.additionalPhone.display}</a
+              >{/if}
           </div>
           <div>
             <h3><Mail size={14} aria-hidden="true" /> Email</h3>
@@ -250,7 +275,7 @@
             href={`mailto:${contact.email}`}
             aria-describedby={demoId}
             ><span class="email-label">Enviar email</span>
-            <ArrowUpRight size={16} aria-hidden="true" /></a
+            <ArrowUpRight size={18} aria-hidden="true" /></a
           >{/if}
       </div>
       {#if contact.isDemo}<p class="demo-note" class:sr-only={!showDemoNote} id={demoId}>
@@ -443,6 +468,9 @@
     gap: var(--column-gap);
     align-items: start;
   }
+  .visit-heading {
+    display: contents;
+  }
   .original-form-divider {
     position: relative;
     min-width: 0;
@@ -633,6 +661,9 @@
   .contact-value.email {
     font-size: 14px;
   }
+  .contact-value + .contact-value {
+    display: block;
+  }
   .opening-hours {
     border-left: 1px solid var(--line);
     padding-left: 25px;
@@ -726,32 +757,24 @@
     color: #111;
   }
   .call-action:focus-visible .action-arrow :global(svg) {
-    rotate: 45deg;
+    transform: translate(3px, -3px);
   }
   .call-action:focus-visible::before {
     box-shadow: 0 3px 10px #00000026;
   }
-  .email-action:focus-visible .email-label::after {
-    opacity: 1;
-    transform: scaleX(1);
-  }
   .email-action:focus-visible > :global(svg) {
-    rotate: 45deg;
+    transform: translate(3px, -3px);
     color: #e30613;
   }
   @media (hover: hover) {
     .call-action:hover .action-arrow :global(svg) {
-      rotate: 45deg;
+      transform: translate(3px, -3px);
     }
     .call-action:hover::before {
       box-shadow: 0 3px 10px #00000026;
     }
-    .email-action:hover .email-label::after {
-      opacity: 1;
-      transform: scaleX(1);
-    }
     .email-action:hover > :global(svg) {
-      rotate: 45deg;
+      transform: translate(3px, -3px);
       color: #e30613;
     }
   }
@@ -759,7 +782,7 @@
     .call-action .action-arrow :global(svg),
     .email-action > :global(svg) {
       transition:
-        rotate 300ms ease,
+        transform 220ms ease,
         color 300ms ease;
     }
     .call-action::before {
@@ -947,8 +970,7 @@
       background: #ffffff09;
       border-color: #ffffff70;
     }
-    .map-link:hover :global(svg),
-    .send-button:hover :global(svg) {
+    .map-link:hover :global(svg) {
       transform: translateX(3px);
     }
   }
@@ -1269,29 +1291,6 @@
   .email-action {
     text-decoration: none;
   }
-  .email-label {
-    position: relative;
-  }
-  .email-label::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -5px;
-    width: 100%;
-    height: 1px;
-    background: #e30613;
-    opacity: 0;
-    transform: scaleX(0);
-    transform-origin: left;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .email-label::after {
-      transition:
-        transform 300ms ease,
-        opacity 300ms ease;
-    }
-  }
-
   @media (prefers-reduced-motion: no-preference) {
     .call-action {
       transition:
@@ -1301,9 +1300,16 @@
     }
   }
   /* Only the map surface changes; all neutral text/actions remain original. */
-  .family-theme .location.original-map { background: var(--visit-map-surface); }
+  .family-theme .location.original-map {
+    background: var(--visit-map-surface);
+  }
   .family-theme .location.original-map::before {
-    background: linear-gradient(90deg, var(--visit-map-surface) 0%, color-mix(in srgb, var(--visit-map-surface) 90%, transparent) 44%, color-mix(in srgb, var(--visit-map-surface) 22%, transparent) 100%);
+    background: linear-gradient(
+      90deg,
+      var(--visit-map-surface) 0%,
+      color-mix(in srgb, var(--visit-map-surface) 90%, transparent) 44%,
+      color-mix(in srgb, var(--visit-map-surface) 22%, transparent) 100%
+    );
   }
   :global(html[data-theme='light']) .original-tone .studio-landscape::before,
   :global(html[data-theme='dark']) .original-tone .studio-landscape::before {
@@ -1315,5 +1321,91 @@
   :global(html[data-theme='dark']) .family-theme .studio-inner {
     --visit-form-panel: #262626c9;
     --visit-map-surface: #262626;
+  }
+
+  .email-action {
+    position: relative;
+    gap: 24px;
+    padding: 12px 0;
+    border-bottom: 1px solid #ffffff50;
+  }
+  .email-action::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 1px;
+    background: #e30613;
+    clip-path: inset(0 100% 0 0);
+    pointer-events: none;
+    transition: clip-path 420ms ease;
+  }
+  .email-action:focus-visible::after {
+    clip-path: inset(0);
+  }
+  .send-button:not(:disabled):focus-visible :global(svg) {
+    transform: translate(3px, -3px);
+  }
+  @media (hover: hover) {
+    .email-action:hover::after {
+      clip-path: inset(0);
+    }
+    .send-button:not(:disabled):hover :global(svg) {
+      transform: translate(3px, -3px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .email-action::after,
+    .email-action > :global(svg),
+    .call-action .action-arrow :global(svg),
+    .send-button :global(svg) {
+      transition: none;
+      transform: none;
+    }
+  }
+  @media (max-width: 700px) {
+    .studio-landscape {
+      inset: 0 0 auto;
+      height: 260px;
+      overflow: hidden;
+    }
+    .studio-landscape :global(picture.bounded) {
+      height: 100%;
+      bottom: 0;
+      mask-image: none;
+    }
+    .studio-inner {
+      padding-top: 0;
+    }
+    .has-form-divider .studio-inner {
+      --column-gap: 48px;
+      gap: 48px;
+    }
+    .visit-heading {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      box-sizing: border-box;
+      height: 260px;
+      margin-inline: -5.5555556%;
+      padding: 24px 5.5555556%;
+      border-bottom: 1px solid var(--line);
+    }
+    .visit-heading h2 {
+      margin-top: 14px;
+      font-size: clamp(32px, 9.2vw, 40px);
+      line-height: 1.06;
+      max-width: 12ch;
+    }
+    .channels {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .channels .contact-value {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      max-width: 100%;
+    }
   }
 </style>

@@ -10,7 +10,9 @@
   let resetTimer: ReturnType<typeof setTimeout> | undefined;
   function reset() {
     clearTimeout(resetTimer);
-    label = 'Partilhar'; confirmed = false; message = '';
+    label = 'Partilhar';
+    confirmed = false;
+    message = '';
   }
   onDestroy(() => clearTimeout(resetTimer));
   $effect(() => {
@@ -38,15 +40,26 @@
     }
     if (result === 'manual') {
       label = 'Não copiado';
-      message = 'Não foi possível copiar automaticamente. Pode copiar a ligação da barra de endereço.';
+      message =
+        'Não foi possível copiar automaticamente. Pode copiar a ligação da barra de endereço.';
     }
     if (result !== 'cancelled') resetTimer = setTimeout(reset, 2500);
   }
 </script>
 
 <div class="vehicle-share">
-  <button type="button" onclick={share} disabled={pending} aria-busy={pending} aria-label="Partilhar viatura">
-    {#if confirmed}<Check size={16} strokeWidth={1.5} aria-hidden="true" />{:else}<Share2 size={16} strokeWidth={1.5} aria-hidden="true" />{/if}
+  <button
+    type="button"
+    onclick={share}
+    disabled={pending}
+    aria-busy={pending}
+    aria-label="Partilhar viatura"
+  >
+    {#if confirmed}<Check size={16} strokeWidth={1.5} aria-hidden="true" />{:else}<Share2
+        size={16}
+        strokeWidth={1.5}
+        aria-hidden="true"
+      />{/if}
     <span class="share-label">{label}</span>
   </button>
   <p class="sr-only" role="status" aria-live="polite">{message}</p>
@@ -108,6 +121,14 @@
       transition:
         background-color 180ms ease,
         color 180ms ease;
+    }
+  }
+  @media (max-width: 700px) {
+    button {
+      gap: 6px;
+    }
+    .share-label {
+      text-align: left;
     }
   }
 </style>

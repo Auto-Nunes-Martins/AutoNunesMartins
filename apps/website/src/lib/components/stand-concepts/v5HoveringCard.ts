@@ -7,19 +7,24 @@ export function hoveringCard(node: HTMLElement, enabled: boolean) {
   let entered = node.getAnimations().some((a) => a.effect?.getComputedTiming().progress === 1);
   let visible = false;
   let started = false;
-  const hoverTargets = [...node.querySelectorAll<HTMLElement>('.hd-photo-stage, .hd-price-motion')];
+  const hoverTargets = [...node.querySelectorAll<HTMLElement>('.hd-photo, .hd-price-motion')];
   const update = () => {
     const photo = node.querySelector<HTMLImageElement>('.hd-photo img');
     const ready =
-      (entered || node.dataset.carouselEntered === 'true') && visible &&
-      !!photo?.complete && photo.naturalWidth > 0 && motion.matches;
+      (entered || node.dataset.carouselEntered === 'true') &&
+      visible &&
+      !!photo?.complete &&
+      photo.naturalWidth > 0 &&
+      motion.matches;
     if (ready && !started) {
       started = true;
       node.dataset.idleReady = 'true';
     }
     node.dataset.idlePaused = String(
-      !ready || document.hidden || hoverTargets.some((target) => target.matches(':hover')) ||
-      !!node.querySelector('.hd-photo:focus-visible'),
+      !ready ||
+        document.hidden ||
+        hoverTargets.some((target) => target.matches(':hover')) ||
+        !!node.querySelector('.hd-photo:focus-visible'),
     );
   };
   const afterFocus = () => queueMicrotask(update);
