@@ -75,7 +75,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 9px;
+    gap: 6px;
     min-height: 44px;
     padding: 11px 18px;
     border: 1px solid transparent;
@@ -93,7 +93,7 @@
   .share-label {
     display: inline-block;
     width: 12ch;
-    text-align: center;
+    text-align: left;
   }
   button:focus-visible {
     outline: 2px solid var(--red);
@@ -121,14 +121,6 @@
       transition:
         background-color 180ms ease,
         color 180ms ease;
-    }
-  }
-  @media (max-width: 700px) {
-    button {
-      gap: 6px;
-    }
-    .share-label {
-      text-align: left;
     }
   }
 </style>
