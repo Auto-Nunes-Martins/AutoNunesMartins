@@ -138,16 +138,20 @@ describe('scroll action read/write integration', () => {
         return { top: 0, bottom: 600, height: 600 };
       },
     };
+    const readingIndicator = { style: style() };
     const root = {
       style: style(),
       classList,
       querySelectorAll: () => [node],
       contains: () => true,
-      querySelector: () => ({
-        get offsetHeight() {
-          return read('strip', 40);
-        },
-      }),
+      querySelector: (selector: string) =>
+        selector === ':scope > .read-line'
+          ? readingIndicator
+          : {
+              get offsetHeight() {
+                return read('strip', 40);
+              },
+            },
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     };
@@ -197,6 +201,7 @@ describe('scroll action read/write integration', () => {
     vi.stubGlobal('MutationObserver', observer);
     return {
       calls,
+      readingIndicator,
       root: root as unknown as HTMLElement,
       header: header as unknown as HTMLElement,
       win,
@@ -205,7 +210,7 @@ describe('scroll action read/write integration', () => {
   }
 
   it('reads the page height before motion/nav writes and retains the reading indicator', () => {
-    const { calls, root, header, win } = fixture();
+    const { calls, root, header, win, readingIndicator } = fixture();
     const motion = designMotion(root);
     const nav = catalogNavigation(header, { enabled: true, open: false, directional: true });
     cleanup.push(motion.destroy, nav.destroy);
@@ -218,35 +223,58 @@ describe('scroll action read/write integration', () => {
     const firstWrite = calls.findIndex((call) => call.startsWith('write'));
     expect(firstWrite).toBeGreaterThan(0);
     expect(calls.slice(firstWrite).some((call) => call.startsWith('read'))).toBe(false);
-    expect(root.style.getPropertyValue('--reading')).toBe(String(100 / 1200));
+    expect(readingIndicator.style.getPropertyValue('--reading')).toBe(String(100 / 1200));
+    expect(root.style.getPropertyValue('--reading')).toBe('');
     calls.length = 0;
     win.addEventListener.mock.calls.find(([event]) => event === 'scroll')![1]();
     advance();
     expect(calls.filter((call) => call.startsWith('write --'))).toEqual([]);
   });
 
-  it('does not remeasure vehicle detail scenes when the pointer moves or leaves', () => {
+  it.each(['orbit-home', 'public-detail'])(
+    'does not attach unused pointer parallax on %s',
+    (page) => {
+      const { calls, root } = fixture();
+      root.classList.add(page);
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query.includes('hover: hover'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }));
+      const motion = designMotion(root);
+      cleanup.push(motion.destroy);
+      advance();
+      advance();
+      calls.length = 0;
+      const listeners = vi.mocked(root.addEventListener).mock.calls;
+      expect(listeners.some(([event]) => event === 'pointermove' || event === 'pointerleave')).toBe(
+        false,
+      );
+      advance();
+      expect(calls).toEqual([]);
+    },
+  );
+
+  it('preserves pointer parallax in an explicitly enabled scene', () => {
     const { calls, root } = fixture();
-    root.classList.add('public-detail');
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query.includes('hover: hover'),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     }));
-    const motion = designMotion(root);
+    const motion = designMotion(root, { pointerParallax: true });
     cleanup.push(motion.destroy);
     advance();
     advance();
     calls.length = 0;
-    const listeners = vi.mocked(root.addEventListener).mock.calls;
-    const move = listeners.find(([event]) => event === 'pointermove')![1] as (
-      event: unknown,
-    ) => void;
-    const leave = listeners.find(([event]) => event === 'pointerleave')![1] as () => void;
+    const move = vi
+      .mocked(root.addEventListener)
+      .mock.calls.find(([event]) => event === 'pointermove')![1] as (event: unknown) => void;
     move({ clientX: 500, clientY: 300 });
-    leave();
     advance();
-    expect(calls).toEqual([]);
+    expect(calls).toContain('read scene');
+    expect(Number(root.style.getPropertyValue('--mx'))).toBeLessThan(0);
+    expect(Number(root.style.getPropertyValue('--my'))).toBeLessThan(0);
   });
 
   it('does not measure catalogue geometry or queue scroll work below the desktop breakpoint', () => {

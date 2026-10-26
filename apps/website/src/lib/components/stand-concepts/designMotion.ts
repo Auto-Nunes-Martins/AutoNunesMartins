@@ -8,9 +8,13 @@ import {
 import { scrollFrame, setScrollStyle } from './scrollFrame';
 
 /** Scroll choreography that observes native browser scrolling without intercepting input. */
-export function designMotion(root: HTMLElement) {
+export function designMotion(
+  root: HTMLElement,
+  { pointerParallax = false }: { pointerParallax?: boolean } = {},
+) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const pointer = matchMedia('(hover: hover) and (pointer: fine)');
+  const readingIndicator = root.querySelector<HTMLElement>(':scope > .read-line');
   let lastTime = 0;
   const progress = new Map<HTMLElement, number>();
   const approach = new Map<HTMLElement, number>();
@@ -134,11 +138,13 @@ export function designMotion(root: HTMLElement) {
           setScrollStyle(node, '--reveal-c', String(chapterProgress(value, 0.5, 1)));
         }
       }
-      x += (targetX - x) * 0.09;
-      y += (targetY - y) * 0.09;
-      setScrollStyle(root, '--mx', String(x));
-      setScrollStyle(root, '--my', String(y));
-      setScrollStyle(root, '--reading', String(reading));
+      if (pointerParallax) {
+        x += (targetX - x) * 0.09;
+        y += (targetY - y) * 0.09;
+        setScrollStyle(root, '--mx', String(x));
+        setScrollStyle(root, '--my', String(y));
+      }
+      if (readingIndicator) setScrollStyle(readingIndicator, '--reading', String(reading));
       if (settling || Math.abs(targetX - x) + Math.abs(targetY - y) > 0.002) schedule();
     };
   };
@@ -185,8 +191,10 @@ export function designMotion(root: HTMLElement) {
   window.addEventListener('scroll', schedule, { passive: true });
   document.addEventListener('visibilitychange', visibility);
   window.addEventListener('resize', schedule);
-  root.addEventListener('pointermove', move, { passive: true });
-  root.addEventListener('pointerleave', leave);
+  if (pointerParallax) {
+    root.addEventListener('pointermove', move, { passive: true });
+    root.addEventListener('pointerleave', leave);
+  }
   reduced.addEventListener('change', configure);
   root.classList.toggle('motion-on', !reduced.matches);
   let destroyed = false;
@@ -225,8 +233,10 @@ export function designMotion(root: HTMLElement) {
       window.removeEventListener('scroll', schedule);
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('resize', schedule);
-      root.removeEventListener('pointermove', move);
-      root.removeEventListener('pointerleave', leave);
+      if (pointerParallax) {
+        root.removeEventListener('pointermove', move);
+        root.removeEventListener('pointerleave', leave);
+      }
       reduced.removeEventListener('change', configure);
     },
   };

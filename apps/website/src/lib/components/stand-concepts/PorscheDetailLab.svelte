@@ -334,7 +334,7 @@
   class:orbit-company={about}
   class:orbit-detail={!!car || !!publicVehicle}
   class:dark={isDark}
-  use:designMotion
+  use:designMotion={{ pointerParallax: true }}
 >
   <div class="read-line" aria-hidden="true"></div>
   <div class="nav-reserve" aria-hidden="true"></div>
