@@ -118,11 +118,19 @@ router.post(
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
-    const created = await createTask(parsed.data, {
-      actorId: req.user.id,
-      actorName: req.user.name,
-    });
-    res.status(201).json(created);
+    try {
+      const created = await createTask(parsed.data, {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      res.status(201).json(created);
+    } catch (err) {
+      if (err instanceof TaskValidationError) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 

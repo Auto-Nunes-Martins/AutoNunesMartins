@@ -1,14 +1,14 @@
 import type { NextFunction, Request, Response } from 'express';
 import { clerkMiddleware as baseClerkMiddleware, createClerkClient, getAuth } from '@clerk/express';
-import { prisma } from '../db.js';
 import { getEnv } from '../env.js';
 import { logger } from '../logger.js';
 import { asyncHandler } from './asyncHandler.js';
 import { recordRequestTiming } from './requestTiming.js';
-import { singleFlight, attemptWindow } from '../lib/data/singleFlight.js';
+import { attemptWindow } from '../lib/data/singleFlight.js';
+import { readLocalUser, syncLocalUser, backfillLocalAvatar } from '../lib/server/userLifecycle.js';
 
 const env = getEnv();
-const userReads = singleFlight();
+
 const allowAvatarBackfill = attemptWindow(5 * 60_000);
 
 export const clerkMiddleware = asyncHandler(
@@ -66,7 +66,11 @@ export const requireUser = asyncHandler(
       return;
     }
 
-    let user = await userReads(auth.userId, () => prisma.user.findUnique({ where: { clerkId: auth.userId! } }));
+    let user = await readLocalUser(auth.userId);
+    if (user?.deactivatedAt) {
+      res.status(403).json({ error: 'Perfil desativado.' });
+      return;
+    }
 
     if (!user) {
       try {
@@ -81,11 +85,11 @@ export const requireUser = asyncHandler(
         const imageUrl = clerkUser.hasImage ? (clerkUser.imageUrl ?? null) : null;
 
         // Upsert in case a concurrent request raced us, or the webhook already fired.
-        user = await prisma.user.upsert({
-          where: { clerkId: auth.userId },
-          update: {},
-          create: { clerkId: auth.userId, email, name, imageUrl, role: 'ADMIN' },
-        });
+        user = await syncLocalUser(auth.userId, { email, name, imageUrl }, false);
+        if (!user) {
+          res.status(403).json({ error: 'Perfil desativado.' });
+          return;
+        }
         logger.info({ clerkId: auth.userId, userId: user.id }, 'User auto-provisioned from Clerk');
       } catch (err) {
         next(err);
@@ -100,10 +104,7 @@ export const requireUser = asyncHandler(
         try {
           const clerkUser = (await clerkClient.users.getUser(auth.userId!)) as ClerkUserShape;
           if (clerkUser.hasImage && clerkUser.imageUrl) {
-            await prisma.user.update({
-              where: { clerkId: auth.userId! },
-              data: { imageUrl: clerkUser.imageUrl },
-            });
+            await backfillLocalAvatar(auth.userId!, clerkUser.imageUrl);
           }
         } catch (err) {
           logger.debug({ err, clerkId: auth.userId }, 'imageUrl backfill skipped');

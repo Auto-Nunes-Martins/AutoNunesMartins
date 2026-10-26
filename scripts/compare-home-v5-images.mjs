@@ -6,15 +6,10 @@ const pairs = [
   ['catalog-portrait', 'images/hero-directions/family-forest-ribbon-portrait-native.webp', 2736],
   ['curves-portrait', 'images/hero-directions/family-family-curves-portrait-native.webp', 2736],
   ['visit-wide', 'images/hero-directions/scene-v5-visit-1672.webp', 1672],
-  ['service-wide', '@service-current', 1920],
 ];
 for (const [name, source, width] of pairs) {
   const samples = [
-    await readFile(
-      source === '@service-current'
-        ? 'artifacts/vehicle-photo-compression/service-current-1920'
-        : root + source,
-    ),
+    await readFile(root + source),
     await readFile(`${root}optimized/home-v5/${name}-${width}.webp`),
     await readFile(`${root}optimized/home-v5/${name}-${width}.avif`),
   ];

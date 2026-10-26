@@ -9,6 +9,7 @@
   let visible = false;
   let pageVisible = true;
   let expandedReviews: number[] = [];
+  let compactReviews = false;
   let activeCopies: number[] = [];
   let track: HTMLDivElement;
   let viewport: HTMLDivElement;
@@ -69,7 +70,9 @@
     };
     updateVisibility();
     document.addEventListener('visibilitychange', updateVisibility);
+    compactReviews = innerWidth <= 700;
     const resize = () => {
+      compactReviews = innerWidth <= 700;
       ++interaction;
       if (innerWidth > 1100 || innerWidth <= 700) {
         track.style.translate = '0px';
@@ -122,7 +125,7 @@
       {#each [false, true] as duplicate}
         <div class="review-grid" class:duplicate data-brand-primary={!duplicate ? true : undefined}>
           {#each examples as review, index}
-            {@const preview = reviewExcerpt(review.text)}
+            {@const preview = reviewExcerpt(review.text, compactReviews ? 64 : undefined)}
             {@const expanded = expandedReviews.includes(index)}
             {@const text = expanded ? review.text : preview.text}
             {@const lastSpace = text.lastIndexOf(' ')}
@@ -528,14 +531,14 @@
     }
     article {
       width: min(78vw, 316px);
-      padding: 20px 18px;
+      padding: 16px 18px;
     }
     .review-header {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .review-copy {
       font-size: 14px;
-      line-height: 1.7;
+      line-height: 1.6;
     }
     .review-ending {
       white-space: normal;

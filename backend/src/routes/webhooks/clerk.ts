@@ -1,7 +1,9 @@
 import { asyncHandler } from '../../middleware/asyncHandler.js';
 import { Router, type Request, type Response } from 'express';
 import { Webhook } from 'svix';
-import { prisma } from '../../db.js';
+import { deactivateLocalUser, syncLocalUser } from '../../lib/server/userLifecycle.js';
+import { UserLifecycleMigrationRequired } from '../../lib/server/userLifecycleSchema.js';
+import { z } from 'zod';
 import { getEnv } from '../../env.js';
 import { logger } from '../../logger.js';
 import { invalidateUsersCache } from '../users.js';
@@ -40,6 +42,10 @@ function fullName(payload: ClerkUserPayload): string {
 router.post(
   '/',
   asyncHandler(async (req: Request, res: Response) => {
+    if (!env.CLERK_WEBHOOK_SECRET) {
+      res.status(503).json({ error: 'Clerk webhook is not configured' });
+      return;
+    }
     const svixId = req.header('svix-id');
     const svixTimestamp = req.header('svix-timestamp');
     const svixSignature = req.header('svix-signature');
@@ -70,7 +76,17 @@ router.post(
     }
 
     try {
-      if (event.type === 'user.created' || event.type === 'user.updated') {
+      if (
+        ['user.created', 'user.updated', 'user.deleted'].includes(event.type) &&
+        !z.string().min(1).safeParse(event.data?.id).success
+      ) {
+        res.status(400).json({ error: 'Missing Clerk user ID' });
+        return;
+      }
+      if (event.type === 'user.deleted') {
+        await deactivateLocalUser(event.data.id);
+        logger.info({ clerkId: event.data.id }, 'Clerk user deactivated');
+      } else if (event.type === 'user.created' || event.type === 'user.updated') {
         const email = pickPrimaryEmail(event.data);
         if (!email) {
           logger.warn({ clerkId: event.data.id }, 'Clerk user has no email');
@@ -83,17 +99,21 @@ router.post(
         // — otherwise Clerk returns a generic auto-generated coloured chip,
         // which we don't want to render in place of our branded fallback.
         const imageUrl = event.data.has_image ? event.data.image_url : null;
-        await prisma.user.upsert({
-          where: { clerkId: event.data.id },
-          update: { email, name, imageUrl },
-          create: { clerkId: event.data.id, email, name, imageUrl, role: 'ADMIN' },
-        });
+        const user = await syncLocalUser(event.data.id, { email, name, imageUrl });
+        if (!user) {
+          res.status(200).json({ ok: true, skipped: 'deactivated' });
+          return;
+        }
         invalidateUsersCache();
         logger.info({ clerkId: event.data.id, type: event.type }, 'Clerk user synced');
       } else {
         logger.debug({ type: event.type }, 'Clerk webhook event ignored');
       }
     } catch (err) {
+      if (err instanceof UserLifecycleMigrationRequired) {
+        res.status(503).json({ error: 'User lifecycle migration required' });
+        return;
+      }
       logger.error({ err }, 'Clerk webhook processing failed');
       res.status(500).json({ error: 'Processing failed' });
       return;

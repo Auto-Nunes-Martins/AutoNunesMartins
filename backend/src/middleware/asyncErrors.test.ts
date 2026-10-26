@@ -8,6 +8,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
+  lifecycle: vi.fn(),
+  clerkUserDeletion: { findUnique: vi.fn() },
   getUser: vi.fn(),
   $transaction: vi.fn(),
   user: { findUnique: vi.fn(), upsert: vi.fn(), findMany: vi.fn() },
@@ -16,6 +18,11 @@ const mocks = vi.hoisted(() => ({
   logger: { error: vi.fn(), warn: vi.fn(), debug: vi.fn(), info: vi.fn() },
 }));
 vi.mock('../db.js', () => ({ prisma: mocks }));
+vi.mock('../lib/server/userLifecycleSchema.js', async (original) => ({
+  ...(await original<typeof import('../lib/server/userLifecycleSchema.js')>()),
+  userLifecycleAvailable: mocks.lifecycle,
+  lockClerkIdentity: vi.fn(),
+}));
 vi.mock('../logger.js', () => ({ logger: mocks.logger }));
 vi.mock('../env.js', () => ({ getEnv: () => ({}) }));
 vi.mock('@clerk/express', () => ({
@@ -82,6 +89,8 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.lifecycle.mockResolvedValue(false);
+  mocks.$transaction.mockImplementation(async (callback) => callback({ user: mocks.user }));
   cache.clearPrefix('');
   mocks.auth.mockReturnValue({ userId: 'clerk-1' });
   mocks.user.findUnique.mockResolvedValue({
@@ -115,6 +124,34 @@ describe('Express 4 async failures', () => {
       expect((await response.json()).user.clerkId).toBe(userId);
     },
   );
+  it('rejects a deactivated profile even after a previous permitted request, without Clerk backfill', async () => {
+    expect((await fetch(base + '/me')).status).toBe(200);
+    mocks.user.findUnique.mockResolvedValue({ id: 'user-1', deactivatedAt: new Date() });
+    expect((await fetch(base + '/me')).status).toBe(403);
+    expect(mocks.getUser).not.toHaveBeenCalled();
+    expect(mocks.user.upsert).not.toHaveBeenCalled();
+  });
+  it('rejects tombstoned unknown profiles before calling Clerk or provisioning', async () => {
+    mocks.lifecycle.mockResolvedValue(true);
+    mocks.user.findUnique.mockResolvedValue(null);
+    mocks.clerkUserDeletion.findUnique.mockResolvedValue({
+      clerkId: 'clerk-1',
+      deletedAt: new Date(),
+    });
+    expect((await fetch(base + '/me')).status).toBe(403);
+    expect(mocks.getUser).not.toHaveBeenCalled();
+    expect(mocks.user.upsert).not.toHaveBeenCalled();
+  });
+  it('lists only active assignment candidates without a browser-stale list', async () => {
+    mocks.lifecycle.mockResolvedValue(true);
+    mocks.user.findMany.mockResolvedValue([]);
+    const response = await fetch(base + '/users');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toContain('no-store');
+    expect(mocks.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { deactivatedAt: null } }),
+    );
+  });
   it('blocks anonymous requests before any private database access', async () => {
     mocks.auth.mockReturnValue({ userId: null });
     for (const route of ['/me', '/users', '/tasks'])

@@ -649,6 +649,7 @@
     margin-top: 8px;
   }
   .map-link > :global(svg) {
+    color: #fff;
     transition: color 180ms ease;
   }
   .contact-details {
@@ -790,8 +791,13 @@
     .email-action:hover > :global(svg) {
       transform: translate(3px, -3px);
     }
+    .map-link:hover {
+      text-decoration: underline;
+      text-decoration-color: currentColor;
+      text-underline-offset: 4px;
+    }
     .map-link:hover > :global(svg) {
-      color: #e30613;
+      color: #fff;
     }
   }
   @media (prefers-reduced-motion: no-preference) {

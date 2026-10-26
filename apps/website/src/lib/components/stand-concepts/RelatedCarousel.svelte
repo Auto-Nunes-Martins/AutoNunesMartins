@@ -15,7 +15,8 @@
   let busy = $state(false);
   let announcement = $state('');
   const loops = $derived(items.length > capacity);
-  const ordered = $derived(items.map((_, i) => items[(first + i) % items.length]!));
+  // Stable DOM order avoids WebKit dropping overlay layers at the settle frame.
+  const ordered = $derived(items);
   let viewport: HTMLDivElement = $state(null!);
   let track: HTMLDivElement = $state(null!);
   let animation: Animation | undefined;
@@ -48,7 +49,7 @@
     void refresh?.();
   });
 
-  const base = () => (loops ? -items.length * step : 0);
+  const base = () => (loops ? -(items.length + first) * step : 0);
   const reset = () => {
     if (track) track.style.transform = `translateX(${base()}px)`;
   };
@@ -204,9 +205,9 @@
     const slide = event.target.closest<HTMLElement>('[data-vehicle]');
     if (!slide) return;
     const index = ordered.findIndex((v) => v.slug === slide.dataset.vehicle);
-    if (index < capacity) return;
+    if ((index - first + items.length) % items.length < capacity) return;
     const target = event.target;
-    first = (first + index) % items.length;
+    first = index;
     indicated = first;
     await tick();
     reset();
@@ -285,12 +286,7 @@
         onfocusin={focused}
         ondragstart={(e) => e.preventDefault()}
       >
-        <div
-          class="track"
-          class:static={!loops}
-          class:moving={busy || pointer?.dragging}
-          bind:this={track}
-        >
+        <div class="track" class:static={!loops} bind:this={track}>
           {#if loops}{#each ordered as vehicle, index (vehicle.slug)}<div
                 class="slide ghost"
                 inert
@@ -481,27 +477,22 @@
   }
   /* Paint shadows/focus outside the frame without changing card geometry. */
   .looping .viewport {
-    overflow-clip-margin: 32px;
+    overflow-clip-margin: 0;
   }
-  .ghost {
-    visibility: hidden;
-  }
-  .moving .ghost {
-    visibility: visible;
-  }
+  /* Inert clones stay painted; only the track transform changes at loop boundaries. */
   .looping .viewport::after {
     content: '';
     position: absolute;
     z-index: 2;
-    inset: 0 -32px 0 auto;
-    width: calc(clamp(42px, 6vw, 86px) + 32px);
+    inset: 0 0 0 auto;
+    width: clamp(64px, 10vw, 128px);
     pointer-events: none;
     background: linear-gradient(
       to right,
       transparent,
-      color-mix(in srgb, var(--bg) 25%, transparent) 35%,
-      color-mix(in srgb, var(--bg) 75%, transparent) 75%,
-      var(--bg)
+      color-mix(in srgb, var(--bg) 30%, transparent) 20%,
+      color-mix(in srgb, var(--bg) 90%, transparent) 65%,
+      var(--bg) 92%
     );
   }
   .track {
@@ -536,6 +527,9 @@
     }
   }
   @media (max-width: 700px) {
+    .looping .viewport::after {
+      width: calc(14% - 4px);
+    }
     .integrated-controls {
       display: none;
     }

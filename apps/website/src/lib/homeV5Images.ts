@@ -73,16 +73,6 @@ import image70 from './assets/optimized/home-v5/visit-portrait-640.webp?url&no-i
 import image71 from './assets/optimized/home-v5/visit-portrait-640.avif?url&no-inline';
 import image72 from './assets/optimized/home-v5/visit-portrait-705.webp?url&no-inline';
 import image73 from './assets/optimized/home-v5/visit-portrait-705.avif?url&no-inline';
-import image74 from './assets/optimized/home-v5/service-wide-640.webp?url&no-inline';
-import image75 from './assets/optimized/home-v5/service-wide-640.avif?url&no-inline';
-import image76 from './assets/optimized/home-v5/service-wide-1080.webp?url&no-inline';
-import image77 from './assets/optimized/home-v5/service-wide-1080.avif?url&no-inline';
-import image78 from './assets/optimized/home-v5/service-wide-1280.webp?url&no-inline';
-import image79 from './assets/optimized/home-v5/service-wide-1280.avif?url&no-inline';
-import image80 from './assets/optimized/home-v5/service-wide-1920.webp?url&no-inline';
-import image81 from './assets/optimized/home-v5/service-wide-1920.avif?url&no-inline';
-import image82 from './assets/optimized/home-v5/service-wide-2560.webp?url&no-inline';
-import image83 from './assets/optimized/home-v5/service-wide-2560.avif?url&no-inline';
 export const homeV5Images = {
   'forest-wide': {
     src: image0,
@@ -132,12 +122,5 @@ export const homeV5Images = {
     avif: `${image71} 640w, ${image73} 705w`,
     width: 705,
     height: 941,
-  },
-  'service-wide': {
-    src: image78,
-    srcset: `${image74} 640w, ${image76} 1080w, ${image78} 1280w, ${image80} 1920w, ${image82} 2560w`,
-    avif: `${image75} 640w, ${image77} 1080w, ${image79} 1280w, ${image81} 1920w, ${image83} 2560w`,
-    width: 2560,
-    height: 3835,
   },
 } as const;

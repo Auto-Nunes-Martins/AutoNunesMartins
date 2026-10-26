@@ -1,4 +1,5 @@
 import type { Prisma, Task } from '@prisma/client';
+import { activeAssignee } from './userLifecycle.js';
 import type { TaskCreate, TaskMove, TaskStatus, TaskUpdate } from '@anm/types';
 import { prisma } from '../../db.js';
 import { emitActivity } from '../data/activity.js';
@@ -67,6 +68,7 @@ export class TaskNotFound extends Error {
 }
 
 export class TaskValidationError extends Error {
+  readonly status = 400;
   constructor(message: string) {
     super(message);
     this.name = 'TaskValidationError';
@@ -89,6 +91,9 @@ async function visibleTask(tx: Prisma.TransactionClient, id: string, actor: Acto
 export async function createTask(data: TaskCreate, actor: ActorContext): Promise<{ id: string }> {
   const created = await prisma.$transaction(async (tx) => {
     await lockTaskBoard(tx);
+    if (data.assigneeId && !(await activeAssignee(tx, data.assigneeId))) {
+      throw new TaskValidationError('Escolha um responsável ativo.');
+    }
     const task = await tx.task.create({
       data: {
         title: data.title,
@@ -96,7 +101,7 @@ export async function createTask(data: TaskCreate, actor: ActorContext): Promise
         status: data.status ?? 'TODO',
         completedAt: data.status === 'DONE' ? new Date() : null,
         priority: data.priority ?? 'MEDIUM',
-        assigneeId: data.assigneeId ?? null,
+        assigneeId: data.assigneeId || null,
         startDate: data.startDate ?? null,
         dueDate: data.dueDate ?? null,
         reminderDate: data.reminderDate ?? null,
@@ -137,6 +142,9 @@ export async function updateTask(
     if (data.title !== undefined) update.title = data.title;
     if (data.description !== undefined) update.description = data.description ?? null;
     if (data.priority !== undefined) update.priority = data.priority;
+    if (data.assigneeId && !(await activeAssignee(tx, data.assigneeId))) {
+      throw new TaskValidationError('Escolha um responsável ativo.');
+    }
     if (data.assigneeId !== undefined) {
       update.assignee = data.assigneeId
         ? { connect: { id: data.assigneeId } }

@@ -16,7 +16,10 @@ const envSchema = z.object({
 
   CLERK_PUBLISHABLE_KEY: z.string().min(1),
   CLERK_SECRET_KEY: z.string().min(1),
-  CLERK_WEBHOOK_SECRET: z.string().min(1),
+  CLERK_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() || undefined),
 
   SUPABASE_URL: z.string().url(),
   // New name: SUPABASE_SECRET_KEY (sb_secret_...). Legacy SUPABASE_SERVICE_ROLE_KEY
@@ -34,7 +37,9 @@ export function getEnv(): Env {
   if (cached) return cached;
   const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
+    const issues = parsed.error.issues
+      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
+      .join('\n');
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
   if (!parsed.data.SUPABASE_SECRET_KEY && !parsed.data.SUPABASE_SERVICE_ROLE_KEY) {

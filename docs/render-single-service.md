@@ -24,26 +24,26 @@ Usar a URL HTTPS temporária que o Render atribuir, sem barra final:
 
 ## Variáveis (sem credenciais neste guia)
 
-| Nome | Quando / finalidade |
-| --- | --- |
-| `WEBSITE_ORIGIN` | Runtime. Origem HTTPS exata do Render, sem caminho/barra final. |
-| `PUBLIC_WEBSITE_URL` | Build. Mesma origem do website; usada pelo CRM para abrir a ficha pública. Nunca herda `localhost:5173` no build conjunto. Alterar exige rebuild. |
-| `CRM_ORIGIN` | Runtime. Igual a `WEBSITE_ORIGIN` neste ensaio. |
-| `CRM_BASE_PATH` | Build **e** runtime: `/crm` neste ensaio. Alterar exige rebuild. |
-| `SITE_NOINDEX` | `true` no ensaio. O hostname `.onrender.com` também força noindex. |
-| `PUBLIC_CLERK_PUBLISHABLE_KEY` | Chave pública da mesma instância Clerk, build/runtime CRM. Não é uma chave secreta. |
-| `CLERK_PUBLISHABLE_KEY` | Mesma chave pública, configuração do backend. |
-| `CLERK_SECRET_KEY` | Segredo privado da mesma instância Clerk, runtime. |
-| `CLERK_WEBHOOK_SECRET` | Segredo de assinatura do endpoint webhook que escolher configurar; runtime. |
-| `DATABASE_URL` | Ligação ao PostgreSQL Supabase **existente**, runtime. Confirmar modo de ligação/pooler, TLS e conectividade a partir do Render. |
-| `DIRECT_URL` | Só se necessário para ferramentas Prisma/manutenção manual. Não há migração automática. |
-| `SUPABASE_URL` | URL do projeto Supabase Storage existente, runtime. |
-| `SUPABASE_SECRET_KEY` | Chave privada do servidor Supabase; aceita-se `SUPABASE_SERVICE_ROLE_KEY` como alternativa legada. Nunca PUBLIC_. |
-| `SUPABASE_STORAGE_BUCKET` | Nome do bucket privado existente; exemplo `vehicle-photos`, confirmar nome real. |
-| `CONTACT_ENABLED` | Manter `false` enquanto faltarem dados oficiais/configuração de email. |
-| `CONTACT_PRIVACY_READY` | Manter `false`; os bloqueios legais existentes continuam ativos. |
-| `PORT` | Atribuída pelo Render; o gateway usa-a. |
-| `LOG_LEVEL` | Opcional; exemplo `info`. |
+| Nome                           | Quando / finalidade                                                                                                                               |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WEBSITE_ORIGIN`               | Runtime. Origem HTTPS exata do Render, sem caminho/barra final.                                                                                   |
+| `PUBLIC_WEBSITE_URL`           | Build. Mesma origem do website; usada pelo CRM para abrir a ficha pública. Nunca herda `localhost:5173` no build conjunto. Alterar exige rebuild. |
+| `CRM_ORIGIN`                   | Runtime. Igual a `WEBSITE_ORIGIN` neste ensaio.                                                                                                   |
+| `CRM_BASE_PATH`                | Build **e** runtime: `/crm` neste ensaio. Alterar exige rebuild.                                                                                  |
+| `SITE_NOINDEX`                 | `true` no ensaio. O hostname `.onrender.com` também força noindex.                                                                                |
+| `PUBLIC_CLERK_PUBLISHABLE_KEY` | Chave pública da mesma instância Clerk, build/runtime CRM. Não é uma chave secreta.                                                               |
+| `CLERK_PUBLISHABLE_KEY`        | Mesma chave pública, configuração do backend.                                                                                                     |
+| `CLERK_SECRET_KEY`             | Segredo privado da mesma instância Clerk, runtime.                                                                                                |
+| `CLERK_WEBHOOK_SECRET`         | Opcional. Segredo de assinatura do endpoint webhook; sem ele /webhooks/clerk devolve 503, sem bloquear o login/API.                               |
+| `DATABASE_URL`                 | Ligação ao PostgreSQL Supabase **existente**, runtime. Confirmar modo de ligação/pooler, TLS e conectividade a partir do Render.                  |
+| `DIRECT_URL`                   | Só se necessário para ferramentas Prisma/manutenção manual. Não há migração automática.                                                           |
+| `SUPABASE_URL`                 | URL do projeto Supabase Storage existente, runtime.                                                                                               |
+| `SUPABASE_SECRET_KEY`          | Chave privada do servidor Supabase; aceita-se `SUPABASE_SERVICE_ROLE_KEY` como alternativa legada. Nunca PUBLIC\_.                                |
+| `SUPABASE_STORAGE_BUCKET`      | Nome do bucket privado existente; exemplo `vehicle-photos`, confirmar nome real.                                                                  |
+| `CONTACT_ENABLED`              | Manter `false` enquanto faltarem dados oficiais/configuração de email.                                                                            |
+| `CONTACT_PRIVACY_READY`        | Manter `false`; os bloqueios legais existentes continuam ativos.                                                                                  |
+| `PORT`                         | Atribuída pelo Render; o gateway usa-a.                                                                                                           |
+| `LOG_LEVEL`                    | Opcional; exemplo `info`.                                                                                                                         |
 
 `PUBLIC_BACKEND_URL=''`, `INTERNAL_BACKEND_URL`, `ORIGIN`, `HOST` e limites são definidos pelo build/launcher conjunto. Não substituir as portas internas nem usar `PUBLIC_BACKEND_URL=http://localhost:...` no Render. O website é iniciado sem variáveis Clerk, DB ou Supabase privadas. Os ficheiros `.env` de todas as pastas ficam excluídos do contexto Docker, incluindo quando o Dockerfile está em `backend`.
 
@@ -123,7 +123,6 @@ Verificações finais adicionais: website Svelte check com 0 erros e 0 avisos; t
 
 O suporte ativo Vercel foi removido por pedido do proprietário: adapters, configurações Git/deploy, scripts exclusivos e diretórios gerados. As referências históricas de validações antigas são conservadas. A remoção local não desliga integrações externas: o estado dos projetos Vercel/Render ligados ao GitHub não foi consultado, e um push pode ativar automações existentes. O exemplo Render mantém autoDeployTrigger: off. Nenhum deploy manual, alteração de painel ou DNS foi executado.
 
-
 ### Política final de tamanho das novas fotos
 
 Na clarificação final, o proprietário confirmou que 1,1 MB é um objetivo aproximado, não um teto obrigatório. A política conserva detalhe com qualidade WebP mínima 82; saídas acima da meta são aceites até ao limite defensivo de 2.000.000 bytes. Ficheiros já adequados e menores não são inflados. Não há reprocessamento de fotografias existentes.
@@ -132,9 +131,8 @@ A decisão final é **meta aproximada de 1.100.000 bytes e máximo obrigatório 
 
 ### Acesso por convite Clerk
 
-O acesso segue a instância Clerk existente, configurada pelo proprietário para convites. Foi retirada a restrição adicional por IDs: uma sessão/token válido dessa instância dá acesso ao CRM. Os guards server-side, Bearer da API, CSRF, noindex e cache privada mantêm-se. O papel interno ADMIN existente é preservado, sem nova flag ou lista de utilizadores.
+O acesso segue a instância Clerk existente, configurada pelo proprietário para convites. Foi retirada a restrição adicional por IDs: uma sessão/token válido dessa instância provisiona o perfil local e permite acesso enquanto esse perfil estiver ativo. Os guards server-side, Bearer da API, CSRF, noindex e cache privada mantêm-se. O papel interno ADMIN existente é preservado, sem nova flag ou lista de utilizadores.
 
-O webhook não decide quem pode entrar: verifica a assinatura dos eventos e sincroniza os dados de utilizador. O primeiro pedido autenticado já cria a linha interna se necessário. O campo de configuração CLERK_WEBHOOK_SECRET continua no contrato atual do backend e deve ser preenchido com o segredo real aplicável quando configurar o webhook; o ficheiro de importação conserva o marcador pendente. Nenhuma configuração de registo/convites foi alterada no painel Clerk.
+O webhook verifica a assinatura dos eventos e sincroniza os dados de utilizador. Após a migração de desativação, user.deleted impede novo acesso desse perfil e devolve as tarefas pendentes a Geral, conservando o histórico (ver [sequência de rollout](clerk-user-deactivation.md)). O primeiro pedido autenticado já cria a linha interna se necessário. CLERK_WEBHOOK_SECRET é opcional no arranque: ausente ou vazio, desativa apenas /webhooks/clerk com HTTP 503 e não altera o login nem a API. Quando configurar o webhook, deve preenchê-lo com o segredo de assinatura real do endpoint; eventos sem assinatura válida continuam a ser rejeitados. O ficheiro de importação conserva o marcador pendente. Nenhuma configuração de registo/convites foi alterada no painel Clerk.
 
 Verificação desta simplificação: três testes de segurança/prefixo CRM, 21 testes de autenticação/erros backend e dois testes de gateway aprovados; TypeScript backend e build Node CRM aprovados. O launcher foi exercitado com as três builds e credenciais fictícias, sem variável de lista de IDs: login 200, rotas CRM anónimas 303, API privada anónima 401, CSRF 403 e healthcheck 200. Sem consultas à base real ou alterações no painel Clerk.
-

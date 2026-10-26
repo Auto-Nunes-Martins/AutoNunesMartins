@@ -9,26 +9,17 @@
     Headphones,
   } from 'lucide-svelte';
   import { logoDark, logoDarkSrcset } from '$lib/localAssets';
-  import { homeV5Images } from '$lib/homeV5Images';
+  import { serviceBannerImage as interiorPhoto } from '$lib/serviceBannerImage';
   import { coverImageSizes } from '$lib/coverImageSizes';
 
   let {
     onContact,
     id = 'propostas-servicos',
     titleId = 'home-services-title',
-    background,
   }: {
     onContact: (message?: string) => void;
     id?: string;
     titleId?: string;
-    background?: {
-      src: string;
-      srcset?: string;
-      avif?: string;
-      width: number;
-      height: number;
-      mobileFocus?: string;
-    };
   } = $props();
 
   const services = [
@@ -63,15 +54,14 @@
       copy: 'A conversa continua também depois da compra.',
     },
   ];
-  const interiorPhoto = $derived(background ?? homeV5Images['service-wide']);
 </script>
 
 <div class="home-services" {id}>
   <section
     class="service-banner essential"
     aria-labelledby={titleId}
-    data-service-proposal="1"
-    style:--service-mobile-focus={background?.mobileFocus}
+    data-service-version="13"
+    style:--service-mobile-focus={interiorPhoto.mobileFocus}
   >
     <picture
       use:coverImageSizes={{

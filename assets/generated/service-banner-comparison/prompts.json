@@ -1,48 +1,13 @@
 {
-  "tool": "built-in image_gen",
   "date": "2026-10-26",
-  "reference": "apps/website/src/lib/assets/optimized/home-v5/service-wide-1920.webp",
-  "originalPreserved": true,
+  "tool": "built-in image_gen",
+  "selectedVersion": 13,
   "variants": [
-    {
-      "number": 1,
-      "prompt": "Use case: photorealistic-natural. Asset type: photographic BACKGROUND ONLY for a real Portuguese automotive services website banner. Reference image is visual mood/depth reference only, not an edit target: keep it untouched. Generate a NEW DISTINCT photograph, not a banner mockup. Landscape 3:2 composition with center crop safe for a wide banner. Natural professional editorial car photography, realistic materials, restrained cool graphite/silver palette and subtle warm highlights. Strong photographic depth: a very near, discreet, softly blurred object along the LEFT edge, framing the deeper sharp scene, similar to the reference's foreground door/seat. Calm low-detail darker left and right areas suitable for white HTML content applied later. Avoid extreme darkness: retain useful midtones and details before the website's existing dark overlay. No lettering, no typography, no logos or trademarks, no people, no UI, no collage, no watermark. Scene: refined unbranded graphite leather car interior, seen from the open front passenger door, a softly blurred door pillar and edge of the front seat very close at the left, beautifully sharp steering wheel, silver-trimmed console and dashboard deeper towards center/right; subtle daylight from a showroom window. Different cockpit design and camera angle from the reference.",
-      "master": "assets/generated/service-banner-comparison/alternative-1.png",
-      "derivatives": "apps/website/src/lib/assets/service-banner-comparison/alternative-1-{640,1080,1536}.{webp,avif}",
-      "version": 2
-    },
-    {
-      "version": 9,
-      "prompt": "Use case: photorealistic-natural. Generate a NEW DISTINCT sophisticated editorial automotive photograph, landscape 3:2, 1536x1024, as background only for a website banner. Real lens, fine crafted materials, believable vehicle geometry and high photographic quality, natural depth and nuanced light. MEDIUM distance framing, no macro and no extreme close-up; enough context to see several elements in a considered diagonal composition. Restrained visually elegant scene with continuous low-contrast areas on right behind a real white HTML services list; don't make right an empty flat background. Safe middle band for wide banner cropping; image should also crop well to portrait. No text, logos, people, watermark, embedded UI or mockup. This must be a genuinely DIFFERENT car and photograph from a black leather Mercedes-like cockpit with four round vents and wide glossy dash screen: do NOT produce that cockpit or any near-copy, do NOT use four circular center vents or a combined two-screen black panel. No broad blurred foreground band. Version9: DIFFERENT FROM ALL INTERIOR OPTIONS: an exquisite exterior editorial photograph of the front quarter of a deep graphite luxury coupe in a refined softly lit preparation studio. Camera at bonnet height and oblique diagonal angle, medium crop includes one beautifully detailed crystal-clear headlamp toward center-left, sculpted bonnet curves, front wheel arch and a restrained slice of side bodywork. Rich graphite paint with long soft architectural reflections flowing toward the right, calm real workshop/studio ambience subtly defocused without clutter. No grille badge or visible license plate. Not a macro of a headlamp; show a coherent beautiful portion of the vehicle with space and proportion. Photographic precision and elegant shadow detail, suitable as premium banner backdrop. No people, tools, signs or logos.",
-      "references": [],
-      "master": "assets/generated/service-banner-comparison/version-9-r5.png",
-      "derivatives": "apps/website/src/lib/assets/service-banner-comparison/version-9-r5-{640,1080,1536}.{webp,avif}"
-    },
-    {
-      "version": 10,
-      "prompt": "Use case: photorealistic-natural. Create ONE premium editorial PHOTOGRAPH only, 1536x1024 landscape 3:2, for a website services banner. Not a website screenshot. Exceptional natural photographic quality, physically credible materials and geometry, refined subtle detail, balanced diagonal composition, soft daylight or believable ambient light. Important composition: the LEFT-CENTER x12–46% y25–75% must remain naturally very dark charcoal with low contrast so a white HTML logo overlaid later stands out. Place rich sharp detail mainly at center x40–60%, leave RIGHT HALF calm and darker to support HTML text. Retain dimensional midtones and small controlled highlights, not murky black everywhere. Create photographic depth with ONLY a narrow out-of-focus nearby object at the extreme LEFT edge, about 4–7% width; this blur must not cover much of the scene. Wider medium framing rather than absurd close-up, elegant crop safe for a wide horizontal banner. No people, text, letters, brands, logos, watermark, collage or embedded UI. Scene: Distinct luxury grand touring car interior: deep cognac leather, dark polished ebony console, an elegant analog clock and finely machined satin aluminum controls. Viewed diagonally through the open passenger door, enough cabin context to see steering wheel, console and passenger dashboard together, medium framing, not extreme macro.",
-      "master": "assets/generated/service-banner-comparison/version-10.png",
-      "derivatives": "apps/website/src/lib/assets/service-banner-comparison/version-10-{640,1080,1536}.{webp,avif}"
-    },
-    {
-      "version": 11,
-      "prompt": "Use case: photorealistic-natural. Create ONE premium editorial PHOTOGRAPH only, 1536x1024 landscape 3:2, for a website services banner. Not a website screenshot. Exceptional natural photographic quality, physically credible materials and geometry, refined subtle detail, balanced diagonal composition, soft daylight or believable ambient light. Important composition: the LEFT-CENTER x12–46% y25–75% must remain naturally very dark charcoal with low contrast so a white HTML logo overlaid later stands out. Place rich sharp detail mainly at center x40–60%, leave RIGHT HALF calm and darker to support HTML text. Retain dimensional midtones and small controlled highlights, not murky black everywhere. Create photographic depth with ONLY a narrow out-of-focus nearby object at the extreme LEFT edge, about 4–7% width; this blur must not cover much of the scene. Wider medium framing rather than absurd close-up, elegant crop safe for a wide horizontal banner. No people, text, letters, brands, logos, watermark, collage or embedded UI. Scene: Distinct contemporary luxury car cabin with ivory saddle stitching, smoked walnut horizontal trim and a sculpted black console, tactile metal switches and subtle glass reflections. Camera from rear passenger doorway looking diagonally across the front cabin. Different architecture and perspective from a grand tourer, medium framing.",
-      "master": "assets/generated/service-banner-comparison/version-11.png",
-      "derivatives": "apps/website/src/lib/assets/service-banner-comparison/version-11-{640,1080,1536}.{webp,avif}"
-    },
     {
       "version": 13,
       "prompt": "Use case: photorealistic-natural. ONE exceptional professional automotive editorial PHOTOGRAPH, landscape 1536x1024, background asset for a car dealership services banner. Clearly automobile related. Rich realistic physical detail, refined balanced diagonal framing, natural controlled lighting and subtle reflections. LEFT-CENTER x12–46% y25–75% naturally very dark and low contrast behind a white HTML logo that will be overlaid later. Detailed subject mainly middle/right, right side sufficiently calm for service text. Discreet nearby out-of-focus object at extreme LEFT only 4–7% width to convey depth; no wide blurred band. Moderate framing with context, not extreme macro. No text, logos, readable branding, people, watermark, UI or collage. Scene: An authentic premium automotive detailing bay, close environmental photograph of an unbranded dark blue car being prepared, no people. Side mirror, polished front door, window edge and part of front wheel visible together, meticulous paint reflections, neatly stored detailing tools deeper in background. Soft blurred edge of another car at extreme left only. Not a vast empty garage.",
       "master": "assets/generated/service-banner-comparison/version-13.png",
       "derivatives": "apps/website/src/lib/assets/service-banner-comparison/version-13-{640,1080,1536}.{webp,avif}"
-    },
-    {
-      "version": 15,
-      "prompt": "Use case: photorealistic-natural. ONE exceptional professional automotive editorial PHOTOGRAPH, landscape 1536x1024, background asset for a car dealership services banner. Clearly automobile related. Rich realistic physical detail, refined balanced diagonal framing, natural controlled lighting and subtle reflections. LEFT-CENTER x12–46% y25–75% naturally very dark and low contrast behind a white HTML logo that will be overlaid later. Detailed subject mainly middle/right, right side sufficiently calm for service text. Discreet nearby out-of-focus object at extreme LEFT only 4–7% width to convey depth; no wide blurred band. Moderate framing with context, not extreme macro. No text, logos, readable branding, people, watermark, UI or collage. Scene: Premium automotive mechanical craftsmanship in a spotless specialist service workshop: an open car bonnet frames a carefully engineered engine bay, tactile metal components, hoses and tasteful carbon details with credible geometry. Medium environmental framing showing the engine bay and a portion of the dark car body, no people, no isolated engine product render. Narrow blurred foreground bodywork edge at extreme left.",
-      "master": "assets/generated/service-banner-comparison/version-15.png",
-      "derivatives": "apps/website/src/lib/assets/service-banner-comparison/version-15-{640,1080,1536}.{webp,avif}"
     }
-  ],
-  "retainedVersions": [1, 2, 9],
-  "newVersions": [10, 11, 13, 15]
+  ]
 }

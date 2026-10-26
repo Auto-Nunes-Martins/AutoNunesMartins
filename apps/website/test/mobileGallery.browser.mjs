@@ -174,6 +174,13 @@ try {
   const frame = await viewport.boundingBox(),
     cardBox = await card.boundingBox();
   assert.ok(cardBox.x - frame.x >= 3, 'card outline has a small inset');
+  await carousel.locator('.track').evaluate((track) => {
+    window.__cardNodes = [...track.querySelectorAll('.card-arrow, .card-compare')];
+    window.__cardMutations = 0;
+    new MutationObserver((records) => {
+      window.__cardMutations += records.filter((r) => r.type === 'childList').length;
+    }).observe(track, { childList: true, subtree: true });
+  });
   await carousel.locator('.position-indicators button').nth(1).click();
   for (let frame = 0; frame < 4; frame++) {
     await page.waitForTimeout(70);
@@ -201,6 +208,20 @@ try {
     );
   }
   await page.waitForTimeout(600);
+  for (const index of [4, 0, 3, 1, 0]) {
+    await carousel.locator('.position-indicators button').nth(index).click();
+    await page.waitForTimeout(750);
+    assert.ok(
+      await carousel
+        .locator('.track')
+        .evaluate(
+          (track) =>
+            window.__cardNodes.every((node) => track.contains(node)) &&
+            window.__cardMutations === 0,
+        ),
+      'settling and loop normalization must not move/remount card DOM',
+    );
+  }
   const output = '../../test-results/mobile-gallery';
   await mkdir(output, { recursive: true });
   await page.screenshot({ path: `${output}/related-portrait.png` });
@@ -271,6 +292,8 @@ try {
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
     const collapsed = await equalReviewHeights();
+    assert.ok(collapsed < 200, 'mobile review default height is reduced without losing read more');
+    console.log(JSON.stringify({ reviewViewport: width, collapsedHeight: collapsed }));
     await review.locator('button.review-more').click();
     assert.ok(
       (await equalReviewHeights(collapsed + 200)) > collapsed + 200,
@@ -286,6 +309,30 @@ try {
   await equalReviewHeights();
   await review.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${output}/reviews-portrait.png` });
+  const banner = page.locator('.home-services .banner-background');
+  await banner.scrollIntoViewIfNeeded();
+  assert.ok((await banner.getAttribute('src')).includes('version-13-'));
+  assert.equal(await page.locator('.service-versions, #service-background-versions').count(), 0);
+  const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  await desktop.route('**/*', (route) =>
+    ['127.0.0.1', 'localhost'].includes(new URL(route.request().url()).hostname)
+      ? route.continue()
+      : route.abort(),
+  );
+  await desktop.goto(origin);
+  const mapLink = desktop.locator('.map-link').first();
+  await mapLink.scrollIntoViewIfNeeded();
+  await mapLink.hover();
+  const hover = await mapLink.evaluate((node) => ({
+    underline: getComputedStyle(node).textDecorationLine,
+    color: getComputedStyle(node).color,
+    decoration: getComputedStyle(node).textDecorationColor,
+    arrow: getComputedStyle(node.querySelector('svg')).color,
+  }));
+  assert.equal(hover.underline, 'underline');
+  assert.equal(hover.color, hover.decoration);
+  assert.equal(hover.arrow, 'rgb(255, 255, 255)');
+  await desktop.close();
   console.log(
     'PASS: native horizontal/vertical touch, drag feedback, touch/keyboard focus, share alignment, card inset/opacity, landscape layouts, mobile review sizing and equal heights at 320/390px, including full expanded text.',
   );

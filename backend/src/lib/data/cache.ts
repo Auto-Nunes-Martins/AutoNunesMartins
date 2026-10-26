@@ -14,6 +14,8 @@ interface Entry<T> {
 }
 
 const store = new Map<string, Entry<unknown>>();
+// Invalidation also prevents older in-flight loads from repopulating stale entries.
+let revision = 0;
 
 export interface TtlCache {
   get<T>(key: string): T | undefined;
@@ -44,22 +46,26 @@ export const cache: TtlCache = {
   async wrap<T>(key: string, ttlMs: number, loader: () => Promise<T>): Promise<T> {
     const hit = this.get<T>(key);
     if (hit !== undefined) return hit;
+    const started = revision;
     const value = await loader();
-    this.set(key, value, ttlMs);
+    if (started === revision) this.set(key, value, ttlMs);
     return value;
   },
 
   invalidate(key: string): void {
+    revision++;
     store.delete(key);
   },
 
   clearPrefix(prefix: string): void {
+    revision++;
     for (const k of store.keys()) {
       if (k.startsWith(prefix)) store.delete(k);
     }
   },
 
   clearAll(): void {
+    revision++;
     store.clear();
   },
 };

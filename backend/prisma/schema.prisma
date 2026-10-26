@@ -13,19 +13,29 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   clerkId   String   @unique
-  email     String   @unique
+  email     String
   name      String
   /// Profile picture URL mirrored from Clerk on webhook + auto-provision.
   /// Null when the user has not uploaded a custom photo (UI falls back to
   /// red-gradient monogram).
   imageUrl  String?
+  /// Terminal local deactivation after a verified Clerk user.deleted event.
+  deactivatedAt DateTime?
   role      Role     @default(ADMIN)
   createdAt DateTime @default(now())
 
   tasks    Task[]        @relation("assignee")
   activity ActivityLog[]
+
+  @@index([email])
 }
 
+/// Records deletion even when the profile has never been provisioned locally.
+/// A Clerk identity is terminal: delayed create/update events cannot restore it.
+model ClerkUserDeletion {
+  clerkId String @id
+  deletedAt DateTime @default(now())
+}
 // ─── Vehicles ────────────────────────────────────────────────────────────
 model Vehicle {
   id              String        @id @default(cuid())

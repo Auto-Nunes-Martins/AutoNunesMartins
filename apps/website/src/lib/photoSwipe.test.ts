@@ -19,10 +19,13 @@ class Surface extends EventTarget {
     return this.allowed;
   }
 }
-function setup() {
+function setup(touchEvents = false) {
   vi.stubGlobal('Element', Surface);
   const viewport = Object.assign(new EventTarget(), { scale: 1 });
-  vi.stubGlobal('window', { visualViewport: viewport });
+  vi.stubGlobal('window', {
+    visualViewport: viewport,
+    ...(touchEvents ? { TouchEvent: Event } : {}),
+  });
   const node = Object.assign(new Surface(), {
     clientWidth: 400,
     style: { touchAction: 'manipulation' },
@@ -193,5 +196,65 @@ it('returns the dragged rail to rest when pinch or pointer cancellation takes ov
   pointer('pointermove', 200, 100);
   pointer('pointercancel', 200, 100);
   expect(drag).toHaveBeenLastCalledWith(undefined);
+  expect(next).not.toHaveBeenCalled();
+});
+
+function touch(node: EventTarget, type: string, points: number[][], changed = points) {
+  const convert = ([x, y, id = 1]: number[]) => ({ clientX: x, clientY: y, identifier: id });
+  const event = Object.assign(new Event(type, { cancelable: true }), {
+    touches: points.map(convert),
+    changedTouches: changed.map(convert),
+  });
+  node.dispatchEvent(event);
+  return event;
+}
+it('keeps iOS touch swipes alive through toolbar resize and pointer cancellation without consuming vertical scroll', () => {
+  const { node, viewport, pointer, next, previous, action } = setup(true);
+  const drag = vi.fn();
+  action.update({ enabled: true, next, previous, drag });
+  expect(node.style.touchAction).toBe('auto');
+  touch(node, 'touchstart', [[240, 100]]);
+  expect(touch(node, 'touchmove', [[220, 106]]).defaultPrevented).toBe(true);
+  viewport.dispatchEvent(new Event('resize'));
+  pointer('pointercancel', 220, 106);
+  expect(touch(node, 'touchmove', [[160, 130]]).defaultPrevented).toBe(true);
+  touch(node, 'touchend', [], [[160, 130]]);
+  expect(next).toHaveBeenCalledOnce();
+  touch(node, 'touchstart', [[240, 100]]);
+  expect(touch(node, 'touchmove', [[230, 160]]).defaultPrevented).toBe(false);
+  touch(node, 'touchend', [], [[180, 230]]);
+  expect(next).toHaveBeenCalledOnce();
+});
+it('yields immediately to a second touch/native pinch and true zoom changes', () => {
+  const { node, viewport, next, previous, action } = setup(true);
+  const drag = vi.fn();
+  action.update({ enabled: true, next, previous, drag });
+  touch(node, 'touchstart', [[240, 100]]);
+  touch(node, 'touchmove', [[200, 100]]);
+  touch(node, 'touchstart', [
+    [200, 100],
+    [280, 100, 2],
+  ]);
+  expect(
+    touch(node, 'touchmove', [
+      [180, 100],
+      [300, 100, 2],
+    ]).defaultPrevented,
+  ).toBe(false);
+  touch(
+    node,
+    'touchend',
+    [],
+    [
+      [180, 100],
+      [300, 100, 2],
+    ],
+  );
+  expect(drag).toHaveBeenLastCalledWith(undefined);
+  touch(node, 'touchstart', [[240, 100]]);
+  touch(node, 'touchmove', [[200, 100]]);
+  viewport.scale = 2;
+  viewport.dispatchEvent(new Event('resize'));
+  touch(node, 'touchend', [], [[100, 100]]);
   expect(next).not.toHaveBeenCalled();
 });

@@ -75,7 +75,7 @@
   import OrbitAccordion from './OrbitAccordion.svelte';
   import VehicleSpecIcon from '../VehicleSpecIcon.svelte';
   import CabinReveal from './CabinReveal.svelte';
-  import ServiceBannerComparison from './ServiceBannerComparison.svelte';
+  import ServiceBanner from './ServiceBanner.svelte';
   import OrbitStats from './OrbitStats.svelte';
   import PublicStockBrands from './PublicStockBrands.svelte';
   import type { PublicBrandDirectory } from '$lib/catalogBrandLinks';
@@ -1302,7 +1302,7 @@
       </section>
 
       <CabinReveal />
-      <ServiceBannerComparison onContact={contact} />
+      <ServiceBanner onContact={contact} />
       <OrbitPerspective
         grouped
         lead="A escolha certa"
