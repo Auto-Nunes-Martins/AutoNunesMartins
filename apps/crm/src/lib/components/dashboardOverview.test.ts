@@ -12,6 +12,7 @@ import * as format from '$lib/utils/format';
 import * as taskPresentation from '$lib/components/task/presentation';
 import { linkedRow } from '$lib/linkedRow';
 import { activityHref } from '$lib/activityNavigation';
+import { publicVehiclePhotoUrl } from '$lib/publicVehiclePhoto';
 
 // Render the actual overview components. Icons are decorative; panel snippets
 // and all operational text/links are rendered by their real components.
@@ -29,8 +30,16 @@ function fromSource(source: string, file: string): any {
     else if (specifier === 'svelte') value = svelte;
     else if (specifier === 'lucide-svelte') value = new Proxy({}, { get: () => icon });
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
+    else if (specifier === '$env/static/public')
+      value = { PUBLIC_BACKEND_URL: 'https://backend.example' };
+    else if (specifier === '$lib/publicVehiclePhoto') value = { publicVehiclePhotoUrl };
     else if (specifier === '$app/navigation') value = { invalidateAll: async () => {} };
-    else if (specifier === '$lib/auth/session') value = { sessionFetch: () => { throw new Error('Unexpected SSR fetch'); } };
+    else if (specifier === '$lib/auth/session')
+      value = {
+        sessionFetch: () => {
+          throw new Error('Unexpected SSR fetch');
+        },
+      };
     else if (specifier === '$lib/utils/format') value = format;
     else if (specifier === '$lib/components/task/presentation') value = taskPresentation;
     else if (specifier === '$lib/linkedRow') value = { linkedRow };
@@ -83,6 +92,50 @@ const text = (html: string) =>
     .trim();
 
 describe('dashboard operational overview', () => {
+  it.each([false, true])(
+    'renders usable showcase photo candidates with versioned path: %s',
+    (versioned) => {
+      const version = 'a'.repeat(64);
+      const path = '/api/public/vehicles/test-car-abcdef123456/photos/0';
+      const html = render(component('FeaturedVehicleHero'), {
+        props: {
+          highlights: [
+            {
+              id: 'vehicle-test',
+              licensePlate: null,
+              photoIndex: 0,
+              vehicle: {
+                brand: 'Test',
+                model: 'Car',
+                year: 2022,
+                fuel: 'GASOLINE',
+                mileage: 1000,
+                price: '15000',
+                description: null,
+                availability: 'AVAILABLE',
+                photos: [path + (versioned ? `?v=${version}` : '')],
+              },
+            },
+          ],
+        },
+      }).body.replaceAll('&amp;', '&');
+      const src = html.match(/<img[^>]+src="([^"]+)"/)?.[1];
+      const srcset = html.match(/<img[^>]+srcset="([^"]+)"/)?.[1];
+      expect(srcset).toBeDefined();
+      const candidates = srcset!.split(', ').map((candidate) => candidate.split(' ')[0]!);
+      expect(candidates).toHaveLength(4);
+      for (const candidate of [src!, ...candidates]) {
+        const url = new URL(candidate);
+        expect(url.origin).toBe('https://backend.example');
+        expect(url.pathname).toBe(path);
+        expect(url.searchParams.get('v')).toBe(versioned ? version : null);
+        expect(url.searchParams.getAll('w')).toHaveLength(1);
+        expect([320, 800, 1600, 2560]).toContain(Number(url.searchParams.get('w')));
+        expect(candidate.match(/\?/g)).toHaveLength(1);
+      }
+    },
+  );
+
   it('shows urgency, overdue status, due dates and general/assigned tasks before opening a task', () => {
     const html = render(component('TodayTasks'), {
       props: {
@@ -125,21 +178,47 @@ describe('dashboard operational overview', () => {
   });
   it('orders overdue work first and limits completion to own or general tasks', () => {
     const base = { priority: 'LOW', status: 'TODO', dueDate: null, isOverdue: false };
-    const html = render(component('TodayTasks'), { props: { currentUserId: 'me', items: [
-      { ...base, id: 'other', title: 'Outra pessoa', priority: 'URGENT', assignee: { id: 'other-user', name: 'Outra pessoa' } },
-      { ...base, id: 'late', title: 'Prazo ultrapassado', isOverdue: true, assignee: null },
-      { ...base, id: 'mine', title: 'Tarefa própria', assignee: { id: 'me', name: 'Eu' } },
-    ] } }).body;
-    expect(html.indexOf('/tarefas/late/editar')).toBeLessThan(html.indexOf('/tarefas/other/editar'));
+    const html = render(component('TodayTasks'), {
+      props: {
+        currentUserId: 'me',
+        items: [
+          {
+            ...base,
+            id: 'other',
+            title: 'Outra pessoa',
+            priority: 'URGENT',
+            assignee: { id: 'other-user', name: 'Outra pessoa' },
+          },
+          { ...base, id: 'late', title: 'Prazo ultrapassado', isOverdue: true, assignee: null },
+          { ...base, id: 'mine', title: 'Tarefa própria', assignee: { id: 'me', name: 'Eu' } },
+        ],
+      },
+    }).body;
+    expect(html.indexOf('/tarefas/late/editar')).toBeLessThan(
+      html.indexOf('/tarefas/other/editar'),
+    );
     expect(html).toContain('Concluir tarefa: Prazo ultrapassado');
     expect(html).toContain('Concluir tarefa: Tarefa própria');
     expect(html).not.toContain('Concluir tarefa: Outra pessoa');
     expect(html).toContain('/tarefas');
   });
   it('uses a task skeleton during streaming without presenting old task data as current', () => {
-    const html = render(component('TodayTasks'), { props: { pending: true, items: [
-      { id: 'old', title: 'Dado antigo', priority: 'LOW', status: 'TODO', dueDate: null, isOverdue: false, assignee: null },
-    ] } }).body;
+    const html = render(component('TodayTasks'), {
+      props: {
+        pending: true,
+        items: [
+          {
+            id: 'old',
+            title: 'Dado antigo',
+            priority: 'LOW',
+            status: 'TODO',
+            dueDate: null,
+            isOverdue: false,
+            assignee: null,
+          },
+        ],
+      },
+    }).body;
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain('A carregar tarefas');
     expect(html).not.toContain('Dado antigo');
@@ -147,8 +226,13 @@ describe('dashboard operational overview', () => {
   });
   it('limits the compact preview to four actionable tasks while keeping full management available', () => {
     const items = Array.from({ length: 7 }, (_, index) => ({
-      id: `task-${index}`, title: `Trabalho ${index}`, priority: 'MEDIUM',
-      status: index === 0 ? 'DONE' : 'TODO', dueDate: null, isOverdue: false, assignee: null,
+      id: `task-${index}`,
+      title: `Trabalho ${index}`,
+      priority: 'MEDIUM',
+      status: index === 0 ? 'DONE' : 'TODO',
+      dueDate: null,
+      isOverdue: false,
+      assignee: null,
     }));
     const html = render(component('TodayTasks'), { props: { currentUserId: 'me', items } }).body;
     expect(html.match(/aria-label="Concluir tarefa:/g)).toHaveLength(4);

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { PUBLIC_BACKEND_URL } from '$env/static/public';
+  import { publicVehiclePhotoUrl } from '$lib/publicVehiclePhoto';
   import { ArrowLeft, ArrowRight, Calendar, Fuel, Gauge, Star, Tag } from 'lucide-svelte';
   import type { DashboardHighlight } from '$lib/server/dashboard';
   import { formatEUR, formatInt } from '$lib/utils/format';
@@ -82,7 +83,7 @@
       <div class="links">
         <a class="primary" href={crmPath(`/viaturas/${current.id}`)}
           >Ver ficha completa <ArrowRight size={15} /></a
-        ><a href={crmPath("/site/destaques")}>Gerir destaques</a>
+        ><a href={crmPath('/site/destaques')}>Gerir destaques</a>
       </div>
     {:else}
       <h2>Sem<br /><span>destaques.</span></h2>
@@ -91,7 +92,9 @@
         homepage.
       </p>
       <div class="links">
-        <a class="primary" href={crmPath("/site/destaques")}>Escolher destaques <ArrowRight size={15} /></a>
+        <a class="primary" href={crmPath('/site/destaques')}
+          >Escolher destaques <ArrowRight size={15} /></a
+        >
       </div>
     {/if}
   </div>
@@ -100,8 +103,13 @@
       {#each highlights as entry, slide (entry.id)}
         {@const image = entry.vehicle.photos[entry.photoIndex]}
         {#if image}<img
-            src={`${PUBLIC_BACKEND_URL}${image}?w=1600`}
-            srcset={[320,800,1600,2560].map(w=>`${PUBLIC_BACKEND_URL}${image}?w=${w} ${w}w`).join(", ")} sizes="(max-width:1050px) 100vw, 800px"
+            src={publicVehiclePhotoUrl(PUBLIC_BACKEND_URL, image, 1600)}
+            srcset={[320, 800, 1600, 2560]
+              .map(
+                (width) => `${publicVehiclePhotoUrl(PUBLIC_BACKEND_URL, image, width)} ${width}w`,
+              )
+              .join(', ')}
+            sizes="(max-width:1050px) 100vw, 800px"
             alt={`${entry.vehicle.brand} ${entry.vehicle.model}`}
             class:is-active={slide === index}
             aria-hidden={slide !== index}

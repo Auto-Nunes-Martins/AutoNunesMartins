@@ -414,6 +414,13 @@
     white-space: nowrap;
   }
   @media (max-width: 640px) {
+    .all-tasks,
+    .refresh-tasks {
+      min-height: 44px;
+    }
+    .refresh-tasks {
+      min-width: 44px;
+    }
     .task-item {
       padding-inline: 12px;
     }
