@@ -1,10 +1,19 @@
 # Anular negócios e corrigir vendas no CRM
 
-O detalhe de uma venda distingue «Anular o negócio» (o negócio aconteceu mas foi
-desfeito) de «Corrigir um registo errado» (venda criada por engano). Antes da
-confirmação, mostra o destino das viaturas, os registos que são eliminados ou
-preservados e o impacto financeiro. As escolhas não executam pagamentos, não
-calculam reembolsos e não regularizam documentos ou crédito automaticamente.
+O detalhe apresenta apenas o botão «Anular ou corrigir». Abre um modal fechado por
+defeito, com uma decisão por etapa: o que aconteceu, destino da viatura quando
+necessário, custo/data apenas para a compra mantida, e resumo final. Fechar e
+voltar conserva os campos; erros e revisão ficam dentro do modal, sem o reabrir
+automaticamente ao carregar a página. Escape, foco e navegação por teclado seguem
+o padrão de dialog nativo do CRM.
+
+«Quero desfazer o negócio» mantém a venda anulada no histórico; «Registei esta venda
+por engano» elimina só o registo errado. Apresentam-se apenas destinos válidos.
+Uma ação indisponível tem o motivo junto da alternativa disponível, sem uma grelha
+de escolhas desativadas. A cadeia detalhada e IVA/lucro estão em detalhes
+recolhidos. O motivo é gerado a partir da escolha explícita, com nota opcional.
+As escolhas não executam pagamentos, não calculam reembolsos e não regularizam
+documentos ou crédito automaticamente.
 
 ## Viatura original e destino da retoma
 
@@ -43,20 +52,24 @@ viaturas seguintes e o que fica preservado, incluindo a aquisição das seguinte
 
 ## Eliminar um registo errado
 
-A eliminação definitiva só está disponível sem movimentos posteriores: não pode
-existir entrega da venda original, venda posterior da original, despesas na
-original registadas depois da venda, ou despesas, vendas, alterações/preparação da
-retoma. Uma venda com esses movimentos pode ser anulada e a aquisição regularizada
-sem eliminar as viaturas ou vendas seguintes.
+A eliminação de A não é permitida se a própria A tem entrega registada, venda
+posterior ou despesas registadas depois da venda. O motivo é mostrado no modal,
+com a alternativa de anular. Movimentos de B protegem B, sem bloquear globalmente
+a correção de A: A pode ser eliminada mantendo B como compra normal, mesmo quando
+B já tem despesas, alterações ou uma venda posterior. Essa venda e C/D são
+preservadas; nunca é necessário eliminar B para corrigir A.
 
-Para uma venda sem esses movimentos, o utilizador escolhe o destino da retoma:
+Para uma venda elegível, o utilizador escolhe o destino da retoma:
 compra normal, devolução, ou eliminar também a ficha criada por engano. Apagar a
 ficha exige ausência de vendas (incluindo históricas), despesas, alterações,
 fotografias e publicação, e uma ficha ainda em rascunho (ou devolvida pela própria
 anulação). O servidor repete estas verificações dentro da transação.
 
-O formulário enumera exatamente o que será eliminado e preservado, exige a palavra
-`ELIMINAR` e a checkbox de confirmação. A eliminação liberta primeiro a venda ativa,
+O resumo enumera o que será eliminado e preservado, seguido de uma única ação
+explícita «Eliminar esta venda» ou «Eliminar venda e ficha erradas». Não é preciso
+digitar uma palavra ou marcar outra checkbox. Apenas esse formulário final envia
+os acknowledgements que a API continua a exigir (`confirmed` e `ELIMINAR`), além
+do token da revisão. A eliminação liberta primeiro a venda ativa,
 remove o recibo de retoma quando necessário e elimina só a venda pedida e a ficha
 vazia explicitamente escolhida. Não elimina clientes, despesas ou outras vendas.
 Uma venda anteriormente anulada pode ser eliminada apenas se continuar elegível;
@@ -91,13 +104,15 @@ Testes de serviço cobrem cadeias de uma e várias retomas, particular/comercian
 custo de entrada, estado e entrega preservados, ausência de ligação/origem antiga,
 proteção de despesas e fotografias, eliminação explícita, repetição idempotente,
 revisão desatualizada, conflitos e rollback. Testes das ações reais verificam os
-campos enviados, confirmação escrita, validação de datas e redirecionamento.
+campos enviados, acknowledgements de confirmação, validação de datas e redirecionamento.
 
 PostgreSQL isolado em memória (PGlite), com as migrations existentes, verifica
 remoção de A→B sem tocar em B→C, proteção de vendas por FK, impossibilidade de
 recibos órfãos e rollback conjunto de custo, métricas e relações. Os testes HTTP
 usam apenas localhost e base simulada. O formulário real hidratado é exercitado em
-Chrome headless a 390 e 1366 px, com dados fictícios. Os testes de conflito simulam
+Chrome headless a 390 e 1366 px, com dados fictícios: fechado ao carregar, etapas,
+foco/Escape, campos preservados, erros, devolução, correção e bloqueios por entidade.
+Os testes de conflito simulam
 a resposta de serialização; não constituem um ensaio de carga PostgreSQL com duas
 ligações reais.
 

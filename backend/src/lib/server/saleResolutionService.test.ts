@@ -463,7 +463,7 @@ describe('explicit deletion of an erroneous sale without later movements', () =>
     expect(state.sales.saleA.cancelledAt).toBeNull();
     expect(mocks.db.sale.delete).not.toHaveBeenCalled();
   });
-  it.each(['expense', 'sale', 'delivery', 'edit', 'laterOriginal'])(
+  it.each(['delivery', 'laterOriginal'])(
     'blocks deletion after a %s movement while retaining cancellation where possible',
     async (movement) => {
       if (movement === 'expense')
@@ -485,6 +485,53 @@ describe('explicit deletion of an erroneous sale without later movements', () =>
         status: 409,
       });
       await expect(previewSaleCancellation('saleA', keep)).resolves.toBeDefined();
+    },
+  );
+  it.each(['expense', 'sale', 'edit', 'prepared'])(
+    'corrects A while preserving B with a %s movement, without permitting B deletion',
+    async (movement) => {
+      if (movement === 'sale') setup(2);
+      if (movement === 'expense')
+        state.vehicles.B.expenses = [{ id: 'cost', amount: '50', createdAt: date }];
+      if (movement === 'edit')
+        state.events.push({
+          id: 'edit',
+          entityType: 'vehicle',
+          entityId: 'B',
+          type: 'VEHICLE_UPDATED',
+          metadata: {},
+        });
+      if (movement === 'prepared') state.vehicles.B.status = 'AVAILABLE';
+      const before = structuredClone(state);
+      const ctx = await getSaleResolutionContext('saleA');
+      expect(ctx.deletionBlockers).toEqual([]);
+      expect(ctx.canDeleteTradeIn).toBe(false);
+      expect(ctx.tradeInDeletionBlockers.length).toBeGreaterThan(0);
+      const decision = movement === 'sale' ? { ...keep, operation: 'DELETE' as const } : correction;
+      await expect(
+        previewSaleCancellation('saleA', {
+          reason: correction.reason,
+          operation: 'DELETE',
+          tradeInAction: 'DELETE',
+        }),
+      ).rejects.toMatchObject({ status: 409 });
+      await cancelSale('saleA', await confirm(decision), actor);
+      expect(state.sales.saleA).toBeUndefined();
+      expect(state.vehicles.B.expenses).toEqual(before.vehicles.B.expenses);
+      expect(state.vehicles.B.status).toBe(before.vehicles.B.status);
+      expect(state.trades.tradeA).toBeUndefined();
+      if (movement === 'sale') {
+        expect(state.sales.saleB).toMatchObject({
+          customer: before.sales.saleB.customer,
+          salePrice: before.sales.saleB.salePrice,
+          deliveryStatus: before.sales.saleB.deliveryStatus,
+        });
+        expect(state.vehicles.C).toEqual(before.vehicles.C);
+        expect(state.vehicles.D).toEqual(before.vehicles.D);
+        expect(state.trades.tradeB).toEqual(before.trades.tradeB);
+        expect(state.sales.saleC).toEqual(before.sales.saleC);
+      }
+      expect(mocks.db.vehicle.delete).not.toHaveBeenCalled();
     },
   );
   it('does not permit deleting a prepared or photographed retoma even if the sale itself is removable', async () => {

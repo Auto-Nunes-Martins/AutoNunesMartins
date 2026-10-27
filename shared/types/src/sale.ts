@@ -132,7 +132,7 @@ export const saleCancellationSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['deletionConfirmation'],
-        message: 'Escreva ELIMINAR para confirmar a correção definitiva.',
+        message: 'Confirme a eliminação na revisão final.',
       });
   });
 export type SaleCancellationDecision = z.infer<typeof saleCancellationDecisionSchema>;

@@ -186,6 +186,7 @@ export interface ResolutionContext {
     vatAmount: string;
   }[];
   deletionBlockers: string[];
+  tradeInDeletionBlockers: string[];
   canDeleteTradeIn: boolean;
   tradeIn: {
     id: string;

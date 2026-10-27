@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
+  import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
   import { enhance } from '$lib/auth/enhance';
   import { crmPath } from '$lib/paths';
   import { toast } from 'svelte-sonner';
@@ -15,14 +16,15 @@
     sale,
     context,
     form,
+    open = $bindable(false),
   }: {
     sale: SaleDetailResponse;
     context?: ResolutionContext;
     form?: { review?: CancellationReview; error?: string; dependencySaleId?: string } | null;
+    open?: boolean;
   } = $props();
   let operation = $state<'CANCEL' | 'DELETE'>('CANCEL');
-  let editingCancelled = $state(false);
-  let reason = $state('');
+  let step = $state<'choose' | 'destination' | 'purchase'>('choose');
   let tradeInAction = $state(untrack(() => sale.cancellationDecision?.tradeInAction ?? ''));
   let purchasePrice = $state(
     untrack(
@@ -33,12 +35,80 @@
     ),
   );
   let acquisitionDate = $state(untrack(() => context?.tradeIn?.acquisitionDate ?? ''));
+  let note = $state('');
   let busy = $state(false);
   let hideReview = $state(false);
+  let dialogEl: HTMLDialogElement | undefined = $state();
+  let decisionForm: HTMLFormElement | undefined = $state();
+  const uid = $props.id();
   const review = $derived(hideReview ? null : form?.review);
   const info = $derived(context);
   const laterSale = $derived(!!info?.tradeIn?.hasLaterSale);
   const deleteBlocked = $derived(!info || !!info.deletionBlockers.length);
+  const reason = $derived(
+    (operation === 'DELETE' ? 'Venda registada por engano' : 'Negócio desfeito') +
+      (note.trim() ? `: ${note.trim()}` : ''),
+  );
+  const tradeLabel = $derived(
+    sale.tradeIn ? `${sale.tradeIn.brand} ${sale.tradeIn.model}` : 'a viatura',
+  );
+  const heading = $derived(
+    review
+      ? 'Rever e confirmar'
+      : sale.cancelledAt
+        ? 'Venda já anulada'
+        : step === 'destination'
+          ? `O que acontece a ${tradeLabel}?`
+          : step === 'purchase'
+            ? 'Confirmar entrada no stock'
+            : 'O que aconteceu?',
+  );
+
+  $effect(() => {
+    if (!dialogEl) return;
+    if (open && !dialogEl.open) {
+      dialogEl.showModal();
+      focusTitle();
+    } else if (!open && dialogEl.open) dialogEl.close();
+  });
+  function focusTitle() {
+    dialogEl?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+  }
+  function closeDialog() {
+    if (!busy) open = false;
+  }
+  async function chooseOperation(value: 'CANCEL' | 'DELETE') {
+    operation = value;
+    hideReview = true;
+    if (value !== 'DELETE' && tradeInAction === 'DELETE') tradeInAction = '';
+    if (sale.tradeIn && !sale.cancelledAt) {
+      step = 'destination';
+      await tick();
+      focusTitle();
+    } else {
+      await tick();
+      decisionForm?.requestSubmit();
+    }
+  }
+  async function chooseDestination(value: 'KEEP' | 'RETURN' | 'DELETE') {
+    tradeInAction = value;
+    if (value === 'KEEP') {
+      step = 'purchase';
+      await tick();
+      focusTitle();
+    } else {
+      await tick();
+      decisionForm?.requestSubmit();
+    }
+  }
+  async function back() {
+    if (review) {
+      hideReview = true;
+      step = sale.tradeIn ? (tradeInAction === 'KEEP' ? 'purchase' : 'destination') : 'choose';
+    } else step = step === 'purchase' ? 'destination' : 'choose';
+    await tick();
+    focusTitle();
+  }
   const submit = () => {
     busy = true;
     hideReview = false;
@@ -50,147 +120,134 @@
       update: (options?: { reset?: boolean; invalidateAll?: boolean }) => Promise<void>;
     }) => {
       try {
-        if (result.type === 'redirect')
-          toast.success(
-            operation === 'DELETE'
-              ? 'Registo errado eliminado. Histórico preservado.'
-              : 'Venda anulada.',
-          );
+        if (result.type === 'redirect') {
+          open = false;
+          toast.success(operation === 'DELETE' ? 'Registo errado eliminado.' : 'Venda anulada.');
+        }
+        if (result.type === 'failure') hideReview = true;
         await update({ reset: false });
+        await tick();
+        if (open) {
+          if (result.type === 'failure')
+            dialogEl?.querySelector<HTMLElement>('[role="alert"]')?.focus({ preventScroll: true });
+          else focusTitle();
+        }
       } finally {
         busy = false;
       }
     };
   };
-  function chooseOperation(value: 'CANCEL' | 'DELETE') {
-    operation = value;
-    if (value !== 'DELETE' && tradeInAction === 'DELETE') tradeInAction = '';
-  }
 </script>
 
-<section class="resolution" id="resolver-venda" aria-label="Anular ou corrigir venda">
-  <header>
-    <span class="eyebrow">GESTÃO DA VENDA</span>
-    <h2>{sale.cancelledAt ? 'Venda anulada' : 'Anular ou corrigir esta venda'}</h2>
-    <p>
-      {sale.cancelledAt
-        ? `Anulada em ${formatDate(sale.cancelledAt)}. Motivo: ${sale.cancellationReason}`
-        : 'Escolha o que aconteceu. Antes de confirmar, verá o destino das viaturas e os registos que ficam guardados.'}
-    </p>
-  </header>
-
-  {#if sale.cancelledAt && !editingCancelled}
-    <div class="notice">
-      A venda deixou de contar nos indicadores. A ficha, despesas e histórico das viaturas foram
-      preservados.
-      {#if sale.cancellationDecision?.tradeInAction === 'KEEP'}
-        A viatura foi mantida como compra normal por {formatEUR(
-          sale.cancellationDecision.independentPurchasePrice ?? '0',
-        )}.
-      {:else if sale.cancellationDecision?.tradeInAction === 'RETURN'}
-        A retoma foi devolvida ao cliente e está fora do stock.{/if}
-    </div>
-    <div class="actions">
-      <Button variant="outline" href={crmPath(`/viaturas/${sale.vehicle.id}`)}>Ver viatura</Button>
-      <Button
-        variant="danger"
-        disabled={deleteBlocked}
-        onclick={() => {
-          operation = 'DELETE';
-          editingCancelled = true;
-        }}>Eliminar registo criado por engano</Button
+<dialog
+  bind:this={dialogEl}
+  class="sale-resolution-dialog"
+  aria-labelledby={uid + '-title'}
+  oncancel={(event) => {
+    event.preventDefault();
+    closeDialog();
+  }}
+  onclose={() => (open = false)}
+  onkeydown={(event) => trapDialogTab(event, dialogEl)}
+  onclick={(event) => {
+    if (event.target === dialogEl) closeDialog();
+  }}
+>
+  <div class="content">
+    <div class="topline">
+      <span class="eyebrow"
+        >{sale.vehicle.brand}
+        {sale.vehicle.model} · {sale.vehicle.licensePlate ?? 'Sem matrícula'}</span
+      ><button
+        type="button"
+        class="close-dialog"
+        aria-label="Fechar anulação ou correção"
+        disabled={busy}
+        onclick={closeDialog}>Cancelar ×</button
       >
     </div>
-    {#if deleteBlocked}<p class="muted">
-        {info?.deletionBlockers[0] ??
-          'Não foi possível verificar os registos associados. Atualize a página.'}
-      </p>{/if}
-  {:else}
-    {#if form?.error}<p class="error" role="alert">{form.error}</p>{/if}
+    <header>
+      <h2 id={uid + '-title'} tabindex="-1">{heading}</h2>
+      <p>
+        {review
+          ? 'Só será alterado o que está indicado abaixo.'
+          : 'As outras viaturas e vendas são preservadas.'}
+      </p>
+    </header>
+    {#if form?.error}<p class="error" role="alert" tabindex="-1">{form.error}</p>{/if}
+
     {#if review}
-      <div class="review-title">
-        <span class="step">2</span>
-        <div>
-          <h3>Confirme o que vai acontecer</h3>
-          <p>
-            {review.vehicle.label} · {review.vehicle.licensePlate ?? 'Sem matrícula'} · {review
-              .customer.name}
-          </p>
-        </div>
-      </div>
-      <div class="destinations">
+      <div class="summary">
         <article>
-          <span class="eyebrow">VIATURA ORIGINAL</span>
-          <h4>{review.vehicle.label}</h4>
-          <p>{sale.cancelledAt ? 'Mantém a situação atual' : 'Volta a Disponível'}</p>
-          <small>Ficha e despesas preservadas. Sem publicação automática.</small>
+          <span class="eyebrow">ESTA VENDA</span><strong
+            >{review.decision.operation === 'DELETE'
+              ? 'Registo eliminado'
+              : 'Venda anulada'}</strong
+          >
+          <p>
+            {sale.cancelledAt
+              ? 'A situação atual da viatura mantém-se.'
+              : `${review.vehicle.label} volta a Disponível.`}
+          </p>
+          <small>A ficha e as despesas da viatura ficam guardadas. Sem publicação automática.</small
+          >
         </article>
-        {#if review.tradeIn}
-          <article>
-            <span class="eyebrow">RETOMA</span>
-            <h4>{review.tradeIn.label}</h4>
-            <p>
-              {review.decision.tradeInAction === 'KEEP'
-                ? 'Compra normal no stock'
+        {#if review.tradeIn}<article>
+            <span class="eyebrow">{review.tradeIn.label}</span><strong
+              >{review.decision.tradeInAction === 'KEEP'
+                ? 'Fica como compra normal'
                 : review.decision.tradeInAction === 'RETURN'
-                  ? 'Devolvida ao cliente'
-                  : 'Ficha errada eliminada'}
-            </p>
-            {#if review.decision.tradeInAction === 'KEEP'}<strong
-                >{formatEUR(review.tradeIn.nextPurchasePrice)}</strong
-              ><small
-                >Aquisição em {formatDate(review.tradeIn.nextAcquisitionDate)}. {laterSale
+                  ? 'É devolvida ao cliente'
+                  : 'Ficha errada eliminada'}</strong
+            >
+            {#if review.decision.tradeInAction === 'KEEP'}<p>
+                Entrada por {formatEUR(review.tradeIn.nextPurchasePrice)} em {formatDate(
+                  review.tradeIn.nextAcquisitionDate,
+                )}.
+              </p>
+              <small
+                >Sem ligação a esta venda ou ao seu cliente. {laterSale
                   ? 'A venda e a entrega seguintes mantêm-se.'
                   : 'O estado atual da ficha mantém-se.'}</small
               >
             {:else if review.decision.tradeInAction === 'RETURN'}<small
                 >Fora do stock e do site. Despesas e histórico preservados.</small
               >
-            {:else}<small
-                >Sem despesas, vendas ou alterações posteriores. Só esta ficha será eliminada.</small
+            {:else}<small>Só esta ficha, criada por engano e sem movimentos, será eliminada.</small
               >{/if}
-          </article>
-        {/if}
-      </div>
-      {#if review.affectedSale}
-        <div class="notice">
-          <h4>A venda seguinte de {review.tradeIn?.label} mantém-se</h4>
-          <p>O custo de aquisição confirmado atualiza apenas os resultados dessa venda.</p>
-          <div class="figures">
-            <span
-              >Lucro: {formatEUR(review.affectedSale.beforeProfit)} →
-              <strong>{formatEUR(review.affectedSale.afterProfit)}</strong></span
-            ><span
-              >IVA: {formatEUR(review.affectedSale.beforeVat)} →
-              <strong>{formatEUR(review.affectedSale.afterVat)}</strong></span
-            >
-          </div>
-          <p>
-            Preços, comissões e entregas mantêm-se. Os valores de entrada das retomas seguintes não
-            mudam.
-          </p>
-        </div>
-      {/if}
-      <div class="consequences">
-        {#if review.eliminated.length}<article class="removed">
-            <h4>Será eliminado</h4>
-            <ul>
-              {#each review.eliminated as item}<li>{item}</li>{/each}
-            </ul>
           </article>{/if}
-        <article>
-          <h4>Fica guardado</h4>
-          <ul>
-            {#each review.preserved as item}<li>{item}</li>{/each}
-          </ul>
-        </article>
       </div>
-      <p class="muted">Motivo: {review.decision.reason}</p>
+      {#if review.eliminated.length}<div class="destructive">
+          <h3>Será eliminado</h3>
+          <ul>
+            {#each review.eliminated as item}<li>{item}</li>{/each}
+          </ul>
+          <p>Esta eliminação não pode ser desfeita.</p>
+        </div>{/if}
+      {#if info?.followingVehicles.length}<p class="notice">
+          As vendas seguintes e os valores de entrada das outras viaturas não mudam.
+        </p>{/if}
+      {#if review.affectedSale}<details>
+          <summary>Ver impacto no resultado da venda de {review.tradeIn?.label}</summary>
+          <p>
+            Lucro: {formatEUR(review.affectedSale.beforeProfit)} → {formatEUR(
+              review.affectedSale.afterProfit,
+            )}.
+          </p>
+          <p>
+            IVA: {formatEUR(review.affectedSale.beforeVat)} → {formatEUR(
+              review.affectedSale.afterVat,
+            )}.
+          </p>
+          <small
+            >Só o novo custo de entrada desta viatura altera estes resultados. Preços, comissão e
+            entrega mantêm-se.</small
+          >
+        </details>{/if}
       <p class="muted">
-        Esta ação não faz pagamentos nem calcula reembolsos. Documentos e crédito exigem
-        regularização separada.
+        Não faz pagamentos nem calcula reembolsos. Documentos e crédito são regularizados à parte.
       </p>
-      <form method="POST" action="?/cancelSale" use:enhance={submit} class="confirmation">
+      <form method="POST" action="?/cancelSale" use:enhance={submit}>
         <input type="hidden" name="operation" value={review.decision.operation ?? 'CANCEL'} />
         <input type="hidden" name="reason" value={review.decision.reason} />
         <input type="hidden" name="tradeInAction" value={review.decision.tradeInAction ?? ''} />
@@ -205,196 +262,220 @@
           value={review.decision.independentAcquisitionDate ?? ''}
         />
         <input type="hidden" name="reviewToken" value={review.reviewToken} />
-        {#if review.decision.operation === 'DELETE'}
-          <label class="field"
-            ><span>Escreva ELIMINAR para confirmar o registo criado por engano</span><input
-              name="deletionConfirmation"
-              required
-              pattern="ELIMINAR"
-              autocomplete="off"
-              placeholder="ELIMINAR"
-            /></label
-          >
-        {/if}
-        <label class="check"
-          ><input type="checkbox" name="confirmed" value="yes" required /><span
-            >Confirmo o destino das viaturas e os registos eliminados ou preservados acima.</span
-          ></label
-        >
+        <input type="hidden" name="confirmed" value="yes" />
+        {#if review.decision.operation === 'DELETE'}<input
+            type="hidden"
+            name="deletionConfirmation"
+            value="ELIMINAR"
+          />{/if}
         <div class="actions">
-          <Button
+          <Button variant="outline" disabled={busy} onclick={back}>Voltar</Button><Button
             type="submit"
             variant={review.decision.operation === 'DELETE' ? 'danger' : 'primary'}
             loading={busy}
             disabled={busy}
             >{review.decision.operation === 'DELETE'
-              ? 'Eliminar registo errado'
+              ? review.decision.tradeInAction === 'DELETE'
+                ? 'Eliminar venda e ficha erradas'
+                : 'Eliminar esta venda'
               : 'Confirmar anulação'}</Button
-          ><Button variant="outline" disabled={busy} onclick={() => (hideReview = true)}
-            >Voltar às escolhas</Button
           >
         </div>
       </form>
     {:else}
-      <div class="review-title">
-        <span class="step">1</span>
-        <div>
-          <h3>O que pretende corrigir?</h3>
-          <p>Apenas esta venda. As outras viaturas e vendas são preservadas.</p>
-        </div>
-      </div>
-      <div class="choices" role="group" aria-label="Tipo de correção">
-        {#if !sale.cancelledAt}<label class:selected={operation === 'CANCEL'}
-            ><input
-              type="radio"
-              name="resolutionOperation"
-              value="CANCEL"
-              checked={operation === 'CANCEL'}
-              onchange={() => chooseOperation('CANCEL')}
-            /><strong>Anular o negócio</strong><span
-              >A venda aconteceu, mas foi desfeita. Mantém-se no histórico.</span
-            ></label
-          >{/if}
-        <label class:selected={operation === 'DELETE'} class:unavailable={deleteBlocked}
-          ><input
-            type="radio"
-            name="resolutionOperation"
-            value="DELETE"
-            checked={operation === 'DELETE'}
-            disabled={deleteBlocked}
-            onchange={() => chooseOperation('DELETE')}
-          /><strong>Corrigir um registo errado</strong><span
-            >A venda foi criada por engano. Só permite eliminar sem movimentos posteriores.</span
-          ></label
-        >
-      </div>
-      {#if deleteBlocked}<p class="muted">
-          {info?.deletionBlockers[0] ?? 'Atualize a página para verificar os registos associados.'}
-        </p>{/if}
-      <form method="POST" action="?/reviewCancellation" use:enhance={submit} class="decision-form">
-        <input type="hidden" name="operation" value={operation} />
-        {#if sale.tradeIn}
-          <fieldset>
-            <legend>Destino da retoma · {sale.tradeIn.brand} {sale.tradeIn.model}</legend>
-            {#if laterSale}<div class="notice">
-                Esta retoma já foi vendida. Mantenha-a como compra normal; não precisa de anular a
-                venda seguinte.
-              </div>{/if}
-            <label class="field"
-              ><span>O que acontece à retoma?</span><select
-                name="tradeInAction"
-                required
-                bind:value={tradeInAction}
-                disabled={!!sale.cancelledAt}
-              >
-                <option value="" disabled>Escolher destino</option>
-                <option value="RETURN" disabled={laterSale}
-                  >Devolver ao cliente{laterSale ? ' — já tem venda posterior' : ''}</option
-                >
-                <option value="KEEP">Manter como compra normal</option>
-                {#if operation === 'DELETE'}<option
-                    value="DELETE"
-                    disabled={!info?.canDeleteTradeIn}
-                    >Eliminar também a ficha criada por engano{!info?.canDeleteTradeIn
-                      ? ' — já tem movimentos ou preparação'
-                      : ''}</option
-                  >{/if}
-              </select></label
+      <form
+        bind:this={decisionForm}
+        method="POST"
+        action="?/reviewCancellation"
+        use:enhance={submit}
+      >
+        <input type="hidden" name="operation" value={operation} /><input
+          type="hidden"
+          name="reason"
+          value={reason}
+        />
+        {#if sale.tradeIn}<input type="hidden" name="tradeInAction" value={tradeInAction} />{/if}
+        {#if sale.tradeIn && tradeInAction === 'KEEP'}<input
+            type="hidden"
+            name="independentPurchasePrice"
+            value={purchasePrice}
+          /><input type="hidden" name="independentAcquisitionDate" value={acquisitionDate} />{/if}
+        {#if sale.cancelledAt}
+          <div class="notice">
+            Anulada em {formatDate(sale.cancelledAt)}. Motivo: {sale.cancellationReason}. As
+            viaturas e despesas foram preservadas.
+          </div>
+          {#if !deleteBlocked}<Button
+              variant="danger"
+              disabled={busy}
+              onclick={() => chooseOperation('DELETE')}>Eliminar registo criado por engano</Button
+            >{/if}
+        {:else if step === 'choose'}
+          <div class="choices">
+            <button type="button" disabled={busy || !info} onclick={() => chooseOperation('CANCEL')}
+              ><strong>Quero desfazer o negócio</strong><span
+                >A venda fica anulada no histórico.</span
+              ><b aria-hidden="true">→</b></button
             >
-            {#if sale.cancelledAt}<input
-                type="hidden"
-                name="tradeInAction"
-                value={tradeInAction}
-              />{/if}
-            {#if tradeInAction === 'KEEP'}
-              <div class="field-pair">
-                <label class="field"
-                  ><span>Valor de aquisição de {sale.tradeIn.brand} {sale.tradeIn.model} (€)</span
-                  ><input
-                    name="independentPurchasePrice"
-                    type="number"
-                    min="0"
-                    max="9999999999.99"
-                    step="0.01"
-                    required
-                    bind:value={purchasePrice}
-                    readonly={!!sale.cancelledAt}
-                  /></label
-                ><label class="field"
-                  ><span>Data de compra normal</span><input
-                    name="independentAcquisitionDate"
-                    type="date"
-                    required
-                    bind:value={acquisitionDate}
-                    readonly={!!sale.cancelledAt}
-                  /></label
-                >
-              </div>
-              <p class="muted">
-                Confirme o valor desta retoma. As despesas já registadas ficam guardadas. Não
-                pedimos novos valores para as viaturas seguintes.
-              </p>
-            {/if}
-            {#if info?.tradeIn}<p class="muted">
-                Despesas desta retoma: {info.tradeIn.expensesCount} registo(s) · {formatEUR(
-                  info.tradeIn.expensesTotal,
-                )}.
-              </p>{/if}
-          </fieldset>
+            {#if !deleteBlocked}<button
+                type="button"
+                disabled={busy}
+                onclick={() => chooseOperation('DELETE')}
+                ><strong>Registei esta venda por engano</strong><span
+                  >Remove só o registo errado. As viaturas válidas ficam guardadas.</span
+                ><b aria-hidden="true">→</b></button
+              >{/if}
+          </div>
+        {:else if step === 'destination'}
+          <div class="choices">
+            <button type="button" disabled={busy} onclick={() => chooseDestination('KEEP')}
+              ><strong>{laterSale ? 'Manter a viatura e a venda seguinte' : 'Fica no stand'}</strong
+              ><span>Passa a compra normal, sem ligação a esta venda ou cliente.</span><b
+                aria-hidden="true">→</b
+              ></button
+            >
+            {#if !laterSale}<button
+                type="button"
+                disabled={busy}
+                onclick={() => chooseDestination('RETURN')}
+                ><strong>É devolvida ao cliente</strong><span
+                  >Sai do stock. A ficha e as despesas ficam guardadas.</span
+                ><b aria-hidden="true">→</b></button
+              >{/if}
+            {#if operation === 'DELETE' && info?.canDeleteTradeIn}<button
+                type="button"
+                disabled={busy}
+                onclick={() => chooseDestination('DELETE')}
+                ><strong>A ficha da retoma também foi criada por engano</strong><span
+                  >Elimina esta ficha vazia, sem despesas nem vendas.</span
+                ><b aria-hidden="true">→</b></button
+              >{/if}
+          </div>
+          {#if laterSale}<p class="notice">
+              {tradeLabel} já foi vendida. A sua ficha e a venda seguinte têm de ser mantidas.
+            </p>{:else if operation === 'DELETE' && !info?.canDeleteTradeIn}<p class="muted">
+              A ficha de {tradeLabel} fica guardada: {info?.tradeInDeletionBlockers?.join(' ') ??
+                'tem movimentos ou preparação a preservar.'}
+            </p>{/if}
+        {:else}
+          <p>Confirme apenas o valor de entrada de <strong>{tradeLabel}</strong>.</p>
+          <div class="field-pair">
+            <label class="field"
+              ><span>Valor de entrada (€)</span><input
+                type="number"
+                min="0"
+                max="9999999999.99"
+                step="0.01"
+                required
+                bind:value={purchasePrice}
+                disabled={busy}
+              /></label
+            ><label class="field"
+              ><span>Data de entrada</span><input
+                type="date"
+                required
+                bind:value={acquisitionDate}
+                disabled={busy}
+              /></label
+            >
+          </div>
+          <p class="muted">
+            Despesas e estado atual mantêm-se. Não precisa de indicar valores das viaturas
+            seguintes.
+          </p>
         {/if}
-        <label class="field"
-          ><span
-            >{operation === 'DELETE'
-              ? 'Porque foi criado este registo por engano?'
-              : 'Motivo da anulação'}</span
-          ><textarea
-            name="reason"
-            required
-            minlength="3"
-            maxlength="500"
-            rows="3"
-            bind:value={reason}
-            placeholder="Descreva brevemente o que aconteceu"
-          ></textarea></label
-        >
-        <Button type="submit" variant="outline" loading={busy} disabled={busy || !info}
-          >Rever efeitos antes de confirmar</Button
-        >
+        {#if (step === 'choose' || sale.cancelledAt) && deleteBlocked}<div class="blocked">
+            <strong>O registo desta venda tem de ficar no histórico</strong>
+            <ul>
+              {#each info?.deletionBlockers.length ? info.deletionBlockers : ['Atualize a página para verificar os registos associados.'] as blocker}<li
+                >
+                  {blocker}
+                </li>{/each}
+            </ul>
+            {#if !sale.cancelledAt}<p>Pode desfazer o negócio com a opção acima.</p>{/if}
+          </div>{/if}
+        {#if step !== 'choose' && !sale.cancelledAt}<details class="optional-note">
+            <summary>Adicionar nota (opcional)</summary><label class="field"
+              ><span>Nota para o registo</span><textarea
+                bind:value={note}
+                maxlength="440"
+                rows="2"
+                disabled={busy}
+              ></textarea></label
+            >
+          </details>{/if}
+        {#if step !== 'choose'}<div class="actions">
+            <Button variant="outline" disabled={busy} onclick={back}>Voltar</Button
+            >{#if step === 'purchase'}<Button
+                type="submit"
+                variant="primary"
+                loading={busy}
+                disabled={busy}>Rever alteração</Button
+              >{/if}
+          </div>{/if}
+        {#if busy}<p role="status" class="muted">A verificar os efeitos…</p>{/if}
       </form>
     {/if}
-  {/if}
-  {#if info?.followingVehicles.length}
-    <aside class="chain">
-      <span class="eyebrow">VIATURAS SEGUINTES · PRESERVADAS</span>
-      <h3>O que continua válido</h3>
-      <ol>
-        {#each info.followingVehicles as vehicle}<li>
-            <span class="chain-dot"></span>
-            <div>
+    {#if info?.followingVehicles.length}<details class="chain">
+        <summary>Ver viaturas seguintes preservadas ({info.followingVehicles.length})</summary>
+        <ul>
+          {#each info.followingVehicles as vehicle}<li>
               <a href={crmPath(`/viaturas/${vehicle.id}`)}>{vehicle.label}</a><small
-                >{vehicle.licensePlate ?? 'Sem matrícula'} · {vehicle.sold
+                >{vehicle.sold
                   ? 'Venda preservada'
-                  : 'Ficha de stock preservada'}</small
-              >{#if vehicle.id !== info.tradeIn?.id}<small
-                  >Aquisição mantém-se: {formatEUR(vehicle.purchasePrice)}</small
-                >{/if}
-            </div>
-          </li>{/each}
-      </ol>
-      <p>Não serão eliminadas estas viaturas, as suas despesas, vendas ou retomas.</p>
-    </aside>
-  {/if}
-</section>
+                  : 'Ficha de stock preservada'}{#if vehicle.id !== info.tradeIn?.id}
+                  · entrada mantém-se: {formatEUR(vehicle.purchasePrice)}{/if}</small
+              >
+            </li>{/each}
+        </ul>
+      </details>{/if}
+  </div>
+</dialog>
 
 <style>
-  .resolution {
+  .sale-resolution-dialog {
+    padding: 0;
+    width: min(620px, calc(100vw - 32px));
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    margin: auto;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card, 12px);
     background: var(--color-bg-2);
-    padding: 28px;
+    color: var(--color-text);
+  }
+  .sale-resolution-dialog::backdrop {
+    background: rgb(0 0 0 / 0.65);
+  }
+  :global(html:has(dialog.sale-resolution-dialog[open])) {
+    overflow: hidden;
+  }
+  .content {
+    padding: 26px;
     display: grid;
-    gap: 24px;
-    scroll-margin-top: 100px;
+    gap: 22px;
+  }
+  .topline {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .close-dialog {
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    min-height: 36px;
+    padding: 5px;
+    cursor: pointer;
+    font-size: 12px;
   }
   header {
     display: grid;
@@ -402,269 +483,233 @@
   }
   h2,
   h3,
-  h4,
   p {
     margin: 0;
   }
   h2 {
     font-family: var(--font-display, inherit);
-    font-size: 24px;
+    font-size: 25px;
+    line-height: 1.2;
     font-weight: 650;
   }
   h3 {
-    font-size: 16px;
-    font-weight: 600;
-  }
-  h4 {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
   }
   p,
   small {
+    color: var(--color-text-muted);
     font-size: 13px;
-    line-height: 1.65;
-    color: var(--color-text-muted);
+    line-height: 1.6;
   }
-  .eyebrow {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    color: var(--color-text-muted);
-  }
-  .review-title {
-    display: flex;
-    gap: 12px;
-    align-items: start;
-  }
-  .step {
-    border: 1px solid var(--color-border);
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
+  small {
+    display: block;
     font-size: 12px;
   }
-  .review-title p {
-    margin-top: 4px;
+  form {
+    display: grid;
+    gap: 18px;
   }
-  .choices,
-  .destinations,
-  .consequences,
+  .choices {
+    display: grid;
+    gap: 10px;
+  }
+  .choices button {
+    display: grid;
+    grid-template-columns: 1fr 16px;
+    gap: 5px 12px;
+    text-align: left;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg-1);
+    color: var(--color-text);
+    padding: 18px;
+    cursor: pointer;
+  }
+  .choices strong {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .choices span {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    grid-column: 1;
+  }
+  .choices b {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+  .choices button:hover:not(:disabled) {
+    border-color: var(--color-red);
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 3px;
+  }
   .field-pair {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
-  .choices label {
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    padding: 18px;
-    display: grid;
-    grid-template-columns: 16px 1fr;
-    gap: 8px;
-    cursor: pointer;
-  }
-  .choices strong {
-    font-size: 14px;
-  }
-  .choices span {
-    grid-column: 2;
-    font-size: 12px;
-    line-height: 1.6;
-    color: var(--color-text-muted);
-  }
-  .choices label.selected {
-    border-color: var(--color-red);
-    background: color-mix(in srgb, var(--color-red) 4%, transparent);
-  }
-  .choices label.unavailable {
-    opacity: 0.55;
-    cursor: default;
-  }
-  input[type='radio'],
-  input[type='checkbox'] {
-    accent-color: var(--color-red);
-    margin-top: 3px;
-  }
-  .decision-form,
-  .confirmation,
-  fieldset {
-    display: grid;
-    gap: 18px;
-  }
-  fieldset {
-    margin: 0;
-    border: 0;
-    padding: 0;
-  }
-  legend {
-    font-size: 15px;
-    font-weight: 600;
-    padding: 0 0 14px;
-  }
   .field {
     display: grid;
     gap: 7px;
+    min-width: 0;
     font-size: 12px;
-    font-weight: 500;
   }
   .field input,
-  .field textarea,
-  .field select {
+  .field textarea {
     box-sizing: border-box;
-    min-width: 0;
     width: 100%;
+    min-width: 0;
     padding: 12px;
     background: var(--color-bg-1);
     border: 1px solid var(--color-border);
     border-radius: 6px;
     color: var(--color-text);
-    font-size: 14px;
-    min-height: 44px;
-  }
-  .field input:focus,
-  .field select:focus,
-  .field textarea:focus {
-    outline: 2px solid var(--color-red);
-    outline-offset: 2px;
-  }
-  .field input[readonly] {
-    opacity: 0.7;
+    font-size: 15px;
+    min-height: 46px;
   }
   .field textarea {
     resize: vertical;
   }
-  .check {
-    display: flex;
-    align-items: start;
-    gap: 10px;
-    font-size: 13px;
-    line-height: 1.6;
-  }
   .actions {
     display: flex;
+    justify-content: space-between;
+    gap: 12px;
     flex-wrap: wrap;
-    gap: 10px;
   }
-  .notice {
-    padding: 16px;
+  .notice,
+  .blocked {
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
     background: var(--color-bg-1);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    font-size: 13px;
-    line-height: 1.7;
-  }
-  .notice h4 {
-    margin-bottom: 6px;
-  }
-  .figures {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 24px;
-    margin: 10px 0;
-  }
-  .destinations article,
-  .consequences article {
-    border: 1px solid var(--color-border);
-    padding: 18px;
-    border-radius: 8px;
-    display: grid;
-    align-content: start;
-    gap: 8px;
-  }
-  .destinations strong {
-    font-size: 20px;
-  }
-  .destinations small {
-    display: block;
-  }
-  .consequences {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-  .consequences ul {
     font-size: 12px;
-    line-height: 1.8;
-    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+  .blocked strong {
+    font-size: 12px;
+  }
+  .blocked ul,
+  .destructive ul {
     padding-left: 18px;
+    margin: 8px 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--color-text-muted);
+  }
+  .blocked p {
+    font-size: 12px;
+  }
+  .error {
     margin: 0;
-  }
-  .consequences .removed {
-    border-color: color-mix(in srgb, var(--color-red) 40%, var(--color-border));
-  }
-  .removed h4,
-  .error {
-    color: var(--color-red);
-  }
-  .error {
     padding: 12px;
     border: 1px solid var(--color-red);
     border-radius: 6px;
+    color: var(--color-red);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .summary {
+    display: grid;
+    gap: 12px;
+  }
+  .summary article {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 16px;
+    display: grid;
+    gap: 7px;
+  }
+  .summary strong {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .destructive {
+    padding: 14px;
+    border: 1px solid color-mix(in srgb, var(--color-red) 40%, var(--color-border));
+    border-radius: 7px;
+  }
+  .destructive h3 {
+    color: var(--color-red);
+  }
+  .destructive p {
+    font-size: 12px;
+  }
+  details {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+  summary {
+    cursor: pointer;
+    line-height: 1.7;
+    min-height: 30px;
+  }
+  details p,
+  details small {
+    margin-top: 8px;
+  }
+  .optional-note textarea {
+    margin-top: 7px;
   }
   .chain {
     border-top: 1px solid var(--color-border);
-    padding-top: 20px;
-    display: grid;
-    gap: 8px;
+    padding-top: 14px;
   }
-  .chain ol {
+  .chain ul {
     padding: 0;
-    margin: 8px 0;
     list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-  }
-  .chain li {
-    display: flex;
+    margin: 10px 0 0;
+    display: grid;
     gap: 10px;
-    align-items: start;
   }
   .chain a {
-    font-size: 13px;
-    font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
+    color: var(--color-text);
+    font-size: 12px;
   }
   .chain small {
-    display: block;
     font-size: 11px;
-  }
-  .chain-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--color-success, #5b9874);
-    margin-top: 6px;
-    flex-shrink: 0;
   }
   .muted {
     font-size: 12px;
   }
   @media (max-width: 640px) {
-    .resolution {
+    .content {
       padding: 18px;
       gap: 20px;
     }
-    .choices,
-    .destinations,
     .field-pair {
       grid-template-columns: 1fr;
     }
-    .chain ol {
-      display: grid;
-      gap: 16px;
-    }
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr;
-    }
     h2 {
-      font-size: 21px;
+      font-size: 22px;
     }
-    .choices label {
-      padding: 14px;
+    .choices button {
+      padding: 15px;
+    }
+    .actions :global(button) {
+      white-space: normal;
+      height: auto;
+      min-height: 44px;
+      line-height: 1.4;
+    }
+    .topline .eyebrow {
+      max-width: 210px;
+      line-height: 1.5;
     }
   }
 </style>

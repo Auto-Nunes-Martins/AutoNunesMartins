@@ -27,16 +27,18 @@ before(async () => {
     `<script>
     import {onMount} from 'svelte';
     import CancellationPanel from '$lib/components/sale/CancellationPanel.svelte';
-    let mode=$state('chain'), form=$state(null);
+    let mode=$state('chain'), form=$state(null), open=$state(false);
     const sale={id:'saleA',cancelledAt:null,cancellationDecision:null,customer:{id:'customerA',name:'Cliente A'},vehicle:{id:'A',brand:'BMW',model:'320',licensePlate:'AA-00-AA'},tradeIn:{id:'tradeA',brand:'Ford',model:'Focus',allowanceValue:'3000',disposition:'STOCK'}};
-    const context=$derived({deletionBlockers:mode==='chain'?['A retoma já tem despesas e uma venda posterior. Anule e mantenha a viatura como compra normal.']:[],canDeleteTradeIn:mode==='clean',
+    const context=$derived({deletionBlockers:mode==='delivered'?['A venda tem uma entrega registada. Anule o negócio para preservar a entrega no histórico.']:[],tradeInDeletionBlockers:mode==='chain'?['A retoma tem uma venda posterior e despesas que devem ser preservadas.']:[],canDeleteTradeIn:mode==='clean',
       dependencies:mode==='chain'?[{saleId:'saleB',vehicleId:'B',label:'Ford Focus'}]:[],
       followingVehicles:mode==='chain'?[{id:'B',label:'Ford Focus',licensePlate:'BB-00-AA',purchasePrice:'3000',sold:true},{id:'C',label:'Renault Clio',licensePlate:'CC-00-AA',purchasePrice:'2100',sold:false}]:[],
       tradeIn:{id:'B',label:'Ford Focus',licensePlate:'BB-00-AA',status:mode==='chain'?'DELIVERED':'DRAFT',purchasePrice:'3000',acquisitionDate:'2026-10-01',expensesCount:mode==='chain'?1:0,expensesTotal:mode==='chain'?'250':'0',hasLaterSale:mode==='chain'}});
     onMount(()=>{window.resolutionState=()=>({sale,context});window.resolutionResponse=value=>form=value;});
   </script>
   <button onclick={()=>{mode=mode==='chain'?'clean':'chain';form=null;window.resolutionConfirmed=null}}>Trocar cenário de teste</button>
-  {#key mode}<CancellationPanel {sale} {context} {form}/>{/key}
+  <button onclick={()=>{mode='delivered';form=null;}}>Mostrar venda entregue</button>
+  <button onclick={()=>open=true}>Anular ou corrigir</button>
+  {#key mode}<CancellationPanel bind:open {sale} {context} {form}/>{/key}
   <style>:global(:root){--color-red:#d82027;--color-text:#ededed;--color-text-muted:#999;--color-border:#444;--color-bg-1:#1b1b1b;--color-bg-2:#242424;} :global(body){background:#151515;color:#eee;font-family:Arial;}</style>`,
   );
   await write(
@@ -56,7 +58,7 @@ before(async () => {
   await write('toast.js', 'export const toast={success(){},error(){}};');
   await write(
     'enhance.js',
-    `export function enhance(form,callback){const submit=async event=>{event.preventDefault();const complete=callback({formElement:form,cancel(){}});const d=Object.fromEntries(new FormData(form));if(form.action.includes('reviewCancellation')){const {sale,context}=window.resolutionState();const review={...context,saleId:sale.id,vehicle:{id:'A',label:'BMW 320',licensePlate:'AA-00-AA'},customer:sale.customer,reviewToken:'isolated-review-token',decision:{reason:d.reason,operation:d.operation,tradeInAction:d.tradeInAction,independentPurchasePrice:d.independentPurchasePrice,independentAcquisitionDate:d.independentAcquisitionDate},tradeIn:{...context.tradeIn,allowanceValue:'3000',nextPurchasePrice:d.independentPurchasePrice,nextAcquisitionDate:d.independentAcquisitionDate},affectedSale:context.dependencies.length?{id:'saleB',beforeProfit:'3961.79',afterProfit:'2742.28',beforeVat:'888.21',afterVat:'607.72'}:null,eliminated:d.operation==='DELETE'?['O registo desta venda',...(d.tradeInAction==='DELETE'?['A ficha Ford Focus, criada por engano']:[])]:[],preserved:['A ficha e as despesas da viatura original','As vendas e os valores de entrada das viaturas seguintes'],effects:[]};await complete({result:{type:'success'},update:async()=>window.resolutionResponse({review})});}else{window.resolutionConfirmed=d;await complete({result:{type:'redirect'},update:async()=>{}});}};form.addEventListener('submit',submit);return{destroy(){form.removeEventListener('submit',submit);}};}`,
+    `export function enhance(form,callback){const submit=async event=>{event.preventDefault();const complete=callback({formElement:form,cancel(){}});const d=Object.fromEntries(new FormData(form));if(form.action.includes('reviewCancellation')){const {sale,context}=window.resolutionState();const review={...context,saleId:sale.id,vehicle:{id:'A',label:'BMW 320',licensePlate:'AA-00-AA'},customer:sale.customer,reviewToken:'isolated-review-token',decision:{reason:d.reason,operation:d.operation,tradeInAction:d.tradeInAction,independentPurchasePrice:d.independentPurchasePrice,independentAcquisitionDate:d.independentAcquisitionDate},tradeIn:{...context.tradeIn,allowanceValue:'3000',nextPurchasePrice:d.independentPurchasePrice,nextAcquisitionDate:d.independentAcquisitionDate},affectedSale:context.dependencies.length?{id:'saleB',beforeProfit:'3961.79',afterProfit:'2742.28',beforeVat:'888.21',afterVat:'607.72'}:null,eliminated:d.operation==='DELETE'?['O registo desta venda',...(d.tradeInAction==='DELETE'?['A ficha Ford Focus, criada por engano']:[])]:[],preserved:['A ficha e as despesas da viatura original','As vendas e os valores de entrada das viaturas seguintes'],effects:[]};await complete({result:{type:'success'},update:async()=>window.resolutionResponse({review})});}else{if(window.resolutionFailure){window.resolutionFailure=false;await complete({result:{type:'failure'},update:async()=>window.resolutionResponse({error:'Os dados mudaram. Reveja os efeitos.'})});return;}window.resolutionConfirmed=d;await complete({result:{type:'redirect'},update:async()=>{}});}};form.addEventListener('submit',submit);return{destroy(){form.removeEventListener('submit',submit);}};}`,
   );
   vite = await createServer({
     configFile: false,
@@ -126,7 +128,7 @@ after(async () => {
     await rm(directory, { recursive: true, force: true });
 });
 for (const width of [390, 1366])
-  test('sale resolution with preserved chain at ' + width + 'px', { timeout: 60000 }, async () => {
+  test('simple modal resolution at ' + width + 'px', { timeout: 60000 }, async () => {
     const page = await browser.newPage({ viewport: { width, height: 900 } });
     try {
       page.setDefaultTimeout(10000);
@@ -135,60 +137,113 @@ for (const width of [390, 1366])
       );
       await page.goto(origin);
       await page.waitForFunction(() => window.reviewReady && window.resolutionState);
+      const opener = page.getByRole('button', { name: 'Anular ou corrigir', exact: true });
+      assert.equal(await page.locator('dialog').evaluate((e) => e.open), false);
+      await opener.click();
+      await page.getByRole('heading', { name: 'O que aconteceu?', exact: true }).waitFor();
       assert.equal(
-        await page.locator('[name="resolutionOperation"][value="DELETE"]').isDisabled(),
+        await page.getByRole('button', { name: /Registei esta venda por engano/ }).count(),
+        1,
+      );
+      assert.equal(await page.locator('input:not([type="hidden"])').count(), 0);
+      await page.getByRole('button', { name: /Registei esta venda por engano/ }).click();
+      assert.equal(
+        await page.getByRole('button', { name: /também foi criada por engano/ }).count(),
+        0,
+      );
+      assert.equal(await page.getByRole('button', { name: /É devolvida ao cliente/ }).count(), 0);
+      assert.match(await page.locator('.notice').innerText(), /já foi vendida/);
+      await page.getByRole('button', { name: 'Voltar', exact: true }).click();
+      await page.getByRole('button', { name: /Quero desfazer o negócio/ }).click();
+      await page.getByRole('button', { name: /Manter a viatura e a venda seguinte/ }).click();
+      await page.getByLabel('Valor de entrada (€)', { exact: true }).fill('4500');
+      assert.equal(await page.locator('textarea[required]').count(), 0);
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('dialog').evaluate((e) => e.open), false);
+      assert.equal(await opener.evaluate((e) => document.activeElement === e), true);
+      await opener.click();
+      assert.equal(
+        await page.getByLabel('Valor de entrada (€)', { exact: true }).inputValue(),
+        '4500',
+      );
+      await page.locator('.close-dialog').focus();
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(
+        await page.locator('dialog').evaluate((e) => e.contains(document.activeElement)),
         true,
       );
-      assert.equal(
-        await page
-          .locator('[name="tradeInAction"] option[value="RETURN"]')
-          .evaluate((e) => e.disabled),
-        true,
-      );
+      await page.getByRole('button', { name: 'Rever alteração', exact: true }).click();
+      await page.getByRole('heading', { name: 'Rever e confirmar', exact: true }).waitFor();
+      assert.equal(await page.locator('.chain').evaluate((e) => e.open), false);
+      await page.locator('.chain summary').click();
       assert.match(await page.locator('.chain').innerText(), /Renault Clio/);
       assert.match(await page.locator('.chain').innerText(), /2[.\s]?100/);
-      await page.locator('[name="tradeInAction"]').selectOption('KEEP');
-      await page.locator('[name="independentPurchasePrice"]').fill('4500');
-      await page.locator('[name="reason"]').fill('Negócio desfeito. Compra da viatura confirmada.');
-      assert.equal(await page.locator('[name*="Price"]').count(), 1);
-      await page
-        .getByRole('button', { name: 'Rever efeitos antes de confirmar', exact: true })
-        .click();
-      await page.getByRole('heading', { name: 'Confirme o que vai acontecer' }).waitFor();
-      assert.match(
-        await page.locator('.notice').innerText(),
-        /valores de entrada das retomas seguintes não mudam/,
+      assert.equal(await page.getByRole('checkbox').count(), 0);
+      await page.evaluate(() => (window.resolutionFailure = true));
+      await page.getByRole('button', { name: 'Confirmar anulação', exact: true }).click();
+      await page.getByRole('alert').waitFor();
+      assert.equal(await page.locator('dialog').evaluate((e) => e.open), true);
+      assert.equal(
+        await page.getByLabel('Valor de entrada (€)', { exact: true }).inputValue(),
+        '4500',
       );
-      assert.equal(await page.locator('[name="deletionConfirmation"]').count(), 0);
-      await page.locator('[name="confirmed"]').check();
+      assert.equal(
+        await page.getByRole('alert').evaluate((e) => e === document.activeElement),
+        true,
+      );
+      await page.getByRole('button', { name: 'Rever alteração', exact: true }).click();
       await page.getByRole('button', { name: 'Confirmar anulação', exact: true }).click();
       assert.equal(
         await page.evaluate(() => window.resolutionConfirmed.independentPurchasePrice),
         '4500',
       );
-      assert.equal(
-        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-        true,
-      );
+      assert.equal(await page.locator('dialog').evaluate((e) => e.open), false);
       await page.getByRole('button', { name: 'Trocar cenário de teste' }).click();
-      await page.locator('[name="resolutionOperation"][value="DELETE"]').check();
-      await page.locator('[name="tradeInAction"]').selectOption('DELETE');
-      await page.locator('[name="reason"]').fill('Registos criados por engano, sem movimentos.');
+      await opener.click();
+      await page.getByRole('button', { name: /Registei esta venda por engano/ }).click();
       await page
-        .getByRole('button', { name: 'Rever efeitos antes de confirmar', exact: true })
+        .getByRole('button', { name: /A ficha da retoma também foi criada por engano/ })
         .click();
-      await page.getByRole('heading', { name: 'Será eliminado', exact: true }).waitFor();
-      assert.match(await page.locator('.removed').innerText(), /Ford Focus/);
-      await page.locator('[name="confirmed"]').check();
-      await page.getByRole('button', { name: 'Eliminar registo errado', exact: true }).click();
-      assert.equal(await page.evaluate(() => window.resolutionConfirmed), null);
-      await page.locator('[name="deletionConfirmation"]').fill('ELIMINAR');
-      await page.getByRole('button', { name: 'Eliminar registo errado', exact: true }).click();
+      await page.getByRole('heading', { name: 'Rever e confirmar', exact: true }).waitFor();
+      assert.match(await page.locator('.destructive').innerText(), /Ford Focus/);
+      assert.equal(await page.getByRole('checkbox').count(), 0);
+      assert.equal(await page.locator('input:not([type="hidden"])').count(), 0);
+      await page
+        .getByRole('button', { name: 'Eliminar venda e ficha erradas', exact: true })
+        .click();
       assert.equal(await page.evaluate(() => window.resolutionConfirmed.tradeInAction), 'DELETE');
       assert.equal(
         await page.evaluate(() => window.resolutionConfirmed.deletionConfirmation),
         'ELIMINAR',
       );
+      assert.equal(await page.locator('dialog').evaluate((e) => e.open), false);
+      await page.getByRole('button', { name: 'Trocar cenário de teste' }).click();
+      await page.getByRole('button', { name: 'Trocar cenário de teste' }).click();
+      await opener.click();
+      await page.getByRole('button', { name: /Quero desfazer o negócio/ }).click();
+      await page.getByRole('button', { name: /É devolvida ao cliente/ }).click();
+      await page.getByRole('heading', { name: 'Rever e confirmar', exact: true }).waitFor();
+      assert.match(await page.locator('.summary').innerText(), /É devolvida ao cliente/);
+      await page.getByRole('button', { name: 'Fechar anulação ou correção' }).click();
+      await page.getByRole('button', { name: 'Mostrar venda entregue' }).click();
+      await opener.click();
+      assert.equal(
+        await page.getByRole('button', { name: /Registei esta venda por engano/ }).count(),
+        0,
+      );
+      assert.match(await page.locator('.blocked').innerText(), /entrega registada/);
+      assert.equal(
+        await page.getByRole('button', { name: /Quero desfazer o negócio/ }).isEnabled(),
+        true,
+      );
+      assert.equal(
+        await page.locator('dialog').evaluate((e) => e.scrollWidth <= e.clientWidth),
+        true,
+      );
+      await page.getByRole('button', { name: 'Fechar anulação ou correção' }).click();
+      await page.reload();
+      await page.waitForFunction(() => window.reviewReady);
+      assert.equal(await page.locator('dialog').evaluate((e) => e.open), false);
     } finally {
       await page.close();
     }

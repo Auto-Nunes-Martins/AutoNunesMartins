@@ -63,6 +63,7 @@
   const isComerciante = $derived(s.buyerType === 'COMERCIANTE');
 
   let updatingDelivery = $state(false);
+  let resolutionOpen = $state(false);
 
   function relativeTime(iso: string): string {
     const ms = Date.now() - new Date(iso).getTime();
@@ -130,16 +131,16 @@
         >Editar viatura e preços</Button
       >
       <Button variant="outline" href={crmPath(`/clientes/${c.id}`)}>Ver cliente</Button>
-      {#if !s.cancelledAt}<Button variant="danger" href="#resolver-venda">Anular ou corrigir</Button
-        >{/if}
+      <Button variant="danger" onclick={() => (resolutionOpen = true)}>Anular ou corrigir</Button>
     </div>
   </div>
 
-  {#if s.cancelledAt}<CancellationPanel
-      sale={s}
-      context={data.resolutionContext}
-      form={form && 'cancellation' in form ? form : null}
-    />{/if}
+  <CancellationPanel
+    bind:open={resolutionOpen}
+    sale={s}
+    context={data.resolutionContext}
+    form={form && 'cancellation' in form ? form : null}
+  />
   <!-- Profit summary. When a financing-referral commission was captured at
        sale time, it gets its own cell between IVA and Lucro Real so the
        breakdown clearly shows what's the vehicle margin and what's the
@@ -429,10 +430,7 @@
   {/if}
 
   <!-- Delivery management -->
-  {#if !s.cancelledAt}<CancellationPanel
-      sale={s}
-      form={form && 'cancellation' in form ? form : null}
-    />{/if}
+
   {#if !s.cancelledAt}
     <Panel>
       <PanelHeader icon={Calendar} title="Entrega" />

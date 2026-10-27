@@ -145,31 +145,31 @@ async function inspect(db: Db, sale: ResolutionSale) {
     );
   if (sale.vehicle.expenses.some((e) => e.createdAt > sale.createdAt))
     deletionBlockers.push('A viatura original tem despesas registadas depois desta venda.');
-  if (
-    retoma &&
-    (retoma.expenses.length ||
-      retoma.salesHistory.length ||
-      retoma.sale ||
-      !['DRAFT', ...(sale.cancelledAt ? ['RETURNED'] : [])].includes(retoma.status) ||
-      subsequentMovements.length)
-  )
-    deletionBlockers.push(
-      'A retoma já tem despesas, vendas ou alterações posteriores. Anule a venda e regularize a aquisição para preservar esses registos.',
-    );
-  const removableTradeIn =
-    !!retoma &&
-    !retoma.expenses.length &&
-    !retoma.salesHistory.length &&
-    !retoma.sale &&
-    !subsequentMovements.length &&
-    !retoma.photos.length &&
-    !retoma.webPublished &&
-    ['DRAFT', ...(sale.cancelledAt ? ['RETURNED'] : [])].includes(retoma.status);
+  // B's movements protect B, rather than blocking correction of A when B is
+  // preserved as a normal purchase. Only A's own movements block deleting A.
+  const tradeInDeletionBlockers: string[] = [];
+  if (retoma) {
+    if (retoma.sale || retoma.salesHistory.length)
+      tradeInDeletionBlockers.push(
+        'A retoma tem uma venda ou histórico de vendas. A ficha e as vendas seguintes têm de ser preservadas.',
+      );
+    if (retoma.expenses.length)
+      tradeInDeletionBlockers.push('A retoma tem despesas registadas, que devem ser preservadas.');
+    if (
+      subsequentMovements.length ||
+      !['DRAFT', ...(sale.cancelledAt ? ['RETURNED'] : [])].includes(retoma.status)
+    )
+      tradeInDeletionBlockers.push('A ficha da retoma já foi alterada ou preparada para venda.');
+    if (retoma.photos.length || retoma.webPublished)
+      tradeInDeletionBlockers.push('A retoma já tem fotografias ou publicação no site.');
+  }
+  const removableTradeIn = !!retoma && !tradeInDeletionBlockers.length;
   return {
     dependencies,
     followingVehicles,
     subsequentMovements,
     deletionBlockers,
+    tradeInDeletionBlockers,
     removableTradeIn,
   };
 }
@@ -274,6 +274,7 @@ function context(sale: ResolutionSale, info: Inspection) {
     dependencies: info.dependencies,
     followingVehicles: info.followingVehicles,
     deletionBlockers: info.deletionBlockers,
+    tradeInDeletionBlockers: info.tradeInDeletionBlockers,
     canDeleteTradeIn: info.removableTradeIn,
     tradeIn: retoma
       ? {
