@@ -1,7 +1,8 @@
+import { contactBudgetFixture } from '../../../../../../backend/test/contactBudgetFixture';
 import { createServer, request as httpRequest, type Server } from 'node:http';
 import { createHmac, randomUUID } from 'node:crypto';
 import express from 'express';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createPublicContactRouter } from '../../../../../../backend/src/routes/publicContact';
 
 // Deployment is a separate native Node JS program (covered by node --test),
@@ -16,10 +17,9 @@ const { config } = await import(
 const settings = vi.hoisted(() => ({
   env: {
     CONTACT_RELAY_SECRET: 'fixture-only-secret'.repeat(2),
-    CONTACT_PRIVACY_READY: 'true',
     INTERNAL_BACKEND_URL: '',
   },
-  readiness: { privacy: [{ value: 'test-only-confirmed' as string | null }] },
+  readiness: { privacy: [{ value: null as string | null }] },
 }));
 vi.mock('$env/dynamic/private', () => ({ env: settings.env }));
 vi.mock('$env/static/public', () => ({ PUBLIC_BACKEND_URL: 'http://127.0.0.1:9' }));
@@ -27,6 +27,7 @@ vi.mock('$lib/publicationReadiness.json', () => ({ default: settings.readiness }
 import { POST } from './+server';
 
 const servers: Server[] = [];
+const budgets: Awaited<ReturnType<typeof contactBudgetFixture>>[] = [];
 async function listen(server: Server) {
   servers.push(server);
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -42,13 +43,13 @@ afterEach(async () => {
         }),
     ),
   );
+  await Promise.all(budgets.splice(0).map((f) => f.db.close()));
   vi.restoreAllMocks();
 });
-beforeEach(() => {
-  settings.env.CONTACT_PRIVACY_READY = 'true';
-});
 
-async function setup(render = true) {
+async function setup(render = true, enabled = true) {
+  const fixture = await contactBudgetFixture();
+  budgets.push(fixture);
   const send = vi
     .fn<typeof fetch>()
     .mockImplementation(async () => Response.json({ id: 'fixture-email' }));
@@ -63,13 +64,14 @@ async function setup(render = true) {
     '/api/public/contact',
     createPublicContactRouter(
       {
-        enabled: true,
+        enabled,
         apiKey: 'fixture-only-key',
         from: 'website@example.org',
         to: 'stand@example.org',
         relaySecret: settings.env.CONTACT_RELAY_SECRET,
       },
       send,
+      fixture.store(),
     ),
   );
   const backend = await listen(createServer(app));
@@ -153,7 +155,7 @@ async function setup(render = true) {
         }),
       );
     });
-  return { post, send, identities };
+  return { post, send, identities, fixture };
 }
 
 describe('gateway → contact relay → real backend limiter (simulated email provider)', () => {
@@ -183,19 +185,17 @@ describe('gateway → contact relay → real backend limiter (simulated email pr
       403,
     );
   });
-  it('keeps the 80-attempt global limit across otherwise independent visitors', async () => {
+  it('keeps the 20-attempt global limit across otherwise independent visitors', async () => {
     const { post, send } = await setup();
-    for (let i = 1; i <= 80; i++) expect(await post(`192.0.2.${i}`)).toBe(202);
-    expect(await post('192.0.2.81')).toBe(429);
-    expect(send).toHaveBeenCalledTimes(80);
+    for (let i = 1; i <= 20; i++) expect(await post(`192.0.2.${i}`)).toBe(202);
+    expect(await post('192.0.2.21')).toBe(429);
+    expect(send).toHaveBeenCalledTimes(20);
   });
   it('allows the same visitor again after the existing ten-minute window', async () => {
-    let now = Date.now();
-    vi.spyOn(Date, 'now').mockImplementation(() => now);
-    const { post, send } = await setup();
+    const { post, send, fixture } = await setup();
     for (let i = 0; i < 5; i++) expect(await post('192.0.2.1')).toBe(202);
     expect(await post('192.0.2.1')).toBe(429);
-    now += 10 * 60_000;
+    fixture.advance(10 * 60_000);
     expect(await post('192.0.2.1')).toBe(202);
     expect(send).toHaveBeenCalledTimes(6);
   });
@@ -224,9 +224,8 @@ describe('gateway → contact relay → real backend limiter (simulated email pr
     expect(await post('192.0.2.2')).toBe(202);
     expect(identities[0]).toBe(identities[1]);
   });
-  it('retains the existing activation gate', async () => {
-    const { post, send } = await setup();
-    settings.env.CONTACT_PRIVACY_READY = 'false';
+  it('retains the independent backend sending switch', async () => {
+    const { post, send } = await setup(true, false);
     expect(await post('192.0.2.1')).toBe(503);
     expect(send).not.toHaveBeenCalled();
   });

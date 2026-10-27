@@ -29,6 +29,9 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      # Use a direct/session connection for migrations when runtime uses transaction pooling.
+      - key: DIRECT_URL
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SECRET_KEY
@@ -36,6 +39,4 @@ services:
       - key: SUPABASE_STORAGE_BUCKET
         value: vehicle-photos
       - key: CONTACT_ENABLED
-        value: "false"
-      - key: CONTACT_PRIVACY_READY
         value: "false"

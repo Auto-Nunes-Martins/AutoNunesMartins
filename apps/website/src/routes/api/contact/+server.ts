@@ -4,16 +4,11 @@ import { json } from '@sveltejs/kit';
 import { createHmac } from 'node:crypto';
 import { isIP } from 'node:net';
 import type { RequestHandler } from './$types';
-import readiness from '$lib/publicationReadiness.json';
 
 export const POST: RequestHandler = async ({ request, url, getClientAddress }) => {
   const headers = { 'Cache-Control': 'no-store' };
-  // The owner must confirm the actual operator, providers and retention before activation.
-  if (
-    !env.CONTACT_RELAY_SECRET ||
-    env.CONTACT_PRIVACY_READY !== 'true' ||
-    readiness.privacy.some((field) => !field.value)
-  ) {
+  // Relay credentials are technical configuration; the backend controls whether sending is enabled.
+  if (!env.CONTACT_RELAY_SECRET) {
     return json(
       { error: 'O envio de pedidos ainda não está disponível.' },
       { status: 503, headers },

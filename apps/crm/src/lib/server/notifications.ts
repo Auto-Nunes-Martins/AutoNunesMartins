@@ -9,6 +9,10 @@ export interface NotificationsPayload {
     /** DRAFT vehicles awaiting a price. */
     draftVehicles: number;
   };
+  contacts?: {
+    unread: number;
+    items: Array<{ id: string; name: string; subject: string; createdAt: string; read: boolean }>;
+  };
   total: number;
   recent: Array<{
     id: string;

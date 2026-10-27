@@ -1,3 +1,7 @@
+import {
+  readContactNotifications,
+  markContactNotificationRead,
+} from '../lib/server/contactNotifications.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { prisma } from '../db.js';
@@ -29,6 +33,7 @@ interface Payload {
     /** DRAFT vehicles awaiting a price (see dashboardService.SmartAlerts). */
     draftVehicles: number;
   };
+  contacts: Awaited<ReturnType<typeof readContactNotifications>>;
   total: number;
   recent: Array<{
     id: string;
@@ -41,7 +46,7 @@ interface Payload {
   }>;
 }
 
-async function buildNotifications(actorId: string): Promise<Payload> {
+async function buildNotifications(actorId: string): Promise<Omit<Payload, 'contacts'>> {
   const now = new Date();
   const todayStart = startOfToday();
   const todayEnd = endOfToday();
@@ -72,6 +77,7 @@ async function buildNotifications(actorId: string): Promise<Payload> {
     }),
     prisma.vehicle.count({ where: { status: 'DRAFT' } }),
     prisma.activityLog.findMany({
+      where: { type: { not: 'CONTACT_REQUEST_RECEIVED' } },
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: { actor: { select: { id: true, name: true } } },
@@ -105,11 +111,45 @@ router.get(
       return;
     }
     const actorId = req.user.id;
-    const payload = await cache.wrap(`notifications:${actorId}`, NOTIFICATIONS_TTL_MS, () =>
-      buildNotifications(actorId),
+    // Contact read state stays fresh across replicas; only operational aggregates use the cache.
+    const [payload, contacts] = await Promise.all([
+      cache.wrap(`notifications:${actorId}`, NOTIFICATIONS_TTL_MS, () =>
+        buildNotifications(actorId),
+      ),
+      readContactNotifications(
+        { query: (sql, values = []) => prisma.$queryRawUnsafe(sql, ...values) },
+        actorId,
+      ),
+    ]);
+    res.set('Cache-Control', 'private, no-store');
+    res.json({ ...payload, contacts, total: payload.total + contacts.unread });
+  }),
+);
+
+router.post(
+  '/contacts/:id/read',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const eventId = String(req.params.id ?? '');
+    if (!/^contact:[a-f0-9]{64}$/.test(eventId)) {
+      res.status(400).json({ error: 'Invalid notification' });
+      return;
+    }
+    const found = await markContactNotificationRead(
+      { query: (sql, values = []) => prisma.$queryRawUnsafe(sql, ...values) },
+      req.user.id,
+      eventId,
     );
-    res.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
-    res.json(payload);
+    if (!found) {
+      res.status(404).json({ error: 'Notification not found' });
+      return;
+    }
+    cache.invalidate('notifications:' + req.user.id);
+    res.set('Cache-Control', 'private, no-store').json({ ok: true });
   }),
 );
 

@@ -24,3 +24,19 @@ it('keeps the configured signing secret for verification', async () => {
   const { getEnv } = await import('./env.js');
   expect(getEnv().CLERK_WEBHOOK_SECRET).toBe('whsec_local_test_only');
 });
+
+it('defaults to the owner contact budgets and accepts explicit positive integer limits', async () => {
+  vi.stubEnv('CONTACT_DAILY_LIMIT', undefined);
+  vi.stubEnv('CONTACT_MONTHLY_LIMIT', undefined);
+  const { getEnv } = await import('./env.js');
+  expect(getEnv().CONTACT_DAILY_LIMIT).toBe(20);
+  expect(getEnv().CONTACT_MONTHLY_LIMIT).toBe(1000);
+});
+it.each(['0', '-1', '1.5', '', 'Infinity', '100001'])(
+  'rejects invalid contact budgets (%s)',
+  async (value) => {
+    vi.stubEnv('CONTACT_DAILY_LIMIT', value);
+    const { getEnv } = await import('./env.js');
+    expect(() => getEnv()).toThrow('CONTACT_DAILY_LIMIT');
+  },
+);

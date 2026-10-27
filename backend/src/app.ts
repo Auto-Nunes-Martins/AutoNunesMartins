@@ -1,3 +1,5 @@
+import { createContactBudgetStore } from './lib/server/contactBudget.js';
+import { contactBudgetDatabase } from './lib/server/contactBudgetDatabase.js';
 import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
 import { createPublicContactRouter } from './routes/publicContact.js';
@@ -30,7 +32,7 @@ import activityRouter from './routes/activity.js';
 import searchRouter from './routes/search.js';
 import { contactErrorHandler, errorHandler } from './middleware/errorHandler.js';
 import { requestTiming, timedMiddleware } from './middleware/requestTiming.js';
-import { runtimeDatabasePoolLimit } from './db.js';
+import { prisma, runtimeDatabasePoolLimit } from './db.js';
 
 const env = getEnv();
 export const app = express();
@@ -38,7 +40,10 @@ app.use(requestTiming(env.NODE_ENV === 'development'));
 
 app.use(helmet());
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, ...(env.NODE_ENV === 'development' ? { databasePoolLimit: runtimeDatabasePoolLimit } : {}) });
+  res.json({
+    ok: true,
+    ...(env.NODE_ENV === 'development' ? { databasePoolLimit: runtimeDatabasePoolLimit } : {}),
+  });
 });
 app.use('/api', (_req, res, next) => {
   res.setHeader('Cache-Control', 'private, no-store');
@@ -48,13 +53,20 @@ app.use('/api', (_req, res, next) => {
 app.use(
   '/api/public/contact',
   express.json({ limit: '16kb' }),
-  createPublicContactRouter({
-    enabled: env.CONTACT_ENABLED === 'true',
-    apiKey: env.RESEND_API_KEY,
-    from: env.CONTACT_FROM_EMAIL,
-    to: env.CONTACT_TO_EMAIL,
-    relaySecret: env.CONTACT_RELAY_SECRET,
-  }),
+  createPublicContactRouter(
+    {
+      enabled: env.CONTACT_ENABLED === 'true',
+      apiKey: env.RESEND_API_KEY,
+      from: env.CONTACT_FROM_EMAIL,
+      to: env.CONTACT_TO_EMAIL,
+      relaySecret: env.CONTACT_RELAY_SECRET,
+    },
+    fetch,
+    createContactBudgetStore(contactBudgetDatabase(prisma), env.CONTACT_RELAY_SECRET ?? '', {
+      daily: env.CONTACT_DAILY_LIMIT,
+      monthly: env.CONTACT_MONTHLY_LIMIT,
+    }),
+  ),
 );
 app.use('/api/public/contact', contactErrorHandler);
 app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const settings = vi.hoisted(() => ({
-  env: { CONTACT_RELAY_SECRET: 's'.repeat(32), CONTACT_PRIVACY_READY: 'true' },
-  readiness: { privacy: [{ value: 'confirmed' as string | null }] },
+  env: { CONTACT_RELAY_SECRET: 's'.repeat(32) },
+  readiness: { privacy: [{ value: null as string | null }] },
 }));
 vi.mock('$env/dynamic/private', () => ({ env: settings.env }));
 vi.mock('$env/static/public', () => ({ PUBLIC_BACKEND_URL: 'https://backend.example.org' }));
@@ -20,8 +20,8 @@ async function post(body = '{}', origin = 'https://site.example.org', address = 
   } as Parameters<typeof POST>[0]);
 }
 beforeEach(() => {
-  settings.env.CONTACT_PRIVACY_READY = 'true';
-  settings.readiness.privacy[0]!.value = 'confirmed';
+  settings.env.CONTACT_RELAY_SECRET = 's'.repeat(32);
+  settings.readiness.privacy[0]!.value = null;
 });
 afterEach(() => vi.unstubAllGlobals());
 describe('contact relay', () => {
@@ -38,13 +38,17 @@ describe('contact relay', () => {
     ).toBe(503);
     expect(send).not.toHaveBeenCalled();
   });
-  it('blocks activation without confirmed privacy details', async () => {
+  it('forwards with pending privacy metadata and no privacy environment prerequisite', async () => {
+    const send = vi.fn().mockResolvedValue(Response.json({ ok: true }, { status: 202 }));
+    vi.stubGlobal('fetch', send);
+    expect(settings.readiness.privacy[0]!.value).toBeNull();
+    expect((await post()).status).toBe(202);
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+  it('fails closed when relay credentials are missing', async () => {
     const send = vi.fn();
     vi.stubGlobal('fetch', send);
-    settings.readiness.privacy[0]!.value = null;
-    expect((await post()).status).toBe(503);
-    settings.readiness.privacy[0]!.value = 'confirmed';
-    settings.env.CONTACT_PRIVACY_READY = 'false';
+    settings.env.CONTACT_RELAY_SECRET = '';
     expect((await post()).status).toBe(503);
     expect(send).not.toHaveBeenCalled();
   });

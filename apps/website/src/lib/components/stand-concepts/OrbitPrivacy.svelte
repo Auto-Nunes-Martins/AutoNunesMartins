@@ -15,7 +15,11 @@
   ];
 </script>
 
-<SocialMetadata title="Política de privacidade — Auto Nunes Martins" description="Informação de privacidade em preparação, funcionamento das preferências locais e dados por confirmar antes da publicação." canonical={new URL('/politica-de-privacidade', $page.url.origin).href} />
+<SocialMetadata
+  title="Política de privacidade — Auto Nunes Martins"
+  description="Informação de privacidade em preparação, funcionamento das preferências locais e dados por confirmar antes da publicação."
+  canonical={new URL('/politica-de-privacidade', $page.url.origin).href}
+/>
 
 <svelte:head>
   <title>Política de privacidade — Auto Nunes Martins</title>
@@ -45,9 +49,9 @@
         <strong>Uma nota sobre esta versão</strong>
         <p>
           Este site é uma montra de viaturas usadas, não uma loja de venda de automóveis online. O
-          serviço de contacto permite encaminhar pedidos por email quando estiver ativado.
-          Enquanto a identificação do responsável e as condições abaixo estiverem por confirmar,
-          o envio permanece indisponível. As páginas de demonstração continuam a não enviar pedidos.
+          serviço de contacto permite encaminhar pedidos por email quando estiver ativado. Enquanto
+          a identificação do responsável e as condições abaixo estiverem por confirmar, o envio
+          permanece indisponível. As páginas de demonstração continuam a não enviar pedidos.
         </p>
         <p>
           Antes da publicação, é necessário confirmar o responsável, os contactos e o funcionamento
@@ -57,7 +61,11 @@
       </aside>
       <section id="responsavel">
         <h2>01 <span>Quem é responsável</span></h2>
-        <p>Preparação incompleta. Consulte também a <a href="/informacao-legal">identificação do operador e informação legal</a>. Os campos seguintes precisam de confirmação antes da publicação.</p>
+        <p>
+          Preparação incompleta. Consulte também a <a href="/informacao-legal"
+            >identificação do operador e informação legal</a
+          >. Os campos seguintes precisam de confirmação antes da publicação.
+        </p>
         <LegalFields fields={readiness.privacy} />
         <p>
           O site apresenta-se sob o nome Auto Nunes Martins. A identificação jurídica do responsável
@@ -80,9 +88,14 @@
           Quando o envio estiver ativo, o formulário transmite o pedido ao servidor do site e ao
           backend, que o encaminha através do Resend para a caixa de email da empresa. Inclui apenas
           o caminho da página de origem, sem parâmetros de pesquisa. Esta funcionalidade não cria
-          conta nem ficha de cliente, nem grava o pedido na base de dados do CRM. O backend utiliza
-          temporariamente contadores associados a um identificador derivado do endereço IP para
-          limitar abusos; esses contadores expiram em dez minutos e não contêm a mensagem.
+          conta nem ficha de cliente e não guarda o corpo da mensagem no CRM. Após a aceitação pelo
+          serviço de email, o CRM regista o nome, assunto, hora e identificador do contacto para
+          notificar a equipa, com indicação de leitura individual. O backend guarda contadores e
+          identificadores protegidos por HMAC para limitar abusos: a janela por visitante é de dez
+          minutos e os limites globais usam o dia e mês UTC. Os metadados técnicos de tentativa
+          expiram após 35 dias e são eliminados com os pedidos seguintes; não incluem o endereço IP,
+          email do remetente nem o corpo da mensagem. O prazo de conservação dos avisos e leituras
+          no CRM continua por confirmar antes da ativação.
         </p>
       </section>
       <section id="finalidades">
@@ -107,22 +120,23 @@
       <section id="conservacao">
         <h2>04 <span>Conservação, destinatários e segurança</span></h2>
         <p>
-          Os pedidos recebidos na caixa de email devem ser conservados apenas pelo tempo necessário para
-          lhes dar resposta e assegurar o acompanhamento justificado, tendo em conta obrigações
-          legais aplicáveis. O prazo ou critério operacional da caixa de email e das suas cópias
-          de segurança deve ser confirmado no campo «Conservação» acima antes de ativar o envio.
-          A empresa deve aplicar esse prazo, não bastando publicá-lo nesta página.
+          Os pedidos recebidos na caixa de email devem ser conservados apenas pelo tempo necessário
+          para lhes dar resposta e assegurar o acompanhamento justificado, tendo em conta obrigações
+          legais aplicáveis. O prazo ou critério operacional da caixa de email e das suas cópias de
+          segurança deve ser confirmado no campo «Conservação» acima antes de ativar o envio. A
+          empresa deve aplicar esse prazo, não bastando publicá-lo nesta página.
         </p>
         <p>
-          O envio utiliza o Resend como prestador de email. Os prestadores de alojamento, caixa
-          de correio e suporte que precisem de tratar dados devem
-          ser identificados e limitados ao estritamente necessário. A existência desses
-          destinatários, de partilhas ou de transferências internacionais no serviço final está a
-          confirmar antes da ativação. O Resend disponibiliza um acordo de tratamento de dados e
-          informação sobre subcontratantes e transferências internacionais. Esses documentos e o
-          percurso efetivo devem ser verificados pela empresa antes de utilizar o serviço.
-          Consulte o <a href="https://resend.com/legal/dpa">acordo de tratamento do Resend</a> e
-          a <a href="https://resend.com/legal/subprocessors">lista de subcontratantes</a>.
+          O envio utiliza o Resend como prestador de email. Os prestadores de alojamento, caixa de
+          correio e suporte que precisem de tratar dados devem ser identificados e limitados ao
+          estritamente necessário. A existência desses destinatários, de partilhas ou de
+          transferências internacionais no serviço final está a confirmar antes da ativação. O
+          Resend disponibiliza um acordo de tratamento de dados e informação sobre subcontratantes e
+          transferências internacionais. Esses documentos e o percurso efetivo devem ser verificados
+          pela empresa antes de utilizar o serviço. Consulte o <a
+            href="https://resend.com/legal/dpa">acordo de tratamento do Resend</a
+          >
+          e a <a href="https://resend.com/legal/subprocessors">lista de subcontratantes</a>.
         </p>
         <p>
           A proteção dos dados exige medidas técnicas e organizativas adequadas ao risco, incluindo
@@ -132,17 +146,22 @@
       </section>
       <section id="navegacao">
         <h2>05 <span>Navegação e preferências</span></h2>
-        <p>Para repor a posição após recarregar a página, o site guarda no armazenamento de sessão deste separador o endereço completo da página, a posição de scroll e a hora. Só usa esse registo para reposição quando tem menos de um minuto; esse limite de utilização não é um apagamento automático. O registo acompanha a sessão do separador.</p>
         <p>
-          Quando escolhe o tema claro ou escuro, a interface guarda essa preferência no armazenamento
-          local deste navegador (<code>localStorage</code>), sem prazo de expiração automático. A escolha
-          é aplicada antes da apresentação da página para evitar uma mudança visível de cores ao recarregar.
-          Esta funcionalidade não cria um cookie de tema, não envia essa preferência ao servidor e não
-          a utiliza para publicidade ou medição de visitas. Pode alterar o tema no botão da navegação
-          ou apagar a preferência nas definições de dados do site no navegador. Se o armazenamento
-          estiver bloqueado, a escolha pode manter-se apenas durante a navegação atual.
-          O funcionamento dos favoritos
-          e da comparação é explicado na secção seguinte.
+          Para repor a posição após recarregar a página, o site guarda no armazenamento de sessão
+          deste separador o endereço completo da página, a posição de scroll e a hora. Só usa esse
+          registo para reposição quando tem menos de um minuto; esse limite de utilização não é um
+          apagamento automático. O registo acompanha a sessão do separador.
+        </p>
+        <p>
+          Quando escolhe o tema claro ou escuro, a interface guarda essa preferência no
+          armazenamento local deste navegador (<code>localStorage</code>), sem prazo de expiração
+          automático. A escolha é aplicada antes da apresentação da página para evitar uma mudança
+          visível de cores ao recarregar. Esta funcionalidade não cria um cookie de tema, não envia
+          essa preferência ao servidor e não a utiliza para publicidade ou medição de visitas. Pode
+          alterar o tema no botão da navegação ou apagar a preferência nas definições de dados do
+          site no navegador. Se o armazenamento estiver bloqueado, a escolha pode manter-se apenas
+          durante a navegação atual. O funcionamento dos favoritos e da comparação é explicado na
+          secção seguinte.
         </p>
         <p>
           Os filtros do catálogo são representados no endereço da página para permitir partilhar a
@@ -158,11 +177,34 @@
       </section>
       <section id="escolhas">
         <h2>06 <span>Favoritos e comparação</span></h2>
-        <p>Quando guarda uma viatura ou a adiciona à comparação, os identificadores das viaturas publicadas ficam no armazenamento local deste navegador (<code>localStorage</code>). A comparação permite até três viaturas; os favoritos não têm esse limite.</p>
-        <p>Estes identificadores servem exclusivamente para manter e apresentar as suas listas. Esta funcionalidade não cria conta nem perfil de utilizador e não utiliza a seleção para análise de utilização ou marketing. As listas não são guardadas como preferências no backend.</p>
-        <p>Ao abrir as listas, o navegador pede à API pública os dados atuais das viaturas selecionadas, incluindo as fotografias disponíveis. O armazenamento local não significa que o site funcione sem comunicações de rede. Uma viatura retirada da publicação pode aparecer como indisponível.</p>
-        <p>Não existe um prazo de expiração automático: as escolhas mantêm-se até as remover, limpar a lista ou apagar os dados do site no navegador. Pode usar o coração para retirar um favorito, o botão “Na comparação” para retirar uma viatura da comparação, ou as opções “Limpar favoritos” e “Limpar seleção” nas páginas respetivas.</p>
-        <p>A seleção pode atualizar-se entre separadores deste site no mesmo navegador. Não é sincronizada entre dispositivos ou navegadores diferentes. Se o armazenamento estiver bloqueado ou indisponível, as listas podem funcionar apenas durante a navegação atual.</p>
+        <p>
+          Quando guarda uma viatura ou a adiciona à comparação, os identificadores das viaturas
+          publicadas ficam no armazenamento local deste navegador (<code>localStorage</code>). A
+          comparação permite até três viaturas; os favoritos não têm esse limite.
+        </p>
+        <p>
+          Estes identificadores servem exclusivamente para manter e apresentar as suas listas. Esta
+          funcionalidade não cria conta nem perfil de utilizador e não utiliza a seleção para
+          análise de utilização ou marketing. As listas não são guardadas como preferências no
+          backend.
+        </p>
+        <p>
+          Ao abrir as listas, o navegador pede à API pública os dados atuais das viaturas
+          selecionadas, incluindo as fotografias disponíveis. O armazenamento local não significa
+          que o site funcione sem comunicações de rede. Uma viatura retirada da publicação pode
+          aparecer como indisponível.
+        </p>
+        <p>
+          Não existe um prazo de expiração automático: as escolhas mantêm-se até as remover, limpar
+          a lista ou apagar os dados do site no navegador. Pode usar o coração para retirar um
+          favorito, o botão “Na comparação” para retirar uma viatura da comparação, ou as opções
+          “Limpar favoritos” e “Limpar seleção” nas páginas respetivas.
+        </p>
+        <p>
+          A seleção pode atualizar-se entre separadores deste site no mesmo navegador. Não é
+          sincronizada entre dispositivos ou navegadores diferentes. Se o armazenamento estiver
+          bloqueado ou indisponível, as listas podem funcionar apenas durante a navegação atual.
+        </p>
         <p><a href="/favoritos">Gerir favoritos</a> · <a href="/comparar">Gerir comparação</a></p>
       </section>
       <section id="direitos">

@@ -37,6 +37,9 @@ COPY --from=builder --chown=node:node /app/apps/website/package.json ./apps/webs
 COPY --from=builder --chown=node:node /app/apps/website/build ./apps/website/build
 COPY --from=builder --chown=node:node /app/backend/package.json ./backend/package.json
 COPY --from=builder --chown=node:node /app/backend/dist ./backend/dist
+# The installed Prisma CLI/engines are retained in node_modules; migrations run only at startup.
+COPY --from=builder --chown=node:node /app/backend/prisma/schema.prisma ./backend/prisma/schema.prisma
+COPY --from=builder --chown=node:node /app/backend/prisma/migrations ./backend/prisma/migrations
 COPY --from=builder --chown=node:node /app/backend/node_modules ./backend/node_modules
 COPY --from=builder --chown=node:node /app/apps/crm/node_modules ./apps/crm/node_modules
 COPY --from=builder --chown=node:node /app/apps/website/node_modules ./apps/website/node_modules
@@ -46,4 +49,4 @@ USER node
 EXPOSE 10000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=45s CMD ["node", "deployment/healthcheck.mjs"]
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "deployment/start.mjs"]
+CMD ["node", "deployment/container-start.mjs"]

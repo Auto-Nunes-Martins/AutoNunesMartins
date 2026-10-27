@@ -1,5 +1,6 @@
 import {
   Activity,
+  Mail,
   ArrowRightLeft,
   Car,
   CheckCircle2,
@@ -23,6 +24,7 @@ const danger = 'var(--color-danger)';
 /** One meaning per colour across history, dashboard and notifications.
  * Icons and explicit labels identify the entity, without a separate rainbow. */
 const events: Record<string, EventStyle> = {
+  CONTACT_REQUEST_RECEIVED: { icon: Mail, color: info, label: 'Contacto do website' },
   VEHICLE_ADDED: { icon: Car, color: info, label: 'Viatura adicionada' },
   VEHICLE_UPDATED: { icon: PencilLine, color: neutral, label: 'Viatura editada' },
   VEHICLE_STATUS_CHANGED: { icon: ArrowRightLeft, color: info, label: 'Estado de viatura' },

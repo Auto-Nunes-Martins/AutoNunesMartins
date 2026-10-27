@@ -9,6 +9,7 @@ import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 const router = Router();
 
 const ACTIVITY_TYPES = [
+  'CONTACT_REQUEST_RECEIVED',
   'VEHICLE_ADDED',
   'VEHICLE_UPDATED',
   'VEHICLE_STATUS_CHANGED',
@@ -25,7 +26,7 @@ const ACTIVITY_TYPES = [
   'EXPENSE_UPDATED',
 ] as const;
 
-const ENTITY_TYPES = ['vehicle', 'sale', 'task', 'customer', 'expense'] as const;
+const ENTITY_TYPES = ['vehicle', 'sale', 'task', 'customer', 'expense', 'contact'] as const;
 
 const listQuerySchema = z.object({
   actorId: z.string().optional(),

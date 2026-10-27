@@ -59,6 +59,7 @@ export const RecurrenceEnum = z.enum(['NONE', 'WEEKLY', 'MONTHLY', 'ANNUAL']);
 export type Recurrence = z.infer<typeof RecurrenceEnum>;
 
 export const ActivityTypeEnum = z.enum([
+  'CONTACT_REQUEST_RECEIVED',
   'VEHICLE_ADDED',
   'VEHICLE_UPDATED',
   'VEHICLE_STATUS_CHANGED',

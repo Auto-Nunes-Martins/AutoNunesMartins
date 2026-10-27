@@ -6,6 +6,18 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default('info'),
   FRONTEND_ORIGIN: z.string().url().default('http://localhost:5174'),
   CONTACT_ENABLED: z.enum(['true', 'false']).default('false'),
+  CONTACT_DAILY_LIMIT: z
+    .string()
+    .regex(/^[1-9]\d*$/)
+    .default('20')
+    .transform(Number)
+    .pipe(z.number().int().max(100_000)),
+  CONTACT_MONTHLY_LIMIT: z
+    .string()
+    .regex(/^[1-9]\d*$/)
+    .default('1000')
+    .transform(Number)
+    .pipe(z.number().int().max(100_000)),
   CONTACT_RELAY_SECRET: z.string().min(32).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   CONTACT_FROM_EMAIL: z.string().email().optional(),

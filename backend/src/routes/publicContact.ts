@@ -1,3 +1,5 @@
+import { cache } from '../lib/data/cache.js';
+import type { ContactBudgetStore } from '../lib/server/contactBudget.js';
 import { contactEmailHtml } from '../lib/server/contactEmail.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router } from 'express';
@@ -37,13 +39,15 @@ export interface ContactConfig {
   relaySecret?: string;
 }
 
-// Only short-lived hashed rate counters are retained; no contact records or message bodies.
-export function createPublicContactRouter(config: ContactConfig, send: typeof fetch = fetch) {
+// Persist only keyed hashes, counters and send status; no contact records or message bodies.
+export function createPublicContactRouter(
+  config: ContactConfig,
+  send: typeof fetch = fetch,
+  budget?: ContactBudgetStore,
+) {
   const router = Router();
-  const counters = new Map<string, { count: number; expires: number }>();
-  let daily = { count: 0, expires: 0 };
   const ready = () =>
-    config.enabled && config.apiKey && config.from && config.to && config.relaySecret;
+    config.enabled && config.apiKey && config.from && config.to && config.relaySecret && budget;
   const authorised = (token: string | undefined) => {
     const expected = Buffer.from(config.relaySecret ?? '');
     const actual = Buffer.from(token ?? '');
@@ -80,31 +84,43 @@ export function createPublicContactRouter(config: ContactConfig, send: typeof fe
         res.status(400).json({ error: 'Não foi possível enviar o pedido.' });
         return;
       }
-      const now = Date.now();
-      for (const [key, counter] of counters) if (counter.expires <= now) counters.delete(key);
-      const key = createHash('sha256')
-        .update(config.relaySecret! + (req.header('x-contact-client') ?? req.ip ?? 'unknown'))
-        .digest('hex');
-      const existing = counters.get(key);
-      const counter = existing ?? { count: 0, expires: now + 10 * 60_000 };
-      if (daily.expires <= now) daily = { count: 0, expires: now + 24 * 60 * 60_000 };
-      if (counter.count >= 5 || daily.count >= 80 || counters.size >= 10_000) {
+      const text = `Pedido de contacto — Auto Nunes Martins\n\nNome: ${data.name}\nEmail: ${data.email}\nAssunto: ${data.subject}\nPágina: ${data.page}\n\n${data.message}\n\nUm pedido de visita não constitui um agendamento confirmado. Responda ao cliente para combinar o horário.`;
+      const emailBody = JSON.stringify({
+        from: config.from,
+        to: [config.to],
+        reply_to: data.email,
+        subject: `Pedido do site: ${data.subject}`,
+        text,
+        html: contactEmailHtml(data),
+      });
+      let reservation;
+      try {
+        reservation = await budget!.reserve(
+          req.header('x-contact-client') ?? req.ip ?? 'unknown',
+          data.requestId,
+          emailBody,
+        );
+      } catch {
+        res.status(503).json({ error: 'O envio de pedidos est� temporariamente indispon�vel.' });
+        return;
+      }
+      if (reservation.kind === 'sent') {
+        res.status(202).json({ ok: true });
+        return;
+      }
+      if (reservation.kind === 'limited') {
         res
-          .set('Retry-After', '600')
+          .set('Retry-After', String(reservation.retryAfter))
           .status(429)
           .json({ error: 'Limite de envios atingido. Tente mais tarde.' });
         return;
       }
-      counter.count++;
-      daily.count++;
-      counters.set(key, counter);
-      if (!existing) {
-        const expiry = setTimeout(() => {
-          if (counters.get(key) === counter) counters.delete(key);
-        }, 10 * 60_000);
-        expiry.unref();
+      if (reservation.kind === 'conflict') {
+        res
+          .status(409)
+          .json({ error: 'Este pedido j� n�o pode ser repetido. Abra um novo formul�rio.' });
+        return;
       }
-      const text = `Pedido de contacto — Auto Nunes Martins\n\nNome: ${data.name}\nEmail: ${data.email}\nAssunto: ${data.subject}\nPágina: ${data.page}\n\n${data.message}\n\nUm pedido de visita não constitui um agendamento confirmado. Responda ao cliente para combinar o horário.`;
       try {
         const response = await send('https://api.resend.com/emails', {
           method: 'POST',
@@ -113,28 +129,29 @@ export function createPublicContactRouter(config: ContactConfig, send: typeof fe
             'Content-Type': 'application/json',
             'Idempotency-Key': `contact/${data.requestId}/${createHash('sha256').update(text).digest('hex')}`,
           },
-          body: JSON.stringify({
-            from: config.from,
-            to: [config.to],
-            reply_to: data.email,
-            subject: `Pedido do site: ${data.subject}`,
-            text,
-            html: contactEmailHtml(data),
-          }),
+          body: emailBody,
           signal: AbortSignal.timeout(12_000),
         });
         if (!response.ok) throw new Error('Provider rejected send');
         const result = (await response.json()) as { id?: string };
         if (!result.id) throw new Error('Missing provider acknowledgement');
+        await budget!.finish(reservation.key, reservation.token, true, {
+          name: data.name,
+          subject: data.subject,
+        });
+        cache.clearPrefix('notifications:');
+        cache.clearPrefix('dashboard:');
         res.status(202).json({ ok: true });
       } catch {
+        try {
+          await budget!.finish(reservation.key, reservation.token, false);
+        } catch {
+          /* Fail closed on the next reservation. */
+        }
         // Never log provider errors, request bodies, customer addresses or credentials.
-        res
-          .status(502)
-          .json({
-            error:
-              'Não foi possível confirmar o envio. Tente novamente dentro de alguns instantes.',
-          });
+        res.status(502).json({
+          error: 'Não foi possível confirmar o envio. Tente novamente dentro de alguns instantes.',
+        });
       }
     }),
   );

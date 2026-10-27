@@ -18,6 +18,7 @@
     User as UserIcon,
     Wallet,
   } from 'lucide-svelte';
+  import ContactNotificationList from './ContactNotificationList.svelte';
   import BrandBell from '$lib/components/brand/icons/BrandBell.svelte';
   import { activityStyle as styleForType } from '$lib/activityPresentation';
   import type { NotificationsPayload } from '$lib/server/notifications';
@@ -27,6 +28,8 @@
   let loading = $state(false);
   let loadError = $state('');
   let controller: AbortController | undefined;
+  let contactReading = $state('');
+  let refreshTimer: ReturnType<typeof setInterval> | undefined;
   const uid = $props.id();
   const panelId = uid + '-alerts';
   let panelEl = $state<HTMLDivElement | null>(null);
@@ -50,6 +53,23 @@
       if (!signal.aborted) loadError = 'Não foi possível atualizar os alertas.';
     } finally {
       if (!signal.aborted) loading = false;
+    }
+  }
+
+  async function markContactRead(id: string) {
+    if (contactReading) return;
+    contactReading = id;
+    try {
+      const res = await sessionFetch(
+        crmPath('/api/notifications/contacts/' + encodeURIComponent(id) + '/read'),
+        { method: 'POST' },
+      );
+      if (!res.ok) throw new Error('Notification update failed');
+      await load();
+    } catch {
+      loadError = 'N\u00e3o foi poss\u00edvel marcar o contacto como lido.';
+    } finally {
+      contactReading = '';
     }
   }
 
@@ -96,12 +116,16 @@
   onMount(() => {
     // Eagerly load so the badge count is correct on first paint
     void load();
+    refreshTimer = setInterval(() => {
+      if (document.visibilityState === 'visible' && !loading) void load();
+    }, 60_000);
     document.addEventListener('click', onDocClick);
     document.addEventListener('keydown', onKey);
   });
 
   onDestroy(() => {
     controller?.abort();
+    if (refreshTimer) clearInterval(refreshTimer);
     if (typeof document !== 'undefined') {
       document.removeEventListener('click', onDocClick);
       document.removeEventListener('keydown', onKey);
@@ -275,6 +299,14 @@
             </a>
           {/if}
         </section>
+
+        {#if data.contacts?.items.length}
+          <ContactNotificationList
+            items={data.contacts.items}
+            onRead={markContactRead}
+            readingId={contactReading}
+          />
+        {/if}
 
         <!-- Recent activity section -->
         <section>
