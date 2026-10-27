@@ -11,7 +11,7 @@ const photos = await Promise.all(
   ['#647b88', '#a58a72', '#6c8475'].map((color, n) =>
     sharp(
       Buffer.from(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900"><rect width="1200" height="900" fill="${color}"/><text x="400" y="450" font-size="80">Foto ${n + 1}</text></svg>`,
+        `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="${n === 1 ? 1600 : 900}"><rect width="1200" height="${n === 1 ? 1600 : 900}" fill="${color}"/><text x="400" y="450" font-size="80">Foto ${n + 1}</text></svg>`,
       ),
     )
       .png()
@@ -107,7 +107,7 @@ try {
   const touch = (type, x, y) =>
     cdp.send('Input.dispatchTouchEvent', {
       type,
-      touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+      touchPoints: ['touchEnd', 'touchCancel'].includes(type) ? [] : [{ x, y }],
     });
   async function swipe(dx, dy, finish = true) {
     const box = await stage.boundingBox();
@@ -150,6 +150,151 @@ try {
       document.querySelector('.gallery-dialog .photo-rail-slide:not([inert]) img')?.naturalWidth >
       0,
   );
+  const gestureOutput = '../../test-results/mobile-gallery';
+  await mkdir(gestureOutput, { recursive: true });
+  const activeImage = () => dialog.locator('.photo-rail-slide:not([inert]) img');
+  async function openViewer() {
+    if (!(await dialog.isVisible())) {
+      await stage.scrollIntoViewIfNeeded();
+      await stage.locator('.photo-rail-slide:not([inert]) [data-swipe-surface]').tap();
+    }
+    await dialog.waitFor({ state: 'visible' });
+    await page.waitForFunction(
+      () =>
+        document.querySelector('.gallery-dialog .photo-rail-slide:not([inert]) img')?.naturalWidth >
+        0,
+    );
+    await page.waitForTimeout(550);
+  }
+  async function imagePoints() {
+    return activeImage().evaluate((image) => {
+      const r = image.getBoundingClientRect(),
+        scale = Math.min(r.width / image.naturalWidth, r.height / image.naturalHeight);
+      const w = image.naturalWidth * scale,
+        h = image.naturalHeight * scale;
+      const left = r.left + (r.width - w) / 2,
+        top = r.top + (r.height - h) / 2;
+      return {
+        center: { x: r.left + r.width / 2, y: r.top + r.height / 2 },
+        black:
+          top - r.top > 15
+            ? { x: r.left + r.width / 2, y: top - 10 }
+            : { x: left - 10, y: r.top + r.height / 2 },
+      };
+    });
+  }
+  async function viewerDrag(dx, dy, { start, cancel = false, finish = true, delay = 25 } = {}) {
+    start ??= (await imagePoints()).center;
+    await touch('touchStart', start.x, start.y);
+    for (let i = 1; i <= 6; i++) {
+      await touch('touchMove', start.x + (dx * i) / 6, start.y + (dy * i) / 6);
+      await page.waitForTimeout(delay);
+    }
+    if (finish) await touch(cancel ? 'touchCancel' : 'touchEnd', start.x + dx, start.y + dy);
+    return { x: start.x + dx, y: start.y + dy };
+  }
+  const offset = () =>
+    dialog.evaluate((node) => parseFloat(node.style.getPropertyValue('--viewer-dismiss-y')) || 0);
+  await openViewer();
+  await page.screenshot({ path: gestureOutput + '/fullscreen-before-drag.png' });
+  let points = await imagePoints();
+  await page.touchscreen.tap(points.center.x, points.center.y);
+  assert.ok(await dialog.isVisible(), 'tapping the photo must keep the viewer open');
+  await dialog.locator('.viewer-next').tap();
+  assert.ok(await dialog.isVisible(), 'navigation controls never dismiss');
+  await page.waitForTimeout(600);
+  await dialog.locator('.viewer-thumbnails button').first().tap();
+  await page.waitForTimeout(600);
+  await dialog.locator('#gallery-caption').tap();
+  assert.ok(await dialog.isVisible(), 'caption and thumbnail controls keep the viewer open');
+  points = await imagePoints();
+  await page.touchscreen.tap(points.black.x, points.black.y);
+  await dialog.waitFor({ state: 'hidden' });
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.documentElement).overflow),
+    'visible',
+  );
+  await openViewer();
+  await viewerDrag(2, 25);
+  await page.waitForTimeout(250);
+  assert.ok(await dialog.isVisible(), 'short drags snap back');
+  assert.equal(await offset(), 0);
+  await viewerDrag(110, 120);
+  assert.ok(await dialog.isVisible(), 'diagonal swipes do not dismiss');
+  const indexBefore = await dialog
+    .locator('.viewer-thumbnails button[aria-pressed="true"]')
+    .getAttribute('aria-label');
+  await viewerDrag(-130, 10);
+  await page.waitForTimeout(550);
+  assert.notEqual(
+    await dialog
+      .locator('.viewer-thumbnails button[aria-pressed="true"]')
+      .getAttribute('aria-label'),
+    indexBefore,
+    'horizontal navigation remains responsive',
+  );
+  const viewerEnd = await viewerDrag(3, 130, { finish: false });
+  assert.ok((await offset()) > 100, 'the photo follows the finger');
+  assert.ok(
+    await dialog
+      .locator('.viewer-stage > .photo-rail')
+      .evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m42 > 100),
+    'rendered photo transform follows the finger',
+  );
+  assert.ok(
+    Number(
+      await dialog.evaluate((node) => node.style.getPropertyValue('--viewer-dismiss-opacity')),
+    ) < 1,
+    'backdrop fades during drag',
+  );
+  await page.screenshot({ path: gestureOutput + '/fullscreen-during-drag.png' });
+  const backdropDuring = await dialog.evaluate(
+    (node) => getComputedStyle(node, '::backdrop').backgroundColor,
+  );
+  console.log(JSON.stringify({ dragOffset: await offset(), backdropDuring }));
+  await dialog.dispatchEvent('pointercancel', { pointerId: 1, pointerType: 'touch' });
+  assert.ok((await offset()) > 100, 'WebKit pointer cancellation leaves native touch drag intact');
+  await page.setViewportSize({ width: 390, height: 824 });
+  assert.ok((await offset()) > 100, 'toolbar-like viewport resize preserves the drag');
+  await touch('touchCancel', viewerEnd.x, viewerEnd.y);
+  await page.waitForTimeout(250);
+  assert.equal(await offset(), 0, 'cancelled gesture returns to its starting pose');
+  await page.screenshot({ path: gestureOutput + '/fullscreen-after-cancel.png' });
+  assert.ok(await dialog.isVisible());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(550);
+  await viewerDrag(2, 190);
+  await dialog.waitFor({ state: 'hidden' });
+  await page.screenshot({ path: gestureOutput + '/fullscreen-after-dismiss.png' });
+  await openViewer();
+  points = await imagePoints();
+  await viewerDrag(1, 190, { start: points.black });
+  await dialog.waitFor({ state: 'hidden' });
+  await openViewer();
+  points = await imagePoints();
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [
+      { x: points.center.x - 30, y: points.center.y, id: 1 },
+      { x: points.center.x + 30, y: points.center.y, id: 2 },
+    ],
+  });
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [
+      { x: points.center.x - 50, y: points.center.y + 80, id: 1 },
+      { x: points.center.x + 50, y: points.center.y + 80, id: 2 },
+    ],
+  });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  assert.ok(await dialog.isVisible(), 'pinching never dismisses');
+  assert.equal(await offset(), 0);
+  await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 1.5 });
+  await viewerDrag(2, 170);
+  assert.ok(await dialog.isVisible(), 'zoomed panning never dismisses');
+  assert.equal(await offset(), 0);
+  await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 });
+  await page.waitForTimeout(550);
   const close = dialog.locator('.dialog-close');
   assert.equal(await close.evaluate((node) => getComputedStyle(node).outlineStyle), 'none');
   await page.keyboard.press('Tab');
@@ -245,6 +390,17 @@ try {
     'landscape thumbnails sit beside a tall photo',
   );
   await page.screenshot({ path: `${output}/fullscreen-landscape.png` });
+  await page.waitForTimeout(550);
+  points = await imagePoints();
+  await page.touchscreen.tap(points.center.x, points.center.y);
+  assert.ok(await dialog.isVisible(), 'landscape image tap stays open');
+  await page.touchscreen.tap(points.black.x, points.black.y);
+  await dialog.waitFor({ state: 'hidden' });
+  await openViewer();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await viewerDrag(0, 130);
+  await dialog.waitFor({ state: 'hidden' });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(origin);
@@ -334,7 +490,7 @@ try {
   assert.equal(hover.arrow, 'rgb(255, 255, 255)');
   await desktop.close();
   console.log(
-    'PASS: native horizontal/vertical touch, drag feedback, touch/keyboard focus, share alignment, card inset/opacity, landscape layouts, mobile review sizing and equal heights at 320/390px, including full expanded text.',
+    'PASS: fullscreen background/image/control taps, downward completion/cancellation/finger tracking/fade, pinch and zoom preservation, viewport resize, reduced motion, portrait/landscape; native horizontal/vertical touch, drag feedback, touch/keyboard focus, share alignment, card inset/opacity, landscape layouts, mobile review sizing and equal heights at 320/390px, including full expanded text.',
   );
 } finally {
   await browser?.close();

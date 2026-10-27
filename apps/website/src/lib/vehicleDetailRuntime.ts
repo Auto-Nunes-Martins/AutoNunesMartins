@@ -23,7 +23,7 @@ import { photoSwipe } from './photoSwipe';
 import { thumbnailNavigation } from './thumbnailNavigation';
 import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from './publicThumbnail';
 import { trapDialogTab } from '../../../../shared/ui/dialogFocus';
-import { galleryBackdrop } from '../../../../shared/ui/galleryBackdrop';
+import { fullscreenGallery as galleryBackdrop } from './fullscreenGallery';
 import './components/stand-concepts/photoViewer.css';
 import './components/stand-concepts/orbitDetail.css';
 
