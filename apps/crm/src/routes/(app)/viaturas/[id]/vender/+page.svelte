@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tradeInCreateSchema, licensePlatePtSchema } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
@@ -77,9 +78,12 @@
     const timeout = setTimeout(async () => {
       searchingCustomers = true;
       try {
-        const response = await sessionFetch(crmPath(`/clientes/pesquisar?q=${encodeURIComponent(q)}`), {
-          signal: controller.signal,
-        });
+        const response = await sessionFetch(
+          crmPath(`/clientes/pesquisar?q=${encodeURIComponent(q)}`),
+          {
+            signal: controller.signal,
+          },
+        );
         if (!response.ok) throw new Error('Pesquisa indisponível');
         const result = (await response.json()) as { items: CustomerListItem[]; total: number };
         if (controller.signal.aborted) return;
@@ -110,23 +114,24 @@
   let buyerType = $state<'PARTICULAR' | 'COMERCIANTE'>('PARTICULAR');
   // ─── Retoma (trade-in) ───────────────────────────────────────────────
   // Off by default — most sales are pure cash. When the dealer toggles it
-  // on, the sub-form appears, the allowance is abated from the live profit
-  // preview, and a TradeIn row gets persisted alongside the Sale on submit.
+  // on, the intake form appears and a TradeIn row is persisted alongside
+  // the Sale. Its acquisition cost does not change this sale's margin.
   let hasTradeIn = $state(false);
   let tradeInBrand = $state('');
   let tradeInModel = $state('');
   let tradeInYear = $state('');
-  let tradeInFuel = $state<'GASOLINE' | 'DIESEL' | 'HYBRID' | 'PLUGIN_HYBRID' | 'ELECTRIC' | 'LPG'>(
-    'GASOLINE',
-  );
+  let tradeInFuel = $state<
+    '' | 'GASOLINE' | 'DIESEL' | 'HYBRID' | 'PLUGIN_HYBRID' | 'ELECTRIC' | 'LPG'
+  >('');
   let tradeInMileage = $state('');
   let tradeInPlate = $state('');
   let tradeInVin = $state('');
   let tradeInAllowance = $state('');
-  // STOCK adds the car to inventory, creating a Vehicle that requires a VIN.
+  // STOCK creates a draft with the same identification rules as the main form.
   // SCRAP sends the car for dismantling and never adds it to inventory.
   let tradeInDisposition = $state<'STOCK' | 'SCRAP'>('STOCK');
   let tradeInNotes = $state('');
+  let tradeInDocs = $state({ financing: false, imt: false, registration: false, docs: false });
   // Field-level errors returned by the backend.
   // Set when the server responds with 409 and a field, such as a duplicate
   // VIN. Clear on input in the corresponding field so the warning
@@ -205,15 +210,28 @@
   // well be worth more than the sold car, e.g. a downgrade trade).
   function validateTradeIn(): string | null {
     if (!hasTradeIn) return null;
-    if (!tradeInBrand.trim()) return 'Indica a marca do carro de retoma.';
-    if (!tradeInModel.trim()) return 'Indica o modelo do carro de retoma.';
-    if (!tradeInYear) return 'Indica o ano do carro de retoma.';
-    if (tradeInMileage == null || tradeInMileage === '')
-      return 'Indica a quilometragem do carro de retoma.';
-    if (!tradeInAllowance || Number(tradeInAllowance) <= 0)
-      return 'Indica o valor atribuído à retoma.';
-    if (tradeInDisposition === 'STOCK' && !tradeInVin.trim())
-      return 'VIN é obrigatório quando a retoma vai para o stock.';
+    const parsed = tradeInCreateSchema.safeParse({
+      brand: tradeInBrand,
+      model: tradeInModel,
+      year: tradeInYear,
+      fuel: tradeInFuel,
+      mileage: tradeInMileage,
+      licensePlate: tradeInPlate,
+      vin: tradeInVin,
+      allowanceValue: tradeInAllowance,
+      disposition: tradeInDisposition,
+      notes: tradeInNotes,
+    });
+    if (!parsed.success) {
+      showFormErrors(saleForm, {
+        error: 'Reveja os dados da retoma.',
+        issues: parsed.error.issues.map((issue) => ({
+          ...issue,
+          path: ['tradeIn', ...issue.path],
+        })),
+      });
+      return parsed.error.issues[0]?.message ?? 'Reveja os dados da retoma.';
+    }
     return null;
   }
 
@@ -343,7 +361,7 @@
     <div class="sale-fields crm-form-layout lg:col-span-8 space-y-6">
       <Panel>
         <PanelHeader icon={UserIcon} title="Cliente">
-          {#snippet actions()}<Button variant="outline" size="sm" onclick={openCustomer}
+          {#snippet actions()}<Button variant="primary" size="sm" onclick={openCustomer}
               >Novo cliente</Button
             >{/snippet}
         </PanelHeader>
@@ -544,7 +562,6 @@
             </span>
             <DateInput
               name="saleDate"
-
               required
               value={today}
               class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
@@ -576,7 +593,6 @@
             </span>
             <DateInput
               name="deliveryDate"
-
               class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             />
@@ -701,7 +717,9 @@
                 class="mt-1.5 font-mono text-[10px] text-[var(--color-text-faint)] uppercase tracking-[0.12em] leading-relaxed"
               >
                 {#if tradeInDisposition === 'STOCK'}
-                  Cria uma viatura nova em stock com preço de compra = valor da retoma.
+                  Cria uma ficha em rascunho com custo igual ao valor da retoma e aquisição na data
+                  da venda. Complete depois o preço de venda na ficha. Fotografias e dados do site
+                  público não são necessários.
                 {:else}
                   Carro vai para abate/desmanche — não entra no inventário.
                 {/if}
@@ -769,10 +787,12 @@
                 </span>
                 <select
                   name="tradeIn.fuel"
+                  required
                   bind:value={tradeInFuel}
                   class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] transition-colors"
                   style="border-radius: var(--radius-btn);"
                 >
+                  <option value="" disabled>Selecionar combustível</option>
                   <option value="GASOLINE">Gasolina</option>
                   <option value="DIESEL">Gasóleo</option>
                   <option value="HYBRID">Híbrido</option>
@@ -789,6 +809,8 @@
                 </span>
                 <input
                   name="tradeIn.mileage"
+                  max="2000000"
+                  step="1"
                   required
                   type="number"
                   min="0"
@@ -802,10 +824,16 @@
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
-                  Matrícula (opcional)
+                  Matrícula {tradeInDisposition === 'STOCK' ? '(obrigatória)' : '(opcional)'}
                 </span>
                 <input
                   name="tradeIn.licensePlate"
+                  required={tradeInDisposition === 'STOCK'}
+                  maxlength="10"
+                  onblur={() => {
+                    const parsed = licensePlatePtSchema.safeParse(tradeInPlate);
+                    if (parsed.success) tradeInPlate = parsed.data;
+                  }}
                   type="text"
                   bind:value={tradeInPlate}
                   oninput={() => (tradeInPlateError = null)}
@@ -827,25 +855,14 @@
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"
                 >
-                  VIN
-                  {#if tradeInDisposition === 'STOCK'}
-                    <span class="text-[var(--color-red)] normal-case tracking-normal text-[10.5px]">
-                      · obrigatório (vai entrar no stock)
-                    </span>
-                  {:else}
-                    <span
-                      class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px]"
-                    >
-                      · opcional (não entra no stock)
-                    </span>
-                  {/if}
+                  VIN (opcional)
                 </span>
                 <input
                   name="tradeIn.vin"
                   minlength="17"
-                  required={tradeInDisposition === 'STOCK'}
                   type="text"
                   bind:value={tradeInVin}
+                  onblur={() => (tradeInVin = tradeInVin.trim().toUpperCase())}
                   oninput={() => (tradeInVinError = null)}
                   placeholder="VF1XXXXXXXXXXXXXX"
                   maxlength="17"
@@ -893,10 +910,11 @@
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
-                  Notas (opcional)
+                  Estado, manutenção e observações (opcional)
                 </span>
                 <textarea
                   name="tradeIn.notes"
+                  maxlength="2000"
                   bind:value={tradeInNotes}
                   rows="2"
                   placeholder="Estado, danos visíveis, documentação em falta…"
@@ -905,6 +923,27 @@
                 ></textarea>
               </label>
             </div>
+            {#if tradeInDisposition === 'STOCK'}
+              <fieldset class="space-y-3">
+                <legend class="font-display font-semibold">Documentos pendentes da retoma</legend>
+                <p class="text-[12px] text-[var(--color-text-muted)]">
+                  Assinale apenas o que falta regularizar nesta viatura.
+                </p>
+                <div class="grid grid-cols-2 gap-3">
+                  {#each [{ key: 'financing', label: 'Financiamento' }, { key: 'imt', label: 'IMT' }, { key: 'registration', label: 'Registo' }, { key: 'docs', label: 'Documentação' }] as flag (flag.key)}
+                    <label class="flex items-center gap-2 text-[13px]">
+                      <input
+                        type="checkbox"
+                        name={'tradeIn.pendingDocFlags.' + flag.key}
+                        value="true"
+                        bind:checked={tradeInDocs[flag.key as keyof typeof tradeInDocs]}
+                      />
+                      {flag.label}
+                    </label>
+                  {/each}
+                </div>
+              </fieldset>
+            {/if}
           {/if}
         </div>
       </Panel>

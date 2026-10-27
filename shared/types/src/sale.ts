@@ -1,57 +1,42 @@
 import { z } from 'zod';
 import { BuyerTypeEnum, DeliveryStatusEnum, FuelEnum, TradeInDispositionEnum } from './enums.js';
 import { moneySchema } from './decimal.js';
-import { licensePlatePtSchema } from './vehicle.js';
-
-const CURRENT_YEAR = new Date().getFullYear();
+import { licensePlatePtSchema, pendingDocFlagsSchema, vehicleCreateSchema } from './vehicle.js';
 
 const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
 
 /**
  * A car the customer hands over as partial payment, recorded inline on the
  * sale-creation request. The backend persists it as a `TradeIn` row tied to
- * the new `Sale`, abates `allowanceValue` from the sale price before margin
- * is computed, and (when `disposition === 'STOCK'`) creates a fresh `Vehicle`
- * row in the dealer's inventory so the car can be re-sold later.
+ * the new `Sale` as a separate acquisition and (when `disposition === 'STOCK'`)
+ * creates a fresh `Vehicle` row in inventory so the car can be re-sold later.
  *
- * VIN/plate are optional here (unlike a regular vehicle add) because the
- * dealer often takes the car in on paper before all docs are checked.
+ * Stock identification follows the main vehicle form: plate required, VIN
+ * optional. SCRAP does not create inventory and may omit both identifiers.
  */
 export const tradeInCreateSchema = z
   .object({
     brand: z.string().trim().min(1, 'Marca obrigatória').max(60),
     model: z.string().trim().min(1, 'Modelo obrigatório').max(80),
-    year: z.coerce
-      .number()
-      .int()
-      .min(1950, 'Ano mínimo: 1950')
-      .max(CURRENT_YEAR + 1, `Ano máximo: ${CURRENT_YEAR + 1}`),
-    fuel: FuelEnum,
-    mileage: z.coerce.number().int().min(0, 'Quilometragem não pode ser negativa').max(2_000_000),
+    year: vehicleCreateSchema.shape.year,
+    fuel: vehicleCreateSchema.shape.fuel,
+    mileage: z.preprocess(emptyToUndefined, vehicleCreateSchema.shape.mileage),
     licensePlate: z.preprocess(emptyToUndefined, licensePlatePtSchema.optional()),
-    vin: z.preprocess(
-      emptyToUndefined,
-      z
-        .string()
-        .trim()
-        .length(17, 'VIN deve ter 17 caracteres')
-        .regex(/^[A-HJ-NPR-Z0-9]{17}$/, 'VIN inválido (sem I, O, Q)')
-        .optional(),
+    vin: vehicleCreateSchema.shape.vin,
+    allowanceValue: moneySchema.refine(
+      (value) => Number(value) >= 0,
+      'O valor da retoma não pode ser negativo.',
     ),
-    allowanceValue: moneySchema,
     disposition: TradeInDispositionEnum,
     notes: z.preprocess(emptyToUndefined, z.string().max(2000).optional()),
+    pendingDocFlags: pendingDocFlagsSchema.optional(),
   })
   .superRefine((val, ctx) => {
-    // VIN is required when the car enters stock — without it we can't create
-    // a unique Vehicle row. For SCRAP the car never enters the inventory, so
-    // VIN can stay blank (the dealer doesn't always copy it for cars that go
-    // straight to the dismantler).
-    if (val.disposition === 'STOCK' && !val.vin) {
+    if (val.disposition === 'STOCK' && !val.licensePlate) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['vin'],
-        message: 'VIN obrigatório quando a viatura entra no stock.',
+        path: ['licensePlate'],
+        message: 'Matrícula obrigatória quando a viatura entra no stock.',
       });
     }
   });
@@ -78,9 +63,8 @@ export const saleCreateSchema = z.object({
    */
   buyerType: BuyerTypeEnum.default('PARTICULAR'),
   /**
-   * Optional trade-in. When present, the allowance is subtracted from
-   * `salePrice` for margin/VAT computation, and (STOCK disposition) a
-   * new Vehicle row is auto-created tied back to this trade-in.
+   * Optional trade-in, recorded as a separate acquisition without changing
+   * this sale's margin/VAT. STOCK creates a new draft Vehicle linked to it.
    */
   tradeIn: tradeInCreateSchema.optional(),
 });

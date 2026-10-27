@@ -401,9 +401,7 @@ export async function createSale(
       let newVehicle: { id: string; brand: string; model: string; year: number } | null = null;
 
       if (ti.disposition === 'STOCK') {
-        // VIN is guaranteed to be present here by the Zod superRefine on
-        // tradeInCreateSchema (STOCK ⇒ vin required). Cast for the Prisma
-        // type which doesn't know about that refinement.
+        // Identification follows the main form: plate required, VIN optional.
         // Enters as DRAFT — the dealer hasn't decided the resale price yet.
         // Stays out of "Marcar como Vendida" and the public listing until
         // explicitly published via publishVehicle().
@@ -420,12 +418,13 @@ export async function createSale(
               year: ti.year,
               fuel: ti.fuel,
               mileage: ti.mileage,
-              vin: ti.vin as string,
+              vin: ti.vin ?? null,
               licensePlate: ti.licensePlate ?? null,
               purchasePrice: new Decimal(ti.allowanceValue as string),
               status: 'DRAFT',
               acquisitionDate: data.saleDate,
               description: ti.notes ?? `Retoma da venda ${sale.id}`,
+              pendingDocFlags: ti.pendingDocFlags,
             },
           });
         } catch (err) {

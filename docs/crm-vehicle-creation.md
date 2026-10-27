@@ -81,3 +81,29 @@ interna quando ambas acontecem na mesma ação. URLs locais usadas pela notifica
 são independentes da pré-visualização e são libertadas ao desmontar a notificação.
 A inicialização do editor de texto já não marca conteúdo equivalente como alterado;
 mudanças reais de texto e formatação continuam a contar como alterações.
+
+## Introdução de retomas na venda
+
+O formulário de venda usa a validação partilhada de retomas no browser, na ação
+SvelteKit e na API. Para entrada em stock, exige matrícula portuguesa e permite
+VIN opcional, validado quando preenchido, em linha com a ficha principal. Marca,
+modelo, ano, combustível, quilometragem e valor atribuído continuam necessários.
+O combustível exige escolha explícita; quilometragem e valor vazios são rejeitados,
+enquanto zero é aceite e valores negativos de retoma são rejeitados.
+
+A retoma entra em DRAFT, com aquisição na data da venda e custo igual ao valor
+atribuído. O preço de revenda continua a ser completado posteriormente na ficha,
+como no fluxo já existente. Não são exigidas fotografias nem informações do site.
+Notas sobre estado/manutenção e as quatro pendências documentais da ficha principal
+podem ser recolhidas logo na venda; as pendências são gravadas na viatura criada.
+No abate, matrícula/VIN permanecem opcionais e não se cria ficha de stock.
+
+A gravação de venda, retoma e viatura permanece na mesma transação; conflitos de
+matrícula/VIN mantêm o formulário preenchido para correção. O botão «Novo cliente»
+na venda usa o estilo primário vermelho, conforme pedido do proprietário.
+
+Verificação: testes de schema, ações reais e criação transacional com base simulada;
+regressões de anulação e consistência financeira; verificação de tipos do backend e
+CRM; formulário real hidratado em Chrome headless a 390 e 1366 px com dados fictícios,
+normalização da matrícula, VIN opcional, valor zero, pendências, retenção após falha e
+abertura do diálogo de cliente. Não foram usados registos reais nem executadas migrations.

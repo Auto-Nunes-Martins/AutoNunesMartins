@@ -49,9 +49,18 @@ function parseForm(fd: FormData) {
         mileage: get('tradeIn.mileage'),
         licensePlate: get('tradeIn.licensePlate') || undefined,
         vin: get('tradeIn.vin') || undefined,
-        allowanceValue: get('tradeIn.allowanceValue') || '0',
+        allowanceValue: get('tradeIn.allowanceValue'),
         disposition: get('tradeIn.disposition'),
         notes: get('tradeIn.notes') || undefined,
+        pendingDocFlags:
+          get('tradeIn.disposition') === 'STOCK'
+            ? {
+                financing: get('tradeIn.pendingDocFlags.financing') === 'true',
+                imt: get('tradeIn.pendingDocFlags.imt') === 'true',
+                registration: get('tradeIn.pendingDocFlags.registration') === 'true',
+                docs: get('tradeIn.pendingDocFlags.docs') === 'true',
+              }
+            : undefined,
       }
     : undefined;
   return {
