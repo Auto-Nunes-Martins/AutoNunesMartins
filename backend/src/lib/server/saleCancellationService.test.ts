@@ -5,10 +5,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import type { SaleCancellationDecision } from '@anm/types';
 
 const mocks = vi.hoisted(() => ({
+  authorized: true,
   db: {
     sale: { findUnique: vi.fn(), update: vi.fn(), findMany: vi.fn() },
     vehicle: { update: vi.fn() },
-    activityLog: { create: vi.fn() },
+    activityLog: { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), updateMany: vi.fn() },
+    tradeIn: { update: vi.fn(), delete: vi.fn() },
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),
   },
@@ -18,7 +20,15 @@ vi.mock('../../db.js', () => ({ prisma: mocks.db }));
 vi.mock('../../env.js', () => ({ getEnv: () => ({ CLERK_SECRET_KEY: 'isolated-test-secret' }) }));
 vi.mock('../data/cache.js', () => ({ cache: mocks.cache }));
 vi.mock('../../middleware/clerk.js', () => ({
-  requireUser: (req: { user?: unknown }, _res: unknown, next: () => void) => {
+  requireUser: (
+    req: { user?: unknown },
+    res: { status: (code: number) => { json: (body: unknown) => void } },
+    next: () => void,
+  ) => {
+    if (!mocks.authorized) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
     req.user = { id: 'admin', name: 'Admin' };
     next();
   },
@@ -42,6 +52,9 @@ function fixture(tradeIn = false) {
     pendingDocFlags: { financing: true, docs: true },
     expenses: [{ id: 'expense-original', amount: '100' }],
     updatedAt: new Date('2026-10-01'),
+    createdAt: new Date('2026-09-01'),
+    acquisitionDate: new Date('2026-09-01'),
+    salesHistory: [] as { id: string; saleDate: Date; cancelledAt: Date | null }[],
   };
   const resultingVehicle = {
     ...structuredClone(vehicle),
@@ -63,6 +76,7 @@ function fixture(tradeIn = false) {
     realProfit: '4000',
     vatAmount: '1000',
     saleDate: new Date('2026-10-01'),
+    createdAt: new Date('2026-10-01'),
     deliveryDate: new Date('2026-10-03'),
     deliveryStatus: 'DELIVERED',
     customer: { id: 'customer', name: 'Cliente' },
@@ -93,8 +107,20 @@ const confirmed = async (input = decision) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.authorized = true;
   state = fixture();
-  mocks.db.sale.findUnique.mockImplementation(async () => structuredClone(state));
+  mocks.db.sale.findUnique.mockImplementation(async ({ where }) =>
+    where.id && where.id !== 'sale'
+      ? {
+          ...structuredClone(state),
+          id: where.id,
+          originalVehicleId: 'retoma',
+          vehicle: structuredClone(state.tradeIn!.resultingVehicle),
+          tradeIn: null,
+        }
+      : structuredClone(state),
+  );
+  mocks.db.activityLog.findMany.mockResolvedValue([]);
   mocks.db.sale.update.mockImplementation(async ({ data }) => {
     Object.assign(state, data);
     return state;
@@ -119,7 +145,7 @@ describe('sale cancellation decisions and atomic effects', () => {
   it('preserves a sale without trade-in, delivery, documents and costs while releasing only the active link', async () => {
     const payload = await confirmed();
     const review = await previewSaleCancellation('sale', decision);
-    expect(review.effects.join(' ')).toContain('não efectua pagamentos');
+    expect(review.effects.join(' ')).toContain('nem efetua pagamentos');
     await cancelSale('sale', payload, actor);
     expect(state).toMatchObject({
       vehicleId: null,
@@ -186,7 +212,7 @@ describe('sale cancellation decisions and atomic effects', () => {
       };
       await cancelSale('sale', await confirmed(input), actor);
       expect(state.tradeIn!.resultingVehicle).toMatchObject({
-        status: status === 'DRAFT' ? 'DRAFT' : 'AVAILABLE',
+        status,
         purchasePrice: '4200.50',
         webPublished: false,
         expenses: [{ amount: '250' }],
@@ -194,7 +220,7 @@ describe('sale cancellation decisions and atomic effects', () => {
       expect(state.tradeIn!.allowanceValue).toBe('3000');
       expect(state.cancellationDecision).toMatchObject({
         independentPurchasePrice: '4200.50',
-        snapshot: { tradeIn: { resultingVehicle: { purchasePrice: '3000' } } },
+        snapshot: { tradeIn: null },
       });
     },
   );
@@ -354,5 +380,15 @@ describe('authenticated cancellation HTTP endpoints', () => {
     expect(await response.json()).toMatchObject({ dependencySaleId: 'later-sale' });
     mocks.db.sale.findUnique.mockRejectedValueOnce(new Error('isolated failure'));
     expect((await post('preview', decision)).status).toBe(500);
+  });
+  it('requires authentication for context, review and confirmation before reading or writing sales', async () => {
+    mocks.authorized = false;
+    expect((await fetch(`${url}/context`)).status).toBe(401);
+    expect((await post('preview', decision)).status).toBe(401);
+    expect(
+      (await post('confirm', { decision, confirmed: true, reviewToken: 'token' })).status,
+    ).toBe(401);
+    expect(mocks.db.sale.findUnique).not.toHaveBeenCalled();
+    expect(mocks.db.sale.update).not.toHaveBeenCalled();
   });
 });

@@ -85,8 +85,9 @@ export interface SaleDetailResponse {
   cancellationReason: string | null;
   cancelledBy: string | null;
   cancellationDecision: {
-    tradeInAction?: 'RETURN' | 'KEEP';
+    tradeInAction?: 'RETURN' | 'KEEP' | 'DELETE';
     independentPurchasePrice?: string;
+    independentAcquisitionDate?: string;
   } | null;
   id: string;
   vehicleId: string | null;
@@ -166,7 +167,39 @@ export interface CreateSaleResponse {
 
 type Ev = Pick<RequestEvent, 'locals' | 'fetch'>;
 
-export interface CancellationReview {
+export interface ResolutionContext {
+  followingVehicles: {
+    id: string;
+    label: string;
+    licensePlate: string | null;
+    purchasePrice: string;
+    sold: boolean;
+  }[];
+  dependencies: {
+    saleId: string;
+    vehicleId: string;
+    label: string;
+    licensePlate: string | null;
+    saleDate: string;
+    salePrice: string;
+    realProfit: string;
+    vatAmount: string;
+  }[];
+  deletionBlockers: string[];
+  canDeleteTradeIn: boolean;
+  tradeIn: {
+    id: string;
+    label: string;
+    licensePlate: string | null;
+    status: string;
+    purchasePrice: string;
+    acquisitionDate: string;
+    expensesCount: number;
+    expensesTotal: string;
+    hasLaterSale: boolean;
+  } | null;
+}
+export interface CancellationReview extends Omit<ResolutionContext, 'tradeIn'> {
   saleId: string;
   vehicleId: string;
   decision: SaleCancellationDecision;
@@ -189,11 +222,25 @@ export interface CancellationReview {
     purchasePrice: string;
     expensesTotal: string;
     nextStatus: string;
+    nextPurchasePrice: string;
+    nextAcquisitionDate: string;
   } | null;
+  affectedSale: {
+    id: string;
+    beforeProfit: string;
+    afterProfit: string;
+    beforeVat: string;
+    afterVat: string;
+  } | null;
+  eliminated: string[];
+  preserved: string[];
   effects: string[];
 }
 
 export const salesApi = {
+  resolutionContext(event: Ev, id: string): Promise<ResolutionContext> {
+    return apiJson(event, `/api/sales/${id}/cancellation/context`);
+  },
   previewCancellation(
     event: Ev,
     id: string,
@@ -208,7 +255,7 @@ export const salesApi = {
     event: Ev,
     id: string,
     body: SaleCancellation,
-  ): Promise<{ vehicleId: string; saleId: string; alreadyCancelled: boolean }> {
+  ): Promise<{ vehicleId: string; saleId: string; alreadyCancelled: boolean; deleted: boolean }> {
     return apiJson(event, `/api/sales/${id}/cancellation/confirm`, {
       method: 'POST',
       body: JSON.stringify(body),

@@ -73,7 +73,16 @@ export type SaleCreate = z.infer<typeof saleCreateSchema>;
 export const saleCancellationDecisionSchema = z
   .object({
     reason: z.string().trim().min(3, 'Indique o motivo (3 a 500 caracteres).').max(500),
-    tradeInAction: z.enum(['RETURN', 'KEEP']).optional(),
+    operation: z.enum(['CANCEL', 'DELETE']).optional(),
+    tradeInAction: z.enum(['RETURN', 'KEEP', 'DELETE']).optional(),
+    independentAcquisitionDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Indique a data de aquisição.')
+      .refine((value) => {
+        const date = new Date(`${value}T00:00:00.000Z`);
+        return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+      }, 'Data de aquisição inválida.')
+      .optional(),
     independentPurchasePrice: moneySchema
       .refine(
         (value) => Number(value) >= 0 && Number(value) <= 9999999999.99,
@@ -97,14 +106,35 @@ export const saleCancellationDecisionSchema = z
         message: 'O valor de aquisição aplica-se apenas à retoma mantida.',
       });
     }
+    if (value.tradeInAction !== 'KEEP' && value.independentAcquisitionDate !== undefined)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['independentAcquisitionDate'],
+        message: 'A data de aquisição aplica-se à retoma mantida.',
+      });
+    if (value.tradeInAction === 'DELETE' && value.operation !== 'DELETE')
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['tradeInAction'],
+        message: 'Só pode eliminar uma retoma criada por engano ao corrigir o registo da venda.',
+      });
   });
 export const saleCancellationSchema = z
   .object({
     decision: saleCancellationDecisionSchema,
     confirmed: z.literal(true),
     reviewToken: z.string().min(1),
+    deletionConfirmation: z.literal('ELIMINAR').optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.decision.operation === 'DELETE' && value.deletionConfirmation !== 'ELIMINAR')
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['deletionConfirmation'],
+        message: 'Escreva ELIMINAR para confirmar a correção definitiva.',
+      });
+  });
 export type SaleCancellationDecision = z.infer<typeof saleCancellationDecisionSchema>;
 export type SaleCancellation = z.infer<typeof saleCancellationSchema>;
 

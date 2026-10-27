@@ -130,10 +130,16 @@
         >Editar viatura e preços</Button
       >
       <Button variant="outline" href={crmPath(`/clientes/${c.id}`)}>Ver cliente</Button>
+      {#if !s.cancelledAt}<Button variant="danger" href="#resolver-venda">Anular ou corrigir</Button
+        >{/if}
     </div>
   </div>
 
-  {#if s.cancelledAt}<CancellationPanel sale={s} />{/if}
+  {#if s.cancelledAt}<CancellationPanel
+      sale={s}
+      context={data.resolutionContext}
+      form={form && 'cancellation' in form ? form : null}
+    />{/if}
   <!-- Profit summary. When a financing-referral commission was captured at
        sale time, it gets its own cell between IVA and Lucro Real so the
        breakdown clearly shows what's the vehicle margin and what's the
@@ -216,9 +222,9 @@
   </Panel>
 
   <!-- Consolidated trade-in profit appears only when the sold car originally entered stock as a trade-in. It combines the original deal profit, partly retained as the car, with this sale profit to show the effective result of both deals. -->
-  {#if v.sourceTradeIn && !s.cancelledAt && !v.sourceTradeIn.sale.cancelledAt}
-    {@const origin = v.sourceTradeIn}
-    {@const originalProfit = Number(origin.sale.realProfit)}
+  {#if v.sourceTradeIn?.sale && !s.cancelledAt && !v.sourceTradeIn.sale.cancelledAt}
+    {@const origin = v.sourceTradeIn.sale}
+    {@const originalProfit = Number(origin.realProfit)}
     {@const thisProfit = Number(s.realProfit)}
     {@const consolidated = originalProfit + thisProfit}
     <Panel>
@@ -230,7 +236,7 @@
       <div class="p-5 space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
           <a
-            href={crmPath(`/vendas/${origin.sale.id}`)}
+            href={crmPath(`/vendas/${origin.id}`)}
             class="group block"
             title="Abrir a venda que originou esta retoma"
           >
@@ -253,8 +259,8 @@
             <div
               class="font-mono text-[10.5px] tracking-[0.04em] text-[var(--color-text-muted)] mt-0.5 truncate"
             >
-              {origin.sale.vehicle.brand}
-              {origin.sale.vehicle.model} → {origin.sale.customer.name}
+              {origin.vehicle.brand}
+              {origin.vehicle.model} → {origin.customer.name}
             </div>
           </a>
           <div>
@@ -475,7 +481,6 @@
           </span>
           <DateInput
             name="deliveryDate"
-
             value={s.deliveryDate ? s.deliveryDate.slice(0, 10) : ''}
             class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)]"
             style="border-radius: var(--radius-btn);"
@@ -499,13 +504,17 @@
         {/each}
       </div>
     {:then tl}
-        <PanelHeader icon={Activity} title="Histórico do negócio" meta={tl._error ? undefined : `${tl.total} EVENTOS`} />
-        {#if tl._error}
-          <div class="p-5 space-y-3" role="alert">
-            <p class="text-[13px] text-[var(--color-text-muted)]">{tl._error}</p>
-            <ErrorRecovery status={tl._status ?? 503} />
-          </div>
-        {:else if tl.items.length === 0}
+      <PanelHeader
+        icon={Activity}
+        title="Histórico do negócio"
+        meta={tl._error ? undefined : `${tl.total} EVENTOS`}
+      />
+      {#if tl._error}
+        <div class="p-5 space-y-3" role="alert">
+          <p class="text-[13px] text-[var(--color-text-muted)]">{tl._error}</p>
+          <ErrorRecovery status={tl._status ?? 503} />
+        </div>
+      {:else if tl.items.length === 0}
         <div
           class="p-8 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
         >

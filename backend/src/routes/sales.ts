@@ -21,9 +21,26 @@ import {
   cancelSale,
   previewSaleCancellation,
   SaleCancellationError,
+  getSaleResolutionContext,
 } from '../lib/server/saleCancellationService.js';
 
 const router = Router();
+
+router.get(
+  '/:id/cancellation/context',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    try {
+      res.set('Cache-Control', 'no-store').json(await getSaleResolutionContext(param(req, 'id')));
+    } catch (err) {
+      if (err instanceof SaleCancellationError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
+  }),
+);
 
 const deliveryUpdateSchema = z.object({
   deliveryStatus: DeliveryStatusEnum,

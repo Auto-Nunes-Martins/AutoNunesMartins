@@ -85,4 +85,76 @@ describe('CRM cancellation form actions', () => {
       await actions.cancelSale!(event({ reason, confirmed: 'yes', reviewToken: 'token' })),
     ).toMatchObject({ status: 409, data: { error: 'Volte a rever os efeitos.' } });
   });
+  it('forwards only B acquisition value/date for review, with no fields for later C/D', async () => {
+    mocks.preview.mockResolvedValue({ reviewToken: 'review' });
+    await actions.reviewCancellation!(
+      event({
+        reason,
+        operation: 'CANCEL',
+        tradeInAction: 'KEEP',
+        independentPurchasePrice: '4500',
+        independentAcquisitionDate: '2026-10-01',
+      }),
+    );
+    expect(mocks.preview).toHaveBeenCalledWith(expect.anything(), 'sale', {
+      reason,
+      operation: 'CANCEL',
+      tradeInAction: 'KEEP',
+      independentPurchasePrice: '4500',
+      independentAcquisitionDate: '2026-10-01',
+    });
+  });
+  it('requires typed confirmation before definitive correction reaches the API', async () => {
+    for (const deletionConfirmation of [undefined, 'eliminar', 'SIM']) {
+      expect(
+        await actions.cancelSale!(
+          event({
+            reason,
+            operation: 'DELETE',
+            confirmed: 'yes',
+            reviewToken: 'token',
+            deletionConfirmation,
+          }),
+        ),
+      ).toMatchObject({ status: 400 });
+    }
+    expect(mocks.cancel).not.toHaveBeenCalled();
+  });
+  it('redirects after deleting an erroneous sale and forwards the explicit correction decision', async () => {
+    mocks.cancel.mockResolvedValue({ deleted: true });
+    await expect(
+      actions.cancelSale!(
+        event({
+          reason,
+          operation: 'DELETE',
+          tradeInAction: 'DELETE',
+          confirmed: 'yes',
+          reviewToken: 'token',
+          deletionConfirmation: 'ELIMINAR',
+        }),
+      ),
+    ).rejects.toMatchObject({ status: 303, location: '/vendas?eliminada=1' });
+    expect(mocks.cancel).toHaveBeenCalledWith(
+      expect.anything(),
+      'sale',
+      expect.objectContaining({
+        decision: { reason, operation: 'DELETE', tradeInAction: 'DELETE' },
+        deletionConfirmation: 'ELIMINAR',
+        confirmed: true,
+      }),
+    );
+  });
+  it('rejects invalid calendar dates rather than normalizing them into another month', async () => {
+    expect(
+      await actions.reviewCancellation!(
+        event({
+          reason,
+          tradeInAction: 'KEEP',
+          independentPurchasePrice: '4500',
+          independentAcquisitionDate: '2026-02-31',
+        }),
+      ),
+    ).toMatchObject({ status: 400 });
+    expect(mocks.preview).not.toHaveBeenCalled();
+  });
 });

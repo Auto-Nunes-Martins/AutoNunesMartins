@@ -13,7 +13,10 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
   try {
-    const sale = await salesApi.get(event, event.params.id);
+    const [sale, resolutionContext] = await Promise.all([
+      salesApi.get(event, event.params.id),
+      salesApi.resolutionContext(event, event.params.id),
+    ]);
 
     // Build the timeline by asking the activity log for every event whose
     // entity is either *this sale* or *the vehicle linked to the sale*. The
@@ -21,26 +24,25 @@ export const load: PageServerLoad = async (event) => {
     // or "viatura adicionada", since the doc-checklist lives on the Vehicle
     // model (pendingDocFlags), not on the Sale. Streamed so the rest of the
     // page renders immediately.
-    const timeline: Promise<ActivityListResult & { _error?: string; _status?: number }> = activityApi
-      .list(event, {
-        scope: [
-          { type: 'sale', id: sale.id },
-          { type: 'vehicle', id: sale.vehicle.id },
-        ],
-        pageSize: 100,
-      })
-      .catch(
-        (err) => ({
+    const timeline: Promise<ActivityListResult & { _error?: string; _status?: number }> =
+      activityApi
+        .list(event, {
+          scope: [
+            { type: 'sale', id: sale.id },
+            { type: 'vehicle', id: sale.vehicle.id },
+          ],
+          pageSize: 100,
+        })
+        .catch((err) => ({
           items: [],
           total: 0,
           page: 1,
           pageSize: 100,
           pageCount: 1,
           ...apiFailure(err),
-        }),
-      );
+        }));
 
-    return { sale, timeline };
+    return { sale, timeline, resolutionContext };
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Venda não encontrada');
@@ -60,8 +62,10 @@ export const actions: Actions = {
     const fd = await event.request.formData();
     const parsed = saleCancellationDecisionSchema.safeParse({
       reason: fd.get('reason'),
+      operation: fd.get('operation') || undefined,
       tradeInAction: fd.get('tradeInAction') || undefined,
       independentPurchasePrice: fd.get('independentPurchasePrice') || undefined,
+      independentAcquisitionDate: fd.get('independentAcquisitionDate') || undefined,
     });
     if (!parsed.success)
       return fail(400, {
@@ -90,11 +94,14 @@ export const actions: Actions = {
     const parsed = saleCancellationSchema.safeParse({
       decision: {
         reason: fd.get('reason'),
+        operation: fd.get('operation') || undefined,
         tradeInAction: fd.get('tradeInAction') || undefined,
         independentPurchasePrice: fd.get('independentPurchasePrice') || undefined,
+        independentAcquisitionDate: fd.get('independentAcquisitionDate') || undefined,
       },
       reviewToken: fd.get('reviewToken'),
       confirmed: fd.get('confirmed') === 'yes',
+      deletionConfirmation: fd.get('deletionConfirmation') || undefined,
     });
     if (!parsed.success)
       return fail(400, {
@@ -102,7 +109,8 @@ export const actions: Actions = {
         error: 'Reveja os efeitos e confirme explicitamente a anulação.',
       });
     try {
-      await salesApi.cancel(event, event.params.id, parsed.data);
+      const result = await salesApi.cancel(event, event.params.id, parsed.data);
+      if (result.deleted) redirect(303, crmPath('/vendas?eliminada=1'));
     } catch (err) {
       if (err instanceof ApiError)
         return fail(err.status, {
