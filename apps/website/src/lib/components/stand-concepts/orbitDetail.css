@@ -1005,9 +1005,15 @@
   .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step { transition: none; }
 }
 
-.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-expand {
-  position:absolute;top:var(--photo-arrow-inset);left:var(--photo-arrow-inset);z-index:3;display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;border:1px solid #ffffff80;border-radius:8px;background:#111c;color:white;box-shadow:0 2px 10px #0007;cursor:pointer;
+/* Only the principal photo uses this paired treatment; other favourite hearts stay unchanged. */
+.design.orbit.orbit-detail.public-detail .photo-image-actions {position:absolute;top:var(--photo-arrow-inset);right:var(--photo-arrow-inset);z-index:3;display:flex;align-items:center;gap:4px;}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .detail-photo-favorite {position:static;}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand {display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:white;box-shadow:none;cursor:pointer;}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand svg {width:20px;height:20px;filter:drop-shadow(0 1px 1px #000e) drop-shadow(0 0 2px #000b);}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .detail-photo-favorite svg {width:22px;height:22px;stroke-width:1.7;}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand:focus-visible {outline:2px solid white;outline-offset:3px;box-shadow:0 0 0 4px #0009;}
+@media(hover:hover) {
+  .design.orbit.orbit-detail.public-detail .photo-image-actions :is(.photo-expand,.detail-photo-favorite button):hover {background:#0004;}
+  .design.orbit.orbit-detail.public-detail .photo-image-actions :is(.photo-expand,.detail-photo-favorite button):hover svg {stroke-width:2;}
 }
-.design.orbit.orbit-detail.public-detail .photo-expand:focus-visible {outline:2px solid white;outline-offset:3px;}
-@media(hover:hover) {.design.orbit.orbit-detail.public-detail .photo-expand:hover {background:#42464c;border-color:white;}}
-.design.orbit.orbit-detail.public-detail .photo-expand:active {background:#60656b;}
+.design.orbit.orbit-detail.public-detail .photo-image-actions :is(.photo-expand,.detail-photo-favorite button):active {background:#0007;}

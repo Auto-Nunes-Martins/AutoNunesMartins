@@ -65,7 +65,7 @@
     Mail,
     CalendarDays,
     Fuel,
-    Maximize2,
+    Maximize,
   } from 'lucide-svelte';
   import { cars, photo, eur, number } from './data';
   import { responsivePhoto, cardImageSizes, publicCardImageSizes } from './images';
@@ -910,18 +910,20 @@
                   aria-label="A carregar fotografia"><span aria-hidden="true"></span></span
                 >{/if}
               {#if publicVehicle && !isContactSlide}
-                {#if publicVehicle.photos.length}<button
-                  type="button"
-                  class="photo-expand"
-                  aria-label="Abrir em ecrã inteiro"
-                  title="Abrir em ecrã inteiro"
-                  onclick={openGallery}><Maximize2 size={22} aria-hidden="true" /></button>{/if}
-                <div class="detail-photo-favorite">
-                  <FavoriteButton
-                    id={publicVehicle.slug}
-                    name={`${publicVehicle.brand} ${publicVehicle.model}`}
-                    onPhoto
-                  />
+                <div class="photo-image-actions">
+                  {#if publicVehicle.photos.length}<button
+                    type="button"
+                    class="photo-expand"
+                    aria-label="Abrir em ecrã inteiro"
+                    title="Abrir em ecrã inteiro"
+                    onclick={openGallery}><Maximize size={20} strokeWidth={1.6} aria-hidden="true" /></button>{/if}
+                  <div class="detail-photo-favorite">
+                    <FavoriteButton
+                      id={publicVehicle.slug}
+                      name={`${publicVehicle.brand} ${publicVehicle.model}`}
+                      onPhoto
+                    />
+                  </div>
                 </div>
                 <div class="detail-photo-compare">
                   <CompareButton
