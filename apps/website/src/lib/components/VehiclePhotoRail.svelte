@@ -127,7 +127,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    cursor: zoom-in;
+    cursor: pointer;
   }
   button:focus-visible {
     outline: 2px solid var(--red);

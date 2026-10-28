@@ -936,3 +936,78 @@
     object-fit: contain;
   }
 }
+/* Inline photo navigation: larger targets, comfortably inset from the image edge. */
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage {
+  --photo-arrow-inset: 24px;
+  overflow: clip;
+}
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 0;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, -50%, 0);
+  background: #111d;
+  border-color: #ffffff90;
+  color: white;
+  box-shadow: 0 2px 10px #0007;
+  transition: opacity 220ms ease, transform 280ms cubic-bezier(.2,.7,.2,1), background-color 150ms ease, border-color 150ms ease;
+}
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-previous {
+  --photo-arrow-enter-x: calc(-100% - var(--photo-arrow-inset));
+  left: var(--photo-arrow-inset);
+}
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-next {
+  --photo-arrow-enter-x: calc(100% + var(--photo-arrow-inset));
+  right: var(--photo-arrow-inset);
+}
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step svg {
+  width: 26px;
+  height: 26px;
+}
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step[aria-disabled='true'] {
+  opacity: .35;
+}
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage:not(:hover):not(:focus-within) > .photo-step,
+  .design.orbit.orbit-detail.public-detail.gallery-pointer-focus .vehicle-photo-stage:not(:hover) > .photo-step {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(var(--photo-arrow-enter-x), -50%, 0);
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step:not([aria-disabled='true']):hover {
+    background: #42464c;
+    border-color: white;
+  }
+}
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step:not([aria-disabled='true']):active {
+  background: #60656b;
+}
+@media (max-width: 700px), (pointer: coarse) {
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage { --photo-arrow-inset: 16px; }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step svg { width: 24px; height: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step { transition: none; }
+}
+
+.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-expand {
+  position:absolute;top:var(--photo-arrow-inset);left:var(--photo-arrow-inset);z-index:3;display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;border:1px solid #ffffff80;border-radius:8px;background:#111c;color:white;box-shadow:0 2px 10px #0007;cursor:pointer;
+}
+.design.orbit.orbit-detail.public-detail .photo-expand:focus-visible {outline:2px solid white;outline-offset:3px;}
+@media(hover:hover) {.design.orbit.orbit-detail.public-detail .photo-expand:hover {background:#42464c;border-color:white;}}
+.design.orbit.orbit-detail.public-detail .photo-expand:active {background:#60656b;}

@@ -8,8 +8,8 @@ html:has(dialog.gallery-dialog[open]) {
   top: 50dvh;
   transform: translate(-50%, -50%);
   margin: 0;
-  width: min(1960px, calc(100vw - 64px));
-  height: min(1180px, calc(100dvh - clamp(40px, 7dvh, 88px)));
+  width: min(1960px, calc(100vw - 32px));
+  height: min(1400px, calc(100dvh - 24px));
   max-width: calc(100vw - 32px);
   max-height: calc(100dvh - 24px);
   padding: 8px;
@@ -21,18 +21,18 @@ html:has(dialog.gallery-dialog[open]) {
 }
 .design.orbit .gallery-dialog[open] {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
-  gap: 10px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
 }
 .design.orbit .gallery-dialog .viewer-stage {
   position: relative;
   min-height: 0;
-  padding: 0 64px;
+  padding: 0 56px;
   user-select: none;
   -webkit-user-select: none;
 }
 .design.orbit .gallery-dialog::backdrop {
-  background: rgb(8 8 12 / 62%);
+  background: rgb(8 8 10 / 76%);
   backdrop-filter: blur(4px);
 }
 .design.orbit .gallery-dialog img {
@@ -60,12 +60,13 @@ html:has(dialog.gallery-dialog[open]) {
 .design.orbit .gallery-dialog #gallery-caption {
   text-align: center;
   margin: 0;
-  padding: 6px;
+  padding: 2px 6px;
   border-radius: 6px;
   background: #111b;
   color: white;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .design.orbit .gallery-dialog :is(.dialog-close, .viewer-step) {
   display: grid;
@@ -165,12 +166,12 @@ html:has(dialog.gallery-dialog[open]) {
     max-width: 100%;
     height: 100dvh;
     max-height: 100dvh;
-    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
-      max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-    background: #0b0c0e;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: #12121452;
   }
   .design.orbit .gallery-dialog .viewer-stage {
-    padding: 48px 0 0;
+    padding: 0;
     box-sizing: border-box;
   }
   .design.orbit .gallery-dialog .dialog-close {
@@ -186,7 +187,7 @@ html:has(dialog.gallery-dialog[open]) {
   }
   .design.orbit .gallery-dialog .viewer-thumbnails {
     gap: 8px;
-    padding: 6px 2px;
+    padding: 2px;
   }
   .design.orbit .gallery-dialog .viewer-thumbnails button {
     flex-basis: 76px;
@@ -243,7 +244,7 @@ html:has(dialog.gallery-dialog[open]) {
   transition: none;
 }
 .design.orbit .gallery-dialog::backdrop {
-  background: rgb(8 8 12 / calc(0.62 * var(--viewer-dismiss-opacity, 1)));
+  background: rgb(8 8 10 / calc(0.76 * var(--viewer-dismiss-opacity, 1)));
   backdrop-filter: blur(calc(4px * var(--viewer-dismiss-opacity, 1)));
 }
 .design.orbit .gallery-dialog :is(#gallery-caption, .viewer-thumbnails, .viewer-controls button) {
@@ -251,7 +252,7 @@ html:has(dialog.gallery-dialog[open]) {
 }
 @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .design.orbit .gallery-dialog {
-    background: rgb(11 12 14 / var(--viewer-dismiss-opacity, 1));
+    background: rgb(18 18 20 / calc(.32 * var(--viewer-dismiss-opacity, 1)));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -333,4 +334,25 @@ html:has(dialog.gallery-dialog[open]) {
   .design.orbit .gallery-dialog .viewer-thumbnails button {
     transition: none;
   }
+}
+
+/* A compact heading uses the close-button row instead of reserving a second footer. */
+.design.orbit .gallery-dialog .viewer-heading {position:relative;grid-row:1;z-index:3;display:flex;align-items:center;gap:14px;min-width:0;}
+.design.orbit .gallery-dialog .viewer-heading #gallery-caption {flex:1;display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0;padding:2px 4px;background:transparent;text-align:left;font-size:12px;line-height:1.35;}
+.design.orbit .gallery-dialog .viewer-vehicle-name {min-width:0;font-weight:500;overflow-wrap:anywhere;}
+.design.orbit .gallery-dialog .viewer-photo-position {flex:none;min-width:6.5ch;text-align:right;white-space:nowrap;color:#ffffffb3;font-variant-numeric:tabular-nums;}
+.design.orbit .gallery-dialog .viewer-heading .dialog-close {position:static;flex:none;transform:none;}
+.design.orbit .gallery-dialog .viewer-stage {grid-row:2;}
+.design.orbit .gallery-dialog .viewer-thumbnails {grid-row:3;}
+@media (max-height:500px) and (pointer:coarse) {
+  .design.orbit .gallery-dialog[open] {grid-template-rows:auto minmax(0,1fr);}
+  .design.orbit .gallery-dialog .viewer-heading {grid-column:1;grid-row:1;}
+  .design.orbit .gallery-dialog .viewer-stage {grid-column:1;grid-row:2;}
+  .design.orbit .gallery-dialog .viewer-thumbnails {grid-column:2;grid-row:1 / -1;padding-top:56px;}
+  .design.orbit .gallery-dialog .viewer-heading .dialog-close {position:absolute;right:-62px;top:0;}
+}
+
+.design.orbit .gallery-dialog .viewer-thumbnails {position:relative;z-index:2;}
+@starting-style {
+  .design.orbit .gallery-dialog[open]::backdrop {background-color:rgb(8 8 10 / 0);backdrop-filter:blur(0);}
 }

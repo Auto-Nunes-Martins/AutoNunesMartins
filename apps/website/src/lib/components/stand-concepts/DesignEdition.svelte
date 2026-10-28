@@ -31,7 +31,7 @@
   import orbitFont600 from '@fontsource/inter/files/inter-latin-600-normal.woff2?url';
   import orbitTitleFont from '@fontsource/barlow/files/barlow-latin-600-normal.woff2?url';
   import orbitTitleItalic from '@fontsource/barlow/files/barlow-latin-600-italic.woff2?url';
-  import { onMount, tick, untrack } from 'svelte';
+  import { onMount, onDestroy, tick, untrack } from 'svelte';
   import { usePublicTheme } from '$lib/publicTheme';
   import {
     emptyStock,
@@ -65,6 +65,7 @@
     Mail,
     CalendarDays,
     Fuel,
+    Maximize2,
   } from 'lucide-svelte';
   import { cars, photo, eur, number } from './data';
   import { responsivePhoto, cardImageSizes, publicCardImageSizes } from './images';
@@ -317,13 +318,21 @@
   let confirmationHeading = $state<HTMLHeadingElement>();
   let galleryDialog: HTMLDialogElement;
   let preparingViewer = false;
+  let stopOpening: (() => void) | undefined;
+  onDestroy(() => stopOpening?.());
   async function openGallery() {
     if (preparingViewer || galleryOpen) return;
+    stopOpening?.();
+    const source = document.querySelector<HTMLImageElement>('.vehicle-photo .photo-rail-slide:not([inert]) img');
+    const opening = galleryRuntime?.captureOpeningPhoto(source);
     preparingViewer = true;
     galleryOpen = true;
     await tick();
     preparingViewer = false;
-    if (galleryOpen) galleryDialog.showModal();
+    if (galleryOpen) {
+      galleryDialog.showModal();
+      stopOpening = galleryRuntime?.animateGalleryOpening(galleryDialog, opening);
+    }
   }
   const gallerySession = $derived(
     publicVehicle?.photos.length ? createPublicGallerySession(publicVehicle) : undefined,
@@ -901,6 +910,12 @@
                   aria-label="A carregar fotografia"><span aria-hidden="true"></span></span
                 >{/if}
               {#if publicVehicle && !isContactSlide}
+                {#if publicVehicle.photos.length}<button
+                  type="button"
+                  class="photo-expand"
+                  aria-label="Abrir em ecrã inteiro"
+                  title="Abrir em ecrã inteiro"
+                  onclick={openGallery}><Maximize2 size={22} aria-hidden="true" /></button>{/if}
                 <div class="detail-photo-favorite">
                   <FavoriteButton
                     id={publicVehicle.slug}
@@ -1465,6 +1480,7 @@
     bind:this={galleryDialog}
     use:galleryBackdrop
     onclose={() => {
+      stopOpening?.();
       galleryOpen = false;
     }}
     class="gallery-dialog"
@@ -1472,6 +1488,19 @@
     onkeydown={galleryKeydown}
   >
     {#if car && galleryOpen}
+      <div class="viewer-heading">
+        <p id="gallery-caption">
+          <span class="viewer-vehicle-name" title={car.brand + ' ' + car.model}>{car.brand} {car.model}</span>
+          <span class="viewer-photo-position">{isContactSlide ? 'Fale connosco' : publicVehicle ? (zoom + 1) + ' / ' + galleryPhotoCount : 'Fotografia ilustrativa'}</span>
+        </p>
+        <div class="viewer-controls">
+          <button
+            class="dialog-close icon-button"
+            onclick={() => galleryDialog.close()}
+            aria-label="Fechar fotografia"><X size={25} aria-hidden="true" /></button
+          >
+        </div>
+      </div>
       <div
         class="viewer-stage"
         role="group"
@@ -1507,11 +1536,7 @@
             alt={`${car.brand} ${car.model}${publicVehicle ? '' : ' — fotografia ilustrativa'}`}
           />{/if}
         <div class="viewer-controls">
-          <button
-            class="dialog-close icon-button"
-            onclick={() => galleryDialog.close()}
-            aria-label="Fechar fotografia"><X size={25} aria-hidden="true" /></button
-          >
+
           {#if publicVehicle && galleryCount > 1}
             <button
               type="button"
@@ -1534,14 +1559,7 @@
           {/if}
         </div>
       </div>
-      <p id="gallery-caption">
-        {car.brand}
-        {car.model}{isContactSlide
-          ? ' · Fale connosco'
-          : publicVehicle
-            ? ' · ' + (zoom + 1) + ' / ' + galleryPhotoCount
-            : ' / FOTOGRAFIA ILUSTRATIVA'}
-      </p>
+
       {#if publicVehicle && galleryPhotoCount}
         <div
           class="viewer-thumbnails"

@@ -1,14 +1,11 @@
 type Range = { start: number; end: number };
 
-/** Minimal shift, with one neighbour as context only when both items fit. */
-export function thumbnailScrollTarget(current: number, maximum: number, viewport: Range, selected: Range, neighbour?: Range) {
-  let range = selected;
-  if (neighbour) {
-    const pair = { start: Math.min(selected.start, neighbour.start), end: Math.max(selected.end, neighbour.end) };
-    if (pair.end - pair.start <= viewport.end - viewport.start) range = pair;
-  }
-  const delta = range.start < viewport.start ? range.start - viewport.start : range.end > viewport.end ? range.end - viewport.end : 0;
-  return Math.max(0, Math.min(maximum, current + delta));
+/** Position early, leaving more visible context in the direction of travel. */
+export function thumbnailScrollTarget(current: number, maximum: number, viewport: Range, selected: Range, direction = 0) {
+  const anchor = direction > 0 ? .35 : direction < 0 ? .65 : .5;
+  const desiredCenter = viewport.start + (viewport.end - viewport.start) * anchor;
+  const selectedCenter = (selected.start + selected.end) / 2;
+  return Math.max(0, Math.min(maximum, current + selectedCenter - desiredCenter));
 }
 
 /** Scroll this strip only. Manual scrolling never writes the selected index. */
@@ -29,8 +26,7 @@ export function followThumbnail(node: HTMLElement, index: number) {
     const maximum = (horizontal ? node.scrollWidth : node.scrollHeight) - size;
     const viewport = { start: start + parseFloat(horizontal ? style.paddingLeft : style.paddingTop), end: start + size - parseFloat(horizontal ? style.paddingRight : style.paddingBottom) };
     const range = (item: HTMLElement) => { const rect = item.getBoundingClientRect(); return { start: horizontal ? rect.left : rect.top, end: horizontal ? rect.right : rect.bottom }; };
-    const neighbour = direction ? items[selected + direction] : undefined;
-    const target = thumbnailScrollTarget(current, maximum, viewport, range(active), neighbour && range(neighbour));
+    const target = thumbnailScrollTarget(current, maximum, viewport, range(active), direction);
     if (Math.abs(target - current) < .5) return;
     const write = (value: number) => node.scrollTo({ left: horizontal ? value : node.scrollLeft, top: horizontal ? node.scrollTop : value, behavior: 'instant' });
     if (motion.matches) { write(target); return; }
