@@ -790,6 +790,15 @@
   overflow-wrap: anywhere;
 }
 
+@media (min-width: 701px) {
+  .design.orbit.orbit-detail.public-detail .detail-facts dl > div {
+    padding-inline-end: 8px;
+  }
+  .design.orbit.orbit-detail.public-detail .detail-facts dd {
+    text-align: right;
+  }
+}
+
 /* Real vehicle mobile layout only; shared comparison/favorite behavior is untouched. */
 @media (max-width: 700px) {
   .design.orbit.orbit-detail.public-detail .services {
