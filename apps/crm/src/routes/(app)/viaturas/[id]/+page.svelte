@@ -67,7 +67,7 @@
     <div class="min-w-0">
       <div class="mb-2 flex flex-wrap items-center gap-2">
         <StatusBadge status={v.status} />
-        <WebsiteStatus vehicle={v} />
+        <WebsiteStatus vehicle={v} compact />
         {#if websiteVisibility(v).state === 'blocked'}<span class="text-[13px] text-[var(--color-text-muted)]">{websiteVisibility(v).detail}</span>{/if}
         {#if v.licensePlate}
           <!-- Stylized Portuguese license plate with the authentic blue prefix. -->

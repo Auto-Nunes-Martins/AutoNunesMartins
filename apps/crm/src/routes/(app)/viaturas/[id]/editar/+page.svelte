@@ -350,8 +350,8 @@
   <div id="vehicle-edit-actions" class="edit-save edit-save-top">
     <div class="edit-state">
       <p role="status">{saving ? progress || 'A guardar…' : needsReload ? 'Recarregue a ficha para continuar.' : dirty ? `Alterações por guardar${removedCount ? ` · ${removedCount} fotografia(s) por eliminar` : ''}` : 'Sem alterações por guardar'}</p>
-      {#if needsReload}<span class="publication-state">Publicação por confirmar · recarregue a ficha.</span>{:else}<WebsiteStatus vehicle={baseline} />{/if}
-      {#if websiteVisibility(baseline).state === 'blocked'}<span class="publication-state">{websiteVisibility(baseline).detail}</span>{/if}
+      {#if needsReload}<span class="publication-state publication-unknown">Publicação por confirmar · recarregue a ficha.</span>{:else}<WebsiteStatus vehicle={baseline} />{/if}
+      {#if websiteVisibility(baseline).state === 'blocked'}<span class="publication-state publication-warning">{websiteVisibility(baseline).detail}</span>{/if}
     </div>
     <div class="edit-actions">
       <button type="button" class="publication-action" data-error-field="published" disabled={saving || deleting || needsReload} onclick={() => void saveAll(!baseline.webPublished)}>{saving && publicationIntent !== undefined ? (publicationIntent ? 'A publicar…' : 'A retirar…') : baseline.webPublished ? (dirty ? 'Guardar e retirar do website' : 'Retirar do website') : (dirty ? 'Guardar e publicar no website' : 'Publicar no website')}</button>
@@ -465,8 +465,20 @@
     margin-inline: auto;
     min-width: 0;
   }
-  .edit-save-top { position: sticky; top: 76px; z-index: 15; background: var(--color-bg-elevated); box-shadow: 0 6px 18px #0001; scroll-margin-top: 88px; flex-wrap: wrap; }
-  .edit-save .edit-state {display: grid;grid-template-columns: minmax(0, 1fr);gap: 4px;min-width: 0;flex: 1 1 200px;}
+  .edit-save.edit-save-top { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 16px;position: sticky; top: 76px; z-index: 15; background: var(--color-bg-elevated); box-shadow: 0 6px 18px #0001; scroll-margin-top: 88px; flex-wrap: wrap; }
+  .edit-save-top .edit-state {display:contents;}
+  .edit-save-top .edit-state > p {grid-column:1 / -1;grid-row:1;}
+  .edit-save-top .edit-state > :global(.website-status), .edit-save-top .publication-unknown {grid-column:1;grid-row:2;justify-self:start;max-width:100%;min-width:0;min-height:44px;box-sizing:border-box;display:inline-flex;align-items:center;}
+  .edit-save-top .publication-warning {grid-column:1 / -1;grid-row:3;}
+  .edit-save-top .edit-actions {grid-column:2;grid-row:2;align-items:stretch;}
+  @media (max-width:900px) {
+    .edit-save.edit-save-top {grid-template-columns:minmax(0,1fr);}
+    .edit-save-top .edit-state > p, .edit-save-top .edit-state > :global(.website-status), .edit-save-top .publication-unknown, .edit-save-top .publication-warning, .edit-save-top .edit-actions {grid-column:1;grid-row:auto;}
+    .edit-save-top .edit-state > :global(.website-status), .edit-save-top .publication-unknown {justify-self:stretch;}
+    .edit-save-top .edit-actions {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+    .edit-save-top .publication-action {grid-column:1 / -1;}
+    .edit-save-top button {width:100%;}
+  }
   .publication-state {font-size: 12px;color: var(--color-text-muted);}
   .edit-actions {flex-shrink: 0;}
   .publication-action {font-weight: 600;border-color: var(--color-red);}
@@ -557,7 +569,6 @@
     outline-offset: 3px;
   }
   @media (max-width: 600px) {
-    .edit-save .edit-state {flex: 0 1 auto;}
     .edit-save {
       align-items: stretch;
       flex-direction: column;

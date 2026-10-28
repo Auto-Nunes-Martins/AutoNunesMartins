@@ -1,0 +1,18 @@
+/* Commercial and website chips share proportions; their semantic colours stay distinct. */
+.vehicle-state-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--state-tag-height, 28px);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--state-tag-padding, 5px 8px);
+  border-radius: var(--state-tag-radius, 3px);
+  font-family: var(--state-tag-font, var(--font-mono));
+  font-size: var(--state-tag-size, 11px);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: var(--state-tag-spacing, 0.06em);
+  text-transform: var(--state-tag-transform, uppercase);
+}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '$lib/styles/vehicleStateTags.css';
   import type { VehicleStatus, Priority, DeliveryStatus } from '@anm/types';
   import { taskPriority } from '$lib/components/task/presentation';
 
@@ -93,6 +94,7 @@
 </script>
 
 <span
+  class:vehicle-state-chip={status in VEHICLE_LABELS}
   class="inline-flex items-center font-mono text-[10px] font-semibold uppercase tracking-[0.12em] px-2 py-1"
   style="background: {style.bg}; color: {style.fg}; border: 1px solid color-mix(in srgb, {style.fg} 35%, transparent); border-radius: 3px;"
 >
