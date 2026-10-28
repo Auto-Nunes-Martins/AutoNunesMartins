@@ -1,10 +1,11 @@
 <script lang="ts">
   import original from '$lib/assets/images/orbit-location-map.svg?raw';
-  let { id }: { id: string } = $props();
+  import alternateArtwork from '$lib/assets/images/orbit-location-map-alternate.svg?raw';
+  let { id, alternate = false }: { id: string; alternate?: boolean } = $props();
   // Trusted repository artwork: preserve every path, coordinate and red marker.
   // Only paint tokens change; the original file remains the fallback for V1/2.
   const artwork = $derived(
-    original
+    (alternate ? alternateArtwork : original)
       .replaceAll('neighbourhood', `${id}-neighbourhood`)
       .replaceAll('#dce2d8', 'var(--visit-map-canvas)')
       .replaceAll('#cbd2c7', 'var(--visit-map-block)')

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { locationMap } from '$lib/localAssets';
+  import alternateLocationMap from '$lib/assets/images/orbit-location-map-alternate.svg?url&no-inline';
   import { createContactForm } from '$lib/contactForm.svelte';
   import ContactFeedback from '$lib/components/ContactFeedback.svelte';
   import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
@@ -54,6 +55,7 @@
   } = $props();
   let section: HTMLElement;
   let useReferenceTone = $state(true);
+  let selectedLocation = $state(0);
   const submission = createContactForm();
   const sending = $derived(submission.state.phase === 'sending');
   let fields = $state({ name: '', email: '', subject: 'Informações gerais', message: '' });
@@ -144,13 +146,15 @@
         </h2>
       </div>
 
-      <div class="location" class:original-map={mapArtwork === 'original'}>
+      <div class="location" id={`${id}-map-preview`} class:original-map={mapArtwork === 'original'}>
         {#if mapArtwork === 'original'}
-          {#if background?.theme}<span class="location-map" aria-hidden="true"
+          {#if background?.theme}<span class="location-map" data-map-image="0" class:is-active={selectedLocation===0} aria-hidden="true"
               ><VisitMapArtwork {id} /></span
             >{:else}
             <img
               class="location-map"
+              data-map-image="0"
+              class:is-active={selectedLocation===0}
               src={locationMap}
               alt=""
               width="1728"
@@ -162,6 +166,8 @@
         {:else}
           <svg
             class="location-map"
+            data-map-image="0"
+            class:is-active={selectedLocation===0}
             viewBox="0 0 540 220"
             preserveAspectRatio="xMidYMid slice"
             aria-hidden="true"
@@ -191,9 +197,11 @@
             <circle cx="328" cy="94" r="5.5" fill="white" />
           </svg>
         {/if}
+        {#if background?.theme}<span class="location-map" data-map-image="1" class:is-active={selectedLocation===1} aria-hidden="true"><VisitMapArtwork id={`${id}-alternate`} alternate/></span>
+        {:else}<img class="location-map" data-map-image="1" class:is-active={selectedLocation===1} src={alternateLocationMap} alt="" width="1728" height="684" loading="eager" decoding="async"/>{/if}
         <div class="location-copy">
           <h3><MapPin size={15} aria-hidden="true" /> Encontre-nos</h3>
-          <address>{contact.address ?? 'Morada por confirmar.'}</address>
+          <address>{#if contact.address}<button class="address-choice" type="button" aria-pressed={selectedLocation===0} aria-controls={`${id}-map-preview`} onclick={()=>selectedLocation=0}>{contact.address}</button>{:else}Morada por confirmar.{/if}</address>
           {#if contact.directionsUrl}
             <a
               class="map-link"
@@ -208,7 +216,7 @@
             </a>
           {/if}
           {#if contact.additionalAddress}
-            <address>{contact.additionalAddress}</address>
+            <address><button class="address-choice" type="button" aria-pressed={selectedLocation===1} aria-controls={`${id}-map-preview`} onclick={()=>selectedLocation=1}>{contact.additionalAddress}</button></address>
             <a
               class="map-link"
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.additionalAddress.replace(/\n/g, ', '))}`}
@@ -220,6 +228,8 @@
             </a>
           {/if}
         </div>
+        <span class="map-preview-note">Mapa ilustrativo</span>
+        <span class="sr-only" role="status" aria-live="polite" aria-atomic="true">Pré-visualização ilustrativa: {(selectedLocation===1?contact.additionalAddress:contact.address)?.replace(/\n/g,', ')}</span>
       </div>
 
       <div class="contact-details">
@@ -1420,4 +1430,15 @@
       background: linear-gradient(90deg, #101114b8, #10111491 60%, #101114a6);
     }
   }
+
+  .location .location-map[data-map-image] {opacity:0;pointer-events:none;}
+  .location .location-map[data-map-image].is-active {opacity:var(--map-preview-opacity,.8);}
+  .location.original-map {--map-preview-opacity:1;}
+  .address-choice {display:block;width:calc(100% + 12px);margin:-4px -6px;padding:4px 6px;border:0;border-radius:3px;background:transparent;color:inherit;font:inherit;line-height:inherit;white-space:pre-line;text-align:left;cursor:pointer;}
+  .address-choice[aria-pressed='true'] {background:#ffffff08;box-shadow:inset 2px 0 #ffffff70;}
+  .address-choice:focus-visible {outline:2px solid currentColor;outline-offset:3px;}
+  .map-preview-note {position:absolute;right:10px;bottom:8px;font-size:9px;line-height:1.5;color:#f5f5f1;background:#262626ce;padding:3px 6px;border-radius:2px;pointer-events:none;}
+  @media(hover:hover) {.address-choice:hover {background:#ffffff10;text-decoration:underline;text-underline-offset:4px;}}
+  @media(prefers-reduced-motion:no-preference) {.location .location-map[data-map-image] {transition:opacity 180ms ease;}}
+  @media(max-width:700px) {.location:not(.original-map) {--map-preview-opacity:.65;}.address-choice {min-height:44px;}}
 </style>
