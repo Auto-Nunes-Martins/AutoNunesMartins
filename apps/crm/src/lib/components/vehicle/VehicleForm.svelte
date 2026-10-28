@@ -308,7 +308,7 @@
             class={inputClass()}
             style="border-radius: var(--radius-btn);"
           >
-            <option value="" disabled>Selecionar…</option>
+            <option value="" disabled>Combustível</option>
             {#each FUELS as f (f.value)}
               <option value={f.value}>{f.label}</option>
             {/each}

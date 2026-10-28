@@ -792,7 +792,7 @@
                   class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] transition-colors"
                   style="border-radius: var(--radius-btn);"
                 >
-                  <option value="" disabled>Selecionar combustível</option>
+                  <option value="" disabled>Combustível</option>
                   <option value="GASOLINE">Gasolina</option>
                   <option value="DIESEL">Gasóleo</option>
                   <option value="HYBRID">Híbrido</option>
@@ -824,7 +824,7 @@
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
-                  Matrícula {tradeInDisposition === 'STOCK' ? '(obrigatória)' : '(opcional)'}
+                  Matrícula {tradeInDisposition === 'STOCK' ? '' : '(opcional)'}
                 </span>
                 <input
                   name="tradeIn.licensePlate"
