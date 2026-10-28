@@ -115,23 +115,24 @@
         onclick={() => setFilter('agedStock', undefined)}>Retirar filtro</button
       >
     </div>{/if}
-  <FilterChoiceGroup label="Estado">
-    {#each STATUSES as s (s.value)}
-      <FilterChoice
-        selected={filters.status === s.value}
-        onclick={() => toggleChip('status', s.value, filters.status)}>{s.label}</FilterChoice
-      >
-    {/each}
-  </FilterChoiceGroup>
-  <FilterChoiceGroup label="Combustível">
-    {#each FUELS as f (f.value)}
-      <FilterChoice
-        selected={filters.fuel === f.value}
-        onclick={() => toggleChip('fuel', f.value, filters.fuel)}>{f.label}</FilterChoice
-      >
-    {/each}
-  </FilterChoiceGroup>
-
+  <div class="flex flex-col gap-2">
+    <FilterChoiceGroup label="Estado">
+      {#each STATUSES as s (s.value)}
+        <FilterChoice
+          selected={filters.status === s.value}
+          onclick={() => toggleChip('status', s.value, filters.status)}>{s.label}</FilterChoice
+        >
+      {/each}
+    </FilterChoiceGroup>
+    <FilterChoiceGroup label="Combustível">
+      {#each FUELS as f (f.value)}
+        <FilterChoice
+          selected={filters.fuel === f.value}
+          onclick={() => toggleChip('fuel', f.value, filters.fuel)}>{f.label}</FilterChoice
+        >
+      {/each}
+    </FilterChoiceGroup>
+  </div>
   <!-- Range filters -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
     <label class="flex flex-col gap-1">

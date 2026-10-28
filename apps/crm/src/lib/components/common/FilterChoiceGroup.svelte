@@ -3,36 +3,24 @@
   let { label, children }: { label: string; children?: Snippet } = $props();
 </script>
 
-<fieldset class="filter-choice-group">
-  <legend>{label}</legend>
-  <div class="choice-track">{@render children?.()}</div>
-</fieldset>
+<div class="filter-choice-group" role="group" aria-label={label}>
+  <span class="choice-category">{label}<span aria-hidden="true">:</span></span>
+  {@render children?.()}
+</div>
 
 <style>
   .filter-choice-group {
     min-width: 0;
     max-width: 100%;
-    margin-inline: 0;
-    padding: 0;
-    border: 0;
-  }
-  legend {
-    margin-bottom: 7px;
-    padding: 0;
-    color: var(--color-text-muted);
-    font: 500 10px/1.5 var(--font-mono);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .choice-track {
     display: flex;
     flex-wrap: wrap;
-    gap: 3px;
-    width: fit-content;
-    max-width: 100%;
-    padding: 4px;
-    border: 1px solid var(--color-border);
-    border-radius: calc(var(--radius-card) + 4px);
-    background: var(--color-bg-0);
+    align-items: center;
+    gap: 6px;
+  }
+  .choice-category {
+    flex-shrink: 0;
+    margin-right: 3px;
+    color: var(--color-text-muted);
+    font: 500 12px/1.4 var(--font-sans);
   }
 </style>

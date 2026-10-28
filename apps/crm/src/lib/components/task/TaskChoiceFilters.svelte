@@ -22,16 +22,18 @@
   } = $props();
 </script>
 
-<FilterChoiceGroup label="Prioridade">
-  {#each TASK_PRIORITIES as p (p.value)}
-    <FilterChoice
-      selected={priority === p.value}
-      markerColor={p.color}
-      onclick={() => onpriority(priority === p.value ? undefined : p.value)}>{p.label}</FilterChoice
-    >
-  {/each}
-</FilterChoiceGroup>
-<div class="flex flex-wrap items-end gap-4">
+<div class="task-choice-filters">
+  <FilterChoiceGroup label="Prioridade">
+    {#each TASK_PRIORITIES as p (p.value)}
+      <FilterChoice
+        selected={priority === p.value}
+        markerColor={p.color}
+        onclick={() => onpriority(priority === p.value ? undefined : p.value)}
+        >{p.label}</FilterChoice
+      >
+    {/each}
+  </FilterChoiceGroup>
+
   <FilterChoiceGroup label="Visibilidade">
     {#each [{ value: 'all' as const, label: 'Todas' }, { value: 'mine' as const, label: 'Minhas' }, { value: 'general' as const, label: 'Gerais' }] as opt (opt.value)}
       <FilterChoice selected={scope === opt.value} onclick={() => onscope(opt.value)}
@@ -48,3 +50,12 @@
     >
   </FilterChoiceGroup>
 </div>
+
+<style>
+  .task-choice-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 20px;
+  }
+</style>

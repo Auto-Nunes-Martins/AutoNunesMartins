@@ -829,7 +829,7 @@
     background: var(--color-bg-2);
     color: var(--color-text-muted);
     border: 1px solid var(--color-border);
-    border-radius: 999px;
+    border-radius: 3px;
     box-shadow:
       0 10px 28px rgba(0, 0, 0, 0.4),
       0 2px 6px rgba(0, 0, 0, 0.25);
@@ -1160,10 +1160,17 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 4px;
-    border: 1px solid var(--color-border);
-    border-radius: calc(var(--radius-card) + 4px);
-    background: var(--color-bg-0);
+  }
+  .qt-form-row:has(.qt-chips) {
+    align-items: start;
+  }
+  .qt-form-row:has(.qt-chips) > .qt-form-label {
+    padding-block: 6px;
+  }
+  @media (pointer: coarse) {
+    .qt-form-row:has(.qt-chips) > .qt-form-label {
+      padding-block: 9px;
+    }
   }
   .qt-chip {
     display: inline-flex;
@@ -1177,7 +1184,7 @@
     color: var(--color-text-muted);
     background: transparent;
     border: 1px solid var(--color-border);
-    border-radius: 3px;
+    border-radius: 999px;
     /* Smooth colour-only transition — no scale, no glow. The size of the
        chip stays exactly the same across hover / active / selected so the
        label never appears to jump or flicker. */
@@ -1292,10 +1299,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 3px;
-    padding: 3px;
-    border: 1px solid var(--color-border);
-    border-radius: calc(var(--radius-card) + 4px);
-    background: var(--color-bg-0);
+    align-items: center;
   }
   .qt-empty {
     padding: 22px 14px 26px;
@@ -1538,7 +1542,7 @@
       font-size: 16px;
     }
     .qt-panel.is-mobile .qt-form-row {
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: 66px minmax(0, 1fr);
       gap: 8px;
     }
     .qt-panel.is-mobile .qt-form-label {
@@ -1549,7 +1553,7 @@
       gap: 8px;
     }
     .qt-panel.is-mobile .qt-chip {
-      flex: 1 0 calc(50% - 4px);
+      flex: 0 1 auto;
       min-height: 44px;
       justify-content: center;
       padding: 8px;
@@ -1559,8 +1563,7 @@
       text-transform: none;
     }
     .qt-panel.is-mobile .qt-chips :global(.filter-choice) {
-      flex: 1 0 calc(50% - 4px);
-      font-size: 13px;
+      flex: 0 1 auto;
     }
     .qt-create {
       display: flex;
