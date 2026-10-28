@@ -32,11 +32,11 @@ before(async () => {
   const write = (name,value) => writeFile(path.join(directory,name),value);
   await write('package.json','{"type":"module"}');
   await write('review.css',"@import '../../src/app.css';\n@source '../../src';");
-  await write('App.svelte',`<script>import {onMount} from 'svelte';import EditPage from '$edit';import DetailPage from '$detail';import HomepageHighlightsEditor from '$lib/components/vehicle/HomepageHighlightsEditor.svelte';import VehicleTable from '$lib/components/vehicle/VehicleTable.svelte';import {Toaster} from 'svelte-sonner';let {data,detail=false,mode=""}=$props();onMount(()=>{const refresh=()=>{if(window.reviewNextData)data=structuredClone(window.reviewNextData);};window.addEventListener('fixture-invalidate',refresh);return()=>window.removeEventListener('fixture-invalidate',refresh);});</script><main style="max-width:1280px;margin:auto;padding:96px 20px 40px">{#if mode === "highlights"}<HomepageHighlightsEditor editor={data.editor} selectedVehicleId={data.selectedVehicleId}/>{:else if mode === "list"}<VehicleTable items={data.items}/>{:else if detail}<DetailPage {data}/>{:else}<EditPage {data}/>{/if}</main><Toaster/>`);
+  await write('App.svelte',`<script>import {onMount} from 'svelte';import EditPage from '$edit';import DetailPage from '$detail';import HomepageHighlightsEditor from '$lib/components/vehicle/HomepageHighlightsEditor.svelte';import VehicleTable from '$lib/components/vehicle/VehicleTable.svelte';import {Toaster} from 'svelte-sonner';let {data,detail=false,mode=""}=$props();let returned=$state(false);onMount(()=>{const navigate=()=>returned=true;window.addEventListener("fixture-navigate",navigate);return()=>window.removeEventListener("fixture-navigate",navigate);});onMount(()=>{const refresh=()=>{if(window.reviewNextData)data=structuredClone(window.reviewNextData);};window.addEventListener('fixture-invalidate',refresh);return()=>window.removeEventListener('fixture-invalidate',refresh);});</script><main style="max-width:1280px;margin:auto;padding:96px 20px 40px">{#if returned}<h1>Destino confirmado</h1><p>{window.reviewSavedModel}</p>{:else if mode === "highlights"}<HomepageHighlightsEditor editor={data.editor} selectedVehicleId={data.selectedVehicleId}/>{:else if mode === "list"}<VehicleTable items={data.items}/>{:else if detail}<DetailPage {data}/>{:else}<EditPage {data}/>{/if}</main><Toaster/>`);
   await write('client.js',`import './review.css';import {hydrate} from 'svelte';import App from './App.svelte';hydrate(App,{target:document.querySelector('#app'),props:{data:window.reviewData,detail:window.reviewDetail,mode:window.reviewMode}});window.reviewReady=true;`);
   await write('ssr.js',`import {render} from 'svelte/server';import App from './App.svelte';export const html=(data,detail,mode)=>render(App,{props:{data,detail,mode}}).body;`);
   await write('paths.js',"export const base='';");
-  await write('navigation.js',"export const goto=async()=>{};export const invalidateAll=async()=>{if(typeof window!=='undefined')window.dispatchEvent(new Event('fixture-invalidate'));};");
+  await write('navigation.js',"import {hasUnsavedForms} from '$lib/forms/formFeedback';export const afterNavigate=(callback)=>{if(typeof window!=='undefined')queueMicrotask(()=>callback({from:window.reviewFrom?{url:new URL(window.reviewFrom,location.origin)}:null,to:{url:new URL(location.href)}}));};export const goto=async(href,options)=>{window.reviewNavigation={href,options,dirty:hasUnsavedForms()};if(window.reviewSimulateNavigation){history.pushState({},'',href);window.dispatchEvent(new Event('fixture-navigate'));}};export const invalidateAll=async()=>{if(typeof window!=='undefined')window.dispatchEvent(new Event('fixture-invalidate'));};");
   await write('public.js',"export const PUBLIC_WEBSITE_URL='http://website.fixture';");
   await write('session.js','export const sessionFetch=(...args)=>fetch(...args);');
   await write('enhance.js',`export function enhance(form,callback){const submit=async event=>{event.preventDefault();let cancelled=false;const handler=await callback({formElement:form,formData:new FormData(form),cancel(){cancelled=true;}});if(cancelled)return;const response=await fetch(form.action,{method:'POST',body:new FormData(form)});const result=await response.json();await handler?.({result,update:async()=>{window.dispatchEvent(new Event('fixture-invalidate'));}});};form.addEventListener('submit',submit);return {destroy(){form.removeEventListener('submit',submit);}};}`);
@@ -64,6 +64,49 @@ before(async () => {
 after(async()=>{
   await browser?.close();await vite?.close();if(server)await new Promise(r=>server.close(r));
   if(directory&&path.dirname(directory)===path.join(appRoot,'.svelte-kit')&&path.basename(directory).startsWith('vehicle-edit-actions-'))await rm(directory,{recursive:true,force:true});
+});
+
+for (const width of [1366,390]) test(`confirmed save returns safely with visible feedback ${width}px`, {timeout:120000}, async()=>{
+  for (const from of [`/viaturas/${id}`, '/viaturas?q=BMW&page=3&status=AVAILABLE', null, 'https://external.test/viaturas', `/viaturas/${id}/editar?/submit`]) {
+    const context=await browser.newContext({viewport:{width,height:950}}),page=await context.newPage();
+    let saved=fixture(),posts=0;
+    await page.addInitScript(value=>{window.reviewFrom=value;window.reviewSimulateNavigation=true;},from);
+    await page.route('**/editar/save',async route=>{
+      if(route.request().method()==='POST') {const body=route.request().postDataJSON();posts++;saved.vehicle={...saved.vehicle,...body.data,year:Number(body.data.year),mileage:Number(body.data.mileage),updatedAt:'2026-10-28T00:00:01.000Z'};await page.evaluate(model=>window.reviewSavedModel=model,saved.vehicle.model);return route.fulfill({json:{ok:true}});}
+      return route.fulfill({json:saved});
+    });
+    try {
+      await page.goto(origin);await page.waitForFunction(()=>window.reviewReady);await page.locator('[name=model]').fill('Modelo guardado');
+      await page.locator(width===390?'.edit-save:not(.edit-save-top) button.primary':'.edit-save-top button.primary').click();
+      await page.getByRole('heading',{name:'Destino confirmado'}).waitFor();
+      const navigation=await page.evaluate(()=>window.reviewNavigation);
+      assert.equal(navigation.href,from?.startsWith('/viaturas?')?from:`/viaturas/${id}`);
+      assert.equal(navigation.dirty,false,'unsaved guard is cleared before returning');assert.equal(navigation.options.invalidateAll,true);assert.equal(posts,1);
+      await page.getByText('Modelo guardado',{exact:true}).waitFor();await page.locator('[data-sonner-toast]').filter({hasText:'Alterações guardadas'}).waitFor();
+    } finally {await context.close();}
+  }
+});
+
+test('failed or unconfirmed saves retain edits and never return', {timeout:120000}, async()=>{
+  for (const failure of ['validation','atomic','unknown','confirmation','upload']) {
+    const context=await browser.newContext(),page=await context.newPage();let posted=false;
+    await page.addInitScript(()=>window.reviewFrom='/viaturas?q=BMW&page=2');
+    await page.route('**/editar/save',async route=>{
+      if(route.request().method()==='POST') {posted=true;if(failure==='validation'||failure==='atomic')return route.fulfill({status:422,json:{issues:[{path:['data','model'],message:'Falha de teste. Rascunho mantido.'}]}});if(failure==='unknown')return route.abort();return route.fulfill({json:{ok:true}});}
+      if(posted&&failure==='confirmation')return route.fulfill({status:503,json:{error:'Indisponível'}});
+      return route.fulfill({json:fixture()});
+    });
+    await page.route('**/photos',route=>route.fulfill({status:422,json:{error:'Falha de upload de teste'}}));
+    try {
+      await page.goto(origin);await page.waitForFunction(()=>window.reviewReady);await page.locator('[name=model]').fill('Rascunho protegido');
+      if(failure==='upload') {await page.locator('input[type=file]').first().setInputFiles({name:'test.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jkH0AAAAASUVORK5CYII=','base64')});}
+      if(failure==='atomic') {await page.locator('.publication-action').click();} else await page.locator('.edit-save-top button.primary').click();
+      await page.locator('[data-sonner-toast]').filter({hasText:/mantido|confirmar|guardadas|upload/}).waitFor();
+      assert.equal(await page.evaluate(()=>window.reviewNavigation),undefined);assert.equal(await page.locator('[name=model]').inputValue(),'Rascunho protegido');
+      assert.equal(await page.locator('.vehicle-edit-page').isVisible(),true);
+      if(failure==='validation'||failure==='atomic')await page.locator('.edit-errors').waitFor();
+    } finally {await context.close();}
+  }
 });
 
 for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct publication persisted on reload ${width}px ${theme}`,{timeout:120000},async()=>{

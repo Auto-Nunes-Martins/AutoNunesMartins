@@ -99,3 +99,9 @@ No widget de tarefas, o botão flutuante voltou a ser circular. A data personali
 
 
 Documentação pendente: implementação autorizada em 28/10/2026. A ficha mostra apenas as flags concretas em falta, com contagem singular/plural e Atualizar para o checklist existente na edição (#documentos). Sem flags, o cartão é substituído por uma linha discreta Sem pendências documentais com o mesmo acesso; sem dados confirmados, não se afirma ausência de pendências. O checklist e a gravação atómica existentes preservam a marcação e reversão. Não há mudança de categorias, critérios, estado comercial ou dados reais.
+
+## Regresso após guardar a edição — 28/10/2026
+
+«Guardar alterações» regressa à origem interna depois do POST atómico e da leitura de confirmação. A origem é capturada pelo ciclo de navegação do SvelteKit, sem history.back; apenas páginas GET conhecidas dentro do basepath são aceites. A lista conserva filtros, pesquisa, paginação e âncora. Link direto ou recarregamento sem origem válida regressa à ficha da viatura. Destinos externos, endpoints, criação/edição e URLs de ações são recusados.
+
+Antes de navegar, os formulários são marcados como guardados para a proteção de alterações não bloquear a saída. A cache da lista é limpa, o destino é invalidado e a notificação existente permanece no Toaster global. Erros de validação, publicação atómica, upload ou resultado não confirmado mantêm a edição e o rascunho visíveis. Os botões de publicação continuam a guardar sem sair. Testes Chrome usam apenas viaturas e endpoints fictícios, incluindo desktop/mobile, origem ficha/lista, fallback e erros.

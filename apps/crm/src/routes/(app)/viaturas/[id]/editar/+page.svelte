@@ -4,7 +4,8 @@
   import { crmPath } from '$lib/paths';
   import { onMount, onDestroy, tick, untrack } from 'svelte';
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
-  import { invalidateAll } from '$app/navigation';
+  import { afterNavigate, goto, invalidateAll } from '$app/navigation';
+  import { vehicleEditReturn } from '$lib/vehicleEditReturn';
   import { toast } from 'svelte-sonner';
   import VehicleSaveProgress from '$lib/components/vehicle/VehicleSaveProgress.svelte';
   import { vehicleSavedFeedback } from '$lib/components/vehicle/vehicleSaveFeedback';
@@ -57,6 +58,11 @@
   let deleting = $state(false);
   let publicationIntent = $state<boolean | undefined>();
   const v = $derived(data.vehicle);
+  let returnDestination = untrack(() => crmPath(`/viaturas/${data.vehicle.id}`));
+  afterNavigate(({ from, to }) => {
+    if (to && from?.url.pathname !== to.url.pathname)
+      returnDestination = vehicleEditReturn(data.vehicle.id, to.url, from?.url);
+  });
   let baseline = $state<VehicleDetailResponse>(
     untrack(() => JSON.parse(JSON.stringify(data.vehicle))),
   );
@@ -208,6 +214,7 @@
     const previouslyPublished = baseline.webPublished;
     message = '';
     let committed = false,
+      confirmed = false,
       saveRequestStarted = false,
       saveResponseReceived = false,
       uncertainResult = false;
@@ -288,6 +295,7 @@
         detail: removing ? 'A ficha deixou de estar visível no website.' : publishing ? 'O website já reflete as alterações confirmadas.' : 'A ficha da viatura foi atualizada no CRM.',
         photo: saved.signedPhotos.find(photo => photo.path === saved.vehicle.photos[0]),
       });
+      confirmed = true;
     } catch (error) {
       message =
         error instanceof Error
@@ -312,6 +320,11 @@
       await tick();
       if (editIssues.length) markEditIssues(root, editIssues);
       if (committed) await rememberSavedForms();
+    }
+    // Publication controls save in place; only the explicit Save action returns.
+    if (confirmed && published === undefined) {
+      try { await goto(returnDestination, { invalidateAll: true }); }
+      catch { toast.error('As alterações foram guardadas, mas não foi possível abrir a página anterior.'); }
     }
   }
   async function discard() {
