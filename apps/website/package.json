@@ -16,6 +16,7 @@
     "test:thumbnail-follow": "node test/thumbnailFollow.browser.mjs",
     "test:gallery-presentation": "node test/galleryPresentation.browser.mjs",
     "test:fullscreen-viewport": "node test/fullscreenViewport.browser.mjs",
+    "test:fullscreen-transitions": "node test/fullscreenTransitions.browser.mjs",
     "lint": "eslint \"src/**/*.{ts,svelte}\"",
     "test:errors:built": "node --conditions=anm-runtime ../../scripts/check-public-errors.mjs"
   },

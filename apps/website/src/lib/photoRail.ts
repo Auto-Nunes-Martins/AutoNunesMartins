@@ -1,6 +1,6 @@
-type Position = { index: number; count: number; drag?: number };
+type Position = { index: number; count: number; drag?: number; fullscreen?: boolean; instant?: boolean };
 
-/** Move one contiguous transform-only strip; interrupted selections start at the current pose. */
+/** Slide adjacent photos; distant fullscreen selections swap with a short fade. */
 export function photoRail(node: HTMLElement, initial: Position) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let selected = initial.index;
@@ -45,7 +45,10 @@ export function photoRail(node: HTMLElement, initial: Position) {
         node.dataset.moving = 'true';
         return;
       }
-      if (target === selected && !dragging) return;
+      if (target === selected && !dragging) {
+        if (next.instant && animation) stop();
+        return;
+      }
       const distance = Math.abs(target - selected);
       const from = animation
         ? getComputedStyle(node).transform
@@ -57,15 +60,23 @@ export function photoRail(node: HTMLElement, initial: Position) {
       animation?.cancel();
       selected = target;
       node.style.transform = position(selected);
-      if (reduced.matches) {
+      const jump = next.fullscreen && distance > 1;
+      const image = jump ? node.children[target]?.querySelector('img') : undefined;
+      if (reduced.matches || next.instant || (image && (!image.complete || !image.naturalWidth))) {
         animation = undefined;
         node.dataset.moving = 'false';
         return;
       }
-      const move = node.animate([{ transform: from }, { transform: position(selected) }], {
-        duration: wasDragging ? 220 : Math.min(1400, 360 + Math.max(0, distance - 1) * 120),
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      });
+      // A distant fullscreen selection changes position immediately. A brief,
+      // shallow fade softens the swap without travelling through other photos.
+      const move = node.animate(
+        jump ? [{ opacity: 0.55 }, { opacity: 1 }] :
+          [{ transform: from }, { transform: position(selected) }],
+        {
+          duration: jump ? 120 : wasDragging ? 220 : Math.min(1400, 360 + Math.max(0, distance - 1) * 120),
+          easing: jump ? 'ease-out' : 'cubic-bezier(0.4, 0, 0.2, 1)',
+        },
+      );
       animation = move;
       node.dataset.moving = 'true';
       void move.finished

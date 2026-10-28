@@ -60,3 +60,8 @@ Verificação reproduzível: `test:fullscreen-viewport`, com API e fotografias f
 
 Validação: nove testes unitários relevantes, Svelte check sem erros/avisos e 18 cenários Chrome (12 de limites/foco fullscreen e seis de antecipação inline/fullscreen), com fotografias e API fictícias.
 Dois cenários adicionais (desktop/mobile) verificam o foco do CTA de contacto sem halo e o retorno após abrir pela própria fotografia e navegar para outra.
+
+## Saltos entre fotografias fullscreen
+
+Avançar ou recuar uma posição mantém o slide horizontal existente, incluindo setas, teclado, miniatura adjacente e swipe. Um salto de duas ou mais posições muda diretamente para o destino e aplica um fade discreto de 120 ms (opacidade 55%→100%), sem deslocar a faixa pelas fotografias intermédias. O inline visível conserva o movimento anterior; enquanto o modal está aberto, a seleção inline sincroniza sem animação para não deslocar fotografias por trás do backdrop. Movimento reduzido ou destino ainda sem pixels descodificados usam troca direta. A animação é cancelável por nova seleção, drag, resize e desmontagem; não cria imagens, URLs ou pedidos adicionais. A seleção, contador e antecipação da faixa continuam a acompanhar o índice atual. Teste reproduzível: `test:fullscreen-transitions`, em desktop/mobile e movimento normal/reduzido, mede posições reais durante as animações e verifica saltos, interrupções, contacto, limites, fallback e fecho.
+`test:fullscreen-transitions` aprovado nos quatro cenários Chrome (1440/390 px × movimento normal/reduzido), com 16 testes unitários relevantes e Svelte check sem erros/avisos.

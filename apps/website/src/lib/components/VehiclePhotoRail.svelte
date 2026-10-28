@@ -14,6 +14,7 @@
     index,
     drag,
     fullscreen = false,
+    instant = false,
     onOpen,
     onContact,
     onLoading,
@@ -23,6 +24,7 @@
     index: number;
     drag?: number;
     fullscreen?: boolean;
+    instant?: boolean;
     onOpen?: () => void;
     onContact: () => void;
     onLoading?: (loading: boolean) => void;
@@ -46,7 +48,7 @@
   <div
     class="photo-rail-track"
     style:transform={`translate3d(${-initialIndex * 100}%, 0, 0)`}
-    use:photoRail={{ index, count: sources.length + 1, drag }}
+    use:photoRail={{ index, count: sources.length + 1, drag, fullscreen, instant }}
   >
     {#each sources as src, i (src)}
       <div class="photo-rail-slide" aria-hidden={i !== index} inert={i !== index}>

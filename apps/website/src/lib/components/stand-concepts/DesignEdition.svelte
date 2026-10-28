@@ -857,6 +857,7 @@
                     session={gallerySession}
                     index={zoom}
                     drag={mainPhotoDrag}
+                    instant={galleryOpen}
                     onOpen={openGallery}
                     onContact={() =>
                       contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`)}
