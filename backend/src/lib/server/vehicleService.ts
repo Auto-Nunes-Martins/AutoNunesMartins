@@ -97,19 +97,34 @@ export async function createVehicle(
 }
 
 export async function updateVehicle(
-  id: string, data: Omit<VehicleUpdate, 'id'>, actor: ActorContext,
+  id: string,
+  data: Omit<VehicleUpdate, 'id'>,
+  actor: ActorContext,
 ): Promise<void> {
-  await saleMutation(tx => updateVehicleInTransaction(tx, id, data, actor));
+  await saleMutation((tx) => updateVehicleInTransaction(tx, id, data, actor));
 }
 
 /** Shared by the single-save editor; financial corrections stay in the same transaction. */
 export async function updateVehicleInTransaction(
-  tx: Prisma.TransactionClient, id: string, data: Omit<VehicleUpdate, 'id' | 'licensePlate'> & { licensePlate?: string | null }, actor: ActorContext,
+  tx: Prisma.TransactionClient,
+  id: string,
+  data: Omit<VehicleUpdate, 'id' | 'licensePlate'> & { licensePlate?: string | null },
+  actor: ActorContext,
 ): Promise<void> {
   validatePrices(data);
   await lockVehicle(tx, id);
   const existing = await tx.vehicle.findUnique({ where: { id }, include: { sale: true } });
   if (!existing) throw new VehicleNotFound(id);
+
+  if (
+    data.acquisitionDate &&
+    (data.acquisitionDate > new Date() ||
+      (existing.sale && data.acquisitionDate > existing.sale.saleDate))
+  ) {
+    throw new VehicleStateConflict(
+      'A data de aquisição não pode estar no futuro nem ser posterior à venda da viatura.',
+    );
+  }
 
   const statusChanged = data.status !== undefined && data.status !== existing.status;
   if (statusChanged && existing.status === 'RETURNED') {
@@ -137,8 +152,7 @@ export async function updateVehicleInTransaction(
     (data.purchasePrice !== undefined &&
       !new Decimal(data.purchasePrice).eq(existing.purchasePrice.toString())) ||
     (data.salePrice !== undefined &&
-      (currentSalePrice === null ||
-        !new Decimal(data.salePrice).eq(currentSalePrice.toString())));
+      (currentSalePrice === null || !new Decimal(data.salePrice).eq(currentSalePrice.toString())));
   if (pricesChanged && SOLD_STATUSES.has(existing.status) && !existing.sale) {
     throw new VehicleStateConflict(
       'Esta viatura está vendida mas não tem venda registada. Regularize a venda antes de corrigir preços.',

@@ -268,6 +268,22 @@ export const salesApi = {
       `/api/sales${toQuery(params as Record<string, unknown>)}`,
     );
   },
+  async listAll(event: Ev, params: SaleListParams = {}): Promise<SaleListResponse> {
+    const first = await salesApi.list(event, { ...params, page: 1, pageSize: 100 });
+    const items = [...first.items];
+    for (let page = 2; page <= first.totalPages; page++) {
+      const next = await salesApi.list(event, { ...params, page, pageSize: 100 });
+      if (
+        next.total !== first.total ||
+        JSON.stringify(next.totals) !== JSON.stringify(first.totals)
+      )
+        throw new Error('As vendas mudaram durante a exportação. Repita a exportação.');
+      items.push(...next.items);
+    }
+    if (items.length !== first.total || new Set(items.map((item) => item.id)).size !== items.length)
+      throw new Error('A lista mudou durante a exportação. Repita a exportação.');
+    return { ...first, items };
+  },
   create(event: Ev, body: SaleCreate): Promise<CreateSaleResponse> {
     return apiJson(event, '/api/sales', {
       method: 'POST',

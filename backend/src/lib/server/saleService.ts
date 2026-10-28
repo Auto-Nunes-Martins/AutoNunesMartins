@@ -233,7 +233,7 @@ export async function listSales(params: ListSalesParams): Promise<ListSalesResul
         bv = b.marginPct;
         break;
     }
-    return sortDir === 'asc' ? av - bv : bv - av;
+    return (sortDir === 'asc' ? av - bv : bv - av) || a.id.localeCompare(b.id);
   });
 
   const total = enriched.length;
@@ -323,6 +323,7 @@ export async function createSale(
       throw new VehicleNotSellable(vehicle.id, vehicle.status);
     }
 
+    await tx.$queryRaw`SELECT "id" FROM "Customer" WHERE "id" = ${data.customerId} FOR UPDATE`;
     const customer = await tx.customer.findUnique({ where: { id: data.customerId } });
     if (!customer) throw new Error(`Customer ${data.customerId} not found`);
 
@@ -372,8 +373,11 @@ export async function createSale(
     });
 
     // Touch customer's lastContactDate
-    await tx.customer.update({
-      where: { id: customer.id },
+    await tx.customer.updateMany({
+      where: {
+        id: customer.id,
+        OR: [{ lastContactDate: null }, { lastContactDate: { lt: data.saleDate } }],
+      },
       data: { lastContactDate: data.saleDate },
     });
 
@@ -388,6 +392,7 @@ export async function createSale(
         customerId: customer.id,
         salePrice: data.salePrice,
         realProfit: figures.realProfit.toString(),
+        previousLastContactDate: customer.lastContactDate?.toISOString() ?? null,
       },
     });
 

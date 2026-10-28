@@ -635,6 +635,34 @@ export async function cancelSale(
           });
         }
         if (deleting) await tx.sale.delete({ where: { id: saleId } });
+        if (deleting && sale.customer.lastContactDate?.getTime() === sale.saleDate.getTime()) {
+          const creation = await tx.activityLog.findFirst({
+            where: { entityType: 'sale', entityId: saleId, type: 'SALE_CREATED' },
+            orderBy: { createdAt: 'asc' },
+          });
+          const metadata = creation?.metadata as Record<string, unknown> | null;
+          const remaining = await tx.sale.findFirst({
+            where: { customerId: sale.customerId },
+            orderBy: { saleDate: 'desc' },
+            select: { saleDate: true },
+          });
+          // Restore the recorded previous contact, retaining any later sales.
+          // Legacy entries without this evidence cannot safely restore a date.
+          if (metadata && Object.hasOwn(metadata, 'previousLastContactDate')) {
+            const previous =
+              typeof metadata.previousLastContactDate === 'string'
+                ? new Date(metadata.previousLastContactDate)
+                : null;
+            const restored =
+              remaining && (!previous || remaining.saleDate > previous)
+                ? remaining.saleDate
+                : previous;
+            await tx.customer.updateMany({
+              where: { id: sale.customerId, lastContactDate: sale.saleDate },
+              data: { lastContactDate: restored },
+            });
+          }
+        }
         await emitActivity(tx, {
           actorId: actor.actorId,
           type: 'SALE_UPDATED',

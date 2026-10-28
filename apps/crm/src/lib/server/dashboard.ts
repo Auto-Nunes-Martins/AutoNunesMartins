@@ -11,6 +11,8 @@ export interface DashboardKpis {
    * `lucroMes`; surfaced separately so the dashboard can show the share.
    */
   comissoesMes: { current: string; previous: string; deltaPct: number | null };
+  despesasOperacionaisMes: { current: string; previous: string; deltaPct: number | null };
+  resultadoAposDespesasMes: { current: string; previous: string; deltaPct: number | null };
   margemMedia: { current: number | null; previous: number | null; deltaPct: number | null };
   sparklines: {
     vendas: number[];
@@ -28,6 +30,26 @@ export interface SalesChartData {
   ytdSold: number;
   ytdRevenue: string;
   ytdAvgMarginPct: number | null;
+  ytdProfit: string;
+  ytdCommission: string;
+  ytdVat: string;
+  ytdOperatingExpenses: string;
+  ytdResultAfterExpenses: string;
+  profit: number[];
+  commission: number[];
+  vat: number[];
+  operatingExpenses: number[];
+  resultAfterExpenses: number[];
+  monthKeys: string[];
+  totals12m: {
+    sold: number;
+    revenue: string;
+    profit: string;
+    commission: string;
+    vat: string;
+    operatingExpenses: string;
+    resultAfterExpenses: string;
+  };
 }
 
 export interface BestSeller {

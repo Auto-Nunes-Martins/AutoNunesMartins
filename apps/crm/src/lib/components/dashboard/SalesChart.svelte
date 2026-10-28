@@ -56,6 +56,18 @@
       <dt>Margem média · ano atual</dt>
       <dd>{data.ytdAvgMarginPct !== null ? `${data.ytdAvgMarginPct.toFixed(1)}%` : '—'}</dd>
     </div>
+    <div>
+      <dt>Lucro das vendas · ano atual</dt>
+      <dd>{formatEUR(data.ytdProfit)}</dd>
+    </div>
+    <div>
+      <dt>Despesas operacionais · ano atual</dt>
+      <dd>{formatEUR(data.ytdOperatingExpenses)}</dd>
+    </div>
+    <div>
+      <dt>Resultado após despesas · ano atual</dt>
+      <dd>{formatEUR(data.ytdResultAfterExpenses)}</dd>
+    </div>
   </dl>
 
   {#if data.sold.length === 0}

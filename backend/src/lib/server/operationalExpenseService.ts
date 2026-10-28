@@ -6,6 +6,7 @@ import type {
 } from '@anm/types';
 import { prisma } from '../../db.js';
 import { emitActivity } from '../data/activity.js';
+import { cache } from '../data/cache.js';
 import type { ActorContext } from './vehicleService.js';
 
 export class OperationalExpenseNotFound extends Error {
@@ -90,6 +91,7 @@ export async function createOperationalExpense(
     });
     return row;
   });
+  cache.clearPrefix('dashboard:');
   return { id: created.id };
 }
 
@@ -118,12 +120,10 @@ export async function updateOperationalExpense(
       metadata: { operational: true },
     });
   });
+  cache.clearPrefix('dashboard:');
 }
 
-export async function deleteOperationalExpense(
-  id: string,
-  actor: ActorContext,
-): Promise<void> {
+export async function deleteOperationalExpense(id: string, actor: ActorContext): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const existing = await tx.operationalExpense.findUnique({ where: { id } });
     if (!existing) throw new OperationalExpenseNotFound(id);
@@ -138,4 +138,5 @@ export async function deleteOperationalExpense(
       metadata: { operational: true, deleted: true },
     });
   });
+  cache.clearPrefix('dashboard:');
 }

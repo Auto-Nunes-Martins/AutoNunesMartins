@@ -1,3 +1,4 @@
+import { dashboardCsvTable } from '$lib/server/dashboardReport';
 import { error, type RequestHandler } from '@sveltejs/kit';
 import {
   PDFDocument,
@@ -11,7 +12,7 @@ import {
 import { dashboardApi, type DashboardPayload } from '$lib/server/dashboard';
 import { buildCsv, sanitizeForWinAnsi } from '$lib/server/exports';
 
-/* Executive dashboard summary. CSV contains monthly aggregates for the last twelve months, plus a TOTAL 12M row; profit, commission and margin cover only the latest six months, matching the sparkline limit. The A4 landscape PDF mirrors the dashboard with branding, KPI cards and sparklines, twelve-month sales bars, top-seller bars and an alert strip, drawn with pdf-lib primitives. */
+/* Executive dashboard summary. CSV contains monthly aggregates for the last twelve months, plus a TOTAL 12M row; all financial columns cover twelve months, with separate calendar-year totals. The A4 landscape PDF mirrors the dashboard with branding, KPI cards and sparklines, twelve-month sales bars, top-seller bars and an alert strip, drawn with pdf-lib primitives. */
 
 const FMT_EUR = new Intl.NumberFormat('pt-PT', {
   style: 'currency',
@@ -51,48 +52,7 @@ export const GET: RequestHandler = async (event) => {
 
   // ─── CSV ────────────────────────────────────────────────────────────
   if (format === 'csv') {
-    const months = data.salesChart.months;
-    const sold = data.salesChart.sold;
-    const revenue = data.salesChart.revenue;
-    const sparkProfit = data.kpis.sparklines.lucro;
-    const sparkCommission = data.kpis.sparklines.comissoes;
-    const sparkMargin = data.kpis.sparklines.margem;
-
-    // Sparklines contain the last six months; offset them into the
-    // twelve-month series, leaving the first six months blank.
-    const profitAt = (i: number): number | null => {
-      const off = i - (months.length - sparkProfit.length);
-      return off >= 0 ? (sparkProfit[off] ?? null) : null;
-    };
-    const commissionAt = (i: number): number | null => {
-      const off = i - (months.length - sparkCommission.length);
-      return off >= 0 ? (sparkCommission[off] ?? null) : null;
-    };
-    const marginAt = (i: number): number | null => {
-      const off = i - (months.length - sparkMargin.length);
-      return off >= 0 ? (sparkMargin[off] ?? null) : null;
-    };
-
-    const headers = ['Mês', 'Vendas', 'Faturação (€)', 'Lucro (€)', 'Comissões (€)', 'Margem %'];
-    const rows: (string | number)[][] = months.map((m, i) => [
-      m,
-      sold[i] ?? 0,
-      (revenue[i] ?? 0).toFixed(2),
-      profitAt(i) !== null ? (profitAt(i) as number).toFixed(2) : '',
-      commissionAt(i) !== null ? (commissionAt(i) as number).toFixed(2) : '',
-      marginAt(i) !== null ? (marginAt(i) as number).toFixed(1) : '',
-    ]);
-    rows.push([
-      'TOTAL 12M',
-      data.salesChart.ytdSold,
-      Number(data.salesChart.ytdRevenue).toFixed(2),
-      '',
-      '',
-      data.salesChart.ytdAvgMarginPct !== null
-        ? data.salesChart.ytdAvgMarginPct.toFixed(1)
-        : '',
-    ]);
-
+    const { headers, rows } = dashboardCsvTable(data);
     const csv = buildCsv(headers, rows);
     return new Response(csv, {
       headers: {
@@ -212,7 +172,7 @@ async function buildDashboardPdf(data: DashboardPayload): Promise<Uint8Array> {
       sparkColor: C.brand,
     },
     {
-      label: 'Lucro real',
+      label: 'Lucro das vendas',
       value: fmtEurCompact(data.kpis.lucroMes.current),
       delta: fmtDelta(data.kpis.lucroMes.deltaPct),
       previous: `Anterior: ${fmtEurCompact(data.kpis.lucroMes.previous)}`,
@@ -251,7 +211,12 @@ async function buildDashboardPdf(data: DashboardPayload): Promise<Uint8Array> {
   // ─── Charts row ─────────────────────────────────────────────────────
   // Left 60%: monthly sales in a twelve-month bar chart.
   // Right (40%): mais vendidos — horizontal bars
-  const chartsTop = kpiTop - kpiH - 16;
+  txt(
+    page,
+    `Despesas operacionais: ${fmtEur(data.kpis.despesasOperacionaisMes.current)} | Resultado após despesas: ${fmtEur(data.kpis.resultadoAposDespesasMes.current)} (mês)`,
+    { x: margin, y: kpiTop - kpiH - 13, size: 8, font, color: C.text },
+  );
+  const chartsTop = kpiTop - kpiH - 28;
   // chartsH fills the space between the KPI cards and alert strip,
   // allowing a 60pt footer, 24pt bottom margin and 16pt gap.
   const chartsH = chartsTop - (margin + 60 + 16);
@@ -282,15 +247,7 @@ async function buildDashboardPdf(data: DashboardPayload): Promise<Uint8Array> {
   );
 
   // Alerts strip in the footer.
-  drawAlertsStrip(
-    page,
-    margin,
-    margin,
-    W - margin * 2,
-    60,
-    data.alerts,
-    fonts,
-  );
+  drawAlertsStrip(page, margin, margin, W - margin * 2, 60, data.alerts, fonts);
 
   return await pdf.save();
 }
@@ -362,15 +319,7 @@ function drawKpiCard(
   });
 
   // Sparkline at the bottom of the card.
-  drawSparkline(
-    page,
-    x + 8,
-    y + 8,
-    w - 16,
-    26,
-    kpi.spark,
-    kpi.sparkColor,
-  );
+  drawSparkline(page, x + 8, y + 8, w - 16, 26, kpi.spark, kpi.sparkColor);
 }
 
 // ─── Sparkline (linha conectada) ───────────────────────────────────────

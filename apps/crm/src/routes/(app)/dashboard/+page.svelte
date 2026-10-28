@@ -19,7 +19,7 @@
   import TodayTasks from '$lib/components/dashboard/TodayTasks.svelte';
   import RecentActivityFeed from '$lib/components/dashboard/RecentActivityFeed.svelte';
   import FeaturedVehicleHero from '$lib/components/dashboard/FeaturedVehicleHero.svelte';
-  import { formatCompactEUR, formatDateLong, formatGreeting } from '$lib/utils/format';
+  import { formatCompactEUR, formatDateLong, formatGreeting, formatEUR } from '$lib/utils/format';
   import type { PageData } from './$types';
 
   interface Props {
@@ -89,9 +89,9 @@
       <!-- Export menu with no default format: the user selects CSV or PDF.
            /dashboard/export produces an executive snapshot of KPIs and aggregates
            for the last twelve months, top sellers and active alerts. -->
-      <ExportMenu baseHref={crmPath("/dashboard/export")} />
+      <ExportMenu baseHref={crmPath('/dashboard/export')} />
       <a
-        href={crmPath("/viaturas/nova")}
+        href={crmPath('/viaturas/nova')}
         class="inline-flex items-center gap-2 px-[14px] py-[10px] bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] text-white font-display font-semibold italic uppercase text-[12px] tracking-[0.1em] transition-colors cursor-pointer"
         style="border-radius: var(--radius-btn);"
       >
@@ -107,9 +107,14 @@
     {#snippet metrics()}
       {#await data.dashboard then result}
         {#if result.kind === 'ok'}
-          <span><strong>{result.payload.kpis.vendasMes.count}</strong><small>Vendas · Mês</small></span>
+          <span
+            ><strong>{result.payload.kpis.vendasMes.count}</strong><small>Vendas · Mês</small></span
+          >
           {@const revenue = formatCompactEUR(result.payload.salesChart.ytdRevenue)}
-          <span><strong>{revenue.value}{revenue.suffix ?? ''}</strong><small>Faturação YTD</small></span>
+          <span
+            ><strong>{revenue.value}{revenue.suffix ?? ''}</strong><small>Faturação YTD</small
+            ></span
+          >
         {/if}
       {/await}
     {/snippet}
@@ -144,8 +149,12 @@
       </div>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      <div class="lg:col-span-7"><Panel><div class="p-5"><Skeleton height="360px" /></div></Panel></div>
-      <div class="lg:col-span-5"><TodayTasks pending currentUserId={data.currentUser?.id ?? null} /></div>
+      <div class="lg:col-span-7">
+        <Panel><div class="p-5"><Skeleton height="360px" /></div></Panel>
+      </div>
+      <div class="lg:col-span-5">
+        <TodayTasks pending currentUserId={data.currentUser?.id ?? null} />
+      </div>
     </div>
   {:then result}
     {#if result.kind === 'error'}
@@ -188,7 +197,7 @@
         />
         <KPICard
           icon={BrandChart}
-          label="Lucro · Mês"
+          label="Lucro das vendas · Mês"
           value={lucro.value}
           suffix={lucro.suffix}
           deltaPct={d.kpis.lucroMes.deltaPct}
@@ -214,6 +223,27 @@
       </div>
 
       <!-- Sales chart (8) + Best Sellers (4) -->
+      <Panel
+        ><div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs text-[var(--color-text-muted)]">Despesas operacionais · Mês</p>
+            <strong class="num-value text-xl"
+              >{formatEUR(d.kpis.despesasOperacionaisMes.current)}</strong
+            >
+          </div>
+          <div>
+            <p class="text-xs text-[var(--color-text-muted)]">Resultado após despesas · Mês</p>
+            <strong class="num-value text-xl"
+              >{formatEUR(d.kpis.resultadoAposDespesasMes.current)}</strong
+            >
+          </div>
+          <p class="md:col-span-2 text-xs text-[var(--color-text-muted)]">
+            Lucro das vendas menos despesas operacionais registadas no mês. Os custos das viaturas e
+            as comissões já estão no lucro das vendas. Não é um saldo de tesouraria nem inclui
+            reembolsos por regularizar.
+          </p>
+        </div></Panel
+      >
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div class="lg:col-span-8">
           <SalesChart data={d.salesChart} />
@@ -229,10 +259,7 @@
           <StockAgingTable items={d.stockAged} />
         </div>
         <div class="lg:col-span-5">
-          <TodayTasks
-            items={d.todayTasks}
-            currentUserId={data.currentUser?.id ?? null}
-          />
+          <TodayTasks items={d.todayTasks} currentUserId={data.currentUser?.id ?? null} />
         </div>
       </div>
 

@@ -14,12 +14,12 @@
   type="button"
   onclick={() => theme.toggle()}
   class="inline-flex items-center justify-center border border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)] transition-colors"
-  style="width: {size}px; height: {size}px; border-radius: var(--radius-btn);"
+  style="box-sizing: border-box; flex-shrink: 0; padding: 0; width: {size}px; height: {size}px; border-radius: var(--radius-btn);"
   aria-label="Alternar tema"
 >
   {#if $theme === 'dark'}
-    <BrandSun class="h-4 w-4" />
+    <BrandSun class="h-[16px] w-[16px]" />
   {:else}
-    <BrandMoon class="h-4 w-4" />
+    <BrandMoon class="h-[16px] w-[16px]" />
   {/if}
 </button>

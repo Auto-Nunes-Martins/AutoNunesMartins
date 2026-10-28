@@ -118,6 +118,32 @@ ligações reais.
 
 Nenhuma destas verificações executa resets, migrations ou alterações em dados reais.
 
+### Propagação financeira e períodos
+
+O dashboard distingue agora os doze meses móveis do ano civil atual (YTD).
+O lucro das vendas soma apenas vendas ativas; o resultado após despesas subtrai
+as despesas operacionais registadas no respetivo mês. Custos das viaturas, IVA e
+comissões já entram no cálculo da venda e não são novamente descontados. Este
+resultado não representa tesouraria, reembolsos ou capital investido.
+
+O CSV financeiro contém os doze meses completos, com totais 12M e do ano atual
+separados. CSV e PDF de vendas percorrem todas as páginas de 100 registos,
+mantendo filtros e ordenação determinística. Se a contagem, os totais ou a
+unicidade mudarem durante a exportação, é pedida nova tentativa; não há snapshot
+transacional entre pedidos HTTP de páginas diferentes.
+
+Testes dos serviços reais sobre PostgreSQL isolado cobrem dezembro/janeiro,
+criação, correção de preços, despesas da viatura e operacionais, entrega,
+anulação/eliminação com KEEP, RETURN, cache preenchida, cliente e elegibilidade
+pública. A correção de B afeta o período da venda de B e preserva C. Os exports
+são exercitados com 205 vendas, incluindo PDF com várias páginas.
+
+Uma venda retroativa deixa de substituir um contacto mais recente do cliente.
+Novas vendas guardam em atividade a data anterior, permitindo repô-la na
+eliminação por engano, sem sobrepor contactos mais recentes ou outras vendas.
+Para vendas antigas sem essa evidência, a data existente é preservada: não é
+possível reconstruir automaticamente um contacto anterior desconhecido.
+
 ## Histórico técnico da migration original (outubro de 2026)
 
 Fonte: `backend/prisma/migrations/20261014120000_preserve_cancelled_sales/migration.sql`.

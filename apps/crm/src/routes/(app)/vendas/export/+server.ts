@@ -22,24 +22,31 @@ export const GET: RequestHandler = async (event) => {
   const sp = event.url.searchParams;
   const format = sp.get('format') === 'pdf' ? 'pdf' : 'csv';
 
-  // Mirror the filters honoured by the list page. pageSize is bumped so a
-  // single export call walks the entire filtered set — backend caps at 100,
-  // so we ask for the max.
+  // Walk every page using the same filters as the sales list.
   const params: SaleListParams = {
     q: sp.get('q') ?? undefined,
     deliveryStatus: pickDeliveryStatus(sp.get('deliveryStatus')),
     dateFrom: sp.get('dateFrom') ?? undefined,
     dateTo: sp.get('dateTo') ?? undefined,
     page: 1,
-    pageSize: 10000,
+    pageSize: 100,
     sortBy: (sp.get('sortBy') as SaleListParams['sortBy']) ?? 'saleDate',
     sortDir: sp.get('sortDir') === 'asc' ? 'asc' : 'desc',
   };
 
-  const result = await salesApi.list(event, params);
+  const result = await salesApi.listAll(event, params);
 
   const headers = [
-    'Viatura', 'Cliente', 'Data', 'Compra', 'Venda', 'Despesas', 'IVA', 'Comissão', 'Lucro', 'Margem%',
+    'Viatura',
+    'Cliente',
+    'Data',
+    'Compra',
+    'Venda',
+    'Despesas',
+    'IVA',
+    'Comissão',
+    'Lucro',
+    'Margem%',
   ];
   const rows = result.items.map((s) => [
     `${s.vehicle.brand} ${s.vehicle.model} ${s.vehicle.year}`,

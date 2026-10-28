@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import Decimal from 'decimal.js';
 import { prisma } from '../../db.js';
 import { vehiclePrincipalPath } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { taskAttentionWhere } from '../data/task.js';
@@ -23,6 +24,8 @@ export interface DashboardKpis {
    * how much of the bottom line depends on credit referrals.
    */
   comissoesMes: MonthlyKpi;
+  despesasOperacionaisMes: MonthlyKpi;
+  resultadoAposDespesasMes: MonthlyKpi;
   margemMedia: { current: number | null; previous: number | null; deltaPct: number | null };
   /** 6-point sparkline trends for the last 6 months (oldest first). */
   sparklines: {
@@ -41,6 +44,26 @@ export interface SalesChartData {
   ytdSold: number;
   ytdRevenue: string;
   ytdAvgMarginPct: number | null;
+  ytdProfit: string;
+  ytdCommission: string;
+  ytdVat: string;
+  ytdOperatingExpenses: string;
+  ytdResultAfterExpenses: string;
+  profit: number[];
+  commission: number[];
+  vat: number[];
+  operatingExpenses: number[];
+  resultAfterExpenses: number[];
+  monthKeys: string[];
+  totals12m: {
+    sold: number;
+    revenue: string;
+    profit: string;
+    commission: string;
+    vat: string;
+    operatingExpenses: string;
+    resultAfterExpenses: string;
+  };
 }
 
 export interface BestSeller {
@@ -145,15 +168,18 @@ interface MonthlyBucket {
   revenue: number;
   profit: number;
   commission: number;
+  vat: number;
+  operatingExpenses: number;
 }
 
 /**
- * Single SQL roundtrip that returns aggregates for the last 12 months.
+ * Sale and operating-expense aggregates for the last 12 months.
  * Replaces what used to be ~18 separate Prisma queries (12 for the chart,
  * 6 for sparklines, 2 KPI period queries).
  */
 async function loadMonthlyBuckets(now: Date): Promise<MonthlyBucket[]> {
-  const earliestMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const earliestMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1));
+  const endMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 
   interface Row {
     month: Date;
@@ -161,6 +187,7 @@ async function loadMonthlyBuckets(now: Date): Promise<MonthlyBucket[]> {
     revenue: Prisma.Decimal | null;
     profit: Prisma.Decimal | null;
     commission: Prisma.Decimal | null;
+    vat: Prisma.Decimal | null;
   }
 
   const rows = await prisma.$queryRaw<Row[]>`
@@ -169,36 +196,54 @@ async function loadMonthlyBuckets(now: Date): Promise<MonthlyBucket[]> {
       COUNT(*)::bigint                            AS sold,
       SUM("salePrice")                            AS revenue,
       SUM("realProfit")                           AS profit,
-      SUM("commission")                           AS commission
+      SUM("commission")                           AS commission,
+      SUM("vatAmount")                            AS vat
     FROM "Sale"
-    WHERE "saleDate" >= ${earliestMonth} AND "cancelledAt" IS NULL
+    WHERE "saleDate" >= ${earliestMonth} AND "saleDate" < ${endMonth} AND "cancelledAt" IS NULL
     GROUP BY date_trunc('month', "saleDate")
     ORDER BY month ASC
   `;
 
+  const expenses = await prisma.$queryRaw<
+    { month: Date; amount: Prisma.Decimal }[]
+  >`SELECT date_trunc('month', "date")::timestamp AS month, SUM("amount") AS amount FROM "OperationalExpense" WHERE "date" >= ${earliestMonth} AND "date" < ${endMonth} GROUP BY date_trunc('month', "date")`;
+  const expenseByKey = new Map(
+    expenses.map((row) => [row.month.toISOString().slice(0, 7), Number(row.amount.toString())]),
+  );
   const byKey = new Map<string, MonthlyBucket>();
   for (const r of rows) {
-    const k = `${r.month.getFullYear()}-${String(r.month.getMonth()).padStart(2, '0')}`;
+    const k = r.month.toISOString().slice(0, 7);
     byKey.set(k, {
       count: Number(r.sold),
       revenue: r.revenue ? Number(r.revenue.toString()) : 0,
       profit: r.profit ? Number(r.profit.toString()) : 0,
       commission: r.commission ? Number(r.commission.toString()) : 0,
+      vat: r.vat ? Number(r.vat.toString()) : 0,
+      operatingExpenses: expenseByKey.get(k) ?? 0,
     });
   }
 
   // Materialise 12 contiguous months with zeros where no rows existed
   const buckets: MonthlyBucket[] = [];
   for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const k = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
-    buckets.push(byKey.get(k) ?? { count: 0, revenue: 0, profit: 0, commission: 0 });
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    const k = d.toISOString().slice(0, 7);
+    buckets.push(
+      byKey.get(k) ?? {
+        count: 0,
+        revenue: 0,
+        profit: 0,
+        commission: 0,
+        vat: 0,
+        operatingExpenses: expenseByKey.get(k) ?? 0,
+      },
+    );
   }
   return buckets;
 }
 
 function buildKpis(buckets: MonthlyBucket[]): DashboardKpis {
-  const empty = { count: 0, revenue: 0, profit: 0, commission: 0 };
+  const empty = { count: 0, revenue: 0, profit: 0, commission: 0, vat: 0, operatingExpenses: 0 };
   const cur = buckets[11] ?? empty;
   const prev = buckets[10] ?? empty;
 
@@ -207,8 +252,18 @@ function buildKpis(buckets: MonthlyBucket[]): DashboardKpis {
     prev.revenue > 0 ? (prev.profit / prev.revenue) * 100 : prev.count > 0 ? 0 : null;
 
   const last6 = buckets.slice(6); // oldest → newest
+  const metric = (current: number, previous: number) => ({
+    current: current.toFixed(2),
+    previous: previous.toFixed(2),
+    deltaPct: pctDelta(current, previous),
+  });
 
   return {
+    despesasOperacionaisMes: metric(cur.operatingExpenses, prev.operatingExpenses),
+    resultadoAposDespesasMes: metric(
+      cur.profit - cur.operatingExpenses,
+      prev.profit - prev.operatingExpenses,
+    ),
     vendasMes: {
       count: cur.count,
       previousCount: prev.count,
@@ -249,26 +304,62 @@ function buildKpis(buckets: MonthlyBucket[]): DashboardKpis {
 
 function buildSalesChart(buckets: MonthlyBucket[], now: Date): SalesChartData {
   const months = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
-    return MONTHS_PT[d.getMonth()] ?? '';
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (11 - i), 1));
+    return MONTHS_PT[d.getUTCMonth()] ?? '';
   });
   const sold = buckets.map((b) => b.count);
   const revenue = buckets.map((b) => b.revenue);
-  const ytdSold = sold.reduce((a, b) => a + b, 0);
-  const ytdRevenue = revenue.reduce((a, b) => a + b, 0);
-  const ytdProfit = buckets.reduce((a, b) => a + b.profit, 0);
+  const monthKeys = Array.from({ length: 12 }, (_, i) =>
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (11 - i), 1))
+      .toISOString()
+      .slice(0, 7),
+  );
+  const ytd = buckets.filter((_, i) => monthKeys[i]?.startsWith(String(now.getUTCFullYear())));
+  const sum = (
+    rows: MonthlyBucket[],
+    key: 'revenue' | 'profit' | 'commission' | 'vat' | 'operatingExpenses',
+  ) => rows.reduce((n, row) => n.plus(row[key]), new Decimal(0));
+  const ytdSold = ytd.reduce((n, b) => n + b.count, 0);
+  const ytdRevenue = sum(ytd, 'revenue').toNumber();
+  const ytdProfit = sum(ytd, 'profit').toNumber();
+  const result = (rows: MonthlyBucket[]) =>
+    sum(rows, 'profit').minus(sum(rows, 'operatingExpenses')).toFixed(2);
+
   return {
     months,
+    monthKeys,
+    profit: buckets.map((b) => b.profit),
+    commission: buckets.map((b) => b.commission),
+    vat: buckets.map((b) => b.vat),
+    operatingExpenses: buckets.map((b) => b.operatingExpenses),
+    resultAfterExpenses: buckets.map((b) =>
+      new Decimal(b.profit).minus(b.operatingExpenses).toNumber(),
+    ),
+    totals12m: {
+      sold: sold.reduce((a, b) => a + b, 0),
+      revenue: sum(buckets, 'revenue').toFixed(2),
+      profit: sum(buckets, 'profit').toFixed(2),
+      commission: sum(buckets, 'commission').toFixed(2),
+      vat: sum(buckets, 'vat').toFixed(2),
+      operatingExpenses: sum(buckets, 'operatingExpenses').toFixed(2),
+      resultAfterExpenses: result(buckets),
+    },
     sold,
     revenue,
     ytdSold,
     ytdRevenue: ytdRevenue.toFixed(2),
+    ytdProfit: sum(ytd, 'profit').toFixed(2),
+    ytdCommission: sum(ytd, 'commission').toFixed(2),
+    ytdVat: sum(ytd, 'vat').toFixed(2),
+    ytdOperatingExpenses: sum(ytd, 'operatingExpenses').toFixed(2),
+    ytdResultAfterExpenses: result(ytd),
     ytdAvgMarginPct: ytdRevenue > 0 ? (ytdProfit / ytdRevenue) * 100 : null,
   };
 }
 
 async function loadBestSellers(now: Date): Promise<BestSeller[]> {
-  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const twelveMonthsAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1));
+  const endMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 
   interface Row {
     brand: string;
@@ -281,7 +372,7 @@ async function loadBestSellers(now: Date): Promise<BestSeller[]> {
     SELECT v."brand", v."model", COUNT(*)::bigint AS count
     FROM "Sale" s
     JOIN "Vehicle" v ON v."id" = s."originalVehicleId"
-    WHERE s."saleDate" >= ${twelveMonthsAgo} AND s."cancelledAt" IS NULL
+    WHERE s."saleDate" >= ${twelveMonthsAgo} AND s."saleDate" < ${endMonth} AND s."cancelledAt" IS NULL
     GROUP BY v."brand", v."model"
     ORDER BY count DESC
     LIMIT 4
@@ -313,8 +404,8 @@ async function loadStockAged(now: Date): Promise<StockAgedRow[]> {
       salePrice: true,
       acquisitionDate: true,
       photos: true,
-      publicPhotoPaths:true,
-      webPublished:true,
+      publicPhotoPaths: true,
+      webPublished: true,
     },
   });
 
@@ -341,7 +432,9 @@ async function loadStockAged(now: Date): Promise<StockAgedRow[]> {
     mileage: r.mileage,
     salePrice: r.salePrice?.toString() ?? null,
     thumbnailUrl: vehiclePrincipalPath(r) ? (signed.get(vehiclePrincipalPath(r)!) ?? null) : null,
-    thumbnailOriginalUrl: vehiclePrincipalPath(r) ? (originalUrls.get(vehiclePrincipalPath(r)!) ?? null) : null,
+    thumbnailOriginalUrl: vehiclePrincipalPath(r)
+      ? (originalUrls.get(vehiclePrincipalPath(r)!) ?? null)
+      : null,
     daysInStock: Math.floor((now.getTime() - r.acquisitionDate.getTime()) / MS_PER_DAY),
   }));
 }
@@ -377,7 +470,12 @@ export async function loadTodayTasks(actorId: string): Promise<TodayTaskRow[]> {
 
   const PRIORITY_RANK: Record<string, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
   rows.sort((a, b) => {
-    const group = (task: typeof a) => task.dueDate && task.dueDate < todayStart ? 0 : task.dueDate && task.dueDate <= todayEnd ? 1 : 2;
+    const group = (task: typeof a) =>
+      task.dueDate && task.dueDate < todayStart
+        ? 0
+        : task.dueDate && task.dueDate <= todayEnd
+          ? 1
+          : 2;
     if (group(a) !== group(b)) return group(a) - group(b);
     // IN_PROGRESS first
     const aIp = a.status === 'IN_PROGRESS' ? 0 : 1;
@@ -454,9 +552,7 @@ async function loadAlerts(actorId: string, now: Date): Promise<SmartAlerts> {
   };
 }
 
-export async function loadDashboard(actorId: string): Promise<DashboardPayload> {
-  const now = new Date();
-
+export async function loadDashboard(actorId: string, now = new Date()): Promise<DashboardPayload> {
   // Parallel fan-out — about 6 queries total instead of the previous ~25.
   const [buckets, bestSellers, stockAged, todayTasks, recentActivity, alerts] = await Promise.all([
     loadMonthlyBuckets(now),

@@ -140,14 +140,14 @@
     bind:this={buttonEl}
     type="button"
     onclick={toggle}
-    class="relative inline-flex items-center justify-center h-11 w-11 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)] transition-colors"
-    style="border-radius: var(--radius-btn);"
+    class="relative inline-flex items-center justify-center border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)] transition-colors"
+    style="box-sizing: border-box; flex-shrink: 0; padding: 0; width: 44px; height: 44px; border-radius: var(--radius-btn);"
     aria-label="Alertas"
     aria-expanded={isOpen}
     aria-haspopup="dialog"
     aria-controls={isOpen ? panelId : undefined}
   >
-    <BrandBell class="h-4 w-4" />
+    <BrandBell class="h-[16px] w-[16px]" />
     {#if badge > 0}
       <span
         class="absolute -top-1 -right-1 min-w-[16px] h-[14px] px-[3px] flex items-center justify-center bg-[var(--color-warning)] text-[var(--color-bg-0)] font-mono text-[9.5px] font-semibold tabular-nums"
