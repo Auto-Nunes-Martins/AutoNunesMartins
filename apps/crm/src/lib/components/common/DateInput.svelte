@@ -289,6 +289,10 @@
     text-transform: none;
     letter-spacing: normal;
   }
+  :global([data-theme='light']) .crm-date-popover {
+    background: var(--color-bg-elevated);
+    box-shadow: var(--shadow-floating);
+  }
   .date-heading {
     display: grid;
     grid-template-columns: 28px minmax(0, 1fr) 76px 28px;

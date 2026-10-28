@@ -68,24 +68,69 @@
 /* ───────── Light theme override ───────── */
 [data-theme='light'] {
   color-scheme: light;
-  --color-bg-0: #eeece6;
-  --color-bg-1: #faf8f4;
-  --color-bg-2: #f3f0e9;
-  --color-bg-3: #e5e1d8;
-  --color-bg-elevated: #ffffff;
-  --color-border: rgba(15, 15, 17, 0.1);
-  --color-border-strong: rgba(15, 15, 17, 0.18);
-  --color-text: #0f0f11;
-  --color-text-muted: #5a5c61;
-  --color-text-faint: #6c6e73;
+  /* Mineral paper: reduce large-area luminance, retaining dark, readable ink.
+     Navigation, working surfaces and floating layers each have their own depth. */
+  --color-bg-0: #dce2de;
+  --color-bg-1: #e9ede8;
+  --color-bg-2: #e1e7e2;
+  --color-bg-3: #d2dcd5;
+  --color-bg-elevated: #eef1ec;
+  --color-shell: #d2dbd5;
+  --color-control: #e3e9e3;
+  --color-control-border: #74857b;
+  --color-border: #bec9c1;
+  --color-border-strong: #899b8f;
+  --color-text: #252d2d;
+  --color-text-muted: #4e5d56;
+  --color-text-faint: #53625a;
+
+  /* White labels retain strong contrast; hover deepens instead of flashing. */
+  --color-red: #ba2532;
+  --color-red-soft: #a8202d;
+  --color-red-deep: #8f1f29;
+  --shadow-panel: 0 1px 2px rgba(35, 52, 42, 0.04);
+  --shadow-floating: 0 12px 32px -8px rgba(35, 52, 42, 0.2), 0 2px 6px rgba(35, 52, 42, 0.08);
 
   --color-success: #176c48;
   --color-warning: #805000;
   --color-info: #195ba8;
   --color-danger: #ac2536;
-  --color-interaction-hover: rgba(15, 15, 17, 0.075);
-  --color-interaction-active: rgba(15, 15, 17, 0.13);
-  --color-priority-low: #5a5c61;
+  --color-interaction-hover: rgba(45, 70, 54, 0.07);
+  --color-interaction-active: rgba(45, 70, 54, 0.12);
+  --color-priority-low: var(--color-text-muted);
+}
+
+[data-theme='light'] .topbar {
+  background: color-mix(in srgb, var(--color-shell) 65%, var(--color-bg-0));
+}
+[data-theme='light'] .gs-input-shell {
+  border-color: var(--color-control-border);
+}
+[data-theme='light'] .gs-input-shell:focus-within {
+  border-color: var(--color-red);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-red) 12%, transparent);
+}
+[data-theme='light'] .crm-table thead {
+  background: var(--color-bg-2);
+}
+[data-theme='light'] .crm-table tbody > tr:nth-child(even) {
+  background-color: color-mix(in srgb, var(--color-bg-2) 40%, transparent);
+}
+[data-theme='light'] .crm-table tbody > tr:hover {
+  background-color: var(--color-interaction-hover);
+}
+[data-theme='light'] .crm-table tbody > tr[aria-selected='true'] {
+  background-color: color-mix(in srgb, var(--color-red) 8%, var(--color-bg-1));
+}
+:root[data-theme='light'] dialog {
+  box-shadow: var(--shadow-floating);
+}
+:root[data-theme='light'] dialog::backdrop {
+  background: rgba(30, 45, 36, 0.38);
+}
+[data-theme='light'] ::selection {
+  background: #c6d5cb;
+  color: var(--color-text);
 }
 
 /* ───────── Base reset ───────── */
@@ -397,11 +442,14 @@ textarea:not(:disabled) {
     radial-gradient(800px 500px at 20% 0%, rgba(227, 6, 19, 0.1), transparent 60%),
     radial-gradient(700px 400px at 90% 100%, rgba(227, 6, 19, 0.08), transparent 70%);
 }
-/* Light theme — softer per prototype line 1382-1386. */
+/* Light theme: neutral ambient depth, keeping red for deliberate accents. */
 [data-theme='light'] .header-ambient::before {
-  background:
-    radial-gradient(800px 500px at 20% 0%, rgba(227, 6, 19, 0.04), transparent 60%),
-    radial-gradient(700px 400px at 90% 100%, rgba(227, 6, 19, 0.03), transparent 70%);
+  background: radial-gradient(900px 650px at 25% 0%, rgba(88, 116, 98, 0.04), transparent 70%);
+}
+
+[data-theme='light'] .app-wedge {
+  background: var(--color-red);
+  opacity: 0.35;
 }
 
 /* ───────── Brand DNA: red icon | divider | label row ───────── */
@@ -623,20 +671,4 @@ textarea:not(:disabled) {
 }
 [aria-invalid='true']:not([type='hidden']) {
   border-color: var(--color-red) !important;
-}
-
-/* Shared selected filter treatment: neutral surface, white label, restrained brand edge.
-   Fixed foreground/background keep the same contrast in both CRM themes. */
-.crm-filter-selected {
-  color: #fff;
-  background: #292b31;
-  border-color: color-mix(in srgb, var(--color-red) 50%, #41434b);
-}
-.crm-filter-selected:hover {
-  color: #fff;
-  background: #33363d;
-}
-.crm-filter-selected:focus-visible {
-  outline: 2px solid var(--color-red);
-  outline-offset: 3px;
 }

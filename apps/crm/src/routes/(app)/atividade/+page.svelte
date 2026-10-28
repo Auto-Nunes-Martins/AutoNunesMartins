@@ -1,4 +1,6 @@
 <script lang="ts">
+  import FilterChoice from '$lib/components/common/FilterChoice.svelte';
+  import FilterChoiceGroup from '$lib/components/common/FilterChoiceGroup.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
   import { activityHref as hrefFor } from '$lib/activityNavigation';
@@ -265,7 +267,6 @@
           </label>
           <DateInput
             id="actv-from"
-
             bind:value={from}
             onchange={applyFilters}
             class="w-full h-10 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -281,7 +282,6 @@
           </label>
           <DateInput
             id="actv-to"
-
             bind:value={to}
             onchange={applyFilters}
             class="w-full h-10 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -299,34 +299,24 @@
         </summary>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2 pt-2">
           {#each TYPE_GROUPS as group (group.label)}
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span
-                class="font-mono text-[9.5px] uppercase tracking-[0.18em] text-[var(--color-text-faint)] pr-1"
-              >
-                {group.label} ·
-              </span>
+            <FilterChoiceGroup label={group.label}>
               {#each group.types as t (t)}
                 {@const s = styleFor(t)}
                 {@const Icon = s.icon}
                 {@const active = selectedTypes.has(t)}
-                <button
-                  type="button"
-                  aria-pressed={active}
+                <FilterChoice
+                  selected={active}
                   onclick={() => {
                     toggleType(t);
                     applyFilters();
                   }}
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1 border font-mono text-[10px] uppercase tracking-[0.12em] transition-colors cursor-pointer {active
-                    ? 'crm-filter-selected'
-                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)]'}"
-                  style="border-radius: 3px;"
                   title={s.label}
                 >
                   <Icon class="h-3 w-3" style="color: {s.color};" />
                   {s.label}
-                </button>
+                </FilterChoice>
               {/each}
-            </div>
+            </FilterChoiceGroup>
           {/each}
         </div>
       </details>

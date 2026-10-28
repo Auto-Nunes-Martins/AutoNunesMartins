@@ -97,7 +97,7 @@
   }
   :global([data-theme='light']) .kpi-surface {
     background: var(--color-bg-1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+    box-shadow: var(--shadow-panel) !important;
   }
   .kpi-spark {
     position: absolute;

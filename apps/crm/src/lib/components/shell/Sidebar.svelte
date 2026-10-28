@@ -263,7 +263,7 @@
     width: var(--sidebar-w-collapsed, 68px);
   }
   :global([data-theme='light']) .sidebar {
-    background: linear-gradient(180deg, #fafaf6 0%, #f4f2ee 100%);
+    background: linear-gradient(180deg, var(--color-shell), var(--color-bg-0));
   }
 
   /*
@@ -489,6 +489,9 @@
     width: 2px;
     background: var(--color-red);
     box-shadow: 0 0 10px color-mix(in oklab, var(--color-red) 50%, transparent);
+  }
+  :global([data-theme='light']) .nav-item-active::before {
+    box-shadow: none;
   }
 
   .nav-label {

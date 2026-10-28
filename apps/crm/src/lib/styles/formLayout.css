@@ -176,9 +176,9 @@
   min-width: 0;
   min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-control-border, var(--color-border));
   border-radius: var(--radius-btn);
-  background-color: var(--color-bg-0) !important;
+  background-color: var(--color-control, var(--color-bg-0)) !important;
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -272,10 +272,21 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   box-sizing: border-box;
   height: 44px;
   min-height: 44px;
-  background-color: var(--color-bg-0) !important;
+  background-color: var(--color-control, var(--color-bg-0)) !important;
+}
+html[data-theme='light']
+  :is(main, header, dialog)
+  :is(div, label):has(> input[type='search']):has(> svg) {
+  border-color: var(--color-control-border);
+}
+html[data-theme='light']
+  :is(main, header, dialog)
+  :is(div, label):has(> input[type='search']):has(> svg):focus-within {
+  border-color: var(--color-red);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-red) 12%, transparent);
 }
 .qt-input {
-  background-color: var(--color-bg-0) !important;
+  background-color: var(--color-control, var(--color-bg-0)) !important;
 }
 :is(main, header, dialog)
   :is(div, label):has(> input[type='search']):has(> svg)
@@ -295,6 +306,6 @@ input[type='date']::-webkit-calendar-picker-indicator:hover {
   box-sizing: border-box;
   height: 44px;
   min-height: 44px;
-  background-color: var(--color-bg-0) !important;
+  background-color: var(--color-control, var(--color-bg-0)) !important;
   color: var(--color-text);
 }

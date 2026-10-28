@@ -135,7 +135,7 @@
     box-shadow: 0 -8px 24px -12px rgba(0, 0, 0, 0.6);
   }
   :global([data-theme='light']) .bottom-nav {
-    background: linear-gradient(180deg, #fafaf6 0%, #f4f2ee 100%);
+    background: var(--color-shell);
     box-shadow: 0 -8px 24px -16px rgba(0, 0, 0, 0.15);
   }
 
@@ -228,7 +228,9 @@
     /* Stretch the active rail to the full cell width by removing default
        button/anchor inline-block oddities. */
     width: 100%;
-    transition: color 0.12s, background-color 0.12s;
+    transition:
+      color 0.12s,
+      background-color 0.12s;
   }
   .bn-item:hover {
     color: var(--color-text);

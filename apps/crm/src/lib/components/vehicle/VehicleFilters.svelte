@@ -1,4 +1,6 @@
 <script lang="ts">
+  import FilterChoice from '$lib/components/common/FilterChoice.svelte';
+  import FilterChoiceGroup from '$lib/components/common/FilterChoiceGroup.svelte';
   import { page } from '$app/stores';
   import { filterNavigation } from '$lib/filterNavigation';
   import { Search, X } from 'lucide-svelte';
@@ -113,49 +115,22 @@
         onclick={() => setFilter('agedStock', undefined)}>Retirar filtro</button
       >
     </div>{/if}
-  <!-- Status chips -->
-  <div class="flex flex-wrap items-center gap-2">
-    <span
-      class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mr-1"
-    >
-      Estado
-    </span>
+  <FilterChoiceGroup label="Estado">
     {#each STATUSES as s (s.value)}
-      {@const active = filters.status === s.value}
-      <button
-        type="button"
-        aria-pressed={active}
-        onclick={() => toggleChip('status', s.value, filters.status)}
-        class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] border transition-colors {active
-          ? 'crm-filter-selected'
-          : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
+      <FilterChoice
+        selected={filters.status === s.value}
+        onclick={() => toggleChip('status', s.value, filters.status)}>{s.label}</FilterChoice
       >
-        {s.label}
-      </button>
     {/each}
-  </div>
-
-  <!-- Fuel chips -->
-  <div class="flex flex-wrap items-center gap-2">
-    <span
-      class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mr-1"
-    >
-      Combustível
-    </span>
+  </FilterChoiceGroup>
+  <FilterChoiceGroup label="Combustível">
     {#each FUELS as f (f.value)}
-      {@const active = filters.fuel === f.value}
-      <button
-        type="button"
-        aria-pressed={active}
-        onclick={() => toggleChip('fuel', f.value, filters.fuel)}
-        class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] border transition-colors {active
-          ? 'crm-filter-selected'
-          : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
+      <FilterChoice
+        selected={filters.fuel === f.value}
+        onclick={() => toggleChip('fuel', f.value, filters.fuel)}>{f.label}</FilterChoice
       >
-        {f.label}
-      </button>
     {/each}
-  </div>
+  </FilterChoiceGroup>
 
   <!-- Range filters -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3">

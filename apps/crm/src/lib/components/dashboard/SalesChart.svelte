@@ -248,6 +248,16 @@
     border-left: 1px solid rgba(255, 255, 255, 0.35);
     padding-left: 8px;
   }
+  :global([data-theme='light']) .selection {
+    background: var(--color-bg-3);
+    color: var(--color-text);
+  }
+  :global([data-theme='light']) .selection strong {
+    color: var(--color-text);
+  }
+  :global([data-theme='light']) .revenue {
+    border-color: var(--color-border-strong);
+  }
   .chart-scroll {
     overflow-x: auto;
     padding: 6px 3px 3px;

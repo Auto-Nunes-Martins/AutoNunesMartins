@@ -1,4 +1,5 @@
 <script lang="ts">
+  import TaskChoiceFilters from '$lib/components/task/TaskChoiceFilters.svelte';
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import { tick, untrack } from 'svelte';
@@ -22,10 +23,7 @@
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
   import RecentActivityFeed from '$lib/components/dashboard/RecentActivityFeed.svelte';
   import TaskCard from '$lib/components/task/TaskCard.svelte';
-  import {
-    TASK_PRIORITIES as PRIORITIES,
-    TASK_STATUS_LABELS,
-  } from '$lib/components/task/presentation';
+  import { TASK_STATUS_LABELS } from '$lib/components/task/presentation';
   import {
     copyBoard,
     moveTask,
@@ -409,66 +407,14 @@
           >
         </label>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span
-          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mr-1"
-        >
-          Prioridade
-        </span>
-        {#each PRIORITIES as p (p.value)}
-          {@const active = data.filters.priority === p.value}
-          <button
-            type="button"
-            aria-pressed={active}
-            onclick={() => setPriority(active ? undefined : p.value)}
-            style={active
-              ? `border-color: ${p.color}`
-              : undefined}
-            class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors flex items-center gap-1.5 {active
-              ? 'crm-filter-selected'
-              : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
-          >
-            <span class="h-1.5 w-1.5 rounded-full" style="background: {p.color};"></span>
-            {p.label}
-          </button>
-        {/each}
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2">
-        <span
-          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mr-1"
-        >
-          Visibilidade
-        </span>
-        {#each [{ value: 'all', label: 'Todas' }, { value: 'mine', label: 'Minhas' }, { value: 'general', label: 'Gerais' }] as opt (opt.value)}
-          {@const active = currentScope === opt.value}
-          <button
-            type="button"
-            aria-pressed={active}
-            onclick={() => setScope(opt.value as Scope)}
-            class="px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors {active
-              ? 'crm-filter-selected'
-              : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
-          >
-            {opt.label}
-          </button>
-        {/each}
-
-        <span class="w-px h-5 bg-[var(--color-border)] mx-1"></span>
-
-        <button
-          type="button"
-          aria-pressed={showScheduledActive}
-          onclick={toggleShowScheduled}
-          title="Mostrar tarefas recorrentes (semanais, mensais, anuais) já agendadas para um próximo ciclo"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] border transition-colors {showScheduledActive
-            ? 'crm-filter-selected'
-            : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'}"
-        >
-          <CalendarClock class="h-3 w-3" />
-          Tarefas agendadas
-        </button>
-      </div>
+      <TaskChoiceFilters
+        priority={data.filters.priority}
+        scope={currentScope}
+        showScheduled={showScheduledActive}
+        onpriority={setPriority}
+        onscope={setScope}
+        onscheduled={toggleShowScheduled}
+      />
     </fieldset>
   </Panel>
 

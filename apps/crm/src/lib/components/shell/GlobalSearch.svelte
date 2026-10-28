@@ -221,9 +221,8 @@
     overflow: hidden;
   }
   :global([data-theme='light']) .gs-dropdown {
-    background:
-      linear-gradient(180deg, rgba(0, 0, 0, 0.015) 0%, rgba(0, 0, 0, 0.02) 100%),
-      var(--color-bg-elevated);
+    background: var(--color-bg-elevated);
+    box-shadow: var(--shadow-floating);
   }
 
   .gs-scroll {

@@ -389,5 +389,6 @@
   }
   :global([data-theme='light']) .panel-surface {
     background: var(--color-bg-elevated);
+    box-shadow: var(--shadow-floating);
   }
 </style>

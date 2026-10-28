@@ -25,5 +25,6 @@
   }
   :global([data-theme='light']) .panel-surface {
     background: var(--color-bg-1);
+    box-shadow: var(--shadow-panel);
   }
 </style>

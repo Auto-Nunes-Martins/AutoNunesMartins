@@ -1,4 +1,5 @@
 <script lang="ts">
+  import FilterChoice from '$lib/components/common/FilterChoice.svelte';
   import { sessionFetch } from '$lib/auth/session';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath, crmRoute } from '$lib/paths';
@@ -611,18 +612,12 @@
         <div class="qt-chips">
           {#each PRIORITIES as p (p.value)}
             {@const active = priority === p.value}
-            <button
-              type="button"
-              aria-pressed={active}
-              onclick={() => (priority = p.value)}
-              style={active
-                ? `color: ${p.color}; border-color: ${p.color}; background: color-mix(in srgb, ${p.color} 12%, transparent)`
-                : undefined}
-              class="qt-chip {active ? 'is-active' : ''}"
+            <FilterChoice
+              compact
+              selected={active}
+              markerColor={p.color}
+              onclick={() => (priority = p.value)}>{p.label}</FilterChoice
             >
-              <span class="qt-chip-dot" style="background: {p.color};"></span>
-              {p.label}
-            </button>
           {/each}
         </div>
       </div>
@@ -632,17 +627,14 @@
         <div class="qt-chips">
           {#each DUE_PRESETS as d (d.value)}
             {@const active = dueChoice === d.value}
-            <button
-              type="button"
-              aria-pressed={active}
+            <FilterChoice
+              compact
+              selected={active}
               onclick={() => {
                 dueChoice = d.value;
                 customDate = '';
-              }}
-              class="qt-chip {active ? 'is-active' : ''}"
+              }}>{d.label}</FilterChoice
             >
-              {d.label}
-            </button>
           {/each}
           <label
             class="qt-chip qt-chip-date {dueChoice === 'custom' ? 'is-active' : ''}"
@@ -693,14 +685,9 @@
           <div class="qt-scope">
             {#each SCOPES as s (s.value)}
               {@const active = scope === s.value}
-              <button
-                type="button"
-                aria-pressed={active}
-                onclick={() => (scope = s.value)}
-                class="qt-scope-btn {active ? 'is-active' : ''}"
+              <FilterChoice compact selected={active} onclick={() => (scope = s.value)}
+                >{s.label}</FilterChoice
               >
-                {s.label}
-              </button>
             {/each}
           </div>
         </div>
@@ -943,7 +930,8 @@
     background: linear-gradient(180deg, #16161a 0%, #101012 100%);
   }
   :global([data-theme='light']) .qt-panel {
-    background: var(--color-bg-1);
+    background: var(--color-bg-elevated);
+    box-shadow: var(--shadow-floating);
   }
 
   /* ───────── Panel (mobile bottom-sheet) ───────── */
@@ -1172,6 +1160,10 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: calc(var(--radius-card) + 4px);
+    background: var(--color-bg-0);
   }
   .qt-chip {
     display: inline-flex;
@@ -1203,12 +1195,6 @@
     color: var(--color-text);
     border-color: var(--color-red);
     background: color-mix(in oklab, var(--color-red) 14%, transparent);
-  }
-  .qt-chip-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    flex-shrink: 0;
   }
   .qt-chip-date {
     padding: 3px 8px;
@@ -1303,38 +1289,14 @@
     font-weight: 600;
   }
   .qt-scope {
-    display: inline-flex;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 3px;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-btn);
-    overflow: hidden;
+    border-radius: calc(var(--radius-card) + 4px);
+    background: var(--color-bg-0);
   }
-  .qt-scope-btn {
-    padding: 5px 11px;
-    font-family: var(--font-mono);
-    font-size: 9.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--color-text-muted);
-    background: transparent;
-    border: 0;
-    border-right: 1px solid var(--color-border);
-    transition:
-      color 0.18s var(--ease-brand),
-      background-color 0.22s var(--ease-brand);
-    cursor: pointer;
-  }
-  .qt-scope-btn:last-child {
-    border-right: 0;
-  }
-  .qt-scope-btn:hover {
-    color: var(--color-text);
-    background: color-mix(in oklab, var(--color-red) 5%, transparent);
-  }
-  .qt-scope-btn.is-active {
-    color: var(--color-text);
-    background: color-mix(in oklab, var(--color-red) 14%, transparent);
-  }
-
   .qt-empty {
     padding: 22px 14px 26px;
     text-align: center;
@@ -1595,6 +1557,10 @@
       font-size: 13px;
       letter-spacing: 0;
       text-transform: none;
+    }
+    .qt-panel.is-mobile .qt-chips :global(.filter-choice) {
+      flex: 1 0 calc(50% - 4px);
+      font-size: 13px;
     }
     .qt-create {
       display: flex;
