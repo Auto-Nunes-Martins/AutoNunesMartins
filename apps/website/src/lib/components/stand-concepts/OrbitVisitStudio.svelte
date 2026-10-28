@@ -143,7 +143,7 @@
         </h2>
       </div>
 
-      <VisitLocations {contact} {id}/>
+      <VisitLocations {contact} {id} harmonized={harmonizedTypography}/>
 
       <div class="contact-details">
         <div class="channels">
