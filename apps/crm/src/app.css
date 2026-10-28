@@ -669,6 +669,25 @@ textarea:not(:disabled) {
   border-radius: var(--radius-btn);
   font-size: 13px;
 }
+.crm-form-error-summary > p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.crm-form-error-summary ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+.crm-form-error-summary a {
+  display: inline-block;
+  padding-block: 3px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 [aria-invalid='true']:not([type='hidden']) {
   border-color: var(--color-red) !important;
 }

@@ -190,10 +190,6 @@
             }
           } else if (result.type === 'failure') {
             showFormErrors(formElement, result.data);
-
-            const err =
-              (result.data as { error?: string } | undefined)?.error ?? 'Falha ao guardar.';
-            toast.error(err);
           }
           if (result.type === 'redirect') {
             submitting = false;

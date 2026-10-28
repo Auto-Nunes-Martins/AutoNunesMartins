@@ -13,7 +13,7 @@
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
-    "test:form-browser": "svelte-kit sync && node --test test/vehicle-form-retention.browser.mjs"
+    "test:form-browser": "svelte-kit sync && node --test test/vehicle-form-retention.browser.mjs test/form-validation.browser.mjs"
   },
   "dependencies": {
     "@anm/types": "workspace:^",
