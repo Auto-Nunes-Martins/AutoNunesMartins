@@ -305,6 +305,9 @@ html:has(dialog.gallery-dialog[open]) {
     color: white;
     box-shadow: 0 0 0 4px #ffffff24, 0 3px 14px #0009;
   }
+  .design.orbit .gallery-dialog .viewer-step:not(:disabled):not([aria-disabled='true']):hover {
+    box-shadow: 0 3px 14px #0009;
+  }
   .design.orbit .gallery-dialog .viewer-thumbnails button:not(:disabled):not([aria-disabled='true']):hover {
     opacity: 1;
     border-color: #ffffffcc;
