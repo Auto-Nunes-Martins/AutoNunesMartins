@@ -2,7 +2,7 @@
 
 **Regra atual de pertença (28/10/2026):** todas as fotografias presentes na viatura acompanham a publicação global; não existe seleção individual. As referências históricas abaixo a «aprovadas» descrevem a política anterior. A autorização atual verifica publicação/elegibilidade da viatura, pertença a `Vehicle.photos` e versão. Ver [regra oficial](vehicle-photo-publication.md). Esta alteração não desfaz a experiência de entrega nem altera os masters ou WebP84.
 
-Pedido do proprietário em 25/10/2026: usar no site normal a mesma versão da fotografia principal nos cartões, miniaturas, galeria e fullscreen. Comportamento ativo: **1600 px fixos**, sem `srcset` nas fotografias públicas de viaturas. Originais pequenos mantêm o fallback nativo existente, sem ampliação artificial.
+Pedido do proprietário em 25/10/2026: usar no site normal a mesma versão da fotografia principal nos cartões, miniaturas, galeria e fullscreen. A alteração seletiva de 28/10/2026 abaixo substitui essa regra apenas nos cartões. **A ficha mantém 1600 px fixos** na principal, miniaturas, galeria e fullscreen. Originais pequenos mantêm o fallback nativo existente, sem ampliação artificial.
 
 ## Referências duradouras
 
@@ -10,6 +10,16 @@ Pedido do proprietário em 25/10/2026: usar no site normal a mesma versão da fo
 - Commit isolado da experiência: tag anotada `photo-delivery-shared-image-2026-10-25`, título `Use one 1600px photo across public vehicle views`.
 - As duas tags são publicadas no remoto de `main`. Não depende de uma stash, desta máquina ou de recordar o SHA.
 - A correção do formulário CRM é um commit separado.
+
+## Alteração seletiva de cartões — 28 de outubro de 2026
+
+Por pedido do proprietário, o bloco partilhado `vehicleCard` volta a oferecer derivados 320/384/800/1280/1600/2560 com `srcset`. Abrange catálogo junto aos filtros, homepage, favoritos e carrossel de relacionadas. O cartão especial de destaque da homepage (`FeaturedPhoto`) e o seu preload também passam a responsivos. `sizes` considera colunas, sidebar, proporção da foto, recorte cover e células fracionárias do carrossel; a medição do elemento ajusta o valor após layout. A densidade fica a cargo do navegador. Não foi reposta a entrega responsiva nos detalhes.
+
+Só uma navegação efetiva captura os pixels já descodificados do cartão, em memória, para uma apresentação temporária. A ficha só os aceita se a identidade da primeira fotografia coincidir com a versão da consulta atual. A camada temporária é removida quando a cópia 1600 descodifica, numa falha ou ao desmontar. Expira em 15 segundos e só pode ser consumida uma vez. Não alimenta a cache da galeria nem substitui a cópia 1600. Uma alteração de versão, outra fotografia ou origem diferente impede a reutilização.
+
+A preparação de todas as fotos em 1600 continua apenas na navegação efetiva, nunca por hover ou por mostrar cartões. A ficha mantém todas as miniaturas eager e os preloads existentes; fullscreen reutiliza as cópias 1600. Não se presume que 1600 esteja na cache: se o cartão recebeu 800/1280, a ficha ainda tem de obter 1600. Autorização dos endpoints, publicação/pertença, versões, masters e WebP84 permanecem inalterados. Sem publicação/deploy neste trabalho.
+
+Medição reproduzível: `node scripts/measure-card-photo-delivery.mjs`. Resultados e limitações em `docs/measurements/card-responsive-2026-10-28/`.
 
 ## Desfazer num chat futuro
 

@@ -4,7 +4,7 @@
   import type { PublicHighlights } from '$lib/homepageHighlights';
   import { publicPhoto, publicHref, publicPrice, fuelLabels } from '$lib/publicVehicles';
   import FeaturedPhoto from './FeaturedPhoto.svelte';
-  import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
+  import { cardPhoto, cardPhotoSet } from '$lib/vehiclePhotoSources';
   import { usePublicTheme } from '$lib/publicTheme';
   import { heroBackgrounds } from './homeHeroBackgrounds';
   import './homeHeroDirections.css';
@@ -188,8 +188,8 @@
     <link
       rel="preload"
       as="image"
-      href={sizedPhoto(firstImage, 1600)}
-      imagesrcset={vehiclePhotoSet(firstImage)}
+      href={cardPhoto(firstImage)}
+      imagesrcset={cardPhotoSet(firstImage)}
       imagesizes={featuredPhotoSizes}
       fetchpriority="high"
     />

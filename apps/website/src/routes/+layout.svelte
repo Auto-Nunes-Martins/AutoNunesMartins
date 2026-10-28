@@ -10,16 +10,24 @@
   import { installAnchorNavigation } from '$lib/anchorNavigation';
   import { slugPattern } from '$lib/publicVehicles';
   import { warmNavigationThumbnails, cancelNavigationThumbnails } from '$lib/publicThumbnail';
+  import { captureCardPhoto } from '$lib/cardPhotoPreview';
   let anchors: ReturnType<typeof installAnchorNavigation> | undefined;
   beforeNavigate(({ type, to }) => {
     anchors?.stop();
     cancelNavigationThumbnails();
+    captureCardPhoto();
     if (!browser || type !== 'link' || !to || to.url.origin !== location.origin) return;
     const match = /^\/viaturas\/([^/]+)$/.exec(to.url.pathname);
     if (match?.[1] && match[1].length <= 180 && slugPattern.test(match[1])) {
-      const card = [...document.querySelectorAll<HTMLAnchorElement>('a[data-photo-count]')]
-        .find(link => link.origin === location.origin && link.pathname === to.url.pathname);
+      const links = [...document.querySelectorAll<HTMLAnchorElement>('a[data-photo-count]')]
+        .filter(link => link.origin === location.origin && link.pathname === to.url.pathname);
+      const focusedCard = document.activeElement?.closest('.vehicle-card');
+      const card = links.find(link => focusedCard?.contains(link)) ?? links.find(link => {
+        const bounds = link.getBoundingClientRect();
+        return bounds.bottom > 0 && bounds.top < innerHeight && bounds.right > 0 && bounds.left < innerWidth;
+      }) ?? links[0];
       const count = card ? Number(card.dataset.photoCount) : undefined;
+      captureCardPhoto(card?.querySelector('img:not([aria-hidden="true"])'));
       warmNavigationThumbnails(match[1], innerWidth, devicePixelRatio, count);
     }
   });

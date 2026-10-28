@@ -13,9 +13,11 @@ export function publicGalleryPhoto(node: HTMLImageElement, initial: Source): {
   let source = initial, session = initial.session, revision = 0, alive = true;
   let renderer: ReturnType<typeof vehiclePhoto> | undefined;
   let cancelSeed: (() => void) | undefined;
+  let clearPreview: (() => void) | undefined;
   session?.attach();
 
   function blank() {
+    clearPreview?.(); clearPreview = undefined;
     renderer?.destroy(); renderer = undefined;
     node.style.visibility = 'hidden';
     node.removeAttribute('srcset');
@@ -55,20 +57,41 @@ export function publicGalleryPhoto(node: HTMLImageElement, initial: Source): {
   async function show(first = false) {
     if (!session) return;
     const version = ++revision, current = source;
+    clearPreview?.(); clearPreview = undefined;
+    const preview = first ? session.preview?.(current.src) : undefined;
+    if (preview && node.parentElement) {
+      const layer = document.createElement('img');
+      layer.src = preview;
+      layer.alt = '';
+      layer.setAttribute('data-card-photo-preview', '');
+      layer.setAttribute('aria-hidden', 'true');
+      layer.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1';
+      layer.style.objectFit = getComputedStyle(node).objectFit;
+      layer.style.objectPosition = getComputedStyle(node).objectPosition;
+      node.parentElement.append(layer);
+      clearPreview = () => layer.remove();
+    }
     const retained = session.hasCopy?.(current.src) ?? false;
-    current.onLoading?.(!retained);
+    current.onLoading?.(!retained && !preview);
     const copy = await session.read(current.src, first && node.getAttribute('src') ? seed : undefined);
     if (!alive || version !== revision) return;
     if (!copy) { blank(); return; }
     node.style.visibility = '';
     const next = { src: copy.url, fade: current.fade, onLoading: (value: boolean) => {
-      if (alive && version === revision) current.onLoading?.(retained ? false : value);
+      if (alive && version === revision) {
+        current.onLoading?.(retained || preview ? false : value);
+        if (!value) { clearPreview?.(); clearPreview = undefined; }
+      }
     } };
     if (renderer) renderer.update(next);
     else {
       node.src = copy.url;
       node.removeAttribute('srcset');
       renderer = vehiclePhoto(node, next);
+    }
+    if (preview) {
+      try { await node.decode(); } catch { /* Normal error handling owns failures. */ }
+      if (alive && version === revision) { clearPreview?.(); clearPreview = undefined; }
     }
   }
   if (session) void show(true);
@@ -100,6 +123,7 @@ export function publicGalleryPhoto(node: HTMLImageElement, initial: Source): {
     },
     destroy() {
       alive = false; revision++;
+      clearPreview?.();
       cancelSeed?.();
       node.removeEventListener('error', failed);
       renderer?.destroy();

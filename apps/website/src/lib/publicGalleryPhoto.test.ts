@@ -11,7 +11,31 @@ class Image extends EventTarget {
   setAttribute(key: string, value: string) { this.attributes.set(key, value); }
   removeAttribute(key: string) { this.attributes.delete(key); }
 }
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+it('keeps the card preview visible while the authorized 1600 copy is acquired and decoded', async () => {
+  const node = new Image();
+  const remove = vi.fn(), append = vi.fn();
+  Object.assign(node, { parentElement: { append } });
+  vi.stubGlobal('document', { createElement: () => ({ style: {}, setAttribute: vi.fn(), remove }) });
+  vi.stubGlobal('getComputedStyle', () => ({ objectFit: 'cover', objectPosition: 'center' }));
+  let finish!: (value: { url: string }) => void;
+  const pending = new Promise<{ url: string }>(resolve => { finish = resolve; });
+  let decoded!: () => void;
+  node.decode.mockImplementation(() => new Promise<void>(resolve => { decoded = resolve; }));
+  const loading = vi.fn();
+  const session = { attach: vi.fn(), detach: vi.fn(), preview: () => 'data:image/webp;base64,preview', read: vi.fn().mockReturnValue(pending) } as unknown as PublicGallerySession;
+  const action = publicGalleryPhoto(node as unknown as HTMLImageElement, { src: '/photo?w=1600', session, onLoading: loading });
+  expect(append).toHaveBeenCalledOnce();
+  expect(remove).not.toHaveBeenCalled();
+  expect(loading).toHaveBeenLastCalledWith(false);
+  finish({ url: 'blob:1600' }); await pending; await Promise.resolve();
+  expect(node.src).toBe('blob:1600');
+  expect(remove).not.toHaveBeenCalled();
+  decoded(); await Promise.resolve(); await Promise.resolve();
+  expect(remove).toHaveBeenCalledOnce();
+  action.destroy();
+});
 
 it('does not flash loading while decoding a photograph already retained in this visit', async () => {
   const node = new Image();

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
+  import { sizedPhoto, vehiclePhotoSet, cardPhoto, cardPhotoSet } from '$lib/vehiclePhotoSources';
   import type { Snippet } from 'svelte';
   import type { VehicleDetailRuntime } from '$lib/vehicleDetailRuntime';
   let galleryOpen = $state(false);
@@ -69,7 +69,7 @@
     Maximize,
   } from 'lucide-svelte';
   import { cars, photo, eur, number } from './data';
-  import { responsivePhoto, cardImageSizes, publicCardImageSizes } from './images';
+  import { responsivePhoto, cardImageSizes, publicCardImageSizes, relatedCardImageSizes } from './images';
   import { coverPhotoSizes } from '$lib/coverPhotoSizes';
   import { designMotion, entrance, conditionalEntrance } from './designMotion';
   import OrbitPerspective from './OrbitPerspective.svelte';
@@ -1614,6 +1614,7 @@
   vehicle: CatalogCar | PublicCard | null,
   index: number,
   animate: boolean = true,
+  relatedCount: number = 0,
 )}
   <article
     class="vehicle-card"
@@ -1649,13 +1650,13 @@
             <img
               use:coverPhotoSizes
               use:vehiclePhoto={{
-                src: photo(vehicle.image, 1100),
-                srcset: responsivePhoto(vehicle.image, 1600),
+                src: 'approved' in vehicle ? cardPhoto(vehicle.image) : photo(vehicle.image, 1100),
+                srcset: 'approved' in vehicle ? cardPhotoSet(vehicle.image) : responsivePhoto(vehicle.image, 1600),
               }}
-              src={photo(vehicle.image, 1100)}
-              srcset={responsivePhoto(vehicle.image, 1600)}
+              src={'approved' in vehicle ? cardPhoto(vehicle.image) : photo(vehicle.image, 1100)}
+              srcset={'approved' in vehicle ? cardPhotoSet(vehicle.image) : responsivePhoto(vehicle.image, 1600)}
               sizes={'approved' in vehicle
-                ? publicCardImageSizes(vehicle.photoDimensions, catalog, favorites)
+                ? relatedCount ? relatedCardImageSizes(vehicle.photoDimensions, relatedCount) : publicCardImageSizes(vehicle.photoDimensions, catalog, favorites)
                 : cardImageSizes}
               fetchpriority={catalog || favorites ? undefined : 'low'}
               alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}

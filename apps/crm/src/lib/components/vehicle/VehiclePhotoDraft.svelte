@@ -5,6 +5,8 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
+  import { PHOTO_ACCEPT, validatePhoto, preparePhoto } from '$lib/photoPreparation';
+  import { crmPath } from '$lib/paths';
   let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, form, disabled = false }:
     { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; form: string; disabled?: boolean } = $props();
   let notice = $state<{ accepted: EditPhoto[]; rejected: string[] } | null>(null);
@@ -18,6 +20,32 @@
   const addedCount = $derived(photos.filter(photo => photo.file).length);
   const uploadId = $props.id();
   const urls = new Set<string>();
+  const controllers = new Map<string, AbortController>();
+  const newPhotos = $derived(photos.filter(photo => photo.file));
+  const readyCount = $derived(newPhotos.filter(photo => photo.preparedFile).length);
+  const failedCount = $derived(newPhotos.filter(photo => photo.preparationError).length);
+  const pendingCount = $derived(newPhotos.length - readyCount - failedCount);
+  function enqueue(photo: EditPhoto) {
+    const controller = new AbortController();
+    controllers.set(photo.path, controller);
+    photo.preparationError = undefined;
+    photo.preparation = preparePhoto(photo.file!, controller.signal);
+    void photo.preparation.then(file => {
+      const current = photos.find(item => item.path === photo.path);
+      if (!current || controller.signal.aborted) return;
+      current.preparedFile = file;
+      const url = URL.createObjectURL(file); urls.add(url); current.url = url;
+      if (notice) notice = { ...notice, accepted: notice.accepted.map(item => item.path === current.path ? current : item) };
+      failedCoverUrl = '';
+    }).catch(error => {
+      const current = photos.find(item => item.path === photo.path);
+      if (current && !controller.signal.aborted) current.preparationError = `${photo.file!.name}: ${error.message}`;
+    });
+  }
+  $effect(() => {
+    for (const photo of photos) if (photo.file && !photo.preparation && !photo.preparedFile) enqueue(photo);
+    for (const [path, controller] of controllers) if (!photos.some(photo => photo.path === path)) { controller.abort(); controllers.delete(path); }
+  });
   $effect(() => {
     const used = new Set([...photos.map(photo => photo.url), ...(notice?.accepted.map(photo => photo.url) ?? [])]);
     for (const url of urls) if (!used.has(url)) { URL.revokeObjectURL(url); urls.delete(url); }
@@ -29,10 +57,11 @@
     const previousCount = photos.length;
     for (const file of Array.from(input.files ?? [])) {
       if (photos.length >= 20) { rejected.push(`${file.name}: máximo de 20 fotografias atingido.`); continue; }
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 20 * 1024 * 1024) { rejected.push(`${file.name}: use JPEG, PNG ou WebP até 20 MB.`); continue; }
-      const uploadId = crypto.randomUUID(), url = URL.createObjectURL(file);
+      try { validatePhoto(file); } catch (error) { rejected.push(`${file.name}: ${(error as Error).message}`); continue; }
+      const uploadId = crypto.randomUUID(), url = /\.hei[cf]$/i.test(file.name) || /image\/hei[cf]/.test(file.type)
+        ? crmPath('/catalog-placeholder.svg') : URL.createObjectURL(file);
       const photo = { path: 'draft:' + uploadId, url, file, uploadId };
-      urls.add(url); accepted.push(photo); photos = [...photos, photo];
+      if (url.startsWith('blob:')) urls.add(url); accepted.push(photo); photos = [...photos, photo];
     }
     input.value = '';
     if (photos.length > previousCount) revealPath = photos[photos.length - 1]!.path;
@@ -42,13 +71,24 @@
   async function primary(path: string) { await reorder([path, ...photos.filter(photo => photo.path !== path).map(photo => photo.path)]); }
   async function remove(path: string) { const wasPrincipal=cover?.path===path;photos = photos.filter(photo => photo.path !== path); selected = selected.filter(item => item !== path);if(wasPrincipal)principalPath=photos[0]?.path;if(notice?.accepted.some(photo=>photo.path===path)){const accepted=notice.accepted.filter(photo=>photo.path!==path);notice=accepted.length||notice.rejected.length?{...notice,accepted}:null;} }
   function closeNotice() { notice = null; uploadButton?.focus({ preventScroll: true }); }
-  onDestroy(() => { for (const url of urls) URL.revokeObjectURL(url); });
+  onDestroy(() => { for (const controller of controllers.values()) controller.abort(); for (const url of urls) URL.revokeObjectURL(url); });
 </script>
 <section class="photo-draft">
   <PanelHeader icon={Camera} title="Fotografias" meta={`${photos.length} / 20`} />
   <div class="draft-content">
-    <div class="draft-toolbar"><p>JPEG, PNG ou WebP · até 20 MB por ficheiro. Otimização para cerca de 1,1 MB, com um máximo de 2 MB na fotografia guardada.</p><button bind:this={uploadButton} type="button" class="upload-button" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Upload size={17} aria-hidden="true" />Escolher fotografias</button></div>
-    <input id={uploadId} bind:this={fileInput} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={disabled || photos.length >= 20} onchange={pick} />
+    <div class="draft-toolbar"><p>JPEG, PNG, WebP ou HEIC/HEIF · até 50 MB e 50 megapíxeis por fotografia. Preparação automática neste dispositivo; envio apenas ao guardar.</p><button bind:this={uploadButton} type="button" class="upload-button" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Upload size={17} aria-hidden="true" />Escolher fotografias</button></div>
+    <input id={uploadId} bind:this={fileInput} type="file" accept={PHOTO_ACCEPT} multiple hidden disabled={disabled || photos.length >= 20} onchange={pick} />
+    <p class="decoder-notice"><a href={crmPath('/licenses/photo-decoder.txt')} target="_blank" rel="noreferrer">Licenças do conversor HEIC/HEIF</a></p>
+    {#if newPhotos.length}
+      <aside class="preparation-status" role="status" aria-live="polite" aria-atomic="true">
+        <strong>{pendingCount ? `A preparar fotografias: ${readyCount} de ${newPhotos.length}` : failedCount ? 'Algumas fotografias precisam de atenção' : `${readyCount} de ${newPhotos.length} fotografias prontas`}</strong>
+        <p>{pendingCount ? 'Pode continuar a preencher a ficha. Guardar aguarda a preparação.' : 'As fotografias só são enviadas ao guardar.'}</p>
+        <progress max={newPhotos.length} value={readyCount} aria-label="Fotografias preparadas"></progress>
+      </aside>
+      {#each newPhotos.filter(photo => photo.preparationError) as photo}
+        <div class="preparation-error"><p>{photo.preparationError}</p><button type="button" disabled={disabled} onclick={() => enqueue(photo)}>Tentar novamente</button><button type="button" disabled={disabled} onclick={() => remove(photo.path)}>Remover</button></div>
+      {/each}
+    {/if}
     {#if notice}<aside class="photo-notice" aria-label="Resultado da seleção de fotografias">
       <div class="notice-thumbnails" aria-hidden="true">{#each notice.accepted.slice(0, 3) as photo}<img {...photoAttrs(photo,320,'48px')} use:photoFallback={photo.url} alt="" />{/each}{#if notice.accepted.length > 3}<span>+{notice.accepted.length - 3}</span>{/if}{#if !notice.accepted.length}<Camera size={28} />{/if}</div>
       <div class="notice-copy" role="status" aria-live="polite" aria-atomic="true">
@@ -83,6 +123,11 @@
   </div>
 </section>
 <style>
+  .decoder-notice {font-size:10px;margin:-12px 0 16px;} .decoder-notice a {text-decoration:underline;color:var(--color-text-faint);}
+  .preparation-status { padding:16px; margin-bottom:20px; border:1px solid var(--color-border); border-left:3px solid var(--color-red); border-radius:var(--radius-card); background:var(--color-bg-2); }
+  .preparation-status strong {font-size:13px;} .preparation-status p {margin-top:5px;font-size:12px;} .preparation-status progress {display:block;width:100%;height:6px;margin-top:12px;accent-color:var(--color-red);}
+  .preparation-status progress::-webkit-progress-bar {background:var(--color-border);border-radius:3px;} .preparation-status progress::-webkit-progress-value {background:var(--color-red);border-radius:3px;} .preparation-status progress {appearance:none;border:0;border-radius:3px;overflow:hidden;}
+  .preparation-error {padding:12px;margin-bottom:12px;border:1px solid var(--color-red);border-radius:var(--radius-card);} .preparation-error button {font-size:12px;text-decoration:underline;margin:8px 16px 0 0;min-height:32px;}
   .photo-draft { border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-bg-1); overflow: hidden; }
   .draft-content { padding: 24px;container-type:inline-size;container-name:vehicle-photos; }
   .photo-workbench { display:grid;grid-template-columns:clamp(240px,26%,320px) minmax(0,1fr);gap:20px;align-items:start; }
@@ -112,7 +157,7 @@
   .notice-copy details {font-size:12px;color:var(--color-text-muted);margin-top:6px;}.notice-copy summary {cursor:pointer;padding:6px 0;}.notice-copy ul {padding-left:18px;list-style:disc;overflow-wrap:anywhere;}
   .notice-rejected {margin-top:6px;}.notice-close {display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border:1px solid var(--color-border);border-radius:4px;color:var(--color-text-muted);cursor:pointer;}.notice-close:focus-visible,.notice-copy summary:focus-visible {outline:2px solid var(--color-red);outline-offset:3px;}
   .organize-heading { margin-bottom: 18px; }
-  @media(max-width:760px) { .draft-content {padding:16px;} .photo-workbench {grid-template-columns:1fr;gap:20px;} .draft-toolbar {flex-wrap:wrap;align-items:flex-start;} .draft-toolbar p {max-width:130px;} .upload-button {font-size:12px;padding-inline:10px;} }
+  @media(max-width:760px) { .draft-content {padding:16px;} .photo-workbench {grid-template-columns:1fr;gap:20px;} .draft-toolbar {flex-wrap:wrap;align-items:flex-start;} .draft-toolbar p {flex-basis:100%;} .upload-button {font-size:12px;padding-inline:10px;} }
   @container vehicle-photos (max-width:800px) {.photo-workbench {grid-template-columns:1fr;}.cover-slot {width:min(320px,100%);}}
   @media(max-width:480px) {.cover-slot {width:min(240px,100%);}figcaption {padding:8px 10px;}figcaption span {font-size:11px;}.add-photo-card strong {font-size:12px;}}
   @media(max-width:480px) {.photo-notice {flex-wrap:wrap;gap:10px;padding:12px;}.notice-thumbnails {order:2;max-width:100%;width:100%;}.notice-copy {flex-basis:calc(100% - 54px);}.notice-close {margin-left:auto;}}

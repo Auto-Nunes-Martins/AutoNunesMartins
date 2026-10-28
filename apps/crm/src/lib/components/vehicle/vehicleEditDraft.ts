@@ -2,6 +2,9 @@ import type { SignedVariantPhoto } from '$lib/vehicleImage';
 import { descriptionHtml } from '@anm/types/richDescription';
 export type EditPhoto = SignedVariantPhoto & {
   file?: File;
+  preparedFile?: File;
+  preparation?: Promise<File>;
+  preparationError?: string;
   uploadId?: string;
   uploadedPath?: string;
 };

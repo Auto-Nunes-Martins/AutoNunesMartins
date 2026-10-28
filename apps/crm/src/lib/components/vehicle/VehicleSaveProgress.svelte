@@ -3,17 +3,17 @@
   let { phase = 0, completed = 0, total = 0, label }: {
     phase?: number; completed?: number; total?: number; label: string;
   } = $props();
-  const stages = ['Verificar ficha', 'Preparar fotografias', 'Guardar alterações'];
+  const stages = ['Verificar ficha', 'Preparar no dispositivo', 'Enviar fotografias', 'Guardar alterações'];
 </script>
 
 <aside data-save-progress class="save-progress" role="status" aria-live="polite" aria-atomic="true">
-  <div class="save-heading"><LoaderCircle size={20} class="save-spinner" /><div><strong>{label}</strong><p>{phase === 1 && total ? `${completed} de ${total} fotografias preparadas. Envio e otimização em curso.` : phase === 0 ? 'A confirmar a versão mais recente da viatura.' : 'A confirmar os dados e as escolhas de publicação.'}</p></div></div>
+  <div class="save-heading"><LoaderCircle size={20} class="save-spinner" /><div><strong>{label}</strong><p>{(phase === 1 || phase === 2) && total ? `${completed} de ${total} fotografias ${phase === 1 ? 'preparadas no dispositivo' : 'enviadas'}.` : phase === 0 ? 'A confirmar a versão mais recente da viatura.' : 'A confirmar os dados e as escolhas de publicação.'}</p></div></div>
   <ol aria-label="Etapas da gravação">{#each stages as stage, index}<li class:current={phase === index} class:done={phase > index} aria-current={phase === index ? 'step' : undefined}><span>{#if phase > index}<Check size={12} />{:else}{index + 1}{/if}</span>{stage}</li>{/each}</ol>
-  {#if phase === 1 && total}<progress max={total} value={completed} aria-label="Fotografias preparadas"></progress>{/if}
+  {#if (phase === 1 || phase === 2) && total}<progress max={total} value={completed} aria-label="Fotografias preparadas"></progress>{/if}
 </aside>
 
 <style>
-  .save-progress { padding: 20px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-left: 3px solid var(--color-red); border-radius: var(--radius-card); }
+  .save-progress { scroll-margin-top:96px; padding: 20px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-left: 3px solid var(--color-red); border-radius: var(--radius-card); }
   .save-heading { display: flex; gap: 12px; align-items: flex-start; }
   .save-heading :global(svg) { flex-shrink: 0; margin-top: 2px; color: var(--color-red); }
   .save-heading strong { font-size: 15px; font-weight: 600; }

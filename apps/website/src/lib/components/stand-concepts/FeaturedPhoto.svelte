@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy, tick, untrack } from 'svelte';
   import { featuredPhotoSizes } from './images';
-  import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
+  import { cardPhoto, cardPhotoSet } from '$lib/vehiclePhotoSources';
+  import { coverPhotoSizes } from '$lib/coverPhotoSizes';
   import { catalogPlaceholder } from '$lib/localAssets';
 
   let {
@@ -80,8 +81,9 @@
 
 {#each [...(outgoing ? [outgoing] : []), displayed, ...(pending ? [pending] : [])] as frame (frame.source)}
   <img
-    src={frame.fallback ? catalogPlaceholder : sizedPhoto(frame.source, 1600)}
-    srcset={frame.fallback ? undefined : vehiclePhotoSet(frame.source)}
+    use:coverPhotoSizes
+    src={frame.fallback ? catalogPlaceholder : cardPhoto(frame.source)}
+    srcset={frame.fallback ? undefined : cardPhotoSet(frame.source)}
     sizes={featuredPhotoSizes}
     width="1600"
     height="1067"

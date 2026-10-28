@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { PHOTO_ACCEPT, preparePhoto } from '$lib/photoPreparation';
+  import { onDestroy } from 'svelte';
   import { sessionFetch } from '$lib/auth/session';
  import {photoAttrs,photoFallback,type SignedVariantPhoto} from "$lib/vehicleImage";
   import { crmPath } from '$lib/paths';
@@ -42,6 +44,9 @@
   const apiBase = $derived(crmPath(`/viaturas/${vehicleId}/photos`));
 
   let uploading = $state(false);
+  let uploadProgress = $state('');
+  const photoController = new AbortController();
+  onDestroy(() => photoController.abort());
   let activeIndex = $state(untrack(() => principalPath === null ? -1 : Math.max(0, photos.findIndex(photo => photo.path === principalPath))));
   let loadedPrincipal = '';
   $effect(()=>{ const key=vehicleId+'|'+principalPath;if(key!==loadedPrincipal){loadedPrincipal=key;if(principalPath!==undefined)activeIndex=principalPath===null?-1:Math.max(0,photos.findIndex(photo=>photo.path===principalPath));} });
@@ -66,18 +71,19 @@
     uploading = true;
     let uploaded = 0;
     try {
-      for (const file of Array.from(files)) {
-        if (file.size > 20 * 1024 * 1024) {
-          toast.error(`${file.name}: ficheiro maior que 20 MB.`);
-          continue;
+      const selected = Array.from(files).slice(0, Math.max(0, 20 - photos.length));
+      if (selected.length < files.length) toast.error('Máximo de 20 fotografias por viatura.');
+      for (const [index, original] of selected.entries()) {
+        uploadProgress = `A preparar fotografias: ${index} de ${selected.length}…`;
+        let file: File;
+        try { file = await preparePhoto(original, photoController.signal); }
+        catch (error) {
+          if (photoController.signal.aborted) return;
+          toast.error(`${original.name}: ${(error as Error).message}`); continue;
         }
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-          toast.error(`${file.name}: formato não suportado.`);
-          continue;
-        }
-
+        uploadProgress = `A enviar fotografias: ${index + 1} de ${selected.length}…`;
         const persistRes = await sessionFetch(apiBase, {
-          method: 'POST', headers: { 'content-type': file.type }, body: file,
+          method: 'POST', headers: { 'content-type': file.type, 'x-upload-id': crypto.randomUUID() }, body: file, signal: photoController.signal,
         });
         if (!persistRes.ok) {
           const error = await persistRes.json().catch(() => ({}));
@@ -181,7 +187,7 @@
         Carregar
         <input
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept={PHOTO_ACCEPT}
           multiple
           disabled={disabled || dragging || busy}
           onchange={pickFile}
@@ -192,7 +198,8 @@
     {/snippet}
   </PanelHeader>
   {#if editable}<p class="px-4 py-3 text-xs text-[var(--color-text-muted)]">
-    JPEG, PNG ou WebP · até 20 MB por ficheiro. Otimização para cerca de 1,1 MB, com um máximo de 2 MB na fotografia guardada.
+    {#if uploading}<span role="status" aria-live="polite">{uploadProgress}</span>{/if}
+    JPEG, PNG, WebP ou HEIC/HEIF · até 50 MB e 50 megapíxeis por fotografia. Preparação automática neste dispositivo.
   </p>{/if}
 
   <div class:photo-workspace={!!editor}>
@@ -307,7 +314,7 @@
               <Plus class="h-5 w-5 text-[var(--color-text-faint)]" />
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={PHOTO_ACCEPT}
                 multiple
                 disabled={disabled || dragging || busy}
                 onchange={pickFile}

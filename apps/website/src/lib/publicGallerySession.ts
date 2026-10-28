@@ -1,6 +1,7 @@
 import { publicPhoto, type PublicVehicle } from './publicVehicles';
 import { publicPhotoWidth } from './vehiclePhotoSources';
 import { retainedPublicPhoto } from './publicThumbnail';
+import { takeCardPhotoPreview } from './cardPhotoPreview';
 
 const MAX_PHOTO_BYTES = 20 * 1024 * 1024;
 const MAX_SESSION_BYTES = 64 * 1024 * 1024;
@@ -36,6 +37,7 @@ export function createPublicGallerySession(vehicle: Pick<PublicVehicle, 'slug' |
     });
   }
   return {
+    preview(src: string) { return identity(src) ? takeCardPhotoPreview(src) : undefined; },
     hasCopy(src: string) { const key = identity(src); return !!key && readyCopies.has(key); },
     attach() { users++; },
     detach() {

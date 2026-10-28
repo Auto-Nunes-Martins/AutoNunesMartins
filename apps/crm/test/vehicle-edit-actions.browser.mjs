@@ -58,7 +58,7 @@ before(async () => {
       {find:'$app/paths',replacement:path.join(directory,'paths.js')},
       {find:'$env/static/public',replacement:path.join(directory,'public.js')},
       {find:'$lib',replacement:path.join(appRoot,'src/lib')},
-    ]},server:{middlewareMode:true,hmr:{server,host:'127.0.0.1',clientPort:Number(new URL(origin).port)},fs:{allow:[path.resolve(appRoot,'../..'),await realpath(path.resolve(appRoot,'../../node_modules'))]}},optimizeDeps:{entries:['client.js']},logLevel:'error'});
+    ]},server:{middlewareMode:true,hmr:{server,host:'127.0.0.1',clientPort:Number(new URL(origin).port)},fs:{allow:[path.resolve(appRoot,'../..'),await realpath(path.resolve(appRoot,'../../node_modules'))]}},optimizeDeps:{entries:['client.js'],include:['heic-to/next']},logLevel:'error'});
   browser=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHROMIUM_CHANNEL||'chrome'});
 });
 after(async()=>{
@@ -99,7 +99,7 @@ test('failed or unconfirmed saves retain edits and never return', {timeout:12000
     await page.route('**/photos',route=>route.fulfill({status:422,json:{error:'Falha de upload de teste'}}));
     try {
       await page.goto(origin);await page.waitForFunction(()=>window.reviewReady);await page.locator('[name=model]').fill('Rascunho protegido');
-      if(failure==='upload') {await page.locator('input[type=file]').first().setInputFiles({name:'test.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jkH0AAAAASUVORK5CYII=','base64')});}
+      if(failure==='upload') {await page.locator('input[type=file]').first().setInputFiles({name:'test.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC','base64')});}
       if(failure==='atomic') {await page.locator('.publication-action').click();} else await page.locator('.edit-save-top button.primary').click();
       await page.locator('[data-sonner-toast]').filter({hasText:/mantido|confirmar|guardadas|upload/}).waitFor();
       assert.equal(await page.evaluate(()=>window.reviewNavigation),undefined);assert.equal(await page.locator('[name=model]').inputValue(),'Rascunho protegido');
@@ -224,4 +224,43 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`website 
     await page.reload();await page.waitForFunction(()=>document.querySelectorAll('.photo-picker button').length===2);assert.equal(await page.getByRole('button',{name:'Fotografia 2',exact:true}).getAttribute('aria-pressed'),'true');assert.equal(await page.locator('.selected-list li').count(),2);assert.equal(posts.length,2,'reload does not duplicate or save implicitly');await page.getByRole('button',{name:'Remover destaque 2',exact:true}).click();await save.click();await page.waitForFunction(()=>[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Guardar destaques')?.disabled);assert.equal(posts.at(-1).items.some(item=>item.vehicleId===id),false);fixtureStates.set(key,{...fixture('?detail=1'),homepageHighlight:'none',isFeatured:false});await page.goto(origin+'/?detail=1');await page.getByRole('link',{name:'Destacar viatura',exact:true}).waitFor();await page.reload();await page.getByRole('link',{name:'Destacar viatura',exact:true}).waitFor();assert.equal(await page.getByText('Em destaque',{exact:true}).count(),0);
     await page.screenshot({path:path.join(appRoot,`.svelte-kit/contextual-highlight-${width}-${theme}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
   }finally{fixtureStates.delete(key);await context.close();}
+});
+
+
+test('save waits for local preparation, preserves appended queue and reuses staged uploads on retry', {timeout:90000},async()=>{
+  const context=await browser.newContext(),page=await context.newPage();
+  let saved=fixture(),uploads=0,saves=0,failOnce=true,workers=0,release;
+  const gate=new Promise(resolve=>release=resolve);
+  await page.route('**/*photoPreparation.worker*',async route=>{if(new URL(route.request().url()).searchParams.has('worker_file')){workers++;await gate;}return route.continue();});
+  await page.route('**/photos',async route=>{uploads++;assert.equal(route.request().headers()['x-edit-stage'],'true');assert.ok(route.request().headers()['x-upload-id']);return route.fulfill({json:{path:id+'/new-'+uploads+'.jpg'}});});
+  await page.route('**/editar/save',async route=>{
+    if(route.request().method()==='POST'){
+      saves++;const body=route.request().postDataJSON();
+      if(failOnce){failOnce=false;return route.fulfill({status:422,json:{error:'Falha de teste. Rascunho mantido.'}});}
+      saved.vehicle={...saved.vehicle,...body.data,photos:body.photos,updatedAt:'2026-10-28T00:00:01.000Z'};
+      return route.fulfill({json:{ok:true}});
+    }
+    return route.fulfill({json:saved});
+  });
+  try{
+    await page.goto(origin);await page.waitForFunction(()=>window.reviewReady);
+    const jpeg=await (await import('node:fs/promises')).readFile(path.resolve(appRoot,'../website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg'));
+    const input=page.locator('input[type=file]').first();
+    await input.setInputFiles([{name:'one.jpg',mimeType:'image/jpeg',buffer:jpeg},{name:'two.jpg',mimeType:'image/jpeg',buffer:jpeg}]);
+    await input.setInputFiles({name:'three.jpg',mimeType:'image/jpeg',buffer:jpeg});
+    await page.locator('[name=model]').fill('Continuo a preencher durante preparação');
+    assert.equal(uploads,0);assert.equal(saves,0);
+    await page.locator('.edit-save-top button.primary').click();
+    await page.locator('[data-save-progress]').getByText('A preparar fotografias: 0 de 3…',{exact:true}).waitFor();
+    assert.equal(uploads,0);assert.equal(saves,0);
+    const progressBox=await page.locator('[data-save-progress]').boundingBox(),toolbarBox=await page.locator('#vehicle-edit-actions').boundingBox();assert.ok(progressBox.y>=toolbarBox.y+toolbarBox.height,'sticky toolbar does not cover save progress');
+    await page.locator('[data-save-progress]').screenshot({path:path.join(appRoot,'.svelte-kit','photo-save-waiting.png')});
+    release();
+    await page.locator('[data-sonner-toast]').filter({hasText:'Falha de teste'}).waitFor();
+    assert.equal(uploads,3);assert.equal(saves,1);assert.equal(workers,3);
+    await page.locator('.edit-save-top button.primary').click();
+    await page.locator('[data-sonner-toast]').filter({hasText:'Alterações guardadas'}).waitFor();
+    assert.equal(uploads,3);assert.equal(saves,2);assert.equal(workers,3);
+    assert.equal(saved.vehicle.photos.length,4);
+  }finally{release();await context.close();}
 });

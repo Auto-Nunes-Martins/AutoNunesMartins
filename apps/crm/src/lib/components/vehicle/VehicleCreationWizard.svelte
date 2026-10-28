@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { readyPhoto } from '$lib/photoPreparation';
   import { onMount, tick, untrack, type ComponentProps } from 'svelte';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
@@ -64,14 +65,14 @@
     details: ReturnType<typeof vehicleDetailsFromForm>;
     publication: ReturnType<typeof publicDraftFromForm>;
     step: number;
-    photos: { path: string; file?: File; uploadId?: string; uploadedPath?: string }[];
+    photos: { path: string; file?: File; preparedFile?: File; uploadId?: string; uploadedPath?: string }[];
   };
   function captureRecovery(): Recovery {
     const draft = snapshot('draft')!;
     return { baseUpdatedAt: baseline.updatedAt, details: draft.details, publication: draft.publication,
       step, photos: draft.paths.map(path => {
         const photo = photoDraft.find(item => item.path === path)!;
-        return { path, file: photo.file, uploadId: photo.uploadId, uploadedPath: photo.uploadedPath };
+        return { path, file: photo.file, preparedFile: photo.preparedFile, uploadId: photo.uploadId, uploadedPath: photo.uploadedPath };
       }) };
   }
   function protectForms() {
@@ -171,8 +172,9 @@
           step = saved.step;
           photoDraft = saved.photos.map(photo => {
             const signed = photos.find(item => item.path === photo.path);
-            const url = photo.file ? URL.createObjectURL(photo.file) : signed?.url ?? '';
-            if (photo.file) urls.push(url);
+            const localFile = photo.preparedFile ?? photo.file;
+            const url = localFile ? URL.createObjectURL(localFile) : signed?.url ?? '';
+            if (localFile) urls.push(url);
             return { ...signed, ...photo, url };
           });
           draftState = 'Rascunho recuperado neste dispositivo';
@@ -245,7 +247,7 @@
     saving = true;
     savePhase = 0; preparedPhotos = 0; photoTotal = 0;
     await tick();
-    root.querySelector<HTMLElement>('[data-save-progress]')?.scrollIntoView({ block: 'nearest' });
+    root.querySelector<HTMLElement>('[data-save-progress]')?.scrollIntoView({ block: 'start', behavior: 'instant' });
     let sent = false,
       responded = false,
       committed = false;
@@ -261,19 +263,27 @@
         );
       }
       const files = photoDraft.filter((photo) => photo.file);
-      photoTotal = files.length; preparedPhotos = files.filter(photo => photo.uploadedPath).length;
+      photoTotal = files.length; preparedPhotos = files.filter(photo => photo.preparedFile || photo.uploadedPath).length;
       if (files.length) savePhase = 1;
+      for (const photo of files) {
+        if (photo.uploadedPath) continue;
+        progress = `A preparar fotografias: ${preparedPhotos} de ${files.length}…`;
+        await readyPhoto(photo);
+        preparedPhotos = files.filter(item => item.preparedFile || item.uploadedPath).length;
+      }
+      preparedPhotos = files.filter(photo => photo.uploadedPath).length;
+      if (files.length) savePhase = 2;
       for (const [index, photo] of files.entries()) {
         if (photo.uploadedPath) continue;
-        progress = `A preparar fotografia ${index + 1} de ${files.length}…`;
+        progress = `A enviar fotografias: ${index + 1} de ${files.length}…`;
         const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/photos`), {
           method: 'POST',
           headers: {
-            'content-type': photo.file!.type,
+            'content-type': photo.preparedFile!.type,
             'x-upload-id': photo.uploadId!,
             'x-edit-stage': 'true',
           },
-          body: photo.file,
+          body: photo.preparedFile,
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.path)
@@ -286,7 +296,7 @@
       const resolve = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
       const { photoPaths: _legacyPhotoPaths, ...publicationData } = draft.publication;
-      savePhase = 2;
+      savePhase = 3;
       progress = action === 'publish' ? 'A concluir e publicar…' : 'A guardar a viatura…';
       sent = true;
       const response = await sessionFetch(endpoint, {

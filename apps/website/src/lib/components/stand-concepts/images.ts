@@ -67,6 +67,18 @@ export function publicCardImageSizes(dimensions?: { width: number; height: numbe
 export const heroImageSizes =
   '(max-width: 700px) 100vw, (max-width: 1050px) 70vw, (min-width: 1920px) 980px, 56vw';
 
+/** Match RelatedCarousel's fractional slots, static cap and cover crop. */
+export function relatedCardImageSizes(dimensions: { width: number; height: number } | null | undefined, count: number) {
+  const ratio = dimensions && dimensions.width > 0 && dimensions.height > 0 ? dimensions.width / dimensions.height : 1.5;
+  const frame = 'min(95vw, 1640px)';
+  const slot = (capacity: number) => count > capacity
+    ? `calc((${frame} - ${capacity * 20 + 8}px) / ${capacity === 3 ? 3.22 : 2.2})`
+    : `min(440px, calc((${frame} - ${(count - 1) * 20}px) / ${count}))`;
+  const cover = (width: string) => `max(${width}, calc((${width} / 1.4 + 60px) * ${ratio}))`;
+  const mobile = count > 1 ? 'calc((90vw - 8px) * .86)' : 'min(90vw, 440px)';
+  return `(max-width: 700px) ${cover(mobile)}, (max-width: 1000px) ${cover(slot(2))}, ${cover(slot(3))}`;
+}
+
 // Match the permanent hero's grid, including the tablet gap and its capped canvas.
 // sizes describes CSS pixels; the browser applies device density.
 export const featuredPhotoSizes =

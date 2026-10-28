@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { readyPhoto } from '$lib/photoPreparation';
   import { sessionFetch } from '$lib/auth/session';
   import { listNavigationCache } from '$lib/lists/navigationCache';
   import { crmPath } from '$lib/paths';
@@ -208,7 +209,12 @@
     publicationIntent = published;
     savePhase = 0; preparedPhotos = 0; photoTotal = 0;
     await tick();
-    root.querySelector<HTMLElement>('[data-save-progress]')?.scrollIntoView({ block: 'nearest' });
+    const progressPanel = root.querySelector<HTMLElement>('[data-save-progress]');
+    if (progressPanel) {
+      const toolbarHeight = root.querySelector('#vehicle-edit-actions')?.getBoundingClientRect().height ?? 0;
+      progressPanel.style.scrollMarginTop = `${96 + toolbarHeight}px`;
+      progressPanel.scrollIntoView({ block: 'start', behavior: 'instant' });
+    }
     const publishing = (publicDirty || changingPublication) && publication.published;
     const removing = changingPublication && !publication.published;
     const previouslyPublished = baseline.webPublished;
@@ -225,19 +231,27 @@
           'A viatura foi alterada entretanto. O rascunho foi mantido. Atualize a ficha e reveja as alterações antes de guardar.',
         );
       const files = photoDraft.filter((photo) => photo.file);
-      photoTotal = files.length; preparedPhotos = files.filter(photo => photo.uploadedPath).length;
+      photoTotal = files.length; preparedPhotos = files.filter(photo => photo.preparedFile || photo.uploadedPath).length;
       if (files.length) savePhase = 1;
+      for (const photo of files) {
+        if (photo.uploadedPath) continue;
+        progress = `A preparar fotografias: ${preparedPhotos} de ${files.length}…`;
+        await readyPhoto(photo);
+        preparedPhotos = files.filter(item => item.preparedFile || item.uploadedPath).length;
+      }
+      preparedPhotos = files.filter(photo => photo.uploadedPath).length;
+      if (files.length) savePhase = 2;
       for (const [index, photo] of files.entries()) {
         if (photo.uploadedPath) continue;
-        progress = `A preparar fotografia ${index + 1} de ${files.length}…`;
+        progress = `A enviar fotografias: ${index + 1} de ${files.length}…`;
         const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/photos`), {
           method: 'POST',
           headers: {
-            'content-type': photo.file!.type,
+            'content-type': photo.preparedFile!.type,
             'x-upload-id': photo.uploadId!,
             'x-edit-stage': 'true',
           },
-          body: photo.file,
+          body: photo.preparedFile,
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.path) {
@@ -256,7 +270,7 @@
       const resolvePath = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
       const { photoPaths: _legacyPhotoPaths, ...publicationData } = publication;
-      savePhase = 2;
+      savePhase = 3;
       progress = 'A guardar todas as alterações…';
       saveRequestStarted = true;
       const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/editar/save`), {

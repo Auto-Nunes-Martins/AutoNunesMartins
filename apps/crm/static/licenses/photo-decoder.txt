@@ -1,0 +1,23 @@
+Local HEIC/HEIF photo decoder
+
+This CRM uses heic-to 1.6.7 by Hopper Gee, unmodified, loaded separately
+only when native HEIC decoding is unavailable. It includes libheif 1.23.7
+(struktur AG and contributors) and libde265 (struktur AG and contributors).
+These libraries are distributed under LGPL version 3 or later, without warranty.
+The application permits reverse engineering for debugging modifications to
+these LGPL libraries. You may replace or modify these libraries under their
+licence; rebuild the CRM with the replacement package using its normal Vite build.
+
+Full licence and notices: heic-to-LICENSE.txt and GPL-3.0.txt (in this directory).
+Exact distributed package, including source, embedded decoder and build scripts:
+https://registry.npmjs.org/heic-to/-/heic-to-1.6.7.tgz
+Wrapper source: https://github.com/hoppergee/heic-to/tree/v1.6.7
+Decoder source: https://github.com/strukturag/libheif/tree/v1.23.7
+HEVC decoder source: https://github.com/strukturag/libde265/tree/v1.0.16
+Build instructions: https://github.com/hoppergee/heic-to#development-guide
+
+Only the first/primary image of a HEIC/HEIF container is used, not motion,
+depth or auxiliary images. Conversion runs on the user's device in an isolated
+worker, one photograph at a time. Original suitable JPEG/PNG/WebP files are
+not re-encoded locally; the server performs privacy sanitisation and final
+optimisation for all accepted images. Prepared canvas output contains no EXIF.

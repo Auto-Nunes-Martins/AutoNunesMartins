@@ -6,7 +6,7 @@
   let {
     vehicles,
     card,
-  }: { vehicles: PublicVehicle[]; card: Snippet<[PublicCard, number, boolean?]> } = $props();
+  }: { vehicles: PublicVehicle[]; card: Snippet<[PublicCard, number, boolean?, number?]> } = $props();
   const items = $derived([...new Map(vehicles.map((v) => [v.slug, v])).values()].slice(0, 5));
   let first = $state(0);
   let indicated = $state(0);
@@ -292,7 +292,7 @@
                 inert
                 aria-hidden="true"
               >
-                {@render card(publicCard(vehicle), index, false)}
+                {@render card(publicCard(vehicle), index, false, items.length)}
               </div>{/each}{/if}
           {#each ordered as vehicle, index (vehicle.slug)}<div
               class="slide"
@@ -301,14 +301,14 @@
               aria-roledescription="diapositivo"
               aria-label={`${items.findIndex((v) => v.slug === vehicle.slug) + 1} de ${items.length}`}
             >
-              {@render card(publicCard(vehicle), index, false)}
+              {@render card(publicCard(vehicle), index, false, items.length)}
             </div>{/each}
           {#if loops}{#each ordered as vehicle, index (vehicle.slug)}<div
                 class="slide ghost"
                 inert
                 aria-hidden="true"
               >
-                {@render card(publicCard(vehicle), index, false)}
+                {@render card(publicCard(vehicle), index, false, items.length)}
               </div>{/each}{/if}
         </div>
       </div>

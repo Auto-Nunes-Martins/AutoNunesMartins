@@ -1,6 +1,6 @@
 import { vehiclePhotoWidths } from '@anm/types/photoWidths';
 export const photoWidths = vehiclePhotoWidths;
-// One existing derivative per photograph across cards, thumbnails and viewers.
+// Detail main, thumbnails, gallery and fullscreen share one existing derivative.
 // The backend retains its native-master fallback for smaller originals.
 export const publicPhotoWidth = 1600;
 const isPublicPhoto = (url: string) =>
@@ -10,3 +10,9 @@ export const sizedPhoto = (url: string, _width: number) =>
 export const nearestPhotoWidth = (width: number) =>
   photoWidths.find((candidate) => candidate >= width) ?? 2560;
 export const vehiclePhotoSet = (_url: string): string | undefined => undefined;
+
+/** Cards alone negotiate derivatives; detail delivery stays fixed at 1600. */
+export const cardPhoto = (url: string, width = 800) =>
+  isPublicPhoto(url) ? `${url}${url.includes('?') ? '&' : '?'}w=${nearestPhotoWidth(width)}` : url;
+export const cardPhotoSet = (url: string): string | undefined =>
+  isPublicPhoto(url) ? photoWidths.map(width => `${cardPhoto(url, width)} ${width}w`).join(', ') : undefined;

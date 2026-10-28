@@ -27,13 +27,14 @@ before(async () => {
     `<script>
 import {onMount} from 'svelte';
 import VehiclePhotoDraft from '$review/VehiclePhotoDraft.svelte';
+import {preparePhoto,readyPhoto} from '$lib/photoPreparation';
 import {Toaster,toast} from 'svelte-sonner';
 import {vehicleSavedFeedback} from '$review/vehicleSaveFeedback';
 const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="gray"/></svg>');
 let currentTheme=$state('dark');
 let photos=$state(Array.from({length:12},(_,i)=>({path:'photo-'+i,url:image}))),selected=$state([]);
 const persisted=photos.map(p=>p.path);
-onMount(()=>{window.setTheme=value=>{currentTheme=value;document.documentElement.dataset.theme=value;};window.photoOrder=()=>photos.map(p=>p.path);window.allPhotos=()=>selected;window.showSaved=(width,height)=>vehicleSavedFeedback({title:"Viatura adicionada ao CRM",brand:"Marca de demonstração",model:"ModeloComUmNomeMuitoCompridoSemEspaços".repeat(3),year:2026,detail:"A viatura e todas as fotografias foram guardadas com sucesso. ".repeat(3),photo:{url:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'"><rect width="100%" height="100%" fill="teal"/></svg>')}});window.dismissSaved=()=>toast.dismiss();});
+onMount(()=>{window.preparePhoto=preparePhoto;window.readyPhoto=readyPhoto;window.clearPhotos=()=>{photos=[];selected=[];};window.photoState=()=>photos.map(p=>({path:p.path,ready:!!p.preparedFile,error:p.preparationError,size:p.preparedFile?.size,type:p.preparedFile?.type}));window.waitPhotos=()=>Promise.all(photos.filter(p=>p.file).map(readyPhoto));window.showPreparedSaved=()=>vehicleSavedFeedback({title:"Fotografia guardada",brand:"Teste",model:"HEIC",year:2026,detail:"Pré-visualização preparada",photo:photos.find(p=>p.preparedFile)});window.setTheme=value=>{currentTheme=value;document.documentElement.dataset.theme=value;};window.photoOrder=()=>photos.map(p=>p.path);window.allPhotos=()=>selected;window.showSaved=(width,height)=>vehicleSavedFeedback({title:"Viatura adicionada ao CRM",brand:"Marca de demonstração",model:"ModeloComUmNomeMuitoCompridoSemEspaços".repeat(3),year:2026,detail:"A viatura e todas as fotografias foram guardadas com sucesso. ".repeat(3),photo:{url:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'"><rect width="100%" height="100%" fill="teal"/></svg>')}});window.dismissSaved=()=>toast.dismiss();});
 </script>
 <main style="max-width:1100px;margin:auto;padding-top:180px;padding-bottom:1600px">
 <form id="photo-form"></form><VehiclePhotoDraft bind:photos bind:selected {persisted} persistedCoverPath="photo-0" form="photo-form"/>
@@ -88,7 +89,7 @@ onMount(()=>{window.setTheme=value=>{currentTheme=value;document.documentElement
         ],
       },
     },
-    optimizeDeps: { entries: ['client.js'] },
+    optimizeDeps: { entries: ['client.js'], include: ['heic-to/next'] },
     logLevel: 'error',
   });
   browser = await chromium.launch({
@@ -179,8 +180,8 @@ test(`whole photo card drag, scroll and saved toast ${width}px ${theme}`,{timeou
     await page.getByRole('button',{name:'Definir fotografia 3 como principal',exact:true}).click();
     assert.equal((await page.evaluate(()=>window.photoOrder()))[0],'photo-2');
     await page.getByRole('button',{name:'Eliminar fotografia 2',exact:true}).click();assert.equal(await cards().count(),11);
-    await page.locator('input[type=file]').setInputFiles({name:'added.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZsAAAAASUVORK5CYII=','base64')});
-    await page.waitForFunction(()=>window.allPhotos().length===12);await page.waitForTimeout(400);
+    await page.locator('input[type=file]').setInputFiles({name:'added.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC','base64')});
+    await page.waitForFunction(()=>window.allPhotos().length===12);await page.waitForFunction(()=>{const photo=window.photoState().at(-1);return photo.ready||photo.error;});await page.waitForTimeout(400);
     const boxes=await cards().evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};}));
     for(const a of boxes)assert.ok(a.height>a.width,'cards are taller than wide');
     for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){const a=boxes[i],b=boxes[j];assert.ok(Math.min(a.right,b.right)-Math.max(a.x,b.x)<=1||Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)<=1,'cards do not overlap');}
@@ -202,4 +203,91 @@ test(`whole photo card drag, scroll and saved toast ${width}px ${theme}`,{timeou
     assert.deepEqual(errors,[]);
   }catch(error){await page.screenshot({path:path.join(appRoot,'.svelte-kit',`photo-failure-${width}-${theme}.png`)});throw error;}
   finally{await context.close();}
+});
+
+
+test('local preparation: real JPEG, large dimensions, queue, cancellation and failed input', {timeout:90000}, async()=>{
+  const context=await browser.newContext(); const page=await context.newPage();
+  try {
+    await page.goto(origin); await page.waitForFunction(()=>window.preparePhoto);
+    const jpeg=await readFile(path.resolve(appRoot,'../website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg'));
+    const result=await page.evaluate(async bytes=>{
+      const file=new File([new Uint8Array(bytes)],'real.jpg',{type:'image/jpeg'});
+      let active=0,max=0,created=0;
+      const NativeWorker=window.Worker;
+      window.Worker=class extends NativeWorker {constructor(...args){super(...args);active++;created++;max=Math.max(max,active);const terminate=this.terminate.bind(this);this.terminate=()=>{active--;terminate();};}};
+      const outputs=await Promise.all([window.preparePhoto(file),window.preparePhoto(file),window.preparePhoto(file)]);
+      const unchanged=(await outputs[0].arrayBuffer()).byteLength===bytes.length && new Uint8Array(await outputs[0].arrayBuffer()).every((v,i)=>v===bytes[i]);
+      const controller=new AbortController();
+      const cancelled=window.preparePhoto(file,controller.signal).catch(e=>e.name);controller.abort();
+      const error=await window.preparePhoto(new File(['broken'],'broken.jpg',{type:'image/jpeg'})).catch(e=>e.message);
+      const after=await window.preparePhoto(file);
+      const limit=await window.preparePhoto(new File([new Uint8Array(50*1024*1024+1)],'large.jpg',{type:'image/jpeg'})).catch(e=>e.message);
+      const padding=new Uint8Array(26*1024*1024-file.size);
+      const pair=await Promise.all([1,2].map(i=>window.preparePhoto(new File([file,padding],'26MB-'+i+'.jpg',{type:'image/jpeg'}))));
+      const pairSizes=pair.map(file=>file.size);
+      window.Worker=NativeWorker;
+      return {unchanged,max,created,active,cancelled:await cancelled,error,after:after.size,limit,pairSizes};
+    },[...jpeg]);
+    assert.equal(result.unchanged,true); assert.equal(result.max,1);assert.equal(result.active,0);
+    assert.equal(result.cancelled,'AbortError');assert.match(result.error,/inválida/);assert.match(result.limit,/50 MB/);assert.ok(result.after>0);assert.equal(result.pairSizes.length,2);assert.ok(result.pairSizes.every(size=>size>0&&size<=20*1024*1024),'limits apply per photograph, not to selection total');
+    const sharp=(await import('sharp')).default;
+    const large=await sharp({create:{width:6000,height:5000,channels:3,background:'#a04020'}}).withMetadata({orientation:6}).jpeg().toBuffer();
+    const oversized=await sharp({create:{width:7200,height:7200,channels:3,background:'#a04020'}}).jpeg().toBuffer();
+    const reduced=await page.evaluate(async({large,oversized})=>{
+      const output=await window.preparePhoto(new File([new Uint8Array(large)],'30MP.jpg',{type:'image/jpeg'}));
+      const image=await createImageBitmap(output);const pixels=image.width*image.height,width=image.width,height=image.height;image.close();
+      const error=await window.preparePhoto(new File([new Uint8Array(oversized)],'52MP.jpg',{type:'image/jpeg'})).catch(e=>e.message);
+      return {pixels,width,height,size:output.size,type:output.type,error,hasExif:new TextDecoder().decode(await output.arrayBuffer()).includes('Exif\0\0')};
+    },{large:[...large],oversized:[...oversized]});
+    assert.ok(reduced.pixels<=24_000_000);assert.ok(reduced.width<reduced.height,'EXIF rotation preserved');assert.equal(reduced.hasExif,false);assert.ok(reduced.size<=20*1024*1024);assert.equal(reduced.type,'image/jpeg');assert.match(reduced.error,/50 megapíxeis/);
+  } finally {await context.close();}
+});
+
+// HEIC_TEST_FILE: local HEIC fixture, e.g. libheif examples/example.heic from its upstream repository.
+test('real HEIC fallback prepares a browser-decodable JPEG without an upload', {timeout:90000,skip:!process.env.HEIC_TEST_FILE},async()=>{
+  const context=await browser.newContext();const page=await context.newPage();let uploads=0;
+  try {
+    await page.route('**/*',route=>{if(route.request().method()==='POST')uploads++;return route.continue();});
+    await page.goto(origin);await page.waitForFunction(()=>window.preparePhoto);
+    await page.locator('input[type=file]').setInputFiles(process.env.HEIC_TEST_FILE);
+    await page.getByText('1 de 1 fotografias prontas',{exact:true}).waitFor({timeout:60000});
+    const photo=(await page.evaluate(()=>window.photoState())).at(-1);
+    assert.equal(photo.ready,true);assert.equal(photo.type,'image/jpeg');assert.ok(photo.size<20*1024*1024);assert.equal(uploads,0);
+    await page.evaluate(()=>window.waitPhotos());assert.equal(uploads,0);await page.waitForFunction(()=>document.querySelector('.notice-thumbnails img')?.naturalWidth>0);
+    await page.locator('.preparation-status').scrollIntoViewIfNeeded();
+    await page.screenshot({path:path.join(appRoot,'.svelte-kit','photo-heic-ready.png')});
+    await page.evaluate(()=>window.showPreparedSaved());await page.waitForFunction(()=>document.querySelector('.vehicle-success img')?.naturalWidth>0);
+    await page.evaluate(()=>window.dismissSaved());
+  }finally{await context.close();}
+});
+
+
+test('removing pending photos cancels work; errors can retry and a new batch respects the 20-photo limit', {timeout:60000},async()=>{
+  const context=await browser.newContext(),page=await context.newPage();let release,workerRequests=0;
+  const gate=new Promise(resolve=>release=resolve);
+  try{
+    await page.goto(origin);await page.waitForFunction(()=>window.preparePhoto);
+    await page.route('**/*photoPreparation.worker*',async route=>{if(new URL(route.request().url()).searchParams.has('worker_file')){workerRequests++;await gate;}return route.continue();});
+    const jpeg=await readFile(path.resolve(appRoot,'../website/static/images/about/auto-nunes-martins-fachada-v2-1024.jpg'));
+    const input=page.locator('input[type=file]');
+    await input.setInputFiles([{name:'pending-one.jpg',mimeType:'image/jpeg',buffer:jpeg},{name:'pending-two.jpg',mimeType:'image/jpeg',buffer:jpeg}]);
+    await page.getByText('A preparar fotografias: 0 de 2',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Eliminar fotografia 14',exact:true}).click();
+    await page.getByRole('button',{name:'Eliminar fotografia 13',exact:true}).click();release();
+    await page.waitForFunction(()=>window.photoState().length===12);assert.equal(await page.locator('.preparation-status').count(),0);
+    await input.setInputFiles({name:'broken.jpg',mimeType:'image/jpeg',buffer:Buffer.from('not a photo')});
+    await page.getByRole('button',{name:'Tentar novamente',exact:true}).waitFor();const before=workerRequests;
+    await page.getByRole('button',{name:'Tentar novamente',exact:true}).click();
+    await page.waitForFunction(()=>window.photoState().at(-1)?.error);assert.ok(workerRequests>before);
+    await page.locator('.preparation-error').getByRole('button',{name:'Remover',exact:true}).click();
+    await page.evaluate(()=>window.clearPhotos());
+    await input.setInputFiles(Array.from({length:21},(_,i)=>({name:'batch-'+i+'.jpg',mimeType:'image/jpeg',buffer:jpeg})));
+    await page.getByText('20 de 20 fotografias prontas',{exact:true}).waitFor({timeout:30000});
+    assert.equal((await page.evaluate(()=>window.photoState())).length,20);assert.equal(await input.isDisabled(),true);
+    await page.getByText('1 ficheiro não adicionado.',{exact:true}).waitFor();
+    await page.setViewportSize({width:390,height:844});await page.locator('.preparation-status').scrollIntoViewIfNeeded();
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.screenshot({path:path.join(appRoot,'.svelte-kit','photo-preparation-mobile.png')});
+  }finally{release?.();await context.close();}
 });

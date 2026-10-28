@@ -62,6 +62,7 @@ __metadata:
     date-fns: "npm:^4.1.0"
     eslint: "npm:^9.17.0"
     eslint-plugin-svelte: "npm:^2.46.1"
+    heic-to: "npm:1.6.7"
     lucide-svelte: "npm:^0.460.0"
     pdf-lib: "npm:^1.17.1"
     svelte: "npm:^5.16.0"
@@ -4557,6 +4558,13 @@ __metadata:
   dependencies:
     function-bind: "npm:^1.1.2"
   checksum: 10c0/2d8de939e270b70618f8cebb69746620db10617dbb495bc66ddad326955ea24d3ca4af133aff3eb7c1853e0218f867bc2b050ec26fe02e3aea58f880ffc5e506
+  languageName: node
+  linkType: hard
+
+"heic-to@npm:1.6.7":
+  version: 1.6.7
+  resolution: "heic-to@npm:1.6.7"
+  checksum: 10c0/26b21d181b177f6f661e02921164f222d7d478444ffe60a5f01adc3e6a3f8a6eabdbec0695cc57903bc03c5a71485929994e6638a05274212f0dd88b6ee8de34
   languageName: node
   linkType: hard
 
