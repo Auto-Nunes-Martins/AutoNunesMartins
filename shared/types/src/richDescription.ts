@@ -79,11 +79,15 @@ export function sanitizeDescriptionHtml(source: string): string {
     .join('');
 }
 
+function hasDescriptionMarkup(value: string): boolean {
+  return /<\/?(?:p|br|strong|b|em|i|u|s|h3|h4|ul|ol|li|blockquote|a)(?:\s|\/?>)/i.test(value);
+}
+
 export function descriptionHtml(value: string | null | undefined): string {
   if (!value) return '';
   if (value.startsWith(RICH_DESCRIPTION_PREFIX))
     return sanitizeDescriptionHtml(value.slice(RICH_DESCRIPTION_PREFIX.length));
-  if (/<\/?(?:p|br|strong|b|em|i|u|s|h3|h4|ul|ol|li|blockquote|a)(?:\s|\/?>)/i.test(value))
+  if (hasDescriptionMarkup(value))
     return sanitizeDescriptionHtml(value);
   function linkText(text: string): string {
     let result = '',
@@ -106,7 +110,8 @@ export function descriptionHtml(value: string | null | undefined): string {
 }
 
 export function descriptionText(value: string | null | undefined): string {
-  if (!value?.startsWith(RICH_DESCRIPTION_PREFIX)) return value?.trim() ?? '';
+  if (!value) return '';
+  if (!value.startsWith(RICH_DESCRIPTION_PREFIX) && !hasDescriptionMarkup(value)) return value.trim();
   function text(node: Node): string {
     if (node.type === 'text') return node.data;
     if (!('children' in node)) return '';
@@ -118,6 +123,21 @@ export function descriptionText(value: string | null | undefined): string {
     );
   }
   return parseDocument(descriptionHtml(value)).children.map(text).join('').trim();
+}
+
+/** Compact summaries keep basic structure, never links, headings, styles or attributes. */
+export function descriptionPreviewHtml(value: string | null | undefined): string {
+  if (!descriptionText(value)) return '';
+  const previewTags = new Set(['p', 'br', 'strong', 'em', 'ul', 'ol', 'li']);
+  function render(node: Node): string {
+    if (node.type === 'text') return escapeDescriptionText(node.data);
+    if (!('children' in node) || !('name' in node)) return '';
+    const children = node.children.map(render).join('');
+    const name = ['h3', 'h4', 'blockquote'].includes(node.name) ? 'p' : node.name;
+    if (!previewTags.has(name)) return children;
+    return name === 'br' ? '<br>' : `<${name}>${children}</${name}>`;
+  }
+  return parseDocument(descriptionHtml(value)).children.map(render).join('');
 }
 
 export function encodeDescription(html: string): string {

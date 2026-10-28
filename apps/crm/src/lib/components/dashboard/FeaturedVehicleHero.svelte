@@ -1,5 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
+  import { descriptionPreviewHtml } from '@anm/types/richDescription';
   import { PUBLIC_BACKEND_URL } from '$env/static/public';
   import { publicVehiclePhotoUrl } from '$lib/publicVehiclePhoto';
   import { ArrowLeft, ArrowRight, Calendar, Fuel, Gauge, Star, Tag } from 'lucide-svelte';
@@ -23,6 +24,7 @@
   let failedImages = $state<Record<string, boolean>>({});
   const current = $derived(highlights[index] ?? highlights[0]);
   const vehicle = $derived(current?.vehicle);
+  const preview = $derived(descriptionPreviewHtml(vehicle?.description));
   const fuelLabels: Record<string, string> = {
     GASOLINE: 'Gasolina',
     DIESEL: 'Gasóleo',
@@ -53,7 +55,7 @@
     <p class="eyebrow"><span></span>Montra · Site público</p>
     {#if current && vehicle}
       <h2>{vehicle.brand}<br /><span>{vehicle.model}</span></h2>
-      <p class="description">{vehicle.description || 'Viatura em destaque na homepage.'}</p>
+      <div class="description">{@html preview || 'Viatura em destaque na homepage.'}</div>
       <div class="specs">
         <div>
           <Calendar size={21} /><span
@@ -232,7 +234,15 @@
     line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    max-height: 4.8em;
   }
+  .description :global(*) {color:inherit;font-family:inherit;font-size:inherit;line-height:inherit;}
+  .description :global(p) {margin:0;}
+  .description :global(strong) {font-weight:600;}
+  .description :global(em) {font-style:italic;}
+  .description :global(ul), .description :global(ol) {margin:0;padding-left:1.2em;}
+  .description :global(ul) {list-style:disc;}
+  .description :global(ol) {list-style:decimal;}
   .specs {
     display: grid;
     grid-template-columns: 1fr 1fr;
