@@ -353,13 +353,10 @@
     color: inherit;
     text-decoration: none;
     border-radius: var(--radius-btn);
-    transition: opacity 0.12s;
+    cursor: pointer;
   }
   :global([data-theme='light']) .brand-block {
     background: #f6f7f2;
-  }
-  .brand-link:hover {
-    opacity: 0.85;
   }
   .brand-link:focus-visible {
     outline: 2px solid var(--color-red);
