@@ -142,6 +142,7 @@ async function readHighlightSelection(db: PrismaClient) {
     : [];
   return {
     configured: !!setting,
+    configuredVehicleIds: items.map(item => item.vehicleId),
     items: items.flatMap((item) => {
       const row = vehicles.find((vehicle) => vehicle.id === item.vehicleId);
       if (!row) return [];
@@ -156,7 +157,7 @@ async function readHighlightSelection(db: PrismaClient) {
 export async function readPublicHighlights(db: PrismaClient) {
   const selection = await readHighlightSelection(db);
   return {
-    ...selection,
+    configured: selection.configured,
     items: selection.items.map(({ vehicle, photoIndex }) => ({ vehicle, photoIndex })),
   };
 }

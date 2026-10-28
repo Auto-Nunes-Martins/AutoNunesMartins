@@ -30,4 +30,5 @@ export async function emitActivity(tx: TxClient, input: EmitActivityInput): Prom
   // an action the user just performed.
   cache.clearPrefix('dashboard:');
   cache.clearPrefix('notifications:');
+  cache.clearPrefix('activity:');
 }

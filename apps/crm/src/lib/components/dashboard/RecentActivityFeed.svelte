@@ -6,7 +6,7 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import { formatDate } from '$lib/utils/format';
   import type { RecentActivityRow } from '$lib/server/dashboard';
-  import { activityStyle as styleFor } from '$lib/activityPresentation';
+  import { activityStyle as styleFor, activityContextText } from '$lib/activityPresentation';
 
   interface Props {
     items: RecentActivityRow[];
@@ -51,7 +51,7 @@
     {:else}
       <ul class="divide-y divide-[var(--color-border)]">
         {#each items as item (item.id)}
-          {@const s = styleFor(item.type)}
+          {@const s = styleFor(item.type, item.semanticAction)}
           {@const Icon = s.icon}
           {@const href = hrefFor(item)}
           {@const actorLabel = item.actor?.name ?? 'Sistema'}
@@ -68,9 +68,9 @@
                   {relativeTime(item.createdAt)}
                 </span>
                 <span
-                  class="activity-message text-[13px] text-[var(--color-text-muted)] group-hover:text-[var(--color-text)] transition-colors truncate flex-1"
+                  class="activity-message text-[13px] text-[var(--color-text-muted)] group-hover:text-[var(--color-text)] transition-colors min-w-0 break-words flex-1"
                 >
-                  {item.message}
+                  {item.message}{#if activityContextText(item)}<span class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1" title={activityContextText(item) ?? undefined}>{activityContextText(item)}</span>{/if}
                 </span>
                 <span
                   class="activity-actor hidden md:flex font-mono text-[9.5px] uppercase tracking-[0.18em] text-[var(--color-text-faint)] flex-shrink-0 items-center gap-1.5"
@@ -89,9 +89,9 @@
                   {relativeTime(item.createdAt)}
                 </span>
                 <span
-                  class="activity-message text-[13px] text-[var(--color-text-muted)] truncate flex-1"
+                  class="activity-message text-[13px] text-[var(--color-text-muted)] min-w-0 break-words flex-1"
                 >
-                  {item.message}
+                  {item.message}{#if activityContextText(item)}<span class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1" title={activityContextText(item) ?? undefined}>{activityContextText(item)}</span>{/if}
                 </span>
                 <span
                   class="activity-actor hidden md:flex font-mono text-[9.5px] uppercase tracking-[0.18em] text-[var(--color-text-faint)] flex-shrink-0 items-center gap-1.5"

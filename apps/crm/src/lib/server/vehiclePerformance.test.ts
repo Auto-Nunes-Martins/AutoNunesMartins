@@ -33,6 +33,16 @@ describe('CRM load latency boundaries', () => {
     highlights.resolve({ items: [{ id: 'car' }] });
     expect(await result.signedPhotos).toHaveLength(1);
     expect(await result.isFeatured).toBe(true);
+    expect(await result.homepageHighlight).toBe('live');
+  });
+  it('keeps a persisted but hidden selection distinct from live and from a failed read', async () => {
+    mocks.highlights.mockResolvedValueOnce({ items: [], configuredVehicleIds: ['car'] });
+    const hidden = await detailLoad(event) as any;
+    expect(await hidden.homepageHighlight).toBe('hidden');
+    expect(await hidden.isFeatured).toBe(false);
+    mocks.highlights.mockRejectedValueOnce(new ApiError(503, null));
+    const failed = await detailLoad(event) as any;
+    expect(await failed.homepageHighlight).toBe('unknown');
   });
   it.each([401, 403])('retains gallery access failures (%s) as streamed errors', async (status) => {
     mocks.photos.mockRejectedValue(new ApiError(status, null));

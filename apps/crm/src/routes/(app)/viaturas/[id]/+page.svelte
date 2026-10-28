@@ -27,6 +27,7 @@
   import ProfitCard from '$lib/components/vehicle/ProfitCard.svelte';
   import { formatDate, formatEUR, formatInt } from '$lib/utils/format';
   import type { PageData } from './$types';
+  import type { HighlightStatus } from '$lib/highlightStatus';
 
   interface Props {
     data: PageData;
@@ -36,6 +37,7 @@
   // Reactive: when SvelteKit re-runs the load function after a form action,
   // `data` is reassigned and these derived values pick up the new vehicle.
   const v = $derived(data.vehicle);
+  const highlightStatus = $derived(data.homepageHighlight ?? Promise.resolve(data.isFeatured).then<HighlightStatus>(featured => featured ? 'live' : 'none'));
 
   const FUEL_LABELS: Record<string, string> = {
     GASOLINE: 'Gasolina',
@@ -90,23 +92,15 @@
           VIN {v.vin}
         </span>
         <span class="featured-slot">
-          {#await data.isFeatured}
-            <span class="invisible" aria-hidden="true">Em destaque</span>
-          {:then isFeatured}
-            {#if isFeatured}
-              <span
-                class="inline-flex items-center gap-1 px-2 py-0.5 bg-[color-mix(in_oklab,#e6b800_15%,transparent)] border border-[color-mix(in_oklab,#e6b800_45%,transparent)] text-[#e6b800] font-mono text-[9.5px] uppercase tracking-[0.22em]"
-                style="border-radius: var(--radius-btn);"
-                title="Esta viatura está nos destaques do site e da dashboard"
-              >
-                <Star class="h-2.5 w-2.5 fill-[#e6b800]" />
-                Em destaque
+          {#await highlightStatus}
+            <span class="highlight-loading">A verificar destaque…</span>
+          {:then status}
+            {#if status === 'live' || status === 'hidden'}
+              <span class="highlight-status vehicle-state-chip" class:highlight-hidden={status === 'hidden'} title={status === 'live' ? 'Esta viatura aparece no carrossel publicado da homepage e nos destaques do painel.' : 'Está na seleção guardada, mas não aparece no carrossel público. Reveja a publicação e a fotografia escolhida.'}>
+                <Star size={14} aria-hidden="true" fill={status === 'live' ? 'currentColor' : 'none'} />{status === 'live' ? 'Em destaque' : 'Destaque oculto'}
               </span>
-            {:else}<span class="invisible" aria-hidden="true">Em destaque</span>{/if}
-          {:catch}
-            <span role="status"
-              >Não foi possível verificar os destaques. Verifique a sessão e atualize a página.</span
-            >
+            {:else if status === 'unknown'}<span class="highlight-loading">Destaque por confirmar</span>{/if}
+          {:catch}<span class="highlight-loading">Destaque por confirmar</span>
           {/await}
         </span>
       </div>
@@ -123,9 +117,11 @@
       </p>
     </div>
     <div class="vehicle-actions flex flex-wrap items-center gap-2">
-     <Button variant="outline" href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}
-        ><Star class="h-4 w-4" />Destacar viatura</Button
-      >
+      {#await highlightStatus}
+        <Button variant="outline" href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}><Star class="h-4 w-4" />Ver destaques</Button>
+      {:then status}
+        <Button variant="outline" class={status === 'live' ? 'featured-vehicle-action' : ''} href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}><Star class="h-4 w-4" fill={status === 'live' ? 'currentColor' : 'none'} />{status === 'live' ? 'Ver destaque' : status === 'hidden' ? 'Rever destaque' : status === 'unknown' ? 'Ver destaques' : 'Destacar viatura'}</Button>
+      {:catch}<Button variant="outline" href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}><Star class="h-4 w-4" />Ver destaques</Button>{/await}
       <Button variant="outline" class="edit-vehicle-action" href={crmPath(`/viaturas/${v.id}/editar`)}>
         <Pencil class="h-4 w-4" />
         Editar
@@ -371,6 +367,10 @@
   .vehicle-actions :global(.edit-vehicle-action) {border-color:var(--color-text-muted);background:var(--color-bg-2);font-weight:600;color:var(--color-text);}
   .vehicle-actions :global(.edit-vehicle-action:hover) {border-color:var(--color-text);}
   .vehicle-actions :global(.sell-vehicle-action) {margin-left:auto;}
+  .highlight-status {color:var(--color-warning);background:color-mix(in srgb,var(--color-warning) 10%,var(--color-bg-1));border:1px solid color-mix(in srgb,var(--color-warning) 45%,transparent);}
+  .highlight-hidden {color:var(--color-text-muted);background:var(--color-bg-2);border-color:var(--color-border-strong);}
+  .highlight-loading {font:11px var(--font-mono);color:var(--color-text-muted);}
+  .vehicle-actions :global(.featured-vehicle-action) {border-color:var(--color-warning);color:var(--color-warning);}
   .featured-slot {
     display: inline-flex;
     min-width: 130px;

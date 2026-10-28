@@ -9,7 +9,7 @@
   import { page } from '$app/stores';
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
-  import { Calendar, ChevronRight, ListChecks, Play, Plus, X } from 'lucide-svelte';
+  import { ChevronRight, ListChecks, Play, Plus, X } from 'lucide-svelte';
   import { mobileDrawer } from '$lib/stores/sidebar';
   import { quickTask } from '$lib/stores/quickTask';
   import { formatDate } from '$lib/utils/format';
@@ -636,11 +636,10 @@
               }}>{d.label}</FilterChoice
             >
           {/each}
-          <label
-            class="qt-chip qt-chip-date {dueChoice === 'custom' ? 'is-active' : ''}"
+          <div
+            class="qt-date-wrap {dueChoice === 'custom' ? 'is-active' : ''}"
             title="Data personalizada"
           >
-            <Calendar class="h-3 w-3" />
             <DateInput
               bind:value={customDate}
               oninput={() => {
@@ -649,7 +648,7 @@
               class="qt-date-input"
               aria-label="Data personalizada"
             />
-          </label>
+          </div>
         </div>
       </div>
 
@@ -829,7 +828,7 @@
     background: var(--color-bg-2);
     color: var(--color-text-muted);
     border: 1px solid var(--color-border);
-    border-radius: 3px;
+    border-radius: 50%;
     box-shadow:
       0 10px 28px rgba(0, 0, 0, 0.4),
       0 2px 6px rgba(0, 0, 0, 0.25);
@@ -1203,28 +1202,9 @@
     border-color: var(--color-red);
     background: color-mix(in oklab, var(--color-red) 14%, transparent);
   }
-  .qt-chip-date {
-    padding: 3px 8px;
-    position: relative;
-  }
-  .qt-date-input {
-    background: transparent;
-    border: 0;
-    color: var(--color-text-muted);
-    font-family: var(--font-mono);
-    font-size: 9.5px;
-    padding: 0;
-    outline: none;
-    cursor: pointer;
-    color-scheme: dark;
-    width: 102px;
-  }
-  :global([data-theme='light']) .qt-date-input {
-    color-scheme: light;
-  }
-  .qt-date-input::-webkit-calendar-picker-indicator {
-    opacity: 0.5;
-  }
+  .qt-date-wrap {flex:0 1 176px;min-width:160px;max-width:100%;}
+  .qt-date-wrap :global(.qt-date-input) {font-size:13px;}
+  .qt-date-wrap.is-active :global(.qt-date-input) {border-color:var(--color-red);background:color-mix(in srgb,var(--color-red) 8%,var(--color-bg-1));}
 
   .qt-assignee-wrap {
     position: relative;

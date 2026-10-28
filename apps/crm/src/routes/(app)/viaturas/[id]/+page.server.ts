@@ -3,6 +3,7 @@ import { vehicleExpenseCreateSchema, vehicleExpenseUpdateSchema } from '@anm/typ
 import { vehiclesApi } from '$lib/server/vehicles';
 import { expensesApi } from '$lib/server/vehicleExpenses';
 import { dashboardApi } from '$lib/server/dashboard';
+import { homepageHighlightStatus, type HighlightStatus } from '$lib/highlightStatus';
 import { ApiError, rethrowAuthError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -26,20 +27,22 @@ export const load: PageServerLoad = async (event) => {
             })
         : Promise.resolve([]);
 
-    // Whether THIS vehicle is the one currently pinned as Dashboard hero.
-    const isFeatured = dashboardApi
+    // Persisted carousel membership and public eligibility come from the same
+    // authoritative read as the homepage, never from contextual editor drafts.
+    const homepageHighlight = dashboardApi
       .highlights(event)
-      .then(({ items }) => items.some((item) => item.id === vehicle.id))
+      .then(selection => homepageHighlightStatus(selection, vehicle.id))
       .catch((err) => {
         rethrowAuthError(err);
-        return false;
+        return 'unknown' as HighlightStatus;
       });
+    const isFeatured = homepageHighlight.then(status => status === 'live');
     // SvelteKit owns delivery of streamed rejections. Attach handlers now as
     // either lookup can fail before the initial response has been serialized.
     void signedPhotos.catch(() => {});
     void isFeatured.catch(() => {});
 
-    return { vehicle, signedPhotos, isFeatured };
+    return { vehicle, signedPhotos, isFeatured, homepageHighlight };
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       throw error(404, 'Viatura não encontrada');

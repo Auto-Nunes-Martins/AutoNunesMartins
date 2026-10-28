@@ -579,13 +579,13 @@
   }
   .user-avatar {
     position: relative;
-    height: 36px;
-    width: 36px;
+    height: 40px;
+    width: 40px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-btn);
+    border-radius: 50%;
     overflow: hidden;
     /* Red gradient acts as the fallback background behind the initials when
        no Clerk photo is available; the <img> overlays it edge-to-edge when
@@ -611,8 +611,8 @@
   }
   .user-presence {
     position: absolute;
-    top: -2px;
-    right: -2px;
+    bottom: 5px;
+    right: 5px;
     height: 8px;
     width: 8px;
     border-radius: 50%;

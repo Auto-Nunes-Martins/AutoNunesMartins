@@ -31,7 +31,7 @@
   import Pagination from '$lib/components/common/Pagination.svelte';
   import EmptyState from '$lib/components/common/EmptyState.svelte';
   import { formatDate, formatDateLong } from '$lib/utils/format';
-  import { activityStyle as styleFor } from '$lib/activityPresentation';
+  import { activityStyle as styleFor, activityContextText } from '$lib/activityPresentation';
   import type { PageData } from './$types';
 
   interface Props {
@@ -348,7 +348,7 @@
         </div>
         <ul class="divide-y divide-[var(--color-border)]">
           {#each group.rows as item (item.id)}
-            {@const s = styleFor(item.type)}
+            {@const s = styleFor(item.type, item.semanticAction)}
             {@const Icon = s.icon}
             {@const href = hrefFor(item)}
             {@const actorLabel = item.actor?.name ?? 'Sistema'}
@@ -370,7 +370,7 @@
                     <div
                       class="text-[14px] text-[var(--color-text)] break-words group-hover:text-[var(--color-red)] transition-colors"
                     >
-                      {item.message}
+                      {item.message}{#if activityContextText(item)}<span class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1" title={activityContextText(item) ?? undefined}>{activityContextText(item)}</span>{/if}
                     </div>
                     <div
                       class="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)] mt-0.5"
@@ -408,7 +408,7 @@
                   ></span>
                   <div class="min-w-0">
                     <div class="text-[14px] text-[var(--color-text)] break-words">
-                      {item.message}
+                      {item.message}{#if activityContextText(item)}<span class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1" title={activityContextText(item) ?? undefined}>{activityContextText(item)}</span>{/if}
                     </div>
                     <div
                       class="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)] mt-0.5"

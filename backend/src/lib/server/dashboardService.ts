@@ -6,6 +6,7 @@ import { taskAttentionWhere } from '../data/task.js';
 import { appSettings } from '../data/appSettings.js';
 import { signedThumbnails } from '../data/storage.js';
 import { logger } from '../../logger.js';
+import { contextualActivity } from './activityContext.js';
 
 interface MonthlyKpi {
   current: string;
@@ -508,12 +509,14 @@ async function loadRecentActivity(): Promise<RecentActivityRow[]> {
     take: 10,
     include: { actor: { select: { id: true, name: true } } },
   });
-  return rows.map((r) => ({
+  const contexts = await contextualActivity(prisma, rows);
+  return rows.map((r, index) => ({
     id: r.id,
     type: r.type,
     entityType: r.entityType,
     entityId: r.entityId,
     message: r.message,
+    ...contexts[index],
     createdAt: r.createdAt.toISOString(),
     actor: r.actor ? { id: r.actor.id, name: r.actor.name } : null,
   }));

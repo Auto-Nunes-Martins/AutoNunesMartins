@@ -545,7 +545,7 @@
           </div>
           <ul class="divide-y divide-[var(--color-border)]">
             {#each group.rows as item (item.id)}
-              {@const style = styleFor(item.type)}
+              {@const style = styleFor(item.type, item.semanticAction)}
               {@const Icon = style.icon}
               {@const actorLabel = item.actor?.name ?? 'Sistema'}
               <!--

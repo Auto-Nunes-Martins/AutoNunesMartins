@@ -3,6 +3,7 @@
   import { SignIn, ClerkLoading } from 'svelte-clerk';
   import { dark } from '@clerk/themes';
   import { theme } from '$lib/stores/theme';
+  import { page } from '$app/stores';
   import Wordmark from '$lib/components/brand/Wordmark.svelte';
   import CrmBrandHead from '$lib/components/brand/CrmBrandHead.svelte';
   import ThemeToggle from '$lib/components/brand/ThemeToggle.svelte';
@@ -75,6 +76,7 @@
     </aside>
     <section class="login-form-side" aria-labelledby="login-heading">
       <div class="form-content">
+        {#if $page.url.searchParams.get('conta') === 'eliminada'}<p class="account-deleted-note" role="status">A sua conta de acesso foi eliminada. Os dados e o histórico da empresa foram preservados.</p>{/if}
         <p class="eyebrow"><span></span> DE VOLTA AO STAND</p>
         <h1 id="login-heading">O seu dia<br />começa aqui<span>.</span></h1>
         <p class="intro">
@@ -98,6 +100,7 @@
 </main>
 
 <style>
+  .account-deleted-note {padding:14px;margin-bottom:20px;border:1px solid var(--color-border-strong);border-left:3px solid var(--color-success);border-radius:var(--radius-btn);font-size:13px;line-height:1.6;color:var(--color-text);}
   .login-page :global(.cl-footer) {
     background: transparent !important;
     border-top: 1px solid var(--color-border);

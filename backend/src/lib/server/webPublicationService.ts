@@ -3,6 +3,7 @@ import { descriptionText } from '@anm/types/richDescription';
 import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { emitActivity } from '../data/activity.js';
 import { preparePhotoDimensions } from './preparePhotoDimensions.js';
+import { activityVehicleLabel } from './activityContext.js';
 import {
   isApprovedPhotoPath,
   makePublicSlug,
@@ -72,6 +73,7 @@ export async function applyWebPublication(
       brand: true,
       model: true,
       year: true,
+      licensePlate: true,
       status: true,
       soldDate: true,
       photos: true,
@@ -123,8 +125,8 @@ export async function applyWebPublication(
     type: 'VEHICLE_UPDATED',
     entityType: 'vehicle',
     entityId: id,
-    message: input.published ? 'Publicação web aprovada' : 'Publicação web desativada',
-    metadata: { webPublished: input.published },
+    message: `${input.published ? 'Publicação web aprovada' : 'Publicação web desativada'}: ${activityVehicleLabel(vehicle)}`,
+    metadata: { webPublished: input.published, vehicle: { brand: vehicle.brand, model: vehicle.model, year: vehicle.year, licensePlate: vehicle.licensePlate } },
   });
   return { published: updated.webPublished, slug: updated.publicSlug };
 }

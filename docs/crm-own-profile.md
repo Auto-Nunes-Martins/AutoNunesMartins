@@ -1,6 +1,6 @@
 # Perfil próprio do CRM
 
-Implementado em `/definicoes`, na secção «O seu perfil». Fotografia, identificação, email, palavra-passe, sessões e confirmação de identidade usam componentes e tokens Auto Nunes Martins, com os dois temas e disposição mobile. O Clerk continua a ser a autoridade da conta; não existe autenticação paralela nem armazenamento local de palavras-passe.
+Implementado em `/definicoes`, na secção «O seu perfil». Fotografia, identificação, email, palavra-passe, sessões, eliminação própria e confirmação de identidade usam componentes e tokens Auto Nunes Martins, com os dois temas e disposição mobile. O Clerk continua a ser a autoridade da conta; não existe autenticação paralela nem armazenamento local de palavras-passe.
 
 ## Integração e capacidades
 
@@ -22,7 +22,18 @@ O backend existente continua a receber `user.updated` pelo webhook com assinatur
 
 ## Limite explícito de interface
 
-A experiência principal já não monta `<UserProfile>`. Para preservar capacidades anteriormente disponíveis, «Opções avançadas de segurança» abre, por escolha explícita, a página de segurança do fornecedor (`openUserProfile`, `__experimental_startPath:'/security'`, API keys ocultas). Configuração de MFA, chaves de acesso, telefones e contas associadas continua nessa interface Clerk. A página própria implementa a reverificação/MFA necessária às suas operações e a gestão de sessões, mas não recria todos os fluxos de configuração avançada. Esta alternativa não deve ser descrita como uma substituição integral de todas as interfaces Clerk.
+A experiência principal não monta `<UserProfile>`. O botão genérico foi substituído por acessos descritivos apenas quando a configuração/recursos confirmam capacidades adicionais (MFA, chaves de acesso, telefones, contas associadas ou email sem código). Usam a área Clerk adequada: segurança para MFA/passkeys e conta para email/telefones/associações. Sem capacidades adicionais não há botão redundante. A gestão avançada continua no fornecedor; a interface própria mantém as operações normais e a reverificação.
+
+Fotografia e identificação partilham um painel compacto, com fotografia de 72 px e formulários separados; email e sessões formam uma coluna contínua junto da palavra-passe. O portal Clerk usa `getContainer` suportado. O hook oficial de scroll lock acrescenta `innerWidth-clientWidth` ao padding do body; o CRM já reserva esse espaço com `scrollbar-gutter:stable`, causando reserva dupla. A compensação é anulada apenas enquanto o portal próprio está aberto, preservando o padding anterior e o scroll lock/foco do fornecedor. Ao fechar, scroll e foco regressam sem animação de scroll. Não há seleção de classes internas Clerk nem alteração da segurança.
+
+## Eliminar a própria conta
+
+A secção separada exige escrever ELIMINAR e reconhecer a perda de acesso nas aplicações e no ambiente de teste que partilham a instância. `user.deleteSelfEnabled` e, quando disponível, `actions.delete_self` condicionam a disponibilidade; a página não altera configuração nem contorna restrições. Usa apenas `user.delete()` do SDK sobre a identidade/sessão capturada, verificando-as antes da ação e de qualquer repetição por reverificação. O diálogo usa a mesma confirmação própria de identidade/MFA. Uma mudança de conta cancela a confirmação pendente. Não há campo para outro ID, endpoint administrativo nem cascata de dados empresariais.
+
+Só a resolução confirmada de `user.delete()` anuncia eliminação. O SDK emite UserSignOut; a sessão capturada é terminada se ainda estiver ativa, a cache local é limpa e segue-se a página de entrada. Uma resposta de rede incerta nunca repete a mutação automaticamente: oferece uma leitura de confirmação; falha de leitura/401 não é prova de eliminação. Uma leitura bem-sucedida da mesma conta permite nova decisão explícita. Erros do fornecedor preservam a confirmação para corrigir/repetir ou cancelar.
+
+Auditoria backend: `user.deleted` assinado chama o ciclo de desativação existente. O tombstone, a desativação e a libertação das tarefas pendentes são transacionais e preservam utilizador/referências/histórico; eventos atrasados e provisionamento não ressuscitam a identidade. Os testes existentes de webhook/lifecycle foram executados com mocks, sem webhook ou BD real. A entrega do webhook continua necessária para a propagação local. Não foi eliminada nenhuma conta real.
+
 
 ## Verificação
 
@@ -30,4 +41,7 @@ A experiência principal já não monta `<UserProfile>`. Para preservar capacida
 
 Os cenários cobrem desktop/mobile, claro/escuro, bloqueio durante gravação, confirmação após API/leitura, username ocupado, erros com links para campos, password atual errada, confirmação/política, fotografia inválida/grande/corrompida/pré-visualização/falha/repetição/remoção, email/código/principal, reverificação com dois fatores/cancelamento, sessões e OAuth sem password. Também verificam que repetir a leitura de confirmação não repete a mutação. O teste com SDK fictício não prova integração end-to-end com uma conta Clerk real, emails reais, políticas remotas ou entrega do webhook. Essa limitação é deliberada; nenhuma conta real foi modificada na validação.
 
-Fontes primárias consultadas: [User](https://clerk.com/docs/js-frontend/reference/objects/user), [Session](https://clerk.com/docs/js-frontend/reference/objects/session), [alteração de password](https://clerk.com/docs/guides/development/custom-flows/account-updates/update-password), [reverificação](https://clerk.com/docs/guides/secure/reverification), [implementação oficial Clerk JS](https://github.com/clerk/javascript/blob/main/packages/clerk-js/src/core/clerk.ts) e declarações do SDK instalado.
+Fontes primárias consultadas: [User](https://clerk.com/docs/js-frontend/reference/objects/user), [Session](https://clerk.com/docs/js-frontend/reference/objects/session), [alteração de password](https://clerk.com/docs/guides/development/custom-flows/account-updates/update-password), [reverificação](https://clerk.com/docs/guides/secure/reverification), [implementação oficial Clerk JS](https://github.com/clerk/javascript/blob/main/packages/clerk-js/src/core/clerk.ts) e declarações do SDK instalado. Para o modal, foi inspecionado também o [hook oficial useScrollLock](https://github.com/clerk/javascript/blob/main/packages/ui/src/hooks/useScrollLock.ts).
+
+
+Validação da revisão local: 17 testes unitários de política/capacidades e 14 cenários Chrome de perfil, layout/modal e eliminação simulada. Inclui estados permitidos/desabilitados, cancelamento, troca de identidade, erro do fornecedor, MFA, resultado incerto sem repetição automática, limpeza de sessão e redirecionamento. O teste do modal reproduz o scroll lock do código oficial, mede geometria antes/durante/depois e demonstra a reserva dupla ao desligar a correção no fixture. Não é uma validação com conta Clerk real.

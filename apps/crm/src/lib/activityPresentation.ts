@@ -12,6 +12,8 @@ import {
   UserCog,
   UserPlus,
   Wallet,
+  Globe,
+  Star,
 } from 'lucide-svelte';
 import type { IconComponent } from '$lib/types/ui';
 
@@ -42,6 +44,22 @@ const events: Record<string, EventStyle> = {
   EXPENSE_UPDATED: { icon: CircleDollarSign, color: neutral, label: 'Despesa editada' },
 };
 
-export function activityStyle(type: string): EventStyle {
-  return events[type] ?? { icon: Activity, color: neutral, label: type };
+export function activityStyle(type: string, semanticAction?: string): EventStyle {
+  if (semanticAction === 'website-enabled') return { icon: Globe, color: 'var(--color-website)', label: 'Publicação no website' };
+  if (semanticAction === 'website-disabled') return { icon: Globe, color: neutral, label: 'Publicação retirada do website' };
+  if (semanticAction === 'homepage-highlights') return { icon: Star, color: 'var(--color-warning)', label: 'Destaques da homepage' };
+  if (semanticAction === 'dashboard-highlight-set' || semanticAction === 'dashboard-highlight-removed') return { icon: Star, color: 'var(--color-warning)', label: 'Destaque do painel' };
+  return events[type] ?? { icon: Activity, color: neutral, label: 'Atividade' };
+}
+
+export type ActivityContext = {
+  semanticAction?: string;
+  entityAvailable?: boolean;
+  entityContext?: { label: string | null; source: 'recorded' | 'current' | 'unavailable' };
+};
+export function activityContextText(row: ActivityContext) {
+  const context = row.entityContext;
+  if (!context) return row.entityAvailable === false ? 'Viatura já não disponível.' : null;
+  if (!context.label) return 'Identificação da viatura não registada neste evento.';
+  return `${context.source === 'current' ? 'Identificação atual' : 'Viatura registada no evento'}: ${context.label}`;
 }

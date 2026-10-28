@@ -1,0 +1,81 @@
+// Actual edit page and components; requests and saved vehicles are isolated fixtures.
+import { after, before, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, readFile, rm, realpath } from 'node:fs/promises';
+import { createServer as httpServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { createServer } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import tailwindcss from '@tailwindcss/vite';
+import { chromium } from '@playwright/test';
+
+const appRoot = fileURLToPath(new URL('../', import.meta.url));
+const id = 'c000000000000000000000001';
+const photo = `${id}/00000000-0000-4000-8000-000000000002.webp`;
+const image = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect width="400" height="240" fill="gray"/></svg>');
+function fixture(query = '') {
+  const empty = query.includes('empty'), blocked = query.includes('blocked');
+  return { vehicle: { id, brand:'BMW', model:'One', year:2020, fuel:'DIESEL', mileage:10000,
+    vin:'WBA12345678912345', licensePlate:'AA-00-AA', purchasePrice:'10000', salePrice:'19000',
+    status:blocked?'DOCS_PENDING':'AVAILABLE', acquisitionDate:'2026-01-01', description:'Notas internas',
+    pendingDocFlags:{financing:false,imt:false,registration:false,docs:false}, sale:null, soldDate:null,
+    updatedAt:'2026-10-28T00:00:00.000Z', photos:empty?[]:[photo], webPublished:query.includes('detail'),
+    publicSlug:query.includes('detail')?'vehicle-aaaaaaaaaaaa':null, publicPrice:null, publicDescription:'Descrição pública confirmada.', publicTransmission:null,
+    publicSpecifications:null,expenses:[{id:'expense-1',category:'REPAIR',description:'Reparação confirmada',amount:'120.00',date:'2026-10-20'}],expensesTotal:'120.00',figures:{margin:'9000.00',vatAmount:'1682.93',commission:'0.00',realProfit:'7197.07'} }, isFeatured:false,signedPhotos:empty?[]:[{path:photo,url:image}] };
+}
+const fixtureStates=new Map();
+let directory, vite, server, browser, origin;
+before(async () => {
+  await mkdir(path.join(appRoot,'.svelte-kit'),{recursive:true});
+  directory = await mkdtemp(path.join(appRoot,'.svelte-kit/vehicle-edit-actions-'));
+  const write = (name,value) => writeFile(path.join(directory,name),value);
+  await write('package.json','{"type":"module"}');
+  await write('review.css',"@import '../../src/app.css';\n@source '../../src';");
+  await write('App.svelte',`<script>import {onMount} from 'svelte';import ActivityPage from '$activity';import RecentActivityFeed from '$lib/components/dashboard/RecentActivityFeed.svelte';import QuickTaskBubble from '$lib/components/shell/QuickTaskBubble.svelte';import Sidebar from '$lib/components/shell/Sidebar.svelte';import {quickTask} from '$lib/stores/quickTask';import EditPage from '$edit';import DetailPage from '$detail';import HomepageHighlightsEditor from '$lib/components/vehicle/HomepageHighlightsEditor.svelte';import VehicleTable from '$lib/components/vehicle/VehicleTable.svelte';import {Toaster} from 'svelte-sonner';let {data,detail=false,mode=""}=$props();onMount(()=>{const refresh=()=>{if(window.reviewNextData)data=structuredClone(window.reviewNextData);};window.addEventListener('fixture-invalidate',refresh);return()=>window.removeEventListener('fixture-invalidate',refresh);});</script><main style="max-width:1280px;margin:auto;padding:96px 20px 40px">{#if mode === "activity"}<ActivityPage {data}/><RecentActivityFeed items={data.result.items}/>{:else if mode === "widgets"}<Sidebar/><button style="position:fixed;top:10px;right:10px" onclick={(event)=>{event.stopPropagation();quickTask.open();}}>Abrir tarefas mobile</button><QuickTaskBubble/>{:else if mode === "highlights"}<HomepageHighlightsEditor editor={data.editor} selectedVehicleId={data.selectedVehicleId}/>{:else if mode === "list"}<VehicleTable items={data.items}/>{:else if detail}<DetailPage {data}/>{:else}<EditPage {data}/>{/if}</main><Toaster/>`);
+  await write('client.js',`import './review.css';import {hydrate} from 'svelte';import App from './App.svelte';hydrate(App,{target:document.querySelector('#app'),props:{data:window.reviewData,detail:window.reviewDetail,mode:window.reviewMode}});window.reviewReady=true;`);
+  await write('ssr.js',`import {render} from 'svelte/server';import App from './App.svelte';export const html=(data,detail,mode)=>render(App,{props:{data,detail,mode}}).body;`);
+  await write('paths.js',"export const base='';");
+  await write('navigation.js',"export const goto=async()=>{};export const invalidateAll=async()=>{if(typeof window!=='undefined')window.dispatchEvent(new Event('fixture-invalidate'));};");
+  await write('public.js',"export const PUBLIC_WEBSITE_URL='http://website.fixture';");
+  await write('session.js','export const sessionFetch=(...args)=>fetch(...args);');
+  await write('enhance.js',`export function enhance(form,callback){const submit=async event=>{event.preventDefault();let cancelled=false;const handler=await callback({formElement:form,formData:new FormData(form),cancel(){cancelled=true;}});if(cancelled)return;const response=await fetch(form.action,{method:'POST',body:new FormData(form)});const result=await response.json();await handler?.({result,update:async()=>{window.dispatchEvent(new Event('fixture-invalidate'));}});};form.addEventListener('submit',submit);return {destroy(){form.removeEventListener('submit',submit);}};}`);
+  await write('clerk.svelte.js',await readFile(path.join(appRoot,'test/account-profile.mock.txt'),'utf8'));
+  await write('SignOut.svelte','<script>let {children}=$props();</script><button>{@render children?.()}</button>');
+  await write('stores.js',"import {readable} from 'svelte/store';export const page=readable({url:new URL('http://fixture/dashboard')});");
+  await write('environment.js','export const browser=true;');
+  server = httpServer(async(req,res)=>{
+    if(req.url.startsWith('/api/')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({items:[]}));return;}
+    if(req.url.startsWith('/viaturas/')){res.writeHead(200,{'content-type':'text/html'});res.end('<h1>Ficha de teste</h1>');return;}
+    if(req.url==='/'||req.url.startsWith('/?')||req.url.startsWith('/site/destaques')){
+      try {const mode=req.url.includes('/site/destaques')?'highlights':req.url.includes('list=1')?'list':req.url.includes('widgets=1')?'widgets':req.url.includes('activity=1')?'activity':'',data=fixtureStates.get(req.headers['x-review-case'])??fixture(req.url),detail=req.url.includes('detail'),module=await vite.ssrLoadModule('/ssr.js');const html=await vite.transformIndexHtml('/',`<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><script>window.reviewData=${JSON.stringify(data)};window.reviewDetail=${detail};window.reviewMode=${JSON.stringify(mode)}</script><div id="app">${module.html(data,detail,mode)}</div><script type="module" src="/client.js"></script></body></html>`);res.writeHead(200,{'content-type':'text/html'});res.end(html);}catch(e){res.writeHead(500);res.end(String(e));}return;
+    }
+    vite.middlewares(req,res);
+  });
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));origin='http://127.0.0.1:'+server.address().port;
+  vite = await createServer({configFile:false,root:directory,plugins:[tailwindcss(),svelte({configFile:false})],
+    ssr:{noExternal:['lucide-svelte','svelte-sonner']},resolve:{alias:[
+      {find:'svelte-clerk',replacement:path.join(directory,'clerk.svelte.js')},
+      {find:'$app/stores',replacement:path.join(directory,'stores.js')},
+      {find:'$app/environment',replacement:path.join(directory,'environment.js')},
+      {find:'$activity',replacement:path.join(appRoot,'src/routes/(app)/atividade/+page.svelte')},
+      {find:'$detail',replacement:path.join(appRoot,'src/routes/(app)/viaturas/[id]/+page.svelte')},
+      {find:'$edit',replacement:path.join(appRoot,'src/routes/(app)/viaturas/[id]/editar/+page.svelte')},
+      {find:'$lib/auth/session',replacement:path.join(directory,'session.js')},
+      {find:'$lib/auth/enhance',replacement:path.join(directory,'enhance.js')},
+      {find:'$app/navigation',replacement:path.join(directory,'navigation.js')},
+      {find:'$app/paths',replacement:path.join(directory,'paths.js')},
+      {find:'$env/static/public',replacement:path.join(directory,'public.js')},
+      {find:'$lib',replacement:path.join(appRoot,'src/lib')},
+    ]},server:{middlewareMode:true,hmr:{server,host:'127.0.0.1',clientPort:Number(new URL(origin).port)},fs:{allow:[path.resolve(appRoot,'../..'),await realpath(path.resolve(appRoot,'../../node_modules'))]}},optimizeDeps:{entries:['client.js']},logLevel:'error'});
+  browser=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHROMIUM_CHANNEL||'chrome'});
+});
+after(async()=>{
+  await browser?.close();await vite?.close();if(server)await new Promise(r=>server.close(r));
+  if(directory&&path.dirname(directory)===path.join(appRoot,'.svelte-kit')&&path.basename(directory).startsWith('vehicle-edit-actions-'))await rm(directory,{recursive:true,force:true});
+});
+
+for(const width of [1366,390])for(const theme of ['light','dark'])test('persisted highlight action '+width+' '+theme,{timeout:90000},async()=>{const key='highlight-'+width+theme,context=await browser.newContext({viewport:{width,height:950},extraHTTPHeaders:{'x-review-case':key}}),page=await context.newPage();try{for(const state of ['none','live','hidden','unknown']){const data=fixture('?detail');data.homepageHighlight=state;data.isFeatured=state==='live';fixtureStates.set(key,data);await page.goto(origin+'/?detail=1');await page.waitForFunction(()=>window.reviewReady);await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);const label={none:'Destacar viatura',live:'Ver destaque',hidden:'Rever destaque',unknown:'Ver destaques'}[state];await page.getByRole('link',{name:label,exact:true}).waitFor();assert.equal(await page.getByText('Em destaque',{exact:true}).count(),state==='live'?1:0);assert.equal(await page.getByText('Destaque oculto',{exact:true}).count(),state==='hidden'?1:0);assert.ok((await page.getByRole('link',{name:label,exact:true}).getAttribute('href')).includes('viatura='+id));assert.equal((await page.locator('.vehicle-actions a').last().textContent()).trim(),'Vender viatura');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);if(state==='live')await page.screenshot({path:path.join(appRoot,'.svelte-kit/live-highlight-'+width+'-'+theme+'.png')});}}finally{fixtureStates.delete(key);await context.close();}});
+for(const width of [1366,390,320])for(const theme of ['light','dark'])test('quick task date and circular navigation controls '+width+' '+theme,{timeout:90000},async()=>{const context=await browser.newContext({viewport:{width,height:950}}),page=await context.newPage();page.setDefaultTimeout(10000);page.setDefaultNavigationTimeout(60000);page.on('pageerror',e=>console.error(e.message));try{await page.goto(origin+'/?widgets=1');await page.waitForFunction(()=>window.reviewReady);await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await page.waitForTimeout(250);const avatar=page.locator('.user-avatar');assert.equal(await avatar.evaluate(n=>getComputedStyle(n).borderRadius),'50%');assert.equal(await avatar.evaluate(n=>n.getBoundingClientRect().width),40);await page.evaluate(()=>{window.accountReview.ctx.user.hasImage=true;window.accountReview.ctx.user.imageUrl='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="red"/></svg>');});assert.equal(await page.locator('.user-avatar img').evaluate(n=>getComputedStyle(n).objectFit),'cover');if(width>767){const bubble=page.getByRole('button',{name:'Tarefas rápidas',exact:true});assert.equal(await bubble.evaluate(n=>getComputedStyle(n).borderRadius),'50%');const r=await bubble.boundingBox();assert.equal(r.width,r.height);assert.ok(r.width>=44);await bubble.click();}else await page.getByRole('button',{name:'Abrir tarefas mobile',exact:true}).click();await page.locator('.qt-date-wrap').waitFor();const input=page.getByLabel('Data personalizada',{exact:true});await input.fill('2026-12-31');const metrics=await page.locator('.qt-date-wrap').evaluate(n=>{const input=n.querySelector('input'),button=n.querySelector('button'),a=n.getBoundingClientRect(),b=input.getBoundingClientRect(),c=button.getBoundingClientRect();return {a:a.toJSON(),b:b.toJSON(),c:c.toJSON(),overflow:n.scrollWidth>n.clientWidth};});assert.equal(metrics.overflow,false);assert.ok(metrics.c.right<=metrics.a.right+1);assert.ok(metrics.b.width>=150);await page.locator('.qt-date-wrap').getByRole('button',{name:'Escolher data',exact:true}).click();await page.getByRole('dialog',{name:'Escolher data',exact:true}).waitFor();await page.getByRole('button',{name:'Hoje',exact:true}).last().click();assert.ok(await input.inputValue());assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(appRoot,'.svelte-kit/quick-task-'+width+'-'+theme+'.png')});}catch(error){console.error(error);await page.screenshot({path:path.join(appRoot,'.svelte-kit/widget-failure-'+width+'-'+theme+'.png'),timeout:1000}).catch(()=>{});throw error;}finally{await context.close();}});
+
+for(const width of [1366,390])for(const theme of ['light','dark'])test('semantic activity and honest vehicle context '+width+' '+theme,{timeout:90000},async()=>{const key='activity-'+width+theme,context=await browser.newContext({viewport:{width,height:950},extraHTTPHeaders:{'x-review-case':key}}),page=await context.newPage();const base={type:'VEHICLE_UPDATED',entityType:'vehicle',createdAt:'2026-10-28T00:00:00Z',actor:{id:'actor',name:'Gonçalo'}};const items=[{...base,id:'a',entityId:'car',message:'Publicação web desativada: BMW One · AA-00-AA',semanticAction:'website-disabled',entityAvailable:true},{...base,id:'b',entityId:'current',message:'Publicação web aprovada',semanticAction:'website-enabled',entityAvailable:true,entityContext:{source:'current',label:'Mercedes A · 12-AB-34'}},{...base,id:'c',entityId:'deleted',message:'Publicação web desativada',semanticAction:'website-disabled',entityAvailable:false,entityContext:{source:'unavailable',label:null}},{...base,id:'d',entityId:'homepageHighlights',message:'Destaques da homepage atualizados',semanticAction:'homepage-highlights'},{...base,id:'e',entityId:'volvo',message:'Viatura editada: Volvo V60',entityAvailable:true}];fixtureStates.set(key,{params:{},actors:[],users:[],result:{items,total:items.length,page:1,pageSize:50,pageCount:1}});try{await page.goto(origin+'/?activity=1');await page.waitForFunction(()=>window.reviewReady);await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);assert.ok(await page.getByText('Publicação web desativada: BMW One · AA-00-AA',{exact:true}).count());assert.ok(await page.getByText('Identificação atual: Mercedes A · 12-AB-34',{exact:true}).count());assert.equal(await page.locator('a[href="/viaturas/deleted"]').count(),0);assert.ok(await page.locator('a[href="/site/destaques"]').count());assert.ok(await page.getByText('Identificação da viatura não registada neste evento.',{exact:true}).count());assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(appRoot,'.svelte-kit/activity-context-'+width+'-'+theme+'.png'),fullPage:true});}finally{fixtureStates.delete(key);await context.close();}});

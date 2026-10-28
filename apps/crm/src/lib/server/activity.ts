@@ -1,7 +1,8 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { apiJson } from './api.js';
+import type { ActivityContext } from '$lib/activityPresentation';
 
-export interface ActivityRow {
+export interface ActivityRow extends ActivityContext {
   id: string;
   type: string;
   entityType: string;

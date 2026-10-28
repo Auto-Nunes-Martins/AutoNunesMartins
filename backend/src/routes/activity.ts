@@ -5,6 +5,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../db.js';
 import { cache } from '../lib/data/cache.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
+import { contextualActivity } from '../lib/server/activityContext.js';
 
 const router = Router();
 
@@ -216,13 +217,15 @@ router.get(
         }),
         prisma.activityLog.count({ where }),
       ]);
+      const contexts = await contextualActivity(prisma, rows);
       return {
-        items: rows.map((r) => ({
+        items: rows.map((r, index) => ({
           id: r.id,
           type: r.type,
           entityType: r.entityType,
           entityId: r.entityId,
           message: r.message,
+          ...contexts[index],
           createdAt: r.createdAt.toISOString(),
           actor: r.actor ? { id: r.actor.id, name: r.actor.name } : null,
         })),
@@ -233,7 +236,7 @@ router.get(
       };
     });
 
-    res.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=15');
+    res.set('Cache-Control', 'private, no-store');
     res.json(payload);
   }),
 );

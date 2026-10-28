@@ -86,7 +86,10 @@ describe('homepage editorial selection', () => {
     expect(dashboard.items[0]).not.toHaveProperty('vin');
     expect(JSON.stringify(publicResult)).not.toContain('PRIVATE');
     mock.vehicle.findMany.mockResolvedValue([]);
-    expect((await readDashboardHighlights(db)).items).toEqual([]);
+    const hidden = await readDashboardHighlights(db);
+    expect(hidden.items).toEqual([]);
+    expect(hidden.configuredVehicleIds).toEqual([secondId, id]);
+    expect(publicResult).not.toHaveProperty('configuredVehicleIds');
   });
   it('preserves the chosen photo, projects only public fields and filters with current publication rules', async () => {
     const result = await readPublicHighlights(db);

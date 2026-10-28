@@ -1,10 +1,11 @@
 export {default as SignOutButton} from './SignOut.svelte';
 const isBrowser = typeof window !== 'undefined';
-const controls = { calls: [], nextError: '', needsVerification: false, verified: false, mfa: false, failReload: false, delay: 20 };
+const controls = { calls: [], nextError: '', needsVerification: false, verified: false, mfa: false, failReload: false, delay: 20, deletedIds: [], redirects: [], signedOutSessions: [], nextTransportError: false };
 const pause = () => new Promise(r=>setTimeout(r,controls.delay));
 const error = (code,paramName) => ({errors:[{code,meta:{paramName}}]});
 async function call(name) {
   controls.calls.push(name); await pause();
+  if(controls.nextTransportError){controls.nextTransportError=false;throw new Error('fixture network failure');}
   if(controls.nextError){const code=controls.nextError;controls.nextError='';throw error(code,code.includes('identifier')?'username':code.includes('code')?'code':undefined);}
   if(controls.needsVerification&&!controls.verified)throw error('session_reverification_required');
 }
@@ -16,7 +17,8 @@ const address = (email,id='email-'+Math.random()) => ({id,emailAddress:email,ver
 });
 const primary=address('goncalo@example.test','email-primary');primary.verification.status='verified';
 const sessions=[{id:'session-current',status:'active',lastActiveAt:new Date('2026-10-28T00:00:00Z'),latestActivity:{browserName:'Chrome',deviceType:'Computador'}},{id:'session-other',status:'active',lastActiveAt:new Date('2026-10-27T00:00:00Z'),latestActivity:{browserName:'Safari',deviceType:'Telemóvel'},async revoke(){await call('session.revoke');this.status='revoked';return this;}}];
-ctx.user={id:'user-fixture',firstName:'Gonçalo',lastName:'Almeida',fullName:'Gonçalo Almeida',username:'goncalo',passwordEnabled:true,hasImage:false,imageUrl:'',emailAddresses:[primary],primaryEmailAddressId:primary.id,externalAccounts:[],twoFactorEnabled:false,
+ctx.user={id:'user-fixture',firstName:'Gonçalo',lastName:'Almeida',fullName:'Gonçalo Almeida',username:'goncalo',deleteSelfEnabled:true,primaryEmailAddress:primary,passkeys:[],phoneNumbers:[],passwordEnabled:true,hasImage:false,imageUrl:'',emailAddresses:[primary],primaryEmailAddressId:primary.id,externalAccounts:[],twoFactorEnabled:false,
+  async delete(){await call('user.delete');controls.deletedIds.push(ctx.user.id);ctx.user=null;},
   async update(payload){await call('user.update');Object.assign(ctx.user,payload);ctx.user.fullName=[ctx.user.firstName,ctx.user.lastName].filter(Boolean).join(' ');return ctx.user;},
   async reload(){controls.calls.push('user.reload');await pause();if(controls.failReload)throw new Error('read failure');return ctx.user;},
   async setProfileImage({file}){await call('user.image');ctx.user.hasImage=!!file;ctx.user.imageUrl=file?image:'';return {publicUrl:ctx.user.imageUrl};},
@@ -31,6 +33,6 @@ ctx.session={id:'session-current',async getToken(){controls.calls.push('token.re
   async attemptFirstFactorVerification(params){controls.calls.push('verification.first');if(params.password!=='Correct!12345'&&params.code!=='123456')throw error('form_code_incorrect','verification');if(controls.mfa)return verification('needs_second_factor');controls.verified=true;return verification('complete');},
   async attemptSecondFactorVerification(params){controls.calls.push('verification.second');if(params.code!=='654321')throw error('form_code_incorrect','verification');controls.verified=true;return verification('complete');}
 };
-ctx.clerk={__internal_environment:{userSettings:{attributes:{first_name:{enabled:true,required:true},last_name:{enabled:true,required:false},username:{enabled:true,required:true},email_address:{enabled:true,required:true,verifications:['email_code']},password:{enabled:true}},usernameSettings:{min_length:4,max_length:20},passwordSettings:{min_length:10,max_length:64,require_numbers:true,require_uppercase:true,require_lowercase:true,require_special_char:true,allowed_special_characters:'!@',disable_hibp:false,show_zxcvbn:true}}},openUserProfile(){controls.calls.push('advanced.open');}};
+ctx.clerk={__internal_environment:{userSettings:{attributes:{first_name:{enabled:true,required:true},last_name:{enabled:true,required:false},username:{enabled:true,required:true},email_address:{enabled:true,required:true,verifications:['email_code']},password:{enabled:true}},usernameSettings:{min_length:4,max_length:20},passwordSettings:{min_length:10,max_length:64,require_numbers:true,require_uppercase:true,require_lowercase:true,require_special_char:true,allowed_special_characters:'!@',disable_hibp:false,show_zxcvbn:true}}},async signOut(options){controls.signedOutSessions.push(options.sessionId);ctx.user=null;ctx.session=null;},openUserProfile(props={}){controls.calls.push('advanced.open');const parent=props.getContainer?.()??document.body;const oldOverflow=document.body.style.overflow,oldPadding=document.body.style.paddingRight;const gutter=innerWidth-document.documentElement.clientWidth;document.body.style.overflow='hidden';if(gutter)document.body.style.paddingRight=gutter+'px';const dialog=document.createElement('div');dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Segurança do fornecedor');Object.assign(dialog.style,{position:'fixed',inset:'15% 10%',zIndex:1000,overflow:'auto',background:'var(--color-bg-elevated)',padding:'20px'});const close=document.createElement('button');close.textContent='Fechar segurança';close.onclick=()=>{document.body.style.overflow=oldOverflow;document.body.style.paddingRight=oldPadding;dialog.remove();};dialog.append(close);const body=document.createElement('div');body.style.height='1600px';body.textContent='Área segura de teste';dialog.append(body);parent.append(dialog);close.focus({preventScroll:true});}};
 if(isBrowser)window.accountReview={ctx,controls};
 export const useClerkContext=()=>ctx;

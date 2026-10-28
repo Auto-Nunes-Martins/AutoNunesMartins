@@ -1,5 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { apiJson } from './api.js';
+import type { ActivityContext } from '$lib/activityPresentation';
 
 export interface DashboardKpis {
   vendasMes: { count: number; previousCount: number; deltaPct: number | null };
@@ -83,7 +84,7 @@ export interface TodayTaskRow {
   isOverdue: boolean;
 }
 
-export interface RecentActivityRow {
+export interface RecentActivityRow extends ActivityContext {
   id: string;
   type: string;
   entityType: string;
@@ -150,7 +151,7 @@ export interface DashboardHighlight {
 type Ev = Pick<RequestEvent, 'locals' | 'fetch'>;
 
 export const dashboardApi = {
-  highlights(event: Ev): Promise<{ configured: boolean; items: DashboardHighlight[] }> {
+  highlights(event: Ev): Promise<{ configured: boolean; configuredVehicleIds?: string[]; items: DashboardHighlight[] }> {
     return apiJson(event, '/api/homepage-highlights/showcase');
   },
   get(event: Ev): Promise<DashboardPayload> {

@@ -7,6 +7,8 @@ export type Verification = Awaited<ReturnType<AccountSession['startVerification'
 export type Email = AccountUser['emailAddresses'][number];
 export type AccountSettings = {
   attributes: Record<string, { enabled: boolean; required: boolean; verifications?: string[] }>;
+  actions?: { delete_self: boolean };
+  social?: Record<string, { enabled: boolean; name?: string }>;
   passwordSettings: {
     min_length: number; max_length: number; require_numbers: boolean;
     require_uppercase: boolean; require_lowercase: boolean; require_special_char: boolean;
@@ -14,6 +16,28 @@ export type AccountSettings = {
   };
   usernameSettings: { min_length: number; max_length: number };
 };
+
+export function canDeleteSelf(user: Pick<AccountUser, 'deleteSelfEnabled'>, settings: AccountSettings | null) {
+  return user.deleteSelfEnabled === true && settings?.actions?.delete_self !== false;
+}
+
+export function extraAccountOptions(user: AccountUser, settings: AccountSettings | null) {
+  const enabled = (key: string) => settings?.attributes[key]?.enabled === true;
+  const options: { key: string; label: string; path: string }[] = [];
+  if (enabled('authenticator_app') || enabled('backup_code') || user.twoFactorEnabled)
+    options.push({ key: 'mfa', label: 'Gerir autenticação de dois fatores', path: '/security' });
+  if (enabled('passkey') || user.passkeys?.length)
+    options.push({ key: 'passkeys', label: 'Gerir chaves de acesso', path: '/security' });
+  if (enabled('phone_number') || user.phoneNumbers?.length)
+    options.push({ key: 'phones', label: 'Gerir telefones de acesso', path: '/account' });
+  if (enabled('email_address') && !settings?.attributes.email_address?.verifications?.includes('email_code'))
+    options.push({ key: 'email', label: 'Gerir email de acesso', path: '/account' });
+  // Connecting/managing social accounts is only offered when the instance
+  // actually enables a provider; an existing identity alone proves no option.
+  if (Object.values(settings?.social ?? {}).some(provider => provider.enabled))
+    options.push({ key: 'social', label: 'Gerir contas de acesso associadas', path: '/account' });
+  return options;
+}
 
 // Clerk JS exposes this read-only getter, but svelte-clerk 1.1 does not type it.
 // Keep the compatibility boundary here. Missing configuration disables editing;

@@ -1,22 +1,32 @@
 <script lang="ts">
-  import { onDestroy, tick, untrack } from 'svelte';
+  import { onDestroy, onMount, tick, untrack } from 'svelte';
   import { useClerkContext } from 'svelte-clerk';
   import { dark } from '@clerk/themes';
   import { theme } from '$lib/stores/theme';
   import { invalidateAll } from '$app/navigation';
-  import { Camera, ShieldCheck, UserRound, Mail, Monitor, Eye, EyeOff } from 'lucide-svelte';
+  import { ShieldCheck, UserRound, Mail, Monitor, Eye, EyeOff } from 'lucide-svelte';
   import Button from '$lib/components/common/Button.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import AccountVerification from './AccountVerification.svelte';
-  import { accountSettings, accountFailure, avatarProblem, needsReverification, passwordProblem, passwordRequirements, verificationLevel, type AccountUser, type Email } from '$lib/account/profile';
+  import AccountDeletion from './AccountDeletion.svelte';
+  import { securityModalHost } from '$lib/account/securityModal';
+  import { accountSettings, accountFailure, avatarProblem, extraAccountOptions, needsReverification, passwordProblem, passwordRequirements, verificationLevel, type AccountUser, type Email } from '$lib/account/profile';
   import { clearFormErrors, showFormErrors, showInvalidFormFields } from '$lib/forms/formFeedback';
   import '$lib/styles/accountProfile.css';
 
   const ctx = useClerkContext();
   const user = $derived(ctx.user);
   const settings = $derived(accountSettings(ctx.clerk));
+  const extraOptions = $derived(user ? extraAccountOptions(user, settings) : []);
   let verify: AccountVerification;
+  let portalHost: HTMLDivElement;
+  let securityPortal: ReturnType<typeof securityModalHost> | undefined;
+  onMount(() => { securityPortal = securityModalHost(portalHost); return () => securityPortal?.destroy(); });
+  function openSecurity(path: string) {
+    if (locked || !ctx.clerk) return;
+    securityPortal?.open(getContainer => ctx.clerk?.openUserProfile({ getContainer, __experimental_startPath: path, apiKeysProps: { hide: true }, appearance: { baseTheme: $theme === 'dark' ? dark : undefined } }));
+  }
   let identity = $state('');
   let firstName = $state(''); let lastName = $state(''); let username = $state('');
   let busy = $state(''); let success = $state('');
@@ -181,10 +191,10 @@
     </header>
     <p class="account-success" role="status" aria-live="polite">{success}</p>
     {#if pendingConfirmation}<div class="account-notice"><p>A alteração foi enviada, mas não foi possível voltar a ler os dados da conta. Confirme o estado antes de fazer outra alteração; o pedido original não será reenviado.</p><Button variant="outline" loading={busy === 'confirm'} onclick={confirmCurrentAccount}>Confirmar estado da conta</Button></div>{/if}
-    {#if !settings}<p class="account-notice">Não foi possível obter as opções da sua conta. A edição está temporariamente indisponível. Recarregue a página ou use as opções avançadas de segurança abaixo.</p>{/if}
-    <div class="account-grid">
-      <Panel>
-        <PanelHeader icon={Camera} title="Fotografia" />
+    {#if !settings}<p class="account-notice">Não foi possível obter as opções da sua conta. A edição está temporariamente indisponível. Recarregue a página para tentar novamente.</p>{/if}
+    <Panel>
+      <PanelHeader icon={UserRound} title="Identificação e fotografia" />
+      <div class="account-identity">
         <form bind:this={avatarForm} class="account-form account-photo-form" onsubmit={saveAvatar} novalidate>
           <div class="account-avatar">{#if preview || user.hasImage}<img src={preview || user.imageUrl} alt={preview ? 'Pré-visualização da nova fotografia' : 'A sua fotografia'} />{:else}<span>{initials}</span>{/if}</div>
           <div><h3>{displayName}</h3><p>JPEG, PNG ou WebP, até 5 MB. A fotografia só muda depois de guardar.</p></div>
@@ -195,9 +205,7 @@
             {#if user.hasImage && !preview}<Button variant="ghost" onclick={() => run(avatarForm, 'avatar', account => account.setProfileImage({ file: null }), 'Fotografia removida.', clearPreview)}>Remover fotografia</Button>{/if}
           </fieldset>
         </form>
-      </Panel>
-      <Panel>
-        <PanelHeader icon={UserRound} title="Identificação" />
+
         <form bind:this={profileForm} class="account-form" onsubmit={saveProfile} novalidate>
           <fieldset disabled={locked || !settings}>
             <div class="account-field-grid">
@@ -209,7 +217,10 @@
             <div class="account-actions"><Button type="submit" disabled={!profileDirty || locked} loading={busy === 'profile'}>Guardar perfil</Button></div>
           </fieldset>
         </form>
-      </Panel>
+      </div>
+    </Panel>
+    <div class="account-access-grid">
+      <div class="account-secondary">
       <Panel>
         <PanelHeader icon={Mail} title="Email" />
         <div class="account-form">
@@ -221,11 +232,27 @@
             <fieldset disabled={locked || !settings}>
               {#if verifyingEmail}<label for="account-email-code">Código enviado para {verifyingEmail.emailAddress}</label><input id="account-email-code" name="code" type="text" autocomplete="one-time-code" inputmode="numeric" bind:value={code} /><div class="account-actions"><Button type="submit" loading={busy === 'email'}>Confirmar email</Button><Button variant="outline" onclick={() => sendCode(verifyingEmail!)}>Reenviar código</Button><Button variant="ghost" onclick={() => { verifyingEmail = null; code = ''; clearFormErrors(emailForm); }}>Voltar</Button></div>
               {:else if enabled('email_address') && emailCodeEnabled}<label for="account-new-email">Adicionar novo email</label><input id="account-new-email" name="email" type="email" autocomplete="email" required bind:value={email} /><p>O email atual mantém-se até verificar o novo endereço e o definir como principal.</p><div class="account-actions"><Button type="submit" loading={busy === 'email'}>Enviar código de verificação</Button></div>
-              {:else}<p>A alteração de email desta conta exige as opções avançadas de segurança.</p>{/if}
+              {:else}<p>{extraOptions.some(option => option.key === 'email') ? 'Esta conta usa outro método de confirmação de email. Use «Gerir email de acesso» abaixo.' : 'O email de acesso não pode ser alterado nesta conta.'}</p>{/if}
             </fieldset>
           </form>
         </div>
       </Panel>
+    <Panel>
+      <PanelHeader icon={Monitor} title="Sessões e segurança" />
+      <form bind:this={securityForm} class="account-form" onsubmit={e => e.preventDefault()}>
+        <p>{user.twoFactorEnabled ? 'Autenticação de dois fatores ativa.' : 'A autenticação de dois fatores ainda não está ativa.'}</p>
+        {#if user.externalAccounts.length}<p>Contas associadas: {user.externalAccounts.map(a => a.provider).join(', ')}.</p>{/if}
+        {#if sessionsLoading}<p role="status">A carregar sessões…</p>{/if}
+        {#if sessionsError}<p role="status">{sessionsError}</p>{/if}
+        <ul class="account-list">{#each sessions as session (session.id)}<li><div><strong>{session.latestActivity?.browserName || 'Navegador'} · {session.latestActivity?.deviceType || (session.latestActivity?.isMobile ? 'Telemóvel' : 'Computador')}</strong><p>{session.id === ctx.session?.id ? 'Esta sessão · ' : ''}Última atividade: {new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short', timeStyle: 'short' }).format(session.lastActiveAt)}</p></div>{#if session.id !== ctx.session?.id}<Button variant="outline" size="sm" disabled={locked} onclick={() => run(securityForm, 'session', () => session.revoke(), 'Sessão terminada.', () => { sessions = sessions.filter(s => s.id !== session.id); })}>Terminar sessão</Button>{/if}</li>{/each}</ul>
+        <div class="account-actions"><Button variant="outline" disabled={sessionsLoading || locked} onclick={loadSessions}>Atualizar sessões</Button></div>
+        {#if extraOptions.length}
+          <div class="account-actions">{#each extraOptions as option (option.key)}<Button variant="ghost" disabled={locked} onclick={() => openSecurity(option.path)}>{option.label}</Button>{/each}</div>
+          <p>Estas opções disponíveis para a sua conta abrem a respetiva área segura do fornecedor de acesso.</p>
+        {/if}
+      </form>
+    </Panel>
+      </div>
       <Panel>
         <PanelHeader icon={ShieldCheck} title="Palavra-passe" />
         <form bind:this={passwordForm} onsubmit={savePassword} class="account-form" novalidate autocomplete="on">
@@ -244,18 +271,9 @@
         </form>
       </Panel>
     </div>
-    <Panel>
-      <PanelHeader icon={Monitor} title="Sessões e segurança" />
-      <form bind:this={securityForm} class="account-form" onsubmit={e => e.preventDefault()}>
-        <p>{user.twoFactorEnabled ? 'Autenticação de dois fatores ativa.' : 'A autenticação de dois fatores ainda não está ativa.'}</p>
-        {#if user.externalAccounts.length}<p>Contas associadas: {user.externalAccounts.map(a => a.provider).join(', ')}.</p>{/if}
-        {#if sessionsLoading}<p role="status">A carregar sessões…</p>{/if}
-        {#if sessionsError}<p role="status">{sessionsError}</p>{/if}
-        <ul class="account-list">{#each sessions as session (session.id)}<li><div><strong>{session.latestActivity?.browserName || 'Navegador'} · {session.latestActivity?.deviceType || (session.latestActivity?.isMobile ? 'Telemóvel' : 'Computador')}</strong><p>{session.id === ctx.session?.id ? 'Esta sessão · ' : ''}Última atividade: {new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short', timeStyle: 'short' }).format(session.lastActiveAt)}</p></div>{#if session.id !== ctx.session?.id}<Button variant="outline" size="sm" disabled={locked} onclick={() => run(securityForm, 'session', () => session.revoke(), 'Sessão terminada.', () => { sessions = sessions.filter(s => s.id !== session.id); })}>Terminar sessão</Button>{/if}</li>{/each}</ul>
-        <div class="account-actions"><Button variant="outline" disabled={sessionsLoading || locked} onclick={loadSessions}>Atualizar sessões</Button><Button variant="ghost" disabled={locked} onclick={() => ctx.clerk?.openUserProfile({ __experimental_startPath: '/security', apiKeysProps: { hide: true }, appearance: { baseTheme: $theme === 'dark' ? dark : undefined } })}>Opções avançadas de segurança</Button></div>
-        <p>As opções avançadas abrem a gestão segura do fornecedor da conta para configurar dois fatores, chaves de acesso, telefones e contas associadas. A edição de fotografia, identificação, email e palavra-passe é feita aqui.</p>
-      </form>
-    </Panel>
   {/if}
 </div>
 <AccountVerification bind:this={verify} />
+<AccountDeletion disabled={locked} onbusychange={(deleting) => { if (deleting) busy = 'delete-account'; else if (busy === 'delete-account') busy = ''; }} />
+
+<div class="account-security-portal" bind:this={portalHost}></div>

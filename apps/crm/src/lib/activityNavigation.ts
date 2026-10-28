@@ -5,7 +5,12 @@ export function activityHref(row: {
   type: string;
   entityType: string;
   entityId: string;
+  entityAvailable?: boolean;
+  semanticAction?: string;
 }): string | null {
+  if (row.semanticAction === 'homepage-highlights') return crmPath('/site/destaques');
+  if (row.semanticAction?.startsWith('dashboard-highlight-')) return crmPath('/dashboard');
+  if (row.entityAvailable === false) return null;
   if (!row.entityId || row.type === 'VEHICLE_DELETED') return null;
   switch (row.entityType) {
     case 'vehicle':

@@ -183,6 +183,9 @@
               await update({ reset: false });
               await tick();
               markFormSaved(formElement);
+              if (selectedVehicleId) contextMessage = editor.items.some(item => item.vehicleId === selectedVehicleId)
+                ? 'Seleção de destaques guardada. A fotografia escolhida foi confirmada.'
+                : 'A viatura foi retirada da seleção guardada.';
               toast.success('Destaques da homepage guardados.');
             } else if (result.type === 'failure') {
               message = (result.data as { error?: string })?.error ?? 'Não foi possível guardar.';
