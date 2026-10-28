@@ -365,7 +365,7 @@
           {#snippet actions()}
             <Button variant="primary" size="sm" onclick={openCustomer}>
               <BrandPlus class="h-4 w-4" />
-              Adicionar cliente
+              Novo cliente
             </Button>
           {/snippet}
         </PanelHeader>

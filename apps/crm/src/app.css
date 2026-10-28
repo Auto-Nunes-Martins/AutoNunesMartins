@@ -42,6 +42,7 @@
   --color-success: #60bf93;
   --color-warning: #e8b052;
   --color-info: #79adf4;
+  --color-website: #c4a7ff;
   --color-danger: #f17c87;
   --color-interaction-hover: rgba(255, 255, 255, 0.09);
   --color-interaction-active: rgba(255, 255, 255, 0.15);
@@ -94,6 +95,7 @@
   --color-success: #176c48;
   --color-warning: #805000;
   --color-info: #195ba8;
+  --color-website: #6932b3;
   --color-danger: #ac2536;
   --color-interaction-hover: rgba(45, 70, 54, 0.07);
   --color-interaction-active: rgba(45, 70, 54, 0.12);

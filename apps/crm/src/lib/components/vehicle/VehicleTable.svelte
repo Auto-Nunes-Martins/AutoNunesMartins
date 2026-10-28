@@ -80,7 +80,7 @@
                 {v.brand}
                 {v.model}
               </div>
-              <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact /></div>
+              <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly /></div>
             </div>
             <!-- Prefer the user-facing license plate on mobile cards; fall back to VIN if it has not been registered. -->
             <div
@@ -250,7 +250,7 @@
             {v.salePrice ? formatEUR(v.salePrice) : '—'}
           </td>
           <td class="px-4 py-3">
-            <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact /></div>
+            <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly /></div>
           </td>
           <td class="px-4 py-3 text-right">
             {@render rowActions(v)}
