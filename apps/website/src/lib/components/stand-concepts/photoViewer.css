@@ -125,6 +125,14 @@ html:has(dialog.gallery-dialog[open]) {
 .design.orbit .gallery-dialog .viewer-thumbnails button[aria-pressed='true'] {
   opacity: 1;
 }
+.design.orbit .gallery-dialog .viewer-thumbnails button[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid white;
+  border-radius: inherit;
+  pointer-events: none;
+}
 .design.orbit .gallery-dialog .viewer-thumbnails button:first-child {
   margin-inline-start: auto;
 }
