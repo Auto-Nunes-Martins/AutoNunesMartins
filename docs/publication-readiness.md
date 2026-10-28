@@ -1,6 +1,6 @@
 # Preparação para publicação — PENDENTE
 
-Atualizado em 25 de outubro de 2026. Os contactos comerciais, a localização, a equipa e as redes sociais foram fornecidos e confirmados pelo proprietário. Os restantes dados oficiais mantêm placeholders. O site **não está pronto para publicação enquanto persistirem estas pendências**. A existência das páginas legais não significa que estejam completas ou juridicamente validadas.
+Atualizado em 28 de outubro de 2026. Os contactos comerciais, a localização, a equipa e as redes sociais foram fornecidos e confirmados pelo proprietário. Os restantes dados oficiais mantêm placeholders. O site **não está pronto para publicação enquanto persistirem estas pendências**. A existência das páginas legais não significa que estejam completas ou juridicamente validadas.
 
 Antes de responder a «está pronto para publicar?», consultar este documento, a configuração e a implementação corrente. Não assumir que uma revisão anterior concluiu a prontidão. Registar aqui evidência e data de cada confirmação; não inferir dados de concorrentes.
 
@@ -28,7 +28,8 @@ Não copiar referências CASA ou ODR do concorrente. Confirmar entidades e mecan
 
 ## Funcionalidades e dados — revisão operacional
 
-- **Formulários de contacto:** em 10 de outubro de 2026 foi implementado o encaminhamento por Resend, sem guardar pedidos no CRM. O envio permanece desativado por falta de configuração e confirmação dos dados de privacidade. As páginas de demonstração mantêm o modal de teste. Consulte `docs/contact-email.md`. Em 2026-10-04, o proprietário pediu a remoção dos avisos visíveis de demonstração na secção de contacto/formulários e do rótulo de pendência no rodapé. Essa alteração visual não confirma dados nem ativa envio real. Não introduzir dados pessoais reais. Escolher envio/receção, prestadores e conservação antes de ativar contacto real; A integração foi acrescentada em 10 de outubro; isto não confirma contactos, serviços finais nem publicação.
+- **Formulários de contacto — auditoria de 28/10/2026:** o código encaminha pedidos por Resend quando as credenciais e o interruptor backend estão configurados. Os campos pendentes de publicationReadiness.json NÃO são um bloqueio de runtime: contactEndpoint.test.ts confirma encaminhamento com metadados de privacidade pendentes. Não se infere configuração ou funcionamento de produção desta auditoria. Não são criadas contas/fichas de cliente nem guardados corpos/email no CRM por este fluxo; após aceite, há notificação com nome, assunto, hora/identificador e leitura individual. Metadados HMAC de tentativa têm expiração de 35 dias e limpeza limitada nos pedidos seguintes; avisos/leituras/caixa de email/backups têm conservação por confirmar. A UI de sucesso verde confirma aceite pelo serviço, não entrega final. Privacidade, fundamentos, prestadores e operação final continuam pendentes; não foram alterados gates nem realizados envios reais. Consulte docs/legal-review-2026-10-28.md e docs/contact-email.md.
+
 - **Contactos oficiais — 25/10/2026:** aplicados em `standContact.ts`, equipa e interface. Substituídos os dados fictícios de Lisboa e os emails `.example`; mapas pesquisam as duas moradas em Castelo Branco. WhatsApp fictício removido; o proprietário confirmou posteriormente o número principal também para WhatsApp, ativando a ligação oficial. A confirmação de contactos comerciais não confirma sede legal, responsável pelo tratamento, contacto específico de privacidade ou envio real de formulários.
 - **Preferências locais:** preservar a informação já implementada sobre tema, favoritos e comparação. `anm-orbit-theme`, `anm-favorites-v1`, `anm-comparison-v1` e legado `anm-design-saved` usam armazenamento local; listas não têm expiração automática. A seleção permite pedidos à API pública, não é uma funcionalidade sem rede.
 - **Scroll:** `orbit-reload-position` usa armazenamento de sessão com URL completo, coordenadas e hora. Janela de utilização de 60 segundos não equivale a apagar a entrada. A política já descreve esta função.
@@ -42,7 +43,7 @@ Não copiar referências CASA ou ODR do concorrente. Confirmar entidades e mecan
 - Pendente: build e runtime Node no Render no ambiente de publicação. Como registo histórico, um build anterior chegou à fase de adaptação Vercel e encontrou `EPERM` ao criar symlink no Windows. Não atribuir esse erro à informação legal nem afirmar que o build final foi validado.
 - Pendente: confirmar domínio/origem e canonical/OG/JSON-LD, links, fotografias, formulários escolhidos, segurança operacional e percursos desktop/mobile.
 - Pendente: revisão final de acessibilidade, contraste, navegação por teclado, links legais e adequação da comunicação ao funcionamento efetivo dos contactos e formulários.
-- Testes locais aprovados não equivalem a aprovação de publicação. Não houve commit, push ou deploy nesta preparação.
+- Testes locais aprovados não equivalem a aprovação de publicação. Esta checklist não autoriza publicação.
 
 ## Como encerrar pendências
 
@@ -54,7 +55,7 @@ Preencher valores confirmados na configuração e substituir placeholders no tex
 - 25 de outubro de 2026 — proprietário forneceu os contactos comerciais, duas moradas em Castelo Branco, horários, contactos de João Nunes, Diogo Nunes e Alexandre Nunes, Facebook e Instagram; confirmou diretamente neste chat «Sim, são oficiais e autorizo aplicar». Evidência adicional na mensagem de voz `01a17471-d4a8-7fb1-bca9-50750706effd` do chat `01a17464-70e7-7a03-9873-a14f9d3c255a`. Facebook confirmado sem parâmetro de idioma. A autorização abrange apresentar estes dados no website, sem deploy externo.
 - As restantes confirmações de identidade legal, registos, privacidade, serviços finais e aprovação de publicação continuam pendentes.
 
-### Verificação local desta preparação
+### Registo histórico da preparação inicial — outubro de 2026
 
 268 testes do website aprovados. Svelte check final: 0 erros e 0 avisos. `/informacao-legal`, `/politica-de-privacidade` e `/quem-somos` responderam com 200. Campos pendentes e avisos de demonstração confirmados na interface; sem overflow na página legal mobile. A verificação manual continua a assinalar 21 pendências. Nenhum build de publicação ou deploy foi executado; estes resultados não encerram as pendências acima.
 
@@ -187,3 +188,7 @@ Por novo pedido explícito do proprietário, removido o lazy loading das fotogra
 ### Validação final antes dos commits — 26 de outubro de 2026
 
 Suite completa do website:551 testes aprovados em64 ficheiros. Svelte check:0 erros/avisos. Build de produção com adapter Node concluído localmente; não confirma ambiente Render nem encerra a pendência de publicação. Chrome390 e1440 confirmou as12 fotografias da viatura descarregadas à entrada, miniaturas todas prontas e nenhuma fotografia nova ao abrir fullscreen; navegação mobile a partir do catálogo também preparou as12. Os contactos e alternativas do banner foram separados em commits próprios. Artefactos locais anteriores em artifacts/ não integram as alterações do website. O novo acabamento do botão Venha conhecer-nos em Quem Somos, pedido depois, será aplicado localmente fora deste push para o próximo envio.
+
+### Revisão editorial e de dados — 28/10/2026
+
+Páginas de informação legal, termos de utilização, privacidade, cookies/preferências e litígios foram preparadas para revisão local, com aviso de dados pendentes e sem inventar identificação jurídica/adesões. Contactos comerciais oficiais mantêm-se. O aviso junto dos formulários passa a informação em camadas, sem checkbox de consentimento genérico nem alteração do tratamento. A revisão de armazenamento ganhou pendência explícita storageConsent: tema, favoritos, comparação e scroll foram inventariados, mas persistência/necessidade/consentimento e alojamento final não se presumem validados. Não foi instalado um banner que não controle nada, nem modificada a memória existente. Fontes, decisões e dados em falta em docs/legal-review-2026-10-28.md. Nenhum campo oficial foi preenchido ou check pendente marcado como verified. Esta revisão local não aprova publicação.

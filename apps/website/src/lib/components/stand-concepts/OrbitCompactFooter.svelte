@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {publicLegalLinks,complaintsPortal} from '$lib/publicLegal';
   import { logoDark, logoDarkSrcset } from '$lib/localAssets';
   import { ArrowUpRight } from 'lucide-svelte';
   import { standContact } from './standContact';
@@ -71,10 +72,10 @@
             >Demonstração · Dados fictícios</span
           >{/if}
       </p>
-      <div class="legal-links">
-        <a href="/informacao-legal">Informação legal</a>
-        <a href="/politica-de-privacidade">Política de privacidade</a>
-      </div>
+      <nav class="legal-links" aria-label="Informação legal e direitos">
+        {#each publicLegalLinks as item}<a href={item.href}>{item.label}</a>{/each}
+        <a class="complaints-link" href={complaintsPortal} aria-label="Livro de Reclamações Eletrónico — portal oficial">Livro de Reclamações</a>
+      </nav>
       <div class="footer-socials"><FooterSocials /></div>
     </div>
   </div>
@@ -261,6 +262,8 @@
     align-items: center;
     min-height: 44px;
   }
+  .legal-links a {font-size:11px;}
+  .legal-links .complaints-link {font-weight:600;color:#f5f5f1;}
   .legal-links {
     display: flex;
     flex-wrap: wrap;

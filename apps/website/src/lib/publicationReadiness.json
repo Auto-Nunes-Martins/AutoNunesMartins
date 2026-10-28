@@ -1,20 +1,52 @@
 {
   "operator": [
-    { "id": "legalName", "label": "Nome legal / firma", "value": null },
-    { "id": "legalForm", "label": "Forma jurídica", "value": null },
-    { "id": "taxId", "label": "NIF / NIPC", "value": null },
-    { "id": "registeredAddress", "label": "Sede / morada do operador", "value": null },
+    {
+      "id": "legalName",
+      "label": "Nome legal / firma",
+      "value": null
+    },
+    {
+      "id": "legalForm",
+      "label": "Forma jurídica",
+      "value": null
+    },
+    {
+      "id": "taxId",
+      "label": "NIF / NIPC",
+      "value": null
+    },
+    {
+      "id": "registeredAddress",
+      "label": "Sede / morada do operador",
+      "value": null
+    },
     {
       "id": "registration",
       "label": "Registo comercial e conservatória — confirmar aplicabilidade",
       "value": null
     },
-    { "id": "capital", "label": "Capital social — confirmar aplicabilidade", "value": null }
+    {
+      "id": "capital",
+      "label": "Capital social — confirmar aplicabilidade",
+      "value": null
+    }
   ],
   "disputes": [
-    { "id": "ralEntity", "label": "Entidade RAL competente e contactos", "value": null },
-    { "id": "ralUrl", "label": "Endereço oficial da entidade RAL", "value": null },
-    { "id": "ralMembership", "label": "Eventual adesão a entidade RAL", "value": null }
+    {
+      "id": "ralEntity",
+      "label": "Entidade RAL competente e contactos",
+      "value": null
+    },
+    {
+      "id": "ralUrl",
+      "label": "Endereço oficial da entidade RAL",
+      "value": null
+    },
+    {
+      "id": "ralMembership",
+      "label": "Eventual adesão a entidade RAL",
+      "value": null
+    }
   ],
   "complaints": [
     {
@@ -22,11 +54,23 @@
       "label": "Registo do operador no Livro de Reclamações Eletrónico",
       "value": null
     },
-    { "id": "complaintsUrl", "label": "Ligação aplicável ao operador", "value": null }
+    {
+      "id": "complaintsUrl",
+      "label": "Ligação aplicável ao operador",
+      "value": null
+    }
   ],
   "privacy": [
-    { "id": "controller", "label": "Responsável pelo tratamento e morada", "value": null },
-    { "id": "privacyContact", "label": "Contacto para assuntos de privacidade", "value": null },
+    {
+      "id": "controller",
+      "label": "Responsável pelo tratamento e morada",
+      "value": null
+    },
+    {
+      "id": "privacyContact",
+      "label": "Contacto para assuntos de privacidade",
+      "value": null
+    },
     {
       "id": "purposes",
       "label": "Finalidades e fundamentos dos tratamentos efetivamente ativos",
@@ -56,7 +100,7 @@
     },
     {
       "id": "forms",
-      "label": "Decidir e validar o funcionamento final dos formulários demonstrativos",
+      "label": "Confirmar a configuração final dos formulários, os fundamentos e os prazos de tratamento",
       "status": "pending"
     },
     {
@@ -77,6 +121,11 @@
     {
       "id": "release",
       "label": "Validar domínio, indexação, conteúdo, acessibilidade e percursos finais antes da publicação",
+      "status": "pending"
+    },
+    {
+      "id": "storageConsent",
+      "label": "Concluir avaliação de consentimento/necessidade para preferências persistentes e reposição de navegação; implementar controlos efetivos quando exigidos",
       "status": "pending"
     }
   ]

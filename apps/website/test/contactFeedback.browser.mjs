@@ -17,6 +17,26 @@ const vite=spawn(process.execPath,['../../node_modules/vite/bin/vite.js','--host
 try{
   for(let n=0;;n++){try{if((await fetch(origin)).ok)break;}catch{}if(n>150||vite.exitCode!==null)throw Error(logs);await new Promise(r=>setTimeout(r,200));}
   browser=await chromium.launch({headless:true,channel:'chrome'});
+
+  const legalRoutes=['/informacao-legal','/termos-de-utilizacao','/politica-de-privacidade','/cookies-e-preferencias','/resolucao-de-litigios'];
+  for(const width of [1366,390])for(const theme of ['light','dark']){
+    const context=await browser.newContext({viewport:{width,height:950},reducedMotion:'reduce'}),page=await context.newPage(),pageErrors=[];page.setDefaultNavigationTimeout(60000);page.on('pageerror',e=>pageErrors.push(e.message));
+    await context.addInitScript(({theme,slug})=>{localStorage.setItem('anm-orbit-theme',theme);localStorage.setItem('anm-favorites-v1',JSON.stringify([slug]));localStorage.setItem('anm-comparison-v1',JSON.stringify([slug]));},{theme,slug:vehicle.slug});
+    await page.route('https://**/*',route=>route.abort());
+    try{
+      for(const route of legalRoutes){
+        const response=await page.goto(origin+route,{waitUntil:'networkidle'});assert.equal(response.status(),200);const main=page.locator('main.legal-page');await main.getByRole('heading',{level:1}).waitFor();assert.equal(await main.locator('h1').count(),1);assert.equal(await page.locator('link[rel=canonical]').count(),1);assert.equal(await page.locator('link[rel=canonical]').getAttribute('href'),origin+route);assert.equal(await page.locator('meta[name=description]').count(),1);assert.match(await page.locator('meta[name=robots]').getAttribute('content'),/noindex/);assert.equal(await main.locator('.legal-navigation [aria-current=page]').getAttribute('href'),route);
+        const anchors=await main.locator('a[href^="#"]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('href').slice(1)));for(const anchor of anchors)assert.equal(await main.locator('[id="'+anchor+'"]').count(),1,'every contents link resolves');
+        const footer=page.getByRole('navigation',{name:'Informação legal e direitos'});for(const path of legalRoutes)assert.equal(await footer.locator('a[href="'+path+'"]').count(),1);assert.equal(await footer.locator('a[href="https://www.livroreclamacoes.pt/"]').count(),1);
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'no page overflow');assert.equal(await page.evaluate(()=>localStorage.getItem('anm-favorites-v1')),JSON.stringify([vehicle.slug]));assert.equal(await page.evaluate(()=>localStorage.getItem('anm-comparison-v1')),JSON.stringify([vehicle.slug]));
+        if(route==='/informacao-legal')assert.equal(await main.getByText('Por confirmar',{exact:true}).count(),6);
+        if(route==='/politica-de-privacidade'){assert.equal(await main.getByText('Por confirmar',{exact:true}).count(),5);assert.ok(!(await main.innerText()).includes('contactos fictícios'));}
+        if(route==='/cookies-e-preferencias'){const table=main.getByRole('region',{name:'Armazenamento utilizado pelo site'});await table.focus();if(width===390){await page.keyboard.press('ArrowRight');await page.waitForTimeout(220);assert.ok(await table.evaluate(n=>n.scrollLeft)>0,'scrollable inventory is keyboard accessible');}assert.equal(await main.locator('tbody tr').count(),4);}
+        await main.screenshot({path:'.svelte-kit/legal-'+route.slice(1)+'-'+width+'-'+theme+'.png'});
+      }
+      assert.deepEqual(pageErrors,[]);console.log('PASS legal navigation, metadata, anchors, placeholders and unchanged preferences '+width+'px '+theme);
+    }finally{await context.close();}
+  }
   for(const width of [1366,390])for(const mode of ['inline','dialog','vehicle','studio']){
     const context=await browser.newContext({viewport:{width,height:950},reducedMotion:width===390?'reduce':'no-preference'}),page=await context.newPage(),posts=[],errors=[];let reply='success',release;
     page.setDefaultTimeout(20000);page.setDefaultNavigationTimeout(60000);page.on('pageerror',e=>errors.push(e.message));
@@ -31,6 +51,7 @@ try{
         const trigger=mode==='vehicle'?page.getByRole('button',{name:'Quero conhecer',exact:true}).first():page.getByRole('button',{name:/Vamos conversar/}).first();await trigger.click();form=page.locator('.contact-dialog form');
       }else form=page.locator(mode==='studio'?'form.message-card':'form.inline-contact').first();
       await form.waitFor();await page.waitForFunction(()=>document.querySelector('form.public-contact-form'));
+      const notice=form.locator('.contact-privacy'),details=notice.locator('details'),summary=notice.locator('summary');assert.equal(await details.getAttribute('open'),null);assert.equal(await notice.locator('input[type=checkbox]').count(),0);assert.equal(await notice.getByRole('link',{name:'Privacidade e direitos (abre num novo separador)',exact:true}).getAttribute('target'),'_blank');await summary.focus();await page.keyboard.press('Enter');assert.notEqual(await details.getAttribute('open'),null);assert.equal(posts.length,0);assert.equal(await notice.locator('a[href="/politica-de-privacidade#pedidos"]').isVisible(),true);await page.keyboard.press('Enter');assert.equal(await details.getAttribute('open'),null);await notice.screenshot({path:'.svelte-kit/contact-layered-'+mode+'-'+width+'.png'});
       await form.getByRole('button',{name:'Enviar pedido',exact:true}).click();await form.locator('[data-contact-feedback].error').waitFor();assert.equal(posts.length,0);assert.equal(await form.locator('[aria-invalid=true]').count(),mode==='dialog'||mode==='vehicle'?2:3);
       assert.equal(await form.locator('[data-contact-feedback]').evaluate(n=>n===document.activeElement),true);await form.getByRole('button',{name:/Nome: /}).click();assert.equal(await form.locator('[name=name]').evaluate(n=>n===document.activeElement),true);
       await form.locator('[name=name]').fill('Pessoa de teste');await form.locator('[name=email]').fill('invalido');await form.locator('[name=message]').fill('Mensagem fictícia para revisão local.');await form.getByRole('button',{name:'Enviar pedido',exact:true}).click();assert.equal(posts.length,0);await form.getByRole('button',{name:/Email: /}).waitFor();await form.locator('[name=email]').fill('teste@example.test');

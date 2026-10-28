@@ -4,7 +4,7 @@ Implementado em 10 de outubro de 2026. O envio está desativado por omissão; fa
 
 ## Funcionamento
 
-Os formulários públicos (modal, formulário inferior e variantes do formulário inferior) enviam JSON ao endpoint SvelteKit `/api/contact`. Este verifica a origem e limita o corpo a 16 KiB. Encaminha para `/api/public/contact` no backend Express com um segredo privado partilhado. O visitante nunca recebe esse segredo nem a chave Resend. As páginas de demonstração conservam o comportamento demonstrativo do seu modal.
+Os formulários públicos (modal, formulário inferior e variantes do formulário inferior) enviam JSON ao endpoint SvelteKit `/api/contact`. Este verifica a origem e limita o corpo a 16 KiB. Encaminha para `/api/public/contact` no backend Express com um segredo privado partilhado. O visitante nunca recebe esse segredo nem a chave Resend. Os consumidores que usam submitContact partilham este percurso; uma página ou texto demonstrativo não garante, por si só, que não possa haver envio. Os interruptores e credenciais do runtime controlam essa possibilidade.
 
 O backend valida e limita os campos, rejeita campos extra e o campo anti-bot preenchido, aplica limites e envia um email HTML com alternativa de texto simples pelo Resend. O destinatário e remetente são definidos no servidor, com o email do visitante em `reply_to`. Só responde 202 após a API Resend aceitar o pedido e devolver um identificador. Isto não comprova entrega na caixa de entrada. Uma visita só é confirmada pelo stand depois de acordar o horário.
 

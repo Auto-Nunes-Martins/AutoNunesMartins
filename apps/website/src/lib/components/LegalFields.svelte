@@ -4,7 +4,7 @@
 
 <dl>
   {#each fields as field}
-    <div><dt>{field.label}</dt><dd class:pending={!field.value?.trim()}>{field.value?.trim() || 'Por preencher / Por confirmar antes da publicação.'}</dd></div>
+    <div><dt>{field.label}</dt><dd class:pending={!field.value?.trim()}>{field.value?.trim() || 'Por confirmar'}</dd></div>
   {/each}
 </dl>
 
