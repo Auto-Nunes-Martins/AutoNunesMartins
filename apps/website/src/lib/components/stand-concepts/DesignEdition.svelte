@@ -24,7 +24,8 @@
   import './serviceTypography.css';
   import { homeVisualFamilies } from './homeVisualFamilies';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
-  import { submitContact } from '$lib/contactRequest';
+  import { createContactForm } from '$lib/contactForm.svelte';
+  import ContactFeedback from '$lib/components/ContactFeedback.svelte';
   import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
   import orbitFont400 from '@fontsource/inter/files/inter-latin-400-normal.woff2?url';
   import orbitFont500 from '@fontsource/inter/files/inter-latin-500-normal.woff2?url';
@@ -315,7 +316,6 @@
   let navOpen = $state(false);
   let contactDialog: HTMLDialogElement;
   let contactName = $state<HTMLInputElement>();
-  let confirmationHeading = $state<HTMLHeadingElement>();
   let galleryDialog: HTMLDialogElement;
   let galleryOpener: HTMLElement | undefined;
   let preparingViewer = false;
@@ -351,9 +351,9 @@
       ? vehiclePhotoSet(publicPhoto(publicVehicle, 0))
       : undefined,
   }));
-  let sent = $state(false);
-  let sending = $state(false);
-  let contactError = $state('');
+  const submission = createContactForm();
+  const sent = $derived(submission.state.phase === 'success');
+  const sending = $derived(submission.state.phase === 'sending');
   let reason = $state('Gostava de saber mais.');
   let zoom = $state(0);
   let mainPhotoDrag = $state<number>();
@@ -438,14 +438,13 @@
     } catch {}
   }
   async function contact(message?: string) {
-    reason =
+    if (submission.state.phase === 'idle') reason =
       message ||
       (car ? `Gostava de conhecer o ${car.brand} ${car.model}.` : 'Gostava de saber mais.');
-    sent = false;
-    contactError = '';
     await tick();
     contactDialog.showModal();
-    contactName?.focus({ preventScroll: true });
+    if (sent) contactDialog.querySelector<HTMLElement>('[data-contact-feedback]')?.focus();
+    else contactName?.focus({ preventScroll: true });
   }
   let contactPointerStartedOutside = false;
   function outsideContact(event: MouseEvent | PointerEvent) {
@@ -1397,7 +1396,6 @@
     bind:this={contactDialog}
     class="contact-dialog"
     aria-labelledby="contact-heading"
-    aria-describedby={sent ? 'contact-description' : undefined}
     onkeydown={contactKeydown}
     onpointerdown={(event) => {
       contactPointerStartedOutside = outsideContact(event);
@@ -1413,36 +1411,10 @@
       aria-label="Fechar"><X size={22} aria-hidden="true" /></button
     >
     <p class="kicker">VAMOS CONVERSAR</p>
-    {#if sent}<h2 id="contact-heading" tabindex="-1" bind:this={confirmationHeading}>
-        Pedido<br />enviado.
-      </h2>
-      <p id="contact-description">
-        O pedido foi aceite pelo serviço de email para envio ao stand. Responderemos para esclarecer
-        as suas questões ou combinar a visita. O agendamento ainda não está confirmado.
-      </p>
-      <button class="pill primary" onclick={() => contactDialog.close()}
-        >Continuar a descobrir <ArrowUpRight size={18} aria-hidden="true" /></button
-      >{:else}<h2 id="contact-heading">O que tem<br />em mente?</h2>
-      <form
-        onsubmit={async (event) => {
-          event.preventDefault();
-          if (sending) return;
-          sending = true;
-          contactError = '';
-          const form = event.currentTarget;
-          try {
-            await submitContact(form);
-            sent = true;
-            await tick();
-            confirmationHeading?.focus({ preventScroll: true });
-          } catch (error) {
-            contactError =
-              error instanceof Error ? error.message : 'Não foi possível enviar o pedido.';
-          } finally {
-            sending = false;
-          }
-        }}
-      >
+    {#if !sent}<h2 id="contact-heading">O que tem<br />em mente?</h2>{/if}
+      <form use:submission.enhance aria-busy={sending}>
+        <ContactFeedback {submission} headingId={sent ? "contact-heading" : undefined}/>
+        {#if !sent}
         <label
           >Nome<input
             bind:this={contactName}
@@ -1474,12 +1446,12 @@
           >Mensagem<textarea name="message" required maxlength="5000" rows="3" bind:value={reason}
           ></textarea></label
         ><ContactPrivacyNotice />
-        {#if contactError}<p role="alert">{contactError}</p>{/if}
-        <button class="pill primary" type="submit" disabled={sending}
-          >{sending ? 'A enviar…' : 'Enviar pedido'}
+        <button class="pill primary" type="submit" disabled={sending || submission.state.kind === "conflict"}
+          >{sending ? 'A enviar…' : submission.state.kind === 'uncertain' ? 'Tentar confirmar envio' : 'Enviar pedido'}
           <ArrowUpRight size={18} aria-hidden="true" /></button
         >
-      </form>{/if}
+        {/if}
+      </form>
   </dialog>
   <dialog
     bind:this={galleryDialog}

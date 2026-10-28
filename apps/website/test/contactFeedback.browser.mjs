@@ -1,0 +1,51 @@
+// Real public pages and all contact form consumers; every POST is intercepted.
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {spawn} from 'node:child_process';
+import {writeFile,mkdir,realpath,rm} from 'node:fs/promises';
+import path from 'node:path';
+import {chromium} from '@playwright/test';
+const vehicle={slug:'contact-test-aaaaaaaaaaaa',brand:'Marca',model:'Modelo',year:2023,fuel:'GASOLINE',mileage:20000,price:'20000.00',currency:'EUR',description:'Viatura fictícia.',transmission:'MANUAL',availability:'AVAILABLE',photos:[]};
+let backendPosts=0;
+const backend=createServer((req,res)=>{if(req.method!=='GET'){backendPosts++;res.writeHead(500);res.end();return;}const url=new URL(req.url,'http://fixture');res.setHeader('content-type','application/json');const range={min:null,max:null};res.end(JSON.stringify(url.pathname.endsWith('/homepage-highlights')?{configured:true,items:[]}:url.pathname.endsWith('/brands')?[]:url.pathname.endsWith('/related')?[]:url.pathname.endsWith('/vehicles')?{items:[vehicle],total:1,page:1,pageSize:30,totalPages:1,facets:{brands:[],models:[],fuels:[],transmissions:[],year:range,mileage:range,price:range}}:vehicle));});
+await new Promise(r=>backend.listen(0,'127.0.0.1',r));const api=`http://127.0.0.1:${backend.address().port}`;
+const reserve=createServer();await new Promise(r=>reserve.listen(0,'127.0.0.1',r));const port=reserve.address().port;await new Promise(r=>reserve.close(r));const origin=`http://127.0.0.1:${port}`;
+await mkdir('.svelte-kit',{recursive:true});const configPath=path.resolve('.svelte-kit/contact-feedback-vite.config.mjs'),clientPath=path.resolve('.svelte-kit/contact-review.client.js');
+await writeFile(clientPath,"import {mount} from 'svelte';import Studio from '../src/lib/components/stand-concepts/OrbitVisitStudio.svelte';import '../src/app.css';mount(Studio,{target:document.querySelector('#app'),props:{id:'studio-test',formTreatment:'minimal'}});");
+await writeFile(configPath,`import base from ${JSON.stringify(path.resolve('vite.config.ts'))};export default {...base,optimizeDeps:{include:['htmlparser2','zod','lucide-svelte']},plugins:[...base.plugins,{name:'contact-review-only',configureServer(server){server.middlewares.use('/contact-review',async(req,res)=>{res.setHeader('content-type','text/html; charset=utf-8');res.end(await server.transformIndexHtml('/contact-review','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div><script type="module" src="/.svelte-kit/contact-review.client.js"></script></body></html>'));});}}],server:{...base.server,fs:{allow:${JSON.stringify([path.resolve('../..'),await realpath('../../node_modules')])}}}};`);
+const vite=spawn(process.execPath,['../../node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(port),'--strictPort','--config',configPath],{env:{...process.env,PUBLIC_BACKEND_URL:api},stdio:'pipe'});let logs='';vite.stdout.on('data',d=>logs+=d);vite.stderr.on('data',d=>logs+=d);let browser;
+try{
+  for(let n=0;;n++){try{if((await fetch(origin)).ok)break;}catch{}if(n>150||vite.exitCode!==null)throw Error(logs);await new Promise(r=>setTimeout(r,200));}
+  browser=await chromium.launch({headless:true,channel:'chrome'});
+  for(const width of [1366,390])for(const mode of ['inline','dialog','vehicle','studio']){
+    const context=await browser.newContext({viewport:{width,height:950},reducedMotion:'reduce'}),page=await context.newPage(),posts=[],errors=[];let reply='success',release;
+    page.setDefaultTimeout(20000);page.setDefaultNavigationTimeout(60000);page.on('pageerror',e=>errors.push(e.message));
+    await page.route('**/api/contact',async route=>{posts.push(route.request().postDataJSON());if(reply==='delay')await new Promise(r=>release=r);if(reply==='offline')return route.abort();if(reply==='limited')return route.fulfill({status:429,json:{error:'private provider data'}});if(reply==='unavailable')return route.fulfill({status:503,json:{error:'technical'}});return route.fulfill({status:202,json:{ok:true}});});
+    await page.route('https://**/*',route=>route.abort());
+    try{
+      await page.goto(origin+(mode==='studio'?'/contact-review':mode==='vehicle'?'/viaturas/'+vehicle.slug:'/'));
+      await page.waitForFunction(()=>document.querySelector('form.public-contact-form'));await page.waitForLoadState('networkidle');
+      let form;
+      if(mode==='dialog'||mode==='vehicle'){
+        // Invoke the actual public contact trigger, keeping its vehicle context.
+        const trigger=mode==='vehicle'?page.getByRole('button',{name:'Quero conhecer',exact:true}).first():page.getByRole('button',{name:/Vamos conversar/}).first();await trigger.click();form=page.locator('.contact-dialog form');
+      }else form=page.locator(mode==='studio'?'form.message-card':'form.inline-contact').first();
+      await form.waitFor();await page.waitForFunction(()=>document.querySelector('form.public-contact-form'));
+      await form.getByRole('button',{name:'Enviar pedido',exact:true}).click();await form.locator('[data-contact-feedback].error').waitFor();assert.equal(posts.length,0);assert.equal(await form.locator('[aria-invalid=true]').count(),mode==='dialog'||mode==='vehicle'?2:3);
+      assert.equal(await form.locator('[data-contact-feedback]').evaluate(n=>n===document.activeElement),true);await form.getByRole('button',{name:/Nome: /}).click();assert.equal(await form.locator('[name=name]').evaluate(n=>n===document.activeElement),true);
+      await form.locator('[name=name]').fill('Pessoa de teste');await form.locator('[name=email]').fill('invalido');await form.locator('[name=message]').fill('Mensagem fictícia para revisão local.');await form.getByRole('button',{name:'Enviar pedido',exact:true}).click();assert.equal(posts.length,0);await form.getByRole('button',{name:/Email: /}).waitFor();await form.locator('[name=email]').fill('teste@example.test');
+      reply='offline';await form.getByRole('button',{name:'Enviar pedido',exact:true}).click();await form.getByRole('heading',{name:'Envio por confirmar.'}).waitFor();assert.equal(await form.locator('[name=message]').inputValue(),'Mensagem fictícia para revisão local.');const key=posts.at(-1).requestId;
+      await form.screenshot({path:`.svelte-kit/contact-${mode}-${width}-error.png`});
+      reply='limited';await form.getByRole('button',{name:'Tentar confirmar envio',exact:true}).click();await form.getByText(/Foram feitos vários pedidos/).waitFor();assert.equal(posts.at(-1).requestId,key);assert.equal(await form.locator('[name=email]').inputValue(),'teste@example.test');
+      reply='delay';await form.getByRole('button',{name:'Enviar pedido',exact:true}).click();await form.getByRole('heading',{name:'Estamos a enviar o seu pedido.'}).waitFor();assert.equal(await form.getAttribute('aria-busy'),'true');assert.equal(await form.locator('[name=name]').isDisabled(),true);const count=posts.length;await form.evaluate(form=>{form.dispatchEvent(new SubmitEvent('submit',{cancelable:true}));form.dispatchEvent(new SubmitEvent('submit',{cancelable:true}));});assert.equal(posts.length,count);release();
+      await form.getByRole('heading',{name:'Pedido recebido.',exact:true}).waitFor();assert.equal(posts.at(-1).requestId,key);assert.equal(await form.locator('[type=submit]').count(),0);assert.equal(await form.locator('[data-contact-feedback]').evaluate(n=>n===document.activeElement),true);const success=form.locator('.contact-feedback.success');assert.equal(await success.evaluate(n=>getComputedStyle(n).backgroundColor),'rgb(229, 244, 233)');assert.match(await success.textContent(),/aceite pelo serviço de envio/);assert.equal(await success.locator('svg').count(),1);await page.waitForTimeout(700);assert.equal(await success.isVisible(),true);
+      await form.screenshot({path:`.svelte-kit/contact-${mode}-${width}-success.png`});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      await form.getByRole('button',{name:'Escrever outro pedido',exact:true}).click();await form.getByRole('button',{name:'Enviar pedido',exact:true}).waitFor();assert.equal(await success.count(),0);
+      if(mode==='inline'||mode==='studio'){
+        const locations=page.getByRole('region',{name:'Onde nos encontrar'}),selected=locations.getByRole('region',{name:'Localização selecionada'});await locations.scrollIntoViewIfNeeded();const choices=locations.getByRole('button',{name:/Ver localização:/});assert.equal(await choices.count(),2);await choices.nth(1).focus();await page.keyboard.press('Enter');await selected.getByText('Estrada de Montalvão',{exact:false}).waitFor();assert.equal(await choices.nth(1).getAttribute('aria-pressed'),'true');await choices.first().click();await selected.getByText('Rua Dr. Jorge Costa',{exact:false}).waitFor();const urls=await locations.locator('a').evaluateAll(nodes=>nodes.map(n=>new URL(n.href).searchParams.get('query')));assert.deepEqual(urls,['Rua Dr. Jorge Costa, 6000-215 Castelo Branco','Estrada de Montalvão, 6000-050 Castelo Branco']);assert.equal(await locations.locator('iframe,img').count(),0);assert.ok(!(await locations.innerText()).includes('República'));await locations.screenshot({path:`.svelte-kit/visit-locations-${mode}-${width}.png`});
+      }
+      assert.deepEqual(errors,[]);console.log(`PASS contact feedback ${mode} ${width}px; idempotent retry, validation, duplicate guard, green success, locations`);
+    }catch(error){console.error(logs.slice(-1600));await page.screenshot({path:'.svelte-kit/contact-feedback-failure.png'});throw error;}finally{await context.close();}
+  }
+  assert.equal(backendPosts,0,'no contact reached even the mock backend');
+}finally{await browser?.close();vite.kill();await new Promise(r=>backend.close(r));await rm(configPath,{force:true});await rm(clientPath,{force:true});}

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { locationMap } from '$lib/localAssets';
-  import { submitContact } from '$lib/contactRequest';
+  import { createContactForm } from '$lib/contactForm.svelte';
+  import ContactFeedback from '$lib/components/ContactFeedback.svelte';
   import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
   import { onMount } from 'svelte';
-  import { ArrowUpRight, ArrowRight, Phone, Mail, MapPin, Clock3, Check } from 'lucide-svelte';
+  import { ArrowUpRight, ArrowRight, Phone, Mail, Clock3 } from 'lucide-svelte';
   import { standContact, type StandContact } from './standContact';
   import { photo } from './data';
   import { responsivePhoto } from './images';
@@ -11,7 +11,7 @@
   import FormSelectField from './FormSelectField.svelte';
   import OrbitVisitLabel from './OrbitVisitLabel.svelte';
   import ScenePhotograph from './ScenePhotograph.svelte';
-  import VisitMapArtwork from './VisitMapArtwork.svelte';
+  import VisitLocations from './VisitLocations.svelte';
   import type { SceneBackground } from './homeVisualFamilies';
 
   let {
@@ -53,9 +53,8 @@
   } = $props();
   let section: HTMLElement;
   let useReferenceTone = $state(true);
-  let tested = $state(false);
-  let sending = $state(false);
-  let contactError = $state('');
+  const submission = createContactForm();
+  const sending = $derived(submission.state.phase === 'sending');
   let fields = $state({ name: '', email: '', subject: 'Informações gerais', message: '' });
   const subjects = [
     'Informações gerais',
@@ -144,83 +143,7 @@
         </h2>
       </div>
 
-      <div class="location" class:original-map={mapArtwork === 'original'}>
-        {#if mapArtwork === 'original'}
-          {#if background?.theme}<span class="location-map" aria-hidden="true"
-              ><VisitMapArtwork {id} /></span
-            >{:else}
-            <img
-              class="location-map"
-              src={locationMap}
-              alt=""
-              width="1728"
-              height="684"
-              loading="lazy"
-              decoding="async"
-            />
-          {/if}
-        {:else}
-          <svg
-            class="location-map"
-            viewBox="0 0 540 220"
-            preserveAspectRatio="xMidYMid slice"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path
-              class="map-block"
-              d="M15 12H104V61H15ZM135 9H210V59H135ZM244 8H324V58H244ZM365 12H469V59H365ZM12 99H96V145H12ZM139 99H213V143H139ZM247 99H321V142H247ZM365 99H444V145H365ZM15 178H99V215H15ZM140 178H212V216H140ZM250 178H322V216H250ZM365 178H470V218H365Z"
-            />
-            <g class="map-street" fill="none" stroke-width="10">
-              <path d="M-20 80H560M-20 160H560M118-20V240M229-20V240M346-20V240M489-20V240" />
-              <path d="M370-30L242 95 103 245" stroke-width="17" />
-            </g>
-            <path
-              d="M370-30L242 95 103 245"
-              fill="none"
-              stroke="currentColor"
-              stroke-opacity=".12"
-              stroke-width="1.5"
-            />
-            <circle cx="328" cy="107" r="36" fill="#e30613" opacity=".07" />
-            <circle cx="328" cy="107" r="22" fill="#e30613" opacity=".09" />
-            <path
-              d="M328 76c-10 0-18 8-18 18 0 14 18 32 18 32s18-18 18-32c0-10-8-18-18-18Z"
-              fill="#e30613"
-            />
-            <circle cx="328" cy="94" r="5.5" fill="white" />
-          </svg>
-        {/if}
-        <div class="location-copy">
-          <h3><MapPin size={15} aria-hidden="true" /> Encontre-nos</h3>
-          <address>{contact.address ?? 'Morada por confirmar.'}</address>
-          {#if contact.directionsUrl}
-            <a
-              class="map-link"
-              href={contact.directionsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-describedby={demoId}
-            >
-              Abrir no mapa <ArrowUpRight size={16} aria-hidden="true" /><span class="sr-only">
-                (abre num novo separador)</span
-              >
-            </a>
-          {/if}
-          {#if contact.additionalAddress}
-            <address>{contact.additionalAddress}</address>
-            <a
-              class="map-link"
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.additionalAddress.replace(/\n/g, ', '))}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Abrir no mapa <ArrowUpRight size={16} aria-hidden="true" />
-              <span class="sr-only">(abre num novo separador)</span>
-            </a>
-          {/if}
-        </div>
-      </div>
+      <VisitLocations {contact} {id}/>
 
       <div class="contact-details">
         <div class="channels">
@@ -300,27 +223,13 @@
     {:else}
       <form
         class="message-card"
-        aria-labelledby={`${id}-form-heading`}
-        aria-describedby={`${id}-form-note`}
-        oninput={() => (tested = false)}
-        onsubmit={async (event) => {
-          event.preventDefault();
-          if (sending) return;
-          sending = true;
-          tested = false;
-          contactError = '';
-          const form = event.currentTarget;
-          try {
-            await submitContact(form);
-            tested = true;
-          } catch (error) {
-            contactError =
-              error instanceof Error ? error.message : 'Não foi possível enviar o pedido.';
-          } finally {
-            sending = false;
-          }
-        }}
+        aria-labelledby={submission.state.phase === 'success' ? undefined : `${id}-form-heading`}
+        aria-describedby={submission.state.phase === 'success' ? undefined : `${id}-form-note`}
+  use:submission.enhance
+  aria-busy={sending}
       >
+  <ContactFeedback {submission}/>
+  {#if submission.state.phase !== 'success'}
         <div class="form-heading">
           <span class="message-icon" aria-hidden="true"
             ><Mail size={20} strokeWidth={1.5} aria-hidden="true" /></span
@@ -376,20 +285,15 @@
           >
         </div>
         <ContactPrivacyNotice />
-        {#if contactError}<p role="alert">{contactError}</p>{/if}
-        <button class="send-button" type="submit" disabled={sending}
-          >{sending ? 'A enviar…' : 'Enviar pedido'}
+        <button class="send-button" type="submit" disabled={sending || submission.state.kind === "conflict"}
+          >{sending ? 'A enviar…' : submission.state.kind === 'uncertain' ? 'Tentar confirmar envio' : 'Enviar pedido'}
           <ArrowRight size={19} aria-hidden="true" /></button
         >
         <p class="form-note" id={`${id}-form-note`}>
           O pedido de visita depende de confirmação do stand.
         </p>
-        <div class="form-status" role="status" aria-atomic="true">
-          {#if tested}<Check size={15} aria-hidden="true" /><span
-              >Pedido aceite para envio ao stand. A visita será confirmada após contacto.</span
-            >{/if}
-        </div>
-      </form>
+  {/if}
+</form>
     {/if}
   </div>
 </section>
@@ -437,7 +341,6 @@
     object-position: center 54%;
     z-index: -2;
   }
-  .borderless-panels .location,
   .borderless-panels :global(.inline-contact) {
     border-color: transparent;
   }
@@ -587,39 +490,6 @@
   .heading-tail {
     white-space: nowrap;
   }
-  .location {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    margin-top: 28px;
-    min-height: 130px;
-    padding: 15px 18px;
-    border: 1px solid var(--line);
-    border-radius: 5px;
-    background: var(--studio-soft);
-  }
-  .location-map {
-    position: absolute;
-    inset: 0 0 0 auto;
-    width: 70%;
-    height: 100%;
-    z-index: -2;
-    opacity: 0.8;
-    color: var(--text);
-  }
-  .map-block {
-    fill: color-mix(in srgb, var(--text) 8%, var(--bg));
-  }
-  .map-street {
-    stroke: var(--bg);
-  }
-  .location::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(90deg, var(--studio-soft) 34%, transparent 84%);
-  }
   h3 {
     display: flex;
     align-items: center;
@@ -628,29 +498,6 @@
     color: var(--muted);
     line-height: 1.5;
     font-weight: 400;
-  }
-  .location h3 {
-    color: var(--text);
-  }
-  address {
-    font-size: 15px;
-    font-style: normal;
-    line-height: 1.6;
-    white-space: pre-line;
-    margin-top: 10px;
-    max-width: 250px;
-  }
-  .map-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    min-height: 30px;
-    margin-top: 8px;
-  }
-  .map-link > :global(svg) {
-    color: #fff;
-    transition: color 180ms ease;
   }
   .contact-details {
     display: grid;
@@ -790,14 +637,6 @@
     }
     .email-action:hover > :global(svg) {
       transform: translate(3px, -3px);
-    }
-    .map-link:hover {
-      text-decoration: underline;
-      text-decoration-color: currentColor;
-      text-underline-offset: 4px;
-    }
-    .map-link:hover > :global(svg) {
-      color: #fff;
     }
   }
   @media (prefers-reduced-motion: no-preference) {
@@ -951,20 +790,6 @@
     font-size: 11px;
     line-height: 1.6;
   }
-  .form-status {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    min-height: 48px;
-    padding-top: 12px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--text);
-  }
-  .form-status :global(svg) {
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
   @media (hover: hover) {
     .visit-copy a:hover {
       color: white;
@@ -991,9 +816,6 @@
     .original-tone .send-button:hover {
       background: #ffffff09;
       border-color: #ffffff70;
-    }
-    .map-link:hover :global(svg) {
-      transform: translateX(3px);
     }
   }
   .original-tone.reference-tone :is(input, select, textarea):focus {
@@ -1041,11 +863,7 @@
     border-color: #ffffff70;
     text-shadow: 0 1px 4px #0008;
   }
-  .refined-form .form-note,
-  .refined-form .form-status {
-    color: #e4e9e5;
-    text-shadow: 0 1px 4px #000a;
-  }
+  .refined-form .form-note {color:#e4e9e5;text-shadow:0 1px 4px #000a;}
   @media (hover: hover) {
     .refined-form :is(input, select, textarea):hover {
       background: #14261eeb;
@@ -1073,7 +891,6 @@
         background-color 180ms ease,
         box-shadow 180ms ease;
     }
-    .map-link :global(svg),
     .send-button :global(svg) {
       transition: transform 220ms ease;
     }
@@ -1101,9 +918,6 @@
     }
   }
   @media (max-width: 900px) {
-    .map-link {
-      min-height: 44px;
-    }
     .has-form-divider .studio-inner {
       --column-gap: 102px;
     }
@@ -1173,20 +987,6 @@
       max-width: 12ch;
       margin-top: 20px;
     }
-    .location {
-      padding: 20px;
-      margin-top: 24px;
-    }
-    .location-map {
-      width: 90%;
-      opacity: 0.65;
-    }
-    .location::before {
-      background: linear-gradient(90deg, var(--studio-soft) 24%, transparent 100%);
-    }
-    address {
-      font-size: 14px;
-    }
     .contact-details {
       grid-template-columns: 1fr;
       margin-top: 23px;
@@ -1230,9 +1030,6 @@
     textarea {
       font-size: 16px;
     }
-    .form-status {
-      min-height: 48px;
-    }
   }
   @media (max-width: 380px) {
     .channels {
@@ -1264,8 +1061,7 @@
     font-size: 14px;
     font-weight: 500;
   }
-  .harmonized-type .contact-value,
-  .harmonized-type address {
+  .harmonized-type .contact-value {
     font-size: 16px;
     line-height: 1.6;
   }
@@ -1280,7 +1076,6 @@
   .harmonized-type dd {
     font-weight: 500;
   }
-  .harmonized-type .map-link,
   .harmonized-type .call-action,
   .harmonized-type .email-action {
     font-size: 14px;
@@ -1300,15 +1095,6 @@
     }
   }
   /* Original map artwork and tint, without changing the approved card geometry. */
-  .location.original-map .location-map {
-    width: 100%;
-    opacity: 1;
-    object-fit: cover;
-    object-position: center;
-  }
-  .location.original-map::before {
-    background: linear-gradient(90deg, #101913f2 0%, #101913df 48%, #10191373 100%);
-  }
 
   .email-action {
     text-decoration: none;
@@ -1322,17 +1108,6 @@
     }
   }
   /* Only the map surface changes; all neutral text/actions remain original. */
-  .family-theme .location.original-map {
-    background: var(--visit-map-surface);
-  }
-  .family-theme .location.original-map::before {
-    background: linear-gradient(
-      90deg,
-      var(--visit-map-surface) 0%,
-      color-mix(in srgb, var(--visit-map-surface) 90%, transparent) 44%,
-      color-mix(in srgb, var(--visit-map-surface) 22%, transparent) 100%
-    );
-  }
   :global(html[data-theme='light']) .original-tone .studio-landscape::before,
   :global(html[data-theme='dark']) .original-tone .studio-landscape::before {
     background:
@@ -1379,7 +1154,6 @@
     .email-action::after,
     .email-action > :global(svg),
     .email-action:is(:hover, :focus-visible) > :global(svg),
-    .map-link > :global(svg),
     .call-action .action-arrow :global(svg),
     .call-action:is(:hover, :focus-visible) .action-arrow :global(svg),
     .send-button :global(svg),

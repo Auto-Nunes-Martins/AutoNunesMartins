@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { submitContact } from '$lib/contactRequest';
+  import { createContactForm } from '$lib/contactForm.svelte';
+  import ContactFeedback from '$lib/components/ContactFeedback.svelte';
   import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
   import { ArrowUpRight } from 'lucide-svelte';
   import FormSelectField from './FormSelectField.svelte';
@@ -7,33 +8,19 @@
   // Comparison snapshot of OrbitContactFooter's original inline form.
   // Keep this isolated so experiments do not restyle the reference section.
   let { id, showDemoNote = true }: { id: string; showDemoNote?: boolean } = $props();
-  let tested = $state(false);
-  let sending = $state(false);
-  let contactError = $state('');
+  const submission = createContactForm();
+  const sending = $derived(submission.state.phase === 'sending');
 </script>
 
 <form
   class="inline-contact"
-  aria-labelledby={`${id}-heading`}
-  aria-describedby={`${id}-note`}
-  oninput={() => (tested = false)}
-  onsubmit={async (event) => {
-    event.preventDefault();
-    if (sending) return;
-    sending = true;
-    tested = false;
-    contactError = '';
-    const form = event.currentTarget;
-    try {
-      await submitContact(form);
-      tested = true;
-    } catch (error) {
-      contactError = error instanceof Error ? error.message : 'Não foi possível enviar o pedido.';
-    } finally {
-      sending = false;
-    }
-  }}
+  aria-labelledby={submission.state.phase === 'success' ? undefined : `${id}-heading`}
+  aria-describedby={submission.state.phase === 'success' ? undefined : `${id}-note`}
+  use:submission.enhance
+  aria-busy={sending}
 >
+  <ContactFeedback {submission}/>
+  {#if submission.state.phase !== 'success'}
   <p class="eyebrow">COMECE A CONVERSA</p>
   <h3 id={`${id}-heading`}>O que tem em mente?</h3>
   <div class="form-row">
@@ -80,19 +67,16 @@
     ></textarea></label
   >
   <ContactPrivacyNotice />
-  {#if contactError}<p role="alert">{contactError}</p>{/if}
   <div class="form-bottom" class:without-note={!showDemoNote}>
     <p id={`${id}-note`} class:sr-only={!showDemoNote}>
       O pedido de visita depende de confirmação do stand.
     </p>
-    <button type="submit" disabled={sending} class="button primary"
-      ><span class="action-text">{sending ? 'A enviar…' : 'Enviar pedido'}</span>
+    <button type="submit" disabled={sending || submission.state.kind === "conflict"} class="button primary"
+      ><span class="action-text">{sending ? 'A enviar…' : submission.state.kind === 'uncertain' ? 'Tentar confirmar envio' : 'Enviar pedido'}</span>
       <span class="action-arrow"><ArrowUpRight size={17} aria-hidden="true" /></span></button
     >
   </div>
-  <p class="form-status" role="status" aria-atomic="true">
-    {tested ? 'Pedido aceite para envio ao stand. A visita será confirmada após contacto.' : ''}
-  </p>
+  {/if}
 </form>
 
 <style>
@@ -247,12 +231,6 @@
     font-weight: 500;
     cursor: pointer;
   }
-  .form-status {
-    margin-top: 12px;
-    color: #f5f5f1;
-    font-size: 12px;
-    line-height: 1.6;
-  }
   .button.primary {
     position: relative;
     isolation: isolate;
@@ -305,9 +283,6 @@
     .button.primary::before {
       transition: box-shadow 300ms ease;
     }
-  }
-  .form-status:empty {
-    display: none;
   }
   @media (max-width: 700px) {
     .form-row {
