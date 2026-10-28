@@ -51,7 +51,7 @@ Não foi instalado um banner decorativo nem alterados armazenamento, memória, s
 
 ## Implementação e camadas de informação
 
-Cinco páginas com identidade visual partilhada, sumário e ligações consistentes; RAL/Livro têm página própria, com portal oficial destacado no rodapé. Privacidade deixa de afirmar contactos fictícios ou bloqueio de envio por campos nulos. Não há promessa de segurança absoluta, prazo inventado, foro exclusivo ou cláusula de perda de direitos legais.
+Três páginas canónicas com identidade visual partilhada: Informação legal (inclui RAL/Livro), Termos de utilização e Privacidade e cookies (inclui preferências). O rodapé tem estas três ligações e acesso direto ao Livro de Reclamações. Privacidade deixa de afirmar contactos fictícios ou bloqueio de envio por campos nulos. Não há promessa de segurança absoluta, prazo inventado, foro exclusivo ou cláusula de perda de direitos legais.
 
 O aviso do formulário mostra finalidade/identidade comercial e ligação aos direitos. O estado de identificação jurídica pendente é visível no sumário; expansão contém responsável/contacto, percurso, destinatários, lacunas de fundamento/conservação e instrução de minimização. A política completa abre em novo separador para preservar o rascunho. Não se adicionou checkbox de aceitar política, consentimento de marketing ou subscrição. Honeypot, validação, sucesso verde, busy, retry e limites mantêm-se.
 
@@ -65,3 +65,25 @@ O aviso do formulário mostra finalidade/identidade comercial e ligação aos di
 6. Decisão sobre memória persistente das preferências/scroll e mecanismo de consentimento/necessidade, com revisão da versão de produção. Nada foi removido silenciosamente para tornar os textos mais simples.
 
 Só depois destas confirmações e das restantes verificações operacionais se pode fechar a preparação para publicação. Compilação, acessibilidade e testes de navegação são evidência técnica separada.
+
+## Minimização e aplicabilidade — consolidação local
+
+A identidade completa concentra-se em Informação legal; os termos remetem para essa página. Privacidade e recolha mantêm identificação/contacto suficientes do responsável e ligação à identidade central. Não há conclusão de não aplicabilidade sem factos do operador.
+
+| Campo / localização | Obrigação e motivo | Facto em falta |
+| --- | --- | --- |
+| Nome/firma, NIF/NIPC, sede e email — Informação legal | Identificação acessível do prestador, DL 7/2004, art. 10.º. Contactos comerciais não substituem identidade jurídica. | Identidade oficial e sede. |
+| Forma jurídica e registo/conservatória — menções societárias em Informação legal | Condicionais à natureza/registo: DL 7/2004, art. 10.º, e CSC 171.º. Não se presume sociedade. | Natureza do operador e registo efetivo. |
+| Capital, realização, capital próprio ou liquidação — mesma secção, se exigíveis | CSC 171.º: capital para sociedades por quotas, anónimas e em comandita por ações; realização se distinta; capital próprio do último balanço aprovado se igual/inferior a metade do capital; liquidação quando aplicável. | Tipo societário e pressupostos; adaptar a menção após confirmação. |
+| Licença, título/ordem e regras profissionais — apenas para atividade regulada | DL 7/2004, art. 10.º: requisitos condicionais. O código auditado não oferece crédito; não se inventa licença ou autorização universal. | Existência de atividade sujeita a autorização/profissão regulada. |
+| Responsável e contacto — privacidade e aviso de recolha | RGPD 12.º/13.º: resumo necessário na recolha, sem repetir todo o bloco societário. | Responsável jurídico e contacto efetivo. |
+| Encarregado/representante — privacidade, se aplicável | RGPD 13.º: contactos quando aplicáveis. Não se presume obrigação universal de nomeação nem dispensa sem avaliação. | Existência/designação e aplicabilidade. |
+| Entidade RAL, site e vinculação — Informação legal#litigios | Lei 144/2015, art. 18.º. Lista geral não demonstra adesão. | Entidade(s) e vinculação efetivas. |
+| Livro de Reclamações — rodapé e Informação legal | DL 156/2005, art. 5.º-B: acesso visível à plataforma. Comprovar registo operacional não exige expor um identificador de registo sem necessidade. | Registo e destino efetivo do operador. |
+| Finalidades/bases, destinatários, conservação, direitos e transferências — privacidade | RGPD 13.º, conforme operações reais; sem repetir em termos ou identidade comercial. | Prestadores, critérios e configurações já pedidos. |
+
+Fontes adicionais: [CSC, artigo 171.º, texto consolidado oficial](https://diariodarepublica.pt/dr/legislacao-consolidada/decreto-lei/1986-34443975-67194417) e [DL 74/2017, introdução do artigo 5.º-B](https://diariodarepublica.pt/dr/detalhe/decreto-lei/74-2017-107541411). Restantes fontes primárias acima. Não se pedem documentos pessoais, nomes de sócios/administradores, datas de constituição ou balanços completos como conteúdo público por rotina.
+
+As rotas antigas devolvem 308 para `/politica-de-privacidade#preferencias` e `/informacao-legal#litigios`. Fragmentos não chegam ao servidor; o destino é a secção principal. Os identificadores úteis antigos também existem nos documentos canónicos para ligações diretas. Não há páginas antigas com metadata duplicada.
+
+Mantêm-se os 16 valores oficiais nulos e as 22 verificações pendentes. O pacote acima é único; a natureza do operador determina as menções societárias exigíveis. Memória, recolha, consentimento e configuração preservados. Validação local: Svelte sem erros/avisos; 26 testes focados; três páginas em desktop/mobile e claro/escuro; redirecionamentos/âncoras; oito contextos de formulário com pedidos simulados e rascunhos preservados. Build e revisão em localhost são evidência técnica, sem resolver pendências legais.

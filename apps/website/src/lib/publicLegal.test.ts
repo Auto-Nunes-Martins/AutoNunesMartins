@@ -21,7 +21,7 @@ it('accepts explicit HTTPS official links and provides unique local destinations
   expect(publicLegalLinks.every(item=>/^\/[a-z-]+$/.test(item.href))).toBe(true);
 });
 it('keeps the published storage inventory aligned with the keys actually used by the preference stores',()=>{
-  const page=readFileSync(new URL('./components/PublicLegalContent.svelte',import.meta.url),'utf8');
+  const page=readFileSync(new URL('./components/PrivacyPreferences.svelte',import.meta.url),'utf8');
   for(const key of [FAVORITES_KEY,COMPARISON_KEY,THEME_KEY])expect(page).toContain(key);
   const startup=readFileSync(new URL('../../assets/orbit-startup.js',import.meta.url),'utf8');
   const sessionKey=startup.match(/sessionStorage\.setItem\(\s*'([^']+)'/)!;

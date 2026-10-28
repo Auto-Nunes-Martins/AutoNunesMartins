@@ -8,10 +8,9 @@
   <p>A Auto Nunes Martins usa estes dados para responder ao seu pedido. <a href="/politica-de-privacidade#direitos" target="_blank" rel="noopener noreferrer" aria-label="Privacidade e direitos (abre num novo separador)">Privacidade e direitos</a>.</p>
   <details><summary>Sobre os seus dados {#if !controller}<small class="identity-pending">Responsável por confirmar</small>{/if}</summary>
     <div class="privacy-details">
-      <p><strong>Responsável:</strong> {controller??'Identificação jurídica por confirmar'}. <strong>Contacto:</strong> {privacyContact??standContact.email} {#if !privacyContact}(contacto comercial para encaminhamento; contacto de privacidade por confirmar){/if}.</p>
-      <p>Nome, email, assunto e mensagem são usados para responder. O pedido passa pelo serviço de envio Resend; a equipa recebe um aviso com nome e assunto no CRM. Não é criada uma ficha de cliente por este envio.</p>
-      <p>Os fundamentos, os prazos de conservação e as condições finais dos prestadores estão <a href="/politica-de-privacidade#conservacao" target="_blank" rel="noopener noreferrer">por confirmar na política completa</a>. Pode consultar os seus direitos e como os exercer nessa página.</p>
-      <p>Partilhe só o necessário, sem documentos de identificação ou dados bancários. O pedido não confirma uma visita nem subscreve marketing.</p>
+      <p><strong>Responsável:</strong> {controller??'identidade jurídica por confirmar'}. <strong>Contacto:</strong> {privacyContact??standContact.email}. {#if !privacyContact}Contacto de privacidade por confirmar; o email comercial permite encaminhar o pedido.{/if}</p>
+      <p>Nome, email, assunto e mensagem servem para responder. O envio passa pelo Resend; a equipa recebe um aviso com nome e assunto no CRM. Fundamentos, destinatários e conservação constam da política, com as pendências assinaladas.</p>
+      <p>Partilhe só o necessário. O pedido não confirma uma visita nem subscreve marketing.</p>
       <a href="/politica-de-privacidade#pedidos" target="_blank" rel="noopener noreferrer">Ler a política de privacidade completa</a>
     </div>
   </details>

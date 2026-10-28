@@ -3,9 +3,7 @@ import readiness from './publicationReadiness.json';
 export const publicLegalLinks = [
   { href: '/informacao-legal', label: 'Informação legal' },
   { href: '/termos-de-utilizacao', label: 'Termos de utilização' },
-  { href: '/politica-de-privacidade', label: 'Privacidade' },
-  { href: '/cookies-e-preferencias', label: 'Cookies e preferências' },
-  { href: '/resolucao-de-litigios', label: 'Resolução de litígios' },
+  { href: '/politica-de-privacidade', label: 'Privacidade e cookies' },
 ];
 const fields: {id:string;label:string;value:string|null}[] =
   [...readiness.operator, ...readiness.privacy, ...readiness.disputes, ...readiness.complaints];
