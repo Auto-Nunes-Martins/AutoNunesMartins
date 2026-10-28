@@ -97,7 +97,7 @@ export const webPublicationSchema = z.discriminatedUnion('published', [
       photoPaths: z
         .array(z.string().max(160))
         .max(20)
-        .refine((v) => new Set(v).size === v.length, 'Duplicate photos'),
+        .optional().default([]), // Deprecated compatibility input; never filters Vehicle.photos.
       transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
       specifications: publicSpecificationsSchema.optional(),
     })

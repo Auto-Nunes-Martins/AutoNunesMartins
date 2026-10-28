@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RequestEvent } from '@sveltejs/kit';
 vi.mock('$env/static/public', () => ({ PUBLIC_BACKEND_URL: 'http://backend.test' }));
-vi.mock('./vehicles', () => ({ vehiclesApi: { webPublication: vi.fn() } }));
+vi.mock('./vehicles', () => ({ vehiclesApi: { webPublication: vi.fn(), get: vi.fn(async () => ({photos:["stored-photo"]})) } }));
 import { vehiclesApi } from './vehicles';
 import { webPublicationAction } from './webPublication';
 const id = 'clabcdefghijklmnopqrstuvw';
@@ -60,7 +60,8 @@ describe('Shared create/edit publication action', () => {
       published: false,
     });
   });
-  it('requires explicit confirmation for publication without photos from either flow', async () => {
+  it('requires explicit confirmation when the stored vehicle has no photos', async () => {
+    vi.mocked(vehiclesApi.get).mockResolvedValueOnce({photos:[]} as any);
     const result = await webPublicationAction(
       event({ operation: 'publish', publicPrice: '10000', publicDescription: 'Factual' }),
       id,
@@ -82,7 +83,6 @@ describe('Shared create/edit publication action', () => {
       published: true,
       price: null,
       description: 'Factual',
-      photoPaths: [],
       transmission: null,
     });
   });
@@ -102,7 +102,6 @@ describe('Shared create/edit publication action', () => {
       published: true,
       price: '10000.25',
       description: 'Factual',
-      photoPaths: ['approved-photo'],
       transmission: null,
     });
   });
@@ -176,7 +175,7 @@ describe('confirmed public specifications', () => {
   });
 });
 
-it('preserves the explicit cover and gallery order in the publication request', async () => {
+it('ignores legacy posted subsets and leaves order to the stored vehicle', async () => {
   await webPublicationAction(
     event({
       operation: 'publish',
@@ -189,6 +188,6 @@ it('preserves the explicit cover and gallery order in the publication request', 
   expect(vehiclesApi.webPublication).toHaveBeenCalledWith(
     expect.anything(),
     id,
-    expect.objectContaining({ photoPaths: ['chosen-cover', 'photo-third', 'photo-second'] }),
+    expect.not.objectContaining({ photoPaths: expect.anything() }),
   );
 });

@@ -115,7 +115,7 @@
             <div
               class="photo-picker"
               role="group"
-              aria-label={`Fotografias autorizadas de ${vehicle.brand} ${vehicle.model}`}
+              aria-label={`Fotografias de ${vehicle.brand} ${vehicle.model}`}
             >
               {#each vehicle.photos as photo, photoIndex (photo.path)}
                 <button
@@ -196,7 +196,7 @@
         /></label
       >
       <p class="hint">
-        Apenas viaturas publicadas com fotografias autorizadas. Ao serem vendidas ou retiradas do
+        Apenas viaturas publicadas com fotografias. Ao serem vendidas ou retiradas do
         site, deixam de aparecer no carrossel.
       </p>
       <div class="candidates">

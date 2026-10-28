@@ -50,6 +50,7 @@ export interface VehicleDetailResponse {
   publicSlug: string | null;
   publicPrice: string | null;
   publicDescription: string | null;
+  /** @deprecated Compatibility mirror of photos, never a public subset. */
   publicPhotoPaths: string[];
   publicTransmission: 'MANUAL' | 'AUTOMATIC' | null;
   publicSpecifications?: PublicSpecifications | null;
@@ -145,7 +146,8 @@ export const vehiclesApi = {
           published: true;
           price: string | null;
           description: string;
-          photoPaths: string[];
+          /** @deprecated Ignored by the backend; all vehicle photos follow publication. */
+          photoPaths?: string[];
           transmission: 'MANUAL' | 'AUTOMATIC' | null;
           specifications?: PublicSpecifications;
         },

@@ -27,7 +27,10 @@ export async function setWebPublication(
   input: WebPublication,
   actorId: string | null,
 ) {
-  if (input.published) await preparePhotoDimensions(db, id, input.photoPaths);
+  if (input.published) {
+    const current = await db.vehicle.findUnique({ where: { id }, select: { photos: true } });
+    if (current) await preparePhotoDimensions(db, id, current.photos);
+  }
   let suffixIndex = 0;
   // A concurrent first publication must re-read a winning persisted slug,
   // never overwrite it using an earlier snapshot of the vehicle's title.
@@ -78,13 +81,6 @@ export async function applyWebPublication(
   });
   if (!vehicle) throw new WebPublicationError(404, 'Vehicle not found');
   if (input.published) {
-    if (vehicle.photos.length && !input.photoPaths.includes(vehicle.photos[0]!)) {
-      throw new WebPublicationError(
-        409,
-        'A foto principal não está selecionada para o site. Escolha outra foto principal entre as selecionadas ou volte a incluir esta fotografia.',
-        'publication.photoPaths',
-      );
-    }
     if (!descriptionText(input.description ?? '').trim()) {
       throw new WebPublicationError(409, 'Uma descrição pública é obrigatória.');
     }
@@ -95,13 +91,11 @@ export async function applyWebPublication(
       );
     }
     if (
-      input.photoPaths.some(
-        (path) => !vehicle.photos.includes(path) || !isApprovedPhotoPath(id, path),
-      )
+      vehicle.photos.some((path) => !isApprovedPhotoPath(id, path))
     ) {
       throw new WebPublicationError(
         409,
-        'Photos must be approved images belonging to this vehicle',
+        'Photos must belong to this vehicle',
       );
     }
   }
@@ -115,7 +109,7 @@ export async function applyWebPublication(
           publicSlug: slug,
           publicPrice: input.price,
           publicDescription: input.description,
-          publicPhotoPaths: orderedPublicPhotos(vehicle.photos, input.photoPaths),
+          publicPhotoPaths: orderedPublicPhotos(vehicle.photos),
           publicTransmission: input.transmission,
           ...(input.specifications !== undefined
             ? { publicSpecifications: input.specifications }

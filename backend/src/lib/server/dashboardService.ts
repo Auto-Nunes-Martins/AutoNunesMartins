@@ -404,7 +404,6 @@ async function loadStockAged(now: Date): Promise<StockAgedRow[]> {
       salePrice: true,
       acquisitionDate: true,
       photos: true,
-      publicPhotoPaths: true,
       webPublished: true,
     },
   });

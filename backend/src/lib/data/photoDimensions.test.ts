@@ -32,11 +32,11 @@ describe('persisted public photo dimensions', () => {
     expect(JSON.stringify(result)).not.toContain(privatePath);
     expect(JSON.stringify(result)).not.toContain('sourceHash');
   });
-  it('does not reuse dimensions after cover replacement, reorder, or approval removal', async () => {
+  it('does not reuse dimensions after cover replacement, reorder, while ignoring legacy subsets', async () => {
     const db = database();
     const reordered = dto([privatePath, path], [privatePath, path]);
     expect((await withCoverPhotoDimensions(db, [reordered]))[0]?.coverPhotoDimensions).toBeUndefined();
-    expect((await withCoverPhotoDimensions(db, [dto([path], [])]))[0]?.coverPhotoDimensions).toBeUndefined();
+    expect((await withCoverPhotoDimensions(db, [dto([path], [])]))[0]?.coverPhotoDimensions).toEqual({width:1600,height:900,version});
     await removePhotoDimensions(db, [path]);
     expect(db.vehiclePhotoDimensions.deleteMany).toHaveBeenCalledWith({ where: { version: { in: [version] } } });
   });

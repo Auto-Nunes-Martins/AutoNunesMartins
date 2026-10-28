@@ -8,7 +8,7 @@ import {
   VehicleStateConflict,
   type ActorContext,
 } from './vehicleService.js';
-import { applyWebPublication, WebPublicationError } from './webPublicationService.js';
+import { applyWebPublication } from './webPublicationService.js';
 import { isApprovedPhotoPath, SLUG_SUFFIX_LENGTHS } from '../domain/publicVehicle.js';
 import { getBucketName, getSupabase } from '../data/storage.js';
 import sharp from 'sharp';
@@ -49,7 +49,7 @@ export const vehicleEditSchema = z
         photoPaths: z
           .array(z.string().max(160))
           .max(20)
-          .refine((paths) => new Set(paths).size === paths.length),
+          .optional().default([]), // Legacy input ignored; photos is the source of truth.
         transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
         specifications: publicSpecificationsSchema,
       })
@@ -96,14 +96,14 @@ export async function saveVehicleEdit(
     )
       throw new VehicleStateConflict('Fotografia preparada inválida.', 409, 'photos');
   }
-  await preparePhotoDimensions(prisma, id, input.publication?.photoPaths ?? input.photos);
+  await preparePhotoDimensions(prisma, id, input.photos);
   for (const suffixLength of SLUG_SUFFIX_LENGTHS) {
     try {
       return await saleMutation(async (tx) => {
         await lockVehicle(tx, id);
         const current = await tx.vehicle.findUnique({
           where: { id },
-          select: { updatedAt: true, photos: true, publicPhotoPaths: true, webPublished: true },
+          select: { updatedAt: true, photos: true, webPublished: true },
         });
         if (!current) throw new VehicleNotFound(id);
         if (current.updatedAt.toISOString() !== input.expectedUpdatedAt)
@@ -120,34 +120,13 @@ export async function saveVehicleEdit(
             409,
             'photos',
           );
-        const approved = input.publication?.photoPaths;
-        const nextApproval = approved ?? current.publicPhotoPaths;
-        if (
-          (input.publication || JSON.stringify(input.photos) !== JSON.stringify(current.photos)) &&
-          (input.publication?.published ?? current.webPublished) &&
-          input.photos.length &&
-          !nextApproval.includes(input.photos[0]!)
-        )
-          throw new WebPublicationError(
-            409,
-            'A foto principal não está selecionada para o site. Escolha outra foto principal entre as selecionadas ou volte a incluir esta fotografia.',
-            'publication.photoPaths',
-          );
-        if (
-          approved?.some((path) => !input.photos.includes(path) || !isApprovedPhotoPath(id, path))
-        )
-          throw new VehicleStateConflict(
-            'A seleção pública contém uma fotografia indisponível ou de outra viatura.',
-            409,
-            'photos',
-          );
         await updateVehicleInTransaction(tx, id, input.data, actor);
         await tx.vehicle.update({
           where: { id },
           data: {
             photos: { set: input.photos },
             publicPhotoPaths: {
-              set: input.photos.filter((path) => current.publicPhotoPaths.includes(path)),
+              set: input.photos,
             },
           },
         });
@@ -156,7 +135,7 @@ export async function saveVehicleEdit(
           await applyWebPublication(
             tx,
             id,
-            publication.published ? { ...publication, published: true } : { published: false },
+            publication.published ? { ...publication, photoPaths: input.photos, published: true } : { published: false },
             actor.actorId,
             suffixLength,
           );
@@ -166,7 +145,7 @@ export async function saveVehicleEdit(
               data: {
                 publicPrice: publication.price,
                 publicDescription: publication.description,
-                publicPhotoPaths: publication.photoPaths,
+                publicPhotoPaths: input.photos,
                 publicTransmission: publication.transmission,
                 publicSpecifications: publication.specifications,
               },

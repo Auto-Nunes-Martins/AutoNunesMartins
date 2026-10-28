@@ -1,6 +1,14 @@
 import { expect, it } from 'vitest';
 import { publicDraftFromForm, publicEditKey } from './vehicleEditDraft';
 
+it('uses the complete photo order for the draft and ignores a legacy public subset', () => {
+  const form = new FormData();
+  form.append('vehiclePhotoPaths','first');
+  form.append('vehiclePhotoPaths','second');
+  form.append('publicPhotoPaths','second');
+  expect(publicDraftFromForm(form).photoPaths).toEqual(['first','second']);
+});
+
 it('includes explicit version in the shared save draft and dirtiness key', () => {
   const form = new FormData();
   const baseline = publicDraftFromForm(form);

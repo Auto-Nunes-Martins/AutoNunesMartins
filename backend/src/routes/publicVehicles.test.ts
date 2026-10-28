@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
       aggregate: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     activityLog: { create: vi.fn() },
     vehiclePhotoDimensions: { findMany: vi.fn(), createMany: vi.fn() },
@@ -49,6 +50,7 @@ import {
   webPublicationSchema,
 } from '../lib/domain/publicVehicle.js';
 import { setWebPublication } from '../lib/server/webPublicationService.js';
+import { mutateVehiclePhotos } from '../lib/server/vehiclePhotoService.js';
 
 const id = 'clabcdefghijklmnopqrstuvw';
 const photo = `${id}/12345678-1234-1234-1234-123456789abc.jpg`;
@@ -282,6 +284,7 @@ describe('public HTTP responses never disclose private inventory', () => {
       publicVehicleDto({
         ...fixture(),
         publicPrice: null,
+        photos: [],
         publicPhotoPaths: [],
         status: 'RESERVED',
       }),
@@ -553,7 +556,7 @@ describe('private photo storage boundary', () => {
       expect(reordered.headers.get('x-photo-version')).toBe(publicPhotoVersion(other));
       mocks.db.vehicle.findFirst.mockResolvedValue({
         ...fixture(),
-        photos: [other, photo],
+        photos: [photo],
         publicPhotoPaths: [photo],
       });
       expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/1`)).status).toBe(404);
@@ -587,7 +590,7 @@ describe('private photo storage boundary', () => {
     expect(mocks.download).toHaveBeenCalledTimes(1);
     expect(mocks.download).toHaveBeenCalledWith(photo);
     expect(mocks.db.vehicle.findFirst.mock.calls[0]?.[0].select).toEqual({
-      id: true, photos: true, publicPhotoPaths: true,
+      id: true, photos: true,
     });
     expect(mocks.db.vehicle.findFirst.mock.calls[0]?.[0].where).toEqual({
       ...publicVehicleWhere(),
@@ -703,7 +706,7 @@ describe('private photo storage boundary', () => {
     expect(mocks.download).not.toHaveBeenCalled();
     mocks.db.vehicle.findFirst.mockResolvedValue({
       ...fixture(),
-      photos: [other, photo],
+      photos: [photo],
       publicPhotoPaths: [photo],
     });
     expect(await (await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).json()).toEqual(
@@ -715,6 +718,49 @@ describe('private photo storage boundary', () => {
 });
 
 describe('explicit publication and stable unique slugs', () => {
+  it('delivers the complete list across append, reorder and removal with an empty legacy subset', async () => {
+    const next = `${id}/12345678-1234-1234-1234-123456789abd.jpg`;
+    const current = { ...fixture(), publicPhotoPaths: [] as string[] };
+    mocks.db.vehicle.findUnique.mockImplementation(async () => current);
+    mocks.db.vehicle.findFirst.mockImplementation(async () =>
+      current.webPublished && ['AVAILABLE', 'RESERVED'].includes(current.status) && !current.sale && !current.soldDate ? current : null);
+    mocks.db.vehicle.updateMany.mockImplementation(async ({where,data}) => {
+      if (JSON.stringify(where.photos.equals) !== JSON.stringify(current.photos)) return {count:0};
+      expect(data).not.toHaveProperty('webPublished');
+      current.photos = data.photos.set;
+      current.publicPhotoPaths = data.publicPhotoPaths.set;
+      return {count:1};
+    });
+    const versions = async () => (await (await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).json()).versions;
+    expect(await versions()).toEqual([publicPhotoVersion(photo)]);
+    await mutateVehiclePhotos(db,id,{type:'append',path:next});
+    // Even a stale/empty compatibility column cannot suppress an attached photo.
+    current.publicPhotoPaths = [];
+    expect(await versions()).toEqual([photo,next].map(publicPhotoVersion));
+    expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/1?v=${publicPhotoVersion(next)}`)).status).toBe(200);
+    await mutateVehiclePhotos(db,id,{type:'reorder',photos:[next,photo]});
+    expect(await versions()).toEqual([next,photo].map(publicPhotoVersion));
+    const detail = await (await fetch(`${base}/api/public/vehicles/${slug}`)).json();
+    expect(detail.photos).toEqual([next,photo].map((path,index)=>`/api/public/vehicles/${slug}/photos/${index}?v=${publicPhotoVersion(path)}`));
+    await mutateVehiclePhotos(db,id,{type:'remove',path:photo});
+    expect(await versions()).toEqual([publicPhotoVersion(next)]);
+    expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/1`)).status).toBe(404);
+    expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?v=${publicPhotoVersion(photo)}`)).status).toBe(404);
+    current.webPublished = false;
+    await mutateVehiclePhotos(db,id,{type:'append',path:photo});
+    expect(current.webPublished).toBe(false);
+    expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).status).toBe(404);
+  });
+  it('accepts omitted or stale legacy subsets but derives publication solely from current owned photos', async () => {
+    const canonical = `${id}/12345678-1234-1234-1234-123456789abd.jpg`;
+    mocks.db.vehicle.findUnique.mockResolvedValue({...fixture(),photos:[canonical,photo]});
+    const {photoPaths: _legacy, ...payload} = publication;
+    const input = webPublicationSchema.parse(payload);
+    await setWebPublication(db,id,input,'admin-id');
+    expect(mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data.publicPhotoPaths).toEqual([canonical,photo]);
+    await setWebPublication(db,id,{...input,photoPaths:['other/ignored.jpg']},'admin-id');
+    expect(mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data.publicPhotoPaths).toEqual([canonical,photo]);
+  });
   it('normalizes accents and punctuation, distinguishes identical titles and never includes private identifiers', () => {
     expect(slug).toMatch(/^bmw-serie-1-2019-[a-f0-9]{12}$/);
     const other = makePublicSlug({ ...fixture(), id: 'clabcdefghijklmnopqrstuvx' });
@@ -743,7 +789,7 @@ describe('explicit publication and stable unique slugs', () => {
     ).toBe(false);
     expect(
       webPublicationSchema.safeParse({ ...publication, photoPaths: [photo, photo] }).success,
-    ).toBe(false);
+    ).toBe(true);
   });
   it('generates on first opt-in and never copies CRM description/price/photos automatically', async () => {
     mocks.db.vehicle.findUnique.mockResolvedValue({ ...fixture(), publicSlug: null });
@@ -832,7 +878,7 @@ describe('explicit publication and stable unique slugs', () => {
     await expect(setWebPublication(db, id, publication, 'admin-id')).rejects.toMatchObject({
       status: 409,
     });
-    mocks.db.vehicle.findUnique.mockResolvedValue(fixture());
+    mocks.db.vehicle.findUnique.mockResolvedValue({...fixture(), photos:[`other/${photo.split('/')[1]}`]});
     await expect(
       setWebPublication(
         db,

@@ -119,7 +119,6 @@
         details,
         publication,
         paths,
-        principal,
         !!baseline.sale || !!baseline.soldDate,
       ),
     ];
@@ -286,7 +285,7 @@
       }
       const resolve = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
-      draft.publication.photoPaths = draft.publication.photoPaths.map(resolve);
+      const { photoPaths: _legacyPhotoPaths, ...publicationData } = draft.publication;
       savePhase = 2;
       progress = action === 'publish' ? 'A concluir e publicar…' : 'A guardar a viatura…';
       sent = true;
@@ -298,7 +297,7 @@
           data: { ...draft.details, status: creationStatus(action, draft.details.status) },
           photos: draft.paths.map(resolve),
           uploadedPhotos: files.map((photo) => photo.uploadedPath!),
-          publication: draft.publication,
+          publication: publicationData,
         }),
       });
       responded = true;
@@ -463,7 +462,7 @@
               <button type="button" onclick={() => void visitIssue(issue)}>{issue.message}</button>
             </li>{/each}
         </ul>{:else}<p>
-          Publicação pronta para validar ao guardar. Só as fotografias selecionadas serão públicas.
+          Publicação pronta para validar ao guardar. Todas as fotografias da viatura serão públicas.
         </p>{/if}
     </div>{/if}
   {:else}<p role="status">A recuperar rascunho…</p>{/if}
@@ -471,7 +470,7 @@
 <ConfirmDialog
   bind:open={confirmNoPhoto}
   title="Publicar sem fotografia?"
-  message="Nenhuma fotografia está autorizada para o site. Será apresentada «Imagem indisponível». Pode voltar e selecionar as fotografias ou confirmar a publicação sem imagem."
+  message="A viatura ainda não tem fotografias. Será apresentada «Imagem indisponível». Pode voltar e adicionar fotografias ou confirmar a publicação sem imagem."
   confirmLabel="Publicar sem fotografia"
   cancelLabel="Voltar à seleção"
   onconfirm={() => void save('publish', true)}

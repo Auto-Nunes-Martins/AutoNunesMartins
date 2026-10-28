@@ -16,7 +16,6 @@ const schema = z.object({
     .min(1, 'Escreva uma descrição pública.')
     .max(6000)
     .refine((value) => descriptionText(value).trim().length > 0, 'Escreva uma descrição pública.'),
-  photoPaths: z.array(z.string()).max(20),
   transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
   specifications: publicSpecificationsSchema.optional(),
 });
@@ -33,7 +32,6 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
   const parsed = schema.safeParse({
     price: form.get('publicPrice') || null,
     description: form.get('publicDescription'),
-    photoPaths: form.getAll('publicPhotoPaths'),
     transmission: form.get('publicTransmission') || null,
     ...(form.has('specificationsPresent')
       ? {
@@ -75,15 +73,13 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
               ],
       })),
     });
-  if (
-    !remove &&
-    parsed.success &&
-    !parsed.data.photoPaths.length &&
-    form.get('confirmWithoutPhoto') !== 'true'
-  ) {
-    return fail(400, { error: 'Confirme que pretende publicar sem fotografia.' });
-  }
   try {
+    // Confirmation is based on current stored photos, never a posted legacy subset.
+    if (!remove && form.get('confirmWithoutPhoto') !== 'true') {
+      const vehicle = await vehiclesApi.get(event, id);
+      if (!vehicle.photos.length)
+        return fail(400, { error: 'Confirme que pretende publicar sem fotografia.' });
+    }
     await vehiclesApi.webPublication(
       event,
       id,
@@ -124,7 +120,7 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
             : err.status === 409
               ? 'A viatura tem de estar disponível ou reservada, sem venda, e as fotografias têm de lhe pertencer. Guarde primeiro as alterações internas.'
               : err.status === 400
-                ? 'Confirme preço, descrição e fotografias selecionadas.'
+                ? 'Confirme preço e descrição.'
                 : 'Não foi possível alterar a publicação. Tente novamente.',
       });
     }

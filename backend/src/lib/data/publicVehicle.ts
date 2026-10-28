@@ -17,7 +17,6 @@ export const publicVehicleSelect = {
   publicSlug: true,
   publicPrice: true,
   publicDescription: true,
-  publicPhotoPaths: true,
   publicTransmission: true,
   publicSpecifications: true,
   photos: true,
@@ -71,8 +70,8 @@ export function publicVehicleOrder(
   return [orders[order], { id: 'asc' }];
 }
 
-export function approvedPaths(row: Pick<PublicRow, 'id' | 'photos' | 'publicPhotoPaths'>): string[] {
-  return orderedPublicPhotos(row.photos, row.publicPhotoPaths)
+export function approvedPaths(row: Pick<PublicRow, 'id' | 'photos'>): string[] {
+  return orderedPublicPhotos(row.photos)
     .filter((path) => isApprovedPhotoPath(row.id, path))
     .slice(0, 20);
 }
@@ -252,7 +251,7 @@ function currentPublicPhotoPaths(db: PrismaClient, slug: string): Promise<string
   // Defer invocation so even a synchronous client failure runs cleanup after set().
   const request = Promise.resolve().then(() => db.vehicle.findFirst({
     where: { ...publicVehicleWhere(), publicSlug: slug },
-    select: { id: true, photos: true, publicPhotoPaths: true },
+    select: { id: true, photos: true },
   })).then(row => row ? approvedPaths(row) : null).finally(() => {
     pending.delete(slug);
   });

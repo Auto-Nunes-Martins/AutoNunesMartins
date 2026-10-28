@@ -48,12 +48,13 @@ describe('bounded dimensions backfill', () => {
     await expect(backfillPhotoDimensions(db, read, { ...options, apply: true })).rejects.toThrow();
     expect(read).not.toHaveBeenCalled();
   });
-  it('reads only the intersection of current photos and approved paths', async () => {
+  it('reads all current owned photos and ignores stale legacy subsets', async () => {
     const { db } = fixture(), read = vi.fn(async () => manifest);
     db.vehicle.findMany.mockResolvedValueOnce([{ id, photos: paths.slice(0, 2), publicPhotoPaths: [paths[1], paths[2]] }]).mockResolvedValue([]);
     const result = await backfillPhotoDimensions(db, read, options);
-    expect(result.photos).toBe(1);
-    expect(read).toHaveBeenCalledTimes(1);
+    expect(result.photos).toBe(2);
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(read).toHaveBeenCalledWith(paths[0]);
     expect(read).toHaveBeenCalledWith(paths[1]);
   });
   it('retains the preceding cursor so a failed batch can be retried', async () => {

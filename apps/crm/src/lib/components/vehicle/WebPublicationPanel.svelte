@@ -5,7 +5,7 @@
   import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
   import { enhance } from '$lib/auth/enhance';
   import { tick, untrack, type Snippet } from 'svelte';
-  import { publicationDraftKey, reconcilePhotoSelection } from './publicationDraft';
+  import { publicationDraftKey } from './publicationDraft';
   import VehiclePhotoDraft from './VehiclePhotoDraft.svelte';
   import DescriptionEditor from './DescriptionEditor.svelte';
   import RichDescription from '../../../../../../shared/ui/RichDescription.svelte';
@@ -59,7 +59,6 @@
   let photoBusy = $state(false);
   const publicationFormId = $props.id();
   let loadedVehicle = '';
-  let previousSavedPhotos: string[] = [];
   let formValid = $state(false);
   let draftPublished = $state(false);
   let specs = $state({
@@ -126,7 +125,7 @@
       const details = recoveredDraft.specifications as typeof recoveredDraft.specifications & Record<string, unknown>;
       return {
         price: recoveredDraft.price ?? '', description: recoveredDraft.description,
-        transmission: recoveredDraft.transmission ?? '', selected: recoveredDraft.photoPaths,
+        transmission: recoveredDraft.transmission ?? '', selected: allowedPhotos,
         specs: { version: details.version, powerHp: String(details.powerHp ?? ''),
           engineCc: String(details.engineCc ?? ''), doors: String(details.doors ?? ''),
           seats: String(details.seats ?? ''), category: details.category, color: details.color,
@@ -143,7 +142,7 @@
       description:
         vehicle.publicDescription ?? `${vehicle.brand} ${vehicle.model}, de ${vehicle.year}.`,
       transmission: vehicle.publicTransmission ?? '',
-      selected: vehicle.publicPhotoPaths.filter((path) => vehicle.photos.includes(path)),
+      selected: vehicle.photos,
       specs: {
         version: details?.version ?? '',
         powerHp: String(details?.powerHp ?? ''),
@@ -163,7 +162,6 @@
     transmission = saved.transmission;
     specs = saved.specs;
     selected = saved.selected;
-    previousSavedPhotos = [...saved.selected];
     draftPublished = creation ? false : vehicle.webPublished;
   }
   const draftKey = $derived(
@@ -173,10 +171,7 @@
     (unified ? draftPublished !== vehicle.webPublished : !vehicle.webPublished) ||
       draftKey !== publicationDraftKey(savedPublicationDraft()),
   );
-  const selectionPending = $derived(
-    selected.length !== vehicle.publicPhotoPaths.length ||
-      selected.some((path) => !vehicle.publicPhotoPaths.includes(path)),
-  );
+
   $effect(() => {
     draftKey;
     const changed = publicationDirty;
@@ -192,16 +187,13 @@
   $effect(() => {
     const id = vehicle.id;
     const available = allowedPhotos;
-    const saved = vehicle.publicPhotoPaths.filter((path) => available.includes(path));
     untrack(() => {
       if (loadedVehicle !== id) {
         resetPublicationDraft();
+        selected = [...available];
         loadedVehicle = id;
       } else {
-        selected = unified
-          ? available.filter((path) => selected.includes(path))
-          : reconcilePhotoSelection(selected, previousSavedPhotos, saved, available);
-        previousSavedPhotos = [...saved];
+        selected = [...available];
       }
     });
   });
@@ -226,7 +218,7 @@
       cancel();
       return;
     }
-    if (formData.get('operation') === 'publish' && !formData.getAll('publicPhotoPaths').length) {
+    if (formData.get('operation') === 'publish' && !formData.getAll('vehiclePhotoPaths').length) {
       if (!confirmedWithoutPhoto) {
         cancel();
         confirmationOrigin =
@@ -381,10 +373,9 @@
     <VehiclePhotoDraft
       bind:photos={photoDraft}
       bind:selected
-      persisted={vehicle.publicPhotoPaths}
+      persisted={vehicle.photos}
       persistedCoverPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
       published={vehicle.webPublished && eligible}
-      requirePublicPrincipal={draftPublished && eligible}
       form={publicationFormId}
       {disabled}
     />
@@ -402,7 +393,7 @@
           bind:dragging={photoDragging}
           allowed={allowedPhotos}
           {photos}
-          persisted={vehicle.publicPhotoPaths}
+          persisted={vehicle.photos}
           published={vehicle.webPublished && eligible}
           pending={disabled || pending || controls.busy}
           form={publicationFormId}
@@ -416,11 +407,7 @@
     </PhotoGallery>
   {/if}
   <p class="note photo-save-note" role="status">
-    {creation
-      ? 'Fotografias em rascunho. A seleção e a publicação são aplicadas na ação final escolhida.'
-      : selectionPending
-        ? `Seleção de fotografias por guardar. Use «${unified ? 'Guardar alterações' : 'Guardar publicação no site'}» para aplicar.`
-        : 'Os indicadores «No site» e «Só no CRM» mostram o estado já guardado.'}
+    Todas as fotografias acompanham a publicação da viatura. Capa, ordem e novas fotografias são aplicadas ao guardar.
   </p>
 {/if}
 
@@ -491,7 +478,7 @@
               esta viatura no website</label
             >
             <p class="note">
-              Aplicado ao guardar. Apenas as fotografias selecionadas ficam públicas.
+              Aplicado ao guardar. Todas as fotografias da viatura ficam públicas.
             </p>
           {/if}
         {/if}
@@ -523,20 +510,19 @@
           público é independente do interno.
         </p>
         {#if !managePhotos}<fieldset>
-            <legend>Fotografias autorizadas para o site</legend>
+            <legend>Fotografias da viatura</legend>
             <p class="note">
               A foto principal do anúncio e do CRM é a mesma. Para a alterar, use o editor de
-              fotografias. A autorização para publicar cada fotografia é explícita.
+              fotografias. Todas acompanham a publicação global da viatura.
             </p>
             <PublicPhotoPicker
               bind:selected
               bind:dragging={photoDragging}
               allowed={allowedPhotos}
               {photos}
-              persisted={vehicle.publicPhotoPaths}
+              persisted={vehicle.photos}
               published={vehicle.webPublished && eligible}
               primaryPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
-              requirePublicPrincipal={eligible}
               pending={disabled || pending || photoBusy}
             />
           </fieldset>{/if}
@@ -580,13 +566,13 @@
             </p>{/if}{#if !descriptionText(description)}<p>
               Falta uma descrição pública.
             </p>{/if}{#if !selected.length}<p>
-              Sem fotografia selecionada, será pedida confirmação para publicar com «Imagem
+              Sem fotografias na viatura, será pedida confirmação para publicar com «Imagem
               indisponível».
             </p>{/if}
         </div>
         {#if !unified}<p class="note" role="status">
             {publicationDirty
-              ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos e a seleção de fotografias.'
+              ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos. Todas as fotografias acompanham a publicação.'
               : 'Publicação guardada · sem alterações.'}
           </p>
           <button

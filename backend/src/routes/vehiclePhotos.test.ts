@@ -82,9 +82,7 @@ beforeEach(() => {
     const current = rows.get(where.id);
     if (
       !current ||
-      JSON.stringify(current) !== JSON.stringify(where.photos.equals) ||
-      JSON.stringify(publicRows.get(where.id) ?? []) !==
-        JSON.stringify(where.publicPhotoPaths.equals)
+      JSON.stringify(current) !== JSON.stringify(where.photos.equals)
     )
       return { count: 0 };
     rows.set(where.id, [...data.photos.set]);
@@ -107,16 +105,16 @@ describe('atomic photo changes across shared database callers', () => {
     expect((await fetch(`${base}/signed`)).status).toBe(404);
     expect(mocks.signedPhotos).toHaveBeenCalledTimes(1);
   });
-  it('uses the same cover/order internally and publicly without authorizing private photos', async () => {
+  it('uses the same cover/order internally and publicly including every current photo', async () => {
     rows.set(id, [a, b, c]);
     publicRows.set(id, [a, c]);
     await mutateVehiclePhotos(db, id, { type: 'reorder', photos: [c, b, a] });
     expect(rows.get(id)).toEqual([c, b, a]);
-    expect(publicRows.get(id)).toEqual([c, a]);
+    expect(publicRows.get(id)).toEqual([c, b, a]);
     await mutateVehiclePhotos(db, id, { type: 'remove', path: c });
-    expect(publicRows.get(id)).toEqual([a]);
+    expect(publicRows.get(id)).toEqual([b, a]);
     await mutateVehiclePhotos(db, id, { type: 'append', path: d });
-    expect(publicRows.get(id)).toEqual([a]);
+    expect(publicRows.get(id)).toEqual([b, a, d]);
   });
   it('rejects a reorder when publication permission changes during the request', async () => {
     mocks.vehicle.updateMany.mockImplementationOnce(async () => {
@@ -313,7 +311,7 @@ describe('photo HTTP contract and storage boundary', () => {
     ).toBe(410);
     expect(mocks.vehicle.updateMany).not.toHaveBeenCalled();
   });
-  it('stores coherent bytes then appends without changing previous/public photos', async () => {
+  it('stores coherent bytes then appends to the complete ordered list', async () => {
     const input = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } })
       .jpeg()
       .toBuffer();
@@ -322,7 +320,7 @@ describe('photo HTTP contract and storage boundary', () => {
     const data = await response.json();
     expect(data.photos.slice(0, 2)).toEqual([a, b]);
     expect(data.photos[2]).toMatch(new RegExp(`^${id}/.*\\.jpg$`));
-    expect(publicRows.get(id)).toEqual([a, b]);
+    expect(publicRows.get(id)).toEqual(data.photos);
     expect(mocks.vehiclePhotoDimensions.createMany).toHaveBeenCalledWith({
       data: [expect.objectContaining({ vehicleId: id, width: 30, height: 20, version: expect.stringMatching(/^[a-f0-9]{64}$/) })],
       skipDuplicates: true,

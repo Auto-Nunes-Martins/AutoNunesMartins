@@ -69,7 +69,7 @@ model Vehicle {
   publicSlug           String?             @unique
   publicPrice          Decimal?            @db.Decimal(12, 2)
   publicDescription    String?             @db.Text
-  /// Explicitly approved subset of this vehicle's private storage photos.
+  /// Deprecated compatibility mirror. Vehicle.photos follows global web publication; never filter by this field.
   publicPhotoPaths     String[]            @default([])
   publicTransmission   PublicTransmission?
   /// Optional confirmed specifications and equipment approved for public display.

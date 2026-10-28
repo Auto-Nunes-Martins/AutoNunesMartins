@@ -37,7 +37,7 @@ describe('in-flight public photo authorization', () => {
     expect(await getPublicPhotoPath(db, 'slug', 0)).toBe(a);
     findFirst.mockResolvedValue(row([b, a]));
     expect(await getPublicPhotoPath(db, 'slug', 0)).toBe(b);
-    findFirst.mockResolvedValue(row([b, a], [a]));
+    findFirst.mockResolvedValue(row([a], [b, a]));
     expect(await getPublicPhotoVersions(db, 'slug')).toEqual([publicPhotoVersion(a)]);
     expect(await getPublicPhotoPath(db, 'slug', 1)).toBeNull();
     findFirst.mockResolvedValue(null);

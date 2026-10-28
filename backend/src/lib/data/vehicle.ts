@@ -99,7 +99,6 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
         acquisitionDate: true,
         soldDate: true,
         photos: true,
-        publicPhotoPaths:true,
         webPublished:true,
         pendingDocFlags: true,
         createdAt: true,
@@ -113,7 +112,7 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
 }
 
 export async function getVehicleById(tx: TxClient, id: string) {
-  return tx.vehicle.findUnique({
+  const vehicle = await tx.vehicle.findUnique({
     where: { id },
     include: {
       expenses: { orderBy: { date: 'desc' } },
@@ -141,6 +140,7 @@ export async function getVehicleById(tx: TxClient, id: string) {
       },
     },
   });
+  return vehicle ? { ...vehicle, publicPhotoPaths: [...vehicle.photos] } : null;
 }
 
 export async function sumVehicleExpenses(tx: TxClient, vehicleId: string): Promise<string> {

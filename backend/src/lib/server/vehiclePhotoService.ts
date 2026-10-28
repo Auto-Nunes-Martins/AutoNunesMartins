@@ -40,11 +40,10 @@ export async function mutateVehiclePhotos(
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const vehicle = await db.vehicle.findUnique({
       where: { id: vehicleId },
-      select: { photos: true, publicPhotoPaths: true, webPublished: true },
+      select: { photos: true },
     });
     if (!vehicle) throw new PhotoMutationError(404, 'Vehicle not found');
     const current = vehicle.photos;
-    const approved = vehicle.publicPhotoPaths;
     let next: string[];
     switch (mutation.type) {
       case 'append':
@@ -70,27 +69,16 @@ export async function mutateVehiclePhotos(
         break;
       }
     }
-    if (vehicle.webPublished && next.length && !approved.includes(next[0]!))
-      throw new PhotoMutationError(
-        409,
-        'A foto principal não está selecionada para o site. Use o editor para escolher outra principal autorizada ou incluir explicitamente esta fotografia.',
-      );
     const result = await db.$transaction(async (tx) => {
       const updated = await tx.vehicle.updateMany({
         where: {
           id: vehicleId,
           photos: { equals: current },
-          publicPhotoPaths: { equals: approved },
         },
         data: {
           photos: { set: next },
-          // A shared cover/order never grants permission to publish a private photo.
-          publicPhotoPaths: {
-            set:
-              mutation.type === 'reorder'
-                ? next.filter((path) => approved.includes(path))
-                : approved.filter((path) => next.includes(path)),
-          },
+          // Compatibility mirror only. Global publication controls all current photos.
+          publicPhotoPaths: { set: next },
         },
       });
       return updated;

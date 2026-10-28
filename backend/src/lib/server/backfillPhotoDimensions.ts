@@ -19,7 +19,7 @@ export async function backfillPhotoDimensions(db: Db, readManifest: (path: strin
   while (report.vehicles < limit) {
     const rows = await db.vehicle.findMany({
       where: { ...scope, ...(report.nextCursor ? { id: { gt: report.nextCursor } } : {}) },
-      select: { id: true, photos: true, publicPhotoPaths: true }, orderBy: { id: 'asc' }, take: Math.min(batchSize, limit - report.vehicles),
+      select: { id: true, photos: true }, orderBy: { id: 'asc' }, take: Math.min(batchSize, limit - report.vehicles),
     });
     if (!rows.length) break;
     const photos = rows.flatMap(row => (options.includePrivate ? [...new Set(row.photos)].filter(path => isApprovedPhotoPath(row.id, path)) : approvedPaths(row)).map(path => ({ vehicleId: row.id, path, version: photoDimensionVersion(path) })));
@@ -39,7 +39,7 @@ export async function backfillPhotoDimensions(db: Db, readManifest: (path: strin
           if (!manifest) { report.missing++; continue; }
           report.available++;
           if (apply) {
-            const current = await db.vehicle.findFirst({ where: { ...scope, id: photo.vehicleId, photos: { has: photo.path }, ...(!options.includePrivate ? { publicPhotoPaths: { has: photo.path } } : {}) }, select: { id: true } });
+            const current = await db.vehicle.findFirst({ where: { ...scope, id: photo.vehicleId, photos: { has: photo.path } }, select: { id: true } });
             if (!current) { report.removed++; continue; }
             if (await persistPhotoDimensions(db, photo.vehicleId, photo.path, manifest)) report.created++;
           }

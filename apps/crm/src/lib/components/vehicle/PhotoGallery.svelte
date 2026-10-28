@@ -89,7 +89,7 @@
         uploaded++;
 
       }
-      if (uploaded) toast.success(`${uploaded} fotografia(s) guardada(s) no CRM. A inclusão no site requer guardar a publicação.`);
+      if (uploaded) toast.success(`${uploaded} fotografia(s) guardada(s) no CRM. Se a viatura estiver publicada, ficam também visíveis no site.`);
       await invalidateAll();
     } catch {
       toast.error('Não foi possível concluir o carregamento. Verifique as fotografias já guardadas antes de repetir.');
@@ -117,7 +117,7 @@
       if (res.ok) {
         activeIndex = 0;
         await invalidateAll();
-        toast.success('Capa e ordem guardadas. A seleção de fotografias para o site é independente.');
+        toast.success('Capa e ordem guardadas. A ordem é a mesma no CRM e no site.');
         return true;
       } else {
         toast.error('Falha ao reordenar.');
@@ -194,7 +194,7 @@
     {/snippet}
   </PanelHeader>
   {#if editable}<p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">
-    Carregar, eliminar, definir a foto principal e ordenar guardam de imediato neste ecrã. A foto principal do anúncio tem de estar autorizada para o site. Incluir ou retirar fotografias requer guardar a publicação.
+    Carregar, eliminar, definir a foto principal e ordenar guardam de imediato neste ecrã. Todas as fotografias acompanham a publicação global da viatura.
   </p>
   {:else}<p class="px-4 py-3 text-xs text-[var(--color-text-muted)]">Consulte as fotografias com as setas ou amplie a imagem. Para alterar fotografias, capa e publicação, use «Editar fotografias» e guarde o rascunho completo.</p>{/if}
   <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">
@@ -208,7 +208,7 @@
           <span class="p-5 text-center text-sm text-[var(--color-text-muted)]">{loadError ? 'Não foi possível carregar as fotografias. Verifique a sessão e atualize a página.' : 'A carregar fotografias…'}</span>
         </div>
         {#if photoCount > 0}
-          {#if publicPaths && principalPath}<p class="saved-visibility" aria-hidden="true">{published && publicPaths.includes(principalPath) ? '✓ No site' : publicPaths.includes(principalPath) ? 'Autorizada · viatura fora do site' : 'Só no CRM'}</p>{/if}
+          {#if publicPaths && principalPath}<p class="saved-visibility" aria-hidden="true">{published ? '✓ No site' : 'Viatura fora do site'}</p>{/if}
           {#if !editor}<div class="flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border)]" aria-hidden="true">
             {#each Array(photoCount) as _}<span class="block h-16 w-24 flex-shrink-0 bg-[var(--color-bg-2)] rounded"></span>{/each}
           </div>{/if}
@@ -245,10 +245,10 @@
               <button type="button" class="photo-step next" aria-label="Fotografia seguinte" aria-disabled={activeIndex === photos.length - 1} onclick={() => { if (activeIndex < photos.length - 1) activeIndex += 1; }} onkeydown={photoKey}><ArrowRight size={20} aria-hidden="true" /></button>
             {/if}
             <span class="photo-count" aria-hidden="true">{activeIndex + 1} / {photos.length}</span>
-          {:else}<span class="photo-unavailable">Sem foto principal autorizada para o site. As fotografias privadas continuam disponíveis nas miniaturas.</span>{/if}
+          {:else}<span class="photo-unavailable">Sem fotografia principal disponível.</span>{/if}
         </div>
 
-        {#if publicPaths && primary}<p class="saved-visibility" class:on-site={published && publicPaths.includes(primary.path)}>{published && publicPaths.includes(primary.path) ? '✓ No site' : publicPaths.includes(primary.path) ? 'Autorizada · viatura fora do site' : 'Só no CRM'}</p>{/if}
+        {#if publicPaths && primary}<p class="saved-visibility" class:on-site={published}>{published ? '✓ No site' : 'Viatura fora do site'}</p>{/if}
         {#if !editor}
           <!-- Thumbnail strip -->
           <div class="flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border)]">
@@ -280,7 +280,7 @@
                     Foto principal
                   </span>
                 {/if}
-                {#if publicPaths}<span class="thumb-visibility">{published && publicPaths.includes(p.path) ? '✓ No site' : 'CRM'}</span>{/if}
+                {#if publicPaths}<span class="thumb-visibility">{published ? '✓ No site' : 'CRM'}</span>{/if}
                 {#if editable}<div class="absolute bottom-0.5 right-0.5 flex gap-0.5">
                   {#if !isPrimary}
                     <button

@@ -1,14 +1,6 @@
-/** Preserve local approval edits while immediate photo operations refresh server data. */
-export function reconcilePhotoSelection(
-  draft: string[], previousSaved: string[], nextSaved: string[], available: string[],
-) {
-  if (JSON.stringify(draft) === JSON.stringify(previousSaved))
-    return nextSaved.filter(path => available.includes(path));
-  const added = draft.filter(path => !previousSaved.includes(path));
-  const removed = previousSaved.filter(path => !draft.includes(path));
-  return available.filter(path =>
-    (nextSaved.includes(path) || added.includes(path)) && !removed.includes(path),
-  );
+/** Legacy drafts cannot retain individual exclusions. */
+export function reconcilePhotoSelection(_draft: string[], _previousSaved: string[], _nextSaved: string[], available: string[]) {
+  return [...available];
 }
 
 type Draft = {

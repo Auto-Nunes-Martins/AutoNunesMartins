@@ -76,20 +76,6 @@
       editIssues = editIssues.filter((issue) => issue.key !== name);
       if (hadErrors && !editIssues.length) message = '';
     }
-    void refreshPhotoIssue();
-  }
-  async function refreshPhotoIssue() {
-    await tick();
-    if (!editIssues.some((issue) => issue.key === 'photoPrincipal')) return;
-    const form = forms().publication;
-    if (!form) return;
-    const pub = publicDraftFromForm(new FormData(form)),
-      principal = root.querySelector<HTMLElement>('.photo-card.is-cover')?.dataset.photoPath;
-    if (!pub.published || !photoDraft.length || (principal && pub.photoPaths.includes(principal))) {
-      clearEditIssueMarks(root, ['photoPrincipal']);
-      editIssues = editIssues.filter((issue) => issue.key !== 'photoPrincipal');
-      if (!editIssues.length) message = '';
-    }
   }
   const photoDirty = $derived(
     JSON.stringify(photoDraft.map((photo) => photo.path)) !== JSON.stringify(baseline.photos),
@@ -124,7 +110,6 @@
     const form = forms().publication;
     if (!saving && form && initialPublicKey)
       publicDirty = publicEditKey(publicDraftFromForm(new FormData(form))) !== initialPublicKey;
-    void refreshPhotoIssue();
   }
   async function rememberSavedForms() {
     await tick();
@@ -187,7 +172,6 @@
       details,
       publication,
       orderedPhotos,
-      principal,
       !!baseline.sale || !!baseline.soldDate,
     );
     markEditIssues(root, editIssues);
@@ -255,7 +239,7 @@
       }
       const resolvePath = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
-      publication.photoPaths = publication.photoPaths.map(resolvePath);
+      const { photoPaths: _legacyPhotoPaths, ...publicationData } = publication;
       savePhase = 2;
       progress = 'A guardar todas as alterações…';
       saveRequestStarted = true;
@@ -267,7 +251,7 @@
           data: details,
           photos: orderedPhotos.map(resolvePath),
           uploadedPhotos: files.map((photo) => photo.uploadedPath!),
-          ...(publicDirty ? { publication } : {}),
+          ...(publicDirty ? { publication: publicationData } : {}),
         }),
       });
       saveResponseReceived = true;
@@ -289,7 +273,7 @@
       revision += 1;
       await invalidateAll().catch(() => {});
       message =
-        'Todas as alterações foram guardadas. As fotografias só estão públicas de acordo com a seleção confirmada.';
+        'Todas as alterações foram guardadas. Todas as fotografias acompanham a publicação da viatura.';
       vehicleSavedFeedback({ title: publishing ? (previouslyPublished ? 'Publicação atualizada' : 'Viatura publicada') : 'Alterações guardadas',
         brand: saved.vehicle.brand, model: saved.vehicle.model, year: saved.vehicle.year,
         detail: publishing ? 'O website já reflete as alterações confirmadas.' : 'A ficha da viatura foi atualizada no CRM.',
@@ -344,7 +328,6 @@
   class="vehicle-edit-page pt-8 pb-12 space-y-6"
   bind:this={root}
   oninput={editChanged}
-  onchange={() => void refreshPhotoIssue()}
 >
   <div>
     <a class="edit-back" href={crmPath(`/viaturas/${data.vehicle.id}`)}

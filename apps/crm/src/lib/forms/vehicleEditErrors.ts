@@ -27,7 +27,6 @@ const labels: Record<string, string> = {
   category: 'Categoria',
   color: 'Cor',
   equipment: 'Equipamento',
-  photoPrincipal: 'Foto principal',
   photos: 'Fotografias',
   publication: 'Publicação',
 };
@@ -50,7 +49,7 @@ export function issueKey(path: unknown): string {
   if (p[0] === 'publication') {
     const publicPath = p.slice(1);
     const field: string = publicPath[0] ?? '';
-    if (field === 'photoPaths') return 'photoPrincipal';
+    if (field === 'photoPaths') return 'photos';
     if (field === 'price') return 'publicPrice';
     if (field === 'description') return 'publicDescription';
     if (field === 'transmission') return 'publicTransmission';
@@ -96,13 +95,8 @@ function fieldFor(root: HTMLElement, key: string, photoPath?: string): HTMLEleme
     const card = [...root.querySelectorAll<HTMLElement>('[data-photo-path]')].find(
       (node) => node.dataset.photoPath === photoPath,
     );
-    if (card) return card.querySelector('.caption');
+    if (card) return card.querySelector('.drag-handle') ?? card;
   }
-  if (key === 'photoPrincipal')
-    return (
-      root.querySelector('[data-error-field="photoPrincipal"]') ??
-      root.querySelector('.photo-grid-scroll')
-    );
   if (key === 'photos') return root.querySelector('.photo-grid-scroll');
   if (key === 'publication')
     return (
@@ -122,7 +116,6 @@ export function validateVehicleEdit(
   data: unknown,
   pub: ReturnType<typeof publicDraftFromForm>,
   photoPaths: string[],
-  principal: string | undefined,
   blockedPublic = false,
 ): EditIssue[] {
   const issues: EditIssue[] = [];
@@ -182,12 +175,6 @@ export function validateVehicleEdit(
       message:
         'Publicação: esta viatura não está disponível para anúncio. Retire a opção de publicar ou regularize o estado da viatura.',
     });
-  if (pub.published && photoPaths.length && (!principal || !pub.photoPaths.includes(principal)))
-    issues.unshift({
-      key: 'photoPrincipal',
-      message:
-        'A foto principal não está selecionada para o site. Escolha outra foto principal entre as selecionadas ou volte a incluir esta fotografia.',
-    });
   if (photoPaths.length > 20)
     issues.push({
       key: 'photos',
@@ -208,11 +195,7 @@ export function clearEditIssueMarks(root: HTMLElement, keys?: string[]) {
       .filter((value) => value && value !== id);
     if (desc.length) field.setAttribute('aria-describedby', desc.join(' '));
     else field.removeAttribute('aria-describedby');
-    if (field.dataset.editIssueKey === 'photoPrincipal') {
-      if (field.closest('.photo-card')?.querySelector('.principal-conflict'))
-        field.setAttribute('aria-invalid', 'true');
-      else field.removeAttribute('aria-invalid');
-    } else if (field.dataset.editPreviousInvalid)
+    if (field.dataset.editPreviousInvalid)
       field.setAttribute('aria-invalid', field.dataset.editPreviousInvalid);
     else field.removeAttribute('aria-invalid');
     delete field.dataset.editError;

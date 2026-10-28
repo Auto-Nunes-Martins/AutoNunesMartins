@@ -1,5 +1,7 @@
 # Experiência publicada: uma versão por fotografia
 
+**Regra atual de pertença (28/10/2026):** todas as fotografias presentes na viatura acompanham a publicação global; não existe seleção individual. As referências históricas abaixo a «aprovadas» descrevem a política anterior. A autorização atual verifica publicação/elegibilidade da viatura, pertença a `Vehicle.photos` e versão. Ver [regra oficial](vehicle-photo-publication.md). Esta alteração não desfaz a experiência de entrega nem altera os masters ou WebP84.
+
 Pedido do proprietário em 25/10/2026: usar no site normal a mesma versão da fotografia principal nos cartões, miniaturas, galeria e fullscreen. Comportamento ativo: **1600 px fixos**, sem `srcset` nas fotografias públicas de viaturas. Originais pequenos mantêm o fallback nativo existente, sem ampliação artificial.
 
 ## Referências duradouras

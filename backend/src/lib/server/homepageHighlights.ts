@@ -95,7 +95,6 @@ export async function saveHighlights(
           const vehicle = vehicles.find((row) => row.id === item.vehicleId);
           if (
             !vehicle ||
-            !vehicle.publicPhotoPaths.includes(item.photoPath) ||
             !vehicle.photos.includes(item.photoPath) ||
             !isApprovedPhotoPath(vehicle.id, item.photoPath)
           ) {

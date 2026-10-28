@@ -100,10 +100,10 @@ describe('homepage editorial selection', () => {
       status: { in: ['AVAILABLE', 'RESERVED'] },
     });
   });
-  it('immediately omits a sold/unpublished vehicle and a revoked photo without substituting another photo', async () => {
+  it('immediately omits a sold/unpublished vehicle and a removed photo without substituting another photo', async () => {
     mock.vehicle.findMany.mockResolvedValue([]);
     expect((await readPublicHighlights(db)).items).toEqual([]);
-    mock.vehicle.findMany.mockResolvedValue([{ ...fixture(), publicPhotoPaths: [photo] }]);
+    mock.vehicle.findMany.mockResolvedValue([{ ...fixture(), photos: [photo] }]);
     expect((await readPublicHighlights(db)).items).toEqual([]);
   });
   it('recomputes the independent homepage selection index when vehicle order changes', async () => {
@@ -167,11 +167,11 @@ describe('homepage editorial selection', () => {
       status: 409,
     });
   });
-  it('offers only approved images in the CRM photo picker', async () => {
+  it('offers all current photos regardless of the legacy subset', async () => {
     mock.vehicle.findMany.mockResolvedValue([
       { ...fixture(), publicPhotoPaths: [photo, `${id}/private.pdf`, 'other/private.jpg'] },
     ]);
     const editor = await readHighlightsEditor(db);
-    expect(editor.candidates[0]?.photos).toEqual([{ path: photo, url: 'signed:' + photo }]);
+    expect(editor.candidates[0]?.photos).toEqual([photo,otherPhoto].map(path=>({path,url:'signed:'+path})));
   });
 });

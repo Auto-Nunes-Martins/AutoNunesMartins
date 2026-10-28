@@ -12,7 +12,7 @@ export function publicDraftFromForm(form: FormData) {
     published: get('published') === 'true',
     price: get('publicPrice') || null,
     description: get('publicDescription'),
-    photoPaths: form.getAll('publicPhotoPaths').map(String),
+    photoPaths: form.getAll('vehiclePhotoPaths').map(String),
     transmission: get('publicTransmission') || null,
     specifications: {
       version: get('version').trim(),

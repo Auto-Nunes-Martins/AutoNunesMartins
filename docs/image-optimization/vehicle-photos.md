@@ -7,6 +7,8 @@ derivatives; production imports only the chosen composition.
 
 ## Vehicle delivery
 
+Current membership rule: every current vehicle photo follows global publication, without individual exclusions. See [the official publication rule](../vehicle-photo-publication.md). Public delivery remains fixed at 1600 px under the [single-photo delivery experiment](../photo-delivery-experiment.md); the widths below remain supported by the backend and CRM.
+
 - Supported derivative requests are shared through `@anm/types/photoWidths`:
   320, 384, 800, 1280, 1600 and 2560 CSS source-width descriptors.
 - 384 accommodates a 112 CSS-pixel thumbnail on a DPR-3 display without jumping to 800.

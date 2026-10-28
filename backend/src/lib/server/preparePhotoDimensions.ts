@@ -5,7 +5,7 @@ import { readVariantManifests } from './photoVariants.js';
 import { logger } from '../../logger.js';
 
 /** Prepare legacy owned photos outside the publication transaction. Never encodes images.
- * Approval is still validated in the transaction; metadata cannot grant public access.
+ * Current photo membership and global publication are validated independently; metadata cannot grant public access.
  * Missing legacy manifests/rolling deployments keep the existing fallback and retry on save.
  */
 export async function preparePhotoDimensions(db: PrismaClient, vehicleId: string, requested: string[]) {

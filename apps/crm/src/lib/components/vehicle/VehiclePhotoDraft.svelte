@@ -5,8 +5,8 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
-  let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, published, requirePublicPrincipal=false, form, disabled = false }:
-    { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; published: boolean; requirePublicPrincipal?:boolean; form: string; disabled?: boolean } = $props();
+  let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, published, form, disabled = false }:
+    { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; published: boolean; form: string; disabled?: boolean } = $props();
   let notice = $state<{ accepted: EditPhoto[]; rejected: string[] } | null>(null);
   let fileInput: HTMLInputElement;
   let uploadButton: HTMLButtonElement;
@@ -53,7 +53,7 @@
       <div class="notice-thumbnails" aria-hidden="true">{#each notice.accepted.slice(0, 3) as photo}<img {...photoAttrs(photo,320,'48px')} use:photoFallback={photo.url} alt="" />{/each}{#if notice.accepted.length > 3}<span>+{notice.accepted.length - 3}</span>{/if}{#if !notice.accepted.length}<Camera size={28} />{/if}</div>
       <div class="notice-copy" role="status" aria-live="polite" aria-atomic="true">
         <h3>{#if notice.accepted.length}<Check size={17} aria-hidden="true" />{notice.accepted.length === 1 ? 'Fotografia adicionada ao rascunho' : 'Fotografias adicionadas ao rascunho'}{:else}Não foi adicionada nenhuma fotografia{/if}</h3>
-        {#if notice.accepted.length}<p><strong>Falta guardar alterações.</strong></p><p><span>{notice.accepted.length} {notice.accepted.length === 1 ? 'fotografia nova por guardar' : 'fotografias novas por guardar'}</span>. A escolha de publicação no site mantém-se independente.</p>{/if}
+        {#if notice.accepted.length}<p><strong>Falta guardar alterações.</strong></p><p><span>{notice.accepted.length} {notice.accepted.length === 1 ? 'fotografia nova por guardar' : 'fotografias novas por guardar'}</span>. Todas as fotografias ficam visíveis quando a viatura é publicada, depois de guardar.</p>{/if}
         {#if notice.rejected.length}<p class="notice-rejected">{notice.rejected.length} {notice.rejected.length === 1 ? 'ficheiro não adicionado' : 'ficheiros não adicionados'}.</p><details><summary>Ver motivo{notice.rejected.length > 1 ? 's' : ''}</summary><ul>{#each notice.rejected as reason}<li>{reason}</li>{/each}</ul></details>{/if}
       </div>
       <button type="button" class="notice-close" aria-label="Fechar notificação de fotografias" onclick={closeNotice}><X size={18} aria-hidden="true" /></button>
@@ -73,8 +73,8 @@
       </figure>
       </div>
       <div class="organize-panel">
-        <div class="organize-heading"><h3>Organizar fotografias</h3><p>Arraste para ordenar; também pode usar Espaço e as setas no cartão. As alterações só são aplicadas <strong>ao guardar</strong>.</p></div>
-        <PublicPhotoPicker dense {revealPath} {persistedCoverPath} {requirePublicPrincipal} bind:selected allowed={displayOrder} {photos} {persisted} {published} {form} pending={disabled} staged onprimary={primary} onreorder={reorder} ondelete={remove} primaryPath={cover?.path}>
+        <div class="organize-heading"><h3>Organizar fotografias</h3><p>Use a pega para arrastar e ordenar, ou Espaço e as setas na pega. As alterações só são aplicadas <strong>ao guardar</strong>.</p></div>
+        <PublicPhotoPicker dense {revealPath} {persistedCoverPath} bind:selected allowed={displayOrder} {photos} {persisted} {published} {form} pending={disabled} staged onprimary={primary} onreorder={reorder} ondelete={remove} primaryPath={cover?.path}>
           {#snippet addPhoto()}<button type="button" class="add-photo-card" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Plus size={30} strokeWidth={1.3} aria-hidden="true" /><strong>Adicionar fotografias</strong><span>{photos.length >= 20 ? 'Limite de 20 atingido' : 'Escolher uma ou várias'}</span></button>{/snippet}
         </PublicPhotoPicker>
         {#if photos.length >= 20}<p class="upload-feedback" role="status">Limite de 20 fotografias atingido.</p>{:else if addedCount && !notice}<p class="upload-feedback" role="status">{addedCount} {addedCount === 1 ? 'fotografia nova por guardar' : 'fotografias novas por guardar'}</p>{/if}

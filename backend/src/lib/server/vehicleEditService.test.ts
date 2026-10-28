@@ -107,14 +107,11 @@ beforeEach(() => {
   });
 });
 describe('single vehicle edit transaction', () => {
-  it('rejects deselection of the announcement principal atomically and reports a photo field', async () => {
-    await expect(saveVehicleEdit(id, input(), actor)).rejects.toMatchObject({
-      status: 409,
-      field: 'publication.photoPaths',
-    });
-    expect(row.photos).toEqual([a, b]);
-    expect(row.publicPhotoPaths).toEqual([a]);
-    expect(mocked.update).not.toHaveBeenCalled();
+  it('ignores a legacy subset and publishes the complete current list atomically', async () => {
+    await saveVehicleEdit(id, input(), actor);
+    expect(row.photos).toEqual([a,b]);
+    expect(row.publicPhotoPaths).toEqual([a,b]);
+    expect(mocked.publication.mock.calls[0]?.[2].photoPaths).toEqual([a,b]);
   });
   it('rejects clearing the now-required plate and accepts clearing an optional VIN', async () => {
     expect(vehicleEditSchema.safeParse({ ...input(), data: { licensePlate: null } }).success).toBe(false);
@@ -127,11 +124,11 @@ describe('single vehicle edit transaction', () => {
     value.photos = [b, a];
     await saveVehicleEdit(id, value, actor);
     expect(mocked.work).toHaveBeenCalledTimes(1);
-    expect(mocked.dimensions).toHaveBeenCalledWith({}, id, [b]);
+    expect(mocked.dimensions).toHaveBeenCalledWith({}, id, [b, a]);
     expect(mocked.dimensions.mock.invocationCallOrder[0]).toBeLessThan(mocked.work.mock.invocationCallOrder[0]!);
     expect(row.brand).toBe('Nova marca');
     expect(row.photos).toEqual([b, a]);
-    expect(row.publicPhotoPaths).toEqual([b]);
+    expect(row.publicPhotoPaths).toEqual([b, a]);
     expect(mocked.update.mock.calls[0]?.[0]).toBe(tx);
     expect(mocked.publication.mock.calls[0]?.[0]).toBe(tx);
   });
@@ -160,13 +157,12 @@ describe('single vehicle edit transaction', () => {
     expect(mocked.download).not.toHaveBeenCalled();
     expect(mocked.update).not.toHaveBeenCalled();
   });
-  it('does not authorize an existing private photo when only order changes', async () => {
-    await expect(
-      saveVehicleEdit(id, { ...input(), photos: [b, a], publication: undefined }, actor),
-    ).rejects.toThrow('foto principal');
-    expect(row.publicPhotoPaths).toEqual([a]);
+  it('reorders every photo on an already published vehicle without requiring publication edits', async () => {
+    await saveVehicleEdit(id, { ...input(), photos: [b,a], publication: undefined }, actor);
+    expect(row.photos).toEqual([b,a]);
+    expect(row.publicPhotoPaths).toEqual([b,a]);
+    expect(row.webPublished).toBe(true);
     expect(mocked.publication).not.toHaveBeenCalled();
-    expect(row.photos).toEqual([a, b]);
   });
   it('removes a photo and its public approval together', async () => {
     row.publicPhotoPaths = [a, b];
@@ -178,7 +174,7 @@ describe('single vehicle edit transaction', () => {
     expect(result.removedPhotos).toEqual([a]);
     expect(row.publicPhotoPaths).toEqual([b]);
   });
-  it('attaches a verified staged private image without authorizing it implicitly', async () => {
+  it('attaches a verified image while keeping an unpublished vehicle unpublished', async () => {
     row.webPublished = false;
     const path = `${id}/12345678-1234-1234-1234-123456789abe.webp`;
     const buffer = await sharp({ create: { width: 8, height: 12, channels: 3, background: 'red' } })
@@ -194,7 +190,8 @@ describe('single vehicle edit transaction', () => {
       actor,
     );
     expect(row.photos).toEqual([path, a]);
-    expect(row.publicPhotoPaths).toEqual([a]);
+    expect(row.publicPhotoPaths).toEqual([path, a]);
+    expect(row.webPublished).toBe(false);
     expect(mocked.publication).not.toHaveBeenCalled();
   });
   it('rejects unavailable or non-image staged objects before any transaction', async () => {

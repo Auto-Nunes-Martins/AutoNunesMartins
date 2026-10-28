@@ -223,7 +223,7 @@
           photoCount={v.photos.length}
           principalPath={vehiclePrincipalPath(v) ?? null}
           editable={false}
-          publicPaths={v.publicPhotoPaths}
+          publicPaths={v.photos}
           published={v.webPublished &&
             ['AVAILABLE', 'RESERVED'].includes(v.status) &&
             !v.sale &&
@@ -235,7 +235,7 @@
           photos={signedPhotos}
           principalPath={vehiclePrincipalPath(v) ?? null}
           editable={false}
-          publicPaths={v.publicPhotoPaths}
+          publicPaths={v.photos}
           published={v.webPublished &&
             ['AVAILABLE', 'RESERVED'].includes(v.status) &&
             !v.sale &&
@@ -249,7 +249,7 @@
           photoCount={v.photos.length}
           principalPath={vehiclePrincipalPath(v) ?? null}
           editable={false}
-          publicPaths={v.publicPhotoPaths}
+          publicPaths={v.photos}
           published={v.webPublished &&
             ['AVAILABLE', 'RESERVED'].includes(v.status) &&
             !v.sale &&
