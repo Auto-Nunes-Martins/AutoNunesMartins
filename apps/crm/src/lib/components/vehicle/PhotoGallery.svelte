@@ -21,8 +21,6 @@
     disabled?: boolean;
     dragging?: boolean;
     editable?: boolean;
-    publicPaths?: string[];
-    published?: boolean;
     principalPath?: string | null;
     editor?: Snippet<
       [
@@ -38,7 +36,7 @@
     >;
   }
 
-  let { vehicleId, photos, editor, disabled = false, dragging = false, editable = true, publicPaths, published = false, principalPath, busy = $bindable(false), loading = false, photoCount = photos.length, loadError = false }: Props & { loading?: boolean; photoCount?: number; loadError?: boolean } = $props();
+  let { vehicleId, photos, editor, disabled = false, dragging = false, editable = true, principalPath, busy = $bindable(false), loading = false, photoCount = photos.length, loadError = false }: Props & { loading?: boolean; photoCount?: number; loadError?: boolean } = $props();
   // All photo ops go through SvelteKit proxy endpoints so the user's Clerk
   // session is forwarded server-side as a Bearer token to the Express backend.
   const apiBase = $derived(crmPath(`/viaturas/${vehicleId}/photos`));
@@ -193,13 +191,9 @@
       {:else}<a class="edit-photos" href={crmPath(`/viaturas/${vehicleId}/editar`)}>Editar fotografias</a>{/if}
     {/snippet}
   </PanelHeader>
-  {#if editable}<p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">
-    Carregar, eliminar, definir a foto principal e ordenar guardam de imediato neste ecrã. Todas as fotografias acompanham a publicação global da viatura.
-  </p>
-  {:else}<p class="px-4 py-3 text-xs text-[var(--color-text-muted)]">Consulte as fotografias com as setas ou amplie a imagem. Para alterar fotografias, capa e publicação, use «Editar fotografias» e guarde o rascunho completo.</p>{/if}
-  <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">
+  {#if editable}<p class="px-4 py-3 text-xs text-[var(--color-text-muted)]">
     JPEG, PNG ou WebP · até 20 MB por ficheiro. Otimização para cerca de 1,1 MB, com um máximo de 2 MB na fotografia guardada.
-  </p>
+  </p>{/if}
 
   <div class:photo-workspace={!!editor}>
     <div>
@@ -208,7 +202,6 @@
           <span class="p-5 text-center text-sm text-[var(--color-text-muted)]">{loadError ? 'Não foi possível carregar as fotografias. Verifique a sessão e atualize a página.' : 'A carregar fotografias…'}</span>
         </div>
         {#if photoCount > 0}
-          {#if publicPaths && principalPath}<p class="saved-visibility" aria-hidden="true">{published ? '✓ No site' : 'Viatura fora do site'}</p>{/if}
           {#if !editor}<div class="flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border)]" aria-hidden="true">
             {#each Array(photoCount) as _}<span class="block h-16 w-24 flex-shrink-0 bg-[var(--color-bg-2)] rounded"></span>{/each}
           </div>{/if}
@@ -248,7 +241,6 @@
           {:else}<span class="photo-unavailable">Sem fotografia principal disponível.</span>{/if}
         </div>
 
-        {#if publicPaths && primary}<p class="saved-visibility" class:on-site={published}>{published ? '✓ No site' : 'Viatura fora do site'}</p>{/if}
         {#if !editor}
           <!-- Thumbnail strip -->
           <div class="flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border)]">
@@ -280,7 +272,6 @@
                     Foto principal
                   </span>
                 {/if}
-                {#if publicPaths}<span class="thumb-visibility">{published ? '✓ No site' : 'CRM'}</span>{/if}
                 {#if editable}<div class="absolute bottom-0.5 right-0.5 flex gap-0.5">
                   {#if !isPrimary}
                     <button
@@ -359,9 +350,6 @@
 <style>
   .photo-preview { position: relative; }
   .edit-photos {display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid var(--color-border);border-radius:var(--radius-btn);font-size:12px;}
-  .saved-visibility {padding:10px 14px;font-size:13px;font-weight:600;background:var(--color-bg-2);border-bottom:1px solid var(--color-border);}
-  .saved-visibility.on-site {background:color-mix(in srgb,#1e9c67 20%,var(--color-bg-1));}
-  .thumb-visibility {position:absolute;bottom:2px;left:2px;padding:2px 4px;background:#111c;color:white;font-size:9px;pointer-events:none;}
   /* Intrinsic image sizes must never grow the aspect-ratio frame after decoding. */
   .photo-open { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: zoom-in; }
   .photo-step,.viewer-step,.viewer-close { display: grid; place-items: center; position: absolute; min-width: 44px; min-height: 44px; background: #1119; color: white; border: 1px solid #ffffff70; border-radius: 50%; cursor: pointer; z-index: 2; }

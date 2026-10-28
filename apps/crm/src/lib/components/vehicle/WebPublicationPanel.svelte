@@ -37,6 +37,8 @@
     onstatechange,
     creation = false,
     recoveredDraft,
+    publicationOpen = $bindable(true),
+    editorId,
   }: {
     vehicle: VehicleDetailResponse;
     photos?: SignedVariantPhoto[];
@@ -50,6 +52,8 @@
     onstatechange?: (state: { dirty: boolean; valid: boolean }) => void;
     creation?: boolean;
     recoveredDraft?: ReturnType<typeof publicDraftFromForm>;
+    publicationOpen?: boolean;
+    editorId?: string;
   } = $props();
   let price = $state('');
   let description = $state('');
@@ -375,7 +379,7 @@
       bind:selected
       persisted={vehicle.photos}
       persistedCoverPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
-      published={vehicle.webPublished && eligible}
+
       form={publicationFormId}
       {disabled}
     />
@@ -394,7 +398,7 @@
           allowed={allowedPhotos}
           {photos}
           persisted={vehicle.photos}
-          published={vehicle.webPublished && eligible}
+
           pending={disabled || pending || controls.busy}
           form={publicationFormId}
           primaryPath={controls.primaryPath}
@@ -418,10 +422,12 @@
     <section class="standalone-characteristics">{@render vehicleCharacteristics()}</section>
   {/if}
 
+  <details class="publication-editor" id={editorId} bind:open={publicationOpen}>
+    <summary>Publicação no website</summary>
   <section class="web-publication" aria-labelledby="web-publication-title">
     <div class="heading">
       <div>
-        <h2 id="web-publication-title">Publicação no website</h2>
+        <h2 id="web-publication-title" tabindex="-1">Publicação no website</h2>
         <p class="publication-status">
           {creation
             ? 'Escolha uma das ações finais para guardar ou publicar.'
@@ -521,7 +527,7 @@
               allowed={allowedPhotos}
               {photos}
               persisted={vehicle.photos}
-              published={vehicle.webPublished && eligible}
+
               primaryPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
               pending={disabled || pending || photoBusy}
             />
@@ -595,6 +601,7 @@
     </form>
     <p role="status" aria-live="polite">{message}</p>
   </section>
+  </details>
 </div>
 
 <dialog
@@ -622,6 +629,9 @@
 </dialog>
 
 <style>
+  .publication-editor {min-width: 0;scroll-margin-top: 190px;}
+  .publication-editor:not([open]), .publication-editor > summary {display: none;}
+  @media (max-width: 600px) {.publication-editor {scroll-margin-top: 260px;}}
   .spec-field-label {
     display: flex;
     align-items: center;

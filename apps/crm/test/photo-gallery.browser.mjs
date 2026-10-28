@@ -36,7 +36,7 @@ const persisted=photos.map(p=>p.path);
 onMount(()=>{window.setTheme=value=>{currentTheme=value;document.documentElement.dataset.theme=value;};window.photoOrder=()=>photos.map(p=>p.path);window.allPhotos=()=>selected;window.showSaved=(width,height)=>vehicleSavedFeedback({title:"Viatura adicionada ao CRM",brand:"Marca de demonstração",model:"ModeloComUmNomeMuitoCompridoSemEspaços".repeat(3),year:2026,detail:"A viatura e todas as fotografias foram guardadas com sucesso. ".repeat(3),photo:{url:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'"><rect width="100%" height="100%" fill="teal"/></svg>')}});window.dismissSaved=()=>toast.dismiss();});
 </script>
 <main style="max-width:1100px;margin:auto;padding-top:180px;padding-bottom:1600px">
-<form id="photo-form"></form><VehiclePhotoDraft bind:photos bind:selected {persisted} persistedCoverPath="photo-0" published={true} form="photo-form"/>
+<form id="photo-form"></form><VehiclePhotoDraft bind:photos bind:selected {persisted} persistedCoverPath="photo-0" form="photo-form"/>
 </main><Toaster theme={currentTheme} position="bottom-right" closeButton richColors duration={4500} expand visibleToasts={5}/><style>${toastStyles}</style>`,
   );
   await write(
@@ -129,7 +129,7 @@ test(`whole photo card drag, scroll and saved toast ${width}px ${theme}`,{timeou
     };
     await wheel(cards().first().locator('img'));
     await wheel(page.getByRole('button',{name:'Eliminar fotografia 3',exact:true}));
-    await wheel(cards().nth(1).locator('.visibility'));
+    await wheel(cards().nth(1).locator('.photo-footer'));
     const help=page.getByText('Como funciona a publicação?',{exact:true});
     await wheel(help);await help.click();await wheel(page.locator('.publication-help p'));await help.click();
     if(width===390){
@@ -146,10 +146,10 @@ test(`whole photo card drag, scroll and saved toast ${width}px ${theme}`,{timeou
     await page.keyboard.press('Space');await page.keyboard.press('ArrowRight');await page.keyboard.press('Space');await page.waitForTimeout(250);
     assert.deepEqual((await page.evaluate(()=>window.photoOrder())).slice(0,2),['photo-1','photo-0']);
     // Image and body both initiate drag. Sample the real clone while moving, not only after drop.
-    for(const region of ['.photo-media img','.visibility']){
+    for(const region of ['.photo-media img','.photo-footer']){
       await cards().first().scrollIntoViewIfNeeded();
       const original=await cards().first().boundingBox(),image=await cards().first().locator('.photo-media').boundingBox();
-      const a=await cards().first().locator(region).boundingBox(),b=await cards().nth(1).boundingBox();
+      const a=await cards().first().locator(region).boundingBox(),b=await cards().nth(1).boundingBox();if(region==='.photo-footer')a.height=8;
       const before=await page.evaluate(()=>window.photoOrder());
       await page.mouse.move(a.x+a.width/2,a.y+a.height/2);await page.mouse.down();
       await page.mouse.move(a.x+a.width/2+10,a.y+a.height/2,{steps:3});

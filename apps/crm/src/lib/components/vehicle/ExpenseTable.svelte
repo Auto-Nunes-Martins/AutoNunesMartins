@@ -48,28 +48,32 @@
   }
 
   const today = new Date().toISOString().slice(0, 10);
+  const addFormId = $props.id();
 </script>
 
 <section
   class="expense-layout overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-1)]"
   style="border-radius: var(--radius-card);"
 >
-  <PanelHeader icon={Wallet} title="Despesas" meta={`${expenses.length} REGISTOS`}>
+  <div class="expense-heading"><PanelHeader icon={Wallet} title="Despesas" meta={`${expenses.length} ${expenses.length === 1 ? 'REGISTO' : 'REGISTOS'}`}>
     {#snippet actions()}
       <button
         type="button"
+        aria-expanded={showForm}
+        aria-controls={addFormId}
         onclick={() => (showForm = !showForm)}
-        class="inline-flex items-center gap-1.5 px-3 h-8 border border-[var(--color-border)] hover:border-[var(--color-border-strong)] font-mono text-[10px] uppercase tracking-[0.2em] transition-colors"
+        class="inline-flex items-center gap-1.5 px-3 h-8 min-h-11 border border-[var(--color-border)] hover:border-[var(--color-border-strong)] font-mono text-[10px] uppercase tracking-[0.2em] transition-colors"
         style="border-radius: var(--radius-btn);"
       >
         <Plus class="h-3.5 w-3.5" />
         Adicionar
       </button>
     {/snippet}
-  </PanelHeader>
+  </PanelHeader></div>
 
   {#if showForm}
     <form
+      id={addFormId}
       method="POST"
       action="?/addExpense"
       use:enhance={() => {
@@ -447,3 +451,16 @@
     </div>
   {/if}
 </section>
+
+<style>
+  @container (width < 480px) {
+    .expense-heading > :global(div) > :global(div:first-child) {
+      display: grid;
+      grid-template-columns: 18px 2px minmax(0, 1fr);
+      column-gap: 8px;
+      row-gap: 3px;
+    }
+    .expense-heading :global(h3) {grid-column: 3;grid-row: 1;}
+    .expense-heading :global(h3 + span) {grid-column: 3;grid-row: 2;margin-left: 0;}
+  }
+</style>

@@ -5,8 +5,8 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
-  let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, published, form, disabled = false }:
-    { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; published: boolean; form: string; disabled?: boolean } = $props();
+  let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, form, disabled = false }:
+    { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; form: string; disabled?: boolean } = $props();
   let notice = $state<{ accepted: EditPhoto[]; rejected: string[] } | null>(null);
   let fileInput: HTMLInputElement;
   let uploadButton: HTMLButtonElement;
@@ -47,7 +47,7 @@
 <section class="photo-draft">
   <PanelHeader icon={Camera} title="Fotografias" meta={`${photos.length} / 20`} />
   <div class="draft-content">
-    <div class="draft-toolbar"><p>JPEG, PNG ou WebP · até 20 MB por ficheiro</p><button bind:this={uploadButton} type="button" class="upload-button" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Upload size={17} aria-hidden="true" />Escolher fotografias</button></div>
+    <div class="draft-toolbar"><p>JPEG, PNG ou WebP · até 20 MB por ficheiro. Otimização para cerca de 1,1 MB, com um máximo de 2 MB na fotografia guardada.</p><button bind:this={uploadButton} type="button" class="upload-button" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Upload size={17} aria-hidden="true" />Escolher fotografias</button></div>
     <input id={uploadId} bind:this={fileInput} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={disabled || photos.length >= 20} onchange={pick} />
     {#if notice}<aside class="photo-notice" aria-label="Resultado da seleção de fotografias">
       <div class="notice-thumbnails" aria-hidden="true">{#each notice.accepted.slice(0, 3) as photo}<img {...photoAttrs(photo,320,'48px')} use:photoFallback={photo.url} alt="" />{/each}{#if notice.accepted.length > 3}<span>+{notice.accepted.length - 3}</span>{/if}{#if !notice.accepted.length}<Camera size={28} />{/if}</div>
@@ -74,7 +74,7 @@
       </div>
       <div class="organize-panel">
         <div class="organize-heading"><h3>Organizar fotografias</h3><p>As alterações só são aplicadas <strong>ao guardar</strong>.</p></div>
-        <PublicPhotoPicker dense {revealPath} {persistedCoverPath} bind:selected allowed={displayOrder} {photos} {persisted} {published} {form} pending={disabled} staged onprimary={primary} onreorder={reorder} ondelete={remove} primaryPath={cover?.path}>
+        <PublicPhotoPicker dense {revealPath} {persistedCoverPath} bind:selected allowed={displayOrder} {photos} {persisted} {form} pending={disabled} staged onprimary={primary} onreorder={reorder} ondelete={remove} primaryPath={cover?.path}>
           {#snippet addPhoto()}<button type="button" class="add-photo-card" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Plus size={30} strokeWidth={1.3} aria-hidden="true" /><strong>Adicionar fotografias</strong><span>{photos.length >= 20 ? 'Limite de 20 atingido' : 'Escolher uma ou várias'}</span></button>{/snippet}
         </PublicPhotoPicker>
         {#if photos.length >= 20}<p class="upload-feedback" role="status">Limite de 20 fotografias atingido.</p>{:else if addedCount && !notice}<p class="upload-feedback" role="status">{addedCount} {addedCount === 1 ? 'fotografia nova por guardar' : 'fotografias novas por guardar'}</p>{/if}

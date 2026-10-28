@@ -65,6 +65,9 @@
     <div class="min-w-0">
       <div class="mb-2 flex flex-wrap items-center gap-2">
         <StatusBadge status={v.status} />
+        <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+          {v.webPublished ? (['AVAILABLE', 'RESERVED'].includes(v.status) && !v.sale && !v.soldDate ? 'Publicada no website' : 'Oculta no website') : 'Só no CRM'}
+        </span>
         {#if v.licensePlate}
           <!-- Stylized Portuguese license plate with the authentic blue prefix. -->
           <span
@@ -214,7 +217,7 @@
 
   <!-- Top grid: gallery + spec/profit -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-    <div class="lg:col-span-7 space-y-6">
+    <div class="lg:col-span-7 min-w-0 space-y-6">
       {#await data.signedPhotos}
         <PhotoGallery
           vehicleId={v.id}
@@ -223,11 +226,6 @@
           photoCount={v.photos.length}
           principalPath={vehiclePrincipalPath(v) ?? null}
           editable={false}
-          publicPaths={v.photos}
-          published={v.webPublished &&
-            ['AVAILABLE', 'RESERVED'].includes(v.status) &&
-            !v.sale &&
-            !v.soldDate}
         />
       {:then signedPhotos}
         <PhotoGallery
@@ -235,11 +233,6 @@
           photos={signedPhotos}
           principalPath={vehiclePrincipalPath(v) ?? null}
           editable={false}
-          publicPaths={v.photos}
-          published={v.webPublished &&
-            ['AVAILABLE', 'RESERVED'].includes(v.status) &&
-            !v.sale &&
-            !v.soldDate}
         />
       {:catch}
         <PhotoGallery
@@ -249,11 +242,6 @@
           photoCount={v.photos.length}
           principalPath={vehiclePrincipalPath(v) ?? null}
           editable={false}
-          publicPaths={v.photos}
-          published={v.webPublished &&
-            ['AVAILABLE', 'RESERVED'].includes(v.status) &&
-            !v.sale &&
-            !v.soldDate}
         />
       {/await}
 
@@ -265,7 +253,7 @@
       </Panel>{/if}
     </div>
 
-    <div class="lg:col-span-5 space-y-6">
+    <div class="vehicle-sidebar lg:col-span-5 min-w-0 space-y-6">
       <!-- Specs -->
       <Panel>
         <PanelHeader icon={Car} title="Especificações" />
@@ -308,6 +296,7 @@
           {/each}
         </div>
       </Panel>
+      <ExpenseTable expenses={v.expenses} vehicleStatus={v.status} />
     </div>
   </div>
 
@@ -326,8 +315,6 @@
       : null}
   />
 
-  <!-- Expenses -->
-  <ExpenseTable expenses={v.expenses} vehicleStatus={v.status} />
 
   {#if v.sale}
     {@const saleId = v.sale.id}

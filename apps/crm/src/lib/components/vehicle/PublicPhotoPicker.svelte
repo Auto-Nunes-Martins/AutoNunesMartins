@@ -3,7 +3,7 @@
   import { tick, untrack, type Snippet } from 'svelte';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { flip } from 'svelte/animate';
-  import { Check, Star, Trash2 } from 'lucide-svelte';
+  import { Star, Trash2 } from 'lucide-svelte';
   import { committedPhotoOrder, type PhotoOrderItem } from './photoOrder';
   let {
     selected = $bindable<string[]>([]),
@@ -12,7 +12,6 @@
     photos,
     pending = false,
     persisted = [],
-    published = false,
     staged = false,
     form,
     primaryPath,
@@ -31,7 +30,6 @@
     photos: SignedVariantPhoto[];
     pending?: boolean;
     persisted?: string[];
-    published?: boolean;
     staged?: boolean;
     form?: string;
     primaryPath?: string;
@@ -132,7 +130,6 @@
     {@const photo = photos.find((photo) => photo.path === item.path)}
 
     {@const saved = persisted.includes(item.path)}
-    {@const live = saved && published}
 
     {@const isPrincipal = (primaryPath ?? selected[0]) === item.path}
 
@@ -151,10 +148,7 @@
       {#if isPrincipal}<span class="primary-badge"><Star size={11} fill="currentColor" aria-hidden="true" />{staged && item.path !== persistedCoverPath ? 'Foto principal · por guardar' : 'Foto principal'}</span>{/if}
       </div>
       <div class="photo-footer">
-      <div class="visibility" class:live>
-        {#if live}<Check size={17} aria-hidden="true" />{/if}
-        <strong>{!saved && staged ? 'Por guardar' : published ? 'No site' : 'Com a publicação'}</strong>
-      </div>
+      {#if !saved && staged}<p class="photo-pending">Por guardar</p>{/if}
       {#if onpreview}<div use:keepControlsInteractive><button class="caption" type="button" disabled={pending || dragging} onclick={() => onpreview?.(item.path)} aria-label={'Ver fotografia ' + (index + 1)}>Ver fotografia</button></div>{/if}
       <div
         class="actions"
@@ -201,10 +195,7 @@
   .order-index {position:absolute;top:10px;right:10px;display:grid;place-items:center;min-width:24px;height:24px;padding:0 5px;border-radius:5px;background:var(--color-bg-1);color:var(--color-text);font-size:11px;border:1px solid var(--color-border);}
   .primary-badge {position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:5px;max-width:calc(100% - 20px);padding:5px 7px;border-radius:5px;background:var(--color-warning);color:#191000;font-size:10px;line-height:1.4;font-weight:600;}
   .photo-footer {display:flex;flex-direction:column;gap:12px;padding:12px;border-top:1px solid var(--color-border);}
-  .visibility {display:flex;align-items:center;gap:6px;min-height:17px;color:var(--color-text-muted);font-size:11px;line-height:17px;}
-  .visibility strong {font-weight:500;}
-  .visibility.live {color:var(--color-text);}
-  .visibility.live :global(svg) {color:var(--color-success);}
+.photo-pending {color:var(--color-text-muted);font-size:11px;line-height:17px;}
   .actions {display:flex;align-items:center;gap:8px;}
   button {display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:38px;padding:8px 10px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-bg-2);color:var(--color-text);font-size:11px;line-height:16px;cursor:pointer;}
   .actions button:not(.delete-photo) {flex:1;}

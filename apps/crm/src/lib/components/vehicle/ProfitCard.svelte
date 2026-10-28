@@ -34,12 +34,12 @@
 </script>
 
 <section
-  class="overflow-hidden border bg-[var(--color-bg-1)]"
+  class="profit-card overflow-hidden border bg-[var(--color-bg-1)]"
   style="border-radius: var(--radius-card); border-color: {isLoss ? 'color-mix(in oklab, var(--color-red) 40%, transparent)' : 'var(--color-border)'};"
 >
   <PanelHeader icon={Receipt} title="Margem · IVA" meta={sale ? 'PERSISTIDO' : 'PROJEÇÃO'} />
 
-  <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+  <div class="profit-summary p-5 grid gap-4">
     <div>
       <div
         class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mb-1.5"
@@ -84,7 +84,7 @@
 
   <!-- Bottom row: VAT, optional commission and real profit. Show the commission column only when it has a value so cash sales retain the cleaner two-column layout. -->
   <div
-    class="grid {hasCommission ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'} px-5 pb-5 gap-4 pt-1"
+    class="profit-results grid px-5 pb-5 gap-4 pt-1"
   >
     <div class="border-t border-[var(--color-border)] pt-4">
       <div
@@ -133,3 +133,19 @@
     </div>
   </div>
 </section>
+
+<style>
+  /* Keep the shared num-value typography and currency formatter used throughout the CRM. */
+  .profit-summary {grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));}
+  .profit-results {grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));}
+  .profit-summary > div, .profit-results > div {min-width: 0;}
+  .profit-card .num-value {line-height: 1.3;overflow-wrap: anywhere;}
+  .profit-summary .num-value {font-size: 20px;}
+  .profit-results .num-value {font-size: 24px;}
+  .profit-results > div:last-child .num-value {font-size: 28px;}
+  @media (max-width: 600px) {
+    .profit-summary .num-value {font-size: 18px;}
+    .profit-results .num-value {font-size: 22px;}
+    .profit-results > div:last-child .num-value {font-size: 26px;}
+  }
+</style>

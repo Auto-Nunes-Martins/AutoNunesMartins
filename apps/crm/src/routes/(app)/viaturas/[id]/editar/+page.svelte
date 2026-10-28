@@ -49,6 +49,16 @@
   }
   onDestroy(() => answerConfirmation(false));
   let root: HTMLElement;
+  let publicationOpen = $state(false);
+  const publicationEditorId = $props.id();
+  async function togglePublication() {
+    publicationOpen = !publicationOpen;
+    if (!publicationOpen) return;
+    await tick();
+    const editor = document.getElementById(publicationEditorId);
+    editor?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+    editor?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  }
   let savePhase = $state(0), preparedPhotos = $state(0), photoTotal = $state(0);
   let deleting = $state(false);
   const v = $derived(data.vehicle);
@@ -334,13 +344,19 @@
       >← Voltar à ficha da viatura</a
     ><ItalicHero text="Editar" accent=" {data.vehicle.brand} {data.vehicle.model}" size="lg" />
     <p class="edit-note">
-      Guardar alterações aplica os dados, as fotografias e as escolhas de publicação. Nenhuma alteração
-      desta edição é aplicada antes de guardar.
+      Edite a ficha e as fotografias. As escolhas de publicação no website também são aplicadas ao guardar.
     </p>
   </div>
-  <div class="edit-save edit-save-top">
-    <p role="status">{saving ? progress || 'A guardar…' : needsReload ? 'Recarregue a ficha para continuar.' : dirty ? 'Alterações por guardar' : 'Sem alterações por guardar'}</p>
-    <div><button type="button" class="primary" disabled={saving || deleting || needsReload || !dirty} onclick={() => void saveAll()}>{saving ? 'A guardar…' : 'Guardar alterações'}</button></div>
+  <div id="vehicle-edit-actions" class="edit-save edit-save-top">
+    <div class="edit-state">
+      <p role="status">{saving ? progress || 'A guardar…' : needsReload ? 'Recarregue a ficha para continuar.' : dirty ? `Alterações por guardar${removedCount ? ` · ${removedCount} fotografia(s) por eliminar` : ''}` : 'Sem alterações por guardar'}</p>
+      <span class="publication-state">{publicDirty ? 'Publicação por guardar' : baseline.webPublished ? (['AVAILABLE', 'RESERVED'].includes(baseline.status) && !baseline.sale && !baseline.soldDate ? 'Publicada no website' : 'Oculta no website devido ao estado ou venda') : 'Visível apenas no CRM'}</span>
+    </div>
+    <div class="edit-actions">
+      <button type="button" class="publication-trigger" aria-controls={publicationEditorId} aria-expanded={publicationOpen} disabled={saving || deleting || needsReload} onclick={() => void togglePublication()}>{baseline.webPublished ? 'Gerir publicação' : 'Publicar no website'}</button>
+      <button type="button" disabled={saving || deleting} onclick={discard}>Cancelar e voltar</button>
+      <button type="button" class="primary" disabled={saving || deleting || needsReload || !dirty} onclick={() => void saveAll()}>{saving ? 'A guardar…' : 'Guardar alterações'}</button>
+    </div>
   </div>
   {#if saving}<VehicleSaveProgress phase={savePhase} completed={preparedPhotos} total={photoTotal} label={progress || 'A guardar as alterações…'} />{/if}
   {#if editIssues.length}<div class="edit-errors" role="alert">
@@ -357,6 +373,8 @@
   {#key revision}
     {@const values = initial(data.vehicle)}
     <WebPublicationPanel
+      bind:publicationOpen
+      editorId={publicationEditorId}
       unified
       managePhotos
       vehicle={data.vehicle}
@@ -407,7 +425,7 @@
             : 'Sem alterações por guardar.'}
     </p>
     <div>
-      <button type="button" disabled={saving} onclick={discard}>Cancelar e voltar</button><button
+      <a class="edit-top-link" href="#vehicle-edit-actions">Voltar às ações do topo ↑</a><button
         type="button"
         class="primary"
         disabled={saving || deleting || needsReload || !dirty}
@@ -447,7 +465,11 @@
     margin-inline: auto;
     min-width: 0;
   }
-  .edit-save-top { position: sticky; top: 76px; z-index: 15; background: var(--color-bg-elevated); box-shadow: 0 6px 18px #0001; }
+  .edit-save-top { position: sticky; top: 76px; z-index: 15; background: var(--color-bg-elevated); box-shadow: 0 6px 18px #0001; scroll-margin-top: 88px; flex-wrap: wrap; }
+  .edit-save .edit-state {display: grid;grid-template-columns: minmax(0, 1fr);gap: 4px;min-width: 0;flex: 1 1 200px;}
+  .publication-state {font-size: 12px;color: var(--color-text-muted);}
+  .edit-actions {flex-shrink: 0;}
+  .edit-top-link {display: inline-flex;align-items: center;min-height: 44px;font-size: 13px;color: var(--color-text-muted);}
   .edit-errors {
     padding: 16px;
     border: 1px solid var(--color-warning);
@@ -534,6 +556,7 @@
     outline-offset: 3px;
   }
   @media (max-width: 600px) {
+    .edit-save .edit-state {flex: 0 1 auto;}
     .edit-save {
       align-items: stretch;
       flex-direction: column;
@@ -542,7 +565,8 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
     }
-    .edit-save-top > div { display: block; }
+    .edit-save-top .edit-actions {display: grid;grid-template-columns: 1fr 1fr;}
+    .edit-save-top .publication-trigger {grid-column: 1 / -1;}
     .edit-save-top button { width: 100%; }
   }
 </style>

@@ -6,7 +6,7 @@ Pedido do proprietário de 28 de outubro de 2026: **todas as fotografias guardad
 - `Vehicle.photos` é a única fonte de ordem, capa e conteúdo da galeria. A primeira fotografia válida é a principal tanto no CRM como no anúncio. O limite continua a ser 20 fotografias e os caminhos continuam a ser validados quanto à pertença à viatura.
 - Numa viatura já publicada, as fotografias adicionadas ficam públicas quando são guardadas. Reordenar atualiza a ordem e a capa; eliminar retira a fotografia da lista pública. Nos fluxos com rascunho, tudo é aplicado na mesma transação ao guardar.
 - O destaque editorial da homepage pode escolher qualquer fotografia atual da viatura elegível. A escolha do destaque não exclui fotografias da galeria nem muda a capa da viatura. Se essa fotografia for eliminada, o destaque não é substituído silenciosamente.
-- Os controlos de inclusão/exclusão individual foram removidos. Os indicadores mostram o estado global guardado ou «Por guardar» para novos ficheiros do rascunho. A prévia inclui a lista completa.
+- Os controlos de inclusão/exclusão individual foram removidos. O estado de publicação aparece ao nível da viatura. Nos cartões mantêm-se apenas capa, ordem e «Por guardar» para novos ficheiros do rascunho; não há selos individuais de publicação. A prévia inclui a lista completa.
 
 ## Compatibilidade e migração
 
@@ -67,3 +67,14 @@ Avançar ou recuar uma ou duas posições mantém o slide horizontal existente, 
 `test:fullscreen-transitions` aprovado nos quatro cenários Chrome (1440/390 px × movimento normal/reduzido), com 16 testes unitários relevantes e Svelte check sem erros/avisos.
 
 A faixa inline deixou de mostrar números sobre as miniaturas fotográficas. Conserva os nomes acessíveis numerados, o contador da fotografia principal e a chamada de contacto. A faixa fullscreen permanece igual.
+
+## CRM: edição e consulta da viatura — 28/10/2026
+
+- As ações de edição ficam juntas na barra superior: acesso a «Publicar no website»/«Gerir publicação», «Cancelar e voltar» e «Guardar alterações». A publicação abre um painel apenas quando pedida, sem alterar a opção de publicar nem enviar pedidos. Os formulários permanecem montados ao fechar, preservando rascunhos, validação e FormData. Erros públicos reabrem o painel através do disclosure nativo e recebem foco. No fundo ficam guardar e o acesso às ações do topo.
+- Na consulta, despesas ficam na coluna lateral, ao lado da fotografia e imediatamente abaixo de documentos pendentes; em ecrãs estreitos usam os cartões responsivos existentes. Adicionar/editar/eliminar, confirmação e mensagens conservam os mesmos callbacks. O cabeçalho adapta o número de registos e mantém o título legível. Margem/IVA permanece depois da grelha principal. O cartão financeiro ajusta espaçamento, tamanhos e número de colunas, conservando `num-value`, `formatEUR`, valores, sinais, casas decimais e fórmulas. A fonte numérica partilhada com vendas, listas e dashboard não foi alterada.
+- Foram retirados os selos/checkmarks «No site», «CRM» e «Com a publicação» de imagens, miniaturas e cartões de organização em todos os consumidores CRM. Permanecem capa/principal, ordem, carregamento, erros e rascunhos por guardar. A situação do website aparece uma vez no cabeçalho da viatura e no editor global. `publicPhotoPaths` só permanece no contrato e adaptação do servidor por compatibilidade; nenhuma vista o consulta. Selecionar destaques editoriais continua independente da publicação global das fotografias.
+- A consulta não mostra instruções de navegação nem texto de formatos/tamanho/otimização. Os modos de upload mantêm a informação existente JPEG/PNG/WebP, 20 MB e otimização, sem mudar limites nem reprocessar ficheiros. Os controlos conservam nomes acessíveis e tooltips.
+
+Verificação Chrome com dados e endpoints fictícios: oito cenários de edição/detalhe (desktop/mobile × claro/escuro), incluindo guardar/publicar/retirar publicação, falha com retenção, erro público num painel fechado, cancelar/descartar, elegibilidade, confirmação sem fotografia, despesas adicionar/repetir/editar/eliminar, valores negativos e longos, fontes partilhadas e ausência de overflow. Quatro cenários adicionais do editor de fotografias verificam drag pela imagem e corpo, touch/teclado, capa, adicionar/eliminar e scroll. Screenshots de barras de ações, despesas e finanças verificadas. Nenhuma alteração de dados reais, API, fórmulas ou esquema.
+
+Checks finais desta revisão CRM: 93 testes unitários relevantes, 12 cenários Chrome, Svelte check sem erros/avisos e build de produção concluída.
