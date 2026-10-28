@@ -1,0 +1,36 @@
+export {default as SignOutButton} from './SignOut.svelte';
+const isBrowser = typeof window !== 'undefined';
+const controls = { calls: [], nextError: '', needsVerification: false, verified: false, mfa: false, failReload: false, delay: 20 };
+const pause = () => new Promise(r=>setTimeout(r,controls.delay));
+const error = (code,paramName) => ({errors:[{code,meta:{paramName}}]});
+async function call(name) {
+  controls.calls.push(name); await pause();
+  if(controls.nextError){const code=controls.nextError;controls.nextError='';throw error(code,code.includes('identifier')?'username':code.includes('code')?'code':undefined);}
+  if(controls.needsVerification&&!controls.verified)throw error('session_reverification_required');
+}
+let ctx = $state({isLoaded:true,user:null,session:null,clerk:null});
+const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="red"/></svg>');
+const address = (email,id='email-'+Math.random()) => ({id,emailAddress:email,verification:{status:'unverified'},linkedTo:[],
+  async prepareVerification(){await call('email.prepare');return this;},
+  async attemptVerification({code}){await call('email.attempt');if(code!=='123456')throw error('form_code_incorrect','code');this.verification.status='verified';return this;}
+});
+const primary=address('goncalo@example.test','email-primary');primary.verification.status='verified';
+const sessions=[{id:'session-current',status:'active',lastActiveAt:new Date('2026-10-28T00:00:00Z'),latestActivity:{browserName:'Chrome',deviceType:'Computador'}},{id:'session-other',status:'active',lastActiveAt:new Date('2026-10-27T00:00:00Z'),latestActivity:{browserName:'Safari',deviceType:'Telemóvel'},async revoke(){await call('session.revoke');this.status='revoked';return this;}}];
+ctx.user={id:'user-fixture',firstName:'Gonçalo',lastName:'Almeida',fullName:'Gonçalo Almeida',username:'goncalo',passwordEnabled:true,hasImage:false,imageUrl:'',emailAddresses:[primary],primaryEmailAddressId:primary.id,externalAccounts:[],twoFactorEnabled:false,
+  async update(payload){await call('user.update');Object.assign(ctx.user,payload);ctx.user.fullName=[ctx.user.firstName,ctx.user.lastName].filter(Boolean).join(' ');return ctx.user;},
+  async reload(){controls.calls.push('user.reload');await pause();if(controls.failReload)throw new Error('read failure');return ctx.user;},
+  async setProfileImage({file}){await call('user.image');ctx.user.hasImage=!!file;ctx.user.imageUrl=file?image:'';return {publicUrl:ctx.user.imageUrl};},
+  async updatePassword(){await call('user.password');ctx.user.passwordEnabled=true;return ctx.user;},
+  async createEmailAddress({email}){await call('user.email');const a=address(email);ctx.user.emailAddresses.push(a);return ctx.user.emailAddresses.at(-1);},
+  async getSessions(){await pause();return sessions;}
+};
+const verification = (status='needs_first_factor') => ({status,level:'multi_factor',supportedFirstFactors:[{strategy:'password'},{strategy:'email_code',emailAddressId:primary.id,safeIdentifier:'g***@example.test'}],supportedSecondFactors:[{strategy:'totp'},{strategy:'backup_code'}]});
+ctx.session={id:'session-current',async getToken(){controls.calls.push('token.refresh');return 'fixture-only';},
+  async startVerification(){controls.calls.push('verification.start');return verification();},
+  async prepareFirstFactorVerification(){controls.calls.push('verification.prepare');return verification();},
+  async attemptFirstFactorVerification(params){controls.calls.push('verification.first');if(params.password!=='Correct!12345'&&params.code!=='123456')throw error('form_code_incorrect','verification');if(controls.mfa)return verification('needs_second_factor');controls.verified=true;return verification('complete');},
+  async attemptSecondFactorVerification(params){controls.calls.push('verification.second');if(params.code!=='654321')throw error('form_code_incorrect','verification');controls.verified=true;return verification('complete');}
+};
+ctx.clerk={__internal_environment:{userSettings:{attributes:{first_name:{enabled:true,required:true},last_name:{enabled:true,required:false},username:{enabled:true,required:true},email_address:{enabled:true,required:true,verifications:['email_code']},password:{enabled:true}},usernameSettings:{min_length:4,max_length:20},passwordSettings:{min_length:10,max_length:64,require_numbers:true,require_uppercase:true,require_lowercase:true,require_special_char:true,allowed_special_characters:'!@',disable_hibp:false,show_zxcvbn:true}}},openUserProfile(){controls.calls.push('advanced.open');}};
+if(isBrowser)window.accountReview={ctx,controls};
+export const useClerkContext=()=>ctx;

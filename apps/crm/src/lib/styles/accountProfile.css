@@ -1,0 +1,39 @@
+.account-profile {display:grid;gap:20px;min-width:0;}
+.account-intro {display:flex;align-items:center;justify-content:space-between;gap:20px;}
+.account-eyebrow {font:600 10px var(--font-mono);text-transform:uppercase;letter-spacing:.12em;color:var(--color-text-muted);}
+.account-intro h2,.account-verification h2 {font:italic 700 30px/1.15 var(--font-display);margin:6px 0 8px;}
+.account-profile p,.account-verification p {font-size:13px;line-height:1.6;color:var(--color-text-muted);overflow-wrap:anywhere;}
+.account-security-note {display:inline-flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap;color:var(--color-success);}
+.account-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:20px;}
+.account-form {display:grid;gap:16px;padding:22px;min-width:0;}
+.account-form fieldset {display:grid;gap:12px;min-width:0;border:0;padding:0;margin:0;}
+.account-form label,.account-form legend {display:block;font-size:12px;font-weight:600;color:var(--color-text);}
+.account-form input:not([type=checkbox]):not([type=file]) {width:100%;min-width:0;min-height:44px;padding:10px 12px;background:var(--color-bg-1);border:1px solid var(--color-border-strong);border-radius:var(--radius-btn);font-size:14px;color:var(--color-text);}
+.account-form input:focus-visible,.account-form button:focus-visible,.account-upload:has(+input:focus-visible) {outline:2px solid var(--color-red);outline-offset:3px;}
+.account-form input[aria-invalid=true] {border-color:var(--color-danger)!important;}
+.account-form input:disabled {opacity:.6;}
+.account-field-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.account-field-grid>div {display:grid;gap:8px;}
+.account-actions,.account-factor-options {display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.account-avatar {width:96px;height:96px;display:grid;place-items:center;border-radius:var(--radius-card);overflow:hidden;background:linear-gradient(135deg,var(--color-red),var(--color-red-deep));color:white;font:italic 700 32px var(--font-display);}
+.account-avatar img {display:block;width:100%;height:100%;object-fit:cover;}
+.account-photo-form h3 {font:600 20px var(--font-display);overflow-wrap:anywhere;}
+.account-upload {display:inline-flex!important;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid var(--color-border-strong);border-radius:var(--radius-btn);cursor:pointer;}
+.account-form fieldset:disabled .account-upload {pointer-events:none;opacity:.5;}
+.account-policy {padding:14px;background:var(--color-bg-2);border-left:2px solid var(--color-border-strong);font-size:12px;line-height:1.6;}
+.account-policy ul {list-style:disc;padding-left:18px;}
+.account-check {display:flex!important;align-items:center;gap:10px;min-height:44px;}
+.account-check input {width:18px;height:18px;accent-color:var(--color-red);flex:none;}
+.account-text-action {display:inline-flex;align-items:center;gap:7px;min-height:44px;font-size:12px;color:var(--color-text-muted);text-decoration:underline;text-underline-offset:3px;justify-self:start;}
+.account-list {display:grid;gap:0;min-width:0;}
+.account-list>li {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--color-border);min-width:0;}
+.account-list strong {font-size:13px;font-weight:600;overflow-wrap:anywhere;}
+.account-list>li>div {min-width:0;}
+.account-nested-form {padding:0;}
+.account-success:empty {display:none;}
+.account-success,.account-notice {padding:12px 16px;border:1px solid var(--color-border-strong);border-left:3px solid var(--color-success);border-radius:var(--radius-btn);background:var(--color-bg-1);}
+.account-factor-options button {padding:10px 12px;min-height:44px;border:1px solid var(--color-border-strong);border-radius:var(--radius-btn);font-size:13px;}
+.account-factor-options button[aria-pressed=true] {border-color:var(--color-red);background:color-mix(in srgb,var(--color-red) 10%,transparent);}
+.account-verification .account-form {padding:0;}
+@media(max-width:900px) {.account-grid {grid-template-columns:1fr;}}
+@media(max-width:480px) {.account-intro,.account-list>li {align-items:flex-start;flex-direction:column;}.account-form {padding:18px;}.account-nested-form {padding:0;}.account-field-grid {grid-template-columns:1fr;}.account-intro h2 {font-size:28px;}.account-actions {gap:8px;}}

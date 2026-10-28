@@ -1,0 +1,105 @@
+// Real profile/sidebar components; all Clerk account resources are isolated fixtures.
+import { after, before, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, readFile, rm, realpath } from 'node:fs/promises';
+import { createServer as httpServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { createServer } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import tailwindcss from '@tailwindcss/vite';
+import { chromium } from '@playwright/test';
+
+const appRoot = fileURLToPath(new URL('../', import.meta.url));
+let directory, vite, server, browser, origin;
+before(async () => {
+  await mkdir(path.join(appRoot,'.svelte-kit'),{recursive:true});
+  directory = await mkdtemp(path.join(appRoot,'.svelte-kit/account-profile-'));
+  const write = (name,value) => writeFile(path.join(directory,name),value);
+  await write('package.json','{"type":"module"}');
+  await write('review.css',"@import '../../src/app.css';\n@source '../../src';");
+  await write('App.svelte',`<script>import Sidebar from '$lib/components/shell/Sidebar.svelte';import AccountProfile from '$lib/components/account/AccountProfile.svelte';import {mobileDrawer} from '$lib/stores/sidebar';import {onMount} from 'svelte';onMount(()=>mobileDrawer.close());</script><Sidebar/><main style="margin-left:300px;padding:30px;max-width:1440px"><AccountProfile/></main><style>@media(max-width:767px){main{margin-left:0!important;padding:18px!important;}}</style>`);
+  await write('clerk.svelte.js', await readFile(path.join(appRoot,'test/account-profile.mock.txt'),'utf8'));
+  await write('SignOut.svelte','<script>let {children}=$props();</script><button>{@render children?.()}</button>');
+  await write('stores.js',"import {readable} from 'svelte/store';export const page=readable({url:new URL('http://fixture/dashboard')});");
+  await write('environment.js','export const browser=true;');
+  await write('client.js',`import './review.css';import {hydrate} from 'svelte';import App from './App.svelte';hydrate(App,{target:document.querySelector('#app'),props:{data:window.reviewData,detail:window.reviewDetail,mode:window.reviewMode}});window.reviewReady=true;`);
+  await write('ssr.js',`import {render} from 'svelte/server';import App from './App.svelte';export const html=(data,detail,mode)=>render(App,{props:{data,detail,mode}}).body;`);
+  await write('paths.js',"export const base='';");
+  await write('navigation.js',"export const goto=async()=>{};export const invalidateAll=async()=>{if(typeof window!=='undefined')window.dispatchEvent(new Event('fixture-invalidate'));};");
+  await write('public.js',"export const PUBLIC_WEBSITE_URL='http://website.fixture';");
+  await write('session.js','export const sessionFetch=(...args)=>fetch(...args);');
+  await write('enhance.js',`export function enhance(form,callback){const submit=async event=>{event.preventDefault();let cancelled=false;const handler=await callback({formElement:form,formData:new FormData(form),cancel(){cancelled=true;}});if(cancelled)return;const response=await fetch(form.action,{method:'POST',body:new FormData(form)});const result=await response.json();await handler?.({result,update:async()=>{window.dispatchEvent(new Event('fixture-invalidate'));}});};form.addEventListener('submit',submit);return {destroy(){form.removeEventListener('submit',submit);}};}`);
+  server = httpServer(async(req,res)=>{
+    if(req.url.startsWith('/viaturas/')){res.writeHead(200,{'content-type':'text/html'});res.end('<h1>Ficha de teste</h1>');return;}
+    if(req.url==='/'||req.url.startsWith('/?')||req.url.startsWith('/site/destaques')){
+      try {const mode='',data={},detail=false,module=await vite.ssrLoadModule('/ssr.js');const html=await vite.transformIndexHtml('/',`<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><script>window.reviewData=${JSON.stringify(data)};window.reviewDetail=${detail};window.reviewMode=${JSON.stringify(mode)}</script><div id="app">${module.html(data,detail,mode)}</div><script type="module" src="/client.js"></script></body></html>`);res.writeHead(200,{'content-type':'text/html'});res.end(html);}catch(e){res.writeHead(500);res.end(String(e));}return;
+    }
+    vite.middlewares(req,res);
+  });
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));origin='http://127.0.0.1:'+server.address().port;
+  vite = await createServer({configFile:false,root:directory,publicDir:path.join(appRoot,'static'),plugins:[tailwindcss(),svelte({configFile:false})],
+    ssr:{noExternal:['lucide-svelte','svelte-sonner']},resolve:{alias:[
+      {find:'svelte-clerk',replacement:path.join(directory,'clerk.svelte.js')},
+      {find:'$app/stores',replacement:path.join(directory,'stores.js')},
+      {find:'$app/environment',replacement:path.join(directory,'environment.js')},
+      {find:'$detail',replacement:path.join(appRoot,'src/routes/(app)/viaturas/[id]/+page.svelte')},
+      {find:'$edit',replacement:path.join(appRoot,'src/routes/(app)/viaturas/[id]/editar/+page.svelte')},
+      {find:'$lib/auth/session',replacement:path.join(directory,'session.js')},
+      {find:'$lib/auth/enhance',replacement:path.join(directory,'enhance.js')},
+      {find:'$app/navigation',replacement:path.join(directory,'navigation.js')},
+      {find:'$app/paths',replacement:path.join(directory,'paths.js')},
+      {find:'$env/static/public',replacement:path.join(directory,'public.js')},
+      {find:'$lib',replacement:path.join(appRoot,'src/lib')},
+    ]},server:{middlewareMode:true,hmr:{server,host:'127.0.0.1',clientPort:Number(new URL(origin).port)},fs:{allow:[path.resolve(appRoot,'../..'),await realpath(path.resolve(appRoot,'../../node_modules'))]}},optimizeDeps:{entries:['client.js']},logLevel:'error'});
+  browser=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHROMIUM_CHANNEL||'chrome'});
+});
+after(async()=>{
+  await browser?.close();await vite?.close();if(server)await new Promise(r=>server.close(r));
+  if(directory&&path.dirname(directory)===path.join(appRoot,'.svelte-kit')&&path.basename(directory).startsWith('account-profile-'))await rm(directory,{recursive:true,force:true});
+});
+
+for(const width of [1366,390])for(const theme of ['light','dark'])test('custom account confirmed flows '+width+' '+theme,{timeout:120000},async()=>{
+ const context=await browser.newContext({viewport:{width,height:1000}}),page=await context.newPage();page.setDefaultTimeout(15000);
+ const set=async props=>page.evaluate(p=>Object.assign(window.accountReview.controls,p),props);
+ const count=async name=>page.evaluate(n=>window.accountReview.controls.calls.filter(c=>c===n).length,name);
+ const fillPasswords=async(current='Correct!12345',next='NewCorrect!12345',confirm=next)=>{await page.getByLabel('Palavra-passe atual',{exact:true}).fill(current);await page.getByLabel('Nova palavra-passe',{exact:true}).fill(next);await page.getByLabel('Confirmar nova palavra-passe',{exact:true}).fill(confirm);};
+ try{
+  await page.goto(origin);await page.waitForFunction(()=>window.reviewReady);await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
+  await page.getByRole('heading',{name:'O seu perfil'}).waitFor();
+  await page.getByLabel('Nome *',{exact:true}).fill('Gonçalo Novo');await set({delay:300});await page.getByRole('button',{name:'Guardar perfil',exact:true}).click();
+  assert.equal(await page.getByLabel('Nome *',{exact:true}).isDisabled(),true);await page.getByRole('status').filter({hasText:'Perfil atualizado.'}).waitFor();assert.equal(await count('user.update'),1);assert.equal(await page.locator('.user-name').textContent(),'goncalo');assert.equal(await page.locator('.account-photo-form h3').textContent(),'Gonçalo Novo Almeida');
+  await set({delay:20,nextError:'form_identifier_exists'});await page.getByLabel('Nome de utilizador *',{exact:true}).fill('ocupado');await page.getByRole('button',{name:'Guardar perfil',exact:true}).click();
+  await page.locator('[data-form-error-summary]').waitFor();assert.equal(await page.getByLabel('Nome de utilizador *',{exact:true}).inputValue(),'ocupado');await page.locator('[data-form-error-summary] a').click();assert.equal(await page.getByLabel('Nome de utilizador *',{exact:true}).evaluate(n=>n===document.activeElement),true);
+  await set({needsVerification:true,verified:false,mfa:true});await page.getByLabel('Nome de utilizador *',{exact:true}).fill('novo_nome');await page.getByRole('button',{name:'Guardar perfil',exact:true}).click();
+  const dialog=page.getByRole('dialog');await dialog.waitFor();await dialog.getByRole('button',{name:'Código por email',exact:false}).click();await dialog.getByLabel('Código de confirmação',{exact:true}).fill('123456');await dialog.getByRole('button',{name:'Confirmar identidade',exact:true}).click();await dialog.getByRole('button',{name:'Aplicação autenticadora',exact:true}).click();await dialog.getByLabel('Código de confirmação',{exact:true}).fill('654321');await dialog.getByRole('button',{name:'Confirmar identidade',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('dialog').open);await page.getByRole('status').filter({hasText:'Perfil atualizado.'}).waitFor();assert.equal(await page.locator('.user-name').textContent(),'novo_nome');assert.equal(await count('verification.second'),1);
+  await fillPasswords('', 'short', 'different');await page.getByRole('button',{name:'Alterar palavra-passe',exact:true}).click();assert.equal(await count('user.password'),0);assert.ok(await page.locator('#account-new-password[aria-invalid=true]').count());
+  await fillPasswords('Wrong!12345');await set({nextError:'form_password_incorrect'});await page.getByRole('button',{name:'Alterar palavra-passe',exact:true}).click();await page.locator('#account-current-password[aria-invalid=true]').waitFor();assert.equal(await page.getByLabel('Nova palavra-passe',{exact:true}).inputValue(),'NewCorrect!12345');
+  await set({nextError:'form_password_pwned'});await fillPasswords();await page.getByRole('button',{name:'Alterar palavra-passe',exact:true}).click();await page.getByText('Esta palavra-passe apareceu numa fuga de dados. Escolha outra.',{exact:false}).first().waitFor();
+  await fillPasswords();await page.getByRole('button',{name:'Alterar palavra-passe',exact:true}).click();await page.getByRole('status').filter({hasText:'Palavra-passe atualizada.'}).waitFor();assert.equal(await page.getByLabel('Nova palavra-passe',{exact:true}).inputValue(),'');assert.equal(await page.getByLabel('Palavra-passe atual',{exact:true}).inputValue(),'');
+  const upload=page.locator('#account-avatar-file');await upload.setInputFiles({name:'bad.svg',mimeType:'image/svg+xml',buffer:Buffer.from('<svg/>')});await page.locator('.account-photo-form [data-form-error-summary]').waitFor();assert.equal(await count('user.image'),0);
+  await upload.setInputFiles({name:'big.png',mimeType:'image/png',buffer:Buffer.alloc(5*1024*1024+1)});await page.locator('.account-photo-form [data-form-error-summary]').waitFor();assert.equal(await count('user.image'),0);
+  await upload.setInputFiles({name:'broken.png',mimeType:'image/png',buffer:Buffer.from('not an image')});await page.locator('.account-photo-form [data-form-error-summary]').waitFor();assert.equal(await count('user.image'),0);
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lXcAAAAASUVORK5CYII=','base64');await upload.setInputFiles({name:'avatar.png',mimeType:'image/png',buffer:png});await page.getByAltText('Pré-visualização da nova fotografia').waitFor();await set({nextError:'image_upload_failed'});await page.getByRole('button',{name:'Guardar fotografia',exact:true}).click();await page.locator('.account-photo-form [data-form-error-summary]').waitFor();assert.equal(await page.getByAltText('Pré-visualização da nova fotografia').count(),1);await page.getByRole('button',{name:'Guardar fotografia',exact:true}).click();await page.getByRole('status').filter({hasText:'Fotografia atualizada.'}).waitFor();assert.equal(await page.getByAltText('A sua fotografia').count(),1);assert.equal(await page.locator('.user-avatar img').count(),1);
+  await page.getByRole('button',{name:'Remover fotografia',exact:true}).click();await page.getByRole('status').filter({hasText:'Fotografia removida.'}).waitFor();assert.equal(await page.locator('.user-avatar img').count(),0);
+  await page.getByLabel('Adicionar novo email',{exact:true}).fill('novo@example.test');await page.getByRole('button',{name:'Enviar código de verificação',exact:true}).click();await page.locator('#account-email-code').waitFor();await page.locator('#account-email-code').fill('000000');await page.getByRole('button',{name:'Confirmar email',exact:true}).click();await page.locator('#account-email-code[aria-invalid=true]').waitFor();await page.locator('#account-email-code').fill('123456');await page.getByRole('button',{name:'Confirmar email',exact:true}).click();await page.getByRole('status').filter({hasText:'Email verificado.'}).waitFor();await page.getByRole('button',{name:'Definir como principal',exact:true}).click();await page.getByRole('status').filter({hasText:'Email principal atualizado.'}).waitFor();assert.equal(await count('user.email'),1);
+  await page.getByRole('button',{name:'Terminar sessão',exact:true}).click();await page.getByRole('status').filter({hasText:'Sessão terminada.'}).waitFor();assert.equal(await count('session.revoke'),1);
+  await set({needsVerification:true,verified:false,mfa:false});await page.getByLabel('Nome de utilizador *',{exact:true}).fill('cancelado');await page.getByRole('button',{name:'Guardar perfil',exact:true}).click();await page.getByRole('dialog').waitFor();await page.getByRole('button',{name:'Cancelar confirmação',exact:true}).click();await page.getByText('Confirmação cancelada. A alteração não foi concluída.',{exact:false}).first().waitFor();assert.equal(await page.getByLabel('Nome de utilizador *',{exact:true}).inputValue(),'cancelado');
+  await set({needsVerification:false,failReload:true});await page.getByRole('button',{name:'Guardar perfil',exact:true}).click();await page.getByRole('button',{name:'Confirmar estado da conta',exact:true}).waitFor();const writes=await count('user.update');assert.equal(await page.getByRole('button',{name:'Guardar perfil',exact:true}).isDisabled(),true);await set({failReload:false});await page.getByRole('button',{name:'Confirmar estado da conta',exact:true}).click();await page.getByRole('status').filter({hasText:'Perfil atualizado.'}).waitFor();assert.equal(await count('user.update'),writes,'read retry does not repeat mutation');
+  await page.evaluate(()=>{window.accountReview.ctx.clerk.__internal_environment.userSettings.attributes.password.enabled=false;window.accountReview.ctx.user.passwordEnabled=false;window.accountReview.ctx.user.externalAccounts=[{provider:'Google'}];});await page.getByText('Esta conta usa Google.',{exact:false}).waitFor();assert.equal(await page.locator('#account-new-password').count(),0);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await page.screenshot({path:path.join(appRoot,'.svelte-kit/account-profile-'+width+'-'+theme+'.png'),fullPage:true});
+ }finally{await context.close();}
+});
+
+test('account capabilities and creating a password without an existing one',{timeout:90000},async()=>{
+ const context=await browser.newContext({viewport:{width:390,height:950}}),page=await context.newPage();
+ try {
+  await page.goto(origin);await page.waitForFunction(()=>window.reviewReady);
+  await page.evaluate(()=>{const r=window.accountReview;r.ctx.user.passwordEnabled=false;r.ctx.user.externalAccounts=[{provider:'Google'}];r.ctx.clerk.__internal_environment.userSettings.attributes.username.enabled=false;});
+  await page.getByRole('button',{name:'Criar palavra-passe',exact:true}).waitFor();assert.equal(await page.locator('#account-current-password').count(),0);assert.equal(await page.locator('#account-username').count(),0);
+  await page.getByLabel('Nova palavra-passe',{exact:true}).fill('NewCorrect!12345');await page.getByLabel('Confirmar nova palavra-passe',{exact:true}).fill('NewCorrect!12345');await page.getByRole('button',{name:'Criar palavra-passe',exact:true}).click();await page.getByRole('status').filter({hasText:'Palavra-passe atualizada.'}).waitFor();
+  await page.getByRole('button',{name:'Opções avançadas de segurança',exact:true}).click();assert.equal(await page.evaluate(()=>window.accountReview.controls.calls.filter(c=>c==='advanced.open').length),1);
+  await page.evaluate(()=>window.accountReview.ctx.clerk.__internal_environment=null);await page.getByText('Não foi possível obter as opções da sua conta.',{exact:false}).waitFor();assert.equal(await page.locator('#account-first-name').count(),0);assert.equal(await page.locator('#account-new-password').count(),0);
+ }finally{await context.close();}
+});

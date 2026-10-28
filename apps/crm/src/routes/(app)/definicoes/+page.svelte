@@ -1,9 +1,8 @@
 <script lang="ts">
   import { enhance } from '$lib/auth/enhance';
   import { toast } from 'svelte-sonner';
-  import { Moon, Palette, Settings as SettingsIcon, Sun, User as UserIcon } from 'lucide-svelte';
-  import { UserProfile } from 'svelte-clerk';
-  import { dark } from '@clerk/themes';
+  import { Moon, Palette, Settings as SettingsIcon, Sun } from 'lucide-svelte';
+  import AccountProfile from '$lib/components/account/AccountProfile.svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
@@ -18,36 +17,6 @@
   let { data }: Props = $props();
   let savingKey = $state<string | null>(null);
 
-  // baseTheme: dark switches Clerk's internal palette to dark when our app
-  // is dark, so all surfaces in <UserProfile> (left nav, page cards, form
-  // backgrounds, hover states, dividers) read clearly instead of clashing
-  // with our dark canvas. Reactive on $theme so toggling the theme picks
-  // up the new variant.
-  const clerkAppearance = $derived({
-    baseTheme: $theme === 'dark' ? dark : undefined,
-    variables: {
-      colorPrimary: '#E30613',
-      colorBackground: 'transparent',
-      colorText: $theme === 'dark' ? '#F4F4F2' : '#16161A',
-      colorInputBackground: $theme === 'dark' ? '#1B1C20' : '#FFFFFF',
-      colorInputText: $theme === 'dark' ? '#F4F4F2' : '#16161A',
-      colorTextSecondary: $theme === 'dark' ? '#A8A8A4' : '#5A5C61',
-      colorTextOnPrimaryBackground: '#FFFFFF',
-      colorNeutral: $theme === 'dark' ? '#FFFFFF' : '#16161A',
-      colorDanger: '#E30613',
-      colorSuccess: '#34C480',
-      colorWarning: '#E0A040',
-      borderRadius: '4.4px',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      fontFamilyButtons: 'Barlow, system-ui, sans-serif',
-    },
-    elements: {
-      rootBox: 'w-full',
-      card: 'bg-transparent shadow-none border-0',
-      navbar: 'bg-transparent border-r border-[var(--color-border)]',
-      pageScrollBox: 'bg-transparent',
-    },
-  });
 </script>
 
 <svelte:head>
@@ -180,11 +149,5 @@
     {/if}
   </Panel>
 
-  <!-- Perfil -->
-  <Panel>
-    <PanelHeader icon={UserIcon} title="Perfil" />
-    <div class="p-5">
-      <UserProfile appearance={clerkAppearance} />
-    </div>
-  </Panel>
+  <AccountProfile />
 </section>
