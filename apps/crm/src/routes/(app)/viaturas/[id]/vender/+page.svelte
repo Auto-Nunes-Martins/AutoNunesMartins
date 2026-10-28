@@ -17,6 +17,7 @@
   import { toast } from 'svelte-sonner';
   import { ArrowRightLeft, Calendar, Search, Tag, User as UserIcon } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
+  import BrandPlus from '$lib/components/brand/icons/BrandPlus.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import Button from '$lib/components/common/Button.svelte';
@@ -361,9 +362,12 @@
     <div class="sale-fields crm-form-layout lg:col-span-8 space-y-6">
       <Panel>
         <PanelHeader icon={UserIcon} title="Cliente">
-          {#snippet actions()}<Button variant="primary" size="sm" onclick={openCustomer}
-              >Novo cliente</Button
-            >{/snippet}
+          {#snippet actions()}
+            <Button variant="primary" size="sm" onclick={openCustomer}>
+              <BrandPlus class="h-4 w-4" />
+              Adicionar cliente
+            </Button>
+          {/snippet}
         </PanelHeader>
         <div class="p-5 space-y-3">
           {#if selectedCustomer}

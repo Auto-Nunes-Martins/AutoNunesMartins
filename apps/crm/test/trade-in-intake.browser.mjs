@@ -127,7 +127,7 @@ for (const width of [390, 1366])
       );
       await page.goto(origin);
       await page.waitForFunction(() => window.reviewReady);
-      const add = page.getByRole('button', { name: 'Novo cliente', exact: true });
+      const add = page.getByRole('button', { name: 'Adicionar cliente', exact: true });
       assert.equal(
         await add.evaluate((e) => getComputedStyle(e).backgroundColor),
         'rgb(216, 32, 39)',
