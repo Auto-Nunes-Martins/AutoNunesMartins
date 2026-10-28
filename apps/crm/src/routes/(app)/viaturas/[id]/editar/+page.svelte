@@ -1,5 +1,6 @@
 <script lang="ts">
   import { sessionFetch } from '$lib/auth/session';
+  import { listNavigationCache } from '$lib/lists/navigationCache';
   import { crmPath } from '$lib/paths';
   import { onMount, onDestroy, tick, untrack } from 'svelte';
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
@@ -9,6 +10,8 @@
   import { vehicleSavedFeedback } from '$lib/components/vehicle/vehicleSaveFeedback';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
+  import WebsiteStatus from '$lib/components/vehicle/WebsiteStatus.svelte';
+  import { websiteVisibility } from '$lib/websiteVisibility';
   import VehicleForm from '$lib/components/vehicle/VehicleForm.svelte';
   import VehicleDeletePanel from '$lib/components/vehicle/VehicleDeletePanel.svelte';
   import WebPublicationPanel from '$lib/components/vehicle/WebPublicationPanel.svelte';
@@ -49,18 +52,10 @@
   }
   onDestroy(() => answerConfirmation(false));
   let root: HTMLElement;
-  let publicationOpen = $state(false);
   const publicationEditorId = $props.id();
-  async function togglePublication() {
-    publicationOpen = !publicationOpen;
-    if (!publicationOpen) return;
-    await tick();
-    const editor = document.getElementById(publicationEditorId);
-    editor?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
-    editor?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-  }
   let savePhase = $state(0), preparedPhotos = $state(0), photoTotal = $state(0);
   let deleting = $state(false);
+  let publicationIntent = $state<boolean | undefined>();
   const v = $derived(data.vehicle);
   let baseline = $state<VehicleDetailResponse>(
     untrack(() => JSON.parse(JSON.stringify(data.vehicle))),
@@ -146,12 +141,14 @@
       );
     return (await response.json()) as Pick<PageData, 'vehicle' | 'signedPhotos'>;
   }
-  async function saveAll() {
-    if (saving || deleting || needsReload || confirmationOpen || !dirty) return;
+  async function saveAll(published?: boolean) {
+    const changingPublication = published !== undefined && published !== baseline.webPublished;
+    if (saving || deleting || needsReload || confirmationOpen || (!dirty && !changingPublication)) return;
     const current = forms();
     if (!current.internal || !current.publication) return;
     const internal = new FormData(current.internal),
       publication = publicDraftFromForm(new FormData(current.publication));
+    if (published !== undefined) publication.published = published;
     const get = (key: string) => String(internal.get(key) ?? '');
     const details = {
       brand: get('brand'),
@@ -202,10 +199,12 @@
     )
       return;
     saving = true;
+    publicationIntent = published;
     savePhase = 0; preparedPhotos = 0; photoTotal = 0;
     await tick();
     root.querySelector<HTMLElement>('[data-save-progress]')?.scrollIntoView({ block: 'nearest' });
-    const publishing = publicDirty && publication.published;
+    const publishing = (publicDirty || changingPublication) && publication.published;
+    const removing = changingPublication && !publication.published;
     const previouslyPublished = baseline.webPublished;
     message = '';
     let committed = false,
@@ -261,7 +260,7 @@
           data: details,
           photos: orderedPhotos.map(resolvePath),
           uploadedPhotos: files.map((photo) => photo.uploadedPath!),
-          ...(publicDirty ? { publication: publicationData } : {}),
+          ...((publicDirty || changingPublication) ? { publication: publicationData } : {}),
         }),
       });
       saveResponseReceived = true;
@@ -276,17 +275,17 @@
         );
       }
       committed = true;
+      listNavigationCache.clear();
       const saved = await freshState();
       data = { ...data, ...saved };
       baseline = JSON.parse(JSON.stringify(saved.vehicle));
       photoDraft = initialPhotos();
       revision += 1;
       await invalidateAll().catch(() => {});
-      message =
-        'Todas as alterações foram guardadas. Todas as fotografias acompanham a publicação da viatura.';
-      vehicleSavedFeedback({ title: publishing ? (previouslyPublished ? 'Publicação atualizada' : 'Viatura publicada') : 'Alterações guardadas',
+      message = removing ? 'Viatura retirada do website. Alterações guardadas.' : publishing ? 'Viatura publicada no website. Alterações guardadas.' : 'Alterações guardadas.';
+      vehicleSavedFeedback({ title: removing ? 'Viatura retirada do website' : publishing ? (previouslyPublished ? 'Publicação atualizada' : 'Viatura publicada') : 'Alterações guardadas',
         brand: saved.vehicle.brand, model: saved.vehicle.model, year: saved.vehicle.year,
-        detail: publishing ? 'O website já reflete as alterações confirmadas.' : 'A ficha da viatura foi atualizada no CRM.',
+        detail: removing ? 'A ficha deixou de estar visível no website.' : publishing ? 'O website já reflete as alterações confirmadas.' : 'A ficha da viatura foi atualizada no CRM.',
         photo: saved.signedPhotos.find(photo => photo.path === saved.vehicle.photos[0]),
       });
     } catch (error) {
@@ -308,6 +307,7 @@
       toast.error(message);
     } finally {
       saving = false;
+      publicationIntent = undefined;
       progress = '';
       await tick();
       if (editIssues.length) markEditIssues(root, editIssues);
@@ -350,10 +350,11 @@
   <div id="vehicle-edit-actions" class="edit-save edit-save-top">
     <div class="edit-state">
       <p role="status">{saving ? progress || 'A guardar…' : needsReload ? 'Recarregue a ficha para continuar.' : dirty ? `Alterações por guardar${removedCount ? ` · ${removedCount} fotografia(s) por eliminar` : ''}` : 'Sem alterações por guardar'}</p>
-      <span class="publication-state">{publicDirty ? 'Publicação por guardar' : baseline.webPublished ? (['AVAILABLE', 'RESERVED'].includes(baseline.status) && !baseline.sale && !baseline.soldDate ? 'Publicada no website' : 'Oculta no website devido ao estado ou venda') : 'Visível apenas no CRM'}</span>
+      {#if needsReload}<span class="publication-state">Publicação por confirmar · recarregue a ficha.</span>{:else}<WebsiteStatus vehicle={baseline} />{/if}
+      {#if websiteVisibility(baseline).state === 'blocked'}<span class="publication-state">{websiteVisibility(baseline).detail}</span>{/if}
     </div>
     <div class="edit-actions">
-      <button type="button" class="publication-trigger" aria-controls={publicationEditorId} aria-expanded={publicationOpen} disabled={saving || deleting || needsReload} onclick={() => void togglePublication()}>{baseline.webPublished ? 'Gerir publicação' : 'Publicar no website'}</button>
+      <button type="button" class="publication-action" data-error-field="published" disabled={saving || deleting || needsReload} onclick={() => void saveAll(!baseline.webPublished)}>{saving && publicationIntent !== undefined ? (publicationIntent ? 'A publicar…' : 'A retirar…') : baseline.webPublished ? (dirty ? 'Guardar e retirar do website' : 'Retirar do website') : (dirty ? 'Guardar e publicar no website' : 'Publicar no website')}</button>
       <button type="button" disabled={saving || deleting} onclick={discard}>Cancelar e voltar</button>
       <button type="button" class="primary" disabled={saving || deleting || needsReload || !dirty} onclick={() => void saveAll()}>{saving ? 'A guardar…' : 'Guardar alterações'}</button>
     </div>
@@ -373,7 +374,6 @@
   {#key revision}
     {@const values = initial(data.vehicle)}
     <WebPublicationPanel
-      bind:publicationOpen
       editorId={publicationEditorId}
       unified
       managePhotos
@@ -469,6 +469,7 @@
   .edit-save .edit-state {display: grid;grid-template-columns: minmax(0, 1fr);gap: 4px;min-width: 0;flex: 1 1 200px;}
   .publication-state {font-size: 12px;color: var(--color-text-muted);}
   .edit-actions {flex-shrink: 0;}
+  .publication-action {font-weight: 600;border-color: var(--color-red);}
   .edit-top-link {display: inline-flex;align-items: center;min-height: 44px;font-size: 13px;color: var(--color-text-muted);}
   .edit-errors {
     padding: 16px;
@@ -566,7 +567,7 @@
       grid-template-columns: 1fr 1fr;
     }
     .edit-save-top .edit-actions {display: grid;grid-template-columns: 1fr 1fr;}
-    .edit-save-top .publication-trigger {grid-column: 1 / -1;}
+    .edit-save-top .publication-action {grid-column: 1 / -1;}
     .edit-save-top button { width: 100%; }
   }
 </style>

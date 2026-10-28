@@ -104,7 +104,7 @@
 
 </script>
 
-<p id={scrollId + '-instructions'} class="hint">Todas as fotografias acompanham a publicação global da viatura. A primeira é a foto principal. {#if onreorder}Arraste o cartão para ordenar, ou use Espaço e as setas. No telemóvel, mantenha premido antes de arrastar.{/if}</p>
+{#if onreorder}<p id={scrollId + '-instructions'} class="sr-only">Arraste o cartão para ordenar, ou use Espaço e as setas. No telemóvel, mantenha premido antes de arrastar.</p>{/if}
 {#each selected as path}<input type="hidden" name="vehiclePhotoPaths" value={path} {form} />{/each}
 <div class="photo-grid-shell" class:dense>
 <!-- svelte-ignore a11y_no_noninteractive_tabindex (The gallery region supports keyboard access.) -->

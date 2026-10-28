@@ -5,6 +5,10 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { apiJson } from './api.js';
 
 export interface VehicleListItem {
+  webPublished?: boolean;
+  publicSlug?: string | null;
+  publicPrice?: string | null;
+  sale?: { id: string } | null;
   id: string;
   brand: string;
   model: string;

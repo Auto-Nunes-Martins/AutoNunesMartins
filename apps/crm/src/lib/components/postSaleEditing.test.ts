@@ -37,6 +37,8 @@ const Empty = component('<span></span>');
 const Panel = component('<script>let {children} = $props();</script>{@render children?.()}');
 const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page.svelte'), {
   VehicleForm,
+  WebsiteStatus: Empty,
+  websiteVisibility: () => ({ state: 'private' }),
   Panel,
   ItalicHero: Empty,
   PhotoGallery: Empty,

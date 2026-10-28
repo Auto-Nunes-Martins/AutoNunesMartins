@@ -5,7 +5,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
   try {
-    return { editor: await apiJson<HighlightsEditor>(event, '/api/homepage-highlights') };
+    return { editor: await apiJson<HighlightsEditor>(event, '/api/homepage-highlights'), selectedVehicleId: event.url.searchParams.get('viatura') };
   } catch (err) {
     rethrowAuthError(err);
     error(503, 'Não foi possível carregar os destaques. Tente novamente.');

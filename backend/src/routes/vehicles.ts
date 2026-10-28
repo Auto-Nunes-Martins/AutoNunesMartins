@@ -97,6 +97,7 @@ router.get(
           return {
             ...v,
             purchasePrice: v.purchasePrice.toString(),
+            publicPrice: v.publicPrice?.toString() ?? null,
             salePrice: v.salePrice?.toString() ?? null,
             thumbnailUrl: primary ? (signed.get(primary) ?? null) : null,
             thumbnailOriginalUrl: primary ? (originalUrls.get(primary) ?? null) : null,

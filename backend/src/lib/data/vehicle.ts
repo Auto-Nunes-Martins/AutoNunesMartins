@@ -77,7 +77,7 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
     params.agedStock ? await appSettings.stockAgingDays() : 60,
   );
   // Bare-minimum select: only what VehicleTable + thumbnail logic actually use.
-  // No `_count` subquery, no Sale join — both were unused by the UI.
+  // Only the sale identity is needed to match public visibility, not the sale details.
   const [items, total] = await Promise.all([
     tx.vehicle.findMany({
       where,
@@ -100,6 +100,9 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
         soldDate: true,
         photos: true,
         webPublished:true,
+        publicSlug: true,
+        publicPrice: true,
+        sale: { select: { id: true } },
         pendingDocFlags: true,
         createdAt: true,
         updatedAt: true,

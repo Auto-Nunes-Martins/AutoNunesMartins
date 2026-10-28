@@ -1,10 +1,11 @@
 <script lang="ts">
   import {photoAttrs,photoFallback} from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
-  import { untrack } from 'svelte';
+  import { untrack, onMount } from 'svelte';
   import { enhance } from '$lib/auth/enhance';
   import { tick } from 'svelte';
-  import { formFeedback, markFormSaved } from '$lib/forms/formFeedback';
+  import { formFeedback, markFormSaved, refreshFormFeedback } from '$lib/forms/formFeedback';
+  import { prepareVehicleHighlight } from '$lib/highlightSelection';
   import { toast } from 'svelte-sonner';
   import { ArrowUp, ArrowDown, Check, Image, Plus, Search, Trash2 } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
@@ -12,14 +13,38 @@
   import Button from '$lib/components/common/Button.svelte';
   import type { HighlightsEditor, HighlightItem } from '$lib/homepageHighlights';
 
-  let { editor }: { editor: HighlightsEditor } = $props();
+  let { editor, selectedVehicleId = null }: { editor: HighlightsEditor; selectedVehicleId?: string | null } = $props();
   let items = $state<HighlightItem[]>(untrack(() => editor.items.map((item) => ({ ...item }))));
   let query = $state('');
   let saving = $state(false);
   let message = $state('');
   let choosing = $state<string | null>(null);
+  let mounted = $state(false);
+  let appliedContext = '';
+  let contextMessage = $state('');
+  let selectionForm: HTMLFormElement;
+  onMount(() => { mounted = true; });
   $effect(() => {
     items = editor.items.map((item) => ({ ...item }));
+  });
+  $effect(() => {
+    const id = selectedVehicleId;
+    if (!mounted || !id || id === appliedContext) return;
+    untrack(() => {
+      appliedContext = id;
+      const prepared = prepareVehicleHighlight(editor, id);
+      items = prepared.items;
+      choosing = prepared.choosing;
+      contextMessage = prepared.message;
+      const vehicle = editor.candidates.find(candidate => candidate.id === id);
+      if (!prepared.choosing && vehicle) query = `${vehicle.brand} ${vehicle.model}`;
+      void tick().then(() => {
+        if (selectionForm) refreshFormFeedback(selectionForm);
+        const row = selectionForm?.parentElement?.querySelector<HTMLElement>(`[data-highlight-vehicle="${CSS.escape(id)}"]`);
+        row?.scrollIntoView({ block: 'center' });
+        row?.querySelector<HTMLButtonElement>('.photo-picker button[aria-pressed="true"]')?.focus({ preventScroll: true });
+      });
+    });
   });
   const dirty = $derived(JSON.stringify(items) !== JSON.stringify(editor.items));
   const filtered = $derived(
@@ -48,6 +73,7 @@
     <PanelHeader icon={Image} title="Carrossel da homepage" meta={`${items.length} / 5`} />
     <div class="intro">
       Escolha a fotografia de cada viatura e a ordem em que aparece no header do site.
+      {#if contextMessage}<p class="context-message" role="status">{contextMessage}</p>{/if}
     </div>
     {#if items.length === 0}
       <div class="empty">
@@ -60,7 +86,7 @@
       {#each items as item, index (item.vehicleId)}
         {@const vehicle = editor.candidates.find((candidate) => candidate.id === item.vehicleId)}
         {@const selectedPhoto = vehicle?.photos.find((photo) => photo.path === item.photoPath)}
-        <li>
+        <li data-highlight-vehicle={item.vehicleId}>
           <div class="selected-row">
             <span class="position">{String(index + 1).padStart(2, '0')}</span>
             {#if selectedPhoto?.url}<img
@@ -145,6 +171,7 @@
       {/each}
     </ol>
     <form
+      bind:this={selectionForm}
       method="POST"
       use:formFeedback
       use:enhance={({ formElement }) => {
@@ -238,6 +265,7 @@
 </div>
 
 <style>
+  .context-message {margin-top:10px;color:var(--color-text);font-size:14px;line-height:1.6;}
   .editor-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr);

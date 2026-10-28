@@ -15,5 +15,5 @@
       <span class="text-[var(--color-red)]">●</span> Site público + seleção editorial
     </p>
   </div>
-  <HomepageHighlightsEditor editor={data.editor} />
+  <HomepageHighlightsEditor editor={data.editor} selectedVehicleId={data.selectedVehicleId} />
 </section>

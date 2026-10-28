@@ -13,6 +13,8 @@
     Star,
     Tag,
   } from 'lucide-svelte';
+  import WebsiteStatus from '$lib/components/vehicle/WebsiteStatus.svelte';
+  import {websiteVisibility} from '$lib/websiteVisibility';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
   import SpecRow from '$lib/components/brand/SpecRow.svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -65,9 +67,8 @@
     <div class="min-w-0">
       <div class="mb-2 flex flex-wrap items-center gap-2">
         <StatusBadge status={v.status} />
-        <span class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-          {v.webPublished ? (['AVAILABLE', 'RESERVED'].includes(v.status) && !v.sale && !v.soldDate ? 'Publicada no website' : 'Oculta no website') : 'Só no CRM'}
-        </span>
+        <WebsiteStatus vehicle={v} />
+        {#if websiteVisibility(v).state === 'blocked'}<span class="text-[13px] text-[var(--color-text-muted)]">{websiteVisibility(v).detail}</span>{/if}
         {#if v.licensePlate}
           <!-- Stylized Portuguese license plate with the authentic blue prefix. -->
           <span
@@ -121,20 +122,21 @@
         {/if}
       </p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
-      {#if !v.sale && ['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(v.status)}
-        <Button variant="primary" href={crmPath(`/viaturas/${v.id}/vender`)}>
-          <Check class="h-4 w-4" />
-          Marcar como Vendida
-        </Button>
-      {/if}
-      <Button variant="outline" href={crmPath('/site/destaques')}
-        ><Star class="h-4 w-4" />Gerir destaques</Button
+    <div class="vehicle-actions flex flex-wrap items-center gap-2">
+     <Button variant="outline" href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}
+        ><Star class="h-4 w-4" />Destacar viatura</Button
       >
-      <Button variant="outline" href={crmPath(`/viaturas/${v.id}/editar`)}>
+      <Button variant="outline" class="edit-vehicle-action" href={crmPath(`/viaturas/${v.id}/editar`)}>
         <Pencil class="h-4 w-4" />
         Editar
       </Button>
+      {#if !v.sale && ['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(v.status)}
+        <Button variant="primary" class="sell-vehicle-action" href={crmPath(`/viaturas/${v.id}/vender`)}>
+          <Check class="h-4 w-4" />
+          Vender viatura
+        </Button>
+      {/if}
+
     </div>
   </div>
 
@@ -366,6 +368,9 @@
 </section>
 
 <style>
+  .vehicle-actions :global(.edit-vehicle-action) {border-color:var(--color-text-muted);background:var(--color-bg-2);font-weight:600;color:var(--color-text);}
+  .vehicle-actions :global(.edit-vehicle-action:hover) {border-color:var(--color-text);}
+  .vehicle-actions :global(.sell-vehicle-action) {margin-left:auto;}
   .featured-slot {
     display: inline-flex;
     min-width: 130px;

@@ -4,6 +4,7 @@
   import { linkedRow } from '$lib/linkedRow';
   import { Car, FileText, Check, Tag } from 'lucide-svelte';
   import RowActions from '$lib/components/common/RowActions.svelte';
+  import WebsiteStatus from './WebsiteStatus.svelte';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
   import { formatDate, formatEUR, formatInt } from '$lib/utils/format';
   import type { VehicleListItem } from '$lib/server/vehicles';
@@ -79,7 +80,7 @@
                 {v.brand}
                 {v.model}
               </div>
-              <StatusBadge status={v.status} />
+              <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact /></div>
             </div>
             <!-- Prefer the user-facing license plate on mobile cards; fall back to VIN if it has not been registered. -->
             <div
@@ -249,7 +250,7 @@
             {v.salePrice ? formatEUR(v.salePrice) : '—'}
           </td>
           <td class="px-4 py-3">
-            <StatusBadge status={v.status} />
+            <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact /></div>
           </td>
           <td class="px-4 py-3 text-right">
             {@render rowActions(v)}

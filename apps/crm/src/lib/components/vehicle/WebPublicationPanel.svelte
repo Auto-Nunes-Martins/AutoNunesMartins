@@ -1,6 +1,8 @@
 <script lang="ts">
   import { photoAttrs, photoFallback, type SignedVariantPhoto } from '$lib/vehicleImage';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
+  import WebsiteStatus from './WebsiteStatus.svelte';
+  import {websiteVisibility} from '$lib/websiteVisibility';
   import { crmPath } from '$lib/paths';
   import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
   import { enhance } from '$lib/auth/enhance';
@@ -37,7 +39,6 @@
     onstatechange,
     creation = false,
     recoveredDraft,
-    publicationOpen = $bindable(true),
     editorId,
   }: {
     vehicle: VehicleDetailResponse;
@@ -52,7 +53,6 @@
     onstatechange?: (state: { dirty: boolean; valid: boolean }) => void;
     creation?: boolean;
     recoveredDraft?: ReturnType<typeof publicDraftFromForm>;
-    publicationOpen?: boolean;
     editorId?: string;
   } = $props();
   let price = $state('');
@@ -410,9 +410,7 @@
       {/snippet}
     </PhotoGallery>
   {/if}
-  <p class="note photo-save-note" role="status">
-    Todas as fotografias acompanham a publicação da viatura. Capa, ordem e novas fotografias são aplicadas ao guardar.
-  </p>
+
 {/if}
 
 <div class:editing-panels={unified}>
@@ -422,25 +420,14 @@
     <section class="standalone-characteristics">{@render vehicleCharacteristics()}</section>
   {/if}
 
-  <details class="publication-editor" id={editorId} bind:open={publicationOpen}>
-    <summary>Publicação no website</summary>
+  <div class="publication-editor" id={editorId}>
   <section class="web-publication" aria-labelledby="web-publication-title">
     <div class="heading">
       <div>
         <h2 id="web-publication-title" tabindex="-1">Publicação no website</h2>
-        <p class="publication-status">
-          {creation
-            ? 'Escolha uma das ações finais para guardar ou publicar.'
-            : vehicle.webPublished
-              ? eligible
-                ? vehicle.status === 'RESERVED'
-                  ? 'Publicada · Reservada'
-                  : 'Publicada no site'
-                : 'Publicação aprovada, mas oculta devido ao estado interno ou venda.'
-              : 'Não publicada · visível apenas no CRM'}
-        </p>
+        {#if creation}<p class="publication-status">Escolha uma das ações finais para guardar ou publicar.</p>{:else}<WebsiteStatus {vehicle} />{#if !websiteVisibility(vehicle).visible}<p class="publication-status">{websiteVisibility(vehicle).detail}</p>{/if}{/if}
       </div>
-      {#if vehicle.webPublished && vehicle.publicSlug && eligible}<a
+      {#if websiteVisibility(vehicle).visible && vehicle.publicSlug}<a
           class="public-view-link"
           href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.publicSlug)}
           target="_blank"
@@ -478,15 +465,7 @@
         <input type="hidden" name="operation" value="publish" />
         {#if unified}
           <input type="hidden" name="published" value={String(draftPublished)} />
-          {#if !creation}
-            <label class="publish-toggle"
-              ><input type="checkbox" data-error-field="published" bind:checked={draftPublished} /> Publicar
-              esta viatura no website</label
-            >
-            <p class="note">
-              Aplicado ao guardar. Todas as fotografias da viatura ficam públicas.
-            </p>
-          {/if}
+
         {/if}
         <h3 class="publication-group-title">Dados do anúncio</h3>
         <div class="fields crm-compact-fields">
@@ -578,7 +557,7 @@
         </div>
         {#if !unified}<p class="note" role="status">
             {publicationDirty
-              ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos. Todas as fotografias acompanham a publicação.'
+              ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos.'
               : 'Publicação guardada · sem alterações.'}
           </p>
           <button
@@ -601,7 +580,7 @@
     </form>
     <p role="status" aria-live="polite">{message}</p>
   </section>
-  </details>
+  </div>
 </div>
 
 <dialog
@@ -630,7 +609,6 @@
 
 <style>
   .publication-editor {min-width: 0;scroll-margin-top: 190px;}
-  .publication-editor:not([open]), .publication-editor > summary {display: none;}
   @media (max-width: 600px) {.publication-editor {scroll-margin-top: 260px;}}
   .spec-field-label {
     display: flex;
@@ -714,18 +692,6 @@
     font-size: 13px;
     font-weight: 600;
     margin: 20px 0 12px;
-  }
-  .publish-toggle {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 0;
-    padding: 12px 14px;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    background: var(--color-bg-2);
   }
   .publication-status {
     font-size: 12px;
