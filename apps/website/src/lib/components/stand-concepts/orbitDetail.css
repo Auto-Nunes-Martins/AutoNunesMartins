@@ -792,7 +792,7 @@
 
 @media (min-width: 701px) {
   .design.orbit.orbit-detail.public-detail .detail-facts dl > div {
-    padding-inline-end: 8px;
+    padding-inline-end: 24px;
   }
   .design.orbit.orbit-detail.public-detail .detail-facts dd {
     text-align: right;
