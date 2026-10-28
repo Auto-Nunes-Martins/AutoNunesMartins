@@ -421,7 +421,7 @@
         ></textarea>
       </label>
 
-      <fieldset class="document-checklist">
+      <fieldset id="documentos" class="document-checklist">
         <legend>Documentos pendentes</legend>
         <p>Assinale apenas o que falta regularizar nesta viatura.</p>
         <div class="document-options">
@@ -498,6 +498,7 @@
     gap: 6px;
   }
   .document-checklist {
+    scroll-margin-top:96px;
     border: 0;
     border-top: 1px solid var(--color-border);
     padding: 18px 0 0;

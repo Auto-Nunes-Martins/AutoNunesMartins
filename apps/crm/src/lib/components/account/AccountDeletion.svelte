@@ -92,8 +92,8 @@
 
 {#if ctx.isLoaded && ctx.user}
   <section class="account-danger-zone" aria-labelledby="account-delete-heading">
-    <div><span class="account-eyebrow">Ação permanente</span><h2 id="account-delete-heading"><Trash2 size={20} aria-hidden="true" />Eliminar a minha conta</h2><p>Elimina a sua conta de acesso, incluindo nas outras aplicações e no ambiente de teste que a partilham. No CRM, as viaturas, clientes, vendas, fotografias e histórico da empresa são preservados.</p></div>
-    {#if allowed}<Button variant="danger" disabled={disabled || phase !== 'closed'} onclick={open}>Eliminar a minha conta</Button>
+    <div><h2 id="account-delete-heading">Eliminar conta</h2><p>Elimina a sua conta de acesso, incluindo nas outras aplicações e no ambiente de teste que a partilham. No CRM, as viaturas, clientes, vendas, fotografias e histórico da empresa são preservados.</p></div>
+    {#if allowed}<button class="account-delete-action" type="button" disabled={disabled || phase !== 'closed'} onclick={open}><Trash2 size={15} aria-hidden="true" />Eliminar a minha conta</button>
     {:else}<p>A eliminação da própria conta não está permitida para este acesso. Esta opção tem de ser disponibilizada pelo responsável pela configuração das contas.</p>{/if}
   </section>
 {/if}
@@ -118,10 +118,17 @@
 <AccountVerification bind:this={verification} />
 
 <style>
-  .account-danger-zone {margin-top:32px;display:grid;justify-items:start;gap:16px;padding:22px;border:1px solid color-mix(in srgb,var(--color-danger) 45%,var(--color-border));border-radius:var(--radius-card);background:var(--color-bg-1);}
-  h2 {display:flex;align-items:center;gap:10px;font:italic 700 24px/1.2 var(--font-display);margin:6px 0 10px;color:var(--color-danger);}
-  p {font-size:13px;line-height:1.7;color:var(--color-text-muted);max-width:85ch;overflow-wrap:anywhere;}
+  .account-danger-zone {margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px;border:1px solid var(--color-border);border-radius:var(--radius-card);}
+  .account-danger-zone h2 {font-size:14px;font-weight:600;color:var(--color-text);margin:0 0 6px;}
+  .account-danger-zone p {color:var(--color-text-muted);font-size:12px;line-height:1.7;max-width:75ch;margin:0;overflow-wrap:anywhere;}
+  .account-delete-action {flex-shrink:0;display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:10px 14px;border:1px solid color-mix(in oklab,var(--color-red) 40%,var(--color-border));border-radius:var(--radius-btn);color:var(--color-red);background:transparent;font-size:12px;transition:background-color 140ms;}
+  .account-delete-action:hover:not(:disabled) {background:color-mix(in oklab,var(--color-red) 8%,transparent);}
+  .account-delete-action:disabled {opacity:0.4;cursor:not-allowed;}
+  .account-delete-action:focus-visible {outline:2px solid var(--color-red);outline-offset:4px;}
+  .account-delete-dialog h2 {display:flex;align-items:center;gap:10px;font:italic 700 24px/1.2 var(--font-display);margin:6px 0 10px;color:var(--color-danger);}
+  .account-delete-dialog p {font-size:13px;line-height:1.7;color:var(--color-text-muted);max-width:85ch;overflow-wrap:anywhere;}
   strong {color:var(--color-text);}
   .account-delete-dialog {width:min(580px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:0;border:1px solid var(--color-border-strong);border-radius:var(--radius-card);background:var(--color-bg-elevated);color:var(--color-text);}
   .account-delete-dialog::backdrop {background:#0009;backdrop-filter:blur(3px);}
+  @media(max-width:600px) {.account-danger-zone {flex-direction:column;align-items:start;gap:14px;}.account-delete-action {min-height:44px;}}
 </style>

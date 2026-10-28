@@ -12,7 +12,6 @@
   import BrandChart from '$lib/components/brand/icons/BrandChart.svelte';
   import BrandDoc from '$lib/components/brand/icons/BrandDoc.svelte';
   import BrandReceipt from '$lib/components/brand/icons/BrandReceipt.svelte';
-  import BrandSet from '$lib/components/brand/icons/BrandSet.svelte';
   import BrandLogout from '$lib/components/brand/icons/BrandLogout.svelte';
   import { SignOutButton, useClerkContext } from 'svelte-clerk';
   import Wordmark from '$lib/components/brand/Wordmark.svelte';
@@ -98,7 +97,6 @@
       items: [
         { href: crmPath('/site/destaques'), label: 'Site público', icon: Globe },
         { href: crmPath('/guia'), label: 'Guia de Fluxo', icon: BrandDoc },
-        { href: crmPath('/definicoes'), label: 'Definições', icon: BrandSet },
       ],
     },
   ];
@@ -218,6 +216,7 @@
 
     <!-- User footer -->
     <div class="user-footer">
+      <a class="user-profile-link" href={crmPath('/definicoes')} aria-label={`Definições de ${userName}`} aria-current={isActive(crmPath('/definicoes'), $page.url.pathname) ? 'page' : undefined}>
       <div class="user-avatar" title={collapsed ? userName : undefined}>
         {#if avatarUrl}
           <img src={avatarUrl} alt={userName} referrerpolicy="no-referrer" />
@@ -230,6 +229,7 @@
         <div class="user-name">{userName}</div>
         <div class="user-role">Gerente</div>
       </div>
+      </a>
       <SignOutButton class="sign-out" redirectUrl={crmPath('/')}>
         <BrandLogout class="h-4 w-4" />
       </SignOutButton>
@@ -594,6 +594,9 @@
     /* Subtle ring so the photo doesn't melt into the dark footer background. */
     box-shadow: 0 0 0 1px var(--color-border);
   }
+  .user-profile-link {display:flex;align-items:center;gap:12px;flex:1;min-width:0;min-height:44px;border-radius:var(--radius-btn);color:inherit;text-decoration:none;cursor:pointer;transition:background-color 140ms;}
+  .user-profile-link:hover {background:var(--color-interaction-hover);}
+  .user-profile-link:focus-visible {outline:2px solid var(--color-red);outline-offset:4px;}
   .user-avatar img {
     width: 100%;
     height: 100%;

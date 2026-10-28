@@ -45,3 +45,6 @@ Fontes primárias consultadas: [User](https://clerk.com/docs/js-frontend/referen
 
 
 Validação da revisão local: 17 testes unitários de política/capacidades e 14 cenários Chrome de perfil, layout/modal e eliminação simulada. Inclui estados permitidos/desabilitados, cancelamento, troca de identidade, erro do fornecedor, MFA, resultado incerto sem repetição automática, limpeza de sessão e redirecionamento. O teste do modal reproduz o scroll lock do código oficial, mede geometria antes/durante/depois e demonstra a reserva dupla ao desligar a correção no fixture. Não é uma validação com conta Clerk real.
+
+
+Refinamento visual: a secção Eliminar conta segue o padrão existente Eliminar viatura (contorno neutro, título de 14 px, descrição discreta e ação de perigo à direita; empilha em mobile), mantendo integralmente a confirmação e segurança. O bloco de identificação na navegação, com avatar/nome/função, é agora o link acessível para Definições; o logout é uma ação irmã e o item Definições separado foi retirado.

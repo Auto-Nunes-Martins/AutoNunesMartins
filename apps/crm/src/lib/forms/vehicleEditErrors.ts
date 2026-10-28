@@ -29,6 +29,11 @@ const labels: Record<string, string> = {
   equipment: 'Equipamento',
   photos: 'Fotografias',
   publication: 'Publicação',
+  pendingDocFlags: 'Documentos pendentes',
+  'pendingDocFlags.financing': 'Documentos pendentes · Financiamento',
+  'pendingDocFlags.imt': 'Documentos pendentes · IMT',
+  'pendingDocFlags.registration': 'Documentos pendentes · Registo',
+  'pendingDocFlags.docs': 'Documentos pendentes · Documentação',
 };
 const fields = vehicleUpdateSchema
   .omit({ id: true })

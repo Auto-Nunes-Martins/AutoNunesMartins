@@ -11,6 +11,7 @@ it('does not require individual approval of the principal when publishing', () =
   expect(issues.filter(issue => ['photos','photoPrincipal'].includes(issue.key))).toEqual([]);
 });
 describe('guided vehicle edit error contract',()=>{
+ it('identifies a pending-document error by its actual category and checkbox',()=>{expect(serverEditIssues({issues:[{path:['data','pendingDocFlags','imt'],message:'Reveja este documento.'}]})).toEqual([{key:'pendingDocFlags.imt',message:'Documentos pendentes · IMT: Reveja este documento.'}]);});
  it('maps nested backend publication/photo/specification errors to actual controls',()=>{expect(issueKey(['publication','photoPaths',0])).toBe('photos');expect(issueKey(['publication','specifications','equipment',2])).toBe('equipment');expect(issueKey(['data','licensePlate'])).toBe('licensePlate');expect(issueKey(['uploadedPhotos',1])).toBe('photos');});
  it('maps old photo payload errors to the complete gallery',()=>{expect(serverEditIssues({issues:[{path:['publication','photoPaths'],message:'Fotografia indisponível.'}]})).toEqual([{key:'photos',message:'Fotografias: Fotografia indisponível.'}]);});
  it('explains limits in Portuguese and supports duplicate-field feedback',()=>{expect(serverEditIssues({issues:[{path:['publication','description'],message:'String must contain at most 6000 character(s)'}]})[0]).toEqual({key:'publicDescription',message:'Descrição pública: Use até 6000 caracteres.'});expect(serverEditIssues({field:'vin',error:'Este VIN já existe.'})[0]?.key).toBe('vin');});

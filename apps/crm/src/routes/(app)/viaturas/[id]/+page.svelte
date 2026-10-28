@@ -54,9 +54,9 @@
     { key: 'registration', label: 'Registo' },
     { key: 'docs', label: 'Documentação' },
   ];
-  const pendingCount = $derived(
-    docFlags.filter((f) => v.pendingDocFlags?.[f.key as keyof typeof v.pendingDocFlags]).length,
-  );
+  const pendingDocs = $derived(docFlags.filter(f => v.pendingDocFlags?.[f.key as keyof typeof v.pendingDocFlags] === true));
+  const pendingCount = $derived(pendingDocs.length);
+  const docsKnown = $derived(v.pendingDocFlags != null);
 </script>
 
 <svelte:head>
@@ -268,32 +268,18 @@
         </div>
       </Panel>
 
-      <!-- Pending docs -->
-      <Panel>
-        <PanelHeader
-          icon={FileText}
-          title="Documentos pendentes"
-          meta={pendingCount === 0 ? 'OK' : `${pendingCount} POR TRATAR`}
-        />
-        <div class="p-5 grid grid-cols-2 gap-3">
-          {#each docFlags as f (f.key)}
-            {@const isPending = v.pendingDocFlags?.[f.key as keyof typeof v.pendingDocFlags]}
-            <div
-              class="flex items-center gap-2 px-3 py-2 border {isPending
-                ? 'border-[color-mix(in_oklab,var(--color-red)_30%,transparent)] text-[var(--color-red)]'
-                : 'border-[var(--color-border)] text-[var(--color-text-muted)]'}"
-              style="border-radius: var(--radius-btn);"
-            >
-              <span
-                class="h-1.5 w-1.5 rounded-full {isPending
-                  ? 'bg-[var(--color-red)]'
-                  : 'bg-[var(--color-success)]'}"
-              ></span>
-              <span class="font-mono text-[10px] uppercase tracking-[0.2em]">{f.label}</span>
-            </div>
-          {/each}
-        </div>
-      </Panel>
+      <section class="vehicle-document-status" aria-label="Documentação da viatura">
+        {#if !docsKnown}
+          <div class="document-summary"><p>Não foi possível confirmar as pendências documentais.</p><a href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</a></div>
+        {:else if pendingCount === 0}
+          <div class="document-summary"><p>Sem pendências documentais</p><a href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</a></div>
+        {:else}
+          <Panel>
+            <PanelHeader icon={FileText} title="Documentos pendentes" meta={`${pendingCount} ${pendingCount === 1 ? 'PENDENTE' : 'PENDENTES'}`} />
+            <div class="pending-doc-body"><ul class="pending-document-list">{#each pendingDocs as document (document.key)}<li><FileText size={14} aria-hidden="true" />{document.label}</li>{/each}</ul><Button variant="outline" size="sm" href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</Button></div>
+          </Panel>
+        {/if}
+      </section>
       <ExpenseTable expenses={v.expenses} vehicleStatus={v.status} />
     </div>
   </div>
@@ -367,6 +353,14 @@
   .vehicle-actions :global(.edit-vehicle-action) {border-color:var(--color-text-muted);background:var(--color-bg-2);font-weight:600;color:var(--color-text);}
   .vehicle-actions :global(.edit-vehicle-action:hover) {border-color:var(--color-text);}
   .vehicle-actions :global(.sell-vehicle-action) {margin-left:auto;}
+  .document-summary {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;font-size:12px;color:var(--color-text-muted);}
+  .document-summary p {min-width:0;}
+  .document-summary a {display:inline-flex;align-items:center;min-height:44px;flex-shrink:0;text-decoration:underline;text-underline-offset:3px;color:var(--color-text-muted);}
+  .document-summary a:focus-visible {outline:2px solid var(--color-red);outline-offset:3px;}
+  .pending-doc-body {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px;}
+  .pending-document-list {display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:150px;}
+  .vehicle-document-status :global(h3) {white-space:normal;overflow:visible;text-overflow:clip;line-height:1.15;}
+  .pending-document-list li {display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid color-mix(in srgb,var(--color-warning) 35%,var(--color-border));border-radius:var(--radius-btn);font-size:12px;color:var(--color-warning);background:color-mix(in srgb,var(--color-warning) 7%,transparent);}
   .highlight-status {color:var(--color-warning);background:color-mix(in srgb,var(--color-warning) 10%,var(--color-bg-1));border:1px solid color-mix(in srgb,var(--color-warning) 45%,transparent);}
   .highlight-hidden {color:var(--color-text-muted);background:var(--color-bg-2);border-color:var(--color-border-strong);}
   .highlight-loading {font:11px var(--font-mono);color:var(--color-text-muted);}
