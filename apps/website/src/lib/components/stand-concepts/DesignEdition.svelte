@@ -991,7 +991,7 @@
                           alt=""
                           loading="eager"
                           fetchpriority="auto"
-                        /><span>{i + 1}</span></button
+                        /></button
                       >{/each}
                     <button
                       type="button"

@@ -1,6 +1,6 @@
 type Position = { index: number; count: number; drag?: number; fullscreen?: boolean; instant?: boolean };
 
-/** Slide adjacent photos; distant fullscreen selections swap with a short fade. */
+/** Slide one or two photos; distant fullscreen selections swap with a short fade. */
 export function photoRail(node: HTMLElement, initial: Position) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let selected = initial.index;
@@ -60,8 +60,8 @@ export function photoRail(node: HTMLElement, initial: Position) {
       animation?.cancel();
       selected = target;
       node.style.transform = position(selected);
-      const jump = next.fullscreen && distance > 1;
-      const image = jump ? node.children[target]?.querySelector('img') : undefined;
+      const jump = next.fullscreen && distance > 2;
+      const image = next.fullscreen && distance > 1 ? node.children[target]?.querySelector('img') : undefined;
       if (reduced.matches || next.instant || (image && (!image.complete || !image.naturalWidth))) {
         animation = undefined;
         node.dataset.moving = 'false';
