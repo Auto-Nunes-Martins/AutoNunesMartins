@@ -317,11 +317,13 @@
   let contactName = $state<HTMLInputElement>();
   let confirmationHeading = $state<HTMLHeadingElement>();
   let galleryDialog: HTMLDialogElement;
+  let galleryOpener: HTMLElement | undefined;
   let preparingViewer = false;
   let stopOpening: (() => void) | undefined;
   onDestroy(() => stopOpening?.());
   async function openGallery() {
     if (preparingViewer || galleryOpen) return;
+    galleryOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     stopOpening?.();
     const source = document.querySelector<HTMLImageElement>('.vehicle-photo .photo-rail-slide:not([inert]) img');
     const opening = galleryRuntime?.captureOpeningPhoto(source);
@@ -1484,6 +1486,14 @@
     onclose={() => {
       stopOpening?.();
       galleryOpen = false;
+      // Visiting the contact slide can replace the original inline opener.
+      if (!document.querySelector('dialog[open]')) {
+        const root = galleryDialog.closest('.design');
+        const opener = galleryOpener?.isConnected && !galleryOpener.closest('[inert]') ? galleryOpener :
+          root?.querySelector<HTMLElement>('.photo-expand') ??
+          root?.querySelector<HTMLElement>('.vehicle-photo .photo-rail-slide:not([inert]) button');
+        opener?.focus({ preventScroll: true });
+      }
     }}
     class="gallery-dialog"
     aria-labelledby="gallery-caption"
@@ -1565,6 +1575,7 @@
       {#if publicVehicle && galleryPhotoCount}
         <div
           class="viewer-thumbnails"
+          tabindex="-1"
           use:followThumbnail={zoom}
           role="group"
           aria-label="Fotografias da viatura"

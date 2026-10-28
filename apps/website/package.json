@@ -15,6 +15,7 @@
     "test:gallery-controls": "node test/galleryControls.browser.mjs",
     "test:thumbnail-follow": "node test/thumbnailFollow.browser.mjs",
     "test:gallery-presentation": "node test/galleryPresentation.browser.mjs",
+    "test:fullscreen-viewport": "node test/fullscreenViewport.browser.mjs",
     "lint": "eslint \"src/**/*.{ts,svelte}\"",
     "test:errors:built": "node --conditions=anm-runtime ../../scripts/check-public-errors.mjs"
   },

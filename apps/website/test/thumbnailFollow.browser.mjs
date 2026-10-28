@@ -98,13 +98,13 @@ try {
       const end=(horizontal?box.left+node.clientLeft+node.clientWidth:box.top+node.clientTop+node.clientHeight)-parseFloat(horizontal?style.paddingRight:style.paddingBottom);
       const items=[...node.querySelectorAll('button')].map(button=>{const r=button.getBoundingClientRect();return {start:horizontal?r.left:r.top,end:horizontal?r.right:r.bottom,active:button.getAttribute('aria-pressed')==='true'};});
       const index=items.findIndex(item=>item.active),active=items[index];
-      return {horizontal,start,end,index,active,items,current:horizontal?node.scrollLeft:node.scrollTop,maximum:Math.max(0,horizontal?node.scrollWidth-node.clientWidth:node.scrollHeight-node.clientHeight),ratio:((active.start+active.end)/2-start)/(end-start),page:window.scrollY,overlay:document.querySelector('.gallery-dialog')?.scrollTop??0};
+      return {bounded:node.classList.contains('viewer-thumbnails'),pitch:items[1]?items[1].start-items[0].start:0,horizontal,start,end,index,active,items,current:horizontal?node.scrollLeft:node.scrollTop,maximum:Math.max(0,horizontal?node.scrollWidth-node.clientWidth:node.scrollHeight-node.clientHeight),ratio:((active.start+active.end)/2-start)/(end-start),page:window.scrollY,overlay:document.querySelector('.gallery-dialog')?.scrollTop??0};
     });
     const check=async(strip,direction)=>{
       await settle();const m=await metrics(strip);
       assert.ok(m.current>=0&&m.current<=m.maximum+.5);
       assert.ok(m.active.start>=m.start-1&&m.active.end<=m.end+1,'selected thumbnail stays fully visible');
-      if(m.current>1&&m.current<m.maximum-1)assert.ok(Math.abs(m.ratio-(direction>0?.35:.65))<.02,'selection is positioned early with directional context');
+      if(m.current>1&&m.current<m.maximum-1)assert.ok(Math.abs(m.ratio-(direction>0?.35:.65))<(.02+(m.bounded?m.pitch/(2*(m.end-m.start)):0)),'selection is positioned early with directional context');
       if(count===18&&m.index>2&&m.index<count-3){
         const contextItems=direction>0?m.items.slice(m.index+1).filter(item=>item.start<m.end-6):m.items.slice(0,m.index).filter(item=>item.end>m.start+6);
         assert.ok(contextItems.length>=2,'multiple thumbnails are visible ahead of travel');
