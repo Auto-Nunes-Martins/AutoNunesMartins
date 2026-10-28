@@ -257,12 +257,12 @@
         />
       {/await}
 
-      <Panel>
+      {#if v.description?.trim()}<Panel>
         <PanelHeader icon={FileText} title="Notas" />
         <div class="p-5 text-[14px] leading-relaxed text-[var(--color-text-muted)]">
-          {v.description ?? 'Sem notas registadas.'}
+          {v.description}
         </div>
-      </Panel>
+      </Panel>{/if}
     </div>
 
     <div class="lg:col-span-5 space-y-6">

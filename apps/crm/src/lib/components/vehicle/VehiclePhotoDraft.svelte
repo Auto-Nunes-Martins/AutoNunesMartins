@@ -73,7 +73,7 @@
       </figure>
       </div>
       <div class="organize-panel">
-        <div class="organize-heading"><h3>Organizar fotografias</h3><p>Use a pega para arrastar e ordenar, ou Espaço e as setas na pega. As alterações só são aplicadas <strong>ao guardar</strong>.</p></div>
+        <div class="organize-heading"><h3>Organizar fotografias</h3><p>As alterações só são aplicadas <strong>ao guardar</strong>.</p></div>
         <PublicPhotoPicker dense {revealPath} {persistedCoverPath} bind:selected allowed={displayOrder} {photos} {persisted} {published} {form} pending={disabled} staged onprimary={primary} onreorder={reorder} ondelete={remove} primaryPath={cover?.path}>
           {#snippet addPhoto()}<button type="button" class="add-photo-card" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Plus size={30} strokeWidth={1.3} aria-hidden="true" /><strong>Adicionar fotografias</strong><span>{photos.length >= 20 ? 'Limite de 20 atingido' : 'Escolher uma ou várias'}</span></button>{/snippet}
         </PublicPhotoPicker>
@@ -100,7 +100,7 @@
   p { font-size: 13px; color: var(--color-text-muted); line-height: 1.6; margin: 0; }
   .upload-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 10px 14px; flex-shrink:0; border: 1px solid var(--color-red); border-radius: var(--radius-btn); background: var(--color-red); color: white; font-size: 13px; font-weight: 600; cursor: pointer; }
   .upload-button:hover { background: var(--color-red-soft); border-color: var(--color-red-soft); }
-  .add-photo-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; width:100%; min-height:184px; padding:14px 8px; border:1px dashed var(--color-border-strong); border-radius:var(--radius-card); background:var(--color-bg-2); color:var(--color-text-muted); cursor:pointer; }
+  .add-photo-card { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:10px; width:100%; min-height:76px; padding:14px 8px; border:1px dashed var(--color-border-strong); border-radius:var(--radius-card); background:var(--color-bg-2); color:var(--color-text-muted); cursor:pointer; }
   .add-photo-card strong {font-size:13px;color:var(--color-text);} .add-photo-card span {font-size:11px;} .add-photo-card:hover {border-color:var(--color-red);color:var(--color-text);}
   .upload-button:disabled,.add-photo-card:disabled { opacity: .45; cursor: not-allowed; }
   :is(.upload-button,.add-photo-card):focus-visible { outline: 2px solid var(--color-red); outline-offset: 4px; }

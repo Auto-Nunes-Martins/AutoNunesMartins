@@ -22,8 +22,18 @@ Mantêm-se os masters privados, a receita WebP84 e a experiência de ficheiro p�
 
 ## Scroll e ordenação
 
-A grelha acompanha a altura normal da página, sem painel vertical limitado com `overscroll-behavior: contain`. Só a pega inicia drag; o corpo da fotografia permite scroll vertical por toque. A pega também permite Espaço e setas por teclado. Botões e ajuda expansível preservam a interação normal.
+A grelha acompanha a altura normal da página, sem painel vertical limitado com `overscroll-behavior: contain`. **Arrasta-se o cartão inteiro, incluindo imagem e corpo, sem pega.** No telemóvel, um toque prolongado de 350 ms inicia a ordenação; mover antes desse prazo cancela o drag e permite scroll vertical. Espaço e setas ordenam a partir do próprio cartão. Os botões de principal/eliminar e a ajuda expansível preservam a interação normal.
 
-Verificação reproduzível: `apps/crm/test/photo-gallery.browser.mjs`, com o componente real e fotografias fictícias, exercita roda sobre imagens e botões, ajuda fechada/aberta, gesto touch sem reorder, drag pela pega, teclado, adicionar/eliminar e ausência de sobreposição dos cartões a 390 e 1366 px. Os testes HTTP backend cobrem a lista completa com campo legado vazio, adição após publicação, reorder, remoção, versões antigas e despublicação.
+Os cartões têm uma imagem de 210 px em desktop e 182 px em mobile, com enquadramento que conserva a fotografia completa e duas ações. A grelha usa posições normais de CSS Grid: eliminados o subgrid e as posições explícitas que interferiam com o placeholder. O clone usa os mesmos estilos do cartão fora da grelha, sem regras dependentes de um antepassado `.dense`, e não muda de dimensões para imitar o placeholder durante o drag.
 
-Resultado local desta alteração: 465 testes backend, 260 testes CRM, 578 testes website e dois testes Chrome aprovados. Tipos backend e Svelte check CRM sem erros; builds CRM e website concluídas. Os testes usam fixtures, incluindo Storage simulado e bases PostgreSQL isoladas; não alteram viaturas reais.
+Verificação reproduzível: `apps/crm/test/photo-gallery.browser.mjs`, com os componentes reais e fotografias fictícias, exercita roda sobre imagens e botões, ajuda fechada/aberta, gesto touch sem reorder, toque prolongado para drag, drag pela imagem e pelo corpo, dimensões do clone durante o gesto, teclado, adicionar/eliminar/capa e ausência de sobreposição a 390 e 1366 px, em ambos os temas. Os testes HTTP backend cobrem a lista completa com campo legado vazio, adição após publicação, reorder, remoção, versões antigas e despublicação.
+
+Validação inicial da regra: 465 testes backend, 260 testes CRM, 578 testes website e dois testes Chrome aprovados. Tipos backend e Svelte check CRM sem erros; builds CRM e website concluídas. Os testes usam fixtures, incluindo Storage simulado e bases PostgreSQL isoladas; não alteram viaturas reais.
+
+## Acabamentos da interface — 28/10/2026
+
+- O toast de conclusão conserva a miniatura dentro de uma moldura fixa com overflow cortado e imagem posicionada em absoluto. A imagem deixa de influenciar as dimensões intrínsecas do grid; nomes longos também respeitam a largura disponível. A fixture usa o Sonner e o toast reais, imagens extremamente largas/verticais, ambos os temas e o temporizador original de 6500 ms.
+- O fullscreen do website usa hover/active neutros, bordas e foco brancos, sem vermelho nos controlos e nas miniaturas. A chamada de contacto da última fotografia também usa hover neutro. Mantidos os comportamentos, áreas de toque e preferência de movimento reduzido. Verificação em `apps/website/test/galleryControls.browser.mjs`.
+- Na ficha CRM, o bloco «Notas» corresponde a `description` interno e só aparece quando tem texto após `trim()`. A descrição pública e o acesso à edição mantêm-se independentes.
+
+A revisão da interface passou nos quatro testes Chrome CRM (desktop/mobile × tema claro/escuro) e nos quatro cenários fullscreen (desktop/mobile × movimento normal/reduzido), com os componentes e ícones reais. A deformação durante drag e o overflow da imagem do toast são verificados enquanto acontecem, além do estado final.

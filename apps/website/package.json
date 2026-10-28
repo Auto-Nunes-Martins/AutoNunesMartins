@@ -12,6 +12,7 @@
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error",
     "test": "vitest run",
     "test:social": "node ../../scripts/check-social-previews.mjs",
+    "test:gallery-controls": "node test/galleryControls.browser.mjs",
     "lint": "eslint \"src/**/*.{ts,svelte}\"",
     "test:errors:built": "node --conditions=anm-runtime ../../scripts/check-public-errors.mjs"
   },

@@ -95,7 +95,7 @@ function fieldFor(root: HTMLElement, key: string, photoPath?: string): HTMLEleme
     const card = [...root.querySelectorAll<HTMLElement>('[data-photo-path]')].find(
       (node) => node.dataset.photoPath === photoPath,
     );
-    if (card) return card.querySelector('.drag-handle') ?? card;
+    if (card) return card;
   }
   if (key === 'photos') return root.querySelector('.photo-grid-scroll');
   if (key === 'publication')

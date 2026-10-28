@@ -92,10 +92,10 @@
     font-size: 13px;
     cursor: pointer;
   }
-  button:hover {
-    background: var(--red);
-    color: white;
+  @media (hover: hover) {
+    button:hover { background:#dfe3e1; color:#151815; box-shadow:0 0 0 3px #ffffff30; }
   }
+  button:active { background:#c5cbc7; color:#151815; box-shadow:inset 0 0 0 2px #15181530; }
   button:focus-visible {
     outline: 2px solid white;
     outline-offset: 4px;
@@ -130,7 +130,7 @@
   }
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
     button:hover {
-      transform: translateY(-3px);
+      transform: translateY(-1px);
     }
   }
   @media (max-width: 700px) {
