@@ -66,7 +66,28 @@ try {
         await page.locator('h1').evaluate((n) => getComputedStyle(n).color),
         'rgb(241, 242, 239)',
       );
-      const images = page.locator('img');
+      const images = page.locator('img[alt="Auto Nunes Martins"]');
+      const arrow = page.locator('a img');
+      assert.equal(await arrow.count(), 1);
+      assert.equal(await arrow.getAttribute('alt'), '');
+      assert.ok(await arrow.evaluate((n) => n.complete && n.naturalWidth > 0));
+      const arrowBox = await arrow.boundingBox();
+      assert.equal(arrowBox.width, 14);
+      assert.equal(arrowBox.height, 14);
+      const cta = page.getByRole('link', { name: 'Responder ao contacto', exact: true });
+      assert.equal(await cta.count(), 1);
+      assert.equal(
+        await cta.evaluate((n) => getComputedStyle(n.parentElement).backgroundColor),
+        'rgb(227, 6, 19)',
+      );
+      assert.equal(await cta.evaluate((n) => getComputedStyle(n).color), 'rgb(255, 255, 255)');
+      assert.equal(
+        await cta.evaluate((n) => getComputedStyle(n).backgroundColor),
+        'rgba(0, 0, 0, 0)',
+      );
+      await cta.screenshot({
+        path: fileURLToPath(new URL(`contact-email-cta-${width}.png`, directory)),
+      });
       if (name === 'contact-email-wordmark') {
         assert.equal(await images.count(), 0);
         await page.getByText('AUTO NUNES MARTINS.', { exact: true }).waitFor();

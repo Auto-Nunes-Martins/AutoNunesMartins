@@ -2,7 +2,12 @@ import { readFileSync } from 'node:fs';
 import sharp from 'sharp';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { contactEmailHtml } from './contactEmail';
-import { contactEmailLogoAttachment, contactEmailLogoId } from './contactEmailLogo';
+import {
+  contactEmailLogoAttachment,
+  contactEmailLogoId,
+  contactEmailArrowAttachment,
+  contactEmailArrowId,
+} from './contactEmailLogo';
 const data = {
   name: 'Ana & João',
   email: 'ana@example.org',
@@ -33,7 +38,7 @@ describe('internal contact HTML email', () => {
       page: '/contacto',
     });
     expect(html).not.toContain('<script>');
-    expect([...html.matchAll(/<img\b/g)]).toHaveLength(1);
+    expect([...html.matchAll(/<img\b/g)]).toHaveLength(2);
     expect(html).not.toContain('<a href="javascript:');
     expect(html).toContain('&lt;script&gt;');
     expect(html).toContain('&lt;a href=&quot;javascript:alert(1)&quot;&gt;');
@@ -53,7 +58,7 @@ describe('internal contact HTML email', () => {
   it('always references the real inline logo without a public website URL', () => {
     vi.stubEnv('PUBLIC_WEBSITE_URL', '');
     const html = contactEmailHtml(data);
-    expect([...html.matchAll(/<img\b/g)]).toHaveLength(1);
+    expect([...html.matchAll(/<img\b/g)]).toHaveLength(2);
     expect(html).toContain(`src="cid:${contactEmailLogoId}"`);
     expect(html).toContain('alt="Auto Nunes Martins"');
     expect(html).not.toMatch(/https?:\/\/|data:image|@font-face/i);
@@ -107,7 +112,8 @@ describe('internal contact HTML email', () => {
   });
   it('keeps a readable alternative presentation for previews without images', () => {
     const html = contactEmailHtml(data, { logo: false });
-    expect(html).not.toContain('<img');
+    expect([...html.matchAll(/<img\b/g)]).toHaveLength(1);
+    expect(html).not.toContain('alt="Auto Nunes Martins"');
     expect(html).toContain('AUTO NUNES MARTINS');
     expect(html).toContain('Responder ao contacto');
   });
@@ -117,9 +123,26 @@ describe('internal contact HTML email', () => {
       email: 'a"&b@example.org',
       page: '/"><script>alert(1)</script>',
     });
-    expect([...html.matchAll(/<img\b/g)]).toHaveLength(1);
+    expect([...html.matchAll(/<img\b/g)]).toHaveLength(2);
     expect(html).not.toContain('<script>');
     expect(html).toContain('mailto:a%22%26b%40example.org');
     expect(html).toContain('/&quot;&gt;&lt;script&gt;');
   });
+});
+
+it('uses a fixed inline PNG arrow without an emoji glyph and uses the same red CTA at all sizes', async () => {
+  const html = contactEmailHtml(data),
+    arrow = contactEmailArrowAttachment();
+  expect(html).toContain('src="cid:' + contactEmailArrowId + '" width="14" height="14" alt=""');
+  expect(html).not.toMatch(/&#8599;|↗|\uFE0F/);
+  expect(html).toContain('bgcolor="#e30613"');
+  expect(html).toContain('color:#ffffff');
+  expect(arrow.content_id).toBe(contactEmailArrowId);
+  expect(Buffer.from(arrow.content, 'base64')).toEqual(
+    readFileSync(new URL('./contactEmailArrow.png', import.meta.url)),
+  );
+  const meta = await sharp(Buffer.from(arrow.content, 'base64')).metadata();
+  expect(meta.format).toBe('png');
+  expect(meta.width).toBe(42);
+  expect(meta.height).toBe(42);
 });

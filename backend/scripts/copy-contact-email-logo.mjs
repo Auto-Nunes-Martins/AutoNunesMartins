@@ -8,6 +8,10 @@ export async function copyContactEmailLogo(
 ) {
   await mkdir(new URL('.', destination), { recursive: true });
   await copyFile(new URL('../src/lib/server/contactEmailLogo.png', import.meta.url), destination);
+  await copyFile(
+    new URL('../src/lib/server/contactEmailArrow.png', import.meta.url),
+    new URL('contactEmailArrow.png', destination),
+  );
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

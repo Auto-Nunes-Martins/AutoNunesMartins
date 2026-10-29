@@ -42,14 +42,16 @@ const directory = new URL('../../docs/previews/', import.meta.url);
 await mkdir(directory, { recursive: true });
 for (const [name, data] of cases) {
   // Preview only: resolve the real repository PNG locally; no invented public domain is sent.
-  const html = contactEmailHtml(data).replace(
-    'cid:auto-nunes-martins-logo',
-    '../../backend/src/lib/server/contactEmailLogo.png',
-  );
+  const html = contactEmailHtml(data)
+    .replace('cid:auto-nunes-martins-logo', '../../backend/src/lib/server/contactEmailLogo.png')
+    .replace('cid:auto-nunes-martins-arrow', '../../backend/src/lib/server/contactEmailArrow.png');
   await writeFile(new URL(`${name}.html`, directory), html);
 }
 await writeFile(
   new URL('contact-email-wordmark.html', directory),
-  contactEmailHtml(cases[0]![1], { logo: false }),
+  contactEmailHtml(cases[0]![1], { logo: false }).replace(
+    'cid:auto-nunes-martins-arrow',
+    '../../backend/src/lib/server/contactEmailArrow.png',
+  ),
 );
 console.info('Quatro previews fictícias em docs/previews; logo local. Nenhum email enviado.');

@@ -1,4 +1,4 @@
-import { contactEmailLogoId } from './contactEmailLogo.js';
+import { contactEmailLogoId, contactEmailArrowId } from './contactEmailLogo.js';
 
 /** Presentation only. No provider, credentials, tracking or official contact details. */
 export interface ContactEmailData {
@@ -83,7 +83,7 @@ ${brand}
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#242627" style="table-layout:fixed;background-color:#242627;border:1px solid #383a3b;border-radius:6px;"><tr><td class="message-pad" style="padding:22px 24px;color:#f1f2ef;font-size:16px;line-height:27px;overflow-wrap:anywhere;word-break:break-word;">${message}</td></tr></table>
 </td></tr>
 <tr><td class="email-pad" bgcolor="#191b1c" style="padding:0 36px 34px;background-color:#191b1c;">
-<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" bgcolor="#f1f2ef" style="background-color:#f1f2ef;border-radius:3px;mso-padding-alt:15px 22px;"><a href="${reply}" style="display:inline-block;padding:15px 22px;border:1px solid #f1f2ef;border-radius:3px;color:#161819;font-size:13px;line-height:18px;font-weight:600;text-decoration:none;">Responder ao contacto&nbsp;&nbsp; <span aria-hidden="true" style="color:#c70511;">&#8599;</span></a></td></tr></table>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" bgcolor="#e30613" style="background-color:#e30613;border-radius:3px;mso-padding-alt:15px 22px;"><a href="${reply}" style="display:inline-block;padding:15px 22px;border:1px solid #e30613;border-radius:3px;color:#ffffff;font-size:13px;line-height:18px;font-weight:600;text-decoration:none;">Responder ao contacto&nbsp;&nbsp; <img src="cid:${contactEmailArrowId}" width="14" height="14" alt="" aria-hidden="true" style="display:inline-block;width:14px;height:14px;vertical-align:-2px;border:0;"></a></td></tr></table>
 </td></tr>
 <tr><td class="email-pad" bgcolor="#141617" style="padding:24px 36px;background-color:#141617;border-top:1px solid #383a3b;overflow-wrap:anywhere;word-break:break-word;">
 <p style="margin:0 0 7px;color:#a6aaa8;font-size:10px;font-weight:400;line-height:16px;letter-spacing:1.3px;">${vehicle}</p>

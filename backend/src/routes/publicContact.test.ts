@@ -88,7 +88,12 @@ describe('public contact email', () => {
     expect(providerHeaders.has('In-Reply-To')).toBe(false);
     expect(email.text).toContain(body.message);
     expect(email.html).toContain('alt="Auto Nunes Martins"');
-    expect(email.attachments).toHaveLength(1);
+    expect(email.attachments).toHaveLength(2);
+    expect(email.attachments[1]).toMatchObject({
+      content_id: 'auto-nunes-martins-arrow',
+      content_type: 'image/png',
+    });
+    expect(email.html).toContain(`src="cid:${email.attachments[1].content_id}"`);
     expect(email.attachments[0]).toMatchObject({
       filename: 'auto-nunes-martins.png',
       content_type: 'image/png',
