@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import catalog from './brands.json';
+import catalog from './brands.json' with { type: 'json' };
 export const vehicleBrands = catalog;
 export function brandSearchKey(value: string): string {
   return value

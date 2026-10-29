@@ -28,6 +28,20 @@ for (const args of [
     shell: process.platform === 'win32',
   });
   if (result.status !== 0) process.exit(result.status || 1);
+  // Exercise emitted ESM in the actual build Node, without tsx/Vite masking loader errors.
+  if (args[1] === '@anm/types') {
+    const check = spawnSync(
+      process.execPath,
+      [
+        '--conditions=anm-runtime',
+        '--input-type=module',
+        '-e',
+        "import assert from 'node:assert/strict'; import { vehicleBrands, registeredBrandSchema, vehicleCreateSchema } from '@anm/types'; assert.ok(vehicleBrands.length >= 200); assert.equal(registeredBrandSchema.parse('nissan'), 'Nissan'); assert.equal(vehicleCreateSchema.shape.brand.safeParse('not-a-registered-brand').success, false); console.log('Compiled shared ESM runtime check passed');",
+      ],
+      { stdio: 'inherit', env },
+    );
+    if (check.status !== 0) process.exit(check.status || 1);
+  }
 }
 mkdirSync('deployment', { recursive: true });
 writeFileSync(
