@@ -60,3 +60,7 @@ deployment/build.json
 
 # Local diagnostic screenshots, reports and experiments
 /artifacts/
+
+# Generated previews and screenshots; source templates, Markdown, manifests and licenses stay tracked.
+/docs/previews/
+/docs/brand-catalog/*.png

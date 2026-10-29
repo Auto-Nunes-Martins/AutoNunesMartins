@@ -98,3 +98,16 @@ Os previews verificam paleta escura em Chromium com preferência de sistema clar
 ### Seta do botão sem emoji
 
 Por opção final do proprietário, o CTA usa o vermelho da marca #e30613 com texto e seta brancos em todos os tamanhos. O resto do email continua escuro. Não existem regras de cor dependentes da largura nem uma tentativa de detetar a inversão interna do Gmail. O glifo Unicode U+2197 foi substituído por um PNG transparente de42×42px apresentado a14×14px, incorporado por CID auto-nunes-martins-arrow. O build empacota logo e seta e o payload inclui ambas as imagens inline; mailto, assunto, idempotência e restantes conteúdos mantêm-se. Previews locais: [desktop](previews/contact-email-cta-900.png) e [móvel](previews/contact-email-cta-375.png). Os testes verificam imagem de dimensão fixa, contraste e payload; a apresentação no Gmail real continua a exigir observação num email novo. Nenhum email real foi enviado.
+
+## Previews gerados e versionamento
+
+`docs/previews/` contém apenas HTML e capturas gerados localmente e está ignorado pelo Git. Os caminhos de preview referidos acima são saídas locais, não ficheiros distribuídos no repositório. O template autoral, fixtures e verificações continuam versionados em `backend/src/lib/server/contactEmail.ts`, `backend/scripts/preview-contact-email.ts` e `backend/scripts/check-contact-email-preview.mjs`. Os PNG fonte do logo e da seta em `backend/src/lib/server/` são assets do email real e continuam versionados; não são previews. A documentação Markdown também continua versionada.
+
+Para gerar novamente a partir da raiz, sem envio real de email:
+
+```sh
+node --import tsx backend/scripts/preview-contact-email.ts
+node backend/scripts/check-contact-email-preview.mjs
+```
+
+O segundo comando requer o browser de teste instalado. Os outputs anteriores podem permanecer localmente para comparação; ignorar/desversionar não os apaga do disco. O exemplo `apps/website/.env.example` conserva um placeholder vazio `CONTACT_RELAY_SECRET`, necessário pelo relay do servidor; configurar o valor real apenas em ambiente privado.
