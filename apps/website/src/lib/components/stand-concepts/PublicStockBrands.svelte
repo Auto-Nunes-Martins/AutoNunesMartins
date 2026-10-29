@@ -7,6 +7,7 @@
     directory,
     context = 'home',
   }: { directory: PublicBrandDirectory; context?: 'home' | 'catalog' } = $props();
+  let failedLogos = $state<string[]>([]);
   const links = $derived(directory.status === 'ready' ? catalogBrandLinks(directory.brands) : []);
 </script>
 
@@ -29,7 +30,7 @@
             aria-hidden={duplicate ? true : undefined}
           >
             {#each links as brand (brand.name)}
-              {@const logo = brandLogo(brand.name)}
+              {@const logo = failedLogos.includes(brand.name) ? undefined : brandLogo(brand.name)}
               <li>
                 <a
                   href={brand.href}
@@ -40,6 +41,7 @@
                       class="brand-logo"
                       class:wide-logo={['audi', 'dacia'].includes(brand.name.trim().toLowerCase())}
                       src={logo}
+                      onerror={() => (failedLogos = [...failedLogos, brand.name])}
                       alt=""
                       aria-hidden="true"
                       width="72"
@@ -134,12 +136,13 @@
     width: 72px;
     height: 44px;
     object-fit: contain;
+    filter: grayscale(1);
   }
   .brand-logo.wide-logo {
     transform: scale(1.4);
   }
   :global(:where(html)[data-theme='dark']) .brand-logo {
-    filter: invert(1);
+    filter: grayscale(1) invert(1);
   }
   .brand-label {
     display: flex;

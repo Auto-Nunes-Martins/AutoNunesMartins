@@ -3,14 +3,19 @@
   import { brandLogo } from '$lib/brandLogos';
   let { label, value = '' }: { label: string; value?: string } = $props();
   const logo = $derived(label === 'Marca' ? brandLogo(value) : undefined);
+  let failedLogo = $state<string | undefined>();
 </script>
 
-{#if logo}
-  <span
+{#if logo && failedLogo !== logo}
+  <img
     class="spec-brand-logo"
-    style={`mask-image: url('${logo}'); -webkit-mask-image: url('${logo}');`}
+    src={logo}
+    alt=""
     aria-hidden="true"
-  ></span>
+    width="20"
+    height="20"
+    onerror={() => (failedLogo = logo)}
+  />
 {:else}
   <VehicleSpecGlyph {label} />
 {/if}
@@ -20,13 +25,11 @@
     display: inline-block;
     width: 20px;
     height: 20px;
-    background: currentColor;
-    mask-size: contain;
-    mask-position: center;
-    mask-repeat: no-repeat;
-    -webkit-mask-size: contain;
-    -webkit-mask-position: center;
-    -webkit-mask-repeat: no-repeat;
+    object-fit: contain;
+    filter: grayscale(1);
     flex-shrink: 0;
+  }
+  :global(:where(html)[data-theme='dark']) .spec-brand-logo {
+    filter: grayscale(1) invert(1);
   }
 </style>

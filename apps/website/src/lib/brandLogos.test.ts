@@ -1,11 +1,10 @@
+import { vehicleBrands } from '@anm/types';
 import { expect, it } from 'vitest';
 import { brandLogo } from './brandLogos';
-import bmw from './assets/images/brands/bmw.svg?url&no-inline';
-import renault from './assets/images/brands/renault.svg?url&no-inline';
 
 it('uses verified local assets for exact brand names, ignoring case and outer whitespace', () => {
-  expect(brandLogo(' BMW ')).toBe(bmw);
-  expect(brandLogo('Renault')).toBe(renault);
+  expect(brandLogo(' BMW ')).toMatch(/bmw.*\.svg/);
+  expect(brandLogo('Renault')).toMatch(/renault.*\.svg/);
 });
 it.each(['renot', 'Renault Trucks', 'Inventada', '__proto__', 'constructor', '../renault'])(
   'does not guess a logo for %s',
@@ -37,3 +36,16 @@ it('accepts explicit brand aliases without fuzzy matching', () => {
   expect(brandLogo('Citroen')).toBe(brandLogo('Citroën'));
   expect(brandLogo(' VW ')).toBe(brandLogo('Volkswagen'));
 });
+
+it('resolves a Nissan stored as legacy text without requiring an edit or a catalogue relation in the API', () => {
+  expect(brandLogo('  nIsSaN  ')).toMatch(/nissan.*\.svg/);
+  expect(brandLogo('Nissan')).toBe(brandLogo('  nIsSaN  '));
+});
+it.each(vehicleBrands)(
+  'matches public logo coverage to the installed catalogue: $name',
+  (brand) => {
+    if (brand.logo) expect(brandLogo(brand.name)).toMatch(/\.(?:svg|png)/);
+    else expect(brandLogo(brand.name)).toBeUndefined();
+    for (const alias of brand.aliases) expect(brandLogo(alias)).toBe(brandLogo(brand.name));
+  },
+);
