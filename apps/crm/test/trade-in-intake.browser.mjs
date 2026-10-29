@@ -127,7 +127,7 @@ for (const width of [390, 1366])
       );
       await page.goto(origin);
       await page.waitForFunction(() => window.reviewReady);
-      const add = page.getByRole('button', { name: 'Adicionar cliente', exact: true });
+      const add = page.getByRole('button', { name: 'Novo cliente', exact: true });
       assert.equal(
         await add.evaluate((e) => getComputedStyle(e).backgroundColor),
         'rgb(216, 32, 39)',
@@ -152,7 +152,7 @@ for (const width of [390, 1366])
         allowanceValue: '0',
         notes: 'Revisão em falta',
       }))
-        await page.locator('[name="tradeIn.' + name + '"]').fill(value);
+        if(name==='brand'){await page.getByRole('combobox',{name:'Marca',exact:true}).fill(value);await page.getByRole('option',{name:value,exact:true}).click();}else await page.locator('[name="tradeIn.' + name + '"]').fill(value);
       await page.locator('[name="tradeIn.licensePlate"]').blur();
       assert.equal(await page.locator('[name="tradeIn.licensePlate"]').inputValue(), '12-AB-34');
       await page.locator('[name="tradeIn.fuel"]').selectOption('DIESEL');

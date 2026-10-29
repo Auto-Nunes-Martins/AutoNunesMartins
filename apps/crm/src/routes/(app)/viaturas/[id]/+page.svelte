@@ -1,6 +1,9 @@
 <script lang="ts">
+ import BrandLogo from '$lib/components/vehicle/BrandLogo.svelte';
   import { crmPath } from '$lib/paths';
   import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
+  import { PUBLIC_WEBSITE_URL } from '$env/static/public';
+  import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import {
     ArrowRightLeft,
     Calendar,
@@ -104,7 +107,7 @@
           {/await}
         </span>
       </div>
-      <ItalicHero text={`${v.brand} `} accent={v.model} size="lg" />
+      <div class="flex items-center gap-3"><BrandLogo name={v.brand} size={40} /><ItalicHero text={`${v.brand} `} accent={v.model} size="lg" /></div>
       <p
         class="mt-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[var(--color-text-muted)]"
       >
@@ -117,6 +120,16 @@
       </p>
     </div>
     <div class="vehicle-actions flex flex-wrap items-center gap-2">
+      {#if websiteVisibility(v).visible && v.publicSlug}
+        <a
+          class="public-view-link"
+          href={publicVehicleUrl(PUBLIC_WEBSITE_URL, v.publicSlug)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Ver ficha pública <span aria-hidden="true">↗</span>
+        </a>
+      {/if}
       {#await highlightStatus}
         <Button variant="outline" href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}><Star class="h-4 w-4" />Ver destaques</Button>
       {:then status}
@@ -126,6 +139,7 @@
         <Pencil class="h-4 w-4" />
         Editar
       </Button>
+
       {#if !v.sale && ['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(v.status)}
         <Button variant="primary" class="sell-vehicle-action" href={crmPath(`/viaturas/${v.id}/vender`)}>
           <Check class="h-4 w-4" />
@@ -350,6 +364,8 @@
 </section>
 
 <style>
+  .public-view-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; white-space:nowrap; font-size:13px; text-decoration:underline; color:var(--color-text); }
+  .public-view-link:focus-visible { outline:2px solid var(--color-red); outline-offset:3px; border-radius:var(--radius-btn); }
   .vehicle-actions :global(.edit-vehicle-action) {border-color:var(--color-text-muted);background:var(--color-bg-2);font-weight:600;color:var(--color-text);}
   .vehicle-actions :global(.edit-vehicle-action:hover) {border-color:var(--color-text);}
   .vehicle-actions :global(.sell-vehicle-action) {margin-left:auto;}

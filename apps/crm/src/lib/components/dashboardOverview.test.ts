@@ -1,3 +1,5 @@
+import { descriptionPreviewHtml } from '@anm/types/richDescription';
+import { photoAttrs } from '$lib/vehicleImage';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,6 +34,7 @@ function fromSource(source: string, file: string): any {
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
     else if (specifier === '$env/static/public')
       value = { PUBLIC_BACKEND_URL: 'https://backend.example' };
+    else if (specifier === '@anm/types/richDescription') value = { descriptionPreviewHtml };
     else if (specifier === '$lib/publicVehiclePhoto') value = { publicVehiclePhotoUrl };
     else if (specifier === '$app/navigation') value = { invalidateAll: async () => {} };
     else if (specifier === '$lib/auth/session')
@@ -48,8 +51,9 @@ function fromSource(source: string, file: string): any {
     else if (specifier === '$lib/activityPresentation')
       value = {
         activityStyle: () => ({ icon, color: 'var(--color-info)', label: 'Evento' }),
+        activityContextText: () => null,
       };
-    else if (specifier === '$lib/vehicleImage') value = { photoFallback: () => ({}) };
+    else if (specifier === '$lib/vehicleImage') value = { photoFallback: () => ({}), photoAttrs };
     else if (specifier.endsWith('.svelte'))
       value = {
         default: load(

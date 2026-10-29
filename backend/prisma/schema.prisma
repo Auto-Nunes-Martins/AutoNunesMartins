@@ -38,10 +38,22 @@ model ClerkUserDeletion {
   deletedAt DateTime @default(now())
 }
 
+model VehicleBrand {
+  name String @id
+  key String @unique
+  aliases String[] @default([])
+  logo String?
+  active Boolean @default(true)
+  vehicles Vehicle[]
+  tradeIns TradeIn[]
+}
+
 // ─── Vehicles ────────────────────────────────────────────────────────────
 model Vehicle {
   id              String                   @id @default(cuid())
   brand           String
+  legacyBrand     String?
+  registeredBrand VehicleBrand @relation(fields: [brand], references: [name], onDelete: Restrict, onUpdate: Cascade)
   model           String
   year            Int
   fuel            Fuel
@@ -196,6 +208,8 @@ model TradeIn {
   // Minimal vehicle identification — enough for the receipt and to seed a
   // future Vehicle row if the car goes to stock.
   brand        String
+  legacyBrand String?
+  registeredBrand VehicleBrand @relation(fields: [brand], references: [name], onDelete: Restrict, onUpdate: Cascade)
   model        String
   year         Int
   fuel         Fuel

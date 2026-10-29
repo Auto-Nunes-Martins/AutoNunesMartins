@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({ api: vi.fn() }));
 vi.mock('$lib/server/api', () => ({
   apiJson: mocks.api,
+  rethrowAuthError: (err: unknown) => { if ((err as {status?:number})?.status === 401 || (err as {status?:number})?.status === 403) throw err; },
   ApiError: class extends Error {
     constructor(
       public status: number,
@@ -26,8 +27,9 @@ describe('CRM homepage highlight actions', () => {
   it('loads the authenticated editor rather than the public inventory projection', async () => {
     const editor = { revision: null, items: [], candidates: [] };
     mocks.api.mockResolvedValue(editor);
-    expect(await load({} as any)).toEqual({ editor });
-    expect(mocks.api).toHaveBeenCalledWith({}, '/api/homepage-highlights');
+    const event = {url: new URL('http://localhost/site/destaques?viatura=selected')};
+    expect(await load(event as any)).toEqual({ editor, selectedVehicleId: 'selected' });
+    expect(mocks.api).toHaveBeenCalledWith(event, '/api/homepage-highlights');
   });
   it('sends the chosen order, photo and revision to the authenticated API', async () => {
     mocks.api.mockResolvedValue({ revision: 'new' });

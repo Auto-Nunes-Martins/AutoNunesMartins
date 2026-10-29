@@ -1,0 +1,486 @@
+[
+  {
+    "brand": "Acura",
+    "title": "Acura",
+    "hex": "000000",
+    "source": "https://www.acura.com",
+    "guidelines": "https://www.honda.com/privacy/terms-and-conditions",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Alfa Romeo",
+    "title": "Alfa Romeo",
+    "hex": "981E32",
+    "source": "https://www.fcaci.com/x/Alfa",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Aston Martin",
+    "title": "Aston Martin",
+    "hex": "00665E",
+    "source": "https://www.astonmartin.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Audi",
+    "title": "Audi",
+    "hex": "BB0A30",
+    "source": "https://www.audi.com/ci/en/intro/basics/rings.html",
+    "guidelines": "https://www.audi.com/ci/en/intro/basics/rings.html",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Bentley",
+    "title": "Bentley",
+    "hex": "333333",
+    "source": "https://en.wikipedia.org/wiki/File:Bentley_logo_2.svg",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "BMW",
+    "title": "BMW",
+    "hex": "0066B1",
+    "source": "https://www.bmw.de",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Bugatti",
+    "title": "Bugatti",
+    "hex": "000000",
+    "source": "https://newsroom.bugatti.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Cadillac",
+    "title": "Cadillac",
+    "hex": "000000",
+    "source": "https://www.cadillac.com",
+    "guidelines": "https://www.gm.com/copyright-trademark",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Chevrolet",
+    "title": "Chevrolet",
+    "hex": "CD9834",
+    "source": "https://www.chevrolet.com/content/dam/chevrolet/na/us/english/index/shopping-tools/download-catalog/02-pdf/2019-chevrolet-corvette-catalog.pdf",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Chrysler",
+    "title": "Chrysler",
+    "hex": "000000",
+    "source": "https://www.stellantis.com/en/brands/chrysler",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Citroën",
+    "title": "Citroën",
+    "hex": "DA291C",
+    "source": "https://www.stellantis.com/en/brands/citroen",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Dacia",
+    "title": "Dacia",
+    "hex": "646B52",
+    "source": "https://commons.wikimedia.org/wiki/File:Dacia-Logo-2021.svg",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "DAF",
+    "title": "DAF",
+    "hex": "00529B",
+    "source": "https://www.daf.com/en",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Daimler",
+    "title": "Daimler",
+    "hex": "E6E6E6",
+    "source": "https://designnavigator.daimler.com/Daimler_Corporate_Logotype_Black_DTP",
+    "guidelines": "https://designnavigator.daimler.com/Daimler_Corporate_Logotype",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "DS Automobiles",
+    "title": "DS Automobiles",
+    "hex": "1D1717",
+    "source": "https://www.stellantis.com/en/brands/ds",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Ferrari",
+    "title": "Ferrari",
+    "hex": "D40000",
+    "source": "https://www.ferrari.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Fiat",
+    "title": "Fiat",
+    "hex": "941711",
+    "source": "https://www.fcaci.com/x/FIATv15",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Ford",
+    "title": "Ford",
+    "hex": "00274E",
+    "source": "https://secure.ford.com/brochures/",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Honda",
+    "title": "Honda",
+    "hex": "E40521",
+    "source": "https://www.honda.ie",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Hyundai",
+    "title": "Hyundai",
+    "hex": "002C5E",
+    "source": "https://www.hyundai.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Infiniti",
+    "title": "INFINITI",
+    "hex": "020B24",
+    "source": "https://www.infiniti.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Jaguar",
+    "title": "Jaguar",
+    "hex": "FFFFFF",
+    "source": "https://media.jaguar.com/en/press-kit",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Jeep",
+    "title": "Jeep",
+    "hex": "000000",
+    "source": "https://commons.wikimedia.org/wiki/File:Jeep_logo.svg",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Kia",
+    "title": "Kia",
+    "hex": "05141F",
+    "source": "https://www.kia.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "KTM",
+    "title": "KTM",
+    "hex": "FF6600",
+    "source": "https://ktm.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Lada",
+    "title": "LADA",
+    "hex": "ED6B21",
+    "source": "https://www.lada.ru",
+    "aliases": {
+      "loc": {
+        "ru-RU": "Лада"
+      }
+    },
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Lamborghini",
+    "title": "Lamborghini",
+    "hex": "B6A272",
+    "source": "https://www.lamborghini.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Land Rover",
+    "title": "Land Rover",
+    "hex": "005A2B",
+    "source": "https://media.landrover.com/en/press-kit",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Lucid",
+    "title": "Lucid",
+    "hex": "282C33",
+    "source": "https://lucid.co/brand",
+    "guidelines": "https://lucid.co/brand",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Mahindra",
+    "title": "Mahindra",
+    "hex": "DD052B",
+    "source": "https://www.mahindra.com",
+    "guidelines": "https://www.mahindra.com/newsroom/logos",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Maserati",
+    "title": "Maserati",
+    "hex": "0C2340",
+    "source": "https://www.stellantis.com/en/brands/maserati",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Mazda",
+    "title": "Mazda",
+    "hex": "101010",
+    "source": "https://www.mazda.com/en/about/profile/library/",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "McLaren",
+    "title": "McLaren",
+    "hex": "FF0000",
+    "source": "https://cars.mclaren.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "title": "Mercedes",
+    "hex": "242424",
+    "source": "https://www.mercedes-benz.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "MG",
+    "title": "MG",
+    "aliases": {
+      "aka": [
+        "Morris Garages"
+      ]
+    },
+    "hex": "FF0000",
+    "source": "https://www.mg.co.uk/themes/custom/mg/assets/images/svg/mg-logo-desktop.svg",
+    "guidelines": "https://www.mg.co.uk/terms-and-conditions",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "MINI",
+    "title": "Mini",
+    "hex": "000000",
+    "source": "https://mini.co.uk",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Mitsubishi",
+    "title": "Mitsubishi",
+    "hex": "E60012",
+    "source": "https://www.mitsubishi.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Nissan",
+    "title": "Nissan",
+    "hex": "C3002F",
+    "source": "https://www.nissan.ie",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Opel",
+    "title": "Opel",
+    "hex": "F7FF14",
+    "source": "https://www.stellantis.com/en/brands/opel",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Peugeot",
+    "title": "Peugeot",
+    "hex": "000000",
+    "source": "https://www.peugeot.co.uk",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Polestar",
+    "title": "Polestar",
+    "hex": "000000",
+    "source": "https://commons.wikimedia.org/wiki/File:Polestar_logo_2020.svg",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Porsche",
+    "title": "Porsche",
+    "hex": "B12B28",
+    "source": "https://www.porsche.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Proton",
+    "title": "Proton",
+    "hex": "6D4AFF",
+    "source": "https://proton.me/media/kit",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "RAM",
+    "title": "Ram",
+    "hex": "000000",
+    "source": "https://www.fcaci.com/x/RAMv15",
+    "guidelines": "https://www.fcaci.com/x/RAMv15",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Renault",
+    "title": "Renault",
+    "hex": "FFCC33",
+    "source": "https://en.media.groupe.renault.com/news/renault-news-march-2021-5f28-989c5.html",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Rolls-Royce",
+    "title": "Rolls-Royce",
+    "hex": "281432",
+    "source": "https://www.rolls-roycemotorcars.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Saturn",
+    "title": "Saturn",
+    "hex": "EB680B",
+    "source": "https://www.saturn.de",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "SEAT",
+    "title": "SEAT",
+    "hex": "33302E",
+    "source": "https://www.seat.es",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Škoda",
+    "title": "ŠKODA",
+    "hex": "0E3A2F",
+    "source": "https://www.skoda-connect.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Smart",
+    "title": "smart",
+    "hex": "D7E600",
+    "source": "https://global.smart.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Subaru",
+    "title": "Subaru",
+    "hex": "013C74",
+    "source": "https://commons.wikimedia.org/wiki/File:Subaru_logo.svg",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Suzuki",
+    "title": "Suzuki",
+    "hex": "E30613",
+    "source": "https://www.suzuki.ie",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Tata",
+    "title": "Tata",
+    "hex": "486AAE",
+    "source": "https://www.tatasteel.com/media/media-kit/logos-usage-guidelines",
+    "guidelines": "https://www.tatasteel.com/media/media-kit/logos-usage-guidelines",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Tesla",
+    "title": "Tesla",
+    "hex": "CC0000",
+    "source": "https://www.tesla.com/tesla-gallery",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Toyota",
+    "title": "Toyota",
+    "hex": "EB0A1E",
+    "source": "https://www.toyota.com/brandguidelines/logo/",
+    "guidelines": "https://www.toyota.com/brandguidelines/",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Vauxhall",
+    "title": "Vauxhall",
+    "hex": "EB001E",
+    "source": "https://www.stellantis.com/en/brands/vauxhall",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Volkswagen",
+    "title": "Volkswagen",
+    "hex": "151F5D",
+    "source": "https://www.vw.com",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  },
+  {
+    "brand": "Volvo",
+    "title": "Volvo",
+    "hex": "003057",
+    "source": "https://www.media.volvocars.com/global/en-gb/logos",
+    "upstream": "https://github.com/simple-icons/simple-icons/tree/11.15.0",
+    "license": "CC0-1.0 (collection; trademark rights retained)"
+  }
+]

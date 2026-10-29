@@ -1,4 +1,5 @@
 <script lang="ts">
+ import BrandLogo from './BrandLogo.svelte';
   import { photoFallback } from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
   import { linkedRow } from '$lib/linkedRow';
@@ -37,7 +38,7 @@
 
 {#snippet rowActions(v: VehicleListItem)}
   <RowActions
-    label={`${v.brand} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`}
+    label={`$<BrandLogo name={v.brand} size={22} /> {v.brand} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`}
     editHref={v.status === 'DRAFT' ? destination(v) : crmPath(`/viaturas/${v.id}/editar`)}
     actions={actionsFor(v)}
   />
@@ -64,7 +65,7 @@
               <img
                 src={v.thumbnailUrl}
                 use:photoFallback={v.thumbnailOriginalUrl ?? v.thumbnailUrl}
-                alt={`${v.brand} ${v.model}`}
+                alt={`$<BrandLogo name={v.brand} size={22} /> {v.brand} ${v.model}`}
                 class="h-full w-full object-cover"
                 loading="lazy"
               />
@@ -77,7 +78,7 @@
               <div
                 class="font-display font-semibold text-[14px] line-clamp-2 break-words group-hover:text-[var(--color-red)] transition-colors"
               >
-                {v.brand}
+                <BrandLogo name={v.brand} size={22} /> {v.brand}
                 {v.model}
               </div>
               <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly /></div>
@@ -209,7 +210,7 @@
                   <img
                     src={v.thumbnailUrl}
                     use:photoFallback={v.thumbnailOriginalUrl ?? v.thumbnailUrl}
-                    alt={`${v.brand} ${v.model}`}
+                    alt={`$<BrandLogo name={v.brand} size={22} /> {v.brand} ${v.model}`}
                     class="h-full w-full object-cover"
                     loading="lazy"
                   />
@@ -221,7 +222,7 @@
                 <div
                   class="font-display font-semibold text-[14px] truncate group-hover:text-[var(--color-red)] transition-colors"
                 >
-                  {v.brand}
+                  <BrandLogo name={v.brand} size={22} /> {v.brand}
                   {v.model}
                 </div>
                 <div

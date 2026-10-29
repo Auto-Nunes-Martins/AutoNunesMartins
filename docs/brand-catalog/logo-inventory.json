@@ -1,0 +1,2305 @@
+[
+  {
+    "name": "Abarth",
+    "key": "abarth",
+    "asset": "abarth.svg",
+    "sha256": "02c73b67f0b3123061dd3546b9eae87f0b4ebe5537960059cb666e49941c2e9b",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/abarth-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "AC",
+    "key": "ac",
+    "asset": "ac.png",
+    "sha256": "cd3439dbc82aa214e88ce2b5245bc48b5aa55b60b92d0ec0020e92b61fc46b16",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/ac.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Acura",
+    "key": "acura",
+    "asset": "acura.svg",
+    "sha256": "b29e78b6e36febd8d19e7f6b8952095759fd7c8026abef0e546f11831f0ad83a",
+    "source": "https://www.acura.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Aion",
+    "key": "aion",
+    "asset": "aion.svg",
+    "sha256": "0367057d34d0dd4ddbb9d92720cdd4262c3f7afdd89acb5ffe5bfb551c75936a",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/aion-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "AITO",
+    "key": "aito",
+    "asset": "aito.svg",
+    "sha256": "a705a1191846c2cec755590f9aa507a0967cc7b08c3ebbb8ae6cf0f025f364dd",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/aito-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Aiways",
+    "key": "aiways",
+    "asset": "aiways.svg",
+    "sha256": "adeb9473c2e2c51949965de380cbc801a9ecef401e97965037ef4969821aea0e",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/aiways-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Aixam",
+    "key": "aixam",
+    "asset": "aixam.svg",
+    "sha256": "655997539f0539a39589cd5ce0c09450f6d69bfd3f5f473933e872d444f20526",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/aixam-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Alfa Romeo",
+    "key": "alfaromeo",
+    "asset": "alfaromeo.svg",
+    "sha256": "c3d25becfb70b68ceb2d8f4f086dea3bf7ee4f28ea2d3e0fbf27f825ef991fd7",
+    "source": "https://www.fcaci.com/x/Alfa",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "ALPINA",
+    "key": "alpina",
+    "asset": "alpina.svg",
+    "sha256": "7741e2726db784a4f88a5bdc372bc2cce354282030b45a72f549373e5a4b2702",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/alpina-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Alpine",
+    "key": "alpine",
+    "asset": "alpine.svg",
+    "sha256": "14ebe96e7acd90ac6e1f125e734d63c2e0139a1a92483345e5c75214924386d6",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/alpine-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Alvis",
+    "key": "alvis",
+    "asset": "alvis.png",
+    "sha256": "20d48279df75b18d3c22e995c0159d6af0a4dc601d58e1660237ed05d0787946",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/alvis.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "AMC",
+    "key": "amc",
+    "asset": "amc.png",
+    "sha256": "baa1c23a1dd26adeae37ae42d5d452e41e5aeeda82d0cb2ca563c6b453546c92",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/amc.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Ariel",
+    "key": "ariel",
+    "asset": "ariel.svg",
+    "sha256": "4671a3238e67e7eda23dd39b22d68d04c6d8b2d069245f767265c50bc05b0de6",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ariel-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Aro",
+    "key": "aro",
+    "asset": "aro.svg",
+    "sha256": "f6d15c670d0334a3c93b6630356e03a563431f16b108efeafabebed967f58c5a",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/aro-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Aston Martin",
+    "key": "astonmartin",
+    "asset": "astonmartin.svg",
+    "sha256": "c6423d510896fb31d55f51b48c26ca0f3849d4fe107c576a1c50153314bd86de",
+    "source": "https://www.astonmartin.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Audi",
+    "key": "audi",
+    "asset": "audi.svg",
+    "sha256": "daebead0fb61bc8cd88e90adabca5161a9b52a8d4202ce89c18daeab6bd70d7e",
+    "source": "https://www.audi.com/ci/en/intro/basics/rings.html",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Austin",
+    "key": "austin",
+    "asset": "austin.svg",
+    "sha256": "0797e2d16cc7e9b7c3aa1b78e093af6343f398639e13bce066fa09cd5970495b",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/austin-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Austin-Healey",
+    "key": "austinhealey",
+    "asset": "austinhealey.png",
+    "sha256": "b106a7001ea54b1bbec896d0e3c621d721f2a1bfc4ea3022022088ffe483c368",
+    "source": "https://vl.imgix.net/img/austin-healey-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Autobianchi",
+    "key": "autobianchi",
+    "asset": "autobianchi.svg",
+    "sha256": "1f0313ab2c134f1243ea31ffe311b481175d76f502ef863b9d76151d35069074",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/autobianchi-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Avatr",
+    "key": "avatr",
+    "asset": "avatr.svg",
+    "sha256": "1c852080aeb2e472bb5b3fbc0e9b60f74ab71f58e5b8836e883ba8ef2cb007cc",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/avatr-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "BAC",
+    "key": "bac",
+    "asset": "bac.svg",
+    "sha256": "3337205a6641d1b78221352cbcf6f491ef0a0c4c6cdc65c32e0126a7532d3d50",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/bac-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "BAIC",
+    "key": "baic",
+    "asset": "baic.svg",
+    "sha256": "61573d54e2131c1916c1e35c21ab0aabdef6b3a4da0742c365d23e1e7df4fc41",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/baic-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "BAW",
+    "key": "baw",
+    "asset": "baw.svg",
+    "sha256": "bf091100b38073f3bda6e514ccf8f3a59ad2912cf44e6cb8e69c07a68ac63ca1",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/baw-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Bentley",
+    "key": "bentley",
+    "asset": "bentley.svg",
+    "sha256": "1f07419b93ca531876dcdddae4627e3b0588e2a05479b7cf57bb1419603b80f4",
+    "source": "https://en.wikipedia.org/wiki/File:Bentley_logo_2.svg",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Bertone",
+    "key": "bertone",
+    "asset": "bertone.svg",
+    "sha256": "b275d3a473914c132f8061eafd8064ffd2b1f5f565ea8844e3d32fc66e54ab35",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/bertone-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "BMW",
+    "key": "bmw",
+    "asset": "bmw.svg",
+    "sha256": "d2a396f98f388b06861ed887a0d9830ed5e32224726c2acf000250e6ef289dcf",
+    "source": "https://www.bmw.de",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Bollinger",
+    "key": "bollinger",
+    "asset": "bollinger.svg",
+    "sha256": "f380f46a7806fa66f0e0eba692dd4e504d443df8c34605b7498f1c1f6ad35cbc",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/bollinger-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Borgward",
+    "key": "borgward",
+    "asset": "borgward.png",
+    "sha256": "30f56e4e03fd32f4cc7b1a3323f19f771c017ca379283b1903eccaa0de7de2a7",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/borgward.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Brabham",
+    "key": "brabham",
+    "asset": "brabham.svg",
+    "sha256": "090ae7a87c47a3d129646567e80ae38b447cebef2d34c1eaeb6a637b75f3703d",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/brabham-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Brilliance",
+    "key": "brilliance",
+    "asset": "brilliance.png",
+    "sha256": "6da6a5581086ba65676d49385e01831733bfd074a234e316c31876324c256177",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/brilliance-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Bristol",
+    "key": "bristol",
+    "asset": "bristol.png",
+    "sha256": "c868f47522cdc3c1932204fd71b6c9dfe1e0595e250c48bc8f58a554e5742c5b",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/bristol.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Bugatti",
+    "key": "bugatti",
+    "asset": "bugatti.svg",
+    "sha256": "86a5c1e22628c7d4b155d41560cd3fdbda486e7feceb38378f5f94764b7806a3",
+    "source": "https://newsroom.bugatti.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Buick",
+    "key": "buick",
+    "asset": "buick.png",
+    "sha256": "7f8652f3017f2b7a0fac58a4b9a7066eb2f62886dadc0c1e747a907f59e802cb",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/buick-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "BYD",
+    "key": "byd",
+    "asset": "byd.svg",
+    "sha256": "532ce729e2ecf9cfeddbc020262a99391079479613799c92c30ea36da5dad9fb",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/byd-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Cadillac",
+    "key": "cadillac",
+    "asset": "cadillac.svg",
+    "sha256": "aec91d6dba7fd61378188bd74672909a9695d02b933f15580a7fe9620216fe70",
+    "source": "https://www.cadillac.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Casalini",
+    "key": "casalini",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Caterham",
+    "key": "caterham",
+    "asset": "caterham.svg",
+    "sha256": "b0ee7413af30cbfd2faf5cca1d3c5b4a847d7d293fc44aefc56b83f1b3027952",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/caterham-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Changan",
+    "key": "changan",
+    "asset": "changan.png",
+    "sha256": "c460e32488051b2b11c81b47aef95b8ad97d0243d82a7920e6ed361c191f9288",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/changan-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Chatenet",
+    "key": "chatenet",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Chery",
+    "key": "chery",
+    "asset": "chery.png",
+    "sha256": "2a75c2fae96e604b95f6d09a36fdabeaccdb66eaad67acee4b5c4aadb85f7740",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/chery-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Chevrolet",
+    "key": "chevrolet",
+    "asset": "chevrolet.svg",
+    "sha256": "c656f8d607bc0230a7a239981b24d79cb7a1550d43c476ff486cf8aa360646f6",
+    "source": "https://www.chevrolet.com/content/dam/chevrolet/na/us/english/index/shopping-tools/download-catalog/02-pdf/2019-chevrolet-corvette-catalog.pdf",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Chrysler",
+    "key": "chrysler",
+    "asset": "chrysler.svg",
+    "sha256": "760fe7ef4fccc504bee0a9f4ac91e2ca23bffd9c294aa92a3922538b50c3c403",
+    "source": "https://www.stellantis.com/en/brands/chrysler",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Citroën",
+    "key": "citroen",
+    "asset": "citroen.svg",
+    "sha256": "99a313e559f14eec272fea440d1ae3c92ac25438145efd31276da50192fefc28",
+    "source": "https://www.stellantis.com/en/brands/citroen",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Corvette",
+    "key": "corvette",
+    "asset": "corvette.png",
+    "sha256": "efaefe9cbd5c04feb3b0651cd1cebb63303b94e18aa9e61408d58ea954af694c",
+    "source": "https://vl.imgix.net/img/corvette-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Cupra",
+    "key": "cupra",
+    "asset": "cupra.svg",
+    "sha256": "27ff4f603e847c8e1594cc59489a67625bdfbecc9e1e8e64a1b23c1d0c2a3a77",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/cupra-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Dacia",
+    "key": "dacia",
+    "asset": "dacia.svg",
+    "sha256": "761cb03b30cead56709cd5ead436a086e15b214dc97e49acedae925c4988bcca",
+    "source": "https://commons.wikimedia.org/wiki/File:Dacia-Logo-2021.svg",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Daewoo",
+    "key": "daewoo",
+    "asset": "daewoo.png",
+    "sha256": "f3448afe7433b447e52092a3fc8cf796b200f2bfd288793631c3951cb28ebdee",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/daewoo-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "DAF",
+    "key": "daf",
+    "asset": "daf.svg",
+    "sha256": "5af58eab6ee27640ad0d6cafc20886fc6cf54986467307142aeb7751a18a6de6",
+    "source": "https://www.daf.com/en",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Daihatsu",
+    "key": "daihatsu",
+    "asset": "daihatsu.svg",
+    "sha256": "4e10f5fceb9b50a86cfc255262acdf952cd1f1f83188f80d46749def453728d5",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/daihatsu-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Daimler",
+    "key": "daimler",
+    "asset": "daimler.svg",
+    "sha256": "0427e95756651ad89393d269b9f66c10f951e31695b0450e274dc2dae86cf276",
+    "source": "https://designnavigator.daimler.com/Daimler_Corporate_Logotype_Black_DTP",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Datsun",
+    "key": "datsun",
+    "asset": "datsun.png",
+    "sha256": "e1485e89f75c5193168a2ffa9a8fb7bb6e63042660b539c18b1ebe2eeb6a683b",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/datsun-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "De Tomaso",
+    "key": "detomaso",
+    "asset": "detomaso.png",
+    "sha256": "f02f13b2263fbc85e53ebb9a313b23f989f530615acd1b4873c20bd018ad6282",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/de-tomaso-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Deepal",
+    "key": "deepal",
+    "asset": "deepal.svg",
+    "sha256": "1151621a269e338864a58336ab5b752b95f4ef578431a05c88d8a20a528765c0",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/deepal-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Delage",
+    "key": "delage",
+    "asset": "delage.png",
+    "sha256": "f20b2c32614b5d2de3ddd5001cd433ab9119d9f9ce584ad08b5f14e5bc71e42a",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/delage.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "DeLorean",
+    "key": "delorean",
+    "asset": "delorean.svg",
+    "sha256": "960e33d38c5337e4b1203455477bd0f7917d28d6f7aa735db07f2588bb667a47",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/de-lorean-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Denza",
+    "key": "denza",
+    "asset": "denza.svg",
+    "sha256": "4d5eda8fff7699a40996183e257ee7d7169a18814d17f13304ceaa4fc5afc26d",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/denza-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "DeSoto",
+    "key": "desoto",
+    "asset": "desoto.png",
+    "sha256": "6b800cf52e56d4f3baac8599b71df994b0380642ab40cca4b0d2035dfd096ddd",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/desoto-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "DFSK",
+    "key": "dfsk",
+    "asset": "dfsk.svg",
+    "sha256": "80c283f2874f3a30aeb2d0f61774faff5df8859fbaad2bc8613bbb25f200e130",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/dfsk-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Dodge",
+    "key": "dodge",
+    "asset": "dodge.png",
+    "sha256": "173d21cdca3056b60313e969209ee93e0cf3bda5ac14f9a27d905bb388903ae4",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/dodge-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Dongfeng",
+    "key": "dongfeng",
+    "asset": "dongfeng.png",
+    "sha256": "e49e1ab3d79ae9144be3f72d680afbd050b8cdb816c3709d98ffb9b30f4eb3e5",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/dongfeng-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Donkervoort",
+    "key": "donkervoort",
+    "asset": "donkervoort.png",
+    "sha256": "e49bd17967384a76fda47e33cc8f2344d0cd1738f25f35ccd4b6099c02349f43",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/donkervoort.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "DR",
+    "key": "dr",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "DS Automobiles",
+    "key": "dsautomobiles",
+    "asset": "dsautomobiles.svg",
+    "sha256": "fde576a29c2a252ad537fe3234c5e02cbda039ee9fe3cf6718561915e0b12bdf",
+    "source": "https://www.stellantis.com/en/brands/ds",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "e.GO",
+    "key": "ego",
+    "asset": "ego.svg",
+    "sha256": "5d439acb117d2684a836e797729de88829acdece52914ee1f698bfd842c8cba1",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ego-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Ebro",
+    "key": "ebro",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Elaris",
+    "key": "elaris",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "EMC",
+    "key": "emc",
+    "asset": "emc.svg",
+    "sha256": "13ac956b11297f4e0640347cd93f1f6c351a5de548153d2f6328a2448a219114",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/emc-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "EVO",
+    "key": "evo",
+    "asset": "evo.svg",
+    "sha256": "811bc47a7d22cc4270a8fc3b61983d8e51e792c5639dd861427fb95eee6a1e99",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/evo-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "FAW",
+    "key": "faw",
+    "asset": "faw.svg",
+    "sha256": "b41b4c61d659181203ef871243bd9d4a25a966ca0f7c8272f762bee8b395349d",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/faw-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Ferrari",
+    "key": "ferrari",
+    "asset": "ferrari.svg",
+    "sha256": "583319b753b043bcfd0a06c3d5889cfe36c30d81262635ed5d24e14f31fa9735",
+    "source": "https://www.ferrari.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Fiat",
+    "key": "fiat",
+    "asset": "fiat.svg",
+    "sha256": "73801d77295b1e306a53e98137051c06feb74f6a2c15bf90f7c982d28b295292",
+    "source": "https://www.fcaci.com/x/FIATv15",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Firefly",
+    "key": "firefly",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "Verified Wikimedia public-domain file, download returned HTTP429; no bypass/retry. Text fallback."
+  },
+  {
+    "name": "Fisker",
+    "key": "fisker",
+    "asset": "fisker.png",
+    "sha256": "f6c3f527afdf2902e03cd5a135a1161547538a2b687fa3327952002ecde37bea",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/fisker-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Ford",
+    "key": "ford",
+    "asset": "ford.svg",
+    "sha256": "933a0ad57caec864d69c4afb43c316018ebc54bd8e76244ffe545197236299c1",
+    "source": "https://secure.ford.com/brochures/",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Forthing",
+    "key": "forthing",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Foton",
+    "key": "foton",
+    "asset": "foton.png",
+    "sha256": "fd92b99aa6698430ba18331f396b12049e923cee3f39c97d23edb8aac0b0f3f7",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/foton.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "GAC",
+    "key": "gac",
+    "asset": "gac.png",
+    "sha256": "b6b18cb091d95049bd830a56a9c9edb62152666aa0663561e7736460b9f0bee4",
+    "source": "https://vl.imgix.net/img/gac-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "GAZ",
+    "key": "gaz",
+    "asset": "gaz.png",
+    "sha256": "e72a4de89339a7e66a97995806d44f3f1cae05b7494233a140895a352adc6454",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/gaz-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Geely",
+    "key": "geely",
+    "asset": "geely.svg",
+    "sha256": "12c94accf6dc02dc3d96780c447b68d6a9b7f33f775206f6497a55455a51aafa",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/geely-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Genesis",
+    "key": "genesis",
+    "asset": "genesis.svg",
+    "sha256": "8e8d52dfd1d85550df4f637b87b1c9386911c6f571bc9760a6279934244c19c7",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/genesis-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Geo",
+    "key": "geo",
+    "asset": "geo.svg",
+    "sha256": "fa9f4d11692e0709c00b70d1d161ed684e35786a6b69d02ff2c4baf4069f5394",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/geo-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Geometry",
+    "key": "geometry",
+    "asset": "geometry.svg",
+    "sha256": "cdc33b4562e2e8387391a33b969df7b17b02e20c9f25aabed63fbf9511b86555",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/geometry-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Ginetta",
+    "key": "ginetta",
+    "asset": "ginetta.svg",
+    "sha256": "1b9a3b7896784b6ab13b2fb2002e7335b215f32f012640a5e5ffc4053fdfeac8",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ginetta-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "GMC",
+    "key": "gmc",
+    "asset": "gmc.png",
+    "sha256": "f9e18c32ece1f2974c837a1174d61b614912f2023f4e6cb66e0202df4a7e4e83",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/gmc-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Gonow",
+    "key": "gonow",
+    "asset": "gonow.png",
+    "sha256": "1fd85ed12a4e9a9e43d84cc3462dd07ea1e770c6a0b0c582fb66f1474632426d",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/gonow.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Great Wall",
+    "key": "greatwall",
+    "asset": "greatwall.png",
+    "sha256": "585464d5c7caa53f87b38f6357198432b6120f9b36bb6f99e79c417616cfba33",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/great-wall-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Grecav",
+    "key": "grecav",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "GWM",
+    "key": "gwm",
+    "asset": "gwm.svg",
+    "sha256": "165b4b806e50397d09340bb47d8164e054955abe0c60ee9952d4f48934ae889b",
+    "source": "https://commons.wikimedia.org/wiki/File:GWM_2025_logo.svg",
+    "license": "Public-domain simple geometry per Wikimedia file page; trademark rights retained; author Great Wall Motor Company Limited; source www.gwm-global.com",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Haima",
+    "key": "haima",
+    "asset": "haima.png",
+    "sha256": "d73b18c09ef6fccec342c3c8431e1087d992d61e255fa442d4167c9bf655bb2c",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/haima.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Haval",
+    "key": "haval",
+    "asset": "haval.png",
+    "sha256": "95e0cc9792373a83a9cf848c1cabf9a798fd7da51b7e6f15d6c54ab445b49471",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/haval-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Hennessey",
+    "key": "hennessey",
+    "asset": "hennessey.svg",
+    "sha256": "0b2a390d408a67db804ab0c11942ba70c9835e0b4162a0230f8faa979851d2e1",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/hennessey-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Hillman",
+    "key": "hillman",
+    "asset": "hillman.png",
+    "sha256": "d2b82bb19884f16db220696f5a92039fce386e1366b13a438023befc07c22d06",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/hillman.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Hispano Suiza",
+    "key": "hispanosuiza",
+    "asset": "hispanosuiza.png",
+    "sha256": "f3f442aa246310bd50f3aa09a437910e192225a6794b40049300910dece7f540",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/hispano-suiza-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Holden",
+    "key": "holden",
+    "asset": "holden.svg",
+    "sha256": "b55ff9b3077c48a347f8c2ef017e8b8b8511cc9a0c52dd0eccd483a40b53867f",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/holden-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Honda",
+    "key": "honda",
+    "asset": "honda.svg",
+    "sha256": "ae97b9478f29718f95fc7956a3971456a8a458e9ff48f24b903ef1d6b68f2de1",
+    "source": "https://www.honda.ie",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Hongqi",
+    "key": "hongqi",
+    "asset": "hongqi.png",
+    "sha256": "970db32ed061ac4a9fe7649ea25397c73d62569cd93cf84579262afc49a5aa0f",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/hongqi-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Hummer",
+    "key": "hummer",
+    "asset": "hummer.svg",
+    "sha256": "fd5eff58aa57f82c813a518f11cf0e9c1110600bd89bd4f963d1151d70519a2d",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/hummer-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Hyundai",
+    "key": "hyundai",
+    "asset": "hyundai.svg",
+    "sha256": "dcd2d6c20e7c4bc431f7c3a1108c4493b007f978b8ee6f48b007406cc8435937",
+    "source": "https://www.hyundai.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "iCAR",
+    "key": "icar",
+    "asset": "icar.svg",
+    "sha256": "f530501ed1c0225abf3e09d2d5ba563693b9774d98a7c8c7404486a6c5356ee1",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/icar-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "ICH-X",
+    "key": "ichx",
+    "asset": "ichx.svg",
+    "sha256": "fe2fa05018f2e0816548286c8f7061793a43cdf6136f731eb96d64e17315ec4e",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ich-x-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "INEOS",
+    "key": "ineos",
+    "asset": "ineos.svg",
+    "sha256": "a7b6da723a434be9a7e63bf9d73d733f23062d9825bf78c18968e1ded0af3f99",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ineos-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Infiniti",
+    "key": "infiniti",
+    "asset": "infiniti.svg",
+    "sha256": "f88f745ff6fd051f1186c17864520ebd41cdd4175ee4dd99e20d673928eae097",
+    "source": "https://www.infiniti.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Innocenti",
+    "key": "innocenti",
+    "asset": "innocenti.png",
+    "sha256": "21ee3e25ef53d21cbd0f40a52b80689660f9c7ff6ae870533a33d15fc85eb766",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/innocenti.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Isuzu",
+    "key": "isuzu",
+    "asset": "isuzu.svg",
+    "sha256": "67140058dfbb66b2224e37a117659dd9b9a143fe0e812670687cff158a90fa93",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/isuzu-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "JAC",
+    "key": "jac",
+    "asset": "jac.png",
+    "sha256": "f1de01bbf35bd03866342f2194a5eeb3527ea0aa697d07af783b736473219870",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/jac-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Jaecoo",
+    "key": "jaecoo",
+    "asset": "jaecoo.svg",
+    "sha256": "edd5029346aeb1f699c9f86ddc1402e63faba797d1f7610d1107123e0cd62365",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/jaecoo-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Jaguar",
+    "key": "jaguar",
+    "asset": "jaguar.svg",
+    "sha256": "0ee3384ec0a800db911a5699cfd70bff9a7a02279cf72a8720d764cf8e2d15e7",
+    "source": "https://media.jaguar.com/en/press-kit",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Jeep",
+    "key": "jeep",
+    "asset": "jeep.svg",
+    "sha256": "b06a5248c18bf0c0b3181dc52f20558f8e85d6952424f52e7b285410bfd47864",
+    "source": "https://commons.wikimedia.org/wiki/File:Jeep_logo.svg",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Jensen",
+    "key": "jensen",
+    "asset": "jensen.png",
+    "sha256": "ac0020d79ebca920cbda08c6d4f5fc8e5ac2724d01676db5b67525d0efdd7006",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/jensen.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Jetour",
+    "key": "jetour",
+    "asset": "jetour.svg",
+    "sha256": "eabd1a1e885553e8db17bc6e78340e5fa1918ddc1814e6f4de6d9f2470c4d9b5",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/jetour-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Jinbei",
+    "key": "jinbei",
+    "asset": "jinbei.png",
+    "sha256": "0dd4e338a6e519ff5faadcf0018a345510859318f84820e72d14554c62a14208",
+    "source": "https://vl.imgix.net/img/jinbei-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Karma",
+    "key": "karma",
+    "asset": "karma.png",
+    "sha256": "c780f95f6dadb9e4fe787fe8130e7d167e4892736edefdf017f3f2ec339b49a5",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/karma-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "KG Mobility",
+    "key": "kgmobility",
+    "asset": "kgmobility.svg",
+    "sha256": "df0b88f6c7e88f9aa11542147a80e1e09526685b333243851a362c8706a7ae62",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/kgm-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Kia",
+    "key": "kia",
+    "asset": "kia.svg",
+    "sha256": "bbdeeab899331fc6181949c2b31686208a88d7afc69d182b54dccc138b8e4843",
+    "source": "https://www.kia.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Koenigsegg",
+    "key": "koenigsegg",
+    "asset": "koenigsegg.svg",
+    "sha256": "c207520c97d1d96ee9177f0cfdfdbeea7f961028d0e2c0fb7bb7f426a27bca63",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/koenigsegg-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "KTM",
+    "key": "ktm",
+    "asset": "ktm.svg",
+    "sha256": "c5755d314fca02056f383366c88b254c87a66b6fa068ba5c6b244abdccae51ee",
+    "source": "https://ktm.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Lada",
+    "key": "lada",
+    "asset": "lada.svg",
+    "sha256": "2b7c49423d526cc3f9b2a02d113a84095d5de2130ebc63c867e434cb2a4b147b",
+    "source": "https://www.lada.ru",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Lamborghini",
+    "key": "lamborghini",
+    "asset": "lamborghini.svg",
+    "sha256": "c1c5fed94cf25f0855b05853fcaebdfb640899b34c733376a1c486196bd7e5e7",
+    "source": "https://www.lamborghini.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Lancia",
+    "key": "lancia",
+    "asset": "lancia.png",
+    "sha256": "b7cffa1a878f88b9600c7f14c9446f3b8bb7997d411ffbd42c0c0e2545b2882b",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/lancia-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Land Rover",
+    "key": "landrover",
+    "asset": "landrover.svg",
+    "sha256": "a9740572838d84a4d7f6f3673bee5ad1bdda7bb2666468441182ac1bc1c564bc",
+    "source": "https://media.landrover.com/en/press-kit",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Leapmotor",
+    "key": "leapmotor",
+    "asset": "leapmotor.png",
+    "sha256": "2cae4e5fbe444fb4db5004cbf8732436737b0b4005ad5f85ccefadc1d77468c4",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/leapmotor-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "LEVC",
+    "key": "levc",
+    "asset": "levc.png",
+    "sha256": "961588d93cbb4941ee16e7d2b2cd43c894e1e1e050dce98c1617a3584e26ee42",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/levc.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Lexus",
+    "key": "lexus",
+    "asset": "lexus.png",
+    "sha256": "9113ee94052cafb3520029d9bdd66aebf87f6fb0320d407f8178b29e72a25fa1",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/lexus-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Ligier",
+    "key": "ligier",
+    "asset": "ligier.png",
+    "sha256": "15ddfc429e5e84fefa528fcd1a300134dcd07278f1683a5b0529716031eaaf1b",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ligier-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Lincoln",
+    "key": "lincoln",
+    "asset": "lincoln.svg",
+    "sha256": "3d849dba3715836a5fc9a9aa2a579b2cb499a23f3b27e1dc84ad04b26e912aa6",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/lincoln-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Livan",
+    "key": "livan",
+    "asset": "livan.png",
+    "sha256": "3495b12eda75906e88e0c917d09fe2bc24b1bfcb6fe1e4d3e75e7fc5064b5410",
+    "source": "https://vl.imgix.net/img/livan-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Lotus",
+    "key": "lotus",
+    "asset": "lotus.svg",
+    "sha256": "b87732b96913f141487191b1be257970623537ad9c00d021be9537793823e5cf",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/lotus-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Lucid",
+    "key": "lucid",
+    "asset": "lucid.svg",
+    "sha256": "0c6bd81fafe8acf041bc67f32c1692497ef8294ad0c3a9926137f6761501e0ba",
+    "source": "https://lucid.co/brand",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Lynk & Co",
+    "key": "lynkco",
+    "asset": "lynkco.png",
+    "sha256": "ca013c4536330b29fe0c546ecfc70e8635c7d7ff559b194cae3dcdec1bb24c98",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/lynk-and-co.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Mahindra",
+    "key": "mahindra",
+    "asset": "mahindra.svg",
+    "sha256": "962d0881bd8d65ad10a107998c68050767c23f9ef3fb024da9d2107619c694e4",
+    "source": "https://www.mahindra.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Marcos",
+    "key": "marcos",
+    "asset": "marcos.png",
+    "sha256": "dd06fdc03087bae268a53bbf7a1da0df4b0183e37db8b49a9c3f6c8ff25681d8",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/marcos.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Maruti",
+    "key": "maruti",
+    "asset": "maruti.svg",
+    "sha256": "8646b154eb130dff0b64b0d5bf6ae08a8fb34fa32b7e495859d9bdb694db7fd3",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/maruti-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Maserati",
+    "key": "maserati",
+    "asset": "maserati.svg",
+    "sha256": "be4ff671866eb694fa6f5756a5ffdef5b9694c4b3c895ff01427b9d98d144b91",
+    "source": "https://www.stellantis.com/en/brands/maserati",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Matra",
+    "key": "matra",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Maxus",
+    "key": "maxus",
+    "asset": "maxus.png",
+    "sha256": "6da016ea01c444bb0af2621405aed35da447e182918a5e3aac8ed6c55e5a1925",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/maxus-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Maybach",
+    "key": "maybach",
+    "asset": "maybach.png",
+    "sha256": "6622c49858fbf3d813dc4262d281a7cd3be7619500c05ada9938e648dce45888",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/maybach-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Mazda",
+    "key": "mazda",
+    "asset": "mazda.svg",
+    "sha256": "e25b1b282b433e90afb5a8053f50dd69c83e786d08794516136adeb60a0f1bb9",
+    "source": "https://www.mazda.com/en/about/profile/library/",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "McLaren",
+    "key": "mclaren",
+    "asset": "mclaren.svg",
+    "sha256": "f53570a9dde333b4f55211831baa3cad69d6c8b01681405a232e97a883506a26",
+    "source": "https://cars.mclaren.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Mercedes-Benz",
+    "key": "mercedesbenz",
+    "asset": "mercedes.svg",
+    "sha256": "7def5c7099ce5f9997067247aaf82c088354866e272992924d0d6c8a05c6c49d",
+    "source": "https://www.mercedes-benz.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Mercury",
+    "key": "mercury",
+    "asset": "mercury.png",
+    "sha256": "cf52f8f497d7c95993c7d8c7f163b262c00cd95384f4853f388343a625dd08df",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/mercury-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "MG",
+    "key": "mg",
+    "asset": "mg.svg",
+    "sha256": "51b79569d32c05fb19e99f03c8ff8edd90a445b3d8f732a9e8bd8899e7a2a350",
+    "source": "https://www.mg.co.uk/themes/custom/mg/assets/images/svg/mg-logo-desktop.svg",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Micro",
+    "key": "micro",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Microcar",
+    "key": "microcar",
+    "asset": "microcar.png",
+    "sha256": "7559c5bc0a9a22332692d91da51a36f4071c18a88077b93064c402ddc594a93c",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/microcar.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "MINI",
+    "key": "mini",
+    "asset": "mini.svg",
+    "sha256": "b6a2b61d674bf15ef45a468962eca1faac42234ff24b13812c4a16bbc71fcb77",
+    "source": "https://mini.co.uk",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Mitsubishi",
+    "key": "mitsubishi",
+    "asset": "mitsubishi.svg",
+    "sha256": "d855e4d9d41f87287c917b1e6bb4baaf868957466a9ae1f64db34a1bdf7255c3",
+    "source": "https://www.mitsubishi.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Mitsuoka",
+    "key": "mitsuoka",
+    "asset": "mitsuoka.png",
+    "sha256": "941531411ab47e0e33242fef7b3e35b187152619ae45231c2b4b778abf70b7c0",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/mitsuoka-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Morgan",
+    "key": "morgan",
+    "asset": "morgan.png",
+    "sha256": "d4802000576e91d2a2eba2308715655f4821e277bc51c5a2dbd80cc82a8bea4b",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/morgan-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Morris",
+    "key": "morris",
+    "asset": "morris.png",
+    "sha256": "034be173cb1abdf7227c7327aa657abb74baf245f0c6f86bb511a1f7dadc7517",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/morris-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "NIO",
+    "key": "nio",
+    "asset": "nio.png",
+    "sha256": "8d4812ad7d05e0ad986c89d7e07d35953cef320dd90ea1e709f42a35f15c8926",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/nio-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Nissan",
+    "key": "nissan",
+    "asset": "nissan.svg",
+    "sha256": "97980fa3135dfeffb72a9acdf3ee23b21bf9a53b8475e7b5cff9ce6df645cf5c",
+    "source": "https://www.nissan.ie",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Noble",
+    "key": "noble",
+    "asset": "noble.png",
+    "sha256": "d89a3d189aa20311ad8eeaf164b730fabcb9b02efe87412a95b822b9fb299c97",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/noble-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "NSU",
+    "key": "nsu",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Oldsmobile",
+    "key": "oldsmobile",
+    "asset": "oldsmobile.png",
+    "sha256": "43130afd5368d963f9ab4c5f21b12c42892bfaae483549ab6d3f400cbf7962ad",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/oldsmobile-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Omoda",
+    "key": "omoda",
+    "asset": "omoda.png",
+    "sha256": "353bcec5853090e97cbdc201b6a46e4fe062f48e4c1b271b665a6c8e03143968",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/omoda-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Opel",
+    "key": "opel",
+    "asset": "opel.svg",
+    "sha256": "ce74d329dfd29a974ef8c126d6ecdc53e4bb7e8505641f38e6cd8d0030efaa87",
+    "source": "https://www.stellantis.com/en/brands/opel",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "ORA",
+    "key": "ora",
+    "asset": "ora.png",
+    "sha256": "03dddd1edce8c5dc1460e33bf89c1daa84ae159943d1409f9a8ac154f8634eef",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ora-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Pagani",
+    "key": "pagani",
+    "asset": "pagani.png",
+    "sha256": "6d8da0d2ec0ea79e5852c352a378ae82daec6d423ae5082a5f57a99da6ec05fc",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/pagani-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Perodua",
+    "key": "perodua",
+    "asset": "perodua.png",
+    "sha256": "3378d30f0c5ab4d16784cea228cb4ec5794a737d55487bc6df62cf543c1917bb",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/perodua-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Peugeot",
+    "key": "peugeot",
+    "asset": "peugeot.svg",
+    "sha256": "52eac20d95c797916ee5ce7344a0e2a647472a9e560af2f2e1e4f45f0de7edf3",
+    "source": "https://www.peugeot.co.uk",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "PGO",
+    "key": "pgo",
+    "asset": "pgo.png",
+    "sha256": "2e66b28cbf9a9d8f63c013ba635f588798d0bde784feb5d7ff3ea46e8b58314a",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/pgo.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Piaggio",
+    "key": "piaggio",
+    "asset": "piaggio.png",
+    "sha256": "8e84862cb9bc02e7e7e99eacaeec3835a1e9b99b8f96cf8792cadb8b086aee0a",
+    "source": "https://vl.imgix.net/img/piaggio-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Pininfarina",
+    "key": "pininfarina",
+    "asset": "pininfarina.png",
+    "sha256": "ff901d1888af388c2c18533dfd77e3cc21223b06e8b3618aa15bd7eb1fe1fd1a",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/pininfarina-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Plymouth",
+    "key": "plymouth",
+    "asset": "plymouth.png",
+    "sha256": "2d3b685bc85f2b90e0fd136e11e6e34c2b3e2e49142a8c578453ce07fa289f5c",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/plymouth-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Polestar",
+    "key": "polestar",
+    "asset": "polestar.svg",
+    "sha256": "543ac583c8f6113152e310d7c7f6fbdf1516b28c3aed0d2cf3121030f406aebf",
+    "source": "https://commons.wikimedia.org/wiki/File:Polestar_logo_2020.svg",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Pontiac",
+    "key": "pontiac",
+    "asset": "pontiac.png",
+    "sha256": "918c4f7ebab849f3662481d120a63cfddcf91baba032c71c38a6f9439de30953",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/pontiac-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Porsche",
+    "key": "porsche",
+    "asset": "porsche.svg",
+    "sha256": "cc78f5661cf80886fa5d94bd13a0f32eca0ba39716dd8154f454bb992c8864a0",
+    "source": "https://www.porsche.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Praga",
+    "key": "praga",
+    "asset": "praga.png",
+    "sha256": "b9e2af122af23812481b0f99a92a19f47f551998d7380fea034a54259ae604d3",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/praga-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Proton",
+    "key": "proton",
+    "asset": "proton.svg",
+    "sha256": "755b547e0849804d770e119acfb85db1e480cf813c820541657a04fa44193c43",
+    "source": "https://proton.me/media/kit",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Puch",
+    "key": "puch",
+    "asset": "puch.svg",
+    "sha256": "118f387126f1101b3f47e9d4e6e0df0f6d7a8e6047f1d284e5bf0342550ca0c1",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/puch-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Puma",
+    "key": "puma",
+    "asset": "puma.png",
+    "sha256": "f7a50b0c0df23e19b3733dbc02dfae57e8f4acac9a6dd8a41d2199e91be02cda",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/puma-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "RAM",
+    "key": "ram",
+    "asset": "ram.svg",
+    "sha256": "fc5e3086092934d242f34c0e3098b1e745c0c975349702015e4298199250b9b0",
+    "source": "https://www.fcaci.com/x/RAMv15",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Reliant",
+    "key": "reliant",
+    "asset": "reliant.png",
+    "sha256": "6c64b6b3fdafdf9cd7777d57f7800498d60314838d7642034d9add7204ca6f7c",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/reliant-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Renault",
+    "key": "renault",
+    "asset": "renault.svg",
+    "sha256": "59a8b5df584c85f680e2f81b8255a3bbf562ce291c5a9db6a78f393c4ecad7d6",
+    "source": "https://en.media.groupe.renault.com/news/renault-news-march-2021-5f28-989c5.html",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Renault Trucks",
+    "key": "renaulttrucks",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Riley",
+    "key": "riley",
+    "asset": "riley.png",
+    "sha256": "ea1fc4fd24760b0b7337163e4f4dc225a03ef40db8848bed4cb6c0ac7b5b33e7",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/riley.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Rimac",
+    "key": "rimac",
+    "asset": "rimac.png",
+    "sha256": "f3b356abd4bbec727826b852a1fbe940fad5097e8e4c9c86db21aee4971c6e57",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/rimac-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Rivian",
+    "key": "rivian",
+    "asset": "rivian.svg",
+    "sha256": "f02d4d3bbcc0afef4b8ab1aa46237ba09c09a45db4f45fb25a8e451e276dacfa",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/rivian-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Rolls-Royce",
+    "key": "rollsroyce",
+    "asset": "rollsroyce.svg",
+    "sha256": "08b4e1fec2499029d9ec3e8d76d59857b5ae22856261096cdde07cdc5424e0b0",
+    "source": "https://www.rolls-roycemotorcars.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Rover",
+    "key": "rover",
+    "asset": "rover.png",
+    "sha256": "5a7d522121715aadec4452658d88c84e14396f7443cda0ac2cfbbd6ecefa0d09",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/rover-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "RUF",
+    "key": "ruf",
+    "asset": "ruf.png",
+    "sha256": "23de2c910d216f0110b5b851eb78c04f5763d6c08d6946c06fe98966f5cfa791",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ruf-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Saab",
+    "key": "saab",
+    "asset": "saab.png",
+    "sha256": "9186c4338c711c43bb50027f64726c52c5a593c4034cacd586bccec7996f1eb1",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/saab-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Santana",
+    "key": "santana",
+    "asset": "santana.png",
+    "sha256": "1637c85ba24343198a31f5f833c5e71c06a8a76b8950fc8add917bc001a12244",
+    "source": "https://vl.imgix.net/img/santana-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Saturn",
+    "key": "saturn",
+    "asset": "saturn.svg",
+    "sha256": "326f0390a29fd14ef95b5b99c7f7af9ce84d6b8151ac845ac6af15017e00aee7",
+    "source": "https://www.saturn.de",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Scion",
+    "key": "scion",
+    "asset": "scion.png",
+    "sha256": "104f1b05f06f759eedd0907a0610096c4487bcee9583337e02ec04805cf12328",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/scion-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "SEAT",
+    "key": "seat",
+    "asset": "seat.svg",
+    "sha256": "662eff13aa274b786e3231e72ca7d65ae9edcfcd5937ca4efab487f2d3825e13",
+    "source": "https://www.seat.es",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Seres",
+    "key": "seres",
+    "asset": "seres.png",
+    "sha256": "4c5715c6b4a2b5d4b42a4b0f1e15c50682184a090ee1e115ad038b8006668edc",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/seres-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Shuanghuan",
+    "key": "shuanghuan",
+    "asset": "shuanghuan.png",
+    "sha256": "bd99c9ed4f2fad5272171af745ba304248931ec59805f7f93dcb38e55ae5bb1f",
+    "source": "https://vl.imgix.net/img/shuanghuan-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Silence",
+    "key": "silence",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Simca",
+    "key": "simca",
+    "asset": "simca.png",
+    "sha256": "91fea73b23777ccccbec67f58a87453b69f37890c7fb610eca29989431b993bd",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/simca.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Škoda",
+    "key": "skoda",
+    "asset": "skoda.svg",
+    "sha256": "72ca42ed6cc6d393e00d0aea0eee4aeae96cc0c86ca8e727145fbf8b6ff24c38",
+    "source": "https://www.skoda-connect.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Skywell",
+    "key": "skywell",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Smart",
+    "key": "smart",
+    "asset": "smart.svg",
+    "sha256": "ae7c0c92c9ebd055b732bc4f882cfa14dd0b3b7099628405d8408420bffe18fd",
+    "source": "https://global.smart.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Soueast",
+    "key": "soueast",
+    "asset": "soueast.png",
+    "sha256": "5371382940efbae7aaf7ec64d522412868539fb84786dd477235d4e3a088c1bd",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/soueast.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "SsangYong",
+    "key": "ssangyong",
+    "asset": "ssangyong.png",
+    "sha256": "a177de49afd0707ca1b0ccfddc69ab36272f5e6e777cf2f6664b9beb05dcf588",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/ssangyong-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Subaru",
+    "key": "subaru",
+    "asset": "subaru.svg",
+    "sha256": "ce64a04d98a02272319baf0fb03576fea64878a40aff5eb36d137e23127109c3",
+    "source": "https://commons.wikimedia.org/wiki/File:Subaru_logo.svg",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Suzuki",
+    "key": "suzuki",
+    "asset": "suzuki.svg",
+    "sha256": "3ef67701d67dcb096645dbaf16cf5cad9dc9f04826d394b471a9f43aee4a2596",
+    "source": "https://www.suzuki.ie",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "SWM",
+    "key": "swm",
+    "asset": "swm.png",
+    "sha256": "d231b006b4d4a19ef842d5b9bfb741aa595eb3f9e0e4157e983c398ded6ab957",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/swm-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Talbot",
+    "key": "talbot",
+    "asset": "talbot.png",
+    "sha256": "291485471a6914350edc952b2e631966dec39beb8a5fe0efe9bc0e8fc71012b6",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/talbot-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Tank",
+    "key": "tank",
+    "asset": "tank.png",
+    "sha256": "f35f31a027939135df549ab8359a31db901decd688c918741c68d03c80e41842",
+    "source": "https://vl.imgix.net/img/tank-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Tata",
+    "key": "tata",
+    "asset": "tata.svg",
+    "sha256": "ba567bbb17d49ca56a154e545ca2041e172b2f640738eea3c038c9bca91db002",
+    "source": "https://www.tatasteel.com/media/media-kit/logos-usage-guidelines",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Tatra",
+    "key": "tatra",
+    "asset": "tatra.png",
+    "sha256": "986381757ca762c1400f5a3fa2cbd47bc5ea1c64cfbe9c16d864163cb8ad25be",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/tatra-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Tazzari",
+    "key": "tazzari",
+    "asset": "tazzari.png",
+    "sha256": "ddb81b854ec09617f2bb89205caeae02b504cd51e975efe97cf9e04d51ec7e22",
+    "source": "https://vl.imgix.net/img/tazzari-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Tesla",
+    "key": "tesla",
+    "asset": "tesla.svg",
+    "sha256": "4b94d9eaf23849d6feec7a9c819e3699a35cbb76045ba7d482d17cbcc97414a5",
+    "source": "https://www.tesla.com/tesla-gallery",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Togg",
+    "key": "togg",
+    "asset": "togg.svg",
+    "sha256": "79804eb423f2c0f107306c01618058f40c1d227917a36dafb28c2625fbbb615b",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/togg-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Toyota",
+    "key": "toyota",
+    "asset": "toyota.svg",
+    "sha256": "70a20e8335255cff3311314636ab15dbc0c5941a52d1ae5ea3471e85f40e7507",
+    "source": "https://www.toyota.com/brandguidelines/logo/",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Trabant",
+    "key": "trabant",
+    "asset": "trabant.svg",
+    "sha256": "0cecf2919a7e346ac1bbf086c3334a7e60c86da1a14cb4e0d273cac5d6182291",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/trabant-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Triumph",
+    "key": "triumph",
+    "asset": "triumph.png",
+    "sha256": "f9dff67d8a241ba7c599444724e60988773aed8f4043ca327d8b66fd47c38565",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/triumph.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "TVR",
+    "key": "tvr",
+    "asset": "tvr.png",
+    "sha256": "80694f5a6807a8bb4aada824654f5f61dfa141db9674967234006d4392596a29",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/tvr-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "TYN-e",
+    "key": "tyne",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "UAZ",
+    "key": "uaz",
+    "asset": "uaz.png",
+    "sha256": "dd58f6d9707c013b680c432b3c02c546202a950e6671f4d7fa931c5bcb466bc5",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/uaz-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Vauxhall",
+    "key": "vauxhall",
+    "asset": "vauxhall.svg",
+    "sha256": "1da470fc0de1c62e9d8e377ba775d8e8a947e022a16fe5b65d7782c0bec44bbe",
+    "source": "https://www.stellantis.com/en/brands/vauxhall",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Venturi",
+    "key": "venturi",
+    "asset": "venturi.png",
+    "sha256": "cd6e4f4f04a3f560af82b1880ee7b29894c067e3d50736bb3fb1830f138bb925",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/venturi-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "VinFast",
+    "key": "vinfast",
+    "asset": "vinfast.png",
+    "sha256": "62e653c158b6dd40ebbde5c800cca845262a07d75b0705cb691970e499aa8305",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/vinfast-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Volkswagen",
+    "key": "volkswagen",
+    "asset": "volkswagen.svg",
+    "sha256": "de8379968dc31340ab9a06fd54f01d59be56f9846bc07938b9da5bd24407034f",
+    "source": "https://www.vw.com",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Volvo",
+    "key": "volvo",
+    "asset": "volvo.svg",
+    "sha256": "3323cdf4d0f8aabe89f1ecd6d8169aacbd2e3a54a9791d75918ade418f538f19",
+    "source": "https://www.media.volvocars.com/global/en-gb/logos",
+    "license": "Simple Icons collection CC0-1.0; respective trademark rights retained",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Voyah",
+    "key": "voyah",
+    "asset": "voyah.png",
+    "sha256": "b977d850d815c4705002acc6d83bb512fe4c92ec3e6f74535835a34c84bb9cf7",
+    "source": "https://vl.imgix.net/img/voyah-logo.png",
+    "license": "MIT collection; respective trademarks retained. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "W Motors",
+    "key": "wmotors",
+    "asset": "wmotors.png",
+    "sha256": "23da079ef15a7766be48840512f419a387ec7a5213955dbdee5e0cdcd979d326",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/w-motors-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Wartburg",
+    "key": "wartburg",
+    "asset": "wartburg.png",
+    "sha256": "10646c09a604dfdfee5091be533c105fafd7321e80d2104f0e52e4a1653611f7",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/wartburg-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Westfield",
+    "key": "westfield",
+    "asset": "westfield.png",
+    "sha256": "ecd90c1f9fb11049bf4a3fe3d41b5be119c79529eaaf4fe625ad909b511f3527",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/westfield-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Wey",
+    "key": "wey",
+    "asset": "wey.png",
+    "sha256": "f7f06b4330d091ac2e310bdb73d14ed7fbca38c015a8531d1420fe6025edf677",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/wey.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Wiesmann",
+    "key": "wiesmann",
+    "asset": "wiesmann.png",
+    "sha256": "c777d4ffd0cdd9cce7e4a1bd71705d4be14165d6828656c585a8396626d14637",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/wiesmann.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Wuling",
+    "key": "wuling",
+    "asset": "wuling.png",
+    "sha256": "bffc1fb30e2977fe59ad02a9977c79fd23f28ce01885359855ccedbcaa4d8b65",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/wuling.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "XEV",
+    "key": "xev",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Xiaomi",
+    "key": "xiaomi",
+    "asset": "xiaomi.svg",
+    "sha256": "35ed09461b4581515321fabcf17044c3e02ee22c9f3e0579dd706aacdbae487b",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/xiaomi-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "XPeng",
+    "key": "xpeng",
+    "asset": "xpeng.png",
+    "sha256": "a2d6a20cdb08cf6cd1ce42dad7bf5119076832ce9b522ab28bc4dd9238804049",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/xpeng-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Yangwang",
+    "key": "yangwang",
+    "asset": "yangwang.svg",
+    "sha256": "38f28bea786bde23dcc63cf3f4569e3df5a68488f04514a9f4e7e75afea531e2",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/yangwang-logo.svg",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "UTF-8, LF normalized"
+  },
+  {
+    "name": "Zastava",
+    "key": "zastava",
+    "asset": "zastava.png",
+    "sha256": "8b2643d61ef007ab535c85d80731ca3ae914432383d3c1b926bec7df61a6edd6",
+    "source": "https://raw.githubusercontent.com/filippofilip95/car-logos-dataset/e334a4d2e8742108ba164c629dff5636576d3808/logos/thumb/zastava.png",
+    "license": "Collection MIT; logos remain property of respective owners. Identification only.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "ZAZ",
+    "key": "zaz",
+    "asset": "zaz.png",
+    "sha256": "fd2f1aea25594d708f553dfc44cfa6edd2221bb1b570d7369aaeb0234973fd43",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/zaz-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Zeekr",
+    "key": "zeekr",
+    "asset": "zeekr.png",
+    "sha256": "a8bb59ce487dd30f6784f31dbbaf64b22974dbb3a2b071e6917ca00f0caf23cf",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/zeekr-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Zenvo",
+    "key": "zenvo",
+    "asset": "zenvo.png",
+    "sha256": "3380ea44ba6f3b9ab0e056f94a96d7d0cc42df4b318670550e53d04ba9960b0a",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/zenvo-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  },
+  {
+    "name": "Zhidou",
+    "key": "zhidou",
+    "asset": null,
+    "sha256": null,
+    "source": null,
+    "license": null,
+    "pendingReason": "No verified matching asset in examined collections. Text fallback; no guessed parent-brand substitution."
+  },
+  {
+    "name": "Zotye",
+    "key": "zotye",
+    "asset": "zotye.png",
+    "sha256": "dc142ee16b8bf363975a2a0ef264920a072aea4ef028f17995fc3fabbee44f5a",
+    "source": "https://raw.githubusercontent.com/vehiclespecs/brand-logos/3f0929e70e0a9a2a502063edc4b3e5c0146cba74/zotye-logo.png",
+    "license": "Logo trademark: identification/reference only; collection MIT explicitly excludes logo images.",
+    "pendingReason": null,
+    "hashEncoding": "original binary bytes"
+  }
+]

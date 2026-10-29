@@ -23,7 +23,7 @@ describe('trade-in identification and initial intake', () => {
       vin: 'VF1AAAAAAAAAAAAAA',
     });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error.issues[0].path).toEqual(['licensePlate']);
+    if (!result.success) expect(result.error.issues[0]!.path).toEqual(['licensePlate']);
   });
   it('keeps scrap identifiers optional but validates identifiers when supplied', () => {
     expect(

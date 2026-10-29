@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BrandCombobox from './BrandCombobox.svelte';
   import VehicleSpecGlyph from '../../../../../../shared/ui/VehicleSpecGlyph.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
@@ -219,15 +220,7 @@
       <div class="crm-compact-fields">
         <label class="flex flex-col" style="--field-width: 180px">
           <span class="{fieldLabelClass()} identification-label">Marca</span>
-          <input
-            name="brand"
-            type="text"
-            required
-            bind:value={draft.brand}
-            placeholder="Dacia"
-            class={inputClass()}
-            style="border-radius: var(--radius-btn);"
-          />
+          <BrandCombobox bind:value={draft.brand} />
         </label>
         <label class="flex flex-col" style="--field-width: 280px">
           <span class="{fieldLabelClass()} identification-label">Modelo</span>

@@ -1,7 +1,10 @@
 <script lang="ts">
+  import BrandCombobox from '$lib/components/vehicle/BrandCombobox.svelte';
   import { tradeInCreateSchema, licensePlatePtSchema } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import DateInput from '$lib/components/common/DateInput.svelte';
+  import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
+  import { saleDocumentWarning } from '$lib/forms/saleDocumentWarning';
   import { crmPath } from '$lib/paths';
   import { tick, untrack } from 'svelte';
   import { enhance } from '$lib/auth/enhance';
@@ -30,6 +33,15 @@
 
   let { data }: Props = $props();
   const v = $derived(data.vehicle);
+  const documentWarning = $derived(saleDocumentWarning(v));
+  let documentWarningOpen = $state(false);
+  let resolveDocumentWarning: ((continueSale: boolean) => void) | undefined;
+  function answerDocumentWarning(continueSale: boolean) {
+    documentWarningOpen = false;
+    const resolve = resolveDocumentWarning;
+    resolveDocumentWarning = undefined;
+    resolve?.(continueSale);
+  }
   const today = new Date().toISOString().slice(0, 10);
 
   let customerDialog: HTMLDialogElement;
@@ -303,8 +315,8 @@
     action="?/submit"
     bind:this={saleForm}
     use:formFeedback
-    use:enhance={({ cancel, formElement }) => {
-      if (submitting) {
+    use:enhance={async ({ cancel, formElement }) => {
+      if (submitting || documentWarningOpen) {
         cancel();
         return;
       }
@@ -318,6 +330,16 @@
         toast.error(tradeInError);
         cancel();
         return;
+      }
+      if (documentWarning) {
+        const continueSale = await new Promise<boolean>((resolve) => {
+          resolveDocumentWarning = resolve;
+          documentWarningOpen = true;
+        });
+        if (!continueSale) {
+          cancel();
+          return;
+        }
       }
       submitting = true;
       return async ({ result, update }) => {
@@ -737,16 +759,7 @@
                 >
                   Marca
                 </span>
-                <input
-                  name="tradeIn.brand"
-                  required
-                  maxlength="60"
-                  type="text"
-                  bind:value={tradeInBrand}
-                  placeholder="Renault"
-                  class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] outline-none focus:border-[var(--color-red)] transition-colors"
-                  style="border-radius: var(--radius-btn);"
-                />
+                <BrandCombobox name="tradeIn.brand" bind:value={tradeInBrand} />
               </label>
               <label class="flex flex-col crm-field-8">
                 <span
@@ -1081,6 +1094,16 @@
     </div>
   </form>
 </section>
+
+<ConfirmDialog
+  bind:open={documentWarningOpen}
+  title="Vender com documentos em falta?"
+  message={documentWarning ?? undefined}
+  cancelLabel="Voltar"
+  confirmLabel="Continuar venda com documentos em falta"
+  oncancel={() => answerDocumentWarning(false)}
+  onconfirm={() => answerDocumentWarning(true)}
+/>
 
 <dialog
   bind:this={customerDialog}

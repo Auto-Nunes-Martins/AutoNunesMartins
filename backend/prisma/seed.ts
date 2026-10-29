@@ -1,11 +1,10 @@
+import { seedBrandCatalog } from './seedBrands.js';
 /*
  * Database seed — populates the dealership with ~2 months of realistic
  * activity (customers, vehicles, expenses, sales, tasks, operational costs,
  * and activity-log entries).
  *
- * Safe to re-run: it deletes the seedable tables first while keeping the
- * Clerk-managed User rows + AppSetting defaults intact. To skip the wipe,
- * run with KEEP_DATA=1.
+ * Default: idempotent catalogue only. SEED_DEMO=1 adds demo data only to an empty DB.
  */
 
 import { PrismaClient, type Prisma } from '@prisma/client';
@@ -205,6 +204,10 @@ const TASK_TEMPLATES: ReadonlyArray<{
 
 // ─── Main ───────────────────────────────────────────────────────────────
 async function main() {
+  await seedBrandCatalog(prisma);
+  // Normal seed is idempotent and never creates demo activity or deletes business data.
+  if (process.env.SEED_DEMO !== '1') return;
+  if (await prisma.vehicle.count() || await prisma.customer.count() || await prisma.sale.count()) throw new Error('Demo seed requires an empty database. Existing data is preserved.');
   console.log('🌱 Seeding 2 months of activity into Auto Nunes Martins…');
   console.log(`   Reference date: ${TODAY.toISOString().slice(0, 10)}`);
 
@@ -220,20 +223,6 @@ async function main() {
     create: { key: 'reminderLookaheadDays', value: 0 },
   });
   await prisma.appSetting.deleteMany({ where: { key: 'doneTaskRetentionDays' } });
-
-  // Wipe in dependency order (skip if KEEP_DATA=1)
-  if (!process.env.KEEP_DATA) {
-    console.log('   Wiping previous seedable data…');
-    await prisma.activityLog.deleteMany({});
-    await prisma.sale.deleteMany({});
-    await prisma.vehicleExpense.deleteMany({});
-    await prisma.task.deleteMany({});
-    await prisma.vehicle.deleteMany({});
-    await prisma.customer.deleteMany({});
-    await prisma.operationalExpense.deleteMany({});
-    // Also clear the featured-vehicle pointer (may reference a deleted row)
-    await prisma.appSetting.deleteMany({ where: { key: 'featuredVehicleId' } });
-  }
 
   // ── Find or create a primary actor ────────────────────────────────────
   let primaryUser = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });

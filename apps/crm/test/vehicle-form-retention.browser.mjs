@@ -137,7 +137,7 @@ for (const width of [390, 1366])
         // Allow hydration's input-default cleanup before the first reactive plate update.
         await page.waitForTimeout(100);
         for (const [name, value] of Object.entries({
-          brand: 'Marca nova',
+          brand: 'Nissan',
           model: 'Modelo novo',
           year: '2022',
           mileage: '54321',
@@ -146,7 +146,7 @@ for (const width of [390, 1366])
           salePrice: '18000',
           description: 'Notas alteradas',
         }))
-          await page.locator(`[name="${name}"]`).fill(value);
+          if(name==='brand'){await page.getByRole('combobox',{name:'Marca',exact:true}).fill(value);await page.getByRole('option',{name:value,exact:true}).click();}else await page.locator(`[name="${name}"]`).fill(value);
         await page.locator('[name="fuel"]').selectOption('DIESEL');
         await page.locator('[name="status"]').selectOption('RESERVED');
         await page.locator('[name="acquisitionDate"]').fill('2026-10-21');
@@ -154,7 +154,7 @@ for (const width of [390, 1366])
         await page.locator('[name="licensePlate"]').fill('cd34ef');
         assert.equal(await page.locator('[name="licensePlate"]').inputValue(), 'cd34ef');
         await page.locator('[name="licensePlate"]').blur();
-        assert.equal(await page.locator('[name="brand"]').inputValue(), 'Marca nova');
+        assert.equal(await page.locator('[name="brand"]').inputValue(), 'Nissan');
         assert.equal(await page.locator('[name="model"]').inputValue(), 'Modelo novo');
         assert.equal(await page.locator('[name="licensePlate"]').inputValue(), 'CD-34-EF');
         await page.getByRole('button', { name: 'Alternar bloqueio' }).click();
@@ -162,7 +162,7 @@ for (const width of [390, 1366])
         await page.getByRole('button', { name: 'Guardar teste', exact: true }).click();
         const payload = JSON.parse(await page.locator('#payload').innerText());
         assert.deepEqual(payload, {
-          brand: 'Marca nova',
+          brand: 'Nissan',
           model: 'Modelo novo',
           year: '2022',
           fuel: 'DIESEL',
@@ -179,7 +179,7 @@ for (const width of [390, 1366])
         // Initial props can still restore a device draft after mounting.
         await page.getByRole('button', { name: 'Recuperar rascunho' }).click();
         await page.waitForFunction(
-          () => document.querySelector('[name="brand"]').value === 'Recuperada',
+          () => document.querySelector('[role="combobox"]').value === 'Recuperada',
         );
         assert.equal(await page.locator('[name="model"]').inputValue(), 'Rascunho');
         assert.equal(await page.locator('[name="licensePlate"]').inputValue(), 'EF-56-GH');

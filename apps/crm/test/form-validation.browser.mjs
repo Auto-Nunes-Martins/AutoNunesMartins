@@ -147,7 +147,7 @@ for (const width of [390, 1366])
         assert.equal(await page.locator('[data-form-error-summary]').count(), 1);
         assert(await summary.evaluate((e) => e === document.activeElement));
         const links = await summary.locator('a').allTextContents();
-        assert(links.includes('Marca: Indique a marca.'));
+        assert(links.includes('Marca: Selecione uma marca registada na lista.'));
         assert(links.includes('Modelo: Indique o modelo.'));
         assert(links.includes('Combustível: Selecione uma opção.'));
         assert.equal(links.length, new Set(links.map((s) => s.split(':')[0])).size);
@@ -160,10 +160,10 @@ for (const width of [390, 1366])
         });
         assert.equal(await summary.getAttribute('aria-live'), null);
         assert.equal(await page.locator('.crm-field-error[role="alert"]').count(), 0);
-        await summary.getByRole('link', { name: 'Marca: Indique a marca.', exact: true }).click();
-        assert.equal(await page.evaluate(() => document.activeElement.name), 'brand');
-        const brand = page.locator('[name="brand"]');
-        await brand.fill('Dacia');
+        await summary.getByRole('link', { name: 'Marca: Selecione uma marca registada na lista.', exact: true }).click();
+        assert.equal(await page.evaluate(() => document.activeElement.dataset.errorField), 'brand');
+        const brand = page.getByRole('combobox',{name:'Marca',exact:true});
+        await brand.fill('Dacia');await page.getByRole('option',{name:'Dacia',exact:true}).click();
         assert.equal(await summary.getByRole('link', { name: /^Marca:/ }).count(), 0);
         await page.locator('[name="year"]').fill('1900');
         await page.getByRole('button', { name: 'Guardar e continuar', exact: true }).click();
@@ -181,14 +181,14 @@ for (const width of [390, 1366])
           }),
         );
         assert.equal(await summary.locator('li').count(), 2);
-        assert.equal(await page.locator('[name="brand"]').getAttribute('aria-invalid'), 'true');
+        assert.equal(await page.getByRole('combobox',{name:'Marca',exact:true}).getAttribute('aria-invalid'), 'true');
         assert.equal(await page.locator('label:has([name="brand"]) .crm-field-error').count(), 1);
         const serverBrand = summary.getByRole('link', { name: /^Marca:/ });
         assert((await serverBrand.textContent()).includes('Marca não reconhecida'));
         assert.equal((await serverBrand.textContent()).match(/Indique a marca/g)?.length, 1);
         await serverBrand.focus();
         await page.keyboard.press('Enter');
-        assert.equal(await page.evaluate(() => document.activeElement.name), 'brand');
+        assert.equal(await page.evaluate(() => document.activeElement.dataset.errorField), 'brand');
         assert.equal(await brand.inputValue(), 'Dacia');
         assert((await summary.innerText()).includes('Não foi possível concluir a validação.'));
         await page.evaluate(() =>
@@ -205,7 +205,7 @@ for (const width of [390, 1366])
           purchasePrice: '10000',
           salePrice: '15000',
         }))
-          await page.locator('[name="' + name + '"]').fill(value);
+          if(name==='brand'){await page.getByRole('combobox',{name:'Marca',exact:true}).fill(value);await page.getByRole('option',{name:value,exact:true}).click();}else await page.locator('[name="' + name + '"]').fill(value);
         await page.locator('[name="fuel"]').selectOption('GASOLINE');
         await page.evaluate(
           () =>

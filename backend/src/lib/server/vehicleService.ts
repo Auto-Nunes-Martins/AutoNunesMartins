@@ -159,7 +159,7 @@ export async function updateVehicleInTransaction(
     );
   }
 
-  const updateData: Prisma.VehicleUpdateInput = {};
+  const updateData: Prisma.VehicleUncheckedUpdateInput = {};
   if (data.brand !== undefined) updateData.brand = data.brand;
   if (data.model !== undefined) updateData.model = data.model;
   if (data.year !== undefined) updateData.year = data.year;

@@ -1,0 +1,1421 @@
+[
+  {
+    "name": "Abarth",
+    "key": "abarth",
+    "aliases": [],
+    "logo": "abarth"
+  },
+  {
+    "name": "AC",
+    "key": "ac",
+    "aliases": [],
+    "logo": "ac"
+  },
+  {
+    "name": "Acura",
+    "key": "acura",
+    "aliases": [],
+    "logo": "acura"
+  },
+  {
+    "name": "Aion",
+    "key": "aion",
+    "aliases": [],
+    "logo": "aion"
+  },
+  {
+    "name": "AITO",
+    "key": "aito",
+    "aliases": [],
+    "logo": "aito"
+  },
+  {
+    "name": "Aiways",
+    "key": "aiways",
+    "aliases": [],
+    "logo": "aiways"
+  },
+  {
+    "name": "Aixam",
+    "key": "aixam",
+    "aliases": [],
+    "logo": "aixam"
+  },
+  {
+    "name": "Alfa Romeo",
+    "key": "alfaromeo",
+    "aliases": [
+      "Alfa-Romeo"
+    ],
+    "logo": "alfaromeo"
+  },
+  {
+    "name": "ALPINA",
+    "key": "alpina",
+    "aliases": [],
+    "logo": "alpina"
+  },
+  {
+    "name": "Alpine",
+    "key": "alpine",
+    "aliases": [],
+    "logo": "alpine"
+  },
+  {
+    "name": "Alvis",
+    "key": "alvis",
+    "aliases": [],
+    "logo": "alvis"
+  },
+  {
+    "name": "AMC",
+    "key": "amc",
+    "aliases": [],
+    "logo": "amc"
+  },
+  {
+    "name": "Ariel",
+    "key": "ariel",
+    "aliases": [],
+    "logo": "ariel"
+  },
+  {
+    "name": "Aro",
+    "key": "aro",
+    "aliases": [],
+    "logo": "aro"
+  },
+  {
+    "name": "Aston Martin",
+    "key": "astonmartin",
+    "aliases": [],
+    "logo": "astonmartin"
+  },
+  {
+    "name": "Audi",
+    "key": "audi",
+    "aliases": [],
+    "logo": "audi"
+  },
+  {
+    "name": "Austin",
+    "key": "austin",
+    "aliases": [],
+    "logo": "austin"
+  },
+  {
+    "name": "Austin-Healey",
+    "key": "austinhealey",
+    "aliases": [],
+    "logo": "austinhealey"
+  },
+  {
+    "name": "Autobianchi",
+    "key": "autobianchi",
+    "aliases": [],
+    "logo": "autobianchi"
+  },
+  {
+    "name": "Avatr",
+    "key": "avatr",
+    "aliases": [],
+    "logo": "avatr"
+  },
+  {
+    "name": "BAC",
+    "key": "bac",
+    "aliases": [],
+    "logo": "bac"
+  },
+  {
+    "name": "BAIC",
+    "key": "baic",
+    "aliases": [],
+    "logo": "baic"
+  },
+  {
+    "name": "BAW",
+    "key": "baw",
+    "aliases": [],
+    "logo": "baw"
+  },
+  {
+    "name": "Bentley",
+    "key": "bentley",
+    "aliases": [],
+    "logo": "bentley"
+  },
+  {
+    "name": "Bertone",
+    "key": "bertone",
+    "aliases": [],
+    "logo": "bertone"
+  },
+  {
+    "name": "BMW",
+    "key": "bmw",
+    "aliases": [],
+    "logo": "bmw"
+  },
+  {
+    "name": "Bollinger",
+    "key": "bollinger",
+    "aliases": [],
+    "logo": "bollinger"
+  },
+  {
+    "name": "Borgward",
+    "key": "borgward",
+    "aliases": [],
+    "logo": "borgward"
+  },
+  {
+    "name": "Brabham",
+    "key": "brabham",
+    "aliases": [],
+    "logo": "brabham"
+  },
+  {
+    "name": "Brilliance",
+    "key": "brilliance",
+    "aliases": [],
+    "logo": "brilliance"
+  },
+  {
+    "name": "Bristol",
+    "key": "bristol",
+    "aliases": [],
+    "logo": "bristol"
+  },
+  {
+    "name": "Bugatti",
+    "key": "bugatti",
+    "aliases": [],
+    "logo": "bugatti"
+  },
+  {
+    "name": "Buick",
+    "key": "buick",
+    "aliases": [],
+    "logo": "buick"
+  },
+  {
+    "name": "BYD",
+    "key": "byd",
+    "aliases": [],
+    "logo": "byd"
+  },
+  {
+    "name": "Cadillac",
+    "key": "cadillac",
+    "aliases": [],
+    "logo": "cadillac"
+  },
+  {
+    "name": "Casalini",
+    "key": "casalini",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Caterham",
+    "key": "caterham",
+    "aliases": [],
+    "logo": "caterham"
+  },
+  {
+    "name": "Changan",
+    "key": "changan",
+    "aliases": [
+      "Changan Automobile"
+    ],
+    "logo": "changan"
+  },
+  {
+    "name": "Chatenet",
+    "key": "chatenet",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Chery",
+    "key": "chery",
+    "aliases": [],
+    "logo": "chery"
+  },
+  {
+    "name": "Chevrolet",
+    "key": "chevrolet",
+    "aliases": [],
+    "logo": "chevrolet"
+  },
+  {
+    "name": "Chrysler",
+    "key": "chrysler",
+    "aliases": [],
+    "logo": "chrysler"
+  },
+  {
+    "name": "Citroën",
+    "key": "citroen",
+    "aliases": [
+      "Citroen"
+    ],
+    "logo": "citroen"
+  },
+  {
+    "name": "Corvette",
+    "key": "corvette",
+    "aliases": [],
+    "logo": "corvette"
+  },
+  {
+    "name": "Cupra",
+    "key": "cupra",
+    "aliases": [],
+    "logo": "cupra"
+  },
+  {
+    "name": "Dacia",
+    "key": "dacia",
+    "aliases": [],
+    "logo": "dacia"
+  },
+  {
+    "name": "Daewoo",
+    "key": "daewoo",
+    "aliases": [],
+    "logo": "daewoo"
+  },
+  {
+    "name": "DAF",
+    "key": "daf",
+    "aliases": [],
+    "logo": "daf"
+  },
+  {
+    "name": "Daihatsu",
+    "key": "daihatsu",
+    "aliases": [],
+    "logo": "daihatsu"
+  },
+  {
+    "name": "Daimler",
+    "key": "daimler",
+    "aliases": [],
+    "logo": "daimler"
+  },
+  {
+    "name": "Datsun",
+    "key": "datsun",
+    "aliases": [],
+    "logo": "datsun"
+  },
+  {
+    "name": "De Tomaso",
+    "key": "detomaso",
+    "aliases": [],
+    "logo": "detomaso"
+  },
+  {
+    "name": "Deepal",
+    "key": "deepal",
+    "aliases": [],
+    "logo": "deepal"
+  },
+  {
+    "name": "Delage",
+    "key": "delage",
+    "aliases": [],
+    "logo": "delage"
+  },
+  {
+    "name": "DeLorean",
+    "key": "delorean",
+    "aliases": [
+      "De Lorean"
+    ],
+    "logo": "delorean"
+  },
+  {
+    "name": "Denza",
+    "key": "denza",
+    "aliases": [],
+    "logo": "denza"
+  },
+  {
+    "name": "DeSoto",
+    "key": "desoto",
+    "aliases": [],
+    "logo": "desoto"
+  },
+  {
+    "name": "DFSK",
+    "key": "dfsk",
+    "aliases": [],
+    "logo": "dfsk"
+  },
+  {
+    "name": "Dodge",
+    "key": "dodge",
+    "aliases": [],
+    "logo": "dodge"
+  },
+  {
+    "name": "Dongfeng",
+    "key": "dongfeng",
+    "aliases": [],
+    "logo": "dongfeng"
+  },
+  {
+    "name": "Donkervoort",
+    "key": "donkervoort",
+    "aliases": [],
+    "logo": "donkervoort"
+  },
+  {
+    "name": "DR",
+    "key": "dr",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "DS Automobiles",
+    "key": "dsautomobiles",
+    "aliases": [
+      "DS"
+    ],
+    "logo": "dsautomobiles"
+  },
+  {
+    "name": "e.GO",
+    "key": "ego",
+    "aliases": [],
+    "logo": "ego"
+  },
+  {
+    "name": "Ebro",
+    "key": "ebro",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Elaris",
+    "key": "elaris",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "EMC",
+    "key": "emc",
+    "aliases": [],
+    "logo": "emc"
+  },
+  {
+    "name": "EVO",
+    "key": "evo",
+    "aliases": [],
+    "logo": "evo"
+  },
+  {
+    "name": "FAW",
+    "key": "faw",
+    "aliases": [],
+    "logo": "faw"
+  },
+  {
+    "name": "Ferrari",
+    "key": "ferrari",
+    "aliases": [],
+    "logo": "ferrari"
+  },
+  {
+    "name": "Fiat",
+    "key": "fiat",
+    "aliases": [],
+    "logo": "fiat"
+  },
+  {
+    "name": "Firefly",
+    "key": "firefly",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Fisker",
+    "key": "fisker",
+    "aliases": [],
+    "logo": "fisker"
+  },
+  {
+    "name": "Ford",
+    "key": "ford",
+    "aliases": [],
+    "logo": "ford"
+  },
+  {
+    "name": "Forthing",
+    "key": "forthing",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Foton",
+    "key": "foton",
+    "aliases": [],
+    "logo": "foton"
+  },
+  {
+    "name": "GAC",
+    "key": "gac",
+    "aliases": [],
+    "logo": "gac"
+  },
+  {
+    "name": "GAZ",
+    "key": "gaz",
+    "aliases": [],
+    "logo": "gaz"
+  },
+  {
+    "name": "Geely",
+    "key": "geely",
+    "aliases": [],
+    "logo": "geely"
+  },
+  {
+    "name": "Genesis",
+    "key": "genesis",
+    "aliases": [],
+    "logo": "genesis"
+  },
+  {
+    "name": "Geo",
+    "key": "geo",
+    "aliases": [],
+    "logo": "geo"
+  },
+  {
+    "name": "Geometry",
+    "key": "geometry",
+    "aliases": [],
+    "logo": "geometry"
+  },
+  {
+    "name": "Ginetta",
+    "key": "ginetta",
+    "aliases": [],
+    "logo": "ginetta"
+  },
+  {
+    "name": "GMC",
+    "key": "gmc",
+    "aliases": [],
+    "logo": "gmc"
+  },
+  {
+    "name": "Gonow",
+    "key": "gonow",
+    "aliases": [],
+    "logo": "gonow"
+  },
+  {
+    "name": "Great Wall",
+    "key": "greatwall",
+    "aliases": [],
+    "logo": "greatwall"
+  },
+  {
+    "name": "Grecav",
+    "key": "grecav",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "GWM",
+    "key": "gwm",
+    "aliases": [],
+    "logo": "gwm"
+  },
+  {
+    "name": "Haima",
+    "key": "haima",
+    "aliases": [],
+    "logo": "haima"
+  },
+  {
+    "name": "Haval",
+    "key": "haval",
+    "aliases": [],
+    "logo": "haval"
+  },
+  {
+    "name": "Hennessey",
+    "key": "hennessey",
+    "aliases": [],
+    "logo": "hennessey"
+  },
+  {
+    "name": "Hillman",
+    "key": "hillman",
+    "aliases": [],
+    "logo": "hillman"
+  },
+  {
+    "name": "Hispano Suiza",
+    "key": "hispanosuiza",
+    "aliases": [],
+    "logo": "hispanosuiza"
+  },
+  {
+    "name": "Holden",
+    "key": "holden",
+    "aliases": [],
+    "logo": "holden"
+  },
+  {
+    "name": "Honda",
+    "key": "honda",
+    "aliases": [],
+    "logo": "honda"
+  },
+  {
+    "name": "Hongqi",
+    "key": "hongqi",
+    "aliases": [],
+    "logo": "hongqi"
+  },
+  {
+    "name": "Hummer",
+    "key": "hummer",
+    "aliases": [],
+    "logo": "hummer"
+  },
+  {
+    "name": "Hyundai",
+    "key": "hyundai",
+    "aliases": [],
+    "logo": "hyundai"
+  },
+  {
+    "name": "iCAR",
+    "key": "icar",
+    "aliases": [],
+    "logo": "icar"
+  },
+  {
+    "name": "ICH-X",
+    "key": "ichx",
+    "aliases": [],
+    "logo": "ichx"
+  },
+  {
+    "name": "INEOS",
+    "key": "ineos",
+    "aliases": [],
+    "logo": "ineos"
+  },
+  {
+    "name": "Infiniti",
+    "key": "infiniti",
+    "aliases": [],
+    "logo": "infiniti"
+  },
+  {
+    "name": "Innocenti",
+    "key": "innocenti",
+    "aliases": [],
+    "logo": "innocenti"
+  },
+  {
+    "name": "Isuzu",
+    "key": "isuzu",
+    "aliases": [],
+    "logo": "isuzu"
+  },
+  {
+    "name": "JAC",
+    "key": "jac",
+    "aliases": [
+      "JAC Motors"
+    ],
+    "logo": "jac"
+  },
+  {
+    "name": "Jaecoo",
+    "key": "jaecoo",
+    "aliases": [],
+    "logo": "jaecoo"
+  },
+  {
+    "name": "Jaguar",
+    "key": "jaguar",
+    "aliases": [],
+    "logo": "jaguar"
+  },
+  {
+    "name": "Jeep",
+    "key": "jeep",
+    "aliases": [],
+    "logo": "jeep"
+  },
+  {
+    "name": "Jensen",
+    "key": "jensen",
+    "aliases": [],
+    "logo": "jensen"
+  },
+  {
+    "name": "Jetour",
+    "key": "jetour",
+    "aliases": [],
+    "logo": "jetour"
+  },
+  {
+    "name": "Jinbei",
+    "key": "jinbei",
+    "aliases": [],
+    "logo": "jinbei"
+  },
+  {
+    "name": "Karma",
+    "key": "karma",
+    "aliases": [],
+    "logo": "karma"
+  },
+  {
+    "name": "KG Mobility",
+    "key": "kgmobility",
+    "aliases": [
+      "KGM"
+    ],
+    "logo": "kgmobility"
+  },
+  {
+    "name": "Kia",
+    "key": "kia",
+    "aliases": [],
+    "logo": "kia"
+  },
+  {
+    "name": "Koenigsegg",
+    "key": "koenigsegg",
+    "aliases": [],
+    "logo": "koenigsegg"
+  },
+  {
+    "name": "KTM",
+    "key": "ktm",
+    "aliases": [],
+    "logo": "ktm"
+  },
+  {
+    "name": "Lada",
+    "key": "lada",
+    "aliases": [],
+    "logo": "lada"
+  },
+  {
+    "name": "Lamborghini",
+    "key": "lamborghini",
+    "aliases": [],
+    "logo": "lamborghini"
+  },
+  {
+    "name": "Lancia",
+    "key": "lancia",
+    "aliases": [],
+    "logo": "lancia"
+  },
+  {
+    "name": "Land Rover",
+    "key": "landrover",
+    "aliases": [],
+    "logo": "landrover"
+  },
+  {
+    "name": "Leapmotor",
+    "key": "leapmotor",
+    "aliases": [],
+    "logo": "leapmotor"
+  },
+  {
+    "name": "LEVC",
+    "key": "levc",
+    "aliases": [],
+    "logo": "levc"
+  },
+  {
+    "name": "Lexus",
+    "key": "lexus",
+    "aliases": [],
+    "logo": "lexus"
+  },
+  {
+    "name": "Ligier",
+    "key": "ligier",
+    "aliases": [],
+    "logo": "ligier"
+  },
+  {
+    "name": "Lincoln",
+    "key": "lincoln",
+    "aliases": [],
+    "logo": "lincoln"
+  },
+  {
+    "name": "Livan",
+    "key": "livan",
+    "aliases": [],
+    "logo": "livan"
+  },
+  {
+    "name": "Lotus",
+    "key": "lotus",
+    "aliases": [],
+    "logo": "lotus"
+  },
+  {
+    "name": "Lucid",
+    "key": "lucid",
+    "aliases": [
+      "Lucid Motors"
+    ],
+    "logo": "lucid"
+  },
+  {
+    "name": "Lynk & Co",
+    "key": "lynkco",
+    "aliases": [
+      "Lynk and Co"
+    ],
+    "logo": "lynkco"
+  },
+  {
+    "name": "Mahindra",
+    "key": "mahindra",
+    "aliases": [],
+    "logo": "mahindra"
+  },
+  {
+    "name": "Marcos",
+    "key": "marcos",
+    "aliases": [],
+    "logo": "marcos"
+  },
+  {
+    "name": "Maruti",
+    "key": "maruti",
+    "aliases": [],
+    "logo": "maruti"
+  },
+  {
+    "name": "Maserati",
+    "key": "maserati",
+    "aliases": [],
+    "logo": "maserati"
+  },
+  {
+    "name": "Matra",
+    "key": "matra",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Maxus",
+    "key": "maxus",
+    "aliases": [],
+    "logo": "maxus"
+  },
+  {
+    "name": "Maybach",
+    "key": "maybach",
+    "aliases": [],
+    "logo": "maybach"
+  },
+  {
+    "name": "Mazda",
+    "key": "mazda",
+    "aliases": [],
+    "logo": "mazda"
+  },
+  {
+    "name": "McLaren",
+    "key": "mclaren",
+    "aliases": [],
+    "logo": "mclaren"
+  },
+  {
+    "name": "Mercedes-Benz",
+    "key": "mercedesbenz",
+    "aliases": [
+      "Mercedes",
+      "Mercedes Benz"
+    ],
+    "logo": "mercedes"
+  },
+  {
+    "name": "Mercury",
+    "key": "mercury",
+    "aliases": [],
+    "logo": "mercury"
+  },
+  {
+    "name": "MG",
+    "key": "mg",
+    "aliases": [],
+    "logo": "mg"
+  },
+  {
+    "name": "Micro",
+    "key": "micro",
+    "aliases": [
+      "Micro Mobility Systems"
+    ],
+    "logo": null
+  },
+  {
+    "name": "Microcar",
+    "key": "microcar",
+    "aliases": [],
+    "logo": "microcar"
+  },
+  {
+    "name": "MINI",
+    "key": "mini",
+    "aliases": [],
+    "logo": "mini"
+  },
+  {
+    "name": "Mitsubishi",
+    "key": "mitsubishi",
+    "aliases": [],
+    "logo": "mitsubishi"
+  },
+  {
+    "name": "Mitsuoka",
+    "key": "mitsuoka",
+    "aliases": [],
+    "logo": "mitsuoka"
+  },
+  {
+    "name": "Morgan",
+    "key": "morgan",
+    "aliases": [],
+    "logo": "morgan"
+  },
+  {
+    "name": "Morris",
+    "key": "morris",
+    "aliases": [],
+    "logo": "morris"
+  },
+  {
+    "name": "NIO",
+    "key": "nio",
+    "aliases": [],
+    "logo": "nio"
+  },
+  {
+    "name": "Nissan",
+    "key": "nissan",
+    "aliases": [],
+    "logo": "nissan"
+  },
+  {
+    "name": "Noble",
+    "key": "noble",
+    "aliases": [],
+    "logo": "noble"
+  },
+  {
+    "name": "NSU",
+    "key": "nsu",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Oldsmobile",
+    "key": "oldsmobile",
+    "aliases": [],
+    "logo": "oldsmobile"
+  },
+  {
+    "name": "Omoda",
+    "key": "omoda",
+    "aliases": [],
+    "logo": "omoda"
+  },
+  {
+    "name": "Opel",
+    "key": "opel",
+    "aliases": [],
+    "logo": "opel"
+  },
+  {
+    "name": "ORA",
+    "key": "ora",
+    "aliases": [],
+    "logo": "ora"
+  },
+  {
+    "name": "Pagani",
+    "key": "pagani",
+    "aliases": [],
+    "logo": "pagani"
+  },
+  {
+    "name": "Perodua",
+    "key": "perodua",
+    "aliases": [],
+    "logo": "perodua"
+  },
+  {
+    "name": "Peugeot",
+    "key": "peugeot",
+    "aliases": [],
+    "logo": "peugeot"
+  },
+  {
+    "name": "PGO",
+    "key": "pgo",
+    "aliases": [],
+    "logo": "pgo"
+  },
+  {
+    "name": "Piaggio",
+    "key": "piaggio",
+    "aliases": [],
+    "logo": "piaggio"
+  },
+  {
+    "name": "Pininfarina",
+    "key": "pininfarina",
+    "aliases": [],
+    "logo": "pininfarina"
+  },
+  {
+    "name": "Plymouth",
+    "key": "plymouth",
+    "aliases": [],
+    "logo": "plymouth"
+  },
+  {
+    "name": "Polestar",
+    "key": "polestar",
+    "aliases": [],
+    "logo": "polestar"
+  },
+  {
+    "name": "Pontiac",
+    "key": "pontiac",
+    "aliases": [],
+    "logo": "pontiac"
+  },
+  {
+    "name": "Porsche",
+    "key": "porsche",
+    "aliases": [],
+    "logo": "porsche"
+  },
+  {
+    "name": "Praga",
+    "key": "praga",
+    "aliases": [],
+    "logo": "praga"
+  },
+  {
+    "name": "Proton",
+    "key": "proton",
+    "aliases": [],
+    "logo": "proton"
+  },
+  {
+    "name": "Puch",
+    "key": "puch",
+    "aliases": [],
+    "logo": "puch"
+  },
+  {
+    "name": "Puma",
+    "key": "puma",
+    "aliases": [],
+    "logo": "puma"
+  },
+  {
+    "name": "RAM",
+    "key": "ram",
+    "aliases": [],
+    "logo": "ram"
+  },
+  {
+    "name": "Reliant",
+    "key": "reliant",
+    "aliases": [],
+    "logo": "reliant"
+  },
+  {
+    "name": "Renault",
+    "key": "renault",
+    "aliases": [],
+    "logo": "renault"
+  },
+  {
+    "name": "Renault Trucks",
+    "key": "renaulttrucks",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Riley",
+    "key": "riley",
+    "aliases": [],
+    "logo": "riley"
+  },
+  {
+    "name": "Rimac",
+    "key": "rimac",
+    "aliases": [],
+    "logo": "rimac"
+  },
+  {
+    "name": "Rivian",
+    "key": "rivian",
+    "aliases": [],
+    "logo": "rivian"
+  },
+  {
+    "name": "Rolls-Royce",
+    "key": "rollsroyce",
+    "aliases": [],
+    "logo": "rollsroyce"
+  },
+  {
+    "name": "Rover",
+    "key": "rover",
+    "aliases": [],
+    "logo": "rover"
+  },
+  {
+    "name": "RUF",
+    "key": "ruf",
+    "aliases": [],
+    "logo": "ruf"
+  },
+  {
+    "name": "Saab",
+    "key": "saab",
+    "aliases": [],
+    "logo": "saab"
+  },
+  {
+    "name": "Santana",
+    "key": "santana",
+    "aliases": [],
+    "logo": "santana"
+  },
+  {
+    "name": "Saturn",
+    "key": "saturn",
+    "aliases": [],
+    "logo": "saturn"
+  },
+  {
+    "name": "Scion",
+    "key": "scion",
+    "aliases": [],
+    "logo": "scion"
+  },
+  {
+    "name": "SEAT",
+    "key": "seat",
+    "aliases": [],
+    "logo": "seat"
+  },
+  {
+    "name": "Seres",
+    "key": "seres",
+    "aliases": [],
+    "logo": "seres"
+  },
+  {
+    "name": "Shuanghuan",
+    "key": "shuanghuan",
+    "aliases": [],
+    "logo": "shuanghuan"
+  },
+  {
+    "name": "Silence",
+    "key": "silence",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Simca",
+    "key": "simca",
+    "aliases": [],
+    "logo": "simca"
+  },
+  {
+    "name": "Škoda",
+    "key": "skoda",
+    "aliases": [
+      "Skoda"
+    ],
+    "logo": "skoda"
+  },
+  {
+    "name": "Skywell",
+    "key": "skywell",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Smart",
+    "key": "smart",
+    "aliases": [],
+    "logo": "smart"
+  },
+  {
+    "name": "Soueast",
+    "key": "soueast",
+    "aliases": [],
+    "logo": "soueast"
+  },
+  {
+    "name": "SsangYong",
+    "key": "ssangyong",
+    "aliases": [],
+    "logo": "ssangyong"
+  },
+  {
+    "name": "Subaru",
+    "key": "subaru",
+    "aliases": [],
+    "logo": "subaru"
+  },
+  {
+    "name": "Suzuki",
+    "key": "suzuki",
+    "aliases": [],
+    "logo": "suzuki"
+  },
+  {
+    "name": "SWM",
+    "key": "swm",
+    "aliases": [],
+    "logo": "swm"
+  },
+  {
+    "name": "Talbot",
+    "key": "talbot",
+    "aliases": [],
+    "logo": "talbot"
+  },
+  {
+    "name": "Tank",
+    "key": "tank",
+    "aliases": [],
+    "logo": "tank"
+  },
+  {
+    "name": "Tata",
+    "key": "tata",
+    "aliases": [],
+    "logo": "tata"
+  },
+  {
+    "name": "Tatra",
+    "key": "tatra",
+    "aliases": [],
+    "logo": "tatra"
+  },
+  {
+    "name": "Tazzari",
+    "key": "tazzari",
+    "aliases": [],
+    "logo": "tazzari"
+  },
+  {
+    "name": "Tesla",
+    "key": "tesla",
+    "aliases": [],
+    "logo": "tesla"
+  },
+  {
+    "name": "Togg",
+    "key": "togg",
+    "aliases": [],
+    "logo": "togg"
+  },
+  {
+    "name": "Toyota",
+    "key": "toyota",
+    "aliases": [],
+    "logo": "toyota"
+  },
+  {
+    "name": "Trabant",
+    "key": "trabant",
+    "aliases": [],
+    "logo": "trabant"
+  },
+  {
+    "name": "Triumph",
+    "key": "triumph",
+    "aliases": [],
+    "logo": "triumph"
+  },
+  {
+    "name": "TVR",
+    "key": "tvr",
+    "aliases": [],
+    "logo": "tvr"
+  },
+  {
+    "name": "TYN-e",
+    "key": "tyne",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "UAZ",
+    "key": "uaz",
+    "aliases": [],
+    "logo": "uaz"
+  },
+  {
+    "name": "Vauxhall",
+    "key": "vauxhall",
+    "aliases": [],
+    "logo": "vauxhall"
+  },
+  {
+    "name": "Venturi",
+    "key": "venturi",
+    "aliases": [],
+    "logo": "venturi"
+  },
+  {
+    "name": "VinFast",
+    "key": "vinfast",
+    "aliases": [],
+    "logo": "vinfast"
+  },
+  {
+    "name": "Volkswagen",
+    "key": "volkswagen",
+    "aliases": [
+      "VW"
+    ],
+    "logo": "volkswagen"
+  },
+  {
+    "name": "Volvo",
+    "key": "volvo",
+    "aliases": [],
+    "logo": "volvo"
+  },
+  {
+    "name": "Voyah",
+    "key": "voyah",
+    "aliases": [],
+    "logo": "voyah"
+  },
+  {
+    "name": "W Motors",
+    "key": "wmotors",
+    "aliases": [],
+    "logo": "wmotors"
+  },
+  {
+    "name": "Wartburg",
+    "key": "wartburg",
+    "aliases": [],
+    "logo": "wartburg"
+  },
+  {
+    "name": "Westfield",
+    "key": "westfield",
+    "aliases": [],
+    "logo": "westfield"
+  },
+  {
+    "name": "Wey",
+    "key": "wey",
+    "aliases": [],
+    "logo": "wey"
+  },
+  {
+    "name": "Wiesmann",
+    "key": "wiesmann",
+    "aliases": [],
+    "logo": "wiesmann"
+  },
+  {
+    "name": "Wuling",
+    "key": "wuling",
+    "aliases": [],
+    "logo": "wuling"
+  },
+  {
+    "name": "XEV",
+    "key": "xev",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Xiaomi",
+    "key": "xiaomi",
+    "aliases": [],
+    "logo": "xiaomi"
+  },
+  {
+    "name": "XPeng",
+    "key": "xpeng",
+    "aliases": [],
+    "logo": "xpeng"
+  },
+  {
+    "name": "Yangwang",
+    "key": "yangwang",
+    "aliases": [],
+    "logo": "yangwang"
+  },
+  {
+    "name": "Zastava",
+    "key": "zastava",
+    "aliases": [],
+    "logo": "zastava"
+  },
+  {
+    "name": "ZAZ",
+    "key": "zaz",
+    "aliases": [],
+    "logo": "zaz"
+  },
+  {
+    "name": "Zeekr",
+    "key": "zeekr",
+    "aliases": [],
+    "logo": "zeekr"
+  },
+  {
+    "name": "Zenvo",
+    "key": "zenvo",
+    "aliases": [],
+    "logo": "zenvo"
+  },
+  {
+    "name": "Zhidou",
+    "key": "zhidou",
+    "aliases": [],
+    "logo": null
+  },
+  {
+    "name": "Zotye",
+    "key": "zotye",
+    "aliases": [],
+    "logo": "zotye"
+  }
+]

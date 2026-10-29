@@ -50,7 +50,7 @@ const actor = { actorId: 'admin', actorName: 'Admin' };
 const input = () =>
   vehicleEditSchema.parse({
     expectedUpdatedAt: '2026-10-17T10:00:00.000Z',
-    data: { brand: 'Nova marca' },
+    data: { brand: 'Nissan' },
     photos: [a, b],
     publication: {
       published: true,
@@ -126,7 +126,7 @@ describe('single vehicle edit transaction', () => {
     expect(mocked.work).toHaveBeenCalledTimes(1);
     expect(mocked.dimensions).toHaveBeenCalledWith({}, id, [b, a]);
     expect(mocked.dimensions.mock.invocationCallOrder[0]).toBeLessThan(mocked.work.mock.invocationCallOrder[0]!);
-    expect(row.brand).toBe('Nova marca');
+    expect(row.brand).toBe('Nissan');
     expect(row.photos).toEqual([b, a]);
     expect(row.publicPhotoPaths).toEqual([b, a]);
     expect(mocked.update.mock.calls[0]?.[0]).toBe(tx);

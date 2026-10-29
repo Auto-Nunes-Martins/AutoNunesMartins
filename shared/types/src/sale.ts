@@ -1,3 +1,4 @@
+import { registeredBrandSchema } from './brands.js';
 import { z } from 'zod';
 import { BuyerTypeEnum, DeliveryStatusEnum, FuelEnum, TradeInDispositionEnum } from './enums.js';
 import { moneySchema } from './decimal.js';
@@ -16,7 +17,7 @@ const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === 
  */
 export const tradeInCreateSchema = z
   .object({
-    brand: z.string().trim().min(1, 'Marca obrigatória').max(60),
+    brand: registeredBrandSchema,
     model: z.string().trim().min(1, 'Modelo obrigatório').max(80),
     year: vehicleCreateSchema.shape.year,
     fuel: vehicleCreateSchema.shape.fuel,

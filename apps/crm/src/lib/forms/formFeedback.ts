@@ -187,7 +187,7 @@ function missingReason(field: HTMLElement, name: string) {
 function nativeReason(field: NativeField) {
   const v = field.validity;
   if (v.customError) return field.validationMessage;
-  if (v.valueMissing) return missingReason(field, field.name);
+  if (v.valueMissing) return missingReason(field, field.dataset.errorField ?? field.name);
   if (v.rangeUnderflow) return `O mínimo é ${field.getAttribute('min')}.`;
   if (v.rangeOverflow) return `O máximo é ${field.getAttribute('max')}.`;
   if (v.tooShort) return `Use pelo menos ${field.getAttribute('minlength')} caracteres.`;
@@ -347,7 +347,7 @@ export function showInvalidFormFields(form: HTMLFormElement) {
   );
   if (!invalid.length) return false;
   showFormErrors(form, {
-    issues: invalid.map((field) => ({ path: [field.name], message: nativeReason(field) })),
+    issues: invalid.map((field) => ({ path: [field.dataset.errorField ?? field.name], message: nativeReason(field) })),
   });
   return true;
 }

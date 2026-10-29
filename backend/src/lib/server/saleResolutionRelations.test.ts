@@ -12,15 +12,15 @@ beforeEach(async () => {
   await db.exec(`
     INSERT INTO "Customer" ("id","name","phone","nif","updatedAt") VALUES ('customerA','Cliente A','900000000','123456789',NOW()),('customerB','Cliente B','900000001','123456788',NOW());
     INSERT INTO "Vehicle" ("id","brand","model","year","fuel","mileage","purchasePrice","status","acquisitionDate","updatedAt") VALUES
-      ('A','Marca','A',2020,'DIESEL',10000,10000,'SOLD',NOW(),NOW()),
-      ('B','Marca','B',2019,'DIESEL',20000,3000,'SOLD',NOW(),NOW()),
-      ('C','Marca','C',2018,'DIESEL',30000,2100,'DRAFT',NOW(),NOW());
+      ('A','Renault','A',2020,'DIESEL',10000,10000,'SOLD',NOW(),NOW()),
+      ('B','Renault','B',2019,'DIESEL',20000,3000,'SOLD',NOW(),NOW()),
+      ('C','Renault','C',2018,'DIESEL',30000,2100,'DRAFT',NOW(),NOW());
     INSERT INTO "Sale" ("id","vehicleId","originalVehicleId","customerId","salePrice","vatAmount","realProfit","saleDate","updatedAt") VALUES
       ('saleA','A','A','customerA',16000,1000,4000,NOW(),NOW()),
       ('saleB','B','B','customerB',8000,888.21,3961.79,NOW(),NOW());
     INSERT INTO "TradeIn" ("id","saleId","brand","model","year","fuel","mileage","allowanceValue","disposition","resultingVehicleId","updatedAt") VALUES
-      ('tradeA','saleA','Marca','B',2019,'DIESEL',20000,3000,'STOCK','B',NOW()),
-      ('tradeB','saleB','Marca','C',2018,'DIESEL',30000,2100,'STOCK','C',NOW());
+      ('tradeA','saleA','Renault','B',2019,'DIESEL',20000,3000,'STOCK','B',NOW()),
+      ('tradeB','saleB','Renault','C',2018,'DIESEL',30000,2100,'STOCK','C',NOW());
     INSERT INTO "VehicleExpense" ("id","vehicleId","category","description","amount","date") VALUES ('expenseB','B','REPAIR','Reparação',250,NOW());
   `);
 }, 30000);

@@ -1,3 +1,4 @@
+import { registeredBrandSchema } from './brands.js';
 import { z } from 'zod';
 import { FuelEnum, VehicleStatusEnum } from './enums.js';
 import { moneySchema } from './decimal.js';
@@ -48,7 +49,7 @@ export const licensePlatePtSchema = z
 export type LicensePlatePt = z.infer<typeof licensePlatePtSchema>;
 
 export const vehicleCreateSchema = z.object({
-  brand: z.string().min(1, 'Marca obrigatória').max(60),
+  brand: registeredBrandSchema,
   model: z.string().min(1, 'Modelo obrigatório').max(80),
   year: z.coerce
     .number()
