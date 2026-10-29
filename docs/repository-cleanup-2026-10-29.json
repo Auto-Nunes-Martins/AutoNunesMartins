@@ -1,0 +1,2516 @@
+{
+  "date": "2026-10-29",
+  "baseCommit": "611a3d7dfe68d0b3c11cf31d52c1ed3ba4402ae8",
+  "policy": "Git index only; every local file remains present with the same SHA-256. No filesystem deletion or traversal of links.",
+  "batches": {
+    "retired-prototype-code": {
+      "files": 22,
+      "bytes": 165136
+    },
+    "duplicate-brand-logos": {
+      "files": 28,
+      "bytes": 96228
+    },
+    "retired-image-derivatives": {
+      "files": 89,
+      "bytes": 77572030
+    },
+    "retired-prototype-tests": {
+      "files": 3,
+      "bytes": 6141
+    },
+    "generated-favicon-studies": {
+      "files": 253,
+      "bytes": 2475294
+    },
+    "retired-prototype-check": {
+      "files": 4,
+      "bytes": 24551
+    }
+  },
+  "files": [
+    {
+      "path": "apps/crm/src/lib/components/brand/CarSilhouette.svelte",
+      "bytes": 2169,
+      "sha256": "53e063a7e710e8248e968a5ff5ff8409f78c9436d53e8bada427d99cad57a113",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/crm/src/lib/components/brand/icons/BrandCal.svelte",
+      "bytes": 414,
+      "sha256": "8b9adc4232174c0b4c11d3f152857d56d47e111ffcb4741389fb357ce46a35a6",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/crm/src/lib/components/brand/icons/BrandCheck.svelte",
+      "bytes": 361,
+      "sha256": "ade353cd14ae7aa89db603ed63ed8b0a3616f4b4260dee30cb677157d59c67b2",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/crm/src/lib/components/brand/icons/BrandChevR.svelte",
+      "bytes": 359,
+      "sha256": "f3122eab6d2dd77793f1246f9677af30be46592b8059d2dbca01ce4df82cebd8",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/crm/src/lib/components/brand/icons/BrandDl.svelte",
+      "bytes": 376,
+      "sha256": "f3156d474eba672d6c26d028ea0c389c9c4eed37c4a6b4702cb78cd21f38309a",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/crm/src/lib/components/brand/icons/BrandRight.svelte",
+      "bytes": 368,
+      "sha256": "40793ea713d31fc36aa523dccd28a5e039401378165da76ac46ad5cd6b47545c",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/crm/src/lib/components/brand/icons/BrandSet.svelte",
+      "bytes": 625,
+      "sha256": "f2bb6454c6c8936bdd211e62663eecf8f1fb304b797724a02acc8749f5f53f65",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/crm/src/lib/components/brand/icons/BrandTag.svelte",
+      "bytes": 430,
+      "sha256": "d6fff21e74fade5c2bfcac1690edc3d117ea045192e38005452157acc6a7ad20",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/crm/src/lib/components/shell/StubPage.svelte",
+      "bytes": 1724,
+      "sha256": "773a26196c568b005a44bada61206793d135813d0caa93585cca97a09e2befdb",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/audi.svg",
+      "bytes": 2113,
+      "sha256": "daebead0fb61bc8cd88e90adabca5161a9b52a8d4202ce89c18daeab6bd70d7e",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/bmw.svg",
+      "bytes": 1598,
+      "sha256": "d2a396f98f388b06861ed887a0d9830ed5e32224726c2acf000250e6ef289dcf",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/citroen.svg",
+      "bytes": 605,
+      "sha256": "99a313e559f14eec272fea440d1ae3c92ac25438145efd31276da50192fefc28",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/dacia.svg",
+      "bytes": 313,
+      "sha256": "761cb03b30cead56709cd5ead436a086e15b214dc97e49acedae925c4988bcca",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/fiat.svg",
+      "bytes": 2958,
+      "sha256": "73801d77295b1e306a53e98137051c06feb74f6a2c15bf90f7c982d28b295292",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/kia.svg",
+      "bytes": 1001,
+      "sha256": "bbdeeab899331fc6181949c2b31686208a88d7afc69d182b54dccc138b8e4843",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/mercedes.svg",
+      "bytes": 1340,
+      "sha256": "8eebabcd9bb086fb0aff092b8acd5a67b74523ddb426d383171a12a8e211edc8",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/opel.svg",
+      "bytes": 559,
+      "sha256": "ce74d329dfd29a974ef8c126d6ecdc53e4bb7e8505641f38e6cd8d0030efaa87",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/peugeot.svg",
+      "bytes": 10503,
+      "sha256": "52eac20d95c797916ee5ce7344a0e2a647472a9e560af2f2e1e4f45f0de7edf3",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/porsche.svg",
+      "bytes": 24183,
+      "sha256": "cc78f5661cf80886fa5d94bd13a0f32eca0ba39716dd8154f454bb992c8864a0",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/renault.svg",
+      "bytes": 338,
+      "sha256": "59a8b5df584c85f680e2f81b8255a3bbf562ce291c5a9db6a78f393c4ecad7d6",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/tesla.svg",
+      "bytes": 541,
+      "sha256": "4b94d9eaf23849d6feec7a9c819e3699a35cbb76045ba7d482d17cbcc97414a5",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/toyota.svg",
+      "bytes": 974,
+      "sha256": "70a20e8335255cff3311314636ab15dbc0c5941a52d1ae5ea3471e85f40e7507",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/brands/volkswagen.svg",
+      "bytes": 1088,
+      "sha256": "de8379968dc31340ab9a06fd54f01d59be56f9846bc07938b9da5bd24407034f",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/coast-640.webp",
+      "bytes": 107092,
+      "sha256": "02af8cf9a812b3860158ea3a436f86e00975bac50c2a469548b00f776e520b63",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/coast-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-curves-portrait-1080.webp",
+      "bytes": 797796,
+      "sha256": "ff7ec09179103157e3ad9952041f0376287d325c6c610f540814800d7ee47f44",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-curves-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-curves-portrait-640.webp",
+      "bytes": 281534,
+      "sha256": "55d66bb6c188a390f6a05da11157ed18ffc1b318b6c681fdfb772170523b330e",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-curves-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-curves-wide-1280.webp",
+      "bytes": 532354,
+      "sha256": "29e07e0a6fee56fff244121078e092b7115851958b82d8d224038dbe3069cacb",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-curves-wide-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-curves-wide-1920.webp",
+      "bytes": 1176306,
+      "sha256": "d12a45d57c5274332f7ea7857690a438d0135753e07f6b8c3d537d1692ff75ab",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-curves-wide-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-curves-wide-3840.webp",
+      "bytes": 4279292,
+      "sha256": "c64a2e0ca79d128f28c8f4b404c974b768afb646fe0384e46d892e5b3dd0d10b",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-curves-wide-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-reference-portrait-1080.webp",
+      "bytes": 1041586,
+      "sha256": "38ffa0f411f7c896ee84654f4b08d1a075c6af44858d5f3cc860891ff7329028",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-reference-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-reference-portrait-640.webp",
+      "bytes": 359872,
+      "sha256": "806f69ff09ea782806c8975e119cbecc3320427d6281e24141397bc9df9093cc",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-reference-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-reference-wide-1280.webp",
+      "bytes": 594478,
+      "sha256": "d5cdf103a53af5c01622333826300bfa1a947cd4c7ed159eaa33e4661481800c",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-reference-wide-5471.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-reference-wide-1920.webp",
+      "bytes": 1344664,
+      "sha256": "0ce686b60d8e053c67fc2257254454aff7e04a2ccc58427df9cd3703c4b90509",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-reference-wide-5471.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/family-reference-wide-3840.webp",
+      "bytes": 4843492,
+      "sha256": "c617b703b0d4940979c63dff9723a91675ef36af081f1ff287217030ea8a9c4d",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/family-reference-wide-5471.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-1280.webp",
+      "bytes": 542776,
+      "sha256": "e12b27390d03b2bb6b99b521b03a021f644ecf6d7f8a9953e1dfe34a5736d65a",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-1920.webp",
+      "bytes": 1222398,
+      "sha256": "362ccf214b0b813e6d25fbb675d64b98e6fd5565eaaa7b57e4357099bd2f253d",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-2560.webp",
+      "bytes": 2117366,
+      "sha256": "d0e8bc8df323949d8798e372957d9d53065c8520bcbfabcc2756c2158be2e684",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-3840.webp",
+      "bytes": 4514566,
+      "sha256": "dc9e1a91b48c3b8fb018210c69063696fa9ffc49ead521741adc7d529c2bddfd",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-portrait-1080.webp",
+      "bytes": 875596,
+      "sha256": "978e7012fce1774dd7238eaf7e59653baff7750ca14ba8a72ba4843b2ec13ce0",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-portrait-640.webp",
+      "bytes": 306102,
+      "sha256": "9bed2deedf119116a74eb5abf8ca8275a318e97b1783fabf7375fd2795c0d802",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/forest-ribbon-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-1280.webp",
+      "bytes": 623064,
+      "sha256": "2fb56705c2d35e9438674718fe2466e005146dbf13eab4a65e27b2480358809a",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-1920.webp",
+      "bytes": 1387394,
+      "sha256": "2400d7ee6da765cb356e08799e87d4e05303e353b82871b499a6224eed0dfdad",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-2560.webp",
+      "bytes": 2302578,
+      "sha256": "c3aa3c728f069b8b701afab7565f789802233fdf9a8c83222adb0ac44497d710",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-3840.webp",
+      "bytes": 4540864,
+      "sha256": "c772103c46fd285c5dd7bad5bcc99240909479305e70b2beb93fea7b4643c575",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-5472.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-portrait-1080.webp",
+      "bytes": 849412,
+      "sha256": "7e3d6396887961e986dd75fdc82590951ef2d32ce53260d4c577e32d3106575f",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-portrait-640.webp",
+      "bytes": 307768,
+      "sha256": "d6c32fdafb2737102e4a593ed85b8eb7e118061c9fe8363ad8834b293eafe3de",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-serpentine-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-trail-1280.webp",
+      "bytes": 1276752,
+      "sha256": "59e64a002fa99f817f0a97097a3acc5ac2ea4a6e2680e03b1d5f6653744765a5",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-trail-3000.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-trail-1920.webp",
+      "bytes": 2758458,
+      "sha256": "90ed2950ccedb72bf18f3f8614744db833aa4728ce65590bad2e31ce259e171e",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-trail-3000.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-trail-2560.webp",
+      "bytes": 4641736,
+      "sha256": "b8e26b2b15382a1e44d26654c37e36877f3916ab6b623afa1752e5c1145b482a",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-trail-3000.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-trail-portrait-1080.webp",
+      "bytes": 924908,
+      "sha256": "f97e79a7b5d39535cff96698fb7465c09a32acea9d00b33eb85a32ec7e6296ff",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-trail-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/green-trail-portrait-640.webp",
+      "bytes": 328420,
+      "sha256": "1c5c3453752d8ea4bf96089cf4fdda4e4ba2988c7b1c9132e9b72c306532fa20",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/green-trail-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/pine-bends-1280.webp",
+      "bytes": 320080,
+      "sha256": "fe697da8c37ac2051cd173534495383b498bddaaba3eb7500f1b226b71458f85",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/pine-bends-5760.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/pine-bends-1920.webp",
+      "bytes": 710396,
+      "sha256": "7ec2ed1efc8de586dde398516998a8fe4f6ee4b06ada0d2a83a64b06fe48320a",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/pine-bends-5760.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/pine-bends-2560.webp",
+      "bytes": 1185540,
+      "sha256": "ffb26032eaea7808e116176df0cf34977af2349abd7d0874627919fcc0462dfb",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/pine-bends-5760.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/pine-bends-3840.webp",
+      "bytes": 2493328,
+      "sha256": "a67fb017ae76f0843410934b817be80fd5aa0715b8464fa85dc3636bd2684bc1",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/pine-bends-5760.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/pine-bends-portrait-1080.webp",
+      "bytes": 494634,
+      "sha256": "afcacbde637905df137ee9d28ac1df72692aed08de86f0c6db71cb37f3883e12",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/pine-bends-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/pine-bends-portrait-640.webp",
+      "bytes": 177966,
+      "sha256": "adfcc29a388fe715803261fb0c6d68b75773b9114a88cba4fc32975d21d49202",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/pine-bends-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/road-approved-1280.webp",
+      "bytes": 490586,
+      "sha256": "4ca3cad332c454ccab8e57d782dd7531c1ee9581921bfff92437d9d74129d264",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/road-approved-1860.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/road-approved-mobile-640.webp",
+      "bytes": 375206,
+      "sha256": "c5dcbf10188988e8bc0015c6e2f8367d9f0dd15c796c5f23278ecf2eafcf33a6",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/road-approved-mobile-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/road-crisp-1280.webp",
+      "bytes": 493766,
+      "sha256": "ddc92791eaebfdadb4e6e687ce744c3dafae2c2a8ca3fc0be18fa513eb69a358",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/road-crisp-1862.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/road-crisp-mobile-640.webp",
+      "bytes": 389552,
+      "sha256": "b1d26ddefb6e9f9e0bad93686a0f7ae73142362d88535ddf31e447a7d7ad04ac",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/road-crisp-mobile-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/road-to-feature-1280.webp",
+      "bytes": 231016,
+      "sha256": "7f801791fff3c9215dc624a99f1e40ca02e0a43ddaf365088fe1e3199a20623c",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/road-to-feature-1859.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/road-to-feature-mobile-640.webp",
+      "bytes": 196416,
+      "sha256": "b929d0d11dc85e210e2b089a2eaadd5f035e07664806d8266bf059ca683195c6",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/road-to-feature-mobile-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-catalog-1080.webp",
+      "bytes": 1020306,
+      "sha256": "80bd6c65ab75c5cc8ada65cb64ea1025538a4b6927f74cd45ef863bf0d5aef67",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-catalog-640.webp",
+      "bytes": 379274,
+      "sha256": "79737cf49f9cb4920c83c86e3944c5b8ebbd1b948ea252422e3e5ac443040788",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-pause-1080.webp",
+      "bytes": 363644,
+      "sha256": "72cafd960ba93a85cf1139b394f1cf5cd3e949dc97826473ce93f9ba7fa6eb47",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-pause-640.webp",
+      "bytes": 131592,
+      "sha256": "67e2433dfeaa33c27b5b2948a0ae20463763a59f8d16f338268d50e144cca393",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-pause-portrait-640.webp",
+      "bytes": 276176,
+      "sha256": "46424cebe37c99c9c2c39b1b0c45c81636cbd6faf51bc5266157d5f89b7ad228",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-pause-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-catalog-1080.webp",
+      "bytes": 828918,
+      "sha256": "e567ec95a4580fbe187dcbeb8f77a41137872cb532644d3aea9336ca56489320",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-catalog-640.webp",
+      "bytes": 320910,
+      "sha256": "625ad0f9d628928118d9091ca2907f4fa884579018c5259eb5875eefc3311f96",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-pause-1080.webp",
+      "bytes": 396016,
+      "sha256": "e992bc5bba7bcd0bbeb39e99663afcbcf75aaca0b27856035676ceb5f911c23e",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-pause-640.webp",
+      "bytes": 146684,
+      "sha256": "86405682a63e725a423ac5d6d4637a47adca1af3e97e25f252325fd8053c66b4",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-pause-portrait-640.webp",
+      "bytes": 312864,
+      "sha256": "a380d61fe1e4187fbaf0f126ad9b79a78b82e8bd29277d6d814e3224519a8d6c",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-pause-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-visit-1080.webp",
+      "bytes": 377730,
+      "sha256": "c36a232a7cc287f759b10d16f0de217bd5e36bb437098b943a3e32380a414a12",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-visit-640.webp",
+      "bytes": 138550,
+      "sha256": "8667b561bf2c372b9e6c4e7a079133545d8a18853c4bddfff6c307e80ea45222",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-visit-portrait-640.webp",
+      "bytes": 292426,
+      "sha256": "857c52080446b36ec7e62dbfd6e6837805be916fcef7fa35398c566e8602b38b",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-r2-visit-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-visit-1080.webp",
+      "bytes": 419524,
+      "sha256": "9749b4a0cfd449cd2590828d489d9fea1f34720256345755dcb5af665c3aeca9",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-visit-640.webp",
+      "bytes": 152168,
+      "sha256": "1a1010157a6bfd4ad44e0308e4e8ae2fcc0714e0f49488e63e107fb872cb8993",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v3-visit-portrait-640.webp",
+      "bytes": 340766,
+      "sha256": "f2b69048311c43f67ad8f05f7a513ef3ce99892d3e3d5bf85fe9d39c6bbe08e2",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v3-visit-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v4-catalog-1080.webp",
+      "bytes": 1020088,
+      "sha256": "13fa44a9cbfa8dc265a0b23077a9f12d802f233001654079a261a3b7ef26c9f0",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v4-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v4-catalog-640.webp",
+      "bytes": 397120,
+      "sha256": "8782aaf9cf790e04c21145e10874beebda700c26450a1606f09102545b3ffb9b",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v4-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v4-pause-1080.webp",
+      "bytes": 401036,
+      "sha256": "af22220d33bbf0137010229fb74e0f1fe1f69e4fc46cfba95b7c3efffad1aa48",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v4-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v4-pause-640.webp",
+      "bytes": 142386,
+      "sha256": "7dbf159d4de55900bf6cafdabf1052e68e32935ba6fa066ae12842ee4a24de88",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v4-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v4-pause-portrait-640.webp",
+      "bytes": 286242,
+      "sha256": "3b933bedaf72b856d91db34acffdcc42d3c3ccf60bebe323899562220b579e24",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v4-pause-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v4-visit-1080.webp",
+      "bytes": 443534,
+      "sha256": "effd985a5542a93d628a3fdc73edf5ea2439ebf3564f2c2dda78f3a4ca7b9cc8",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v4-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v4-visit-640.webp",
+      "bytes": 159112,
+      "sha256": "1f187e2dd7aec95116e4377d5f337e8476f9ff0aaa4faf16af8a3e1193578f7a",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v4-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v4-visit-portrait-640.webp",
+      "bytes": 348336,
+      "sha256": "a483f8f73b724730b5e5a4937de4268985bab8c678de5012173c914e52d34bb1",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v4-visit-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v5-visit-1080.webp",
+      "bytes": 418794,
+      "sha256": "87530ebb0090bf834d5e7f8da24858f1c6f1aab84e9c4b50e81ce947bb234ef4",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v5-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v5-visit-640.webp",
+      "bytes": 152400,
+      "sha256": "0bea4715ebfdb32dc1b12d27e3e7e9cf0fdb8103a4e2006530483140448c848e",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v5-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v5-visit-portrait-640.webp",
+      "bytes": 322942,
+      "sha256": "5442aa96b1eb3c6fcac1c1adfa660a8a6758884cf8278c15270cfbdded71a7c4",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v5-visit-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v6-catalog-1080.webp",
+      "bytes": 955892,
+      "sha256": "39b17ad7a0392f1cf9497a177d4b4b7ee7d50e0591edd10ef4341401eefc256c",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v6-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v6-catalog-640.webp",
+      "bytes": 370612,
+      "sha256": "6c5cf7ef3c064caac9ddd0a6eb680502ed6077fc340cf03c9752119cd516f3a2",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v6-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v6-pause-1080.webp",
+      "bytes": 384180,
+      "sha256": "c792eb3886e35b86f5eec991b47e8665b08c62dc50ff0d1fb5e43d65190f1501",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v6-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v6-pause-640.webp",
+      "bytes": 137360,
+      "sha256": "1c2d234ccc3e3361b54e8382a844aeadfba627b9e40696bcfdd1d2926cb83246",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v6-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v6-pause-portrait-640.webp",
+      "bytes": 283724,
+      "sha256": "59d9e2e9a4ee84a1c74e3711e8424a05085638ac1cd6470c6a87c84582448133",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v6-pause-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v6-visit-1080.webp",
+      "bytes": 416004,
+      "sha256": "16ccae1cc3686a265c9c0abd93c4dfc54b5b44db354769ebd52ca7f620fcaaa6",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v6-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v6-visit-640.webp",
+      "bytes": 150652,
+      "sha256": "ba5fd29619e823c6eb35d46f2b8df9e4ebf3ca931cb4e8d40ec9f30a718a58e7",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v6-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v6-visit-portrait-640.webp",
+      "bytes": 320316,
+      "sha256": "590af3cef9752cdee79218c8bfe86c68b706d171dba19a3c1b9b18ec4f218c8e",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v6-visit-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v7-catalog-1080.webp",
+      "bytes": 1004542,
+      "sha256": "474ab4c1f0c00a464812bbf933b0c56b1a50c3fdf59e858c5d9cb1b74628e910",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v7-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v7-catalog-640.webp",
+      "bytes": 382986,
+      "sha256": "b6fafabbfff3f275d66b5d17f7801e6d04e2c5945333ad67e91534fb8d5f072a",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v7-catalog-1086.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v7-pause-1080.webp",
+      "bytes": 365574,
+      "sha256": "7696e693ff0060968064a715a1efe86ff9b13c59ed9caac7063b80212e426ffe",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v7-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v7-pause-640.webp",
+      "bytes": 133272,
+      "sha256": "a5fed87c561ad468f582c76788886733b6e51bc1aef880e6168fcda867381ea6",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v7-pause-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v7-pause-portrait-640.webp",
+      "bytes": 289210,
+      "sha256": "3f8b75419d3a6d73cedd32b7da325a2aee5bf2d8dcecc1b5655c122a92b896a3",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v7-pause-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v7-visit-1080.webp",
+      "bytes": 377048,
+      "sha256": "1339cbfe75c86410f537d05f75e4891e23578e4df04b7491a03e42803fe8baa6",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v7-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v7-visit-640.webp",
+      "bytes": 139638,
+      "sha256": "31fd2cb98edba24da8b7c808d87f86a397308f19e5351f4fff1dee7586c38956",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v7-visit-1672.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/scene-v7-visit-portrait-640.webp",
+      "bytes": 287460,
+      "sha256": "0a5d396dc2a9c77a61be7d85e822e929eb363f41c2bc65eaa1138bc625ee53fe",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/scene-v7-visit-portrait-705.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-1280.webp",
+      "bytes": 629670,
+      "sha256": "7448eb52d91f37398b8892b8ae0c776b3336c914292a1ab643d7ebbb0d9be910",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-4150.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-1920.webp",
+      "bytes": 1340832,
+      "sha256": "b0bd6c99118968a3fe77d6adab0b463947768624928bed4b80fea9aa76a55a9a",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-4150.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-2560.webp",
+      "bytes": 2193702,
+      "sha256": "cae6638ae2fb0711dd64f823796ac52271e2dd8c374e23c5b847e7a45edb192d",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-4150.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-3840.webp",
+      "bytes": 3872398,
+      "sha256": "f010897e851e5fde03387f58d48639745a834fa1d55ee9fb06fe2492e26a5d79",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-4150.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-portrait-1080.webp",
+      "bytes": 812928,
+      "sha256": "7d13a01086798c1b04bae94830755df05ec597342276bc7b758241c4819ddd75",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-portrait-640.webp",
+      "bytes": 297382,
+      "sha256": "17a51270a4a2588af366dfee1fb6d878c17a1f2881ba84bddaf2383a81feff68",
+      "category": "retired-image-derivatives",
+      "retainedLargest": "apps/website/src/lib/assets/images/hero-directions/woodland-curves-portrait-1920.webp"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/featuredHover.ts",
+      "bytes": 1407,
+      "sha256": "41d68557665475e0e5916a72d39b0af742882db17074aa310666f2847be785dd",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/geometricStandCrop.test.ts",
+      "bytes": 1625,
+      "sha256": "e39bb3aeb76e26a5f2f3f8b9fef33c9ad655f5e182eb6093c85bc61811f5f37d",
+      "category": "retired-prototype-tests"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/geometricStandCrop.ts",
+      "bytes": 1938,
+      "sha256": "3be1246b555fa62c734b31a78450c4caef21b2f49be1373aac82d7b048859286",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/heroBackgroundFade.ts",
+      "bytes": 1572,
+      "sha256": "cff783219bd0b44e4253c4d60df64be96e65aee944798c2f3c263a6854fc9f7b",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/HeroBackgroundTuner.svelte",
+      "bytes": 9038,
+      "sha256": "e50a8f3be21a6ce1be2352cad91d882bb01aac714630b5db549d9d1fbe477f0f",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/HeroStandBackground.svelte",
+      "bytes": 5673,
+      "sha256": "1fd223cddd5adfd92f498b620eb4793209ce8866b34c9cc5614619228eb43f9b",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/heroStandSettings.ts",
+      "bytes": 1532,
+      "sha256": "b4a314de5f0eae4bf4b0079a1bcf7506898e4bb3f0e3695850790d066c659d35",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/OrbitCatalogFooter.svelte",
+      "bytes": 5659,
+      "sha256": "9a52ce4f2aa9c0136d9b52e9d46c04bfc2c92959f70a43b3114a1230c95b0485",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/OrbitTrust.svelte",
+      "bytes": 8349,
+      "sha256": "fa17f988c734ca3a8bc7cf9b259f6030559bf91feb3876f51b45263df6e6de4b",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/PorscheDetailLab.svelte",
+      "bytes": 104550,
+      "sha256": "2056d599688cec490db83664007683e7c9a1f76e6067afdeccddfe786a0f97d0",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/porscheLabData.ts",
+      "bytes": 1830,
+      "sha256": "86b27a859736bd726bdd95b7ae5e38e4946d98849ec11aebbc8ccf53695018e5",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/responsiveStandFraming.test.ts",
+      "bytes": 3012,
+      "sha256": "89ff9be997d6b5fbdc11da2d92101362804babab0195fbbec63b04afce5c3ea9",
+      "category": "retired-prototype-tests"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/responsiveStandFraming.ts",
+      "bytes": 3610,
+      "sha256": "09b6a60a35b28bf207ffcd9a94feb17111a989ff7740a0ceef1bac2620a74266",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/StageBackdrop.svelte",
+      "bytes": 10387,
+      "sha256": "b17e5f1c7be0bc39e3f0b3fdb82a8764d4638640fe089184f5949d1d9ee14e63",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/trustRow.test.ts",
+      "bytes": 1504,
+      "sha256": "46bf54490ce144a95115942014828d9a00ecce7874e020d8ef227ce5b8a65249",
+      "category": "retired-prototype-tests"
+    },
+    {
+      "path": "apps/website/src/lib/components/stand-concepts/trustRow.ts",
+      "bytes": 2765,
+      "sha256": "23c28b2f15e388a40a2cb1270b49e696d577d054915d6520039491e48455c5e6",
+      "category": "retired-prototype-code"
+    },
+    {
+      "path": "apps/website/static/images/brands/audi.svg",
+      "bytes": 2113,
+      "sha256": "daebead0fb61bc8cd88e90adabca5161a9b52a8d4202ce89c18daeab6bd70d7e",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/bmw.svg",
+      "bytes": 1598,
+      "sha256": "d2a396f98f388b06861ed887a0d9830ed5e32224726c2acf000250e6ef289dcf",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/citroen.svg",
+      "bytes": 605,
+      "sha256": "99a313e559f14eec272fea440d1ae3c92ac25438145efd31276da50192fefc28",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/dacia.svg",
+      "bytes": 313,
+      "sha256": "761cb03b30cead56709cd5ead436a086e15b214dc97e49acedae925c4988bcca",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/fiat.svg",
+      "bytes": 2958,
+      "sha256": "73801d77295b1e306a53e98137051c06feb74f6a2c15bf90f7c982d28b295292",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/kia.svg",
+      "bytes": 1001,
+      "sha256": "bbdeeab899331fc6181949c2b31686208a88d7afc69d182b54dccc138b8e4843",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/mercedes.svg",
+      "bytes": 1340,
+      "sha256": "8eebabcd9bb086fb0aff092b8acd5a67b74523ddb426d383171a12a8e211edc8",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/opel.svg",
+      "bytes": 559,
+      "sha256": "ce74d329dfd29a974ef8c126d6ecdc53e4bb7e8505641f38e6cd8d0030efaa87",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/peugeot.svg",
+      "bytes": 10503,
+      "sha256": "52eac20d95c797916ee5ce7344a0e2a647472a9e560af2f2e1e4f45f0de7edf3",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/porsche.svg",
+      "bytes": 24183,
+      "sha256": "cc78f5661cf80886fa5d94bd13a0f32eca0ba39716dd8154f454bb992c8864a0",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/renault.svg",
+      "bytes": 338,
+      "sha256": "59a8b5df584c85f680e2f81b8255a3bbf562ce291c5a9db6a78f393c4ecad7d6",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/tesla.svg",
+      "bytes": 541,
+      "sha256": "4b94d9eaf23849d6feec7a9c819e3699a35cbb76045ba7d482d17cbcc97414a5",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/toyota.svg",
+      "bytes": 974,
+      "sha256": "70a20e8335255cff3311314636ab15dbc0c5941a52d1ae5ea3471e85f40e7507",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "apps/website/static/images/brands/volkswagen.svg",
+      "bytes": 1088,
+      "sha256": "de8379968dc31340ab9a06fd54f01d59be56f9846bc07938b9da5bd24407034f",
+      "category": "duplicate-brand-logos"
+    },
+    {
+      "path": "docs/favicon-proposals/01-perfil/favicon-16.png",
+      "bytes": 364,
+      "sha256": "17389c1e2985655db9fa536fab5ab4cb89d5aac229e82117b4aec6f8ef7fd260",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/01-perfil/favicon-180.png",
+      "bytes": 3324,
+      "sha256": "d2174700d75840b309280931196bd01724aab42ef22b340ab0dc18c38bd153f3",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/01-perfil/favicon-256.png",
+      "bytes": 4665,
+      "sha256": "cd8c131e8fa8d5b9a2d83629953722d46e66b7ab3e200b8d96eb500991858bfd",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/01-perfil/favicon-32.png",
+      "bytes": 613,
+      "sha256": "749bd45cbbcc8fc637e91e5c3cae8c888c1880a616f2e416b8899411c5168abe",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/01-perfil/favicon-48.png",
+      "bytes": 922,
+      "sha256": "888e5d8d6cf82565e1b1c4f3e995aa6d3f46018328fe0d6f1910ab222e2f73bf",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/01-perfil/favicon-64.png",
+      "bytes": 1141,
+      "sha256": "35e1d130e758bd4308fc680b1ed9cb0577f16c0f91db389a1c9e9a8e6a7c654f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/01-perfil/favicon.ico",
+      "bytes": 3110,
+      "sha256": "f6a25ff45f9bb0557e1b707ff77681e043b55092f8985ece9a893f49b2d2255f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/02-monograma-nm/favicon-16.png",
+      "bytes": 568,
+      "sha256": "a37caba9f310ad555f299a770bffa6d7df82866850ba1a143e5b199086fdf89b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/02-monograma-nm/favicon-180.png",
+      "bytes": 5487,
+      "sha256": "6ea1281c425e4baf4c0c65f312ccb2c838da064e83e890b9147470a94a4795cc",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/02-monograma-nm/favicon-256.png",
+      "bytes": 7169,
+      "sha256": "f578ff90e95cf15b9f32b6023af2630c1cd3e0785b05ff0d56b58c3ba01ab426",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/02-monograma-nm/favicon-32.png",
+      "bytes": 1033,
+      "sha256": "9491bf6ab714cceb99b66b048ceba18af2934355c00df96196ba2d5a95a6e858",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/02-monograma-nm/favicon-48.png",
+      "bytes": 1576,
+      "sha256": "0bdbd36ed4dd46c3b088077548cbfb63fcc6c37a3fbef275bacdd00a0ccba066",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/02-monograma-nm/favicon-64.png",
+      "bytes": 1818,
+      "sha256": "11f9d155ec10f731844125335566aea14ff69f624cb10813e2cd0308bb6b4f7e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/02-monograma-nm/favicon.ico",
+      "bytes": 5065,
+      "sha256": "00f52dbc38765ab9ccfb5e05193a344b4e2f12fe104a59cbdcde058862a03054",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/03-a-perfil/favicon-16.png",
+      "bytes": 510,
+      "sha256": "a878931be52b0a58821ef3b94de2b1f04aefce8fa734e29609b053e1e5251fab",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/03-a-perfil/favicon-180.png",
+      "bytes": 4098,
+      "sha256": "e40344e54fc9fc746627c59222d3e10851f79bea4386f0009d893a0569319add",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/03-a-perfil/favicon-256.png",
+      "bytes": 5778,
+      "sha256": "24450985d136f82f17d79418058d329adebbf086b5d347d2d8c72953325435d0",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/03-a-perfil/favicon-32.png",
+      "bytes": 885,
+      "sha256": "bb298d469743ae481bd0a0602b190d7bc400e2c1252c2880cfd3fcb5f022dea4",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/03-a-perfil/favicon-48.png",
+      "bytes": 1295,
+      "sha256": "39b1ec4851e09aaa09fad17ed87a18d60c4e86be19cb04094870d77c72876202",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/03-a-perfil/favicon-64.png",
+      "bytes": 1537,
+      "sha256": "492e555c0b91935cee797307d2820fa655cfe19c7c63061e2b3981d6299902a5",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/03-a-perfil/favicon.ico",
+      "bytes": 4297,
+      "sha256": "fbf3c37849a1ce6aa87a1c087b9ecb86376583894564b84c5d8abede5e6faf80",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/04-n-faixa/favicon-16.png",
+      "bytes": 483,
+      "sha256": "b7c14230ba72f29669212e3bd59cd93216d0f78ff490d28de3ca0e60effdd2cc",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/04-n-faixa/favicon-180.png",
+      "bytes": 4199,
+      "sha256": "54427eed241321fa31503f5eb843c92ca0027e4b99e29f3932ec650d24bc2865",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/04-n-faixa/favicon-256.png",
+      "bytes": 6269,
+      "sha256": "08ff3784dc54e199bf2cabafa9659e3f244c6a57982fc35b6f34b2dc033e0859",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/04-n-faixa/favicon-32.png",
+      "bytes": 864,
+      "sha256": "10b0f49c31bd9f8c73c81c179c267e2329594ae8c9f15a363d75a1772a2144e8",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/04-n-faixa/favicon-48.png",
+      "bytes": 1265,
+      "sha256": "f793383bcf3b903b2e3fc555643a781186111c059d49a09d724eaa309841d342",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/04-n-faixa/favicon-64.png",
+      "bytes": 1540,
+      "sha256": "7e6f8757b0d2e3b6d82c2dcd359f03ba95ae5e9e59fef922eec8d75c9bbcf2ff",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/04-n-faixa/favicon.ico",
+      "bytes": 4222,
+      "sha256": "584927d70a9243483724c0a1606fd73c49fcbd05ff03b95a6e5dff11fccbfbe0",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/comparacao-favicons.png",
+      "bytes": 114375,
+      "sha256": "b1f6127e532d2c220ac0b9684da53334a8eda45314f99142d49858d2d097ca02",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/05-full-claro/favicon-128.png",
+      "bytes": 6576,
+      "sha256": "d0f9c4fd06aa3ad50779a6297476bd400cfcd37754edb9179a6f1c27bfa844cb",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/05-full-claro/favicon-16.png",
+      "bytes": 331,
+      "sha256": "d3fd8620e358007630757280f66149cb06bd0965301448da63735255503be999",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/05-full-claro/favicon-180.png",
+      "bytes": 10538,
+      "sha256": "3d8996c76741ed14b51a7a6a13c29c9ef97b0983b7cfa8a6497cc389533ba9db",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/05-full-claro/favicon-256.png",
+      "bytes": 17802,
+      "sha256": "6ab40e63f57d0bd8d8478777feee41ddafebdda1c00ee83d3cf9d2aef421a4a5",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/05-full-claro/favicon-32.png",
+      "bytes": 732,
+      "sha256": "a95c86f95118e54dd1c3cf680da329f592a9105c808c36b6c2256826f34e4aa3",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/05-full-claro/favicon-48.png",
+      "bytes": 1406,
+      "sha256": "a608a43a9c441dbfdbbc1b158a2c8b20478c05025df7d9f4f3c1a04baca3a981",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/05-full-claro/favicon-64.png",
+      "bytes": 2225,
+      "sha256": "ee29165da7de1e6ee70a0746c8548f3c9f8011342f187e3d700987856e3c99d5",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/05-full-claro/favicon.ico",
+      "bytes": 4764,
+      "sha256": "42b7c6056897a4b4812f813985bbcdf92c2233e9c3d75d875f8ae004dd179155",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/06-full-escuro/favicon-128.png",
+      "bytes": 6034,
+      "sha256": "4af49eb1c43a7941256044f695c0ffbe93440d589ba82866c8e49868cf131bd1",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/06-full-escuro/favicon-16.png",
+      "bytes": 313,
+      "sha256": "f92f2ab06fc484887042d7b058fa838870a8897161896b8b47d9cb76a30927f0",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/06-full-escuro/favicon-180.png",
+      "bytes": 9189,
+      "sha256": "c9b979879cf066437dde33f21616eb9b1f548085d7e958fbaf7014144542b508",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/06-full-escuro/favicon-256.png",
+      "bytes": 14943,
+      "sha256": "3e1e05be5c72c25a1e9c3b876fef7a3c1e11b00da434d9bc3324c748d2e8dac7",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/06-full-escuro/favicon-32.png",
+      "bytes": 697,
+      "sha256": "19a7ed80b34f3fb655b6968f4f838349b2f37c4559e33c741221a81c0bbc8b9b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/06-full-escuro/favicon-48.png",
+      "bytes": 1345,
+      "sha256": "679c007ad6c02b9279e0028674ad7f8fc7b492c21b8f8192bb8adfbee63f0cc8",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/06-full-escuro/favicon-64.png",
+      "bytes": 2116,
+      "sha256": "aecac48b982166a171294267790cdec91ec3e4fe3eca5d7da16b71379d6a12af",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/06-full-escuro/favicon.ico",
+      "bytes": 4541,
+      "sha256": "c81c0b0865c10300abcffb6edb0d1d22eadac73d5bd65a7f37f363671123ae12",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/07-upper-claro/favicon-128.png",
+      "bytes": 4913,
+      "sha256": "87070ed5680e7c223ff11ea511d68bcb89b63b2936b4ef717b7f309e22febb07",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/07-upper-claro/favicon-16.png",
+      "bytes": 274,
+      "sha256": "948a8ab0dff21ee27e83ead73d1ab9a095923fc11e55566fd693e04c977c7d14",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/07-upper-claro/favicon-180.png",
+      "bytes": 7841,
+      "sha256": "fc50eb948966fffa5ccd92fcd4f0223557c18dae8c0171b0b6d6e2f5e668feda",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/07-upper-claro/favicon-256.png",
+      "bytes": 13209,
+      "sha256": "347e3db3d96bc56cc1748722276e7cda780b7fb402cbbd4fc079920214b5849e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/07-upper-claro/favicon-32.png",
+      "bytes": 614,
+      "sha256": "e9773a449aee50edd77f6ffd63085d89c48b2bf9f8ec08bd5e07fbe7e02b9cde",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/07-upper-claro/favicon-48.png",
+      "bytes": 1085,
+      "sha256": "616b35598d94b50cce0308de5d0435851bf6d48887ef2aca8fc0118da4110b9c",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/07-upper-claro/favicon-64.png",
+      "bytes": 1741,
+      "sha256": "9d6b8296bd1ed878f7185454129c30594424c2a61065241d9b018a6a9c2e8d77",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/07-upper-claro/favicon.ico",
+      "bytes": 3784,
+      "sha256": "12f7af04b849f428dc58ff32c63402f1186756aaa32ace6561f1ee98bb04eed1",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/08-upper-escuro/favicon-128.png",
+      "bytes": 4652,
+      "sha256": "c6c86df4a02f136c121f4a5f0bd126e082e6514f11596225acad95b995df6fb3",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/08-upper-escuro/favicon-16.png",
+      "bytes": 256,
+      "sha256": "d35ffcb801929e739976a2c6ed7d87919e1ea12e787d1f2011eb4ea7945eed1a",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/08-upper-escuro/favicon-180.png",
+      "bytes": 7179,
+      "sha256": "9f7473a1199bee8c203d653e31aea71b20ce26bba17cca99d40e7f00920b7c36",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/08-upper-escuro/favicon-256.png",
+      "bytes": 11685,
+      "sha256": "74f707ae236a5d2e1a7df92d9e9bee178655d1fba2d56a67fb26db53a69a42ea",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/08-upper-escuro/favicon-32.png",
+      "bytes": 560,
+      "sha256": "3821ed8fb91af41dbe3eb3c26b231f1e27ba6be5d443a0475d04aab73f3da72f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/08-upper-escuro/favicon-48.png",
+      "bytes": 1029,
+      "sha256": "f05da25fc8b18b4d45e9edd361afaeac6260b0901e92295be21d1b955616dc03",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/08-upper-escuro/favicon-64.png",
+      "bytes": 1667,
+      "sha256": "864df224978f35c931b628cc105343bd83a07ab67f4526cf721f5be404cbfc7d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/08-upper-escuro/favicon.ico",
+      "bytes": 3582,
+      "sha256": "afb07ef4572990c46b8e0f7a4211d901a263d4f9b3bb715ac5f5cc8edc2a149e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon-128.png",
+      "bytes": 7353,
+      "sha256": "cbe3b69c87f135a60134868dd4377d32a4f36d899f96c2c542cc25acf7bb1b37",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon-16.png",
+      "bytes": 374,
+      "sha256": "b33a62dd64ba86e8ad2c3e50205f8fcff0780ce1038b38d3b40af0625cdcc30b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon-180.png",
+      "bytes": 12205,
+      "sha256": "70cc91e8a2f478aa4ebd2e1b1a0d43beb646a0f652d2ce1364cdb22a107d1e98",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon-256.png",
+      "bytes": 21377,
+      "sha256": "4d29f2ddf12f93fcc8a5863fca878df18a3af64c5667b9df92017c9194b58645",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon-32.png",
+      "bytes": 1049,
+      "sha256": "bcd1956d24686ad563a3d3e6719e43f357cedca2e71051094d9fd7f340d33835",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon-48.png",
+      "bytes": 1876,
+      "sha256": "65e007fd3f5affa09aecd263e69c6feefd2d16bb24a21c331b83fca91b9a8ef4",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon-64.png",
+      "bytes": 2848,
+      "sha256": "caaf625a2768522a3ef29fec132b64dfc05208fba82c815f962a24cbf6df5b2f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/09-stacked-claro/favicon.ico",
+      "bytes": 6217,
+      "sha256": "a8ef8ae8a007ffdfd5f8c95521f9bf6578deeeadeb40d6ca3d8e68646d2135ac",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon-128.png",
+      "bytes": 6333,
+      "sha256": "284cc5e618a321fabeacecab7391bcc159d0e26b83d28f98d918c2790ead9c6e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon-16.png",
+      "bytes": 343,
+      "sha256": "a364add5126f0381ba6c0de3c4227c0e11c5cf0a46a07438fbc8d0d71a36592d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon-180.png",
+      "bytes": 10068,
+      "sha256": "69e69a3da0f63336b805f13b303e4bcfebdc85bdb988797e451349d9b81662af",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon-32.png",
+      "bytes": 989,
+      "sha256": "67c358631112211a9a434b3ab9bd3677f2b399747e97fbfdcdc91d2fbeac9dad",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon-48.png",
+      "bytes": 1789,
+      "sha256": "08a9ee23ae0673e68ba7b15bc14714e0da5ac11ed56df09670057dd7d756b2ae",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon-64.png",
+      "bytes": 2643,
+      "sha256": "3cdb2caf4b5452450548e1be2e409e2240f9f9786a4edb92b7a594b8bf607379",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/10-stacked-escuro/favicon.ico",
+      "bytes": 5834,
+      "sha256": "ae4d6b433bf3ba5c1e113f05dccbbdf32c57b6ec718ef492755fa4bb766b10e8",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/11-name-claro/favicon-128.png",
+      "bytes": 3493,
+      "sha256": "de02320343353db74060314b47a4b274fa7318fa8d78003c5c3f32ea7a82b0d9",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/11-name-claro/favicon-16.png",
+      "bytes": 238,
+      "sha256": "7030e0549ff730828766bd7885ba305f97dac2597b086e084f2b542601ac9855",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/11-name-claro/favicon-180.png",
+      "bytes": 5456,
+      "sha256": "b5fdb20c8a3b8c48460df8e2a071601d6876b79ada6a86c5251045de4bcee803",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/11-name-claro/favicon-256.png",
+      "bytes": 9144,
+      "sha256": "6061f20c5c93dce5a49114aa1bfc484556fff48585d3f663a907483918837b6c",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/11-name-claro/favicon-32.png",
+      "bytes": 485,
+      "sha256": "687978901cea0d33ddf7e21b65b63cf7b244627cf5f5fd585130396b35dd1495",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/11-name-claro/favicon-48.png",
+      "bytes": 865,
+      "sha256": "40e1e41959f073b81bb3c62ae55ba9637af8f70e72d0176d96007b3ec567570e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/11-name-claro/favicon-64.png",
+      "bytes": 1164,
+      "sha256": "47525693c4b861f32360e17bf1214db4a067ee71f220a35b465542b8becfcd4b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/11-name-claro/favicon.ico",
+      "bytes": 2822,
+      "sha256": "cf6924af0175fe4b9023d2ac83d056eb3483729ab71b011e411079782ec26292",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/12-name-escuro/favicon-128.png",
+      "bytes": 3244,
+      "sha256": "7cd76d70fb583d25db06436e5ee21002c901459357f42777ccf788919dc89ad3",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/12-name-escuro/favicon-16.png",
+      "bytes": 226,
+      "sha256": "fb2e77f9a9cdb4ab8434516aa91ee0c887822ab864c418813f31311a93557ad1",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/12-name-escuro/favicon-180.png",
+      "bytes": 4829,
+      "sha256": "6391d22bbe1a8b752db84743e378e77ea13cd882fd49d2c32e9d377448f230cc",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/12-name-escuro/favicon-256.png",
+      "bytes": 7656,
+      "sha256": "938000383e0e510a1e03dbe5a9932e6a4899ce8a86964a8b7d785f0cbce3c5b1",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/12-name-escuro/favicon-32.png",
+      "bytes": 456,
+      "sha256": "19d4f1300ec37d1aa8325679454a71dd6b24c26f427a82feded1ee3e03cdb2c5",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/12-name-escuro/favicon-48.png",
+      "bytes": 824,
+      "sha256": "46459486d8c8366ee08d7490faad3fec4f178ee05f774784f18e47a8fbf9ad03",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/12-name-escuro/favicon-64.png",
+      "bytes": 1109,
+      "sha256": "566acc44fb3c6241fb6b764d6bd9ee31616c29ff0e67148535ea8b2a1d4df074",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/12-name-escuro/favicon.ico",
+      "bytes": 2685,
+      "sha256": "827bcda231a7f06ae3c198116a75547f6f51549f37ce97c17c0370979856da12",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-05-12/comparacao-05-12.png",
+      "bytes": 191847,
+      "sha256": "c3dc4256574c77dd31386af3f6ae75073e052e6e85520bd6048fe0b6e5dd0afe",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/13-carvao-pagina/favicon-128.png",
+      "bytes": 6317,
+      "sha256": "339e0628a70ad3a48803de1a87b43f57e373372780860cd093a4b402865f9a15",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/13-carvao-pagina/favicon-16.png",
+      "bytes": 343,
+      "sha256": "50b7d615c53f4b8ab5d46677320e6742708c6df305a2992ef99468b1d8759d8f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/13-carvao-pagina/favicon-180.png",
+      "bytes": 10070,
+      "sha256": "402eae2361eae39de11e2ebcc88b05a039ea1a2020d73bfcb04171461ea6b631",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/13-carvao-pagina/favicon-256.png",
+      "bytes": 16809,
+      "sha256": "6bbbc02731e3da458078b41d4da5891091cc7a99902b2ee1b8e4c2222e9fa68d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/13-carvao-pagina/favicon-32.png",
+      "bytes": 1003,
+      "sha256": "da58ecb81dba7887afd62b622d3405c8717c725007a2c5576d05ae67ba4ceb1e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/13-carvao-pagina/favicon-48.png",
+      "bytes": 1800,
+      "sha256": "41b1a8654f587a8bef80d17220d38bdb99fe39c3de976c6ae364a90ea81d333d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/13-carvao-pagina/favicon-64.png",
+      "bytes": 2642,
+      "sha256": "a60369d3d913131f7d71754dd3897d5f587adc3e1412035ba888cc7529432cd0",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/13-carvao-pagina/favicon.ico",
+      "bytes": 5858,
+      "sha256": "5b201359a13055ab9913d797ba95a8e25288644d7245a4fea154f2a7481c1580",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/14-carvao-rodape/favicon-128.png",
+      "bytes": 6246,
+      "sha256": "6fc9fbea4e13c6bfe23d0fce8bd433999f7cc891277cdf6feefa31d620c1a73a",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/14-carvao-rodape/favicon-16.png",
+      "bytes": 344,
+      "sha256": "ab85b7ede4198387417aeb5afd332d9ac20287b3ebfa488eb18a8867ab129fbe",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/14-carvao-rodape/favicon-180.png",
+      "bytes": 9948,
+      "sha256": "625056ba4b3474ceda3bf2ccd793b036bdd2f2a2e8532524744ccee66a2054f5",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/14-carvao-rodape/favicon-256.png",
+      "bytes": 16726,
+      "sha256": "bbd2928754055be5fca3994db8feee20a1c39da49fd7b26743b2b0ba01a231e2",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/14-carvao-rodape/favicon-32.png",
+      "bytes": 990,
+      "sha256": "b9632f4aa5d6b00881069ca677614d4717746fdd68026d3bb596af12fd10604b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/14-carvao-rodape/favicon-48.png",
+      "bytes": 1768,
+      "sha256": "845541dcfa2088338dbb794cc5fe6e7ae30ab9c0be9d4c0db2963af2c69522af",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/14-carvao-rodape/favicon-64.png",
+      "bytes": 2615,
+      "sha256": "6bb15531892482132d9210d55bda6ba64e8e1a91e23ab3f397f714fb8d973f0f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/14-carvao-rodape/favicon.ico",
+      "bytes": 5787,
+      "sha256": "ba3dd3f08ff117e17981cf6f4a9f0091a22f3794959100c99054bbbaa04b373c",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/15-carvao-superficie/favicon-128.png",
+      "bytes": 6202,
+      "sha256": "6be5b4fffb8372a4999b9f6613a82fea098ff3793567b770bdd665265141d963",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/15-carvao-superficie/favicon-16.png",
+      "bytes": 341,
+      "sha256": "626b9423d3ee661972d797de3b32f6951d10bc761ba318c598da152eaa5a3881",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/15-carvao-superficie/favicon-180.png",
+      "bytes": 9901,
+      "sha256": "1d6bad9a3e9c9fc6fbe4e7291c6a0868ebeb376eac4534a22f2a7768e92dd084",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/15-carvao-superficie/favicon-256.png",
+      "bytes": 16619,
+      "sha256": "bae2ee4aa823620cf3110cac3cfcf85c4344a3780aec0eb0dfc384f56eec7af1",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/15-carvao-superficie/favicon-32.png",
+      "bytes": 965,
+      "sha256": "1e5f9592e063de5b1c8bf2aed648488ae34a835b523868af980a9122d006fef8",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/15-carvao-superficie/favicon-48.png",
+      "bytes": 1716,
+      "sha256": "f5352a078345a59377b6784fd8aeb80b609fe0bd12a2e344b1abecbb40b8bda7",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/15-carvao-superficie/favicon-64.png",
+      "bytes": 2568,
+      "sha256": "037c6964f99bc4bdbc8d7f5c60299fb697ff80dd47424e1065c070680383e3de",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/15-carvao-superficie/favicon.ico",
+      "bytes": 5660,
+      "sha256": "14d3ff1eebaee12878853c6cfb4e756bf95f08fba256c993218d4cd55e00ad14",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/16-grafite/favicon-128.png",
+      "bytes": 6113,
+      "sha256": "ae3f215a7001e3b4b3f70cd227ed5c84e7ff4212e60f4864762a43708c1d2aeb",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/16-grafite/favicon-16.png",
+      "bytes": 332,
+      "sha256": "3a2b828a89ffc8af823214e809e1b311a718a3d9d9e6c2c8687455c4e36b8c4c",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/16-grafite/favicon-180.png",
+      "bytes": 9852,
+      "sha256": "c40de2789f6176f622214a8c5a3e01c87d1371e02a0a46c482fc8672cc40312d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/16-grafite/favicon-256.png",
+      "bytes": 16649,
+      "sha256": "988f38cde93c764c78e5f94ae1aa727515ccb467202ee7a0b9d5b71117e3f262",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/16-grafite/favicon-32.png",
+      "bytes": 981,
+      "sha256": "46683590be50e457c2d1b7f05053f3f3a4023d9e1c92ee08ed0635c3fec15805",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/16-grafite/favicon-48.png",
+      "bytes": 1727,
+      "sha256": "47cfcb108d794a9f20022fc5c9070691226afa369f713c8c27f6df956fbb7db4",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/16-grafite/favicon-64.png",
+      "bytes": 2561,
+      "sha256": "2e1ded4b06428de41bb7208d9efd13ed984f73652839f641e60735917461cc26",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/16-grafite/favicon.ico",
+      "bytes": 5671,
+      "sha256": "07f6df87fed89f9e893335b462e2194665785eed392c5e44713e65d19bec9449",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/17-branco/favicon-128.png",
+      "bytes": 7349,
+      "sha256": "6b78742a60013111bb5b4e1ffea9cfc37312527605ce5be37d0aaec1ff901d12",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/17-branco/favicon-16.png",
+      "bytes": 364,
+      "sha256": "9d30ea0167f68a988433f4928d1c7873ac08798527b78bf2885d42dc4d292cc9",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/17-branco/favicon-180.png",
+      "bytes": 12185,
+      "sha256": "5f3aca0b5995395ab9970d02a1833d4a1469ba8923241a45ae38d28f13f94a07",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/17-branco/favicon-256.png",
+      "bytes": 21357,
+      "sha256": "11e810c88960d0b884d91c763e23c7535c850e689ff9527d23761416b5a1553e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/17-branco/favicon-32.png",
+      "bytes": 1050,
+      "sha256": "b59dff2f006c860452f808a16817b66f8a26eca3dd9f32dc7ecf7c65a360aa77",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/17-branco/favicon-48.png",
+      "bytes": 1857,
+      "sha256": "66d0f863ca10a65cafe990169e251befb4beaad416ae761c6a6718b2a218b8a8",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/17-branco/favicon-64.png",
+      "bytes": 2848,
+      "sha256": "974c1bfc140cbb69e2209fad108ea8a61b57a12247098760cbf89d9bd7f96505",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/17-branco/favicon.ico",
+      "bytes": 6189,
+      "sha256": "1a0ca9ecfe2ac0c0afeb6ae5a5a672f0eb781282df3bef1e93163a2dbb435949",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/18-branco-orbit/favicon-128.png",
+      "bytes": 7353,
+      "sha256": "cbe3b69c87f135a60134868dd4377d32a4f36d899f96c2c542cc25acf7bb1b37",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/18-branco-orbit/favicon-16.png",
+      "bytes": 374,
+      "sha256": "b33a62dd64ba86e8ad2c3e50205f8fcff0780ce1038b38d3b40af0625cdcc30b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/18-branco-orbit/favicon-180.png",
+      "bytes": 12205,
+      "sha256": "70cc91e8a2f478aa4ebd2e1b1a0d43beb646a0f652d2ce1364cdb22a107d1e98",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/18-branco-orbit/favicon-256.png",
+      "bytes": 21377,
+      "sha256": "4d29f2ddf12f93fcc8a5863fca878df18a3af64c5667b9df92017c9194b58645",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/18-branco-orbit/favicon-32.png",
+      "bytes": 1049,
+      "sha256": "bcd1956d24686ad563a3d3e6719e43f357cedca2e71051094d9fd7f340d33835",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/18-branco-orbit/favicon-48.png",
+      "bytes": 1876,
+      "sha256": "65e007fd3f5affa09aecd263e69c6feefd2d16bb24a21c331b83fca91b9a8ef4",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/18-branco-orbit/favicon-64.png",
+      "bytes": 2848,
+      "sha256": "caaf625a2768522a3ef29fec132b64dfc05208fba82c815f962a24cbf6df5b2f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/18-branco-orbit/favicon.ico",
+      "bytes": 6217,
+      "sha256": "a8ef8ae8a007ffdfd5f8c95521f9bf6578deeeadeb40d6ca3d8e68646d2135ac",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/19-branco-base/favicon-128.png",
+      "bytes": 7314,
+      "sha256": "e32cbdaae468f59cf00e20f3d51cedd9951436190a23556e21c2830645e61a5b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/19-branco-base/favicon-16.png",
+      "bytes": 368,
+      "sha256": "0bdb007d2a2dc10af00ce8593834ddc73f0ead2b57c1a7a0bea406d90a6823a7",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/19-branco-base/favicon-180.png",
+      "bytes": 12184,
+      "sha256": "412a0467855f2bf66fcc94f767b35781bd0e157537868d5ad5732a9950a18778",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/19-branco-base/favicon-256.png",
+      "bytes": 21298,
+      "sha256": "1f9d4d7e4fff8c1e50442c81dbe7f445af7d9be4187414ff8c5eccf0e36e58c1",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/19-branco-base/favicon-32.png",
+      "bytes": 1051,
+      "sha256": "3a9220b2f475b024780bbd94eb6e5d0c679a5ab7385013c5c5c997a3b9f773c4",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/19-branco-base/favicon-48.png",
+      "bytes": 1863,
+      "sha256": "ca33a02bdb62079e800dcf5d33d298ce48e5d6d936f17259d582d38b4179fb44",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/19-branco-base/favicon-64.png",
+      "bytes": 2829,
+      "sha256": "4d4435f8d7462693ed3cb8e839708e594414cb86d4b7098e7ef9d21270c73905",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/19-branco-base/favicon.ico",
+      "bytes": 6181,
+      "sha256": "7229d2537b4eb3162e7a5a70d1d7a385b73948c5c4d757a16af854f8fb552824",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/20-papel-convite/favicon-128.png",
+      "bytes": 7431,
+      "sha256": "f5fbe0d6c662a3b0691a0e42045a12da3817bdc12706a3c4cd487eef9bd64b96",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/20-papel-convite/favicon-16.png",
+      "bytes": 375,
+      "sha256": "5b0e6215285617e1ec04358524075cc2e0153ca4cd6ebe1f5c4923153f61d05d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/20-papel-convite/favicon-180.png",
+      "bytes": 12303,
+      "sha256": "4caf0772eca5053ccfd01225bbfec407cf59313fcff3e243a0a534c87d0013c1",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/20-papel-convite/favicon-256.png",
+      "bytes": 21502,
+      "sha256": "4ae68c156216a700fcb6663cdfb027777e517cc078845f96c342d62ddaa7a652",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/20-papel-convite/favicon-32.png",
+      "bytes": 1079,
+      "sha256": "67c586a1eb71daaec6a96cffeee01ec9ab5893559de26d23972fca7a9e954c7f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/20-papel-convite/favicon-48.png",
+      "bytes": 1891,
+      "sha256": "43161e2b7a7a97f447884eac9fa28c398799d6caabd028d74f15e96668e51628",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/20-papel-convite/favicon-64.png",
+      "bytes": 2886,
+      "sha256": "02198b79196f99f261ca3f66c9f37f19e6d33e389a1a0cf7d054cd256f063473",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/20-papel-convite/favicon.ico",
+      "bytes": 6301,
+      "sha256": "bb97d813ce616e5d04e82abd8835b90b5d4ea9778ac5e7455078766a2df6b6c8",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-13-20/comparacao-13-20.png",
+      "bytes": 201518,
+      "sha256": "d0580bd7f2689d494deeb95aa9fc4d51edc38b880abe52750678cdf90a04fe8a",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/21-centro-carvao/favicon-128.png",
+      "bytes": 7111,
+      "sha256": "3e35f0c6840b9437d51a90b7bf110ceef83d4a2b58ed09a04eb7dc6a4d195581",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/21-centro-carvao/favicon-16.png",
+      "bytes": 431,
+      "sha256": "f8995b683345fe40de8968bdcfd90371e179b2137da60d5677aee6a126eb4242",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/21-centro-carvao/favicon-180.png",
+      "bytes": 11043,
+      "sha256": "f936f017c4a9e142ad16b2069cf8842830db1cbf35adc27360c795b1f443e6b2",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/21-centro-carvao/favicon-256.png",
+      "bytes": 17839,
+      "sha256": "703d2ddcaeba77ea55958f686390e958eff3934eb7a9d8d1888835ccee48e5ad",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/21-centro-carvao/favicon-32.png",
+      "bytes": 1107,
+      "sha256": "27b1bd463785fc2ec24cf5a85e00bbbfd9fdeb3932ec70e66430b324eb877061",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/21-centro-carvao/favicon-48.png",
+      "bytes": 1886,
+      "sha256": "e58e21ca22c045c231722329b452a1e3e12e58bd5330dfdcd1445bae933eda4f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/21-centro-carvao/favicon-64.png",
+      "bytes": 2789,
+      "sha256": "6868b62d851915f3c73c0063ab5cb9b9aa58cdb44ab2e859107fc73ba67d8d8e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/21-centro-carvao/favicon.ico",
+      "bytes": 6283,
+      "sha256": "574000071874da68db6a30e4bb12b95d5ef51c7dc0b6203eed655959d9d16263",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/22-centro-claro/favicon-128.png",
+      "bytes": 8649,
+      "sha256": "8e0883160ab63568bda98e55067bd442905a07bacc0c4c517769f23f7ce56ad6",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/22-centro-claro/favicon-16.png",
+      "bytes": 439,
+      "sha256": "69330b4d18b5f97b39aff92644da37afef68293f2f870c7e9c115ae99436b564",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/22-centro-claro/favicon-180.png",
+      "bytes": 13992,
+      "sha256": "fd419476f882a35ce16ea9a130e7f0ec030b17581a963630ae6a14b4570deaa4",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/22-centro-claro/favicon-256.png",
+      "bytes": 23696,
+      "sha256": "48ef00c82d45f833400db5316673d073e58a048af2a6fe461d91eb524aafec1b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/22-centro-claro/favicon-32.png",
+      "bytes": 1210,
+      "sha256": "b288b761a04b4e72338d90697fb8305231f2509f98d208ef367ae700faab6e2a",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/22-centro-claro/favicon-48.png",
+      "bytes": 2053,
+      "sha256": "83c59e76a79a9498136461d18322530e7b2220b569b24627d47c5c32053252c4",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/22-centro-claro/favicon-64.png",
+      "bytes": 3144,
+      "sha256": "39bce506ebfedf2913288159fd2a635b56e0c9419c9d00ba39b864de8093e84d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/22-centro-claro/favicon.ico",
+      "bytes": 6916,
+      "sha256": "5d334b7310f66468547890aa07e8b98f60262776d28e5a6e50d07d5d0d76be15",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/23-compacto-grafite/favicon-128.png",
+      "bytes": 7052,
+      "sha256": "a355504c8727277ef42c667c53649c070251b9ea7e91a83005ddd08f064f8afb",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/23-compacto-grafite/favicon-16.png",
+      "bytes": 429,
+      "sha256": "dfd90a1a4c61cdb691dd4e28ee51046d499e66597b55148cad4885a9413f7008",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/23-compacto-grafite/favicon-180.png",
+      "bytes": 10950,
+      "sha256": "1d79bac087ef7a2bd3a1be307725cffb3ea5a69d4bf04aed83474310a22e666a",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/23-compacto-grafite/favicon-256.png",
+      "bytes": 17735,
+      "sha256": "dd49f017acfaf71e380f8a92c556a9b02e969309e03d5c769caeb98bcb5368b9",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/23-compacto-grafite/favicon-32.png",
+      "bytes": 1113,
+      "sha256": "89101af4f2c62be8966e350fed2eb0361c57c564ebb4fab2f7bb68178ef3ebcb",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/23-compacto-grafite/favicon-48.png",
+      "bytes": 1873,
+      "sha256": "46394ffb59431181a45f9dcdccac9dca01255649d7944c7ede5e421ccdda9ccb",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/23-compacto-grafite/favicon-64.png",
+      "bytes": 2753,
+      "sha256": "d14fcc375540b3d32a35352fc8274d86ddb5eefb87455c8098230aadefb8f120",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/23-compacto-grafite/favicon.ico",
+      "bytes": 6238,
+      "sha256": "aa364f913c72bdc6742699bf49c17d5b26f766f8b364168a6b207fbe060525e4",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/24-compacto-branco/favicon-128.png",
+      "bytes": 8520,
+      "sha256": "0046431be85fb9531e20c9fc290ae3c63b757f9ffc7bda8aed52edb716fa7df5",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/24-compacto-branco/favicon-16.png",
+      "bytes": 421,
+      "sha256": "49e9318ab79ddf613c3deaac57b84843dd115035e96f1db13f770a0cf70bfbbc",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/24-compacto-branco/favicon-180.png",
+      "bytes": 13884,
+      "sha256": "452f66917848880ff7c270acfe0bf88543d739428505fbe5d653e1070eaba19e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/24-compacto-branco/favicon-256.png",
+      "bytes": 23449,
+      "sha256": "e452eaf5d35f4d0b2e1d21f89b627cb25928b2b6baf0f6d6e06272755205b53d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/24-compacto-branco/favicon-32.png",
+      "bytes": 1186,
+      "sha256": "ee37526862cbb99d7074d05c1fe1b91cc302ac6e14a1d9d52371acb7fa916d67",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/24-compacto-branco/favicon-48.png",
+      "bytes": 2034,
+      "sha256": "953f10890acd587f6f5279d44c452af271cb7d073b6df9e7bbbd628f4448ac30",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/24-compacto-branco/favicon-64.png",
+      "bytes": 3116,
+      "sha256": "3787f45669905d5b646a0b5d0e90e63ecf3580e42963773205e24f965579593b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/24-compacto-branco/favicon.ico",
+      "bytes": 6827,
+      "sha256": "20dba6f75107eef0e44421e261e2a639e84fd052f6fa9c902ba36cdf06b442f2",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao/favicon-128.png",
+      "bytes": 6904,
+      "sha256": "4c29710d0d5a4ab3388201ecab7cb52ab16ea9ef96dcc1746655503e51935f13",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao/favicon-16.png",
+      "bytes": 437,
+      "sha256": "36af5c93c9c2454e3ef1e4bc6ef765f2ba0dbb219df65a846dccb9ea7b9775e5",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao/favicon-180.png",
+      "bytes": 10850,
+      "sha256": "ef076242a07d4b466259e0e5f96ab28191795a526fb49286a4673dce540854fb",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao/favicon-256.png",
+      "bytes": 17053,
+      "sha256": "1d632cdb1e54cf3b7b7d919ad3bea843430e05ba4e2ff80b45f8aa796c910bed",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao/favicon-32.png",
+      "bytes": 1129,
+      "sha256": "fe5bf255ef3d3dc783e8803fce2a37fbc0bbc9a38b8d496f923c6b18a945b405",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao/favicon-48.png",
+      "bytes": 1922,
+      "sha256": "1cede71bccf27b4a3c4209aa9aa5737c72e7da782bba19709a8c0b92e7a43572",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao/favicon-64.png",
+      "bytes": 2824,
+      "sha256": "a3b932f74f8acde22181231d1b9637317964052ea2338265a8db12a9bbae3c9c",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/25-alinhado-carvao/favicon.ico",
+      "bytes": 6382,
+      "sha256": "418fb5de30064cd44405d87236b50a90acf5d34b892e8b24fa691d642c87218e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/26-alinhado-papel/favicon-128.png",
+      "bytes": 8253,
+      "sha256": "67c58b1d2f94eb08615de0c5562071cdd0f4e40a4b8e1d605d10c93b26732df9",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/26-alinhado-papel/favicon-16.png",
+      "bytes": 444,
+      "sha256": "caecfa3b23e76768a251b576dd776e81ae82c4bb5a02e255244ad92ea18d32ee",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/26-alinhado-papel/favicon-180.png",
+      "bytes": 13715,
+      "sha256": "e4a694bd0866771f83140ce8987c11fc0840fc2bd98a643ccf98e7eabcf87a63",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/26-alinhado-papel/favicon-256.png",
+      "bytes": 22719,
+      "sha256": "8ce466ea59f386940eb6be37f53a74ea790253514bf5fb3b21019549976dcb87",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/26-alinhado-papel/favicon-32.png",
+      "bytes": 1221,
+      "sha256": "3c531e14437ccbfe7383ac418b4bd038006f48cf91fab20570adca77782b6e50",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/26-alinhado-papel/favicon-48.png",
+      "bytes": 2096,
+      "sha256": "08b74dbfa9ab4beaef0bdf2af13a9a73075f4816539cef51ebd85987989f3768",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/26-alinhado-papel/favicon-64.png",
+      "bytes": 3163,
+      "sha256": "483e65af2fe5fa227d8079bd93bdcc486992045d3229ff441263011b5e6fb1f9",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/26-alinhado-papel/favicon.ico",
+      "bytes": 6994,
+      "sha256": "c8dbb8ded08537b8301f401e3c1153205cf7e0c3560a944123a4a96de23e0380",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/27-respiro-carvao/favicon-128.png",
+      "bytes": 6941,
+      "sha256": "4bc41d2b3656c654605146f12686a75836b3cd2f1a297119a1cd489f7ce2bc02",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/27-respiro-carvao/favicon-16.png",
+      "bytes": 441,
+      "sha256": "d18f1e28b048cd2cce206ed49af6e525cfe8ebfce3e84cde1cd4dc6e877cca78",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/27-respiro-carvao/favicon-180.png",
+      "bytes": 10592,
+      "sha256": "cc1da6ae069bb7d2fbd5df0c3daf4e882385045948ce26a35e47bacbf51f2577",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/27-respiro-carvao/favicon-256.png",
+      "bytes": 16710,
+      "sha256": "1c46d6faa04c288d41a3fc23759595483c1eba7212e0fd462bf907092197cb41",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/27-respiro-carvao/favicon-32.png",
+      "bytes": 1138,
+      "sha256": "304ea2ae1a889d7f88a72376259a03a47edf0c36543490580f2d58bf7953f420",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/27-respiro-carvao/favicon-48.png",
+      "bytes": 1644,
+      "sha256": "005fe54825a5a995d4978bc9e53449634d403630a7b65f330ccb945353a81d2a",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/27-respiro-carvao/favicon-64.png",
+      "bytes": 2577,
+      "sha256": "f3fd83fa1d4f519c6e5c7f520bad7986e4808c9a36ccc319bfc62554c4b2f94c",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/27-respiro-carvao/favicon.ico",
+      "bytes": 5870,
+      "sha256": "bec83424ec6dd31daabe44c6af7b85daec9b9327908281fb644eeefda753ec1d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/28-respiro-claro/favicon-128.png",
+      "bytes": 8182,
+      "sha256": "8b47b44b0889260b9791ab2f59b7e216058ccf009730aa9f5f35080e511a22e8",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/28-respiro-claro/favicon-16.png",
+      "bytes": 440,
+      "sha256": "9946cdde2a1ef61b68e03e027b0cc79b9e755c7bb6f31e49b414d83f1de3f426",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/28-respiro-claro/favicon-180.png",
+      "bytes": 13172,
+      "sha256": "ae6b4df9d742baf552c870280d5af5cc35aa26b6c7b6ad0ff9ddfec51191fafd",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/28-respiro-claro/favicon-256.png",
+      "bytes": 21849,
+      "sha256": "06472b4c8eb1cf568005e26d27e7602e8ab7d8cfd6d4d519277d8fe95e7e35ba",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/28-respiro-claro/favicon-32.png",
+      "bytes": 1204,
+      "sha256": "e809d4c2a62f2f5cd051553e62c099c08f35952ac73d21b042dfd030e1510f26",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/28-respiro-claro/favicon-48.png",
+      "bytes": 1757,
+      "sha256": "141c45760cbdd95624970ba91a5aeac25d814aca5d123be9f16b66a4d61d5f3d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/28-respiro-claro/favicon-64.png",
+      "bytes": 2809,
+      "sha256": "c910d73618adc22f4c37a9b194dc3fbdf9cbfe46b9cc5b1081053a2bb1c14c5d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/28-respiro-claro/favicon.ico",
+      "bytes": 6280,
+      "sha256": "7759b092cf362844e3fb626c2e79fb1042a01c2523bf0676b91759af4317c82a",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/comparacao-21-28.png",
+      "bytes": 240082,
+      "sha256": "7bab9c23acd634ceab289179ec2d71b3025d34bfa6889b74431126bc54993296",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/serie-21-28/proveniencia-tipografia.png",
+      "bytes": 140251,
+      "sha256": "e7f66480474f71b2e226a8c9f99e1c446c8caf71ab5aa233455191cf3ecb7215",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/comparacao-25-29.png",
+      "bytes": 67458,
+      "sha256": "fb583aa34d0518ba6c3a9b4dbd9f71e8a1db9a7302c694c53ca64ddbaa0b9512",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/favicon-128.png",
+      "bytes": 6973,
+      "sha256": "c3317dc0d3a9ed0cd47f7d17150e0c72d60533a13e1f65d36df5e310b4dfa076",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/favicon-16.png",
+      "bytes": 431,
+      "sha256": "390ecde105792bcba27f3a002b0b9dd7aa99cbe912bec5eed3bbfc8ae3c3ed0b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/favicon-180.png",
+      "bytes": 10932,
+      "sha256": "5146a12ef735c1255e4c09ec2a659e2aef6d7197fb9ef2e1169a421458629712",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/favicon-256.png",
+      "bytes": 17159,
+      "sha256": "a31cb4774c718c89906d3d7ac2f11fd7899827265b965519e1b0eb14f7beeb8f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/favicon-32.png",
+      "bytes": 1131,
+      "sha256": "904b1d22362e1bbcf8889645330f11f8172aefb0ba93f09a9f8453a6f424e16d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/favicon-48.png",
+      "bytes": 1930,
+      "sha256": "22d5531e9d050d7f3d0e61346a05422a5a77bb9e1aa266ec6aac361be852d7fb",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/favicon-64.png",
+      "bytes": 2851,
+      "sha256": "60a84b56a6ef70b3a34f94e980b5cfeb71df74adeea5bc7a773428d615753724",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-29/favicon.ico",
+      "bytes": 6413,
+      "sha256": "57849dd3f1832db81d02d7ec9a271b752e6726d3dfb0f12419b8ff97e3d46275",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/comparacao-25-30.png",
+      "bytes": 68378,
+      "sha256": "29c00dca45b3fdf0ecb64806c805ebd6c537de713cea9071ebd456ee5c3ced8f",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/favicon-128.png",
+      "bytes": 6944,
+      "sha256": "031ec5126d55ff2a55a2f8ac2e833d4b683bffed27b8e9ae697028c098c400a0",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/favicon-16.png",
+      "bytes": 441,
+      "sha256": "39ef689706b6a49d72390b6d02d69fd2ec78f412e6e5128c5bf1f522bc632946",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/favicon-180.png",
+      "bytes": 10880,
+      "sha256": "4fe9ce4177feec26cb65cff23059ecd905612cbe3b1fcb51950351d2a530ba52",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/favicon-256.png",
+      "bytes": 17100,
+      "sha256": "633081c5526716895ea3fbcdd82046a9bbf394f54d64ff51741700bd397346aa",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/favicon-32.png",
+      "bytes": 1135,
+      "sha256": "3a747c8cfd99d2f15ffe993a80b1a6a45f04316a90a69b53b871af007cfb7157",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/favicon-48.png",
+      "bytes": 1930,
+      "sha256": "d83ab54e50fdf5b589da87edb9d1ea0d8d553e5878231e35a604790d383bc724",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/favicon-64.png",
+      "bytes": 2830,
+      "sha256": "2c480e3e496b82c322893b56856cc1f6b9740c5c8e9bc813d00a198dce8c85b8",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-30/favicon.ico",
+      "bytes": 6406,
+      "sha256": "d5b1897009868018bfe3087cd7bdfee6fa8b25aad53079c55be0e4c23480c67a",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/comparacao-25-31-23.png",
+      "bytes": 89284,
+      "sha256": "58634abdfd8cd6d86871a11695d11a1090f429ba9e81de24a1196445725dc218",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-128.png",
+      "bytes": 6810,
+      "sha256": "f635341951168ec620458a473c8e4848867cd0e36eafb7786647a0ec632142cc",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-16.png",
+      "bytes": 421,
+      "sha256": "7da2a4d68e6655568a06c32eea2ea318a6443b219d52063980c76378ef687cc6",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-180.png",
+      "bytes": 10678,
+      "sha256": "1e25c7116848803447087b8600f8c0e848cd45d663c09f4bcee16db3d9d87049",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-192.png",
+      "bytes": 11464,
+      "sha256": "e9b9ca97e7abafe880caad6413305abe13aca672f5f1949f574aff3650ec8462",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-256.png",
+      "bytes": 16899,
+      "sha256": "c0d042a995646e67323a704d8f793fefe226aafab6d7f2eb65fa8e3ae6840205",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-32.png",
+      "bytes": 1084,
+      "sha256": "31e7d99d5c4c38313ee2fad4aaab78b8b1abfefddb65d814034ad2d78458ea0e",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-48.png",
+      "bytes": 1860,
+      "sha256": "824fc7c3ae2ac20863922c84d56c535114af9ee14b9a9c4013b73aca1c87852b",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-512.png",
+      "bytes": 46392,
+      "sha256": "f83af9f100fd0197574cb0cda9680487064077d901620e177a3897842ca3089d",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon-64.png",
+      "bytes": 2750,
+      "sha256": "4d3992f0bf403d6c2d42e8d51805763becfe5f8d43c79d15a3f5bcaa90782fce",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "docs/favicon-proposals/variante-31/favicon.ico",
+      "bytes": 6185,
+      "sha256": "ef449979def27977bd1edeb960515968579267e63af9c1ba1db3d9e84ebb1f28",
+      "category": "generated-favicon-studies"
+    },
+    {
+      "path": "scripts/check-home-hero-directions.mjs",
+      "bytes": 7142,
+      "sha256": "f1ca1dd54bf6127de9839d113bf1bdadae1f0e2f23c01f43f7993ac836a00a39",
+      "category": "retired-prototype-check"
+    },
+    {
+      "path": "scripts/check-home-hero-isolation.mjs",
+      "bytes": 5503,
+      "sha256": "018383f1dc7b2141184d583791ec5dc03e0567fa16f833317c05189480edcbf8",
+      "category": "retired-prototype-check"
+    },
+    {
+      "path": "scripts/check-stand-framing.mjs",
+      "bytes": 8798,
+      "sha256": "9d077226c8f84a6ca6592ec4e75fdd1137070c9ca138277a2c0b714266087de8",
+      "category": "retired-prototype-check"
+    },
+    {
+      "path": "scripts/check-stand-tuner.mjs",
+      "bytes": 3108,
+      "sha256": "fc79b5bb9ad44778b80590c690dfcfebc54844106e4c8833f2e5281b2935325c",
+      "category": "retired-prototype-check"
+    }
+  ]
+}
