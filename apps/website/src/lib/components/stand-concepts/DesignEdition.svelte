@@ -26,7 +26,8 @@
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { createContactForm } from '$lib/contactForm.svelte';
   import ContactFeedback from '$lib/components/ContactFeedback.svelte';
-  import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
+  import { LoaderCircle } from 'lucide-svelte';
+  import ContactFormFooter from '$lib/components/ContactFormFooter.svelte';
   import orbitFont400 from '@fontsource/inter/files/inter-latin-400-normal.woff2?url';
   import orbitFont500 from '@fontsource/inter/files/inter-latin-500-normal.woff2?url';
   import orbitFont600 from '@fontsource/inter/files/inter-latin-600-normal.woff2?url';
@@ -319,13 +320,16 @@
   let galleryDialog: HTMLDialogElement;
   let galleryOpener: HTMLElement | undefined;
   let preparingViewer = false;
+  let closingViewer = $state(false);
+  let galleryScroll = { x: 0, y: 0 };
   let stopOpening: (() => void) | undefined;
   onDestroy(() => stopOpening?.());
   async function openGallery() {
     if (preparingViewer || galleryOpen) return;
     galleryOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     stopOpening?.();
-    const source = document.querySelector<HTMLImageElement>('.vehicle-photo .photo-rail-slide:not([inert]) img');
+    galleryScroll = { x: window.scrollX, y: window.scrollY };
+    const source = inlineGalleryPhoto();
     const opening = galleryRuntime?.captureOpeningPhoto(source);
     preparingViewer = true;
     galleryOpen = true;
@@ -333,8 +337,18 @@
     preparingViewer = false;
     if (galleryOpen) {
       galleryDialog.showModal();
+      window.scrollTo({ left: galleryScroll.x, top: galleryScroll.y, behavior: 'instant' });
       stopOpening = galleryRuntime?.animateGalleryOpening(galleryDialog, opening);
     }
+  }
+  function inlineGalleryPhoto() {
+    return galleryDialog?.closest('.design')?.querySelector<HTMLImageElement>('.vehicle-photo .photo-rail-slide:not([inert]):not(.rail-contact) img, button.vehicle-photo > img') ?? null;
+  }
+  function closeGallery() {
+    if (!galleryDialog.open || closingViewer) return;
+    stopOpening?.();
+    closingViewer = true;
+    stopOpening = galleryRuntime?.animateGalleryClosing(galleryDialog, inlineGalleryPhoto(), () => galleryDialog.close());
   }
   const gallerySession = $derived(
     publicVehicle?.photos.length ? createPublicGallerySession(publicVehicle) : undefined,
@@ -352,7 +366,6 @@
       : undefined,
   }));
   const submission = createContactForm();
-  const sent = $derived(submission.state.phase === 'success');
   const sending = $derived(submission.state.phase === 'sending');
   let reason = $state('Gostava de saber mais.');
   let zoom = $state(0);
@@ -370,6 +383,7 @@
     if (publicVehicle) zoom = Math.max(0, Math.min(galleryCount - 1, zoom + direction));
   }
   function galleryKeydown(event: KeyboardEvent) {
+    if (closingViewer) { event.preventDefault(); return; }
     trapDialogTab(event, galleryDialog);
     if (!publicVehicle || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     const count = galleryCount;
@@ -438,13 +452,13 @@
     } catch {}
   }
   async function contact(message?: string) {
+    if (submission.state.phase === 'success') submission.reset();
     if (submission.state.phase === 'idle') reason =
       message ||
       (car ? `Gostava de conhecer o ${car.brand} ${car.model}.` : 'Gostava de saber mais.');
     await tick();
     contactDialog.showModal();
-    if (sent) contactDialog.querySelector<HTMLElement>('[data-contact-feedback]')?.focus();
-    else contactName?.focus({ preventScroll: true });
+    contactName?.focus({ preventScroll: true });
   }
   let contactPointerStartedOutside = false;
   function outsideContact(event: MouseEvent | PointerEvent) {
@@ -1411,10 +1425,9 @@
       aria-label="Fechar"><X size={22} aria-hidden="true" /></button
     >
     <p class="kicker">VAMOS CONVERSAR</p>
-    {#if !sent}<h2 id="contact-heading">O que tem<br />em mente?</h2>{/if}
+    <h2 id="contact-heading">O que tem<br />em mente?</h2>
       <form use:submission.enhance aria-busy={sending}>
-        <ContactFeedback {submission} headingId={sent ? "contact-heading" : undefined}/>
-        {#if !sent}
+        <ContactFeedback {submission}/>
         <label
           >Nome<input
             bind:this={contactName}
@@ -1445,20 +1458,24 @@
         ><label
           >Mensagem<textarea name="message" required maxlength="5000" rows="3" bind:value={reason}
           ></textarea></label
-        ><ContactPrivacyNotice />
-        <button class="pill primary" type="submit" disabled={sending || submission.state.kind === "conflict"}
-          >{sending ? 'A enviar…' : submission.state.kind === 'uncertain' ? 'Tentar confirmar envio' : 'Enviar pedido'}
-          <ArrowUpRight size={18} aria-hidden="true" /></button
+        ><ContactFormFooter>
+        <button class="pill primary" type="submit" aria-busy={sending} disabled={sending || submission.state.kind === "conflict"}
+          >{sending ? 'A enviar…' : 'Enviar pedido'}
+          {#if sending}<LoaderCircle class="contact-submit-spinner" size={18} aria-hidden="true" />{:else}<ArrowUpRight size={18} aria-hidden="true" />{/if}</button
         >
-        {/if}
+        </ContactFormFooter>
       </form>
   </dialog>
   <dialog
     bind:this={galleryDialog}
-    use:galleryBackdrop
+    use:galleryBackdrop={{ close: closeGallery }}
+    data-closing={closingViewer || undefined}
+    oncancel={(event) => { event.preventDefault(); closeGallery(); }}
     onclose={() => {
       stopOpening?.();
       galleryOpen = false;
+      closingViewer = false;
+      window.scrollTo({ left: galleryScroll.x, top: galleryScroll.y, behavior: 'instant' });
       // Visiting the contact slide can replace the original inline opener.
       if (!document.querySelector('dialog[open]')) {
         const root = galleryDialog.closest('.design');
@@ -1481,7 +1498,7 @@
         <div class="viewer-controls">
           <button
             class="dialog-close icon-button"
-            onclick={() => galleryDialog.close()}
+            onclick={closeGallery}
             aria-label="Fechar fotografia"><X size={25} aria-hidden="true" /></button
           >
         </div>
@@ -4508,19 +4525,19 @@
     }
   }
 
-  .contact-dialog form > button[type='submit'] :global(svg) {
+  .contact-dialog form button[type='submit'] :global(svg) {
     transition: transform 220ms ease;
   }
-  .contact-dialog form > button[type='submit']:not(:disabled):focus-visible :global(svg) {
+  .contact-dialog form button[type='submit']:not(:disabled):focus-visible :global(svg) {
     transform: translate(3px, -3px);
   }
   @media (hover: hover) {
-    .contact-dialog form > button[type='submit']:not(:disabled):hover :global(svg) {
+    .contact-dialog form button[type='submit']:not(:disabled):hover :global(svg) {
       transform: translate(3px, -3px);
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .contact-dialog form > button[type='submit'] :global(svg) {
+    .contact-dialog form button[type='submit'] :global(svg) {
       transition: none;
     }
   }

@@ -4,14 +4,17 @@
   import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from '$lib/publicThumbnail';
   import { catalogPlaceholder } from '$lib/localAssets';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import SelectionPreview from './SelectionPreview.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { onMount, tick, untrack } from 'svelte';
   import { ArrowUpRight, Plus, X, RotateCcw } from 'lucide-svelte';
   import { useComparison, comparisonRows } from '$lib/comparison';
   import { publicHref, publicPhoto, publicPrice } from '$lib/publicVehicles';
-  import { loadSelectedVehicles, type SelectedVehicle as Entry } from '$lib/selectedVehicles';
+  import { loadSelectedVehicles, rememberSelectionIdentity, retainSelectionIdentity, selectionIdentity, type SelectionIdentity, type SelectedVehicle as Entry } from '$lib/selectedVehicles';
   const comparison = useComparison();
   const { ids, ready } = comparison;
+  const memory = new Map<string, SelectionIdentity>();
   let entries = $state<Entry[]>([]);
   let loading = $state(false);
   let reload = $state(0);
@@ -20,6 +23,7 @@
   let announcement = $state('');
   let loadedReload = -1;
   let pair = $state('0-1');
+  const failedPhotos = $state<Record<string, boolean>>({});
   const pairs = [
     [0, 1],
     [0, 2],
@@ -27,7 +31,7 @@
   ] as const;
   // Keep the actual table geometry while fresh data is fetched; never display cached inventory.
   const displayEntries = $derived(
-    loading ? $ids.map((id) => ({ id, status: 0, vehicle: null }) as Entry) : entries,
+    $ids.map(id => entries.find(entry => entry.id === id) ?? { id, status: 0, vehicle: null } as Entry),
   );
   const visible = $derived(
     compact && displayEntries.length === 3
@@ -63,10 +67,11 @@
     return () => media.removeEventListener('change', update);
   });
   const name = (entry: Entry) =>
-    entry.vehicle ? `${entry.vehicle.brand} ${entry.vehicle.model}` : 'Viatura indisponível';
+    selectionIdentity(entry) ? `${selectionIdentity(entry)!.brand} ${selectionIdentity(entry)!.model}` : `Viatura selecionada ${$ids.indexOf(entry.id) + 1}`;
   $effect(() => {
     const selected = [...$ids];
     const requestedReload = reload;
+    for (const id of memory.keys()) if (!selected.includes(id)) memory.delete(id);
     if (!$ready || !selected.length) {
       entries = [];
       loading = false;
@@ -81,18 +86,20 @@
       entries = current.filter((entry) => selected.includes(entry.id));
       return;
     }
-    entries = [];
+    rememberSelectionIdentity(current.filter(entry => selected.includes(entry.id)), memory, document.querySelector('.comparison-page'));
+    entries = current.filter(entry => selected.includes(entry.id));
     loading = true;
     void (async () => {
       try {
         const fresh = await loadSelectedVehicles(selected, controller.signal);
         if (!controller.signal.aborted) {
-          entries = fresh;
+          rememberSelectionIdentity(entries, memory, document.querySelector('.comparison-page'));
+          entries = retainSelectionIdentity(fresh, memory);
           loadedReload = requestedReload;
         }
       } catch {
         if (!controller.signal.aborted)
-          entries = selected.map((id) => ({ id, status: 503, vehicle: null }));
+          entries = retainSelectionIdentity(selected.map((id) => ({ id, status: 503, vehicle: null })), memory);
       } finally {
         if (!controller.signal.aborted) loading = false;
       }
@@ -160,14 +167,6 @@
       >
     </section>
   {:else}
-    {#if entries.some((entry) => entry.status === 503)}
-      <div class="retry" role="status">
-        <p>Alguns dados estão temporariamente indisponíveis.</p>
-        <button type="button" onclick={() => (reload += 1)}
-          ><RotateCcw size={16} aria-hidden="true" /> Tentar novamente</button
-        >
-      </div>
-    {/if}
     {#if compact && displayEntries.length === 3}
       <div class="pair-picker">
         <label for="comparison-pair">Comparar lado a lado</label>
@@ -176,7 +175,7 @@
             <option value={indexes.join('-')}
               >{loading
                 ? `Viaturas ${indexes[0] + 1} e ${indexes[1] + 1}`
-                : `${name(entries[indexes[0]]!)} + ${name(entries[indexes[1]]!)}`}</option
+                : `${name(displayEntries[indexes[0]]!)} + ${name(displayEntries[indexes[1]]!)}`}</option
             >
           {/each}
         </select>
@@ -200,8 +199,8 @@
             <td class="attribute-space" aria-hidden="true"></td>
             {#each visible as entry (entry.id)}
               <td>
-                <div class="vehicle-photo">
-                  {#if loading}<div class="pending-photo" aria-hidden="true"></div>
+                <div class="vehicle-photo" data-selection-id={entry.id}>
+                  {#if entry.status === 0}<div class="pending-photo" aria-hidden="true"></div>
                   {:else if entry.vehicle}
                     {@const session = imageSessions.get(entry.id)!}
                     {@const src = entry.vehicle.photos.length
@@ -228,6 +227,15 @@
                         height="320"
                       /></a
                     >
+                  {:else if entry.lastKnownIdentity?.preview}
+                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><SelectionPreview preview={entry.lastKnownIdentity.preview} /></a>
+                  {:else if selectionIdentity(entry)?.photo && !failedPhotos[entry.id]}
+                    <a href={publicHref(entry.id)} aria-label={entry.status === 404 ? `Ver ficha indisponível: ${name(entry)}` : `Ver ${name(entry)}`}><img
+                      src={selectionIdentity(entry)!.photo!}
+                      alt={entry.status === 404 ? `${name(entry)} — já não disponível` : name(entry)}
+                      width="480" height="320"
+                      onerror={() => failedPhotos[entry.id] = true}
+                    /></a>
                   {:else}<div class="missing-photo">
                       <img
                         src={catalogPlaceholder}
@@ -239,7 +247,7 @@
                   <button
                     class="remove"
                     type="button"
-                    disabled={loading}
+                    disabled={entry.status === 0}
                     aria-label={`Remover ${name(entry)} da comparação`}
                     onclick={() => remove(entry)}><X size={18} aria-hidden="true" /></button
                   >
@@ -248,10 +256,10 @@
             {/each}
           </tr>
           <tr class="summary-row">
-            <th scope="col" class="attribute-space">Especificações</th>
+            <th scope="col" class="attribute-space">{loading || visible.some(entry => entry.vehicle) ? 'Especificações' : 'Seleção'}</th>
             {#each visible as entry (entry.id)}
               <th scope="col" id={`vehicle-${entry.id}`}>
-                {#if loading}
+                {#if entry.status === 0}
                   <span class="brand pending-line" aria-hidden="true">&nbsp;</span>
                   <div class="pending-line pending-title" aria-hidden="true">&nbsp;</div>
                   <strong class="price pending-line" aria-hidden="true">&nbsp;</strong>
@@ -268,17 +276,29 @@
                     >Ver viatura <ArrowUpRight size={16} aria-hidden="true" /></a
                   >
                 {:else}
-                  <h2>{entry.status === 404 ? 'Já não disponível' : 'Dados por atualizar'}</h2>
-                  <p class="unavailable">
+                  {#if selectionIdentity(entry)}
+                    <span class="brand">{selectionIdentity(entry)!.brand}</span>
+                    <h2><a href={publicHref(entry.id)}>{selectionIdentity(entry)!.model}</a></h2>
+                    <span class="unavailable-year">{selectionIdentity(entry)!.year}</span>
+                  {:else}<h2>{name(entry)}</h2>{/if}
+                  <p class="unavailable" class:lookup-error={entry.status === 503}>
                     {entry.status === 404
-                      ? 'Esta viatura deixou de estar publicada.'
-                      : 'Tente novamente dentro de instantes.'}
+                      ? 'Já não disponível'
+                      : 'Falha na consulta.'}
                   </p>
+                  {#if entry.status === 503}<p class="lookup-detail">Disponibilidade por confirmar.</p><button class="retry-item detail-link" type="button" disabled={loading} onclick={() => reload += 1}><RotateCcw size={15} aria-hidden="true" />Tentar novamente</button>{/if}
+                  <a class="detail-link" href="/viaturas" onclick={(event) => {
+                    if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    comparison.remove(entry.id, name(entry));
+                    void goto('/viaturas');
+                  }}>Substituir <ArrowUpRight size={16} aria-hidden="true" /></a>
                 {/if}
               </th>
             {/each}
           </tr>
         </thead>
+        {#if loading || visible.some(entry => entry.vehicle)}
         {#each facts as row, index}
           <tbody class="fact-group">
             <tr class="aligned-fact">
@@ -288,13 +308,14 @@
                   class="fact-value"
                   class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'}
                   headers={`vehicle-${entry.id} fact-${index}`}
-                  >{#if loading}<span class="pending-line" aria-hidden="true">&nbsp;</span
-                    >{:else}{entry.vehicle ? row.value(entry.vehicle) : 'Indisponível'}{/if}</td
+                  >{#if entry.status === 0}<span class="pending-line" aria-hidden="true">&nbsp;</span
+                    >{:else}{entry.vehicle ? row.value(entry.vehicle) : '—'}{/if}</td
                 >
               {/each}</tr
             >
           </tbody>
         {/each}
+        {/if}
       </table>
       {#if visible.length === 1}
         <a class="second-option" href="/viaturas"
@@ -304,7 +325,7 @@
         >
       {/if}
     </div>
-    <p class="data-note">“Não indicado”: informação não publicada na ficha.</p>
+    <p class="data-note">{entries.some(entry => entry.vehicle) ? '“Não indicado”: informação não publicada na ficha. “—”: viatura sem dados atuais para comparar.' : entries.some(entry => entry.status === 503) ? 'Não foi possível confirmar a disponibilidade. As escolhas continuam guardadas.' : 'As escolhas continuam guardadas. Pode remover ou substituir as viaturas que já não estão disponíveis.'}</p>
   {/if}
   <p class="storage-note">
     As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer
@@ -314,6 +335,10 @@
 </main>
 
 <style>
+  .retry-item { border: 0; background: transparent; color: var(--text); cursor: pointer; min-height: 44px; padding: 0; font: inherit; }
+  .retry-item:disabled { opacity: .5; cursor: wait; }
+  .unavailable.lookup-error, .lookup-detail { font-size: 12px; line-height: 1.5; color: var(--muted); }
+  .unavailable-year { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); }
   .pending-photo {
     height: clamp(150px, 12vw, 210px);
     background: var(--surface);
@@ -459,7 +484,7 @@
   .vehicle-photo a {
     display: block;
   }
-  .vehicle-photo img {
+  .vehicle-photo img, .vehicle-photo :global(canvas) {
     display: block;
     width: 100%;
     height: clamp(150px, 12vw, 210px);
@@ -643,28 +668,6 @@
     font-size: 16px;
     color: var(--muted);
   }
-  .retry {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px 24px;
-    margin-bottom: 26px;
-    font-size: 14px;
-  }
-  .retry p {
-    margin: 0;
-    color: var(--muted);
-  }
-  .retry button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    border: 0;
-    background: none;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
   .unavailable {
     color: var(--muted);
     font-size: 15px;
@@ -762,7 +765,7 @@
       position: absolute;
       inset: -4px;
     }
-    .vehicle-photo img,
+    .vehicle-photo img, .vehicle-photo :global(canvas),
     .pending-photo {
       height: clamp(100px, 28vw, 150px);
     }

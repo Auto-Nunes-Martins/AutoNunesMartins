@@ -6,6 +6,21 @@ const id='audi-012345abcdef',vehicle={slug:id,brand:'Audi',model:'A3',year:2022,
 const read=(query:string)=>GET({url:new URL('http://site.test/comparar/dados?'+query)} as Parameters<typeof GET>[0]);
 afterEach(()=>vi.resetAllMocks());
 describe('fresh comparison selection BFF',()=>{
+ it('reuses only matching public unavailable detail data and its surviving photo',async()=>{
+  const unavailableVehicle={slug:id,brand:'Audi',model:'A3',year:2022,photo:`/viaturas/${id}/indisponivel/foto`,vin:'SECRET',price:'SECRET'};
+  mocks.request.mockResolvedValueOnce(Response.json({items:[{id,status:404,vehicle:null}]})).mockResolvedValueOnce(Response.json({unavailableVehicle},{status:404}));
+  const item=(await(await read('id='+id)).json()).items[0];
+  expect(item).toMatchObject({id,status:404,vehicle:null,unavailableVehicle:{brand:'Audi',photo:unavailableVehicle.photo}});
+  expect(mocks.request).toHaveBeenNthCalledWith(2,'/'+id);expect(JSON.stringify(item)).not.toContain('SECRET');
+ });
+ it.each(['https://private.test/photo',`/viaturas/other-012345abcdef/indisponivel/foto`])('rejects substituted unavailable photo %s',async photo=>{
+  mocks.request.mockResolvedValueOnce(Response.json({items:[{id,status:404,vehicle:null}]})).mockResolvedValueOnce(Response.json({unavailableVehicle:{slug:id,brand:'Audi',model:'A3',year:2022,photo}},{status:404}));
+  expect((await(await read('id='+id)).json()).items[0]).toEqual({id,status:404,vehicle:null});
+ });
+ it('keeps missing records saved without inventing identification',async()=>{
+  mocks.request.mockResolvedValueOnce(Response.json({items:[{id,status:404,vehicle:null}]})).mockResolvedValueOnce(Response.json({error:'Not found'},{status:404}));
+  expect((await(await read('id='+id)).json()).items[0]).toEqual({id,status:404,vehicle:null});
+ });
  it('requests one bounded public snapshot and allowlists values and identities',async()=>{
   mocks.request.mockResolvedValue(Response.json({items:[{id,status:200,vehicle:{...vehicle,vin:'SECRET'},photoVersions:['a'.repeat(64)]}]}));
   const response=await read('id='+id),data=await response.json();

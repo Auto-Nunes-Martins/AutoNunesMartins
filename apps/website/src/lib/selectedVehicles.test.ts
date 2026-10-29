@@ -1,9 +1,30 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { loadSelectedVehicles } from './selectedVehicles';
+import { loadSelectedVehicles, retainSelectionIdentity, selectionIdentity } from './selectedVehicles';
 const ids = ['audi-012345abcdef', 'bmw-012345abcdef', 'dacia-012345abcdef', 'tesla-012345abcdef'];
 const vehicle = { slug: ids[0], brand: 'Audi', model: 'A3', year: 2022, mileage: 12, fuel: 'GASOLINE', price: null, currency: 'EUR', description: null, transmission: null, availability: 'AVAILABLE', photos: [] };
 afterEach(() => vi.unstubAllGlobals());
 describe('Fresh selected vehicle data', () => {
+  it('retains only session identity after error and replaces it after confirmed success or removal',()=>{
+    const memory = new Map();
+    const known={id:ids[0]!,status:200,vehicle:{...vehicle,slug:ids[0]!,currency:'EUR' as const,fuel:'GASOLINE' as const,availability:'AVAILABLE' as const}};
+    retainSelectionIdentity([known],memory);
+    const [failed]=retainSelectionIdentity([{id:ids[0]!,status:503,vehicle:null}],memory);
+    expect(failed?.vehicle).toBeNull();expect(selectionIdentity(failed!)?.model).toBe('A3');
+    expect(JSON.stringify(failed)).not.toMatch(/price|availability|mileage|specifications/);
+    const [removed]=retainSelectionIdentity([{id:ids[0]!,status:404,vehicle:null}],memory);
+    expect(removed).not.toHaveProperty('lastKnownIdentity');expect(memory.size).toBe(0);
+    expect(retainSelectionIdentity([{id:ids[0]!,status:503,vehicle:null}],memory)[0]).not.toHaveProperty('lastKnownIdentity');
+  });
+  it('keeps validated unavailable identity without creating a live comparison DTO or local snapshot',async()=>{
+    const unavailableVehicle={slug:ids[0],brand:'Audi',model:'A3',year:2022,photo:`/viaturas/${ids[0]}/indisponivel/foto`,vin:'SECRET',privateNotes:'SECRET'};
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({items:[{id:ids[0],status:404,vehicle:null,unavailableVehicle}]})));
+    const [entry]=await loadSelectedVehicles([ids[0]!],new AbortController().signal);
+    expect(entry).toMatchObject({id:ids[0],status:404,vehicle:null,unavailableVehicle:{brand:'Audi',model:'A3',photo:unavailableVehicle.photo}});expect(JSON.stringify(entry)).not.toContain('SECRET');
+  });
+  it.each([['other-012345abcdef',null],[ids[0],'https://private.test/photo']])('discards unavailable identity/photo substitution %s %s',async(slug,photo)=>{
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({items:[{id:ids[0],status:404,vehicle:null,unavailableVehicle:{slug,brand:'Audi',model:'A3',year:2022,photo}}]})));
+    expect((await loadSelectedVehicles([ids[0]!],new AbortController().signal))[0]).toEqual({id:ids[0],status:404,vehicle:null});
+  });
   it('passes only matching bounded photo identities and never reuses an earlier DTO on a later load', async () => {
     const version='a'.repeat(64),fresh={...vehicle,photos:[`/api/public/vehicles/${ids[0]}/photos/0`]};
     const fetcher=vi.fn().mockResolvedValueOnce(Response.json({items:[{id:ids[0],status:200,vehicle:fresh,photoVersions:[version]}]})).mockRejectedValueOnce(new Error('offline'));

@@ -3,9 +3,9 @@
   import alternateLocationMap from '$lib/assets/images/orbit-location-map-alternate.svg?url&no-inline';
   import { createContactForm } from '$lib/contactForm.svelte';
   import ContactFeedback from '$lib/components/ContactFeedback.svelte';
-  import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
+  import ContactFormFooter from '$lib/components/ContactFormFooter.svelte';
   import { onMount } from 'svelte';
-  import { ArrowUpRight, ArrowRight, Phone, Mail, MapPin, Clock3 } from 'lucide-svelte';
+  import { ArrowUpRight, ArrowRight, Phone, Mail, MapPin, Clock3, LoaderCircle } from 'lucide-svelte';
   import { standContact, type StandContact } from './standContact';
   import { photo } from './data';
   import { responsivePhoto } from './images';
@@ -310,13 +310,12 @@
     {:else}
       <form
         class="message-card"
-        aria-labelledby={submission.state.phase === 'success' ? undefined : `${id}-form-heading`}
-        aria-describedby={submission.state.phase === 'success' ? undefined : `${id}-form-note`}
+        aria-labelledby={`${id}-form-heading`}
+        aria-describedby={`${id}-form-note`}
   use:submission.enhance
   aria-busy={sending}
       >
   <ContactFeedback {submission}/>
-  {#if submission.state.phase !== 'success'}
         <div class="form-heading">
           <span class="message-icon" aria-hidden="true"
             ><Mail size={20} strokeWidth={1.5} aria-hidden="true" /></span
@@ -371,15 +370,15 @@
             ></textarea></label
           >
         </div>
-        <ContactPrivacyNotice />
-        <button class="send-button" type="submit" disabled={sending || submission.state.kind === "conflict"}
-          >{sending ? 'A enviar…' : submission.state.kind === 'uncertain' ? 'Tentar confirmar envio' : 'Enviar pedido'}
-          <ArrowRight size={19} aria-hidden="true" /></button
+        <ContactFormFooter>
+        <button class="send-button" type="submit" aria-busy={sending} disabled={sending || submission.state.kind === "conflict"}
+          >{sending ? 'A enviar…' : 'Enviar pedido'}
+          {#if sending}<LoaderCircle class="contact-submit-spinner" size={19} aria-hidden="true" />{:else}<ArrowRight size={19} aria-hidden="true" />{/if}</button
         >
+        </ContactFormFooter>
         <p class="form-note" id={`${id}-form-note`}>
           O pedido de visita depende de confirmação do stand.
         </p>
-  {/if}
 </form>
     {/if}
   </div>

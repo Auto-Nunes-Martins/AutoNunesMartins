@@ -1,6 +1,8 @@
 import { cache } from '../lib/data/cache.js';
 import type { ContactBudgetStore } from '../lib/server/contactBudget.js';
 import { contactEmailHtml } from '../lib/server/contactEmail.js';
+import { contactEmailLogoAttachment } from '../lib/server/contactEmailLogo.js';
+import { contactEmailSubject } from '../lib/server/contactEmailSubject.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router } from 'express';
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -89,9 +91,10 @@ export function createPublicContactRouter(
         from: config.from,
         to: [config.to],
         reply_to: data.email,
-        subject: `Pedido do site: ${data.subject}`,
+        subject: contactEmailSubject(data),
         text,
         html: contactEmailHtml(data),
+        attachments: [contactEmailLogoAttachment()],
       });
       let reservation;
       try {

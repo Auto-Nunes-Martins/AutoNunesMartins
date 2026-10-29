@@ -79,8 +79,25 @@ describe('public contact email', () => {
     const email = JSON.parse(options!.body as string);
     expect(email.to).toEqual(['stand@example.org']);
     expect(email.reply_to).toBe(body.email);
+    expect(email.subject).toMatch(/^Pedido do site: Marcar uma visita \[Ref\. [A-F0-9]{12}\]$/);
+    expect(email).not.toHaveProperty('cc');
+    expect(email).not.toHaveProperty('bcc');
+    expect(email).not.toHaveProperty('headers');
+    const providerHeaders = new Headers(options!.headers);
+    expect(providerHeaders.has('References')).toBe(false);
+    expect(providerHeaders.has('In-Reply-To')).toBe(false);
     expect(email.text).toContain(body.message);
-    expect(email.html).toContain('AUTO NUNES MARTINS');
+    expect(email.html).toContain('alt="Auto Nunes Martins"');
+    expect(email.attachments).toHaveLength(1);
+    expect(email.attachments[0]).toMatchObject({
+      filename: 'auto-nunes-martins.png',
+      content_type: 'image/png',
+      content_id: 'auto-nunes-martins-logo',
+    });
+    expect(email.html).toContain(`src="cid:${email.attachments[0].content_id}"`);
+    expect(Buffer.from(email.attachments[0].content, 'base64').subarray(0, 8)).toEqual(
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    );
     expect(email.html).toContain(body.message);
     expect(email.html).toContain('mailto:');
     expect((options!.headers as Record<string, string>)['Idempotency-Key']).toContain(
@@ -88,6 +105,18 @@ describe('public contact email', () => {
     );
     expect((await post(body)).status).toBe(202);
     expect(send).toHaveBeenCalledTimes(1);
+  });
+  it('gives separate enquiries distinct subjects without adding deliveries', async () => {
+    const { post, send } = await setup();
+    const first = data();
+    const second = { ...first, requestId: randomUUID() };
+    expect((await post(first)).status).toBe(202);
+    expect((await post(second)).status).toBe(202);
+    expect(send).toHaveBeenCalledTimes(2);
+    const subjects = send.mock.calls.map(([, init]) => JSON.parse(init!.body as string).subject);
+    expect(subjects[0]).not.toBe(subjects[1]);
+    expect((await post(first)).status).toBe(202);
+    expect(send).toHaveBeenCalledTimes(2);
   });
   it('fails closed when disabled or missing credentials', async () => {
     for (const overrides of [
@@ -149,6 +178,8 @@ it('retries a failed provider call with the same idempotency key and charges eac
   expect((await post(body)).status).toBe(502);
   expect((await post(body)).status).toBe(202);
   expect(send.mock.calls[0]![1]!.headers).toEqual(send.mock.calls[1]![1]!.headers);
+  const subjects = send.mock.calls.map(([, init]) => JSON.parse(init!.body as string).subject);
+  expect(subjects[0]).toBe(subjects[1]);
 });
 
 it('recovers an accepted provider response after a database failure without duplicate delivery or notification', async () => {

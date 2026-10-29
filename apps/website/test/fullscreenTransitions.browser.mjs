@@ -107,6 +107,41 @@ try{
  await thumbs.first().click();await page.waitForTimeout(190);await rail.evaluate(n=>n.children[2].querySelector('img').removeAttribute('src'));await reset();await thumbs.nth(2).click();await page.waitForTimeout(190);assert.equal(await selected(),2);assert.equal((await page.evaluate(()=>window.railMoves)).length,0,'unloaded two-position target retains direct fallback');await thumbs.first().click();await page.waitForTimeout(550);await thumbs.nth(4).click();await page.setViewportSize({width:width+20,height:820});await page.waitForTimeout(200);assert.equal(await rail.getAttribute('data-moving'),'false');assert.equal(await selected(),4);
  await thumbs.first().click();await page.keyboard.press('Escape');await page.locator('.gallery-dialog').waitFor({state:'hidden'});await page.waitForFunction(()=>!document.querySelector('.gallery-dialog .photo-rail-track'));
  assert.deepEqual(errors,[]);console.log('PASS fullscreen one/two-photo slides, distant quick fades, interruption, fallback '+width+'px '+motion);
+ // Opening/closing uses actual viewport geometry, including an image clipped above the viewport.
+ await page.setViewportSize({width,height:850});
+ await page.evaluate(()=>{window.galleryMoves=[];window.galleryFades=[];const animate=Element.prototype.animate;Element.prototype.animate=function(frames,options){if(this.hasAttribute('data-opening-photo'))window.galleryMoves.push({frames,options});if(this.tagName==='CANVAS'&&frames.some(f=>'opacity'in f))window.galleryFades.push({frames,options});return animate.call(this,frames,options);};});
+ const inline=page.locator('.vehicle-photo .photo-rail-slide:not([inert]) img');
+ for(const partial of [false,true]){
+   await page.evaluate(partial=>{const rect=document.querySelector('.vehicle-photo').getBoundingClientRect();window.scrollTo({top:partial?window.scrollY+rect.top+rect.height*.25:0,behavior:'instant'});window.galleryMoves=[];window.galleryFades=[];},partial);
+   const source=await inline.boundingBox(),scroll=await page.evaluate(()=>scrollY);
+   if(partial)assert.ok(source.y<0&&source.y+source.height>0);
+   await page.locator('.vehicle-photo .photo-rail-slide:not([inert]) button').evaluate(n=>n.click());
+   await page.waitForTimeout(400);
+   assert.equal(await page.locator('.gallery-dialog').evaluate(n=>n.open),true);
+   assert.ok(Math.abs((await page.evaluate(()=>scrollY))-scroll)<1,'opening preserves page scroll');
+   await page.mouse.wheel(0,250);await page.waitForTimeout(60);
+   assert.ok(Math.abs((await page.evaluate(()=>scrollY))-scroll)<1,'background stays scroll locked');
+   const box=await page.locator('.gallery-dialog').boundingBox();
+   let moves=await page.evaluate(()=>window.galleryMoves);
+   if(motion==='reduce')assert.equal(moves.length,0);
+   else {assert.equal(moves.length,1);const fades=await page.evaluate(()=>window.galleryFades);assert.equal(fades.length,1);assert.ok(fades[0].frames[0].opacity<.1);assert.equal(fades[0].frames.at(-1).opacity,1);assert.equal(fades[0].options.easing,'linear');assert.ok(Math.abs(parseFloat(moves[0].frames[0].top)+box.y-source.y)<1);assert.ok(Math.abs(parseFloat(moves[0].frames[0].left)+box.x-source.x)<1);if(partial)assert.ok(parseFloat(moves[0].frames.at(-1).top)>parseFloat(moves[0].frames[0].top),'clipped photo travels down towards centre');}
+   // A new viewer selection returns to its matching inline photo, not a stale opener.
+   await page.locator('.viewer-thumbnails button').nth(1).click();await page.waitForTimeout(550);
+   const destination=await inline.boundingBox();
+   await page.getByRole('button',{name:'Fechar fotografia',exact:true}).click();
+   await page.locator('.gallery-dialog').waitFor({state:'hidden'});
+   moves=await page.evaluate(()=>window.galleryMoves);
+   if(motion==='reduce')assert.equal(moves.length,0);
+   else {assert.equal(moves.length,2);assert.equal(moves[1].frames[0].opacity,1);const end=moves[1].frames.at(-1);assert.equal(end.opacity,0);assert.ok(Math.abs(parseFloat(end.top)+box.y-destination.y)<1);assert.ok(Math.abs(parseFloat(end.left)+box.x-destination.x)<1);assert.ok(Math.abs(parseFloat(end.width)-destination.width)<1);}
+   assert.ok(Math.abs((await page.evaluate(()=>scrollY))-scroll)<1,'closing restores exactly the same scroll');
+   assert.equal(await page.locator('[data-opening-photo]').count(),0);
+   assert.equal(await inline.evaluate(n=>n.style.opacity),'');
+ }
+ // Interrupt opening with Escape; closing must still complete without leaked layers.
+ await page.locator('.vehicle-photo .photo-rail-slide:not([inert]) button').evaluate(n=>n.click());await page.waitForTimeout(40);await page.keyboard.press('Escape');await page.locator('.gallery-dialog').waitFor({state:'hidden'});assert.equal(await page.locator('[data-opening-photo]').count(),0);
+ // Contact has no photo origin: fade out instead of inventing a geometric route.
+ await page.locator('.vehicle-photo .photo-rail-slide:not([inert]) button').evaluate(n=>n.click());await page.waitForTimeout(400);await page.locator('.viewer-thumbnails button').last().click();await page.waitForTimeout(200);await page.evaluate(()=>window.galleryMoves=[]);await page.getByRole('button',{name:'Fechar fotografia',exact:true}).click();await page.locator('.gallery-dialog').waitFor({state:'hidden'});assert.equal((await page.evaluate(()=>window.galleryMoves)).length,0);
+ assert.deepEqual(errors,[]);console.log('PASS gallery origin/return geometry, changed photo, scroll lock, interruption and fallback '+width+'px '+motion);
  }catch(e){console.error(logs.slice(-1500));await page.screenshot({path:'.svelte-kit/fullscreen-transitions-failure-'+width+'-'+motion+'.png'});throw e;}finally{await context.close();}
  }
 }finally{await browser?.close();vite.kill();await new Promise(r=>backend.close(r));await rm(configPath,{force:true});}

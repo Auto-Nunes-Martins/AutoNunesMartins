@@ -9,7 +9,7 @@
   let expanded = $state(false);
   let animating = $state(false);
   let overflowing = $state(false);
-  let limit = $state(810);
+  let limit = $state(405);
   let measure: (() => void) | undefined;
   let transition: Animation | undefined;
   let change = 0;
@@ -36,7 +36,7 @@
     let alive = true;
     measure = () => {
       const lines =
-        Number(getComputedStyle(viewport).getPropertyValue('--description-lines')) || 30;
+        Number(getComputedStyle(viewport).getPropertyValue('--description-lines')) || 15;
       const rich = content.firstElementChild ?? content;
       const lineHeight = parseFloat(getComputedStyle(rich).lineHeight) || 27;
       limit = lines * lineHeight;
@@ -135,7 +135,7 @@
 
 <style>
   .description-window {
-    --description-lines: 30;
+    --description-lines: 15;
   }
   .description-window.collapsed {
     height: var(--description-limit);
@@ -207,7 +207,7 @@
   }
   @media (max-width: 700px) {
     .description-window {
-      --description-lines: 20;
+      --description-lines: 10;
     }
   }
 </style>

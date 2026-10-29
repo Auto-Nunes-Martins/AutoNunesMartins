@@ -1,36 +1,62 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
-  import { tick, untrack, type Snippet } from 'svelte';
+  import { tick, untrack, onDestroy, type Snippet } from 'svelte';
   import OrbitBackLink from './OrbitBackLink.svelte';
-  import { Heart, ArrowUpRight, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-svelte';
+  import { Heart, ArrowUpRight, ArrowLeft, ArrowRight } from 'lucide-svelte';
   import { useFavorites } from '$lib/favorites';
   import { publicCard, type PublicCard } from '$lib/publicVehicles';
-  import { loadSelectedVehicles, type SelectedVehicle } from '$lib/selectedVehicles';
+  import { loadSelectedVehicles, rememberSelectionIdentity, retainSelectionIdentity, type SelectedVehicle, type SelectionIdentity } from '$lib/selectedVehicles';
+  import UnavailableFavorite from './UnavailableFavorite.svelte';
+  import PendingFavorite from './PendingFavorite.svelte';
   let { card }: { card: Snippet<[PublicCard | null, number]> } = $props();
   const favorites = useFavorites();
   const { ids, ready } = favorites;
   const pageSize = 12;
   let requestedPage = $state(1);
-  let refresh = $state(0);
+  const memory = new Map<string, SelectionIdentity>();
+  const retries = new Set<AbortController>();
+  const retrying = $state<Record<string, boolean>>({});
+  onDestroy(() => retries.forEach(controller => controller.abort()));
   let entries = $state<SelectedVehicle[]>([]);
   let loading = $state(false);
   let heading: HTMLHeadingElement;
   const pages = $derived(Math.max(1, Math.ceil($ids.length / pageSize)));
   const currentPage = $derived(Math.min(requestedPage, pages));
+  const normal = $derived($ids.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(id => entries.find(entry => entry.id === id) ?? { id, status: 0, vehicle: null }).filter(entry => entry.status !== 404));
+  const unavailable = $derived(entries.filter(entry => !entry.vehicle && entry.status === 404));
   $effect(() => {
     const selected = $ids.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-    refresh;
+    for (const id of memory.keys()) if (!$ids.includes(id)) memory.delete(id);
     if (!$ready || !selected.length) { entries = []; loading = false; return; }
     const controller = new AbortController();
     loading = true;
     // Keep remaining cards mounted during removal so keyboard focus can be restored.
-    entries = untrack(() => entries.filter(entry => selected.includes(entry.id)));
+    entries = untrack(() => {
+      rememberSelectionIdentity(entries.filter(entry => $ids.includes(entry.id)), memory, document.querySelector('.favorites-page'));
+      return entries.filter(entry => selected.includes(entry.id));
+    });
     void loadSelectedVehicles(selected, controller.signal).then(fresh => {
-      if (!controller.signal.aborted) { entries = fresh; loading = false; }
+      if (!controller.signal.aborted) {
+        rememberSelectionIdentity(entries, memory, document.querySelector('.favorites-page'));
+        entries = retainSelectionIdentity(fresh, memory); loading = false;
+      }
     });
     return () => controller.abort();
   });
+  async function retry(id: string) {
+    if (retrying[id]) return;
+    const controller = new AbortController(); retries.add(controller); retrying[id] = true;
+    rememberSelectionIdentity(entries, memory, document.querySelector('.favorites-page'));
+    try {
+      const fresh = await loadSelectedVehicles([id], controller.signal);
+      if (!controller.signal.aborted && $ids.includes(id)) {
+        rememberSelectionIdentity(entries, memory, document.querySelector('.favorites-page'));
+        const [next] = retainSelectionIdentity(fresh, memory);
+        if (next) entries = entries.map(entry => entry.id === id ? next : entry);
+      }
+    } finally { retrying[id] = false; retries.delete(controller); }
+  }
   async function remove(id?: string) {
     if (id) favorites.remove(id); else favorites.clear();
     await tick(); heading?.focus({ preventScroll: true });
@@ -54,18 +80,26 @@
   {:else}
     <div class="toolbar"><p>{$ids.length} {$ids.length === 1 ? 'viatura guardada' : 'viaturas guardadas'}</p><button type="button" onclick={() => remove()}>Limpar favoritos</button></div>
     <p role="status" class="loading">{loading ? 'A consultar os dados atuais…' : '\u00a0'}</p>
-    {#if entries.some(entry => entry.status === 503)}<div class="retry"><p>Alguns dados estão temporariamente indisponíveis.</p><button type="button" onclick={() => refresh += 1}><RotateCcw size={16} aria-hidden="true" /> Tentar novamente</button></div>{/if}
     <h2 class="sr-only">Viaturas guardadas</h2>
     <div class="favorites-grid" aria-busy={loading}>
-      {#if loading}
-        {#each $ids.slice((currentPage - 1) * pageSize, currentPage * pageSize) as _, index}{@render card(null, index)}{/each}
-      {:else}
-      {#each entries as entry, index (entry.id)}
+      {#each normal as entry, index (entry.id)}
+        <div data-selection-id={entry.id} class="saved-slot">
         {#if entry.vehicle}{@render card(publicCard(entry.vehicle), index)}
-        {:else}<article class="unavailable"><Heart size={28} strokeWidth={1.2} aria-hidden="true" /><h2>{entry.status === 404 ? 'Já não está publicada.' : 'Dados por atualizar.'}</h2><p>{entry.status === 404 ? 'Esta viatura deixou de estar disponível no catálogo. Pode removê-la dos favoritos.' : 'O favorito está guardado. Tente consultar os dados novamente.'}</p><button type="button" onclick={() => remove(entry.id)}>Remover dos favoritos</button></article>{/if}
+        {:else if entry.status === 503}<PendingFavorite {entry} position={$ids.indexOf(entry.id) + 1} retrying={!!retrying[entry.id]} onretry={() => retry(entry.id)} onremove={() => remove(entry.id)} />
+        {:else}{@render card(null, index)}
+        {/if}
+        </div>
       {/each}
-      {/if}
     </div>
+    {#if unavailable.length}
+      <section class="unavailable-group" aria-labelledby="unavailable-favorites-title">
+        <h2 id="unavailable-favorites-title">Já não disponíveis <span>{unavailable.length}{pages > 1 ? ' nesta página' : ''}</span></h2>
+        <p>Saíram da oferta pública, mas continuam nos seus guardados. Pode removê-las quando quiser.</p>
+        <div class="unavailable-list">
+          {#each unavailable as entry (entry.id)}<div data-selection-id={entry.id}><UnavailableFavorite {entry} position={$ids.indexOf(entry.id) + 1} onremove={() => remove(entry.id)} /></div>{/each}
+        </div>
+      </section>
+    {/if}
     {#if pages > 1}<nav class="pagination" aria-label="Paginação de favoritos"><button type="button" disabled={currentPage === 1} onclick={() => changePage(currentPage - 1)}><ArrowLeft size={16} aria-hidden="true" /> Anterior</button><span>{currentPage} / {pages}</span><button type="button" disabled={currentPage === pages} onclick={() => changePage(currentPage + 1)}>Seguinte <ArrowRight size={16} aria-hidden="true" /></button></nav>{/if}
     <p class="note">Guardados apenas neste navegador. Limpar os dados do navegador remove a seleção. Os detalhes são consultados no catálogo atual.</p>
   {/if}
@@ -85,25 +119,28 @@
   h1 span { color: var(--muted); }
   .lead { color: var(--muted); line-height: 1.8; font-size: 15px; margin: 24px 0 0; }
   .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; border-top: 1px solid var(--line); padding: 22px 0; font-size: 13px; }
-  .toolbar button, .unavailable button, .retry button { border: none; background: none; min-height: 44px; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
+  .toolbar button { border: none; background: none; min-height: 44px; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
   .toolbar p, .loading, .note { color: var(--muted); }
   .favorites-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; }
+  .saved-slot { min-width: 0; }
   .empty { border-block: 1px solid var(--line); padding: 60px 8%; background: color-mix(in srgb, var(--text) 2%, var(--bg)); }
   .empty > :global(svg) { color: var(--red); }
   h2 { font-size: clamp(26px, 3vw, 40px); font-weight: 500; letter-spacing: -.04em; line-height: 1.15; }
   .empty p { max-width: 52ch; color: var(--muted); font-size: 15px; line-height: 1.8; }
   .primary { display: inline-flex; align-items: center; gap: 24px; background: var(--text); color: var(--bg); border-radius: 30px; padding: 15px 24px; min-height: 48px; margin-top: 18px; font-size: 13px; }
-  .unavailable { border: 1px solid var(--line); padding: 38px 28px; min-height: 290px; }
-  .unavailable h2 { font-size: 30px; }
-  .unavailable p { color: var(--muted); font-size: 14px; line-height: 1.8; }
+  .unavailable-group { margin-top: 32px; }
+  .unavailable-group h2 { display: flex; align-items: baseline; gap: 12px; font-size: 23px; margin: 0 0 10px; }
+  .unavailable-group h2 span { font-size: 13px; color: var(--muted); letter-spacing: 0; }
+  .unavailable-group > p { font-size: 13px; line-height: 1.7; color: var(--muted); margin: 0 0 16px; }
+  .unavailable-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; border-top: 1px solid var(--line); }
+  @media (max-width: 1000px) { .unavailable-list { grid-template-columns: minmax(0, 1fr); } }
   .pagination { display: flex; align-items: center; justify-content: center; gap: 30px; margin-top: 36px; font-size: 13px; }
-  .pagination button, .retry button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: none; background: none; }
+  .pagination button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: none; background: none; }
   .pagination button:disabled { opacity: .35; cursor: default; }
-  .retry { display: flex; align-items: center; gap: 20px; font-size: 13px; color: var(--muted); margin-bottom: 24px; }
   .note { margin: 28px 0 0; line-height: 1.8; font-size: 12px; }
   .storage-note { margin: 28px 0 0; max-width: 90ch; font-size: 12px; line-height: 1.8; color: var(--muted); }
   .storage-note a { text-decoration: underline; text-underline-offset: 3px; }
   @media (hover: hover) { .primary:hover { background: var(--red); color: white; } }
   @media (max-width: 1000px) { .favorites-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
-  @media (max-width: 700px) { .favorites-page { padding: 20px 0 72px; } .intro { padding: 26px 0 32px; gap: 12px; } h1 { font-size: clamp(34px, 8vw, 52px); } .intro :global(.intro-heart) { width: 40px; } .lead { font-size: 13px; } .favorites-grid { grid-template-columns: 1fr; gap: 24px; } .empty { padding: 36px 22px; } .retry { align-items: flex-start; flex-direction: column; gap: 0; } }
+  @media (max-width: 700px) { .favorites-page { padding: 20px 0 72px; } .intro { padding: 26px 0 32px; gap: 12px; } h1 { font-size: clamp(34px, 8vw, 52px); } .intro :global(.intro-heart) { width: 40px; } .lead { font-size: 13px; } .favorites-grid { grid-template-columns: 1fr; gap: 24px; } .empty { padding: 36px 22px; } }
 </style>

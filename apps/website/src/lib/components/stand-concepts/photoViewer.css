@@ -1,6 +1,7 @@
 html:has(dialog.gallery-dialog[open]) {
   overflow: hidden;
 }
+.gallery-dialog[data-closing] { pointer-events: none; }
 .design.orbit .gallery-dialog {
   position: fixed;
   inset: auto;

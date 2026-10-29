@@ -1,8 +1,8 @@
 <script lang="ts">
   import { createContactForm } from '$lib/contactForm.svelte';
   import ContactFeedback from '$lib/components/ContactFeedback.svelte';
-  import ContactPrivacyNotice from '$lib/components/ContactPrivacyNotice.svelte';
-  import { ArrowUpRight } from 'lucide-svelte';
+  import ContactFormFooter from '$lib/components/ContactFormFooter.svelte';
+  import { ArrowUpRight, LoaderCircle } from 'lucide-svelte';
   import FormSelectField from './FormSelectField.svelte';
 
   // Comparison snapshot of OrbitContactFooter's original inline form.
@@ -14,13 +14,12 @@
 
 <form
   class="inline-contact"
-  aria-labelledby={submission.state.phase === 'success' ? undefined : `${id}-heading`}
-  aria-describedby={submission.state.phase === 'success' ? undefined : `${id}-note`}
+  aria-labelledby={`${id}-heading`}
+  aria-describedby={`${id}-note`}
   use:submission.enhance
   aria-busy={sending}
 >
   <ContactFeedback {submission}/>
-  {#if submission.state.phase !== 'success'}
   <p class="eyebrow">COMECE A CONVERSA</p>
   <h3 id={`${id}-heading`}>O que tem em mente?</h3>
   <div class="form-row">
@@ -66,17 +65,15 @@
       required
     ></textarea></label
   >
-  <ContactPrivacyNotice />
-  <div class="form-bottom" class:without-note={!showDemoNote}>
-    <p id={`${id}-note`} class:sr-only={!showDemoNote}>
-      O pedido de visita depende de confirmação do stand.
-    </p>
-    <button type="submit" disabled={sending || submission.state.kind === "conflict"} class="button primary"
-      ><span class="action-text">{sending ? 'A enviar…' : submission.state.kind === 'uncertain' ? 'Tentar confirmar envio' : 'Enviar pedido'}</span>
-      <span class="action-arrow"><ArrowUpRight size={17} aria-hidden="true" /></span></button
+  <ContactFormFooter>
+    <button type="submit" aria-busy={sending} disabled={sending || submission.state.kind === "conflict"} class="button primary"
+      ><span class="action-text">{sending ? 'A enviar…' : 'Enviar pedido'}</span>
+      <span class="action-arrow">{#if sending}<LoaderCircle class="contact-submit-spinner" size={17} aria-hidden="true" />{:else}<ArrowUpRight size={17} aria-hidden="true" />{/if}</span></button
     >
-  </div>
-  {/if}
+  </ContactFormFooter>
+  <p id={`${id}-note`} class="form-confirmation" class:sr-only={!showDemoNote}>
+    O pedido de visita depende de confirmação do stand.
+  </p>
 </form>
 
 <style>
@@ -187,34 +184,8 @@
         box-shadow 180ms ease;
     }
   }
-  .form-bottom {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-top: 24px;
-  }
-  .form-bottom p {
-    flex: 1 1 140px;
-    color: #b7c1b9;
-    font-size: 11px;
-    line-height: 1.6;
-  }
-  .form-bottom.without-note {
-    justify-content: flex-end;
-  }
-  .form-bottom .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
+  .form-confirmation { margin-top:12px; color:#b7c1b9; font-size:11px; line-height:1.6; }
+  .sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
   .button {
     display: inline-flex;
     align-items: center;

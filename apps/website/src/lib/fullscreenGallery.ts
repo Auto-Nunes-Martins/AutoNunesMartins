@@ -8,7 +8,8 @@ type Gesture = Point & {
 };
 
 /** Keep native pinch/pan and horizontal navigation; own only deliberate downward dismissal. */
-export function fullscreenGallery(dialog: HTMLDialogElement) {
+export function fullscreenGallery(dialog: HTMLDialogElement, options?: { close: () => void }) {
+  const close = () => options?.close ? options.close() : dialog.close();
   const viewport = window.visualViewport;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const nativeTouch = 'TouchEvent' in window;
@@ -103,12 +104,13 @@ export function fullscreenGallery(dialog: HTMLDialogElement) {
         (dy > 55 && recent && current.velocity > 0.65));
     reset();
     if (dismiss) {
-      if (reduced.matches) dialog.close();
+      if (options?.close) options.close();
+      else if (reduced.matches) close();
       else {
         pose(Math.max(dy, dialog.clientHeight));
         closeTimer = setTimeout(() => {
           closeTimer = undefined;
-          dialog.close();
+          close();
         }, 180);
       }
     } else if (
@@ -135,7 +137,7 @@ export function fullscreenGallery(dialog: HTMLDialogElement) {
     if (tap && !zoomed() && outside(point) && Math.hypot(point.x - tap.x, point.y - tap.y) < 6) {
       event.preventDefault();
       event.stopPropagation();
-      dialog.close();
+      close();
     }
     tap = undefined;
   }
