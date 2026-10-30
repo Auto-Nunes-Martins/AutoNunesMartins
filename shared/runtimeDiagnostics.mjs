@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { isMainThread, threadId } from 'node:worker_threads';
 
 const numericKeys = new Set([
   'inputBytes',
@@ -97,7 +98,8 @@ function snapshot() {
 export class ProcessDiagnostics {
   constructor(options = {}) {
     const env = options.env ?? process.env;
-    this.enabled = env.RUNTIME_DIAGNOSTICS === 'true';
+    // Loader/worker contexts share process RSS but have separate globals. Count the process once.
+    this.enabled = env.RUNTIME_DIAGNOSTICS === 'true' && isMainThread;
     this.service = ['backend', 'website', 'crm', 'gateway', 'harness'].includes(options.service)
       ? options.service
       : 'backend';
@@ -166,6 +168,7 @@ export class ProcessDiagnostics {
         instance: this.instance,
         boot: this.boot,
         pid: this.pid,
+        thread:threadId,
         ...point,
         ...(includeContainer ? this.container() : {}),
         active: this.active.size,
