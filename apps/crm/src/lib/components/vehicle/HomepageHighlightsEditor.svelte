@@ -187,6 +187,7 @@
               await update({ reset: false });
               await tick();
               markFormSaved(formElement);
+              choosing = null;
               if (selectedVehicleId) contextMessage = editor.items.some(item => item.vehicleId === selectedVehicleId)
                 ? 'Seleção de destaques guardada. A fotografia escolhida foi confirmada.'
                 : 'A viatura foi retirada da seleção guardada.';

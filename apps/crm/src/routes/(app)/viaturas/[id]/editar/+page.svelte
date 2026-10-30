@@ -1,5 +1,7 @@
 <script lang="ts">
   import { readyPhoto } from '$lib/photoPreparation';
+  import { PUBLIC_WEBSITE_URL } from '$env/static/public';
+  import { publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { sessionFetch } from '$lib/auth/session';
   import { listNavigationCache } from '$lib/lists/navigationCache';
   import { crmPath } from '$lib/paths';
@@ -224,6 +226,7 @@
       saveRequestStarted = false,
       saveResponseReceived = false,
       uncertainResult = false;
+    let savedFeedback:Parameters<typeof vehicleSavedFeedback>[0]|undefined;
     try {
       const latest = await freshState();
       if (latest.vehicle.updatedAt !== baseline.updatedAt)
@@ -305,11 +308,12 @@
       revision += 1;
       await invalidateAll().catch(() => {});
       message = removing ? 'Viatura retirada do website. Alterações guardadas.' : publishing ? 'Viatura publicada no website. Alterações guardadas.' : 'Alterações guardadas.';
-      vehicleSavedFeedback({ title: removing ? 'Viatura retirada do website' : publishing ? (previouslyPublished ? 'Publicação atualizada' : 'Viatura publicada') : 'Alterações guardadas',
+      savedFeedback={ title: removing ? 'Viatura retirada do website' : publishing ? (previouslyPublished ? 'Publicação atualizada' : 'Viatura publicada') : 'Alterações guardadas',
         brand: saved.vehicle.brand, model: saved.vehicle.model, year: saved.vehicle.year,
         detail: removing ? 'A ficha deixou de estar visível no website.' : publishing ? 'O website já reflete as alterações confirmadas.' : 'A ficha da viatura foi atualizada no CRM.',
         photo: saved.signedPhotos.find(photo => photo.path === saved.vehicle.photos[0]),
-      });
+        onlineUrl:publishedVehicleUrl(PUBLIC_WEBSITE_URL,saved.vehicle),
+      };
       confirmed = true;
     } catch (error) {
       message =
@@ -336,10 +340,10 @@
       if (editIssues.length) markEditIssues(root, editIssues);
       if (committed) await rememberSavedForms();
     }
-    // Publication controls save in place; only the explicit Save action returns.
-    if (confirmed && published === undefined) {
+    if (confirmed) {
       try { await goto(returnDestination, { invalidateAll: true }); }
       catch { toast.error('As alterações foram guardadas, mas não foi possível abrir a página anterior.'); }
+      if(savedFeedback)vehicleSavedFeedback(savedFeedback);
     }
   }
   async function discard() {

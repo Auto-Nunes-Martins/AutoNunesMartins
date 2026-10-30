@@ -27,7 +27,8 @@
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import { formatEUR } from '$lib/utils/format';
   import { toast } from 'svelte-sonner';
-  import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
+  import { publicVehicleUrl, publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
+  import { vehicleSavedFeedback } from './vehicleSaveFeedback';
   import type { VehicleDetailResponse } from '$lib/server/vehicles';
   let {
     vehicle,
@@ -265,7 +266,7 @@
           if (formElement === publicationForm) resetPublicationDraft();
           await tick();
           message = 'Visibilidade no site atualizada.';
-          toast.success(message);
+          vehicleSavedFeedback({title:vehicle.webPublished?'Publicação atualizada':'Viatura retirada do website',brand:vehicle.brand,model:vehicle.model,year:vehicle.year,detail:message,photo:cover,onlineUrl:publishedVehicleUrl(PUBLIC_WEBSITE_URL,vehicle)});
         } else if (result.type === 'failure') {
           showFormErrors(formElement, result.data);
           message =

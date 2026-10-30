@@ -63,7 +63,7 @@ before(async () => {
 });
 after(async()=>{
   await browser?.close();await vite?.close();if(server)await new Promise(r=>server.close(r));
-  if(directory&&path.dirname(directory)===path.join(appRoot,'.svelte-kit')&&path.basename(directory).startsWith('vehicle-edit-actions-'))await rm(directory,{recursive:true,force:true});
+  // Retain fixtures and screenshots for inspection; do not initiate cleanup.
 });
 
 for (const width of [1366,390]) test(`confirmed save returns safely with visible feedback ${width}px`, {timeout:120000}, async()=>{
@@ -83,6 +83,7 @@ for (const width of [1366,390]) test(`confirmed save returns safely with visible
       assert.equal(navigation.href,from?.startsWith('/viaturas?')?from:`/viaturas/${id}`);
       assert.equal(navigation.dirty,false,'unsaved guard is cleared before returning');assert.equal(navigation.options.invalidateAll,true);assert.equal(posts,1);
       await page.getByText('Modelo guardado',{exact:true}).waitFor();await page.locator('[data-sonner-toast]').filter({hasText:'Alterações guardadas'}).waitFor();
+      assert.equal(await page.getByRole('link',{name:'Ver online ↗',exact:true}).count(),0,'private saves never offer a public link');
     } finally {await context.close();}
   }
 });
@@ -135,6 +136,11 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
     assert.equal(await save().isDisabled(),true);assert.equal(await action().isDisabled(),false);await action().click();await page.waitForFunction(()=>!!document.querySelector('[name="publicPrice"][aria-invalid=true]'));assert.equal(posts.length,1);assert.match(await status.innerText(),/Não publicado/);
     await page.locator('[name="model"]').fill('Rascunho mantido');await page.locator('[name="publicPrice"]').fill('18000');assert.match(await action().innerText(),/Guardar e publicar/);await action().click();await page.waitForFunction(()=>document.querySelector('.edit-save-top .website-status')?.textContent.includes('Publicado'));
     assert.equal(posts.length,2);assert.equal(posts.at(-1).publication.published,true);assert.equal(posts.at(-1).data.model,'Rascunho mantido');assert.deepEqual(posts.at(-1).photos,[photo]);await page.waitForFunction(()=>!document.querySelector('.publication-action')?.disabled&&document.querySelector('.edit-save-top button.primary')?.disabled);
+    await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().waitFor();
+    assert.equal(await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().getAttribute('href'),'http://website.fixture/viaturas/vehicle-aaaaaaaaaaaa');
+    assert.equal(await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().getAttribute('target'),'_blank');
+    assert.match(await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().getAttribute('rel'),/noopener/);
+    assert.equal((await page.evaluate(()=>window.reviewNavigation)).href,`/viaturas/${id}`);
     await load();assert.match(await status.innerText(),/Publicado/);assert.equal(await action().innerText(),'Retirar do website');assert.equal(await page.locator('[name="model"]').inputValue(),'Rascunho mantido');
     await page.locator('[name="model"]').fill('Alteração e retirada');await action().click();await page.waitForFunction(()=>document.querySelector('.publication-action')?.textContent==='Publicar no website');assert.equal(posts.at(-1).publication.published,false);assert.equal(posts.at(-1).data.model,'Alteração e retirada');await page.waitForFunction(()=>!document.querySelector('.publication-action')?.disabled&&document.querySelector('.edit-save-top button.primary')?.disabled);
     await load();assert.match(await status.innerText(),/Não publicado/);assert.equal(await page.locator('[name="model"]').inputValue(),'Alteração e retirada');
@@ -198,6 +204,7 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`detail e
 for(const width of [1366,390])for(const theme of ['light','dark'])test(`website indicators and contextual highlight persistence ${width}px ${theme}`,{timeout:90000},async()=>{
   const key=`highlights-${width}-${theme}`,context=await browser.newContext({viewport:{width,height:950},extraHTTPHeaders:{'x-review-case':key}}),page=await context.newPage(),errors=[],posts=[];
   page.setDefaultTimeout(20000);page.on('pageerror',e=>errors.push(e.message));
+  let releaseSave,enteredSave;const saveGate=new Promise(resolve=>releaseSave=resolve),saveEntered=new Promise(resolve=>enteredSave=resolve);
   const base=fixture('?detail=1').vehicle;
   const variants=[base,{...base,id:id+'a',webPublished:false},{...base,id:id+'b',status:'SOLD',sale:{id:'sale'}},{...base,id:id+'c',photos:[]},{...base,id:id+'d',status:'DRAFT'},{...base,id:id+'e',publicSlug:null}];
   fixtureStates.set(key,{items:variants});
@@ -207,6 +214,7 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`website 
     if(request.method()==='POST'){
       const raw=request.postData(),match=String(raw).match(/name="selection"\r\n\r\n([^\r]*)/);const selection=JSON.parse(match[1]);posts.push(selection);
       if(posts.length===1)return route.fulfill({json:{type:'failure',status:409,data:{error:'Falha de teste. Seleção mantida.'}}});
+      if(posts.length===2){enteredSave();await saveGate;}
       data={...data,editor:{...data.editor,revision:'version-'+posts.length,items:selection.items}};fixtureStates.set(key,data);await page.evaluate(value=>window.reviewNextData=value,data);
       return route.fulfill({json:{type:'success',status:200,data:{saved:true}}});
     }
@@ -220,7 +228,8 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`website 
     fixtureStates.set(key,data);const url=origin+'/site/destaques?viatura='+id;await page.goto(url);await page.waitForFunction(()=>document.querySelectorAll('.selected-list li').length===2);await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
     assert.equal(posts.length,0,'preselection never saves on render');assert.equal(await page.locator('.photo-picker button').count(),2);await page.getByRole('button',{name:'Fotografia 2',exact:true}).click();
     const save=page.getByRole('button',{name:'Guardar destaques',exact:true});await save.click();await page.getByRole('alert').filter({hasText:'Falha de teste'}).waitFor();assert.equal(await page.getByRole('button',{name:'Fotografia 2',exact:true}).getAttribute('aria-pressed'),'true');
-    await save.click();await page.waitForFunction(()=>[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Guardar destaques')?.disabled);assert.equal(posts.at(-1).items[0].vehicleId,'other');assert.equal(posts.at(-1).items.filter(i=>i.vehicleId===id).length,1);assert.equal(posts.at(-1).items[1].photoPath,data.editor.candidates[0].photos[1].path);
+    await save.click();await saveEntered;assert.equal(await page.locator('.photo-picker button').count(),2,'picker stays open during saving');releaseSave();await page.waitForFunction(()=>document.querySelectorAll('.photo-picker button').length===0);assert.equal(posts.at(-1).items[0].vehicleId,'other');assert.equal(posts.at(-1).items.filter(i=>i.vehicleId===id).length,1);assert.equal(posts.at(-1).items[1].photoPath,data.editor.candidates[0].photos[1].path);
+    await page.locator(`[data-highlight-vehicle="${id}"]`).getByRole('button',{name:'Escolher fotografia',exact:true}).click();assert.equal(await page.getByRole('button',{name:'Fotografia 2',exact:true}).getAttribute('aria-pressed'),'true','saved picker can be reopened');
     await page.reload();await page.waitForFunction(()=>document.querySelectorAll('.photo-picker button').length===2);assert.equal(await page.getByRole('button',{name:'Fotografia 2',exact:true}).getAttribute('aria-pressed'),'true');assert.equal(await page.locator('.selected-list li').count(),2);assert.equal(posts.length,2,'reload does not duplicate or save implicitly');await page.getByRole('button',{name:'Remover destaque 2',exact:true}).click();await save.click();await page.waitForFunction(()=>[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Guardar destaques')?.disabled);assert.equal(posts.at(-1).items.some(item=>item.vehicleId===id),false);fixtureStates.set(key,{...fixture('?detail=1'),homepageHighlight:'none',isFeatured:false});await page.goto(origin+'/?detail=1');await page.getByRole('link',{name:'Destacar viatura',exact:true}).waitFor();await page.reload();await page.getByRole('link',{name:'Destacar viatura',exact:true}).waitFor();assert.equal(await page.getByText('Em destaque',{exact:true}).count(),0);
     await page.screenshot({path:path.join(appRoot,`.svelte-kit/contextual-highlight-${width}-${theme}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
   }finally{fixtureStates.delete(key);await context.close();}

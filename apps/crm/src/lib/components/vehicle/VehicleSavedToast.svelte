@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { Check, Car } from 'lucide-svelte';
-  let { title, label, detail, imageUrl, ownedUrl = false }: {
-    title: string; label: string; detail: string; imageUrl?: string; ownedUrl?: boolean;
+  let { title, label, detail, imageUrl, ownedUrl = false, onlineUrl }: {
+    title: string; label: string; detail: string; imageUrl?: string; ownedUrl?: boolean; onlineUrl?:string;
   } = $props();
   let failed = $state(false);
   onDestroy(() => { if (ownedUrl && imageUrl) URL.revokeObjectURL(imageUrl); });
@@ -10,7 +10,7 @@
 
 <div class="vehicle-success">
   <div class="vehicle-image">{#if imageUrl && !failed}<img src={imageUrl} alt="" onerror={() => failed = true} />{:else}<Car size={25} />{/if}<span><Check size={12} /></span></div>
-  <div class="copy"><strong>{title}</strong><p>{label}</p><small>{detail}</small></div>
+  <div class="copy"><strong>{title}</strong><p>{label}</p><small>{detail}</small>{#if onlineUrl}<a href={onlineUrl} target="_blank" rel="noopener noreferrer">Ver online ↗</a>{/if}</div>
 </div>
 
 <style>
@@ -22,5 +22,6 @@
   strong { font-size: 14px; line-height: 1.35; font-weight: 600; }
   p { margin: 4px 0; font-size: 13px; overflow-wrap: anywhere; }
   small { display: block; font-size: 11px; line-height: 1.45; color: var(--color-text-muted); }
+  a {display:inline-flex;align-items:center;min-height:36px;margin-top:6px;font-size:12px;font-weight:600;color:var(--color-red);text-decoration:underline;text-underline-offset:3px;}a:focus-visible{outline:2px solid var(--color-red);outline-offset:3px;border-radius:3px;}
   @media(max-width:480px) {.vehicle-success {gap:12px;padding:16px;}.vehicle-image {flex-basis:64px;width:64px;height:58px;}}
 </style>

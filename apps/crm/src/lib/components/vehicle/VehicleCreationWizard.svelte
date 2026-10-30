@@ -1,5 +1,7 @@
 <script lang="ts">
   import { readyPhoto } from '$lib/photoPreparation';
+  import { PUBLIC_WEBSITE_URL } from '$env/static/public';
+  import { publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { onMount, tick, untrack, type ComponentProps } from 'svelte';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
@@ -324,20 +326,24 @@
         );
       }
       committed = true;
+      let onlineUrl:string|undefined;
+      if(action==='publish')try{const confirmed=await sessionFetch(endpoint,{cache:'no-store'});if(confirmed.ok){const state=await confirmed.json();onlineUrl=publishedVehicleUrl(PUBLIC_WEBSITE_URL,state.vehicle);}}catch{/* The save succeeded; a link is optional if confirmation is unavailable. */}
       unregister?.();
       try { await autosave?.discard(); } catch { /* CRM save has already succeeded */ }
       saving = false;
       await tick();
       for (const form of Object.values(forms())) if (form) markFormSaved(form);
       listNavigationCache.clear();
-      vehicleSavedFeedback({ title: action === 'publish' ? 'Viatura publicada' : 'Viatura adicionada ao CRM',
+      const savedFeedback={ title: action === 'publish' ? 'Viatura publicada' : 'Viatura adicionada ao CRM',
         brand: draft.details.brand, model: draft.details.model, year: draft.details.year,
         detail: action === 'publish' ? 'O anúncio já está disponível no website.' : 'Entrada confirmada. Ainda não publicada no website.',
         photo: photoDraft.find(photo => photo.path === draft.paths[0]),
-      });
+        onlineUrl,
+      };
       await goto(crmPath(action === 'draft' ? '/viaturas' : `/viaturas/${baseline.id}`), {
         invalidateAll: true,
       });
+      vehicleSavedFeedback(savedFeedback);
     } catch (error) {
       if (committed || (sent && !responded)) needsReload = true;
       message = committed
