@@ -210,3 +210,10 @@ test('a failing sampler remains best effort and does not break the upload lifecy
   assert.equal(diagnostics.completed, 1);
   diagnostics.stop();
 });
+test('worker/loader contexts cannot duplicate RSS baselines or global process counters',()=>{
+  const moduleUrl=new URL('./runtimeDiagnostics.mjs',import.meta.url).href;
+  const workerCode=`import {parentPort} from 'node:worker_threads';import {getProcessDiagnostics} from ${JSON.stringify(moduleUrl)};parentPort.postMessage(getProcessDiagnostics().enabled);`;
+  const code=`import assert from 'node:assert/strict';import {Worker} from 'node:worker_threads';import {once} from 'node:events';const worker=new Worker(new URL('data:text/javascript,'+encodeURIComponent(${JSON.stringify(workerCode)})));const [enabled]=await once(worker,'message');assert.equal(enabled,false);await once(worker,'exit');`;
+  const result=spawnSync(process.execPath,['--import','./deployment/diagnostics-preload.mjs','--input-type=module','-e',code],{cwd:fileURLToPath(new URL('../',import.meta.url)),env:{...process.env,RUNTIME_DIAGNOSTICS:'true'},encoding:'utf8',timeout:5000});
+  assert.equal(result.status,0,result.stderr);const rows=result.stdout.trim().split('\n').map(line=>JSON.parse(line));assert.equal(rows.filter(row=>row.kind==='boot').length,1);assert.equal(rows.filter(row=>row.kind==='shutdown').length,1);
+});
