@@ -43,7 +43,7 @@ export async function optimizePhoto(input: Buffer, trace?:UploadTrace) {
     });
     trace?.phase('metadata');
     const meta = await image.metadata();
-    trace?.fields({width:meta.width??0,height:meta.height??0});trace?.phase('optimize');
+    trace?.fields({inputWidth:meta.width??0,inputHeight:meta.height??0});trace?.phase('optimize');
     if (
       !meta.width ||
       !meta.height ||

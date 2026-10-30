@@ -5,9 +5,12 @@ import { createGateway } from './gateway.mjs';
 import { clientAddressHeader } from './client-address.mjs';
 import { randomUUID } from 'node:crypto';
 import { getProcessDiagnostics } from '../shared/runtimeDiagnostics.mjs';
+import { ApplicationMemoryMonitor } from '../shared/applicationMemory.mjs';
 
 process.env.RUNTIME_DIAGNOSTICS_INSTANCE ||= randomUUID();
-const diagnostics=getProcessDiagnostics('gateway');
+process.env.RUNTIME_DIAGNOSTICS_MANAGED = 'true';
+const diagnostics = getProcessDiagnostics('gateway');
+const memoryMonitor = new ApplicationMemoryMonitor({ diagnostics });
 
 const settings = config(process.env);
 const manifest = JSON.parse(await readFile(new URL('./build.json', import.meta.url), 'utf8'));
@@ -35,20 +38,36 @@ const websiteEnv = Object.fromEntries(
   ),
 );
 const launch = (service, file, extra) => {
-  const child = spawn(process.execPath, ['--conditions=anm-runtime', '--import', './deployment/diagnostics-preload.mjs', file], {
-    stdio: 'inherit',
-    env: { ...(service === 'website' ? websiteEnv : common), ...extra, RUNTIME_DIAGNOSTICS_SERVICE:service },
-  });
+  const child = spawn(
+    process.execPath,
+    ['--conditions=anm-runtime', '--import', './deployment/diagnostics-preload.mjs', file],
+    {
+      stdio: diagnostics.enabled ? ['inherit', 'inherit', 'inherit', 'ipc'] : 'inherit',
+      env: {
+        ...(service === 'website' ? websiteEnv : common),
+        ...extra,
+        RUNTIME_DIAGNOSTICS_SERVICE: service,
+      },
+    },
+  );
   children.push(child);
-  child.on('error', () => {diagnostics.marker('child_error',{}, {child:service});shutdown(1);});
-  child.on('exit', (code,signal) => {
-    diagnostics.marker('child_exit',code===null?{}:{status:code},{child:service,signal});
+  memoryMonitor.register(service, child);
+  child.on('error', () => {
+    diagnostics.marker('child_error', {}, { child: service });
+    shutdown(1);
+  });
+  child.on('exit', (code, signal) => {
+    diagnostics.marker('child_exit', code === null ? {} : { status: code }, {
+      child: service,
+      signal,
+    });
     if (!stopping) shutdown(1);
   });
 };
 function shutdown(code = 0) {
   if (stopping) return;
   stopping = true;
+  memoryMonitor.stop();
   diagnostics.marker('shutdown_requested');
   ready = false;
   gateway.close();
@@ -99,6 +118,7 @@ launch('crm', 'apps/crm/build/index.js', {
   PUBLIC_CLERK_SIGN_IN_URL: settings.base + '/',
   BODY_SIZE_LIMIT: '20971520',
 });
+void memoryMonitor.collect();
 gateway.on('error', () => shutdown(1));
 gateway.listen(Number(process.env.PORT || 10000), '0.0.0.0');
 // Probe each internal listener without touching the database or sending email.
@@ -119,6 +139,8 @@ for (let attempt = 0; attempt < 120 && !stopping; attempt++) {
   );
   if (checks.every(Boolean)) {
     ready = true;
+    memoryMonitor.ready();
+    void memoryMonitor.collect();
     console.info('Combined service ready');
     break;
   }

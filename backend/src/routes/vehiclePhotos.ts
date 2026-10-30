@@ -152,7 +152,7 @@ router.post('/', requireUser, (req, res, next) => {
       try {
         trace.phase('derivatives');
         const { manifest } = diagnostics.enabled ? await ensurePhotoVariants(path,storedMaster,trace) : await ensurePhotoVariants(path,storedMaster);
-        trace.fields({width:manifest.width,height:manifest.height,variants:manifest.variants?.length??0});trace.phase('dimensions');
+        trace.fields({width:manifest.width,height:manifest.height,outputWidth:manifest.width,outputHeight:manifest.height,variants:manifest.variants?.length??0});trace.phase('dimensions');
         await persistPhotoDimensions(prisma, vehicleId, path, manifest);
       }
       catch { throw new PhotoUploadError(502,'Não foi possível preparar os tamanhos da fotografia. Tente guardar novamente.'); }

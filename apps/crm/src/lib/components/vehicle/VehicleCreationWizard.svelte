@@ -68,14 +68,14 @@
     details: ReturnType<typeof vehicleDetailsFromForm>;
     publication: ReturnType<typeof publicDraftFromForm>;
     step: number;
-    photos: { path: string; file?: File; preparedFile?: File; uploadId?: string; uploadedPath?: string }[];
+    photos: { path: string; file?: File; preparedFile?: File; uploadId?: string; uploadedPath?: string; preparationMetrics?: Record<string, number> }[];
   };
   function captureRecovery(): Recovery {
     const draft = snapshot('draft')!;
     return { baseUpdatedAt: baseline.updatedAt, details: draft.details, publication: draft.publication,
       step, photos: draft.paths.map(path => {
         const photo = photoDraft.find(item => item.path === path)!;
-        return { path, file: photo.file, preparedFile: photo.preparedFile, uploadId: photo.uploadId, uploadedPath: photo.uploadedPath };
+        return { path, file: photo.file, preparedFile: photo.preparedFile, uploadId: photo.uploadId, uploadedPath: photo.uploadedPath, preparationMetrics: photo.preparationMetrics };
       }) };
   }
   function protectForms() {
@@ -287,7 +287,7 @@
             'x-edit-stage': 'true',
           },
           body: photo.preparedFile,
-        });
+        }, photo.preparationMetrics);
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.path)
           throw Error(

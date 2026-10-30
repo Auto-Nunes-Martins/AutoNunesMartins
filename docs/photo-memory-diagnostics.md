@@ -1,6 +1,6 @@
 # Diagnóstico de memória durante fotografias
 
-Opcional e **desligado por omissão**. Não altera compressão, WebP84, masters, admissão ou entrega. O destino normal é stdout JSON estruturado, recolhido pelo alojamento, sem ficheiros/DB da aplicação. Não foram ativadas opções ou feito deploy no Render.
+Opcional e **desligado por omissão**. Não altera compressão, WebP84, masters, admissão ou entrega. O destino normal é stdout JSON estruturado, recolhido pelo alojamento, sem ficheiros/DB da aplicação. Não foram ativadas flags em produção. Um push para main pode acionar o deploy configurado pelo alojamento; o exemplo versionado tem `autoDeployTrigger: off`, mas não comprova a configuração efetiva do serviço.
 
 ## Ativação
 
@@ -11,15 +11,35 @@ Opcional e **desligado por omissão**. Não altera compressão, WebP84, masters,
 
 ## O que ler
 
+### Baseline total independente dos uploads
+
+No launcher combinado, `application_memory` recolhe gateway, API, CRM e website na mesma janela, por IPC privado entre processos filhos registados. O supervisor de arranque e o gateway são o mesmo PID; não são contados 2 vezes. O preload responde com heap/RSS/CPU próprios; `sampleSkewMs`, início/fim e idade das amostras expõem o desfasamento, em vez de prometer uma medição atómica. Cada resposta tem prazo de 750 ms; não há filas de recolhas. Falhas, amostras em falta e logs descartados ficam explícitos. O modo gerido elimina baselines periódicos duplicados nos filhos, mantendo os samplers de upload. Sem o launcher, permanecem baselines individuais, sem alegar cobertura global.
+
+A recolha global começa depois das migrações de arranque, quando o gateway é importado. O pico da vida do cgroup pode incluir esse período anterior; não o atribuir aos uploads ou aos processos observados sem evidência temporal.
+
+Linux resolve `/proc/self/cgroup` e mountinfo para cgroup v1/v2, incluindo caminhos aninhados e namespaces. `currentBytes` é o uso medido pelo controlador, `limitBytes` a quota visível e `peakBytes` o máximo da vida do cgroup, que pode preceder este boot. `effectiveHeadroomBytes` é a menor margem observada no cgroup e até 8 níveis ancestrais visíveis; quotas ancestrais podem ser partilhadas. A cobertura do percurso é indicada; limites ocultos ou não legíveis continuam desconhecidos. `max`, sentinelas ilimitadas, ficheiros ausentes e permissões não são convertidos em RAM livre do host. Nunca usar a RAM da máquina como quota da aplicação.
+
+`components` inclui anon/file/kernel/socket/slab/page tables quando disponíveis. Cache, kernel e memória nativa ajudam a investigar o total, mas estes contadores podem sobrepor-se. Não atribuir automaticamente a diferença entre cgroup e RSS a 1 serviço. `sumProcessRssBytes` é apenas soma descritiva com sobreposição possível; **não é o total do contentor**. Heap/external/arrayBuffers também não se somam a RSS.
+
+O inventário Linux percorre apenas descendentes do PID da aplicação, com ficheiros `children`, `stat` e `status`, até 64 processos e profundidade 8. Não enumera `/proc` globalmente nem lê comandos, ambientes ou nomes. Descendentes recebem o papel do serviço (`backend:worker`, etc.); heap exige cooperação Node, caso contrário fica desconhecido. PID + start ticks/boot distinguem reutilizações. Nascimentos/saídas e limites de cobertura são registados. Processos demasiado breves entre 2 recolhas podem não ser vistos. Em Windows só há os processos registados por IPC; não existe medição cgroup ou margem de quota, nem enumeração de processos alheios.
+
+Os estados `startup`, `warmup` (60 s depois de ready), `activity`, `post_activity` (30 s) e `idle` organizam a observação; são janelas operacionais, não prova de aquecimento completo. Tendências por identidade mantêm primeiro/mínimo/máximo/delta, com estado limitado a 64 identidades vivas. Um baseline alto continua **por explicar** (`baselineNormality: not_determined`), mesmo que estável ou sem crescimento após uploads. Medir arranque, navegação habitual e idle no runtime de produção, comparar cgroup com quota e observar várias séries antes de concluir capacidade ou leak. Não extrapolar Vite local para o SSR de produção ou uma quota de 512 MB.
+
+Heap cooperativo descreve o isolate principal Node; worker threads podem ter heaps adicionais dentro do mesmo RSS do PID. Não criar entradas RSS separadas por thread. CPU de descendentes Linux sem cooperação permanece em ticks do kernel, sem presumir uma frequência para converter.
+
+Todas as saídas humanas do analisador usam **MB = 1000000 bytes**, números em algarismos. Os eventos brutos usam bytes. O analisador mantém até 128 boots e 50 amostras globais recentes por boot; o histórico completo depende da retenção do alojamento.
+
 `boot`/`baseline` dão RSS, heapUsed/heapTotal, external, arrayBuffers, CPU user/system cumulativa e uptime. **Não somar estas categorias**: arrayBuffers está incluído em external e outras regiões já estão dentro de RSS. Os deltas de CPU entre timestamps dão CPU de todo o processo naquele intervalo, incluindo pedidos concorrentes; não são CPU exclusiva da foto. O relay CRM também amostra o seu próprio processo enquanto encaminha o upload e aguarda a API; website/gateway têm baseline periódico. Em Linux, baseline/idle incluem memória/limite cgroup quando disponíveis, e a API amostra também o uso cgroup durante uploads, abrangendo a instância. Não somar RSS dos processos para fingir uso exato do contentor.
 
 `upload_start`, `upload_phase`, `upload_sample`, `upload_end` ligam receber, metadata, otimizar, sanear, Storage, codificar/publicar derivados, dimensões e finalizar. Incluem duração da fase anterior, duração total, picos **amostrados** e resultado/estado HTTP. Fases que terminam entre amostras podem ter picos superiores aos observados. Reutilizações válidas podem saltar etapas. Rejeições de admissão contam globalmente e os seus eventos são limitados a um por 5 s. Desconexões contam como abortadas quando observadas; erros não incluem mensagem, stack, caminhos ou credenciais.
+
+Cada fase preserva `phasePeak` e `phasePeakAt`, mesmo em uploads abaixo de 5 s, e o pico global conserva fase, timestamp e tempo desde o início em `peakAt`. CPU por fase é CPU de todo o processo no intervalo. `inputWidth/inputHeight` identificam o input recebido pelo servidor; `outputWidth/outputHeight` identificam o master final. As dimensões originais do browser são separadas. Métricas numéricas mínimas de preparação acompanham o File e os rascunhos recuperáveis, mesmo que a telemetria ainda estivesse desligada; só são transmitidas com opt-in. Rascunhos antigos sem dados declaram `preparationCoverage: 0`; não se inventam dimensões ou tempos.
 
 `idle` ajuda a distinguir memória que regressa da que permanece alta. RSS elevada depois de libertar buffers pode refletir allocator/VIPS/memória nativa reutilizável e **não prova leak**. Comparar várias séries, idle e boots, heap/external, duração e cgroup. Um OOM/SIGKILL pode impedir o último log: correlacionar o novo boot, `child_exit` do gateway e eventos/limite do alojamento. A retenção e pesquisa dos logs dependem do plano/configuração da plataforma; esta instrumentação não garante histórico da Render.
 
 ## Teste seguro e análise
 
-1. `node --test shared/runtimeDiagnostics.test.mjs`: testes determinísticos de amostragem de pico intermédio, dez uploads globais, estado/timers limitados, opt-out, contrapressão e privacidade.
+1. `node --test shared/runtimeDiagnostics.test.mjs shared/applicationMemory.test.mjs`: cgroup v1/v2, quota/indisponibilidade, inventário limitado, IPC, churn de PID, RSS sobreposta, picos por fase, 10 uploads globais, opt-out e limites de estado.
 2. `node node_modules/tsx/dist/cli.mjs backend/scripts/photo-memory-harness.mjs > photo-memory-harness.log`: fixture sintética, 1 + 10 fotografias sequenciais com optimizer/derivados reais e Storage simulado. Rede bloqueada no harness; não usa DB, credenciais ou viaturas reais. Os ciclos não repõem contadores por viatura. Observa idle depois das duas séries. Resultados Windows locais não demonstram o consumo do Linux/Render, nem incluem a latência real de Storage.
 3. `node scripts/summarize-photo-diagnostics.mjs backend.log crm.log website.log`: resumo por boot/processo, até 50 uploads recentes por processo, picos observados, idle, CPU e transferências correlacionadas. Lê linha a linha e ignora logs que não pertencem ao diagnóstico.
 4. Para teste humano local, ativar apenas os processos de desenvolvimento do checkout principal, confirmar eventos `boot` e `baseline`, e só depois carregar as 10 fotos pela interface real. Não executar uploads em viaturas reais automaticamente. Os logs locais capturam Vite em vez do runtime SSR de produção: comparar tendências e etapas, não concluir capacidade do contentor de 512 MB a partir do total local.

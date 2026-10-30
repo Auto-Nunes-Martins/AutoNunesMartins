@@ -2,6 +2,28 @@ import { sessionFetch } from '$lib/auth/session';
 
 type Metrics = Record<string, number>;
 const prepared = new WeakMap<Blob, Metrics>();
+export function getPreparationMetrics(file: Blob): Metrics | undefined {
+  const value = prepared.get(file);
+  return value ? { ...value } : undefined;
+}
+function preservedMetrics(value?: Metrics): Metrics | undefined {
+  if (!value) return;
+  const result: Metrics = {};
+  for (const key of [
+    'originalBytes',
+    'preparedBytes',
+    'originalWidth',
+    'originalHeight',
+    'preparedWidth',
+    'preparedHeight',
+    'preparationMs',
+    'queueMs',
+  ]) {
+    const n = value[key];
+    if (typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 100000000) result[key] = n;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
 /** Explicit browser opt-in. No file names, paths, plates, user IDs or image data. */
 export function photoDiagnosticsEnabled() {
   try {
@@ -32,7 +54,6 @@ export function recordPreparation(
   startedAt: number,
   dimensions: Metrics = {},
 ) {
-  if (!photoDiagnosticsEnabled()) return;
   const metrics = {
     originalBytes: original.size,
     preparedBytes: output?.size ?? 0,
@@ -41,6 +62,7 @@ export function recordPreparation(
     ...dimensions,
   };
   if (output) prepared.set(output, metrics);
+  if (!photoDiagnosticsEnabled()) return;
   console.info(
     JSON.stringify({
       event: 'photo_client_diagnostics',
@@ -50,16 +72,31 @@ export function recordPreparation(
     }),
   );
 }
-export async function photoUpload(input: string, init: RequestInit): Promise<Response> {
+export async function photoUpload(
+  input: string,
+  init: RequestInit,
+  recoveryMetrics?: Metrics,
+): Promise<Response> {
   if (!photoDiagnosticsEnabled()) return sessionFetch(input, init);
   const trace = crypto.randomUUID(),
     started = performance.now(),
     headers = new Headers(init.headers);
   const file = init.body instanceof Blob ? init.body : undefined;
+  const known = (file && prepared.get(file)) ?? preservedMetrics(recoveryMetrics);
   headers.set('x-photo-trace-id', trace);
   headers.set(
     'x-photo-metrics',
-    JSON.stringify({ ...((file && prepared.get(file)) ?? {}), preparedBytes: file?.size ?? 0 }),
+    JSON.stringify({
+      ...(known ?? {}),
+      preparedBytes: file?.size ?? 0,
+      preparationCoverage:
+        known &&
+        Number.isFinite(known.preparationMs) &&
+        Number.isFinite(known.originalWidth) &&
+        Number.isFinite(known.originalHeight)
+          ? 1
+          : 0,
+    }),
   );
   try {
     const response = await sessionFetch(input, { ...init, headers });

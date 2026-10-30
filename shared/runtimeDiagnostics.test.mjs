@@ -74,6 +74,12 @@ test('samples an in-flight peak that is absent at both endpoints', () => {
   assert.equal(end.active, 0);
   assert.equal(end.uploadsCompleted, 1);
   assert.ok(end.samples >= 3);
+  assert.equal(end.peakAt.rss.phase, 'lookup');
+  assert.equal(end.peakAt.rss.elapsedMs, 250);
+  const phase = f.logs.find((row) => row.kind === 'upload_phase');
+  assert.equal(phase.phasePeak.rss, 900);
+  assert.equal(phase.phasePeakAt.rss.elapsedMs, 250);
+  assert.equal(phase.processCpuUserUs, 50000);
   f.diagnostics.stop();
   assert.equal(f.timers.size, 0);
 });
@@ -97,6 +103,23 @@ test('ten sequential photos across arbitrary editors share global monotonic coun
   f.time(50000);
   [...f.timers].find((t) => t.ms === 5000).fn();
   assert.equal(f.timers.size, 1);
+  f.diagnostics.stop();
+});
+test('initial maxima retain their timestamp and input dimensions survive final dimensions', () => {
+  const f = fixture();
+  f.memory(900);
+  const trace = f.diagnostics.begin();
+  trace.fields({ inputWidth: 4000, inputHeight: 3000 });
+  f.time(100);
+  f.memory(100);
+  trace.phase('storage');
+  trace.fields({ outputWidth: 1600, outputHeight: 1200 });
+  trace.finish('ok');
+  const end = f.logs.find((r) => r.kind === 'upload_end');
+  assert.equal(end.peakAt.rss.elapsedMs, 0);
+  assert.equal(end.peakAt.rss.phase, 'lookup');
+  assert.equal(end.metrics.inputWidth, 4000);
+  assert.equal(end.metrics.outputWidth, 1600);
   f.diagnostics.stop();
 });
 test('metadata allowlist rejects strings, paths, nonfinite numbers, images and oversized headers', () => {
@@ -210,10 +233,25 @@ test('a failing sampler remains best effort and does not break the upload lifecy
   assert.equal(diagnostics.completed, 1);
   diagnostics.stop();
 });
-test('worker/loader contexts cannot duplicate RSS baselines or global process counters',()=>{
-  const moduleUrl=new URL('./runtimeDiagnostics.mjs',import.meta.url).href;
-  const workerCode=`import {parentPort} from 'node:worker_threads';import {getProcessDiagnostics} from ${JSON.stringify(moduleUrl)};parentPort.postMessage(getProcessDiagnostics().enabled);`;
-  const code=`import assert from 'node:assert/strict';import {Worker} from 'node:worker_threads';import {once} from 'node:events';const worker=new Worker(new URL('data:text/javascript,'+encodeURIComponent(${JSON.stringify(workerCode)})));const [enabled]=await once(worker,'message');assert.equal(enabled,false);await once(worker,'exit');`;
-  const result=spawnSync(process.execPath,['--import','./deployment/diagnostics-preload.mjs','--input-type=module','-e',code],{cwd:fileURLToPath(new URL('../',import.meta.url)),env:{...process.env,RUNTIME_DIAGNOSTICS:'true'},encoding:'utf8',timeout:5000});
-  assert.equal(result.status,0,result.stderr);const rows=result.stdout.trim().split('\n').map(line=>JSON.parse(line));assert.equal(rows.filter(row=>row.kind==='boot').length,1);assert.equal(rows.filter(row=>row.kind==='shutdown').length,1);
+test('worker/loader contexts cannot duplicate RSS baselines or global process counters', () => {
+  const moduleUrl = new URL('./runtimeDiagnostics.mjs', import.meta.url).href;
+  const workerCode = `import {parentPort} from 'node:worker_threads';import {getProcessDiagnostics} from ${JSON.stringify(moduleUrl)};parentPort.postMessage(getProcessDiagnostics().enabled);`;
+  const code = `import assert from 'node:assert/strict';import {Worker} from 'node:worker_threads';import {once} from 'node:events';const worker=new Worker(new URL('data:text/javascript,'+encodeURIComponent(${JSON.stringify(workerCode)})));const [enabled]=await once(worker,'message');assert.equal(enabled,false);await once(worker,'exit');`;
+  const result = spawnSync(
+    process.execPath,
+    ['--import', './deployment/diagnostics-preload.mjs', '--input-type=module', '-e', code],
+    {
+      cwd: fileURLToPath(new URL('../', import.meta.url)),
+      env: { ...process.env, RUNTIME_DIAGNOSTICS: 'true' },
+      encoding: 'utf8',
+      timeout: 5000,
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const rows = result.stdout
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line));
+  assert.equal(rows.filter((row) => row.kind === 'boot').length, 1);
+  assert.equal(rows.filter((row) => row.kind === 'shutdown').length, 1);
 });

@@ -1,5 +1,5 @@
 import PreparationWorker from './photoPreparation.worker?worker';
-import { photoDiagnosticsEnabled, recordPreparation } from './photoDiagnostics';
+import { recordPreparation, getPreparationMetrics } from './photoDiagnostics';
 
 export const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
 export function validatePhoto(file: File) {
@@ -15,26 +15,27 @@ export function validatePhoto(file: File) {
 // heaps after each image, including nested HEIC workers, failures and cancellation.
 let tail: Promise<unknown> = Promise.resolve();
 export function preparePhoto(file: File, signal?: AbortSignal): Promise<File> {
-  const queuedAt=photoDiagnosticsEnabled()?performance.now():undefined;
+  const queuedAt = performance.now();
   const run = tail
     .catch(() => {})
     .then(
       () =>
         new Promise<File>((resolve, reject) => {
-          const startedAt=performance.now();
+          const startedAt = performance.now();
           if (signal?.aborted) {
             reject(new DOMException('Cancelado', 'AbortError'));
             return;
           }
           let worker: Worker;
           let timer: ReturnType<typeof setTimeout>;
-          let finished=false;
-          const finish = (error?: Error, output?: File, dimensions?:Record<string,number>) => {
-            if(finished)return;finished=true;
+          let finished = false;
+          const finish = (error?: Error, output?: File, dimensions?: Record<string, number>) => {
+            if (finished) return;
+            finished = true;
             clearTimeout(timer);
             signal?.removeEventListener('abort', cancel);
             worker?.terminate();
-            if(queuedAt!==undefined)recordPreparation(file,output,queuedAt,startedAt,dimensions);
+            recordPreparation(file, output, queuedAt, startedAt, dimensions);
             if (error) reject(error);
             else resolve(output!);
           };
@@ -74,13 +75,18 @@ export async function readyPhoto(photo: {
   preparation?: Promise<File>;
   preparedFile?: File;
   preparationError?: string;
+  preparationMetrics?: Record<string, number>;
 }) {
-  if (photo.preparedFile) return photo.preparedFile;
+  if (photo.preparedFile) {
+    photo.preparationMetrics ??= getPreparationMetrics(photo.preparedFile);
+    return photo.preparedFile;
+  }
   if (photo.preparationError) throw Error(photo.preparationError);
   photo.preparation ??= preparePhoto(photo.file!);
   try {
     const file = await photo.preparation;
     photo.preparedFile = file;
+    photo.preparationMetrics = getPreparationMetrics(file);
     return file;
   } catch (error) {
     if (error instanceof Error && error.name !== 'AbortError')

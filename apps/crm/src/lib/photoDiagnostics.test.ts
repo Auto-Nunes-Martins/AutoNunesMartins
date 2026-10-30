@@ -1,13 +1,32 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
 vi.mock('$lib/auth/session', () => ({ sessionFetch: mocks.fetch }));
-import { photoUpload, recordPreparation } from './photoDiagnostics';
+import { photoUpload, recordPreparation, getPreparationMetrics } from './photoDiagnostics';
 beforeEach(() => {
   vi.restoreAllMocks();
   mocks.fetch.mockReset();
   vi.stubGlobal('window', {});
   vi.stubGlobal('localStorage', { getItem: () => 'true' });
   vi.spyOn(console, 'info').mockImplementation(() => {});
+});
+it('retains numeric preparation across opt-in changes and recovered File objects, marks old drafts absent', async () => {
+  vi.stubGlobal('localStorage', { getItem: () => null });
+  const file = new File(['image'], 'private.jpg');
+  recordPreparation(file, file, 0, 1, { originalWidth: 4000, originalHeight: 3000 });
+  const metrics = getPreparationMetrics(file);
+  expect(metrics?.originalWidth).toBe(4000);
+  expect(console.info).not.toHaveBeenCalled();
+  vi.stubGlobal('localStorage', { getItem: () => 'true' });
+  mocks.fetch.mockImplementation(() => Promise.resolve(new Response('{}')));
+  const recovered = new File(['image'], 'recovered.jpg');
+  await photoUpload('/photos', { method: 'POST', body: recovered }, metrics);
+  expect(
+    JSON.parse(mocks.fetch.mock.calls[0]![1].headers.get('x-photo-metrics')).preparationCoverage,
+  ).toBe(1);
+  await photoUpload('/photos', { method: 'POST', body: new File(['old'], 'old.jpg') });
+  expect(
+    JSON.parse(mocks.fetch.mock.calls[1]![1].headers.get('x-photo-metrics')).preparationCoverage,
+  ).toBe(0);
 });
 it('forwards bounded numeric preparation metrics with a fresh random correlation, then a small authenticated result', async () => {
   const file = new File(['image'], 'private-name.jpg', { type: 'image/jpeg' });

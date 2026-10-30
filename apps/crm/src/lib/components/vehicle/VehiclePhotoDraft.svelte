@@ -5,6 +5,7 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
+  import { getPreparationMetrics } from '$lib/photoDiagnostics';
   import { framingStyle, type PhotoFraming } from '@anm/types';
   import { PHOTO_ACCEPT, validatePhoto, preparePhoto } from '$lib/photoPreparation';
   import { crmPath } from '$lib/paths';
@@ -35,6 +36,7 @@
       const current = photos.find(item => item.path === photo.path);
       if (!current || controller.signal.aborted) return;
       current.preparedFile = file;
+      current.preparationMetrics = getPreparationMetrics(file);
       const url = URL.createObjectURL(file); urls.add(url); current.url = url;
       if (notice) notice = { ...notice, accepted: notice.accepted.map(item => item.path === current.path ? current : item) };
       failedCoverUrl = '';

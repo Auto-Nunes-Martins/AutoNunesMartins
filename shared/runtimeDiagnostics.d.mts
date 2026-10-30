@@ -18,6 +18,15 @@ export interface UploadTrace {
 }
 export interface Diagnostics {
   enabled: boolean;
+  capture(): {
+    pid: number;
+    service: string;
+    instance: string;
+    boot: string;
+    sampledAtEpochMs: number;
+    rss: number | null;
+    [key: string]: unknown;
+  };
   begin(id?: string, metrics?: Record<string, number>): UploadTrace;
   rejection(): void;
   clientTransfer(id: string, metrics: Record<string, number>, outcome: string): boolean;

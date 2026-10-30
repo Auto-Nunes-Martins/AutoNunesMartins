@@ -256,7 +256,7 @@
             'x-edit-stage': 'true',
           },
           body: photo.preparedFile,
-        });
+        }, photo.preparationMetrics);
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.path) {
           editIssues = [

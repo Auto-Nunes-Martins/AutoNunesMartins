@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { isMainThread, threadId } from 'node:worker_threads';
+import { createCgroupReader } from './containerMemory.mjs';
 
 const numericKeys = new Set([
   'inputBytes',
@@ -18,6 +18,11 @@ const numericKeys = new Set([
   'height',
   'variants',
   'status',
+  'inputWidth',
+  'inputHeight',
+  'outputWidth',
+  'outputHeight',
+  'preparationCoverage',
 ]);
 const phases = new Set([
   'lookup',
@@ -62,22 +67,15 @@ export function correlationId(value) {
     ? value
     : randomUUID();
 }
-function containerMemory() {
-  for (const [usage, limit] of [
-    ['/sys/fs/cgroup/memory.current', '/sys/fs/cgroup/memory.max'],
-    ['/sys/fs/cgroup/memory/memory.usage_in_bytes', '/sys/fs/cgroup/memory/memory.limit_in_bytes'],
-  ]) {
-    try {
-      const bytes = Number(readFileSync(usage, 'utf8').trim()),
-        max = Number(readFileSync(limit, 'utf8').trim());
-      return {
-        containerBytes: Number.isFinite(bytes) ? bytes : undefined,
-        containerLimitBytes:
-          Number.isFinite(max) && max < Number.MAX_SAFE_INTEGER ? max : undefined,
-      };
-    } catch {}
-  }
-  return {};
+const cgroups = createCgroupReader();
+function containerMemory(detail = true) {
+  const cgroup = cgroups.read({ detail });
+  return {
+    cgroup,
+    containerBytes: cgroup.currentBytes ?? undefined,
+    containerLimitBytes: cgroup.limitBytes ?? undefined,
+    containerHeadroomBytes: cgroup.effectiveHeadroomBytes ?? undefined,
+  };
 }
 function snapshot() {
   const memory = process.memoryUsage(),
@@ -100,7 +98,9 @@ export class ProcessDiagnostics {
     const env = options.env ?? process.env;
     // Loader/worker contexts share process RSS but have separate globals. Count the process once.
     this.enabled = env.RUNTIME_DIAGNOSTICS === 'true' && isMainThread;
-    this.service = ['backend', 'website', 'crm', 'gateway', 'harness'].includes(options.service)
+    this.service = ['backend', 'website', 'crm', 'gateway', 'supervisor', 'harness'].includes(
+      options.service,
+    )
       ? options.service
       : 'backend';
     this.boot = randomUUID();
@@ -109,9 +109,12 @@ export class ProcessDiagnostics {
     const readSample = options.sample ?? snapshot;
     this.sample = () => {
       try {
-        return readSample();
+        const value = readSample();
+        this.sampleAvailable = true;
+        return value;
       } catch {
         this.dropped = (this.dropped ?? 0) + 1;
+        this.sampleAvailable = false;
         return {
           atMs: performance.now(),
           uptimeMs: Math.round(process.uptime() * 1000),
@@ -151,9 +154,28 @@ export class ProcessDiagnostics {
     this.clientCount = 0;
     if (this.enabled) {
       this.emit('boot', {}, true);
-      this.baseline = this.interval(() => this.emit('baseline', {}, true), this.baselineMs);
-      this.baseline.unref?.();
+      if (env.RUNTIME_DIAGNOSTICS_MANAGED !== 'true') {
+        this.baseline = this.interval(() => this.emit('baseline', {}, true), this.baselineMs);
+        this.baseline.unref?.();
+      }
     }
+  }
+  capture() {
+    const point = this.sample();
+    return {
+      service: this.service,
+      instance: this.instance,
+      boot: this.boot,
+      pid: this.pid,
+      thread: threadId,
+      ...point,
+      rss: this.sampleAvailable ? point.rss : null,
+      sampledAtEpochMs: Date.now(),
+      active: this.active.size,
+      uploadsStarted: this.sequence,
+      uploadsCompleted: this.completed,
+      uploadsFailed: this.failed,
+    };
   }
   emit(kind, fields = {}, includeContainer = false) {
     if (!this.enabled || this.stopped) return;
@@ -168,7 +190,7 @@ export class ProcessDiagnostics {
         instance: this.instance,
         boot: this.boot,
         pid: this.pid,
-        thread:threadId,
+        thread: threadId,
         ...point,
         ...(includeContainer ? this.container() : {}),
         active: this.active.size,
@@ -205,12 +227,27 @@ export class ProcessDiagnostics {
       this.idle = undefined;
     }
     const start = this.sample(),
+      initialAt = { phase: 'lookup', elapsedMs: 0, time: new Date().toISOString() },
       state = {
         id: correlationId(id),
         sequence: ++this.sequence,
         start: start.atMs,
         phase: 'lookup',
         phaseStart: start.atMs,
+        wallStart: Date.now(),
+        phaseCpu: { user: start.cpuUserUs, system: start.cpuSystemUs },
+        phasePeak: {
+          rss: start.rss,
+          heapUsed: start.heapUsed,
+          external: start.external,
+          arrayBuffers: start.arrayBuffers,
+        },
+        phasePeakAt: Object.fromEntries(
+          ['rss', 'heapUsed', 'external', 'arrayBuffers'].map((key) => [key, initialAt]),
+        ),
+        peakAt: Object.fromEntries(
+          ['rss', 'heapUsed', 'external', 'arrayBuffers'].map((key) => [key, initialAt]),
+        ),
         peak: {
           rss: start.rss,
           heapUsed: start.heapUsed,
@@ -233,23 +270,42 @@ export class ProcessDiagnostics {
     };
     const phase = (name, values = {}) => {
       if (!this.active.has(token) || !phases.has(name)) return;
-      this.observe(state);
-      const now = this.sample().atMs;
+      const sampled = this.observe(state) ?? this.sample();
+      const now = sampled.atMs;
       this.emit('upload_phase', {
         trace: state.id,
         upload: state.sequence,
         phase: state.phase,
         nextPhase: name,
         phaseMs: Math.max(0, now - state.phaseStart),
+        phasePeak: { ...state.phasePeak },
+        phasePeakAt: { ...state.phasePeakAt },
+        processCpuUserUs: Math.max(0, sampled.cpuUserUs - state.phaseCpu.user),
+        processCpuSystemUs: Math.max(0, sampled.cpuSystemUs - state.phaseCpu.system),
         ...safeMetrics(values),
       });
       state.phase = name;
       state.phaseStart = now;
+      state.phaseCpu = { user: sampled.cpuUserUs, system: sampled.cpuSystemUs };
+      state.phasePeak = {
+        rss: sampled.rss,
+        heapUsed: sampled.heapUsed,
+        external: sampled.external,
+        arrayBuffers: sampled.arrayBuffers,
+      };
+      const boundary = {
+        phase: name,
+        elapsedMs: Math.max(0, now - state.start),
+        time: new Date(state.wallStart + Math.max(0, now - state.start)).toISOString(),
+      };
+      state.phasePeakAt = Object.fromEntries(
+        ['rss', 'heapUsed', 'external', 'arrayBuffers'].map((key) => [key, boundary]),
+      );
     };
     const finish = (outcome = 'error', values = {}) => {
       if (!this.active.has(token)) return;
-      this.observe(state);
-      const now = this.sample().atMs;
+      const sampled = this.observe(state) ?? this.sample(),
+        now = sampled.atMs;
       this.active.delete(token);
       if (this.recent.size >= 256) this.recent.delete(this.recent.keys().next().value);
       this.recent.set(state.id, { until: now + 300000, upload: state.sequence });
@@ -263,6 +319,11 @@ export class ProcessDiagnostics {
         phaseMs: Math.max(0, now - state.phaseStart),
         durationMs: Math.max(0, now - state.start),
         peak: state.peak,
+        peakAt: state.peakAt,
+        phasePeak: state.phasePeak,
+        phasePeakAt: state.phasePeakAt,
+        processCpuUserUs: Math.max(0, sampled.cpuUserUs - state.phaseCpu.user),
+        processCpuSystemUs: Math.max(0, sampled.cpuSystemUs - state.phaseCpu.system),
         samples: state.samples,
         metrics: state.metrics,
         ...safeMetrics(values),
@@ -287,12 +348,33 @@ export class ProcessDiagnostics {
     try {
       const sample = this.sample();
       state.samples++;
-      for (const key of ['rss', 'heapUsed', 'external', 'arrayBuffers'])
-        state.peak[key] = Math.max(state.peak[key], sample[key]);
+      const at = {
+        phase: state.phase,
+        elapsedMs: Math.max(0, sample.atMs - state.start),
+        time: new Date(state.wallStart + Math.max(0, sample.atMs - state.start)).toISOString(),
+      };
+      for (const key of ['rss', 'heapUsed', 'external', 'arrayBuffers']) {
+        if (sample[key] > state.peak[key]) {
+          state.peak[key] = sample[key];
+          state.peakAt[key] = at;
+        }
+        if (sample[key] > state.phasePeak[key]) {
+          state.phasePeak[key] = sample[key];
+          state.phasePeakAt[key] = at;
+        }
+      }
       if (this.service === 'backend') {
-        const current = this.container().containerBytes;
-        if (Number.isFinite(current))
-          state.peak.containerBytes = Math.max(state.peak.containerBytes ?? 0, current);
+        const current = this.container(false).containerBytes;
+        if (Number.isFinite(current)) {
+          if (current >= (state.peak.containerBytes ?? 0)) {
+            state.peak.containerBytes = current;
+            state.peakAt.containerBytes = at;
+          }
+          if (current >= (state.phasePeak.containerBytes ?? 0)) {
+            state.phasePeak.containerBytes = current;
+            state.phasePeakAt.containerBytes = at;
+          }
+        }
       }
       return sample;
     } catch {
@@ -380,6 +462,37 @@ export function getProcessDiagnostics(
     globalThis[monitor] = true;
     process.once('exit', () => diagnostics.stop());
     process.on('uncaughtExceptionMonitor', () => diagnostics.marker('uncaught_exception'));
+    if (process.send) {
+      let replyPending = false;
+      process.on('message', (message) => {
+        if (
+          replyPending ||
+          diagnostics.stopped ||
+          message?.type !== 'anm:memory:sample' ||
+          typeof message.collection !== 'string' ||
+          !/^[a-f0-9-]{36}$/i.test(message.collection)
+        )
+          return;
+        try {
+          if (process.connected) {
+            replyPending = true;
+            process.send(
+              {
+                type: 'anm:memory:snapshot',
+                collection: message.collection,
+                snapshot: diagnostics.capture(),
+              },
+              () => {
+                replyPending = false;
+              },
+            );
+          }
+        } catch {
+          replyPending = false;
+        }
+      });
+      process.channel?.unref?.();
+    }
   }
   return diagnostics;
 }
