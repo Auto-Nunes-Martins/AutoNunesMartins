@@ -28,10 +28,8 @@
   let start:
     | {
         id: number;
-        x: number;
         y: number;
         position: { x: number; y: number };
-        overflowX: number;
         overflowY: number;
       }
     | undefined;
@@ -53,10 +51,8 @@
     );
     start = {
       id: event.pointerId,
-      x: event.clientX,
       y: event.clientY,
       position: { ...position },
-      overflowX: image.naturalWidth * scale - frame.clientWidth,
       overflowY: image.naturalHeight * scale - frame.clientHeight,
     };
     frame.setPointerCapture(event.pointerId);
@@ -64,11 +60,28 @@
   function move(event: PointerEvent) {
     if (!start || disabled || event.pointerId !== start.id) return;
     set(
-      start.position.x -
-        (start.overflowX > 0.5 ? ((event.clientX - start.x) / start.overflowX) * 100 : 0),
+      start.position.x,
       start.position.y -
         (start.overflowY > 0.5 ? ((event.clientY - start.y) / start.overflowY) * 100 : 0),
     );
+  }
+  function keydown(event: KeyboardEvent) {
+    if (disabled) return;
+    const step = event.shiftKey ? 10 : 2;
+    const y =
+      event.key === 'ArrowUp'
+        ? position.y + step
+        : event.key === 'ArrowDown'
+          ? position.y - step
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? 100
+              : undefined;
+    if (y !== undefined) {
+      event.preventDefault();
+      set(position.x, y);
+    }
   }
 </script>
 
@@ -93,13 +106,19 @@
       >Telemóvel</button
     >
   </div>
-  <p>Arraste a fotografia para manter o carro visível. Cada dispositivo tem o seu ajuste.</p>
+  <p>Arraste a fotografia para cima ou para baixo, até o carro ficar bem enquadrado.</p>
   <div
     class="preview"
     style:aspect-ratio={ratio}
     class:mobile={device === 'mobile'}
-    role="img"
-    aria-label="Pré-visualização do recorte"
+    role="slider"
+    tabindex={disabled ? -1 : 0}
+    aria-label="Posição da fotografia"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow={position.y}
+    aria-disabled={disabled}
+    onkeydown={keydown}
     onpointerdown={begin}
     onpointermove={move}
     onpointerup={() => (start = undefined)}
@@ -113,30 +132,6 @@
       draggable="false"
       style:object-position={`${position.x}% ${position.y}%`}
     />
-  </div>
-  <div class="sliders">
-    <label
-      >Horizontal <input
-        type="range"
-        min="0"
-        max="100"
-        step="0.1"
-        value={position.x}
-        {disabled}
-        oninput={(event) => set(Number(event.currentTarget.value), position.y)}
-      /></label
-    >
-    <label
-      >Vertical <input
-        type="range"
-        min="0"
-        max="100"
-        step="0.1"
-        value={position.y}
-        {disabled}
-        oninput={(event) => set(position.x, Number(event.currentTarget.value))}
-      /></label
-    >
   </div>
   <p class="note">
     {context === 'featured'
@@ -179,7 +174,7 @@
     cursor: default;
   }
   button:focus-visible,
-  input:focus-visible {
+  .preview:focus-visible {
     outline: 2px solid var(--color-red);
     outline-offset: 3px;
   }
@@ -221,22 +216,6 @@
     height: 100%;
     object-fit: cover;
     pointer-events: none;
-  }
-  .sliders {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 12px;
-  }
-  label {
-    font-size: 12px;
-    color: var(--color-text-muted);
-  }
-  input {
-    display: block;
-    width: 100%;
-    min-height: 32px;
-    accent-color: var(--color-red);
   }
   .note {
     font-size: 11px;

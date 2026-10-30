@@ -119,7 +119,8 @@ const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertica
         assert.equal(value.mobile.y, 50);
         await editor.getByRole('button', { name: 'Telemóvel', exact: true }).click();
         assert.equal(await position(), '50% 50%');
-        await editor.getByLabel('Vertical', { exact: true }).focus();
+        assert.equal(await editor.locator('input[type=range]').count(), 0);
+        await editor.getByRole('slider', { name: 'Posição da fotografia' }).focus();
         await page.keyboard.press('End');
         value = JSON.parse(await page.locator('#value').textContent());
         assert.equal(value.mobile.y, 100);
@@ -160,7 +161,7 @@ const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertica
         );
         await page.getByRole('button', { name: 'Enquadrar', exact: true }).first().click();
         const gallery = page.locator('.framing-editor');
-        await gallery.getByLabel('Vertical', { exact: true }).focus();
+        await gallery.getByRole('slider', { name: 'Posição da fotografia' }).focus();
         await page.keyboard.press('End');
         await gallery.getByRole('button', { name: 'Aplicar enquadramento' }).click();
         assert.equal(JSON.parse(await page.locator('#gallery').textContent()).a.desktop.y, 100);
