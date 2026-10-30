@@ -1,5 +1,6 @@
 <script lang="ts">
   import { readyPhoto } from '$lib/photoPreparation';
+  import { photoUpload } from '$lib/photoDiagnostics';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { sessionFetch } from '$lib/auth/session';
@@ -247,7 +248,7 @@
       for (const [index, photo] of files.entries()) {
         if (photo.uploadedPath) continue;
         progress = `A enviar fotografias: ${index + 1} de ${files.length}…`;
-        const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/photos`), {
+        const response = await photoUpload(crmPath(`/viaturas/${baseline.id}/photos`), {
           method: 'POST',
           headers: {
             'content-type': photo.preparedFile!.type,

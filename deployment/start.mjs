@@ -3,6 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { config } from './routing.mjs';
 import { createGateway } from './gateway.mjs';
 import { clientAddressHeader } from './client-address.mjs';
+import { randomUUID } from 'node:crypto';
+import { getProcessDiagnostics } from '../shared/runtimeDiagnostics.mjs';
+
+process.env.RUNTIME_DIAGNOSTICS_INSTANCE ||= randomUUID();
+const diagnostics=getProcessDiagnostics('gateway');
 
 const settings = config(process.env);
 const manifest = JSON.parse(await readFile(new URL('./build.json', import.meta.url), 'utf8'));
@@ -30,25 +35,28 @@ const websiteEnv = Object.fromEntries(
   ),
 );
 const launch = (service, file, extra) => {
-  const child = spawn(process.execPath, ['--conditions=anm-runtime', file], {
+  const child = spawn(process.execPath, ['--conditions=anm-runtime', '--import', './deployment/diagnostics-preload.mjs', file], {
     stdio: 'inherit',
-    env: { ...(service === 'website' ? websiteEnv : common), ...extra },
+    env: { ...(service === 'website' ? websiteEnv : common), ...extra, RUNTIME_DIAGNOSTICS_SERVICE:service },
   });
   children.push(child);
-  child.on('error', () => shutdown(1));
-  child.on('exit', () => {
+  child.on('error', () => {diagnostics.marker('child_error',{}, {child:service});shutdown(1);});
+  child.on('exit', (code,signal) => {
+    diagnostics.marker('child_exit',code===null?{}:{status:code},{child:service,signal});
     if (!stopping) shutdown(1);
   });
 };
 function shutdown(code = 0) {
   if (stopping) return;
   stopping = true;
+  diagnostics.marker('shutdown_requested');
   ready = false;
   gateway.close();
   gateway.closeIdleConnections();
   for (const child of children) child.kill('SIGTERM');
   const deadline = setTimeout(() => {
     for (const child of children) child.kill('SIGKILL');
+    diagnostics.stop();
     process.exit(1);
   }, 18000);
   Promise.all(
@@ -59,6 +67,7 @@ function shutdown(code = 0) {
     ),
   ).then(() => {
     clearTimeout(deadline);
+    diagnostics.stop();
     process.exit(code);
   });
 }

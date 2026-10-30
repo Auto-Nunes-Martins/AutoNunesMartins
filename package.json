@@ -22,6 +22,8 @@
     "build:service": "node scripts/build-service.mjs",
     "start:service": "node deployment/start.mjs",
     "test:service": "node --test deployment/*.test.mjs",
+    "test:diagnostics": "node --test shared/runtimeDiagnostics.test.mjs",
+    "test:photo-memory": "node node_modules/tsx/dist/cli.mjs backend/scripts/photo-memory-harness.mjs",
     "test:service:runtime": "node scripts/check-service-runtime.mjs",
     "test:assets:built": "node scripts/check-asset-cache.mjs"
   },

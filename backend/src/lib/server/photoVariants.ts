@@ -5,6 +5,7 @@ import { MAX_UPLOAD_BYTES, MAX_UPLOAD_PIXELS } from './photoOptimization.js';
 import { vehiclePhotoWidths } from '@anm/types/photoWidths';
 import { PhotoByteCache, type CachedPhoto } from './photoByteCache.js';
 import { sanitizePhotoMetadata } from './photoMetadata.js';
+import type { UploadTrace } from '../../../../shared/runtimeDiagnostics.mjs';
 
 export const PHOTO_WIDTHS = vehiclePhotoWidths;
 // Schema/paths remain compatible; existing derivatives are regenerated from their master.
@@ -183,7 +184,7 @@ export async function buildPhotoVariants(
   return { manifest, files };
 }
 /** Publish the manifest last to track complete batches. Individually valid derivatives are reusable. */
-export async function ensurePhotoVariants(path: string, input?: Buffer) {
+export async function ensurePhotoVariants(path: string, input?: Buffer, trace?:UploadTrace) {
   const bucket = getSupabase().storage.from(getBucketName());
   const existing = await readVariantManifest(path);
   if (existing) {
@@ -205,7 +206,9 @@ export async function ensurePhotoVariants(path: string, input?: Buffer) {
       throw new Error('Master unavailable or too large');
     input = Buffer.from(await data.arrayBuffer());
   }
+  trace?.phase('variant_encode');
   const built = await buildPhotoVariants(input);
+  trace?.phase('variant_storage',{variants:built.files.length});
   for (const file of built.files) {
     // Deterministic, private derivative namespace; safe to replace partial derivatives only.
     const { error } = await bucket.upload(variantPath(path, file.width), file.buffer, {

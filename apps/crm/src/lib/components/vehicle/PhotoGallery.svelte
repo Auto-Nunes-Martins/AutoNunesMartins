@@ -1,5 +1,6 @@
 <script lang="ts">
   import { PHOTO_ACCEPT, preparePhoto } from '$lib/photoPreparation';
+  import { photoUpload } from '$lib/photoDiagnostics';
   import { framingStyle, type PhotoFraming } from '@anm/types';
   import { onDestroy } from 'svelte';
   import { sessionFetch } from '$lib/auth/session';
@@ -84,7 +85,7 @@
           toast.error(`${original.name}: ${(error as Error).message}`); continue;
         }
         uploadProgress = `A enviar fotografias: ${index + 1} de ${selected.length}…`;
-        const persistRes = await sessionFetch(apiBase, {
+        const persistRes = await photoUpload(apiBase, {
           method: 'POST', headers: { 'content-type': file.type, 'x-upload-id': crypto.randomUUID() }, body: file, signal: photoController.signal,
         });
         if (!persistRes.ok) {

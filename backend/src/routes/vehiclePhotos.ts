@@ -2,6 +2,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js';
 import { ensurePhotoVariants } from '../lib/server/photoVariants.js';
 import { persistPhotoDimensions, removePhotoDimensions } from '../lib/data/photoDimensions.js';
 import { logger } from '../logger.js';
+import { getProcessDiagnostics, clientMetrics } from '../../../shared/runtimeDiagnostics.mjs';
 import { sanitizePhotoMetadata } from '../lib/server/photoMetadata.js';
 import express from 'express';
 import {
@@ -34,6 +35,16 @@ import {
 } from '../lib/server/vehiclePhotoService.js';
 
 const router = Router({ mergeParams: true });
+const diagnostics=getProcessDiagnostics();
+const transferSchema=z.object({trace:z.string().uuid(),transferMs:z.number().finite().min(0).max(300000),status:z.number().int().min(100).max(599).optional(),outcome:z.enum(['ok','error','network_error'])}).strict();
+router.post('/diagnostics',requireUser,(req,res)=>{
+  if(!diagnostics.enabled){res.status(204).end();return;}
+  if(Number(req.get('content-length')??0)>1024||Buffer.byteLength(JSON.stringify(req.body??{}))>1024){res.status(413).end();return;}
+  const parsed=transferSchema.safeParse(req.body);
+  if(!parsed.success){res.status(400).end();return;}
+  const {trace,outcome,...metrics}=parsed.data;
+  res.status(diagnostics.clientTransfer(trace,metrics,outcome)?204:429).end();
+});
 const framingInput = z.object({ path: z.string().min(1).max(160), framing: photoFramingSchema.nullable() }).strict();
 router.post('/framing', requireUser, asyncHandler(async (req: AuthedRequest, res: Response) => {
   const parsed = framingInput.safeParse(req.body);
@@ -70,10 +81,17 @@ router.post('/upload-url', requireUser, (_req, res) => {
 router.post('/', requireUser, (req, res, next) => {
   const release = photoAdmission.acquire();
   if (!release) {
+    diagnostics.rejection();
     res.setHeader('Retry-After', '3');
     res.status(429).json({ error: 'Outra fotografia está a ser processada. Tente novamente.' });
     return;
   }
+  const trace=diagnostics.begin(req.get('x-photo-trace-id'),clientMetrics(req.get('x-photo-metrics')));
+  let outcome:'ok'|'error'|'aborted'='error', diagnosticStatus=500;
+  let disconnected=false;
+  const aborted=()=>{disconnected=true;};
+  const closed=()=>{if(!res.writableEnded)aborted();};
+  if(diagnostics.enabled){req.once('aborted',aborted);res.once('close',closed);if(trace.id)res.set('x-photo-trace-id',trace.id);res.set('x-photo-diagnostics-enabled','true');}
   // Release only after the work settles, including disconnects during compression/storage.
   void (async () => {
     try {
@@ -90,6 +108,7 @@ router.post('/', requireUser, (req, res, next) => {
         throw new PhotoUploadError(400, 'Identificador de carregamento inválido.');
       const repeated = uploadId && vehicle.photos.find(path => path.startsWith(`${vehicleId}/${uploadId}.`));
       if (repeated) {
+        outcome='ok';diagnosticStatus=201;
         req.resume();
         res.status(201).json({ photos: vehicle.photos, path: repeated, reused: true });
         return;
@@ -99,6 +118,7 @@ router.post('/', requireUser, (req, res, next) => {
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(req.headers['content-type'] || ''))
         throw new PhotoUploadError(415, 'Formato inválido.');
       // Admission happens BEFORE reading any body. One buffer globally, queue length zero.
+      trace.phase('receive');
       await new Promise<void>((resolve, reject) =>
         express.raw({ type: () => true, limit: MAX_UPLOAD_BYTES, inflate: false })(
           req,
@@ -107,11 +127,14 @@ router.post('/', requireUser, (req, res, next) => {
         ),
       );
       if (!Buffer.isBuffer(req.body)) throw new PhotoUploadError(400, 'Ficheiro inválido.');
-      const photo = await optimizePhoto(req.body as Buffer);
+      trace.fields({inputBytes:req.body.length});trace.phase('optimize');
+      const photo = diagnostics.enabled ? await optimizePhoto(req.body as Buffer,trace) : await optimizePhoto(req.body as Buffer);
+      trace.fields({outputBytes:photo.buffer.length});
       if (photo.buffer.length > MAX_OUTPUT_BYTES)
         throw new PhotoUploadError(422, 'A fotografia otimizada excede o limite de 2 MB.');
       const path = vehicleId + '/' + (uploadId ?? randomUUID()) + '.' + photo.extension;
       let storedMaster = photo.buffer;
+      trace.phase('storage');
       const { error } = await getSupabase()
         .storage.from(getBucketName())
         .upload(path, photo.buffer, { contentType: photo.contentType, upsert: false });
@@ -127,16 +150,21 @@ router.post('/', requireUser, (req, res, next) => {
           throw new PhotoUploadError(502, 'Não foi possível preparar a fotografia.');
       } else if (error) throw new PhotoUploadError(502, 'Não foi possível guardar a fotografia.');
       try {
-        const { manifest } = await ensurePhotoVariants(path,storedMaster);
+        trace.phase('derivatives');
+        const { manifest } = diagnostics.enabled ? await ensurePhotoVariants(path,storedMaster,trace) : await ensurePhotoVariants(path,storedMaster);
+        trace.fields({width:manifest.width,height:manifest.height,variants:manifest.variants?.length??0});trace.phase('dimensions');
         await persistPhotoDimensions(prisma, vehicleId, path, manifest);
       }
       catch { throw new PhotoUploadError(502,'Não foi possível preparar os tamanhos da fotografia. Tente guardar novamente.'); }
+      trace.phase('finalize');
       if (staged) {
+        outcome='ok';diagnosticStatus=201;
         res.status(201).json({ path, staged: true, bytes: photo.buffer.length, optimized: photo.optimized });
         return;
       }
       try {
         const result = await mutateVehiclePhotos(prisma, vehicleId, { type: 'append', path });
+        outcome='ok';diagnosticStatus=201;
         res
           .status(201)
           .json({ photos: result.photos, path, bytes: photo.buffer.length, optimized: photo.optimized });
@@ -157,6 +185,7 @@ router.post('/', requireUser, (req, res, next) => {
         throw error;
       }
     } catch (error) {
+      diagnosticStatus=typeof error==='object'&&error&&'status' in error&&typeof error.status==='number'?error.status:500;
       if (error instanceof PhotoUploadError) {
         res.status(error.status).json({ error: error.message });
       } else if (
@@ -170,6 +199,8 @@ router.post('/', requireUser, (req, res, next) => {
           .json({ error: 'Ficheiro inválido ou acima do limite de 20 MB.' });
       else next(error);
     } finally {
+      if(diagnostics.enabled){req.off('aborted',aborted);res.off('close',closed);}
+      trace.finish(disconnected?'aborted':outcome,{status:diagnosticStatus});
       release();
     }
   })();

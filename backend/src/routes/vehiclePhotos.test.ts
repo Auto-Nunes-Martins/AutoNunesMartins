@@ -7,6 +7,8 @@ import type { PrismaClient } from '@prisma/client';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  diagnostics:{enabled:false,begin:vi.fn(),rejection:vi.fn(),clientTransfer:vi.fn()},
+  trace:{id:'12345678-1234-4234-8234-123456789abc',phase:vi.fn(),fields:vi.fn(),finish:vi.fn()},
   vehicle: { findUnique: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
   $queryRaw: vi.fn(),
   $transaction: vi.fn(),
@@ -19,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   ensureVariants: vi.fn(),
   vehiclePhotoDimensions: { createMany: vi.fn(), deleteMany: vi.fn() },
 }));
+vi.mock('../../../shared/runtimeDiagnostics.mjs',async importOriginal=>({...await importOriginal<object>(),getProcessDiagnostics:()=>mocks.diagnostics}));
 vi.mock('../lib/server/photoVariants.js', () => ({ ensurePhotoVariants: mocks.ensureVariants }));
 vi.mock('../db.js', () => ({ prisma: mocks }));
 vi.mock('../logger.js', () => ({ logger: mocks.logger }));
@@ -63,6 +66,7 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.diagnostics.enabled=false;mocks.diagnostics.begin.mockReturnValue(mocks.trace);
   mocks.ensureVariants.mockResolvedValue({ manifest: { width: 30, height: 20, sourceHash: 'a'.repeat(64) } });
   mocks.vehiclePhotoDimensions.createMany.mockResolvedValue({ count: 1 });
   mocks.vehiclePhotoDimensions.deleteMany.mockResolvedValue({ count: 1 });
@@ -92,6 +96,19 @@ beforeEach(() => {
   });
   mocks.deleteObjects.mockResolvedValue(undefined);
   mocks.upload.mockResolvedValue({ error: null });
+});
+describe('optional diagnostic boundary',()=>{
+  it('does not accept telemetry when disabled and bounds enabled numeric reports',async()=>{
+    let response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});expect(response.status).toBe(204);expect(mocks.diagnostics.clientTransfer).not.toHaveBeenCalled();
+    mocks.diagnostics.enabled=true;
+    response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({trace:mocks.trace.id,transferMs:20,status:201,outcome:'ok',filename:'private.jpg'})});expect(response.status).toBe(400);
+    mocks.diagnostics.clientTransfer.mockReturnValue(false);
+    const report={trace:mocks.trace.id,transferMs:20,status:201,outcome:'ok'};
+    response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(report)});expect(response.status).toBe(429);
+    mocks.diagnostics.clientTransfer.mockReturnValue(true);
+    response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(report)});expect(response.status).toBe(204);
+    expect(mocks.diagnostics.clientTransfer).toHaveBeenCalledWith(mocks.trace.id,{transferMs:20,status:201},'ok');
+  });
 });
 describe('photo framing', () => {
   const framing = {desktop:{x:50,y:84},mobile:{x:35,y:75}};

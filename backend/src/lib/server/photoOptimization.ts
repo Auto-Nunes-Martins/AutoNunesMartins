@@ -1,5 +1,6 @@
 import sharp from 'sharp';
 import { sanitizePhotoMetadata } from './photoMetadata.js';
+import type { UploadTrace } from '../../../../shared/runtimeDiagnostics.mjs';
 
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 export const MAX_UPLOAD_PIXELS = 24_000_000;
@@ -31,7 +32,7 @@ export class PhotoAdmission {
   }
 }
 export const photoAdmission = new PhotoAdmission();
-export async function optimizePhoto(input: Buffer) {
+export async function optimizePhoto(input: Buffer, trace?:UploadTrace) {
   if (!input.length || input.length > MAX_UPLOAD_BYTES)
     throw new PhotoUploadError(413, 'Fotografia acima do limite de 20 MB.');
   try {
@@ -40,7 +41,9 @@ export async function optimizePhoto(input: Buffer) {
       failOn: 'warning',
       sequentialRead: true,
     });
+    trace?.phase('metadata');
     const meta = await image.metadata();
+    trace?.fields({width:meta.width??0,height:meta.height??0});trace?.phase('optimize');
     if (
       !meta.width ||
       !meta.height ||
@@ -56,6 +59,7 @@ export async function optimizePhoto(input: Buffer) {
     ) {
       // Decode once to reject truncated/corrupt inputs even on the passthrough path.
       await image.timeout({ seconds: 15 }).stats();
+      trace?.phase('sanitize');
       return {
         buffer: await sanitizePhotoMetadata(input),
         contentType: `image/${meta.format}`,

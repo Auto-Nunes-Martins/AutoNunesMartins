@@ -1,4 +1,5 @@
 import PreparationWorker from './photoPreparation.worker?worker';
+import { photoDiagnosticsEnabled, recordPreparation } from './photoDiagnostics';
 
 export const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
 export function validatePhoto(file: File) {
@@ -14,21 +15,26 @@ export function validatePhoto(file: File) {
 // heaps after each image, including nested HEIC workers, failures and cancellation.
 let tail: Promise<unknown> = Promise.resolve();
 export function preparePhoto(file: File, signal?: AbortSignal): Promise<File> {
+  const queuedAt=photoDiagnosticsEnabled()?performance.now():undefined;
   const run = tail
     .catch(() => {})
     .then(
       () =>
         new Promise<File>((resolve, reject) => {
+          const startedAt=performance.now();
           if (signal?.aborted) {
             reject(new DOMException('Cancelado', 'AbortError'));
             return;
           }
           let worker: Worker;
           let timer: ReturnType<typeof setTimeout>;
-          const finish = (error?: Error, output?: File) => {
+          let finished=false;
+          const finish = (error?: Error, output?: File, dimensions?:Record<string,number>) => {
+            if(finished)return;finished=true;
             clearTimeout(timer);
             signal?.removeEventListener('abort', cancel);
             worker?.terminate();
+            if(queuedAt!==undefined)recordPreparation(file,output,queuedAt,startedAt,dimensions);
             if (error) reject(error);
             else resolve(output!);
           };
@@ -38,7 +44,7 @@ export function preparePhoto(file: File, signal?: AbortSignal): Promise<File> {
             worker = new PreparationWorker();
             signal?.addEventListener('abort', cancel, { once: true });
             worker.onmessage = ({ data }) =>
-              data.error ? finish(Error(data.error)) : finish(undefined, data.file);
+              data.error ? finish(Error(data.error)) : finish(undefined, data.file, data.metrics);
             worker.onerror = () =>
               finish(
                 Error(
