@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sizedPhoto, vehiclePhotoSet, cardPhoto, cardPhotoSet } from '$lib/vehiclePhotoSources';
+  import { sizedPhoto, vehiclePhotoSet, cardPhoto, cardPhotoSet,galleryPhotoSizes } from '$lib/vehiclePhotoSources';
   import type { Snippet } from 'svelte';
   import type { VehicleDetailRuntime } from '$lib/vehicleDetailRuntime';
   let galleryOpen = $state(false);
@@ -206,10 +206,6 @@
   const createThumbnailSession = (
     ...args: Parameters<VehicleDetailRuntime['createThumbnailSession']>
   ) => galleryRuntime!.createThumbnailSession(...args);
-  const publicThumbnail = (...args: Parameters<VehicleDetailRuntime['publicThumbnail']>) =>
-    galleryRuntime!.publicThumbnail(...args);
-  const thumbnailAttrs = (...args: Parameters<VehicleDetailRuntime['thumbnailAttrs']>) =>
-    galleryRuntime!.thumbnailAttrs(...args);
   const trapDialogTab = (...args: Parameters<VehicleDetailRuntime['trapDialogTab']>) =>
     galleryRuntime!.trapDialogTab(...args);
   const galleryBackdrop = (...args: Parameters<VehicleDetailRuntime['galleryBackdrop']>) =>
@@ -217,11 +213,6 @@
   const thumbnailSession = $derived(
     publicVehicle
       ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle))
-      : undefined,
-  );
-  const viewerThumbnailSession = $derived(
-    galleryOpen && publicVehicle
-      ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle) ?? [])
       : undefined,
   );
   const car = $derived(
@@ -529,9 +520,9 @@
         <link
           rel="preload"
           as="image"
-          href={sizedPhoto(publicPhoto(publicVehicle, i), 320)}
+          href={sizedPhoto(publicPhoto(publicVehicle, i), 1600)}
           imagesrcset={vehiclePhotoSet(publicPhoto(publicVehicle, i))}
-          imagesizes="(max-width:700px) 88px, 128px"
+          imagesizes={galleryPhotoSizes(publicVehicle,i)}
           fetchpriority="low"
         />
       {/each}
@@ -988,19 +979,12 @@
                         aria-pressed={zoom === i}
                         onclick={() => (zoom = i)}
                         ><img
-                          {...thumbnailAttrs(
-                            thumbnailSession!,
-                            sizedPhoto(publicPhoto(publicVehicle, i), 320),
-                            vehiclePhotoSet(publicPhoto(publicVehicle, i)),
-                          )}
-                          use:publicThumbnail={{
-                            session: thumbnailSession!,
-                            index: i,
-                            src: sizedPhoto(publicPhoto(publicVehicle, i), 320),
-                            srcset: vehiclePhotoSet(publicPhoto(publicVehicle, i)),
-                            sizes: '(max-width:700px) 88px, 128px',
+                          {...gallerySession!.attrs(sizedPhoto(publicPhoto(publicVehicle,i),1600),vehiclePhotoSet(publicPhoto(publicVehicle,i)))}
+                          use:publicGalleryPhoto={{
+                            session: gallerySession!,
+                            src: sizedPhoto(publicPhoto(publicVehicle, i), 1600),
                           }}
-                          sizes="(max-width:700px) 88px, 128px"
+                          sizes={galleryPhotoSizes(publicVehicle,i)}
                           alt=""
                           loading="eager"
                           fetchpriority="auto"
@@ -1013,7 +997,9 @@
                       aria-pressed={isContactSlide}
                       onclick={() => (zoom = galleryPhotoCount)}
                       ><img
-                        src={sizedPhoto(publicPhoto(publicVehicle, 0), 320)}
+                        {...gallerySession!.attrs(sizedPhoto(publicPhoto(publicVehicle,0),1600),vehiclePhotoSet(publicPhoto(publicVehicle,0)))}
+                        use:publicGalleryPhoto={{session:gallerySession,src:sizedPhoto(publicPhoto(publicVehicle,0),1600)}}
+                        sizes={galleryPhotoSizes(publicVehicle,0)}
                         alt=""
                         loading="eager"
                       /><ArrowUpRight size={24} aria-hidden="true" /><span>Fale connosco</span
@@ -1578,17 +1564,9 @@
               onclick={() => (zoom = i)}
             >
               <img
-                {...thumbnailAttrs(
-                  viewerThumbnailSession!,
-                  sizedPhoto(publicPhoto(publicVehicle, i), 320),
-                )}
-                use:publicThumbnail={{
-                  session: viewerThumbnailSession!,
-                  index: i,
-                  src: sizedPhoto(publicPhoto(publicVehicle, i), 320),
-                  srcset: vehiclePhotoSet(publicPhoto(publicVehicle, i)),
-                  sizes: '(max-width:700px) 76px, 80px',
-                  minimumWidth: 80,
+                use:publicGalleryPhoto={{
+                  session: gallerySession!,
+                  src: sizedPhoto(publicPhoto(publicVehicle, i), 1600),
                 }}
                 draggable={false}
                 alt=""
@@ -1604,16 +1582,9 @@
             onclick={() => (zoom = galleryPhotoCount)}
           >
             <img
-              {...thumbnailAttrs(
-                viewerThumbnailSession!,
-                sizedPhoto(publicPhoto(publicVehicle, 0), 320),
-              )}
-              use:publicThumbnail={{
-                session: viewerThumbnailSession!,
-                index: 0,
-                src: sizedPhoto(publicPhoto(publicVehicle, 0), 320),
-                sizes: '(max-width:700px) 76px, 80px',
-                minimumWidth: 80,
+              use:publicGalleryPhoto={{
+                session: gallerySession!,
+                src: sizedPhoto(publicPhoto(publicVehicle, 0), 1600),
               }}
               draggable={false}
               alt=""

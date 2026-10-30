@@ -29,6 +29,7 @@ export const publicVehicleSchema = z
     specifications: publicSpecificationsSchema.optional(),
     availability: z.enum(['AVAILABLE', 'RESERVED']),
     photos: z.array(z.string()).max(20),
+    photoDimensions:z.array(z.object({version:z.string().regex(/^[a-f0-9]{64}$/),width:z.number().int().positive(),height:z.number().int().positive()}).refine(v=>v.width*v.height<=24_000_000).nullable()).max(20).optional().catch(undefined),
     galleryFraming: z.array(photoFramingSchema.nullable()).max(20).optional(),
     // Optional during rolling deployment/backfill. Never trust a dimension for another version.
     coverPhotoDimensions: z

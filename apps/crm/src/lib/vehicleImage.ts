@@ -8,16 +8,11 @@ export type SignedVariantPhoto = {
 export function photoAttrs(
   photo: { url: string | null; width?: number; variants?: { width: number; url: string }[] },
   width: number,
-  sizes: string
+  sizes: string,
 ) {
-  const parts = photo.variants ?? [];
-  const candidates = parts.map((v) => `${v.url} ${v.width}w`);
-  if (photo.width && photo.url) candidates.push(`${photo.url} ${photo.width}w`);
-  return {
-    src: parts.find((p) => p.width >= width)?.url ?? photo.url ?? undefined,
-    srcset: candidates.length ? candidates.join(', ') : undefined,
-    sizes,
-  };
+  // The private CRM action chooses once after layout; SSR must not start a
+  // different thumbnail candidate before the shared gallery group is measured.
+  return { src: undefined, srcset: undefined, sizes };
 }
 /** Missing/expired derivative falls back once to the original, before component error UI. */
 export function photoFallback(node: HTMLImageElement, original: string | null) {

@@ -1,13 +1,16 @@
 <script lang="ts">
+  import {reusablePhoto} from '$lib/reusablePhoto';
   import type { PhotoFraming } from '@anm/types';
   let {
     src,
+    photo,
     value,
     context,
     disabled = false,
     onchange,
   }: {
     src: string;
+    photo?:{url:string|null;width?:number;height?:number;variants?:{url:string;width:number;height?:number}[]};
     value?: PhotoFraming;
     context: 'gallery' | 'featured';
     disabled?: boolean;
@@ -127,7 +130,8 @@
   >
     <img
       bind:this={image}
-      {src}
+      src={photo?undefined:src}
+      use:reusablePhoto={{photo:photo??{url:src}}}
       alt=""
       draggable="false"
       style:object-position={`${position.x}% ${position.y}%`}

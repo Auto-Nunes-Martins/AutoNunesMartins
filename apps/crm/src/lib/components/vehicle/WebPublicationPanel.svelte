@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { photoAttrs, photoFallback, type SignedVariantPhoto } from '$lib/vehicleImage';
+  import {reusablePhoto} from '$lib/reusablePhoto';
+  import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
   import type { PhotoFraming } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import { invalidateAll } from '$app/navigation';
@@ -552,7 +553,7 @@
           <div class="preview-card">
             {#if cover}<img
                 {...photoAttrs(cover, 800, '(max-width:700px) 80vw, 600px')}
-                use:photoFallback={cover.url}
+                use:reusablePhoto={{photo:cover}}
                 alt="Foto principal do anúncio"
               />{:else}<div class="preview-empty">Imagem indisponível</div>{/if}
             <div>

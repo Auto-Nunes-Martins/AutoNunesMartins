@@ -24,12 +24,13 @@ it('gives the viewer a cache-only session using identities already supplied by t
   session.detach();
 });
 
-it('selects the same principal file at every viewport and density', async () => {
+it('selects a coherent gallery group from the detail slot and density', async () => {
   const { navigationThumbnailWidth } = await import('./publicThumbnail');
-  expect(navigationThumbnailWidth(1400, 1)).toBe(1600);
-  expect(navigationThumbnailWidth(390, 3)).toBe(1600);
-  expect(navigationThumbnailWidth(1400, 4)).toBe(1600);
-  expect(navigationThumbnailWidth(1400, 8)).toBe(1600);
+  expect(navigationThumbnailWidth(1400, 1)).toBe(1280);
+  expect(navigationThumbnailWidth(390, 2)).toBe(800);
+  expect(navigationThumbnailWidth(390, 3)).toBe(1280);
+  expect(navigationThumbnailWidth(1400, 4)).toBe(2560);
+  expect(navigationThumbnailWidth(1400, 8)).toBe(2560);
 });
 
 it.each([390, 1400])(
@@ -46,7 +47,7 @@ it.each([390, 1400])(
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(13));
     const urls = request.mock.calls.map(([url]) => url).filter((url) => !url.endsWith('/access'));
     expect(urls).toHaveLength(12);
-    expect(urls.every((url) => /photos\/\d+\?v=[a-f0-9]{64}&w=1600$/.test(url))).toBe(true);
+    const chosen=module.navigationThumbnailWidth(viewport,3);expect(urls.every((url)=>url.endsWith('&w='+chosen))).toBe(true);
     module.cancelNavigationThumbnails();
   },
 );
@@ -83,7 +84,7 @@ it('starts only explicitly, queues all photos with six concurrent downloads, the
   expect(peak).toBe(6);
   const urls = request.mock.calls.map(([url]) => url).filter((url) => !url.endsWith('/access'));
   expect(urls).toHaveLength(12);
-  expect(urls.every((url) => /\?v=[a-f0-9]{64}&w=1600$/.test(url))).toBe(true);
+  expect(urls.every((url) => /\?v=[a-f0-9]{64}&w=1280$/.test(url))).toBe(true);
   expect(module.createThumbnailSession('car-abcdef123456').hasPixels()).toBe(true);
   session.detach();
   module.cancelNavigationThumbnails();

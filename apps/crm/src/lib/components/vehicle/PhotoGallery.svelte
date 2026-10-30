@@ -1,10 +1,11 @@
 <script lang="ts">
   import { PHOTO_ACCEPT, preparePhoto } from '$lib/photoPreparation';
   import { photoUpload } from '$lib/photoDiagnostics';
+  import {reusablePhoto} from '$lib/reusablePhoto';
   import { framingStyle, type PhotoFraming } from '@anm/types';
   import { onDestroy } from 'svelte';
   import { sessionFetch } from '$lib/auth/session';
- import {photoAttrs,photoFallback,type SignedVariantPhoto} from "$lib/vehicleImage";
+ import {photoAttrs,type SignedVariantPhoto} from "$lib/vehicleImage";
   import { crmPath } from '$lib/paths';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
   import { untrack, type Snippet } from 'svelte';
@@ -166,7 +167,7 @@
   const primary = $derived(activeIndex<0 ? null : photos[activeIndex] ?? photos[0] ?? null);
 </script>
 
-<section
+<section data-photo-resolution-group
   class:with-editor={!!editor}
   class="overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-1)]"
   style="border-radius: var(--radius-card);"
@@ -235,11 +236,11 @@
             <button bind:this={opener} type="button" class="photo-open" aria-label={`Ampliar fotografia ${activeIndex + 1} de ${photos.length}`} onclick={() => { viewerOpen = true; viewer.showModal(); }} onkeydown={photoKey}>
             {#if imageFailed}<span class="photo-unavailable">Fotografia indisponível</span>{:else}
             <img
-              {...photoAttrs(primary,1600,'(max-width:700px) 100vw, 1100px')} use:photoFallback={primary.url}
+              {...photoAttrs(primary,1600,'(max-width:700px) 100vw, 1100px')} use:reusablePhoto={{photo:primary}}
               style={editable?undefined:framingStyle(framing[primary.path])}
               alt={`Fotografia ${activeIndex + 1} da viatura`}
               class="h-full w-full object-cover"
-              loading="lazy"
+              loading="eager"
               onerror={() => imageFailed = true}
             />
             {/if}
@@ -268,10 +269,10 @@
                   style="border-radius: 4px;"
                 >
                   {#if failedThumbnailUrls.includes(p.url)}<span class="flex h-full w-full items-center justify-center bg-[var(--color-bg-2)] text-[10px] text-[var(--color-text-muted)]">Indisponível</span>{:else}<img
-                    {...photoAttrs(p,320,'96px')} use:photoFallback={p.url}
+                    {...photoAttrs(p,320,'96px')} use:reusablePhoto={{photo:p}}
                     alt="Miniatura"
                     class="h-full w-full object-cover"
-                    loading="lazy"
+                    loading="eager"
                     onerror={() => { if (!failedThumbnailUrls.includes(p.url)) failedThumbnailUrls = [...failedThumbnailUrls, p.url]; }}
                   />{/if}
                 </button>
@@ -349,7 +350,7 @@
 <dialog class="crm-photo-viewer" bind:this={viewer} aria-labelledby={captionId} onkeydown={photoKey} onclose={() => { viewerOpen = false; opener?.focus({ preventScroll: true }); }} onclick={event => { if (event.target === viewer) viewer.close(); }}>
   <button type="button" class="viewer-close" aria-label="Fechar fotografia" onclick={() => viewer.close()}><X size={22} aria-hidden="true" /></button>
   {#if viewerOpen && primary}
-    {#if imageFailed}<p class="photo-unavailable" role="status">Fotografia indisponível. Pode navegar para outra fotografia.</p>{:else}<img src={primary.url} alt={`Fotografia ${activeIndex + 1} da viatura`} onerror={() => imageFailed = true} />{/if}
+    {#if imageFailed}<p class="photo-unavailable" role="status">Fotografia indisponível. Pode navegar para outra fotografia.</p>{:else}<img use:reusablePhoto={{photo:primary,fullscreen:true}} alt={`Fotografia ${activeIndex + 1} da viatura`} onerror={() => imageFailed = true} />{/if}
   {/if}
   <p id={captionId}>Fotografia {activeIndex + 1} de {photos.length}</p>
   {#if photos.length > 1}

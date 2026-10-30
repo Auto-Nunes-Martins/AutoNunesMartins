@@ -1,5 +1,5 @@
 import { catalogPlaceholder } from './localAssets';
-import { publicPhotoWidth } from './vehiclePhotoSources';
+import { publicPhotoWidth, detailPhotoWidth, photoWidths } from './vehiclePhotoSources';
 
 type NavigationWarmup = {
   slug: string;
@@ -9,7 +9,12 @@ type NavigationWarmup = {
 };
 let navigationWarmup: NavigationWarmup | undefined;
 
-export const navigationThumbnailWidth = (_viewport: number, _density: number) => publicPhotoWidth;
+export const navigationThumbnailWidth = (viewport: number, density: number, ratio = 0) =>
+  Number.isFinite(viewport) ? detailPhotoWidth(viewport, density, ratio) : publicPhotoWidth;
+const currentWidth = () =>
+  typeof window === 'undefined'
+    ? publicPhotoWidth
+    : navigationThumbnailWidth(window.innerWidth, window.devicePixelRatio || 1);
 
 function photoVersions(data: unknown): string[] {
   const versions = (data as { versions?: unknown })?.versions;
@@ -28,9 +33,9 @@ export function warmNavigationThumbnails(
   viewport: number,
   density: number,
   _count?: number,
+  decodedCard?: Promise<void>,
 ) {
   cancelNavigationThumbnails();
-  const width = navigationThumbnailWidth(viewport, density);
   const controller = new AbortController();
   const work: NavigationWarmup = { slug, controller, ready: Promise.resolve(), photos: new Map() };
   navigationWarmup = work;
@@ -43,10 +48,24 @@ export function warmNavigationThumbnails(
     signal: controller.signal,
   }).then(async (response) => {
     if (!response.ok) throw Error('Photos unavailable');
-    return photoVersions(await response.json());
+    const data = await response.json();
+    return { versions: photoVersions(data), dimensions: data.photoDimensions };
   });
   work.ready = discovery
-    .then(async (versions) => {
+    .then(async ({ versions, dimensions }) => {
+      if (decodedCard) {
+        let timeout: ReturnType<typeof setTimeout>;
+        try {
+          await Promise.race([
+            decodedCard,
+            new Promise<void>((resolve) => {
+              timeout = setTimeout(resolve, 100);
+            }),
+          ]);
+        } finally {
+          clearTimeout(timeout!);
+        }
+      }
       if (controller.signal.aborted) return;
       // Each image still performs its own live authorization. This first query
       // discovers the count/identities; it is not reused as permission on arrival.
@@ -64,7 +83,20 @@ export function warmNavigationThumbnails(
         while (next < finish.length && !controller.signal.aborted) {
           const index = next++;
           try {
-            const cached = entries.get(`${versions[index]}/${width}`);
+            const hint = Array.isArray(dimensions) ? dimensions[index] : undefined;
+            const ratio =
+              hint?.version === versions[index] &&
+              Number.isFinite(hint.width) &&
+              Number.isFinite(hint.height) &&
+              hint.width > 0 &&
+              hint.height > 0 &&
+              hint.width * hint.height <= 24_000_000
+                ? hint.width / hint.height
+                : 0;
+            const width = navigationThumbnailWidth(viewport, density, ratio);
+            const cached = entries.get(
+              `${versions[index]}/${retainedPhotoWidth(versions[index]!, width)}`,
+            );
             if (cached && cached.used > Date.now() - MAX_AGE) continue;
             const version = versions[index];
             const image = await fetch(`/viaturas/${slug}/photos/${index}?v=${version}&w=${width}`, {
@@ -120,7 +152,21 @@ const available = (slug: string) =>
   [...entries.values()].some(
     (e) => e.slug === slug && (e.refs > 0 || e.used > Date.now() - MAX_AGE),
   );
-function remember(slug: string, version: string, width: number, blob: Blob) {
+export const hasPublicPhotoPixels = (slug: string) =>
+  available(slug) || navigationWarmup?.slug === slug;
+export function retainedPhotoWidth(version: string, minimum: number) {
+  return (
+    [...entries.values()]
+      .filter(
+        (e) =>
+          e.version === version &&
+          e.width >= minimum &&
+          (e.refs > 0 || e.used > Date.now() - MAX_AGE),
+      )
+      .sort((a, b) => a.width - b.width)[0]?.width ?? minimum
+  );
+}
+export function remember(slug: string, version: string, width: number, blob: Blob) {
   if (
     blob.size > 20 * 1024 * 1024 ||
     !['image/webp', 'image/jpeg', 'image/png'].includes(blob.type)
@@ -160,11 +206,16 @@ function remember(slug: string, version: string, width: number, blob: Blob) {
 }
 
 /** Pixels only; callers must already hold this visit's freshly approved version. */
-export async function retainedPublicPhoto(slug: string, index: number, version: string) {
+export async function retainedPublicPhoto(
+  slug: string,
+  index: number,
+  version: string,
+  width = currentWidth(),
+) {
   const warming = navigationWarmup?.slug === slug ? navigationWarmup : undefined;
   await warming?.ready;
   await warming?.photos.get(index);
-  const entry = entries.get(`${version}/${publicPhotoWidth}`);
+  const entry = entries.get(`${version}/${width}`);
   return entry && (entry.refs > 0 || entry.used > Date.now() - MAX_AGE) ? entry.blob : undefined;
 }
 
@@ -274,7 +325,7 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       width = Number(url.searchParams.get('w'));
     if (
       url.origin !== location.origin ||
-      width !== publicPhotoWidth ||
+      !photoWidths.includes(width as (typeof photoWidths)[number]) ||
       !url.pathname.endsWith(`/photos/${source.index}`)
     )
       return;
@@ -326,7 +377,7 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       const versions = await source.session.access();
       await source.session.prepared(source.index);
       if (!alive || token !== revision) return;
-      const needed = publicPhotoWidth;
+      const needed = Math.max(currentWidth(), source.minimumWidth ?? 0);
       const entry = [...entries.values()]
         .filter(
           (e) =>
@@ -360,6 +411,12 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
   }
   node.addEventListener('load', loaded);
   node.addEventListener('error', error);
+  function resized() {
+    source.session.detach();
+    unpin();
+    void start();
+  }
+  if (typeof window !== 'undefined') window.addEventListener('resize', resized);
   void start();
   return {
     update(next: Source) {
@@ -384,6 +441,7 @@ export function publicThumbnail(node: HTMLImageElement, initial: Source) {
       unpin();
       node.removeEventListener('load', loaded);
       node.removeEventListener('error', error);
+      if (typeof window !== 'undefined') window.removeEventListener('resize', resized);
     },
   };
 }

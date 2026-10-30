@@ -27,8 +27,8 @@
         return bounds.bottom > 0 && bounds.top < innerHeight && bounds.right > 0 && bounds.left < innerWidth;
       }) ?? links[0];
       const count = card ? Number(card.dataset.photoCount) : undefined;
-      captureCardPhoto(card?.querySelector('img:not([aria-hidden="true"])'));
-      warmNavigationThumbnails(match[1], innerWidth, devicePixelRatio, count);
+      const decodedCard=captureCardPhoto(card?.querySelector('img:not([aria-hidden="true"])'));
+      warmNavigationThumbnails(match[1], innerWidth, devicePixelRatio, count,decodedCard);
     }
   });
   afterNavigate(({ type, to }) => { if (to) anchors?.afterNavigate(type, to.url); });

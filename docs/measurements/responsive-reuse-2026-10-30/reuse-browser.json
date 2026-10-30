@@ -1,0 +1,266 @@
+[
+  {
+    "profile": "desktop",
+    "view": "open",
+    "initial": [
+      {
+        "scope": "public",
+        "width": 800,
+        "bytes": 170764
+      },
+      {
+        "scope": "crm",
+        "width": 800,
+        "bytes": 170764
+      }
+    ],
+    "pixels": [
+      {
+        "id": "inline",
+        "width": 601,
+        "src": "blob"
+      },
+      {
+        "id": "thumb",
+        "width": 601,
+        "src": "0?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&w=800"
+      },
+      {
+        "id": "crm-inline",
+        "width": 800,
+        "src": "800.webp"
+      },
+      {
+        "id": "crm-thumb",
+        "width": 800,
+        "src": "800.webp"
+      }
+    ],
+    "effective": 1280,
+    "transfers": [
+      {
+        "scope": "public",
+        "width": 1280,
+        "bytes": 421766
+      }
+    ]
+  },
+  {
+    "profile": "desktop",
+    "view": "open-crm",
+    "initial": [
+      {
+        "scope": "public",
+        "width": 800,
+        "bytes": 170764
+      },
+      {
+        "scope": "crm",
+        "width": 800,
+        "bytes": 170764
+      }
+    ],
+    "pixels": [
+      {
+        "id": "inline",
+        "width": 601,
+        "src": "blob"
+      },
+      {
+        "id": "thumb",
+        "width": 601,
+        "src": "0?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&w=800"
+      },
+      {
+        "id": "crm-inline",
+        "width": 800,
+        "src": "800.webp"
+      },
+      {
+        "id": "crm-thumb",
+        "width": 800,
+        "src": "800.webp"
+      }
+    ],
+    "effective": 1280,
+    "transfers": [
+      {
+        "scope": "crm",
+        "width": 1280,
+        "bytes": 421766
+      }
+    ]
+  },
+  {
+    "profile": "mobile",
+    "view": "open",
+    "initial": [
+      {
+        "scope": "public",
+        "width": 800,
+        "bytes": 170764
+      },
+      {
+        "scope": "crm",
+        "width": 800,
+        "bytes": 170764
+      }
+    ],
+    "pixels": [
+      {
+        "id": "inline",
+        "width": 390,
+        "src": "blob"
+      },
+      {
+        "id": "thumb",
+        "width": 390,
+        "src": "0?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&w=800"
+      },
+      {
+        "id": "crm-inline",
+        "width": 800,
+        "src": "800.webp"
+      },
+      {
+        "id": "crm-thumb",
+        "width": 800,
+        "src": "800.webp"
+      }
+    ],
+    "effective": 800,
+    "transfers": []
+  },
+  {
+    "profile": "mobile",
+    "view": "open-crm",
+    "initial": [
+      {
+        "scope": "public",
+        "width": 800,
+        "bytes": 170764
+      },
+      {
+        "scope": "crm",
+        "width": 800,
+        "bytes": 170764
+      }
+    ],
+    "pixels": [
+      {
+        "id": "inline",
+        "width": 390,
+        "src": "blob"
+      },
+      {
+        "id": "thumb",
+        "width": 390,
+        "src": "0?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&w=800"
+      },
+      {
+        "id": "crm-inline",
+        "width": 800,
+        "src": "800.webp"
+      },
+      {
+        "id": "crm-thumb",
+        "width": 800,
+        "src": "800.webp"
+      }
+    ],
+    "effective": 800,
+    "transfers": []
+  },
+  {
+    "profile": "desktop-dpr15",
+    "view": "open",
+    "initial": [
+      {
+        "scope": "public",
+        "width": 1280,
+        "bytes": 421766
+      },
+      {
+        "scope": "crm",
+        "width": 1280,
+        "bytes": 421766
+      }
+    ],
+    "pixels": [
+      {
+        "id": "inline",
+        "width": 850,
+        "src": "blob"
+      },
+      {
+        "id": "thumb",
+        "width": 850,
+        "src": "0?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&w=1280"
+      },
+      {
+        "id": "crm-inline",
+        "width": 1280,
+        "src": "1280.webp"
+      },
+      {
+        "id": "crm-thumb",
+        "width": 1280,
+        "src": "1280.webp"
+      }
+    ],
+    "effective": 2560,
+    "transfers": [
+      {
+        "scope": "public",
+        "width": 2560,
+        "bytes": 1395622
+      }
+    ]
+  },
+  {
+    "profile": "desktop-dpr15",
+    "view": "open-crm",
+    "initial": [
+      {
+        "scope": "public",
+        "width": 1280,
+        "bytes": 421766
+      },
+      {
+        "scope": "crm",
+        "width": 1280,
+        "bytes": 421766
+      }
+    ],
+    "pixels": [
+      {
+        "id": "inline",
+        "width": 850,
+        "src": "blob"
+      },
+      {
+        "id": "thumb",
+        "width": 850,
+        "src": "0?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&w=1280"
+      },
+      {
+        "id": "crm-inline",
+        "width": 1280,
+        "src": "1280.webp"
+      },
+      {
+        "id": "crm-thumb",
+        "width": 1280,
+        "src": "1280.webp"
+      }
+    ],
+    "effective": 2560,
+    "transfers": [
+      {
+        "scope": "crm",
+        "width": 2560,
+        "bytes": 1395622
+      }
+    ]
+  }
+]

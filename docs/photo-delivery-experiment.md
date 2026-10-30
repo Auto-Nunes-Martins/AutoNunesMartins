@@ -2,7 +2,36 @@
 
 **Regra atual de pertença (28/10/2026):** todas as fotografias presentes na viatura acompanham a publicação global; não existe seleção individual. As referências históricas abaixo a «aprovadas» descrevem a política anterior. A autorização atual verifica publicação/elegibilidade da viatura, pertença a `Vehicle.photos` e versão. Ver [regra oficial](vehicle-photo-publication.md). Esta alteração não desfaz a experiência de entrega nem altera os masters ou WebP84.
 
-Pedido do proprietário em 25/10/2026: usar no site normal a mesma versão da fotografia principal nos cartões, miniaturas, galeria e fullscreen. A alteração seletiva de 28/10/2026 abaixo substitui essa regra apenas nos cartões. **A ficha mantém 1600 px fixos** na principal, miniaturas, galeria e fullscreen. Originais pequenos mantêm o fallback nativo existente, sem ampliação artificial.
+Pedido do proprietário em 25/10/2026: usar no site normal a mesma versão da fotografia principal nos cartões, miniaturas, galeria e fullscreen. A alteração seletiva de 28/10/2026 substituiu essa regra nos cartões. A ficha manteve 1600 px fixos até à nova política de 30/10/2026 descrita abaixo. Originais pequenos mantêm o fallback nativo existente, sem ampliação artificial.
+
+## Política atual — responsivo com reaproveitamento, 30/10/2026
+
+Pedido explícito do proprietário: escolher uma resolução adequada ao dispositivo, espaço ocupado e DPR, reutilizá-la entre miniatura/principal/galeria e abrir fullscreen com os pixels disponíveis. Uma versão maior só substitui essa cópia depois de descodificada, quando acrescenta pelo menos 20% de resolução útil. Só a foto ativa no fullscreen é elegível para essa melhoria; não se preparam 2560 px para todas preventivamente. Todas as fotos continuam eager à entrada, sem repor o lazy mobile histórico.
+
+No website, principal e miniaturas partilham a mesma sessão por fotografia/versão/resolução. Preloads, navegação e `sizes` usam o mesmo cálculo do layout da ficha. O recorte cover conta: uma fotografia larga pode exigir mais pixels que a largura do elemento. A ficha e a consulta de acesso podem fornecer dimensões já persistidas, num único batch indexado e só das versões autorizadas, sem ler Storage. Hints ausentes mantêm o fallback existente e permitem refinar a resolução depois do primeiro decode; nesse caso pode ser necessário mais 1 candidato, sem identificar bytes pequenos como uma cópia maior. Resize aumenta o grupo quando necessário e conserva cópias maiores já obtidas. Miniaturas da própria ficha também usam a sessão, incluindo as do viewer.
+
+Cartões de catálogo/homepage/favoritos/relacionadas e o destaque mantêm a sua seleção responsiva por área/cover/DPR. Podem escolher uma resolução diferente da ficha. O handoff conserva os pixels descodificados enquanto a resolução necessária é adquirida, com as mesmas validações de identidade/versão e prazo de 15 s; não promete 0 pedidos quando a ficha precisa de mais pixels. Na navegação efetiva pode também reter os bytes já obtidos pelo cartão, por leitura estritamente cache-only: uma cópia suficiente ou maior evita pedir uma menor só para coincidir com a seleção inicial da ficha. Cache em memória continua limitada a 64 × 1048576 bytes por orçamento, 120 entradas globais e 20 × 1048576 bytes por fotografia; cópias da sessão são revogadas ao sair. Não se conserva autorização de uma visita anterior.
+
+No CRM privado, a action mede os elementos depois de montar e escolhe entre variantes assinadas já existentes e o master nativo. Não atribui uma URL provisória de thumbnail no SSR antes de medir o grupo. Principal/miniaturas da consulta usam a área da principal; seleção/edição/previews do mesmo objeto partilham os candidatos necessários aos elementos apresentados. Blobs/rascunhos continuam locais. O fullscreen mostra os pixels disponíveis e só melhora a foto ativa após decode. Não há armazenamento persistente novo de URLs assinados, nem reutilização entre objetos de payload/autorização diferentes. A sessão CRM continua a exigir JavaScript.
+
+Não foram alterados masters, compressão WebP84, larguras geradas, pertença/publicação, autenticação ou os limites de upload. Esta política de rede não corrige retenção de RAM durante processamento de imagens. A investigação nativa está em [native-photo-memory-investigation.md](native-photo-memory-investigation.md).
+
+### Verificação e medições desta política
+
+Fixtures locais, Chrome, 3 fotografias reais do repositório, mesmos 6 cartões em cada perfil. Desktop 1440×900 DPR1 e mobile 390×844 DPR2. Bytes de corpos, sem overhead HTTP, MB decimais:
+
+| Entrada na ficha | Antes, 1600 fixos | Política final | Redução | Pedidos antes → depois |
+| --- | ---: | ---: | ---: | ---: |
+| Desktop | 1,303288 MB | 0,889638 MB | 31,7% | 6 → 4 |
+| Mobile | 1,303288 MB | 0,462486 MB | 64,5% | 6 → 3 |
+
+Desktop escolheu 1280; mobile escolheu 800/1280 conforme o recorte. Os cartões mantiveram os mesmos corpos: 0,791604 MB desktop e 1,989084 MB mobile, com os mesmos 6 cartões. Fullscreen e revisitas não transferiram novos corpos neste percurso. Ainda houve 1 revalidação na primeira entrada em cada perfil e 4/3 no regresso à ficha (desktop/mobile); não se promete ausência de pedidos condicionais. Nas capturas guardadas de baseline e final o handoff foi observado nos 2 perfis, sem loading enquanto os pixels temporários estavam visíveis. Uma tentativa inicial a frio navegou antes de hidratar; não foi usada para estes resultados. O teste focado verifica também o handoff durante uma aquisição atrasada.
+
+`node scripts/check-responsive-photo-reuse.mjs` exercita público e CRM em 1024×900 DPR1, 390×844 DPR2 e 1280×900 DPR1,5. A fixture 1,2:1 mostra uma melhoria útil para 1280/2560 nos perfis desktop e mantém 800 no mobile. Nenhum frame vazio observado durante a substituição atrasada; reabrir não gerou pedidos. Inclui resize e bloqueio de reutilização por nova versão/permissão. Os testes unitários cobrem descarte/revogação local e aquisição falhada; o teste Svelte existente preserva recortes, drag, teclado e dispositivos. São fixtures, não um ensaio de produção ou de todos os navegadores.
+
+Resultados numéricos: [baseline](measurements/responsive-reuse-2026-10-30/before/results.json), [final](measurements/responsive-reuse-2026-10-30/final/results.json), [reutilização no browser](measurements/responsive-reuse-2026-10-30/reuse-browser.json). Para repetir: definir `PHOTO_MEASUREMENT_MODES=before` e um diretório novo em `PHOTO_MEASUREMENT_DIR` para a baseline; usar `responsive` para a política atual. `PHOTO_RELAX_PREVIEW=true` regista a limitação de mudança de documento em vez de a esconder. Não substituir resultados históricos.
+
+O procedimento de revert abaixo é histórico da experiência isolada. Depois desta política nova, não o aplicar cegamente: comparar os commits e preservar a política e os ajustes posteriores solicitados.
 
 ## Referências duradouras
 

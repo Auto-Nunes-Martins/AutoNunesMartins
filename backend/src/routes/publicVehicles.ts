@@ -173,7 +173,7 @@ router.get(
         });
         return;
       }
-      res.json(vehicle);
+      res.json((await withCoverPhotoDimensions(prisma,[vehicle],true))[0]);
     } catch {
       logger.error('Public vehicle detail unavailable');
       res.status(503).json({ error: 'Public catalogue temporarily unavailable' });
@@ -195,7 +195,8 @@ router.get(
         res.status(404).json({ error: 'Photos unavailable' });
         return;
       }
-      res.json({ versions });
+      const metadata=(await withCoverPhotoDimensions(prisma,[{photos:versions.map(v=>'?v='+v)}],true))[0];
+      res.json({ versions,...(metadata?.photoDimensions?.some(Boolean)?{photoDimensions:metadata.photoDimensions}:{}) });
     } catch {
       logger.error('Public photo authorization unavailable');
       res.status(503).json({ error: 'Photos temporarily unavailable' });

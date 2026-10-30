@@ -1,5 +1,6 @@
 <script lang="ts">
- import {photoAttrs,photoFallback} from "$lib/vehicleImage";
+  import {reusablePhoto} from '$lib/reusablePhoto';
+ import {photoAttrs} from "$lib/vehicleImage";
   import { onDestroy, untrack } from 'svelte';
   import { Camera, Plus, Upload, X, Check } from 'lucide-svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
@@ -93,7 +94,7 @@
       {/each}
     {/if}
     {#if notice}<aside class="photo-notice" aria-label="Resultado da seleção de fotografias">
-      <div class="notice-thumbnails" aria-hidden="true">{#each notice.accepted.slice(0, 3) as photo}<img {...photoAttrs(photo,320,'48px')} use:photoFallback={photo.url} alt="" />{/each}{#if notice.accepted.length > 3}<span>+{notice.accepted.length - 3}</span>{/if}{#if !notice.accepted.length}<Camera size={28} />{/if}</div>
+      <div class="notice-thumbnails" aria-hidden="true">{#each notice.accepted.slice(0, 3) as photo}<img {...photoAttrs(photo,320,'48px')} use:reusablePhoto={{photo}} alt="" />{/each}{#if notice.accepted.length > 3}<span>+{notice.accepted.length - 3}</span>{/if}{#if !notice.accepted.length}<Camera size={28} />{/if}</div>
       <div class="notice-copy" role="status" aria-live="polite" aria-atomic="true">
         <h3>{#if notice.accepted.length}<Check size={17} aria-hidden="true" />{notice.accepted.length === 1 ? 'Fotografia adicionada ao rascunho' : 'Fotografias adicionadas ao rascunho'}{:else}Não foi adicionada nenhuma fotografia{/if}</h3>
         {#if notice.accepted.length}<p><strong>Falta guardar alterações.</strong></p><p><span>{notice.accepted.length} {notice.accepted.length === 1 ? 'fotografia nova por guardar' : 'fotografias novas por guardar'}</span>. Todas as fotografias ficam visíveis quando a viatura é publicada, depois de guardar.</p>{/if}
@@ -107,7 +108,7 @@
       <figure class="cover-preview" aria-label="Pré-visualização da foto principal">
         <div class="cover-image">
           {#if cover && failedCoverUrl !== cover.url}
-            <img {...photoAttrs(cover,800,'320px')} style={framingStyle(framing[cover.path])} use:photoFallback={cover.url} alt={cover.path !== persistedCoverPath ? 'Foto principal · por guardar' : 'Foto principal guardada'} onerror={() => failedCoverUrl = cover.url} />
+            <img {...photoAttrs(cover,800,'320px')} style={framingStyle(framing[cover.path])} use:reusablePhoto={{photo:cover}} alt={cover.path !== persistedCoverPath ? 'Foto principal · por guardar' : 'Foto principal guardada'} onerror={() => failedCoverUrl = cover.url} />
           {:else}
             <div class="cover-empty"><Camera size={36} strokeWidth={1.2} aria-hidden="true" /><span>{cover ? 'Fotografia indisponível' : 'A foto principal aparece aqui'}</span></div>
           {/if}

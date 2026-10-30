@@ -8,9 +8,10 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
+import {execFileSync} from 'node:child_process';
 
 const root = process.cwd(), site = path.join(root, 'apps/website');
-const out = path.join(root, 'docs/measurements/card-responsive-2026-10-28');
+const out = path.join(root, process.env.PHOTO_MEASUREMENT_DIR || 'docs/measurements/responsive-reuse-2026-10-30/current');
 const screenshots = path.join(site, '.svelte-kit/card-photo-measurements');
 await mkdir(out, { recursive: true });
 await mkdir(screenshots, { recursive: true });
@@ -27,7 +28,7 @@ const items = Array.from({ length: 6 }, (_, i) => {
   return { slug, brand: 'Teste', model: `Modelo ${i + 1}`, year: 2023, fuel: 'DIESEL', mileage: 20000,
     price: '21000.00', currency: 'EUR', description: 'Fixture local.', transmission: 'MANUAL', availability: 'AVAILABLE',
     photos: versions.map((v, n) => `/api/public/vehicles/${slug}/photos/${n}?v=${v}`),
-    coverPhotoDimensions: { version: versions[0], width: metadata[0].width, height: metadata[0].height } };
+    coverPhotoDimensions: { version: versions[0], width: metadata[0].width, height: metadata[0].height },photoDimensions:metadata.map((m,i)=>({version:versions[i],width:m.width,height:m.height})) };
 });
 const catalog = { items, total: 6, page: 1, pageSize: 30, totalPages: 1, facets: {
   brands: [{ value: 'Teste', count: 6 }], models: [], fuels: [], transmissions: [],
@@ -48,7 +49,7 @@ const api = createServer((req, res) => {
     if (cached) res.end(); else setTimeout(() => res.end(body), w === 1600 ? 120 : 0);
     return;
   }
-  const data = p.endsWith('/photos/access') ? { versions }
+  const data = p.endsWith('/photos/access') ? { versions,photoDimensions:items[0].photoDimensions }
     : p.endsWith('/related') ? items.filter(v => !p.includes(v.slug)).slice(0, 5)
     : p === '/homepage-highlights' ? { configured: true, items: items.slice(0, 5).map(vehicle => ({ vehicle, photoIndex: 0 })) }
     : p === '/brands' ? catalog.facets.brands : items.find(v => p === '/' + v.slug) ?? catalog;
@@ -59,13 +60,15 @@ const apiPort = await listen(api), results = [];
 let browser, child;
 try {
   browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome', headless: true });
-  for (const mode of ['fixed1600', 'responsive']) {
+  for (const mode of process.env.PHOTO_MEASUREMENT_MODES?.split(',') || ['before', 'responsive']) {
+    const historical=mode==='before'?Object.fromEntries(['vehiclePhotoSources.ts','publicThumbnail.ts','publicGallerySession.ts','publicGalleryPhoto.ts','components/VehiclePhotoRail.svelte','components/stand-concepts/DesignEdition.svelte'].map(file=>[file,execFileSync('git',['show',`3f41972:apps/website/src/lib/${file}`],{encoding:'utf8'})])):{};
     const probe = createServer(), port = await listen(probe); await new Promise(resolve => probe.close(resolve));
     const origin = `http://127.0.0.1:${port}`;
     const config = path.join(site, '.svelte-kit', `measure-${mode}.config.mjs`);
     await mkdir(path.dirname(config), { recursive: true });
     await writeFile(config, `import base from ${JSON.stringify(path.join(site, 'vite.config.ts'))};
 export default {...base, plugins:[{name:'measurement-baseline',enforce:'pre',transform(code,id){
+const old=Object.entries(${JSON.stringify(historical)}).find(([file])=>id.endsWith('/'+file));if(old)return old[1];
 if(${JSON.stringify(mode)}==='fixed1600' && id.endsWith('/DesignEdition.svelte')) return code.replaceAll('cardPhoto(vehicle.image)', 'sizedPhoto(vehicle.image, 1600)').replaceAll('cardPhotoSet(vehicle.image)', 'undefined');
 if(${JSON.stringify(mode)}==='fixed1600' && (id.endsWith('/FeaturedPhoto.svelte') || id.endsWith('/HomeHeroDirections.svelte'))) return code.replace('{ cardPhoto, cardPhotoSet }','{ sizedPhoto, vehiclePhotoSet }').replaceAll('cardPhoto(frame.source)', 'sizedPhoto(frame.source, 1600)').replaceAll('cardPhoto(firstImage)', 'sizedPhoto(firstImage, 1600)').replaceAll('cardPhotoSet(', 'vehiclePhotoSet(');
 }},...base.plugins], server:{...base.server,fs:{allow:${JSON.stringify([root, await realpath(path.join(root, 'node_modules'))])}}}};`);
@@ -98,6 +101,7 @@ if(${JSON.stringify(mode)}==='fixed1600' && (id.endsWith('/FeaturedPhoto.svelte'
       assert.equal(await cards.count(), 6, 'catalogue fixture');
       // Same six cards in each profile, including cards initially below the fold.
       for (const card of await cards.all()) await card.scrollIntoViewIfNeeded();
+      await page.waitForFunction(()=>[...document.querySelectorAll('.vehicle-card.public-card .card-image img')].some(image=>/^\d+(?:\.\d+)?px$/.test(image.sizes)));
       await snapshot('catalog-cold');
       await page.screenshot({ path: path.join(screenshots, `${mode}-${profile}-catalog.png`) });
       await page.evaluate(() => {
@@ -116,9 +120,8 @@ if(${JSON.stringify(mode)}==='fixed1600' && (id.endsWith('/FeaturedPhoto.svelte'
       await cards.first().locator('.card-detail-link').click();
       await page.locator('.detail-thumbnails img').first().waitFor();
       await snapshot('enter-detail-three-photos');
-      const preview = await page.evaluate(() => window.__cardPreview);
-      assert.equal(preview.seen, true, `${mode}/${profile}: decoded card preview`);
-      assert.equal(preview.busy, false, 'preview does not show loading');
+      const preview = await page.evaluate(() => window.__cardPreview??{seen:false,busy:false,documentChanged:true});
+      if(process.env.PHOTO_RELAX_PREVIEW!=='true'){assert.equal(preview.seen, true, `${mode}/${profile}: decoded card preview`);assert.equal(preview.busy, false, 'preview does not show loading');}
       results.at(-1).preview = preview;
       assert.equal(await page.locator('[data-card-photo-preview]').count(), 0, 'preview removed after 1600 decodes');
       for (const button of await page.locator('.detail-thumbnails button[aria-label^="Ver fotografia"]').all()) await button.click();

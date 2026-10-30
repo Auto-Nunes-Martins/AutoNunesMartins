@@ -1,0 +1,1556 @@
+{
+  "sources": [
+    "home-v5/curves-wide-3840.webp",
+    "cabin/interior-crop-1920.webp",
+    "home-v5/forest-wide-3840.webp"
+  ],
+  "metadata": [
+    {
+      "width": 3840,
+      "height": 2560
+    },
+    {
+      "width": 1920,
+      "height": 2126
+    },
+    {
+      "width": 3840,
+      "height": 2560
+    }
+  ],
+  "variants": [
+    {
+      "320": 22398,
+      "384": 32712,
+      "800": 131934,
+      "1280": 331514,
+      "1600": 497352,
+      "2560": 1141648
+    },
+    {
+      "320": 21728,
+      "384": 29450,
+      "800": 93400,
+      "1280": 189038,
+      "1600": 253958,
+      "2560": 383340
+    },
+    {
+      "320": 25010,
+      "384": 35438,
+      "800": 145420,
+      "1280": 369086,
+      "1600": 551978,
+      "2560": 1266114
+    }
+  ],
+  "results": [
+    {
+      "mode": "before",
+      "profile": "desktop",
+      "stage": "catalog-cold",
+      "bytes": 791604,
+      "requests": 6,
+      "downloads": 6,
+      "revalidations": 0,
+      "widths": [
+        800
+      ],
+      "transfers": [
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        },
+        {
+          "path": "/measure-1-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        },
+        {
+          "path": "/measure-2-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        },
+        {
+          "path": "/measure-3-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        },
+        {
+          "path": "/measure-4-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        },
+        {
+          "path": "/measure-5-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        }
+      ],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.328125,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.328125,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.34375,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.328125,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.328125,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.34375,
+          "height": 292.375,
+          "sizes": "440px"
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "desktop",
+      "stage": "enter-detail-three-photos",
+      "bytes": 1303288,
+      "requests": 6,
+      "downloads": 3,
+      "revalidations": 3,
+      "widths": [
+        1600
+      ],
+      "transfers": [
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1600,
+          "status": 200,
+          "bytes": 497352
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/1",
+          "width": 1600,
+          "status": 200,
+          "bytes": 253958
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/2",
+          "width": 1600,
+          "status": 200,
+          "bytes": 551978
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/1",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/2",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        }
+      ],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "507px"
+        }
+      ],
+      "preview": {
+        "seen": true,
+        "busy": false
+      }
+    },
+    {
+      "mode": "before",
+      "profile": "desktop",
+      "stage": "gallery-and-fullscreen",
+      "bytes": 0,
+      "requests": 0,
+      "downloads": 0,
+      "revalidations": 0,
+      "widths": [],
+      "transfers": [],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "desktop",
+      "stage": "catalog-http-cache",
+      "bytes": 0,
+      "requests": 6,
+      "downloads": 0,
+      "revalidations": 6,
+      "widths": [
+        800
+      ],
+      "transfers": [
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 800,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-1-abcdef123456/photos/0",
+          "width": 800,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-2-abcdef123456/photos/0",
+          "width": 800,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-3-abcdef123456/photos/0",
+          "width": 800,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-4-abcdef123456/photos/0",
+          "width": 800,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-5-abcdef123456/photos/0",
+          "width": 800,
+          "status": 304,
+          "bytes": 0
+        }
+      ],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.328125,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.328125,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.34375,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.328125,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.328125,
+          "height": 292.375,
+          "sizes": "440px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 325.34375,
+          "height": 292.375,
+          "sizes": "440px"
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "desktop",
+      "stage": "detail-revisit",
+      "bytes": 0,
+      "requests": 6,
+      "downloads": 0,
+      "revalidations": 6,
+      "widths": [
+        1600
+      ],
+      "transfers": [
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/1",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/2",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/1",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/2",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        }
+      ],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "desktop",
+      "stage": "featured-card",
+      "src": "http://127.0.0.1:55969/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+      "srcset": "/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+      "sizes": "538px"
+    },
+    {
+      "mode": "before",
+      "profile": "desktop",
+      "stage": "home-visible",
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 346.265625,
+          "height": 307.328125,
+          "sizes": "462px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 346.265625,
+          "height": 307.328125,
+          "sizes": "462px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 346.28125,
+          "height": 307.34375,
+          "sizes": "463px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 346.265625,
+          "height": 307.328125,
+          "sizes": "462px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 346.265625,
+          "height": 307.328125,
+          "sizes": "462px"
+        }
+      ],
+      "transfersAfterScroll": []
+    },
+    {
+      "mode": "before",
+      "profile": "desktop",
+      "stage": "related-visible",
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "509px"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800",
+          "srcset": "/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 388.8125,
+          "height": 337.71875,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        }
+      ],
+      "transfersAfterScroll": [
+        {
+          "path": "/measure-1-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        },
+        {
+          "path": "/measure-2-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        },
+        {
+          "path": "/measure-3-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        },
+        {
+          "path": "/measure-4-abcdef123456/photos/0",
+          "width": 800,
+          "status": 200,
+          "bytes": 131934
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "mobile",
+      "stage": "catalog-cold",
+      "bytes": 1989084,
+      "requests": 6,
+      "downloads": 6,
+      "revalidations": 0,
+      "widths": [
+        1280
+      ],
+      "transfers": [
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        },
+        {
+          "path": "/measure-1-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        },
+        {
+          "path": "/measure-2-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        },
+        {
+          "path": "/measure-3-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        },
+        {
+          "path": "/measure-4-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        },
+        {
+          "path": "/measure-5-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        }
+      ],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "458px"
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "mobile",
+      "stage": "enter-detail-three-photos",
+      "bytes": 1303288,
+      "requests": 6,
+      "downloads": 3,
+      "revalidations": 3,
+      "widths": [
+        1600
+      ],
+      "transfers": [
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1600,
+          "status": 200,
+          "bytes": 497352
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/1",
+          "width": 1600,
+          "status": 200,
+          "bytes": 253958
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/2",
+          "width": 1600,
+          "status": 200,
+          "bytes": 551978
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/1",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/2",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        }
+      ],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        }
+      ],
+      "preview": {
+        "seen": true,
+        "busy": false
+      }
+    },
+    {
+      "mode": "before",
+      "profile": "mobile",
+      "stage": "gallery-and-fullscreen",
+      "bytes": 0,
+      "requests": 0,
+      "downloads": 0,
+      "revalidations": 0,
+      "widths": [],
+      "transfers": [],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "mobile",
+      "stage": "catalog-http-cache",
+      "bytes": 0,
+      "requests": 6,
+      "downloads": 0,
+      "revalidations": 6,
+      "widths": [
+        1280
+      ],
+      "transfers": [
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-1-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-2-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-3-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-4-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-5-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 304,
+          "bytes": 0
+        }
+      ],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "mobile",
+      "stage": "detail-revisit",
+      "bytes": 0,
+      "requests": 6,
+      "downloads": 0,
+      "revalidations": 6,
+      "widths": [
+        1600
+      ],
+      "transfers": [
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/1",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/2",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/0",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/1",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        },
+        {
+          "path": "/measure-0-abcdef123456/photos/2",
+          "width": 1600,
+          "status": 304,
+          "bytes": 0
+        }
+      ],
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "400px"
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "mobile",
+      "stage": "featured-card",
+      "src": "http://127.0.0.1:55969/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+      "srcset": "/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+      "sizes": "334px"
+    },
+    {
+      "mode": "before",
+      "profile": "mobile",
+      "stage": "home-visible",
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-0-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "457px"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 342,
+          "height": 304.28125,
+          "sizes": "(max-width: 700px) max(calc(90vw + 0px), calc(96.428571vw + 90.000000px)), (max-width: 1100px) max(calc((min(96vw, calc(100vw - 48px), 1320px) - 0px - 24px) / 2), calc((calc((min(96vw, calc(100vw - 48px), 1320px) - 0px - 24px) / 2) / 1.4 + 60px) * 1.500000)), (width < 1200px) max(calc((min(96vw, calc(100vw - 48px), 1320px) - calc(190px + clamp(24px, 3vw, 48px)) - 24px) / 2), calc((calc((min(96vw, calc(100vw - 48px), 1320px) - calc(190px + clamp(24px, 3vw, 48px)) - 24px) / 2) / 1.4 + 60px) * 1.500000)), (max-width: 1920px) max(calc((min(96vw, calc(100vw - 48px), 1320px) - calc(190px + clamp(24px, 3vw, 48px)) - 48px) / 3), calc((calc((min(96vw, calc(100vw - 48px), 1320px) - calc(190px + clamp(24px, 3vw, 48px)) - 48px) / 3) / 1.4 + 60px) * 1.500000)), max(calc((min(96vw, calc(100vw - 48px), 1440px) - calc(190px + clamp(24px, 3vw, 48px)) - 48px) / 3), calc((calc((min(96vw, calc(100vw - 48px), 1440px) - calc(190px + clamp(24px, 3vw, 48px)) - 48px) / 3) / 1.4 + 60px) * 1.500000))"
+        }
+      ],
+      "transfersAfterScroll": [
+        {
+          "path": "/measure-3-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        }
+      ]
+    },
+    {
+      "mode": "before",
+      "profile": "mobile",
+      "stage": "related-visible",
+      "cards": [
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "399px"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-1-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "http://127.0.0.1:55969/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280",
+          "srcset": "/viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-2-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-3-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-4-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        },
+        {
+          "src": "",
+          "srcset": "/viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=320 320w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=384 384w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=800 800w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1280 1280w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=1600 1600w, /viaturas/measure-5-abcdef123456/photos/0?v=b77c307f3105fd36d1972bc34436d3fc9d304ebcd1a2efb728b580eae0d4199b&w=2560 2560w",
+          "width": 287.234375,
+          "height": 265.15625,
+          "sizes": "(max-width: 700px) max(calc((90vw - 8px) * .86), calc((calc((90vw - 8px) * .86) / 1.4 + 60px) * 1.5)), (max-width: 1000px) max(calc((min(95vw, 1640px) - 48px) / 2.2), calc((calc((min(95vw, 1640px) - 48px) / 2.2) / 1.4 + 60px) * 1.5)), max(calc((min(95vw, 1640px) - 68px) / 3.22), calc((calc((min(95vw, 1640px) - 68px) / 3.22) / 1.4 + 60px) * 1.5))"
+        }
+      ],
+      "transfersAfterScroll": [
+        {
+          "path": "/measure-1-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        },
+        {
+          "path": "/measure-2-abcdef123456/photos/0",
+          "width": 1280,
+          "status": 200,
+          "bytes": 331514
+        }
+      ]
+    }
+  ]
+}

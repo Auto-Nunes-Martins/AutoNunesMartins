@@ -1,5 +1,6 @@
 <script lang="ts">
-  import {photoAttrs,photoFallback} from '$lib/vehicleImage';
+  import {reusablePhoto} from '$lib/reusablePhoto';
+  import {photoAttrs} from '$lib/vehicleImage';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
   import { crmPath } from '$lib/paths';
   import { untrack, onMount } from 'svelte';
@@ -92,7 +93,7 @@
             <span class="position">{String(index + 1).padStart(2, '0')}</span>
             {#if selectedPhoto?.url}<img
                 class="cover"
-                {...photoAttrs(selectedPhoto,320,'128px')} use:photoFallback={selectedPhoto.url}
+                {...photoAttrs(selectedPhoto,320,'128px')} use:reusablePhoto={{photo:selectedPhoto}}
                 alt={`${vehicle?.brand} ${vehicle?.model} — fotografia escolhida`}
               />{:else}<div class="cover unavailable"><Image size={20} /></div>{/if}
             <div class="vehicle-info">
@@ -158,7 +159,7 @@
                         : entry,
                     ))}
                 >
-                  {#if photo.url}<img {...photoAttrs(photo,320,'128px')} use:photoFallback={photo.url} alt="" loading="lazy" />{:else}<Image
+                  {#if photo.url}<img {...photoAttrs(photo,320,'128px')} use:reusablePhoto={{photo}} alt="" loading="eager" />{:else}<Image
                       size={20}
                     />{/if}
                   {#if photo.path === item.photoPath}<span class="photo-check"
@@ -168,7 +169,7 @@
               {/each}
             </div>
             {#if selectedPhoto?.url}
-              <PhotoFramingEditor src={selectedPhoto.url} value={item.framing} context="featured" disabled={saving} onchange={framing => items = items.map(entry => entry.vehicleId === item.vehicleId ? {...entry, framing} : entry)} />
+              <PhotoFramingEditor photo={selectedPhoto} src={selectedPhoto.url} value={item.framing} context="featured" disabled={saving} onchange={framing => items = items.map(entry => entry.vehicleId === item.vehicleId ? {...entry, framing} : entry)} />
             {/if}
           {/if}
         </li>
@@ -239,7 +240,7 @@
           {@const selected = items.some((item) => item.vehicleId === vehicle.id)}
           <div class="candidate">
             {#if vehicle.photos[0]?.url}<img
-                {...photoAttrs(vehicle.photos[0],320,'64px')} use:photoFallback={vehicle.photos[0].url}
+                {...photoAttrs(vehicle.photos[0],320,'64px')} use:reusablePhoto={{photo:vehicle.photos[0]}}
                 alt=""
                 loading="lazy"
               />{:else}<div class="candidate-placeholder"><Image size={18} /></div>{/if}
