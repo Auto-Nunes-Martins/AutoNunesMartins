@@ -23,6 +23,7 @@ test(
     const src = 'data:image/svg+xml,' + encodeURIComponent(svg);
     await write('package.json', '{"type":"module"}');
     await write('paths.js', "export const base='';");
+    await write('navigation.js','export const invalidateAll=async()=>{};');
     await write('review.css', "@import '../../src/app.css';\n@source '../../src';");
     await write(
       'App.svelte',
@@ -31,6 +32,7 @@ import Editor from '@crm/components/vehicle/PhotoFramingEditor.svelte';
 import Picker from '@crm/components/vehicle/PublicPhotoPicker.svelte';
 import Featured from '@website/components/stand-concepts/FeaturedPhoto.svelte';
 import Rail from '@website/components/VehiclePhotoRail.svelte';
+import Gallery from '@crm/components/vehicle/PhotoGallery.svelte';
 import '@website/components/stand-concepts/homeHeroDirections.css';
 const src=${JSON.stringify(src)};
 const session={attach(){},detach(){},hasCopy(){return true;},async read(){return {url:src};}};
@@ -43,6 +45,7 @@ const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertica
 <Picker bind:selected allowed={['a','b','draft:new']} persisted={['a','b']} staged photos={[{path:'a',url:src},{path:'b',url:src},{path:'draft:new',url:src}]} {framing} onframing={(path,value)=>framing={...framing,[path]:value}}/>
 <button type="button" onclick={()=>localStorage.setItem('framing-fixture',JSON.stringify(framing))}>Guardar ficha</button>
 <output id="gallery">{JSON.stringify(framing)}</output>
+<div id="crm-gallery"><Gallery vehicleId="fixture" photos={[{path:'a',url:src},{path:'b',url:src}]} {framing} editable={false}/></div>
 <section class="hd-root hd-1"><div class="hd-photo" style="width:100%;height:300px"><Featured source={src} framing={value} alt="Destaque" onfailure={()=>{}} ondisplay={()=>{}}/></div></section>
 <div id="inline" style="height:300px"><Rail {vehicle} index={0} onContact={()=>{}}/></div>
 <div id="full" style="height:300px"><Rail {vehicle} {session} index={0} fullscreen onContact={()=>{}}/></div>
@@ -85,6 +88,7 @@ const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertica
             { find: '@crm', replacement: path.join(root, 'apps/crm/src/lib') },
             { find: '@website', replacement: path.join(root, 'apps/website/src/lib') },
             { find: '$app/paths', replacement: path.join(directory, 'paths.js') },
+            { find: '$app/navigation', replacement: path.join(directory, 'navigation.js') },
           ],
         },
         server: { host: '127.0.0.1', port: 0, fs: { allow: [root] } },
@@ -188,6 +192,15 @@ const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertica
         await page.getByRole('button',{name:'Guardar ficha',exact:true}).click();await page.reload();
         await page.locator('.photo-card').first().waitFor();
         assert.equal(await cardPosition(),'50% 100%','existing crop reopens from saved state');
+        const crmImage=page.locator('#crm-gallery .photo-preview img');
+        assert.equal(await crmImage.evaluate(img=>getComputedStyle(img).objectPosition),'50% 100%');
+        const crmRatio=await page.locator('#crm-gallery .photo-preview').evaluate(node=>node.clientWidth/node.clientHeight);
+        assert.ok(Math.abs(crmRatio-(width===390?4/3:1.4))<.025);
+        await page.locator('#crm-gallery').getByRole('button',{name:'Fotografia seguinte',exact:true}).click();
+        assert.equal(await crmImage.evaluate(img=>getComputedStyle(img).objectPosition),'50% 50%','each consultation photo uses its own crop');
+        await page.locator('#crm-gallery .photo-open').click();
+        assert.equal(await page.locator('.crm-photo-viewer > img').evaluate(img=>getComputedStyle(img).objectFit),'contain');
+        await page.locator('.crm-photo-viewer').getByRole('button',{name:'Fechar fotografia',exact:true}).click();
         assert.equal(await page.locator('.photo-card').nth(2).locator('.photo-media img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 100%','new draft photo reopens with its own crop');
         await editor.getByRole('button', { name: 'Repor original' }).click();
         assert.equal(await page.locator('#value').textContent(), 'null');

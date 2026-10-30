@@ -237,6 +237,7 @@
           loading
           photoCount={v.photos.length}
           principalPath={vehiclePrincipalPath(v) ?? null}
+            framing={v.galleryFraming??{}}
           editable={false}
         />
       {:then signedPhotos}
@@ -244,6 +245,7 @@
           vehicleId={v.id}
           photos={signedPhotos}
           principalPath={vehiclePrincipalPath(v) ?? null}
+            framing={v.galleryFraming??{}}
           editable={false}
         />
       {:catch}
@@ -253,6 +255,7 @@
           loadError
           photoCount={v.photos.length}
           principalPath={vehiclePrincipalPath(v) ?? null}
+            framing={v.galleryFraming??{}}
           editable={false}
         />
       {/await}

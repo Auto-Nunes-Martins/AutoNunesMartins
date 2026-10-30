@@ -1,5 +1,6 @@
 <script lang="ts">
   import { PHOTO_ACCEPT, preparePhoto } from '$lib/photoPreparation';
+  import { framingStyle, type PhotoFraming } from '@anm/types';
   import { onDestroy } from 'svelte';
   import { sessionFetch } from '$lib/auth/session';
  import {photoAttrs,photoFallback,type SignedVariantPhoto} from "$lib/vehicleImage";
@@ -17,6 +18,7 @@
   }
 
   interface Props {
+    framing?:Record<string,PhotoFraming>;
     vehicleId: string;
     photos: SignedPhoto[];
     busy?: boolean;
@@ -38,7 +40,7 @@
     >;
   }
 
-  let { vehicleId, photos, editor, disabled = false, dragging = false, editable = true, principalPath, busy = $bindable(false), loading = false, photoCount = photos.length, loadError = false }: Props & { loading?: boolean; photoCount?: number; loadError?: boolean } = $props();
+  let { vehicleId, photos, editor, framing={}, disabled = false, dragging = false, editable = true, principalPath, busy = $bindable(false), loading = false, photoCount = photos.length, loadError = false }: Props & { loading?: boolean; photoCount?: number; loadError?: boolean } = $props();
   // All photo ops go through SvelteKit proxy endpoints so the user's Clerk
   // session is forwarded server-side as a Bearer token to the Express backend.
   const apiBase = $derived(crmPath(`/viaturas/${vehicleId}/photos`));
@@ -227,12 +229,13 @@
 
       {:else}
         <!-- Primary photo -->
-        <div class="photo-preview aspect-[16/10] bg-[var(--color-bg-2)] overflow-hidden">
+        <div class="photo-preview aspect-[16/10] bg-[var(--color-bg-2)] overflow-hidden" class:public-crop={!editable}>
           {#if primary}
             <button bind:this={opener} type="button" class="photo-open" aria-label={`Ampliar fotografia ${activeIndex + 1} de ${photos.length}`} onclick={() => { viewerOpen = true; viewer.showModal(); }} onkeydown={photoKey}>
             {#if imageFailed}<span class="photo-unavailable">Fotografia indisponível</span>{:else}
             <img
               {...photoAttrs(primary,1600,'(max-width:700px) 100vw, 1100px')} use:photoFallback={primary.url}
+              style={editable?undefined:framingStyle(framing[primary.path])}
               alt={`Fotografia ${activeIndex + 1} da viatura`}
               class="h-full w-full object-cover"
               loading="lazy"
@@ -356,6 +359,8 @@
 
 <style>
   .photo-preview { position: relative; }
+  .photo-preview.public-crop{aspect-ratio:1.4;max-height:690px;}.public-crop img{object-fit:cover;object-position:var(--photo-desktop,50% 50%);}
+  @media(max-width:700px){.photo-preview.public-crop{aspect-ratio:4/3;max-height:none;}.public-crop img{object-position:var(--photo-mobile,50% 50%);}}
   .edit-photos {display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid var(--color-border);border-radius:var(--radius-btn);font-size:12px;}
   /* Intrinsic image sizes must never grow the aspect-ratio frame after decoding. */
   .photo-open { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: zoom-in; }
