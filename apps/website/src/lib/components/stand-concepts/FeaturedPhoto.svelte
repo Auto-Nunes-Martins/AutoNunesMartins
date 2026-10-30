@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, tick, untrack } from 'svelte';
+  import { framingStyle, type PhotoFraming } from '@anm/types';
   import { featuredPhotoSizes } from './images';
   import { cardPhoto, cardPhotoSet } from '$lib/vehiclePhotoSources';
   import { coverPhotoSizes } from '$lib/coverPhotoSizes';
@@ -7,29 +8,32 @@
 
   let {
     source,
+    framing,
     alt,
     onfailure,
     ondisplay,
   }: {
     source: string;
+    framing?: PhotoFraming;
     alt: string;
     onfailure: (failed: boolean) => void;
     ondisplay: (source: string) => void;
   } = $props();
-  type Frame = { source: string; alt: string; fallback: boolean };
-  let displayed = $state<Frame>(untrack(() => ({ source, alt, fallback: false })));
+  type Frame = { source: string; alt: string; fallback: boolean; framing?: PhotoFraming };
+  let displayed = $state<Frame>(untrack(() => ({ source, alt, framing, fallback: false })));
   let pending = $state<Frame | undefined>();
   let outgoing = $state<Frame | undefined>();
   let transitioning: Frame | undefined;
   let crossfade: Animation | undefined;
   onDestroy(() => crossfade?.cancel());
   $effect(() => {
-    const next = { source, alt, fallback: false };
+    const next = { source, alt, framing, fallback: false };
     untrack(() => {
       crossfade?.cancel();
       transitioning = undefined;
       outgoing = undefined;
       pending = source === displayed.source ? undefined : next;
+      if (source === displayed.source) displayed.framing = framing;
       onfailure(source === displayed.source && displayed.fallback);
       if (source === displayed.source) ondisplay(source);
     });
@@ -82,6 +86,7 @@
 {#each [...(outgoing ? [outgoing] : []), displayed, ...(pending ? [pending] : [])] as frame (frame.source)}
   <img
     use:coverPhotoSizes
+    style={frame.fallback ? undefined : framingStyle(frame.framing)}
     src={frame.fallback ? catalogPlaceholder : cardPhoto(frame.source)}
     srcset={frame.fallback ? undefined : cardPhotoSet(frame.source)}
     sizes={featuredPhotoSizes}
@@ -99,6 +104,8 @@
 {/each}
 
 <style>
+  img { object-position: var(--photo-desktop, 50% 53%) !important; }
+  @media (max-width:700px) { img { object-position: var(--photo-mobile, 50% 53%) !important; } }
   img.featured-photo-pending {
     position: absolute;
     inset: 0;

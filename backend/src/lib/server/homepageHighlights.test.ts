@@ -54,6 +54,17 @@ beforeEach(() => {
   mock.$transaction.mockImplementation((fn) => fn(mock));
 });
 describe('homepage editorial selection', () => {
+  it('validates and carries a highlight crop separately from gallery framing without private paths', async () => {
+    const framing = {desktop:{x:50,y:80},mobile:{x:50,y:65}};
+    const selection = {revision,items:[{vehicleId:id,photoPath:otherPhoto,framing}]};
+    expect(highlightsInputSchema.parse(selection)).toEqual(selection);
+    expect(highlightsInputSchema.safeParse({...selection, items:[{...selection.items[0],framing:{desktop:{x:101,y:0},mobile:{x:0,y:0}}}]}).success).toBe(false);
+    mock.appSetting.findUnique.mockResolvedValue({value:selection});
+    const result = await readPublicHighlights(db);
+    expect(result.items[0]?.framing).toEqual(framing);
+    expect(result.items[0]?.vehicle).not.toHaveProperty('galleryFraming');
+    expect(JSON.stringify(result)).not.toContain(otherPhoto);
+  });
   it('shares the exact selection, order and chosen photo with the dashboard', async () => {
     const secondId = 'c223456789012345678901234';
     const secondPhoto = `${secondId}/12345678-1234-1234-1234-123456789abc.jpg`;

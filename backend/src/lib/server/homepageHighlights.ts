@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import { photoFramingSchema } from '@anm/types';
 import {
   publicVehicleDto,
   publicVehicleSelect,
@@ -18,6 +19,7 @@ export const highlightItemsSchema = z
       .object({
         vehicleId: z.string().min(1).max(100),
         photoPath: z.string().min(1).max(500),
+        framing: photoFramingSchema.optional(),
       })
       .strict(),
   )
@@ -149,7 +151,7 @@ async function readHighlightSelection(db: PrismaClient) {
       const approved = approvedPaths(row);
       const index = approved.indexOf(item.photoPath);
       if (index < 0) return [];
-      return [{ id: row.id, vehicle: publicVehicleDto(row), photoIndex: index }];
+      return [{ id: row.id, vehicle: publicVehicleDto(row), photoIndex: index, ...(item.framing ? { framing: item.framing } : {}) }];
     }),
   };
 }
@@ -158,7 +160,7 @@ export async function readPublicHighlights(db: PrismaClient) {
   const selection = await readHighlightSelection(db);
   return {
     configured: selection.configured,
-    items: selection.items.map(({ vehicle, photoIndex }) => ({ vehicle, photoIndex })),
+    items: selection.items.map(({ vehicle, photoIndex, framing }) => ({ vehicle, photoIndex, ...(framing ? { framing } : {}) })),
   };
 }
 

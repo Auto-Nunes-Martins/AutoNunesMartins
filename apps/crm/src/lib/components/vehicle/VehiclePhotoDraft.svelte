@@ -5,10 +5,11 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
+  import type { PhotoFraming } from '@anm/types';
   import { PHOTO_ACCEPT, validatePhoto, preparePhoto } from '$lib/photoPreparation';
   import { crmPath } from '$lib/paths';
-  let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, form, disabled = false }:
-    { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; form: string; disabled?: boolean } = $props();
+  let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, form, disabled = false, framing = $bindable<Record<string, PhotoFraming>>({}) }:
+    { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; form: string; disabled?: boolean; framing?: Record<string, PhotoFraming> } = $props();
   let notice = $state<{ accepted: EditPhoto[]; rejected: string[] } | null>(null);
   let fileInput: HTMLInputElement;
   let uploadButton: HTMLButtonElement;
@@ -114,7 +115,7 @@
       </div>
       <div class="organize-panel">
         <div class="organize-heading"><h3>Organizar fotografias</h3><p>As alterações só são aplicadas <strong>ao guardar</strong>.</p></div>
-        <PublicPhotoPicker dense {revealPath} {persistedCoverPath} bind:selected allowed={displayOrder} {photos} {persisted} {form} pending={disabled} staged onprimary={primary} onreorder={reorder} ondelete={remove} primaryPath={cover?.path}>
+        <PublicPhotoPicker dense {revealPath} {persistedCoverPath} bind:selected allowed={displayOrder} {photos} {persisted} {form} {framing} onframing={(path, value) => { const next = {...framing}; if (value) next[path] = value; else delete next[path]; framing = next; }} pending={disabled} staged onprimary={primary} onreorder={reorder} ondelete={remove} primaryPath={cover?.path}>
           {#snippet addPhoto()}<button type="button" class="add-photo-card" disabled={disabled || photos.length >= 20} aria-controls={uploadId} onclick={() => fileInput.click()}><Plus size={30} strokeWidth={1.3} aria-hidden="true" /><strong>Adicionar fotografias</strong><span>{photos.length >= 20 ? 'Limite de 20 atingido' : 'Escolher uma ou várias'}</span></button>{/snippet}
         </PublicPhotoPicker>
         {#if photos.length >= 20}<p class="upload-feedback" role="status">Limite de 20 fotografias atingido.</p>{:else if addedCount && !notice}<p class="upload-feedback" role="status">{addedCount} {addedCount === 1 ? 'fotografia nova por guardar' : 'fotografias novas por guardar'}</p>{/if}

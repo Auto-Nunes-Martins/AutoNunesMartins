@@ -295,7 +295,7 @@
       }
       const resolve = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
-      const { photoPaths: _legacyPhotoPaths, ...publicationData } = draft.publication;
+      const { photoPaths: _legacyPhotoPaths, galleryFraming, ...publicationData } = draft.publication;
       savePhase = 3;
       progress = action === 'publish' ? 'A concluir e publicar…' : 'A guardar a viatura…';
       sent = true;
@@ -306,6 +306,7 @@
           expectedUpdatedAt: baseline.updatedAt,
           data: { ...draft.details, status: creationStatus(action, draft.details.status) },
           photos: draft.paths.map(resolve),
+          galleryFraming: Object.fromEntries(Object.entries(galleryFraming).filter(([path]) => draft.paths.includes(path)).map(([path, value]) => [resolve(path), value])),
           uploadedPhotos: files.map((photo) => photo.uploadedPath!),
           publication: publicationData,
         }),

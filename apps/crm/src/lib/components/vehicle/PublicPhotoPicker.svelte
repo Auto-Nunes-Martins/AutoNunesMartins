@@ -5,6 +5,8 @@
   import { flip } from 'svelte/animate';
   import { Star, Trash2 } from 'lucide-svelte';
   import { committedPhotoOrder, type PhotoOrderItem } from './photoOrder';
+  import PhotoFramingEditor from './PhotoFramingEditor.svelte';
+  import type { PhotoFraming } from '@anm/types';
   let {
     selected = $bindable<string[]>([]),
     dragging = $bindable(false),
@@ -23,6 +25,8 @@
     dense = false,
     revealPath,
     persistedCoverPath,
+    framing = {},
+    onframing,
   }: {
     selected: string[];
     dragging?: boolean;
@@ -41,8 +45,14 @@
     dense?: boolean;
     revealPath?: string;
     persistedCoverPath?: string;
+    framing?: Record<string, PhotoFraming>;
+    onframing?: (path: string, value: PhotoFraming | undefined) => void | Promise<boolean>;
   } = $props();
   let items = $state<PhotoOrderItem[]>([]);
+  let framingPath = $state<string>();
+  let framingDraft = $state<PhotoFraming>();
+  let framingPanel = $state<HTMLDivElement>();
+  $effect(() => { if (framingPath) void tick().then(() => framingPanel?.scrollIntoView({block:'nearest',behavior:'smooth'})); });
   const zoneId = $props.id();
   const duration = 150;
 
@@ -156,6 +166,7 @@
         role="group"
         aria-label={'Ações da fotografia ' + (index + 1)}
       >
+        {#if onframing && photo}<button type="button" disabled={pending || dragging} onclick={() => { framingDraft = framing[item.path]; framingPath = framingPath === item.path ? undefined : item.path; }} aria-expanded={framingPath === item.path}>Enquadrar</button>{/if}
         {#if onprimary}<button
             type="button"
             disabled={pending || dragging || (primaryPath ?? selected[0]) === item.path}
@@ -180,9 +191,14 @@
 </div>
 </div>
 {#if !allowed.length && !staged}<p class="hint">Sem fotografias. Use «Carregar» para adicionar.</p>{/if}
+{#if framingPath && onframing}
+  {@const photo = photos.find(photo => photo.path === framingPath)}
+  {#if photo}<div class="framing-editor" bind:this={framingPanel}><p>Fotografia {allowed.indexOf(photo.path) + 1}{staged ? ' · Aplicar e guardar a ficha para confirmar' : ''}</p><PhotoFramingEditor src={photo.url} value={framingDraft} context="gallery" disabled={pending} onchange={value => framingDraft = value} /><button type="button" disabled={pending} onclick={async () => { const saved = await onframing?.(photo.path, framingDraft); if (saved !== false) framingPath = undefined; }}>Aplicar enquadramento</button><button type="button" disabled={pending} onclick={() => framingPath = undefined}>Cancelar</button></div>{/if}
+{/if}
 {#if staged && allowed.length}<details class="publication-help"><summary>Como funciona a publicação?</summary><p class="hint">Ao publicar a viatura, todas as fotografias guardadas ficam visíveis no site, pela mesma ordem e com a mesma foto principal. Adicionar, ordenar e eliminar só é aplicado ao guardar. Retirar a viatura do site oculta todas as fotografias. O caixote elimina a fotografia da viatura.</p></details>{/if}
 
 <style>
+  .framing-editor {margin:16px auto 0;max-width:760px;} .framing-editor > p {font-size:12px;color:var(--color-text-muted);margin-bottom:8px;} .framing-editor > button {margin:12px 8px 0 0;} .actions {flex-wrap:wrap;}
   .photo-grid-shell, .photo-grid-scroll {min-width:0;}
   .photo-grid-scroll {padding:4px;overflow:visible;}
   .photo-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(min(198px,100%),1fr));gap:16px;align-items:start;}

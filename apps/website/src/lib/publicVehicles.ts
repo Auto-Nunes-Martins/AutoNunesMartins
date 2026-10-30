@@ -1,6 +1,6 @@
 import { catalogPlaceholder } from '$lib/localAssets';
 import { z } from 'zod';
-import { publicSpecificationsSchema } from '@anm/types';
+import { publicSpecificationsSchema, photoFramingSchema } from '@anm/types';
 
 export const fuelLabels = {
   GASOLINE: 'Gasolina',
@@ -29,6 +29,7 @@ export const publicVehicleSchema = z
     specifications: publicSpecificationsSchema.optional(),
     availability: z.enum(['AVAILABLE', 'RESERVED']),
     photos: z.array(z.string()).max(20),
+    galleryFraming: z.array(photoFramingSchema.nullable()).max(20).optional(),
     // Optional during rolling deployment/backfill. Never trust a dimension for another version.
     coverPhotoDimensions: z
       .object({

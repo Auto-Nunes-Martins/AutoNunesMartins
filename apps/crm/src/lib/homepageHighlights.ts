@@ -1,4 +1,5 @@
-export type HighlightItem = { vehicleId: string; photoPath: string };
+import type { PhotoFraming } from '@anm/types';
+export type HighlightItem = { vehicleId: string; photoPath: string; framing?: PhotoFraming };
 export type HighlightCandidate = {
   id: string;
   brand: string;

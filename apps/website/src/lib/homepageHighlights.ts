@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { photoFramingSchema } from '@anm/types';
 import { publicVehicleSchema, publicPhoto, publicHref } from './publicVehicles';
 
 export const publicHighlightsSchema = z.object({
@@ -6,7 +7,7 @@ export const publicHighlightsSchema = z.object({
   items: z
     .array(
       z
-        .object({ vehicle: publicVehicleSchema, photoIndex: z.number().int().min(0).max(19) })
+        .object({ vehicle: publicVehicleSchema, photoIndex: z.number().int().min(0).max(19), framing: photoFramingSchema.optional() })
         .refine((item) => item.photoIndex < item.vehicle.photos.length),
     )
     .max(5),

@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:form-browser": "svelte-kit sync && node --test test/vehicle-form-retention.browser.mjs test/form-validation.browser.mjs",
     "test:photo-browser": "node --test test/photo-gallery.browser.mjs",
+    "test:photo-framing": "node --test test/photo-framing.browser.mjs",
     "test:vehicle-actions-browser": "node --test test/vehicle-edit-actions.browser.mjs",
     "test:account-browser": "node --test test/account-profile.browser.mjs"
   },

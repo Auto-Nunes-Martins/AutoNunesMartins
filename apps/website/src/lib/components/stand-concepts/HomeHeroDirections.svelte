@@ -238,6 +238,7 @@
         >
           <FeaturedPhoto
             source={image}
+            framing={requested?.framing}
             alt={requested ? `${requested.vehicle.brand} ${requested.vehicle.model}` : ''}
             onfailure={(value) => (failed = value)}
             ondisplay={(source) => {

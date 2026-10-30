@@ -68,6 +68,15 @@ it('rejects a formatted description with no visible text when publishing, but pe
   value.publication!.published = false;
   expect(vehicleEditSchema.safeParse(value).success).toBe(true);
 });
+it('saves gallery positions with the same edit transaction and validates ownership', async () => {
+  const value = input();
+  value.galleryFraming = {[a]: {desktop:{x:50,y:75},mobile:{x:50,y:80}}};
+  await saveVehicleEdit(id, value, actor);
+  expect(tx.vehicle.update).toHaveBeenCalledWith(expect.objectContaining({data:expect.objectContaining({galleryFraming:value.galleryFraming})}));
+  value.expectedUpdatedAt = row.updatedAt.toISOString();
+  value.galleryFraming = {'foreign/photo.jpg':value.galleryFraming[a]!};
+  await expect(saveVehicleEdit(id, value, actor)).rejects.toThrow('Enquadramento');
+});
 beforeEach(() => {
   vi.clearAllMocks();
   row = {

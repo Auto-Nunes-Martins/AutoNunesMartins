@@ -70,6 +70,7 @@ model Vehicle {
   soldDate        DateTime?
   description     String?                  @db.Text
   photos          String[]                 @default([])
+  galleryFraming  Json                     @default("{}")
   photoDimensions VehiclePhotoDimensions[]
   pendingDocFlags Json                     @default("{\"financing\":false,\"imt\":false,\"registration\":false,\"docs\":false}")
   createdAt       DateTime                 @default(now())

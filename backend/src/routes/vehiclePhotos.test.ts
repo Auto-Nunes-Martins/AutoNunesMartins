@@ -7,7 +7,8 @@ import type { PrismaClient } from '@prisma/client';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  vehicle: { findUnique: vi.fn(), updateMany: vi.fn() },
+  vehicle: { findUnique: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
+  $queryRaw: vi.fn(),
   $transaction: vi.fn(),
   deleteObjects: vi.fn(),
   createSignedReadUrl: vi.fn(),
@@ -91,6 +92,27 @@ beforeEach(() => {
   });
   mocks.deleteObjects.mockResolvedValue(undefined);
   mocks.upload.mockResolvedValue({ error: null });
+});
+describe('photo framing', () => {
+  const framing = {desktop:{x:50,y:84},mobile:{x:35,y:75}};
+  it('saves metadata only, preserves other photos, and resets without touching storage', async () => {
+    mocks.vehicle.findUnique.mockResolvedValue({photos:[a,b],galleryFraming:{[b]:framing}});
+    let response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:a,framing})});
+    expect(response.status).toBe(200);
+    expect((await response.json()).galleryFraming).toEqual({[a]:framing,[b]:framing});
+    expect(mocks.vehicle.update).toHaveBeenCalledWith({where:{id},data:{galleryFraming:{[a]:framing,[b]:framing}}});
+    response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:b,framing:null})});
+    expect((await response.json()).galleryFraming).toEqual({});
+    expect(mocks.upload).not.toHaveBeenCalled(); expect(mocks.deleteObjects).not.toHaveBeenCalled();
+  });
+  it('rejects unknown photos and invalid coordinates before writing', async () => {
+    let response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:a,framing:{...framing,desktop:{x:50,y:101}}})});
+    expect(response.status).toBe(400);
+    mocks.vehicle.findUnique.mockResolvedValue({photos:[a,b],galleryFraming:{}});
+    response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:c,framing})});
+    expect(response.status).toBe(404);
+    expect(mocks.vehicle.update).not.toHaveBeenCalled();
+  });
 });
 
 describe('atomic photo changes across shared database callers', () => {

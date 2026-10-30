@@ -4,6 +4,7 @@ export function reconcilePhotoSelection(_draft: string[], _previousSaved: string
 }
 
 type Draft = {
+  galleryFraming?: Record<string, import('@anm/types').PhotoFraming>;
   price: string | number | null | undefined;
   description: string;
   transmission: string;

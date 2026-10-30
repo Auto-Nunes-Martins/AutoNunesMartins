@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { framingStyle } from '@anm/types';
   import type { PublicVehicle } from '$lib/publicVehicles';
   import { publicPhoto } from '$lib/publicVehicles';
   import { sizedPhoto } from '$lib/vehiclePhotoSources';
@@ -76,6 +77,7 @@
               alt={`Ampliar fotografia: ${vehicle.brand} ${vehicle.model} — fotografia ${i + 1}`}
               loading="eager"
               fetchpriority={i === 0 ? 'high' : 'auto'}
+              style={framingStyle(vehicle.galleryFraming?.[i] ?? undefined)}
               draggable={false}
             />
           </button>
@@ -100,6 +102,8 @@
 </div>
 
 <style>
+  .photo-rail:not(.fullscreen) img { object-position: var(--photo-desktop, 50% 50%); }
+  @media (max-width: 700px) { .photo-rail:not(.fullscreen) img { object-position: var(--photo-mobile, 50% 50%); } }
   .photo-rail {
     width: 100%;
     height: 100%;

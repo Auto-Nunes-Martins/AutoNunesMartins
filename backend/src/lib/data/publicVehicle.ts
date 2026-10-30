@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { createHash } from 'node:crypto';
-import { publicSpecificationsSchema } from '@anm/types';
+import { publicSpecificationsSchema, galleryFramingSchema } from '@anm/types';
 import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { isApprovedPhotoPath, type PublicVehicleQuery } from '../domain/publicVehicle.js';
 
@@ -20,6 +20,7 @@ export const publicVehicleSelect = {
   publicTransmission: true,
   publicSpecifications: true,
   photos: true,
+  galleryFraming: true,
 } satisfies Prisma.VehicleSelect;
 type PublicRow = Prisma.VehicleGetPayload<{ select: typeof publicVehicleSelect }>;
 
@@ -78,6 +79,8 @@ export function approvedPaths(row: Pick<PublicRow, 'id' | 'photos'>): string[] {
 
 /** Explicit JSON allowlist, even if a future query accidentally over-selects. */
 export function publicVehicleDto(row: PublicRow) {
+  const framing = galleryFramingSchema.safeParse(row.galleryFraming).data ?? {};
+  const positions = approvedPaths(row).map(path => framing[path] ?? null);
   if (
     !row.webPublished ||
     !row.publicSlug ||
@@ -88,6 +91,7 @@ export function publicVehicleDto(row: PublicRow) {
   }
   return {
     slug: row.publicSlug,
+    ...(positions.some(Boolean) ? { galleryFraming: positions } : {}),
     brand: row.brand,
     model: row.model,
     year: row.year,

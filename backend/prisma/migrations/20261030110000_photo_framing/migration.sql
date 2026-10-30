@@ -1,0 +1,1 @@
+ALTER TABLE "Vehicle" ADD COLUMN "galleryFraming" JSONB NOT NULL DEFAULT '{}';

@@ -50,6 +50,7 @@ export interface VehicleExpenseDto {
 }
 
 export interface VehicleDetailResponse {
+  galleryFraming?: Record<string, import('@anm/types').PhotoFraming>;
   webPublished: boolean;
   publicSlug: string | null;
   publicPrice: string | null;

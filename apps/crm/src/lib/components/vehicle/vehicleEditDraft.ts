@@ -1,5 +1,6 @@
 import type { SignedVariantPhoto } from '$lib/vehicleImage';
 import { descriptionHtml } from '@anm/types/richDescription';
+import { galleryFramingSchema } from '@anm/types';
 export type EditPhoto = SignedVariantPhoto & {
   file?: File;
   preparedFile?: File;
@@ -13,6 +14,7 @@ export function publicDraftFromForm(form: FormData) {
   const get = (key: string) => String(form.get(key) ?? '');
   return {
     published: get('published') === 'true',
+    galleryFraming: galleryFramingSchema.parse(JSON.parse(get('galleryFraming') || '{}')),
     price: get('publicPrice') || null,
     description: get('publicDescription'),
     photoPaths: form.getAll('vehiclePhotoPaths').map(String),

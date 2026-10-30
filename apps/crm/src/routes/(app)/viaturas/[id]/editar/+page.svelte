@@ -269,7 +269,7 @@
       }
       const resolvePath = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
-      const { photoPaths: _legacyPhotoPaths, ...publicationData } = publication;
+      const { photoPaths: _legacyPhotoPaths, galleryFraming, ...publicationData } = publication;
       savePhase = 3;
       progress = 'A guardar todas as alterações…';
       saveRequestStarted = true;
@@ -280,6 +280,7 @@
           expectedUpdatedAt: baseline.updatedAt,
           data: details,
           photos: orderedPhotos.map(resolvePath),
+          galleryFraming: Object.fromEntries(Object.entries(galleryFraming).filter(([path]) => orderedPhotos.includes(path)).map(([path, value]) => [resolvePath(path), value])),
           uploadedPhotos: files.map((photo) => photo.uploadedPath!),
           ...((publicDirty || changingPublication) ? { publication: publicationData } : {}),
         }),

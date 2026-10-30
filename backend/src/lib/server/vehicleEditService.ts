@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { descriptionText } from '@anm/types/richDescription';
-import { publicSpecificationsSchema, vehicleUpdateSchema, licensePlatePtSchema } from '@anm/types';
+import { publicSpecificationsSchema, vehicleUpdateSchema, licensePlatePtSchema, galleryFramingSchema } from '@anm/types';
 import { lockVehicle, saleMutation } from './saleFinancials.js';
 import {
   updateVehicleInTransaction,
@@ -19,6 +19,7 @@ import { preparePhotoDimensions } from './preparePhotoDimensions.js';
 export const vehicleEditSchema = z
   .object({
     expectedUpdatedAt: z.string().datetime(),
+    galleryFraming: galleryFramingSchema.optional(),
     data: vehicleUpdateSchema
       .omit({ id: true })
       .extend({
@@ -121,9 +122,12 @@ export async function saveVehicleEdit(
             'photos',
           );
         await updateVehicleInTransaction(tx, id, input.data, actor);
+        if (input.galleryFraming && Object.keys(input.galleryFraming).some(path => !input.photos.includes(path)))
+          throw new VehicleStateConflict('Enquadramento de uma fotografia inválida.', 409, 'photos');
         await tx.vehicle.update({
           where: { id },
           data: {
+            ...(input.galleryFraming ? { galleryFraming: input.galleryFraming } : {}),
             photos: { set: input.photos },
             publicPhotoPaths: {
               set: input.photos,

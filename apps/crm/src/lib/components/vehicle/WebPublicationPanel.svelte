@@ -1,5 +1,8 @@
 <script lang="ts">
   import { photoAttrs, photoFallback, type SignedVariantPhoto } from '$lib/vehicleImage';
+  import type { PhotoFraming } from '@anm/types';
+  import { sessionFetch } from '$lib/auth/session';
+  import { invalidateAll } from '$app/navigation';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import WebsiteStatus from './WebsiteStatus.svelte';
   import {websiteVisibility} from '$lib/websiteVisibility';
@@ -59,6 +62,20 @@
   let description = $state('');
   let transmission = $state('');
   let selected = $state<string[]>([]);
+  let framing = $state<Record<string, PhotoFraming>>({});
+  let framingBusy = $state(false);
+  async function saveFraming(path: string, value: PhotoFraming | undefined) {
+    framingBusy = true;
+    try {
+      const response = await sessionFetch(crmPath(`/viaturas/${vehicle.id}/photos/framing`), { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({path, framing: value ?? null}) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? 'Não foi possível guardar o enquadramento.');
+      framing = result.galleryFraming;
+      await invalidateAll().catch(() => {});
+      toast.success('Enquadramento guardado.');
+      return true;
+    } catch (error) { toast.error((error as Error).message); return false; } finally { framingBusy = false; }
+  }
   let photoDragging = $state(false);
   let photoBusy = $state(false);
   const publicationFormId = $props.id();
@@ -80,7 +97,7 @@
   );
   let pending = $state(false);
   $effect(() => {
-    busy = pending || photoBusy || photoDragging;
+    busy = pending || photoBusy || photoDragging || framingBusy;
   });
   let message = $state('');
   let confirmationDialog: HTMLDialogElement;
@@ -130,6 +147,7 @@
       return {
         price: recoveredDraft.price ?? '', description: recoveredDraft.description,
         transmission: recoveredDraft.transmission ?? '', selected: allowedPhotos,
+        galleryFraming: recoveredDraft.galleryFraming ?? {},
         specs: { version: details.version, powerHp: String(details.powerHp ?? ''),
           engineCc: String(details.engineCc ?? ''), doors: String(details.doors ?? ''),
           seats: String(details.seats ?? ''), category: details.category, color: details.color,
@@ -147,6 +165,7 @@
         vehicle.publicDescription ?? `${vehicle.brand} ${vehicle.model}, de ${vehicle.year}.`,
       transmission: vehicle.publicTransmission ?? '',
       selected: vehicle.photos,
+      galleryFraming: vehicle.galleryFraming ?? {},
       specs: {
         version: details?.version ?? '',
         powerHp: String(details?.powerHp ?? ''),
@@ -160,6 +179,7 @@
     };
   }
   function resetPublicationDraft() {
+    framing = creation && recoveredDraft ? recoveredDraft.galleryFraming ?? {} : vehicle.galleryFraming ?? {};
     const saved = savedPublicationDraft();
     price = saved.price;
     description = saved.description;
@@ -169,7 +189,7 @@
     draftPublished = creation ? false : vehicle.webPublished;
   }
   const draftKey = $derived(
-    publicationDraftKey({ price, description, transmission, selected, specs }),
+    publicationDraftKey({ price, description, transmission, selected, specs, galleryFraming: framing }),
   );
   const publicationDirty = $derived(
     (unified ? draftPublished !== vehicle.webPublished : !vehicle.webPublished) ||
@@ -217,6 +237,7 @@
       pending ||
       photoDragging ||
       photoBusy ||
+      framingBusy ||
       (formData.get('operation') === 'publish' && (!ready || !formValid || !publicationDirty))
     ) {
       cancel();
@@ -381,13 +402,14 @@
       persistedCoverPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
 
       form={publicationFormId}
+      bind:framing
       {disabled}
     />
   {:else}
     <PhotoGallery
       vehicleId={vehicle.id}
       {photos}
-      disabled={disabled || pending}
+      disabled={disabled || pending || framingBusy}
       dragging={photoDragging}
       bind:busy={photoBusy}
     >
@@ -399,13 +421,14 @@
           {photos}
           persisted={vehicle.photos}
 
-          pending={disabled || pending || controls.busy}
+          pending={disabled || pending || controls.busy || framingBusy}
           form={publicationFormId}
           primaryPath={controls.primaryPath}
           onprimary={controls.setPrimary}
           onreorder={controls.reorder}
           ondelete={controls.deletePhoto}
           onpreview={controls.preview}
+          {framing} onframing={saveFraming}
         />
       {/snippet}
     </PhotoGallery>
@@ -462,6 +485,7 @@
     >
       <fieldset class="publication-lock" data-save-lock disabled={disabled || pending}>
         <input type="hidden" name="vehicleId" value={vehicle.id} />
+        {#if unified}<input type="hidden" name="galleryFraming" value={JSON.stringify(Object.fromEntries(Object.entries(framing).filter(([path]) => allowedPhotos.includes(path))))} />{/if}
         <input type="hidden" name="operation" value="publish" />
         {#if unified}
           <input type="hidden" name="published" value={String(draftPublished)} />
@@ -506,9 +530,10 @@
               allowed={allowedPhotos}
               {photos}
               persisted={vehicle.photos}
+              {framing} onframing={saveFraming}
 
               primaryPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
-              pending={disabled || pending || photoBusy}
+              pending={disabled || pending || photoBusy || framingBusy}
             />
           </fieldset>{/if}
         <details class="publication-help">

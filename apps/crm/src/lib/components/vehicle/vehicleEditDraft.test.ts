@@ -1,5 +1,12 @@
 import { expect, it } from 'vitest';
 import { publicDraftFromForm, publicEditKey } from './vehicleEditDraft';
+it('retains per-photo framing in the draft and dirtiness key, including draft upload identities', () => {
+  const form = new FormData(), baseline = publicEditKey(publicDraftFromForm(form));
+  const framing = {'draft:new':{desktop:{x:50,y:75},mobile:{x:50,y:80}}};
+  form.set('galleryFraming',JSON.stringify(framing));
+  expect(publicDraftFromForm(form).galleryFraming).toEqual(framing);
+  expect(publicEditKey(publicDraftFromForm(form))).not.toBe(baseline);
+});
 
 it('uses the complete photo order for the draft and ignores a legacy public subset', () => {
   const form = new FormData();

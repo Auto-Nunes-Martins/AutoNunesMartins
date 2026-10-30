@@ -8,7 +8,15 @@ Pedido do proprietário de 28 de outubro de 2026: **todas as fotografias guardad
 - O destaque editorial da homepage pode escolher qualquer fotografia atual da viatura elegível. A escolha do destaque não exclui fotografias da galeria nem muda a capa da viatura. Se essa fotografia for eliminada, o destaque não é substituído silenciosamente.
 - Os controlos de inclusão/exclusão individual foram removidos. O estado de publicação aparece ao nível da viatura. Nos cartões mantêm-se apenas capa, ordem e «Por guardar» para novos ficheiros do rascunho; não há selos individuais de publicação. A prévia inclui a lista completa.
 
-## Compatibilidade e migração
+## Enquadramento público — 30/10/2026
+
+O CRM permite deslocar a fotografia dentro da moldura, mantendo `cover`, as alturas atuais e os masters intactos. Na galeria, «Enquadrar» abre o ajuste da fotografia identificada; «Aplicar enquadramento» confirma-o no rascunho e guardar a ficha persiste também fotografias novas. Nos fluxos de gestão imediata, aplicar guarda apenas esse enquadramento. Na seleção de destaques, o ajuste está junto das fotografias escolhidas e acompanha «Guardar destaques». Há arrasto, controlos acessíveis de horizontal/vertical, computador/telemóvel independentes e «Repor original».
+
+Persistência: `Vehicle.galleryFraming` é um mapa JSON por caminho privado imutável; a seleção existente `homepageHighlights` guarda um `framing` opcional por destaque, mantendo o seu controlo de revisão. O DTO público transforma o mapa numa lista alinhada com as fotografias aprovadas atuais, sem revelar caminhos privados. Coordenadas finitas entre 0 e 100, pertença à viatura e limite de 20 fotografias são validados. Ordenação e mudança da principal não transferem o ajuste para outra fotografia. Valores ausentes conservam centro na galeria e `50% 53%` no destaque, incluindo fotografias horizontais. Cartões e fullscreen não usam estes ajustes.
+
+Aplicar a migração `20261030110000_photo_framing` antes de executar o novo backend. A migração foi verificada em PostgreSQL isolado (PGlite); nenhuma base real foi alterada e não houve deploy. Verificação visual reproduzível: `apps/crm/test/photo-framing.browser.mjs`, com componentes reais, imagens fictícias e Chrome, a 390 e 1280 px. Guarda capturas em `.svelte-kit` e preserva as fixtures para inspeção.
+
+## Compatibilidade e migração da regra de publicação
 
 `publicPhotoPaths` permanece no esquema como campo legado, temporariamente espelhado nas escritas e na resposta de detalhe CRM. **Nunca filtra leituras públicas**, mesmo que tenha um subconjunto antigo, esteja vazio ou desatualizado. Não é necessário alterar registos existentes: a nova regra é aplicada nas leituras a partir de `photos`.
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import {photoAttrs,photoFallback} from '$lib/vehicleImage';
+  import PhotoFramingEditor from './PhotoFramingEditor.svelte';
   import { crmPath } from '$lib/paths';
   import { untrack, onMount } from 'svelte';
   import { enhance } from '$lib/auth/enhance';
@@ -153,7 +154,7 @@
                   onclick={() =>
                     (items = items.map((entry) =>
                       entry.vehicleId === item.vehicleId
-                        ? { ...entry, photoPath: photo.path }
+                        ? { ...entry, photoPath: photo.path, framing: undefined }
                         : entry,
                     ))}
                 >
@@ -166,6 +167,9 @@
                 </button>
               {/each}
             </div>
+            {#if selectedPhoto?.url}
+              <PhotoFramingEditor src={selectedPhoto.url} value={item.framing} context="featured" disabled={saving} onchange={framing => items = items.map(entry => entry.vehicleId === item.vehicleId ? {...entry, framing} : entry)} />
+            {/if}
           {/if}
         </li>
       {/each}

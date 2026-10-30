@@ -15,6 +15,9 @@ import { randomUUID } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import { Router, type Response, type Request, type NextFunction } from 'express';
 import { z } from 'zod';
+import { photoFramingSchema, galleryFramingSchema } from '@anm/types';
+import { lockVehicle } from '../lib/server/saleFinancials.js';
+import { cache } from '../lib/data/cache.js';
 import { prisma } from '../db.js';
 import {
   signedPhotos,
@@ -31,6 +34,26 @@ import {
 } from '../lib/server/vehiclePhotoService.js';
 
 const router = Router({ mergeParams: true });
+const framingInput = z.object({ path: z.string().min(1).max(160), framing: photoFramingSchema.nullable() }).strict();
+router.post('/framing', requireUser, asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const parsed = framingInput.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: 'Enquadramento inválido.', issues: parsed.error.issues }); return; }
+  const id = param(req, 'vehicleId');
+  const result = await prisma.$transaction(async tx => {
+    await lockVehicle(tx, id);
+    const vehicle = await tx.vehicle.findUnique({ where: { id }, select: { photos: true, galleryFraming: true } });
+    if (!vehicle || !vehicle.photos.includes(parsed.data.path)) return null;
+    const framing = galleryFramingSchema.parse(vehicle.galleryFraming);
+    if (parsed.data.framing) framing[parsed.data.path] = parsed.data.framing;
+    else delete framing[parsed.data.path];
+    const cleaned = Object.fromEntries(Object.entries(framing).filter(([path]) => vehicle.photos.includes(path)));
+    await tx.vehicle.update({ where: { id }, data: { galleryFraming: cleaned } });
+    return cleaned;
+  });
+  if (!result) { res.status(404).json({ error: 'Fotografia não encontrada.' }); return; }
+  cache.clearPrefix('dashboard:');
+  res.json({ galleryFraming: result });
+}));
 
 const reorderSchema = z.object({
   photos: z
