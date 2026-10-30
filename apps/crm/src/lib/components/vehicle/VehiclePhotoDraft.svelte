@@ -5,7 +5,7 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
-  import type { PhotoFraming } from '@anm/types';
+  import { framingStyle, type PhotoFraming } from '@anm/types';
   import { PHOTO_ACCEPT, validatePhoto, preparePhoto } from '$lib/photoPreparation';
   import { crmPath } from '$lib/paths';
   let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, form, disabled = false, framing = $bindable<Record<string, PhotoFraming>>({}) }:
@@ -105,7 +105,7 @@
       <figure class="cover-preview" aria-label="Pré-visualização da foto principal">
         <div class="cover-image">
           {#if cover && failedCoverUrl !== cover.url}
-            <img {...photoAttrs(cover,800,'320px')} use:photoFallback={cover.url} alt={cover.path !== persistedCoverPath ? 'Foto principal · por guardar' : 'Foto principal guardada'} onerror={() => failedCoverUrl = cover.url} />
+            <img {...photoAttrs(cover,800,'320px')} style={framingStyle(framing[cover.path])} use:photoFallback={cover.url} alt={cover.path !== persistedCoverPath ? 'Foto principal · por guardar' : 'Foto principal guardada'} onerror={() => failedCoverUrl = cover.url} />
           {:else}
             <div class="cover-empty"><Camera size={36} strokeWidth={1.2} aria-hidden="true" /><span>{cover ? 'Fotografia indisponível' : 'A foto principal aparece aqui'}</span></div>
           {/if}
@@ -134,8 +134,9 @@
   .photo-workbench { display:grid;grid-template-columns:clamp(240px,26%,320px) minmax(0,1fr);gap:20px;align-items:start; }
   .cover-slot { min-width:0; }
   .cover-preview { display:block;margin:0;width:100%;min-width:0;border:1px solid var(--color-border);border-radius:6px;overflow:hidden; }
-  .cover-image { position:relative;aspect-ratio:16/10;background:var(--color-bg-0);display:grid;place-items:center;overflow:hidden; }
-  .cover-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .cover-image { position:relative;aspect-ratio:1.4;background:var(--color-bg-0);display:grid;place-items:center;overflow:hidden; }
+  .cover-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;object-position:var(--photo-desktop,50% 50%); }
+  @media(max-width:700px){.cover-image{aspect-ratio:4/3;}.cover-image img{object-position:var(--photo-mobile,50% 50%);}}
   .cover-empty { display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;color:var(--color-text-faint);font-size:11px;text-align:center; }
   figcaption { display:flex;flex-direction:column;justify-content:center;gap:6px;padding:12px 16px;border-top:1px solid var(--color-border); }
   figcaption strong { font-size: 13px; } figcaption span { font-size: 12px; color: var(--color-text-muted); }

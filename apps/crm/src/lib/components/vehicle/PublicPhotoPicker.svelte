@@ -6,7 +6,7 @@
   import { Star, Trash2 } from 'lucide-svelte';
   import { committedPhotoOrder, type PhotoOrderItem } from './photoOrder';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
-  import type { PhotoFraming } from '@anm/types';
+  import { framingStyle, type PhotoFraming } from '@anm/types';
   let {
     selected = $bindable<string[]>([]),
     dragging = $bindable(false),
@@ -116,6 +116,7 @@
 
 {#if onreorder}<p id={scrollId + '-instructions'} class="sr-only">Arraste o cartão para ordenar, ou use Espaço e as setas. No telemóvel, mantenha premido antes de arrastar.</p>{/if}
 {#each selected as path}<input type="hidden" name="vehiclePhotoPaths" value={path} {form} />{/each}
+{#if onframing}<p class="crop-hint">As miniaturas mostram o recorte da ficha pública neste ecrã. Use «Enquadrar» para deslocar a fotografia.</p>{/if}
 <div class="photo-grid-shell" class:dense>
 <!-- svelte-ignore a11y_no_noninteractive_tabindex (The gallery region supports keyboard access.) -->
 <div id={scrollId} class="photo-grid-scroll" bind:this={scrollPort} tabindex={dense ? 0 : undefined} role="region" aria-label="Fotografias da viatura">
@@ -138,6 +139,7 @@
 >
   {#each items as item, index (item.id)}
     {@const photo = photos.find((photo) => photo.path === item.path)}
+    {@const crop = framingPath === item.path ? framingDraft : framing[item.path]}
 
     {@const saved = persisted.includes(item.path)}
 
@@ -153,7 +155,7 @@
       aria-describedby={onreorder ? scrollId + '-instructions' : undefined}
     >
       <div class="photo-media">
-      {#if photo}<img {...photoAttrs(photo,320,'(max-width:480px) 160px, 210px')} use:photoFallback={photo.url} alt={'Fotografia ' + (index + 1)} draggable="false" />{/if}
+      {#if photo}<img {...photoAttrs(photo,320,'(max-width:480px) 160px, 210px')} style={framingStyle(crop)} use:photoFallback={photo.url} alt={'Fotografia ' + (index + 1)} draggable="false" />{/if}
       <span class="order-index" aria-hidden="true">{index + 1}</span>
       {#if isPrincipal}<span class="primary-badge"><Star size={11} fill="currentColor" aria-hidden="true" />{staged && item.path !== persistedCoverPath ? 'Foto principal · por guardar' : 'Foto principal'}</span>{/if}
       </div>
@@ -206,8 +208,10 @@
   .photo-card {position:relative;min-width:0;margin:0;overflow:hidden;border:1px solid var(--color-border-strong);border-radius:10px;background:var(--color-bg-1);touch-action:pan-y;cursor:grab;box-sizing:border-box;}
   .photo-card.is-cover {border-color:var(--color-warning);}
   .photo-card:focus-visible {outline:2px solid var(--color-red);outline-offset:4px;}
-  .photo-media {position:relative;height:210px;background:var(--color-bg-2);overflow:hidden;}
-  .photo-media img {display:block;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-touch-callout:none;}
+  .crop-hint {font-size:12px;color:var(--color-text-muted);line-height:1.6;margin-bottom:12px;}
+  .photo-media {position:relative;aspect-ratio:1.4;background:var(--color-bg-2);overflow:hidden;}
+  .photo-media img {position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:var(--photo-desktop,50% 50%);user-select:none;-webkit-touch-callout:none;}
+  @media(max-width:700px) {.photo-media{aspect-ratio:4/3;}.photo-media img{object-position:var(--photo-mobile,50% 50%);}}
   .order-index {position:absolute;top:10px;right:10px;display:grid;place-items:center;min-width:24px;height:24px;padding:0 5px;border-radius:5px;background:var(--color-bg-1);color:var(--color-text);font-size:11px;border:1px solid var(--color-border);}
   .primary-badge {position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:5px;max-width:calc(100% - 20px);padding:5px 7px;border-radius:5px;background:var(--color-warning);color:#191000;font-size:10px;line-height:1.4;font-weight:600;}
   .photo-footer {display:flex;flex-direction:column;gap:12px;padding:12px;border-top:1px solid var(--color-border);}
@@ -224,5 +228,5 @@
   .publication-help {margin-top:20px;padding-top:14px;border-top:1px solid var(--color-border);}
   .publication-help summary {display:list-item;width:fit-content;padding:6px 0;color:var(--color-text-muted);font-size:12px;cursor:pointer;}
   @media (hover:hover) {.photo-card:hover {border-color:var(--color-text-muted);}button:not(:disabled):hover {border-color:var(--color-border-strong);}}
-  @media (max-width:480px) {.photo-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}.photo-media {height:182px;}.photo-footer {padding:10px;gap:10px;}.actions {gap:6px;}.actions button {min-height:44px;padding-inline:7px;}.delete-photo {min-width:38px;}.primary-badge {left:7px;bottom:7px;font-size:9px;max-width:calc(100% - 14px);}.order-index {top:7px;right:7px;}}
+  @media (max-width:480px) {.photo-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}.photo-footer {padding:10px;gap:10px;}.actions {gap:6px;}.actions button {min-height:44px;padding-inline:7px;}.delete-photo {min-width:38px;}.primary-badge {left:7px;bottom:7px;font-size:9px;max-width:calc(100% - 14px);}.order-index {top:7px;right:7px;}}
 </style>
