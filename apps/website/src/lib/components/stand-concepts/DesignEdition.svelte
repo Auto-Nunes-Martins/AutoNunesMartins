@@ -3777,17 +3777,16 @@
   }
   .image-category.reserved-status {
     z-index: 1;
-    background: #fbbf24;
-    color: #231806;
-    border: 1px solid #23180640;
-    padding: 8px 13px;
-    border-radius: 6px;
+    background: #181a1df2;
+    color: #f6f5f2;
+    border: 1px solid #ffffff30;
+    padding: 7px 11px;
+    border-radius: 2px;
     font-size: 12px;
-    font-weight: 800;
-    line-height: 1.2;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    box-shadow: 0 2px 10px #0004;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.01em;
+    box-shadow: 0 1px 4px #0003;
   }
   .card-arrow {
     width: 38px;
