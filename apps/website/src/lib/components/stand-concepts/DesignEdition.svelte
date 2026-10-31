@@ -1607,6 +1607,7 @@
   <article
     class="vehicle-card"
     class:public-card={!!vehicle && 'approved' in vehicle}
+    class:reserved-card={!!vehicle && 'approved' in vehicle && vehicle.category === 'Reservada'}
     class:pending-card={!vehicle}
     aria-hidden={!vehicle ? 'true' : undefined}
     use:conditionalEntrance={vehicle && animate ? (index % 2) * 110 : false}
@@ -3777,16 +3778,24 @@
   }
   .image-category.reserved-status {
     z-index: 1;
-    background: #181a1df2;
-    color: #f6f5f2;
-    border: 1px solid #ffffff30;
-    padding: 7px 11px;
-    border-radius: 2px;
-    font-size: 12px;
-    font-weight: 600;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #c91020;
+    color: #fff;
+    border: 0;
+    padding: 8px 14px;
+    border-radius: 0;
+    font-size: 11px;
+    font-weight: 700;
     line-height: 1.3;
-    letter-spacing: 0.01em;
-    box-shadow: 0 1px 4px #0003;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    box-shadow: none;
   }
   .card-arrow {
     width: 38px;
@@ -4259,6 +4268,9 @@
     bottom: 12px;
     left: 12px;
     margin: 0;
+  }
+  .vehicle-card.reserved-card :is(.card-compare, .card-arrow) {
+    bottom: 44px;
   }
   .card-favorite {
     position: absolute;
