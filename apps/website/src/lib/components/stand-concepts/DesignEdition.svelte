@@ -3777,16 +3777,19 @@
   }
   .image-category.reserved-status {
     z-index: 1;
+    top: 0;
+    right: 0;
+    left: 0;
     background: #c91020;
     color: #fff;
-    min-width: 112px;
-    padding: 8px 19px;
-    border-radius: 1px;
-    font-size: 14px;
+    padding: 9px 16px;
+    border-radius: 0;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1.25;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
     text-align: center;
+    text-transform: uppercase;
   }
   .card-arrow {
     width: 38px;
