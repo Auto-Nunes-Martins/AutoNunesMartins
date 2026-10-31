@@ -3782,9 +3782,10 @@
     min-width: 112px;
     padding: 8px 19px;
     border-radius: 5px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
     line-height: 1.25;
+    letter-spacing: 0.08em;
     text-align: center;
   }
   .card-arrow {
