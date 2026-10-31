@@ -6,6 +6,7 @@ import { installDiagnosticStore, flushDiagnosticEvents } from './lib/server/diag
 import { registerDiagnosticProvider } from '../../shared/nativeDiagnostics.mjs';
 import { diagnosticStoreStatus } from './lib/server/diagnosticStore.js';
 import sharp from 'sharp';
+import { startVehiclePhotoCleanup } from './lib/server/vehiclePhotoCleanup.js';
 installDiagnosticStore(prisma);
 registerDiagnosticProvider('persistence', () => ({ ...diagnosticStoreStatus }));
 registerDiagnosticProvider('sharp', () => {
@@ -26,6 +27,7 @@ registerDiagnosticProvider('sharp', () => {
 });
 import { getProcessDiagnostics } from '../../shared/runtimeDiagnostics.mjs';
 const diagnostics = getProcessDiagnostics();
+const stopVehiclePhotoCleanup = startVehiclePhotoCleanup();
 
 const server = app.listen(getEnv().PORT, process.env.BACKEND_HOST || '0.0.0.0', () => {
   logger.info('Backend listening');
@@ -43,6 +45,7 @@ async function shutdown() {
   }, 15000);
   deadline.unref();
   server.close(async () => {
+    await stopVehiclePhotoCleanup();
     diagnostics.stop();
     await flushDiagnosticEvents();
     await prisma.$disconnect();

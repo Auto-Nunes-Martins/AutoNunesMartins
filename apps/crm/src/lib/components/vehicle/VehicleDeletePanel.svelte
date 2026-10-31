@@ -28,7 +28,7 @@
     <p>
       {blocked
         ? 'A eliminação está indisponível enquanto existir uma venda associada.'
-        : 'Elimina permanentemente a ficha e as despesas associadas. Para a retirar apenas do website, desative a publicação.'}
+        : 'Elimina permanentemente a ficha, as despesas e as fotografias associadas, incluindo os tamanhos derivados. O histórico de atividade é preservado. Para a retirar apenas do website, desative a publicação.'}
     </p>
   </div>
   <form
@@ -40,7 +40,7 @@
         disabled ||
         busy ||
         !window.confirm(
-          `Eliminar definitivamente ${brand} ${model}? A ficha e as despesas associadas serão eliminadas. Esta ação não pode ser desfeita.`,
+          `Eliminar definitivamente ${brand} ${model}? A ficha, as despesas e as fotografias associadas serão eliminadas. O histórico de atividade é preservado. Esta ação não pode ser desfeita.`,
         )
       ) {
         cancel();

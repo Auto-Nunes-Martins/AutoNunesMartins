@@ -6,6 +6,7 @@ import { getVehicleById } from '../data/vehicle.js';
 import { computeSaleFigures } from '../domain/sale.js';
 import Decimal from 'decimal.js';
 import { lockVehicle, recomputeSaleIfExists, saleMutation } from './saleFinancials.js';
+import { cleanupVehiclePhotos, vehicleCleanupPhotos } from './vehiclePhotoCleanup.js';
 
 const SOLD_STATUSES = new Set(['SOLD', 'DELIVERED']);
 
@@ -279,6 +280,7 @@ export async function publishVehicle(
 
 export async function deleteVehicle(id: string, actor: ActorContext): Promise<void> {
   await prisma.$transaction(async (tx) => {
+    await lockVehicle(tx, id);
     const existing = await tx.vehicle.findUnique({
       where: { id },
       include: { sale: true },
@@ -288,7 +290,9 @@ export async function deleteVehicle(id: string, actor: ActorContext): Promise<vo
       throw new VehicleHasSale(id);
     }
 
+    const photos = vehicleCleanupPhotos(id, [...existing.photos, ...existing.publicPhotoPaths]);
     await tx.vehicle.delete({ where: { id } });
+    await tx.vehiclePhotoCleanup.create({ data: { vehicleId: id, photos } });
     await emitActivity(tx, {
       actorId: actor.actorId,
       type: 'VEHICLE_DELETED',
@@ -297,6 +301,8 @@ export async function deleteVehicle(id: string, actor: ActorContext): Promise<vo
       message: `Viatura eliminada: ${vehicleLabel(existing.brand, existing.model, existing.year)}`,
     });
   });
+  // Only remove Storage objects after the database transaction has committed.
+  await cleanupVehiclePhotos(id);
 }
 
 export async function getVehicleWithProfit(id: string) {

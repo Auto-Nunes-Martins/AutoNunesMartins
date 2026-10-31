@@ -123,6 +123,17 @@ model Vehicle {
   @@index([webPublished, status])
 }
 
+/// Durable Storage cleanup after deleting a vehicle; deliberately has no Vehicle FK.
+model VehiclePhotoCleanup {
+  vehicleId     String   @id
+  photos        String[]
+  attempts      Int      @default(0)
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  nextAttemptAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([nextAttemptAt])
+}
+
 /// Derived metadata only; never grants permission to publish a photograph.
 model VehiclePhotoDimensions {
   version    String   @id @db.VarChar(64)
