@@ -9,6 +9,26 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+/// Sanitized operational diagnostics only. Server access, never public browser access.
+model RuntimeDiagnosticEvent {
+  id              BigInt   @id @default(autoincrement())
+  eventId         String   @unique @db.Uuid
+  occurredAt      DateTime @db.Timestamptz(3)
+  receivedAt      DateTime @default(now()) @db.Timestamptz(3)
+  instance        String   @db.Uuid
+  boot            String   @db.Uuid
+  service         String
+  event           String
+  kind            String?
+  processSequence BigInt
+  trace           String?  @db.Uuid
+  payload         Json
+
+  @@index([occurredAt, id], map: "RuntimeDiagnosticEvent_time_id")
+  @@index([instance, occurredAt], map: "RuntimeDiagnosticEvent_instance_time")
+  @@index([trace, occurredAt], map: "RuntimeDiagnosticEvent_trace_time")
+}
+
 // ─── Users (synced from Clerk via webhook) ───────────────────────────────
 model User {
   id            String    @id @default(cuid())

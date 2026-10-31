@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { createCgroupReader } from './containerMemory.mjs';
+import { recordDiagnostic } from './diagnosticEvents.mjs';
 
 const roles = new Set(['gateway', 'supervisor', 'backend', 'crm', 'website']);
 const metrics = [
@@ -22,6 +23,22 @@ const uuid = (value) => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(val
 export function safeProcessSnapshot(value, pid, service) {
   if (!value || value.pid !== pid || value.service !== service || !uuid(value.boot)) return null;
   const result = { pid, service, boot: value.boot };
+  function numericTree(value, depth = 0) {
+    if (depth > 5) return;
+    if (value === null || typeof value === 'boolean') return value;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+    if (Array.isArray(value)) return value.slice(0, 32).map((v) => numericTree(v, depth + 1));
+    if (value && typeof value === 'object') {
+      const out = {};
+      for (const [k, v] of Object.entries(value).slice(0, 64)) {
+        if (!/^[a-zA-Z][a-zA-Z0-9_]{0,47}$/.test(k)) continue;
+        const safe = numericTree(v, depth + 1);
+        if (safe !== undefined) out[k] = safe;
+      }
+      return out;
+    }
+  }
+  if (value.native && typeof value.native === 'object') result.native = numericTree(value.native);
   for (const key of metrics)
     if (typeof value[key] === 'number' && Number.isFinite(value[key]) && value[key] >= 0)
       result[key] = value[key];
@@ -186,6 +203,7 @@ export class ApplicationMemoryMonitor {
     this.sink =
       sink ??
       ((row) => {
+        recordDiagnostic(row);
         if (process.stdout.writableNeedDrain) return false;
         process.stdout.write(JSON.stringify(row) + '\n');
         return true;

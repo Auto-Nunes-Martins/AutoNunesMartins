@@ -29,13 +29,16 @@ import operationalExpensesRouter from './routes/operationalExpenses.js';
 import settingsRouter from './routes/settings.js';
 import notificationsRouter from './routes/notifications.js';
 import activityRouter from './routes/activity.js';
+import diagnosticsRouter from './routes/diagnostics.js';
 import searchRouter from './routes/search.js';
 import { contactErrorHandler, errorHandler } from './middleware/errorHandler.js';
 import { requestTiming, timedMiddleware } from './middleware/requestTiming.js';
 import { prisma, runtimeDatabasePoolLimit } from './db.js';
+import { requestDiagnostics } from './middleware/requestDiagnostics.js';
 
 const env = getEnv();
 export const app = express();
+app.use(requestDiagnostics);
 app.use(requestTiming(env.NODE_ENV === 'development'));
 
 app.use(helmet());
@@ -88,6 +91,7 @@ app.use((req, res, next) => {
 // Public read-only projection bypasses authenticated CRM auto-provisioning.
 app.use('/api/public/vehicles', publicVehiclesRouter);
 app.use(timedMiddleware('backend-clerk', clerkMiddleware));
+app.use('/api/diagnostics', diagnosticsRouter);
 app.get('/api/me', requireUser, (req: AuthedRequest, res: Response) => {
   res.json({ user: req.user });
 });

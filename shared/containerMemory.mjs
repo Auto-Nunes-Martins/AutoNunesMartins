@@ -156,6 +156,16 @@ export function createCgroupReader({
         hostMemoryUsedAsQuota: false,
       };
       if (detail) {
+        const events = {};
+        for (const line of (
+          text(location.directory + '/' + (v2 ? 'memory.events' : 'memory.failcnt')) ?? ''
+        ).split('\n')) {
+          const [name, value] = line.split(/\s+/);
+          if (v2 && /^[a-z_]+$/.test(name) && integer(value) !== null)
+            events[name] = integer(value);
+          else if (!v2 && integer(name) !== null) events.failcnt = integer(name);
+        }
+        result.memoryEvents = events;
         const stat = {};
         for (const line of (text(location.directory + '/memory.stat') ?? '').split('\n')) {
           const [key, value] = line.trim().split(/\s+/);

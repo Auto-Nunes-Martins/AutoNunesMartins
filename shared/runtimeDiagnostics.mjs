@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { isMainThread, threadId } from 'node:worker_threads';
 import { createCgroupReader } from './containerMemory.mjs';
+import { recordDiagnostic, setDiagnosticSender } from './diagnosticEvents.mjs';
+import { nativeDiagnosticSnapshot } from './nativeDiagnostics.mjs';
 
 const numericKeys = new Set([
   'inputBytes',
@@ -131,6 +133,7 @@ export class ProcessDiagnostics {
     this.sink =
       options.sink ??
       ((row) => {
+        recordDiagnostic(row);
         if (process.stdout.writableNeedDrain) return false;
         process.stdout.write(JSON.stringify(row) + '\n');
         return true;
@@ -163,6 +166,7 @@ export class ProcessDiagnostics {
   capture() {
     const point = this.sample();
     return {
+      native: nativeDiagnosticSnapshot(),
       service: this.service,
       instance: this.instance,
       boot: this.boot,
@@ -182,6 +186,7 @@ export class ProcessDiagnostics {
     try {
       const point = this.sample();
       const row = {
+        native: nativeDiagnosticSnapshot(),
         event: 'runtime_diagnostics',
         version: 1,
         kind,
@@ -463,6 +468,14 @@ export function getProcessDiagnostics(
     process.once('exit', () => diagnostics.stop());
     process.on('uncaughtExceptionMonitor', () => diagnostics.marker('uncaught_exception'));
     if (process.send) {
+      if (
+        ['crm', 'website'].includes(service) ||
+        (service === 'backend' && process.env.RUNTIME_DIAGNOSTICS_MANAGED === 'true')
+      )
+        setDiagnosticSender((events, callback) => {
+          if (process.connected) process.send({ type: 'anm:diagnostic:events', events }, callback);
+          else callback(Error('IPC unavailable'));
+        });
       let replyPending = false;
       process.on('message', (message) => {
         if (

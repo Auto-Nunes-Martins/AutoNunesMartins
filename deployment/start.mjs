@@ -6,11 +6,17 @@ import { clientAddressHeader } from './client-address.mjs';
 import { randomUUID } from 'node:crypto';
 import { getProcessDiagnostics } from '../shared/runtimeDiagnostics.mjs';
 import { ApplicationMemoryMonitor } from '../shared/applicationMemory.mjs';
+import { acceptDiagnosticEvents, flushDiagnosticEvents } from '../shared/diagnosticEvents.mjs';
 
 process.env.RUNTIME_DIAGNOSTICS_INSTANCE ||= randomUUID();
 process.env.RUNTIME_DIAGNOSTICS_MANAGED = 'true';
 const diagnostics = getProcessDiagnostics('gateway');
 const memoryMonitor = new ApplicationMemoryMonitor({ diagnostics });
+if (diagnostics.enabled) {
+  const { installRemoteDiagnosticStore } =
+    await import('../backend/dist/lib/server/diagnosticRemoteStore.js');
+  installRemoteDiagnosticStore();
+}
 
 const settings = config(process.env);
 const manifest = JSON.parse(await readFile(new URL('./build.json', import.meta.url), 'utf8'));
@@ -51,6 +57,9 @@ const launch = (service, file, extra) => {
     },
   );
   children.push(child);
+  child.on('message', (message) => {
+    if (message?.type === 'anm:diagnostic:events') acceptDiagnosticEvents(message.events);
+  });
   memoryMonitor.register(service, child);
   child.on('error', () => {
     diagnostics.marker('child_error', {}, { child: service });
@@ -84,9 +93,10 @@ function shutdown(code = 0) {
         ? Promise.resolve()
         : new Promise((resolve) => child.once('exit', resolve)),
     ),
-  ).then(() => {
-    clearTimeout(deadline);
+  ).then(async () => {
     diagnostics.stop();
+    await flushDiagnosticEvents();
+    clearTimeout(deadline);
     process.exit(code);
   });
 }
