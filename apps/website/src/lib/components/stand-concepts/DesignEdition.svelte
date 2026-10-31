@@ -1650,7 +1650,7 @@
               alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
               loading="lazy"
             /></picture
-          >{#if vehicle.category}<span class="image-category">{vehicle.category}</span>{/if}<span
+          >{#if vehicle.category}<span class="image-category" class:reserved-status={'approved' in vehicle && vehicle.category === 'Reservada'}>{vehicle.category}</span>{/if}<span
             class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
           ></a
         >
@@ -3774,6 +3774,20 @@
     top: 13px;
     left: 13px;
     padding: 5px 10px;
+  }
+  .image-category.reserved-status {
+    z-index: 1;
+    background: #fbbf24;
+    color: #231806;
+    border: 1px solid #23180640;
+    padding: 8px 13px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 10px #0004;
   }
   .card-arrow {
     width: 38px;
