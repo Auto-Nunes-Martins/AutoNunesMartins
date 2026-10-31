@@ -3779,10 +3779,13 @@
     z-index: 1;
     background: #c91020;
     color: #fff;
-    padding: 7px 13px;
+    min-width: 112px;
+    padding: 8px 19px;
+    border-radius: 5px;
     font-size: 12px;
     font-weight: 600;
     line-height: 1.25;
+    text-align: center;
   }
   .card-arrow {
     width: 38px;
