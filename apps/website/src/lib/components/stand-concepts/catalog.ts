@@ -19,7 +19,7 @@ export const filterLabels = {
 } as const;
 export type FilterKey = keyof typeof filterLabels;
 export const sortOptions = {
-  relevancia: 'A nossa seleção',
+  relevancia: 'Últimas entradas',
   preco_asc: 'Preço: menor primeiro',
   preco_desc: 'Preço: maior primeiro',
   ano: 'Ano: mais recente',

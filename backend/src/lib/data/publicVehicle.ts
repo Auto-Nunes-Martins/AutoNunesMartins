@@ -61,8 +61,9 @@ export function publicVehicleWhere(query?: PublicVehicleQuery): Prisma.VehicleWh
 export function publicVehicleOrder(
   order: PublicVehicleQuery['ordem'],
 ): Prisma.VehicleOrderByWithRelationInput[] {
-  const orders: Record<typeof order, Prisma.VehicleOrderByWithRelationInput> = {
-    relevancia: { publicSlug: 'asc' },
+  // Homepage and catalog share stock-arrival order. Dates stay outside the public DTO.
+  if (order === 'relevancia') return [{ acquisitionDate: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }];
+  const orders: Record<Exclude<typeof order, 'relevancia'>, Prisma.VehicleOrderByWithRelationInput> = {
     preco_asc: { publicPrice: { sort: 'asc', nulls: 'last' } },
     preco_desc: { publicPrice: { sort: 'desc', nulls: 'last' } },
     ano: { year: 'desc' },

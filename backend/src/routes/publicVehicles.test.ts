@@ -232,12 +232,18 @@ describe('public query validation and search boundary', () => {
     expect(Object.keys(publicVehicleSelect)).not.toContain('vin');
     expect(Object.keys(publicVehicleSelect)).not.toContain('description');
   });
+  it('orders homepage entries by stock arrival, with deterministic ties, without exposing private dates', () => {
+    const query = publicVehicleQuerySchema.parse({});
+    expect(publicVehicleOrder(query.ordem)).toEqual([{ acquisitionDate: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }]);
+    expect(Object.keys(publicVehicleSelect)).not.toContain('acquisitionDate');
+    expect(Object.keys(publicVehicleSelect)).not.toContain('createdAt');
+  });
   it.each(['relevancia', 'preco_asc', 'preco_desc', 'ano', 'km'] as const)(
     'uses stable allowlisted order %s',
     (order) => {
       const sort = publicVehicleOrder(order);
-      expect(sort[1]).toEqual({ id: 'asc' });
-      expect(JSON.stringify(sort)).not.toMatch(/purchasePrice|salePrice|acquisitionDate/);
+      expect(sort.at(-1)).toEqual({ id: 'asc' });
+      expect(JSON.stringify(sort)).not.toMatch(/purchasePrice|salePrice/);
     },
   );
 });
