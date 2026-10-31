@@ -3781,7 +3781,7 @@
     color: #fff;
     min-width: 112px;
     padding: 8px 19px;
-    border-radius: 5px;
+    border-radius: 2px;
     font-size: 14px;
     font-weight: 600;
     line-height: 1.25;
