@@ -15,6 +15,23 @@ function state() {
 const uuid = (value) =>
   typeof value === 'string' && /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(value);
 const enums = new Set([
+  'configuration',
+  'connection',
+  'permission',
+  'schema',
+  'timeout',
+  'database',
+  '42501',
+  '42883',
+  '42P01',
+  '57014',
+  '55P03',
+  '53300',
+  '08001',
+  '08006',
+  '23502',
+  '23505',
+  '22023',
   'runtime_diagnostics',
   'application_memory',
   'backend',
@@ -91,6 +108,8 @@ const enums = new Set([
   'smaps_unreadable',
 ]);
 const textKeys = new Set([
+  'lastFailureKind',
+  'lastFailureSqlState',
   'event',
   'service',
   'kind',

@@ -12,10 +12,12 @@ process.env.RUNTIME_DIAGNOSTICS_INSTANCE ||= randomUUID();
 process.env.RUNTIME_DIAGNOSTICS_MANAGED = 'true';
 const diagnostics = getProcessDiagnostics('gateway');
 const memoryMonitor = new ApplicationMemoryMonitor({ diagnostics });
+let closeDiagnosticStore = async () => {};
 if (diagnostics.enabled) {
-  const { installRemoteDiagnosticStore } =
+  const { installRemoteDiagnosticStore, closeRemoteDiagnosticStore } =
     await import('../backend/dist/lib/server/diagnosticRemoteStore.js');
   installRemoteDiagnosticStore();
+  closeDiagnosticStore = closeRemoteDiagnosticStore;
 }
 
 const settings = config(process.env);
@@ -96,6 +98,7 @@ function shutdown(code = 0) {
   ).then(async () => {
     diagnostics.stop();
     await flushDiagnosticEvents();
+    await closeDiagnosticStore();
     clearTimeout(deadline);
     process.exit(code);
   });

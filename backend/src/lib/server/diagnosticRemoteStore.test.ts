@@ -1,35 +1,46 @@
-import { it, expect } from 'vitest';
-import { createServer } from 'node:http';
+import { it, expect, vi } from 'vitest';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
-import { installRemoteDiagnosticStore } from './diagnosticRemoteStore';
+const state = vi.hoisted(() => ({
+  batches: [] as Record<string, unknown>[][],
+  attempts: 0,
+  options: undefined as unknown,
+  disconnect: vi.fn(),
+}));
+vi.mock('@prisma/client', () => ({
+  PrismaClient: class {
+    constructor(options: unknown) {
+      state.options = options;
+    }
+    $disconnect = state.disconnect;
+    async $transaction(fn: (tx: unknown) => Promise<unknown>) {
+      return fn({
+        $executeRaw: async () => 1,
+        $queryRaw: async (_sql: unknown, body: string) => {
+          const rows = JSON.parse(body);
+          state.batches.push(rows);
+          if (++state.attempts === 1)
+            throw { code: 'P1001', message: 'private details must not enter diagnostics' };
+          return [{ count: rows.length }];
+        },
+      });
+    }
+  },
+}));
+import { installRemoteDiagnosticStore, closeRemoteDiagnosticStore } from './diagnosticRemoteStore';
 import {
   acceptDiagnosticEvents,
   recordDiagnostic,
   flushDiagnosticEvents,
 } from '../../../../shared/diagnosticEvents.mjs';
-it('supervisor persists a real child exit independently, retries HTTP failure and preserves event IDs', async () => {
-  const batches: any[] = [];
-  let calls = 0;
-  const server = createServer(async (req, res) => {
-    let body = '';
-    for await (const part of req) body += part;
-    const events = JSON.parse(body).events;
-    batches.push(events);
-    res.setHeader('Content-Type', 'application/json');
-    if (++calls === 1) {
-      res.statusCode = 503;
-      res.end('{"message":"unavailable"}');
-    } else res.end(String(events.length));
-  });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+it('private supervisor SQL survives a real child exit, bounds its pool and retries idempotent batches without a Data API', async () => {
   const previous = process.env.RUNTIME_DIAGNOSTICS;
   process.env.RUNTIME_DIAGNOSTICS = 'true';
   const instance = randomUUID();
   const status = installRemoteDiagnosticStore({
-    SUPABASE_URL: 'http://127.0.0.1:' + (server.address() as any).port,
-    SUPABASE_SECRET_KEY: 'test-only-not-a-real-key',
+    DATABASE_URL:
+      'postgresql://test:fake@localhost:5432/isolated?pgbouncer=true&connection_limit=8',
   });
   const child = spawn(
     process.execPath,
@@ -50,7 +61,7 @@ it('supervisor persists a real child exit independently, retries HTTP failure an
   try {
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(Error('Child diagnostics timeout')), 5000);
-      child.on('message', (message: any) => {
+      child.on('message', (message: { type: string; events: unknown }) => {
         if (message.type === 'anm:diagnostic:events') {
           acceptDiagnosticEvents(message.events);
           clearTimeout(timeout);
@@ -74,19 +85,26 @@ it('supervisor persists a real child exit independently, retries HTTP failure an
     });
     await flushDiagnosticEvents();
     expect(status.failures).toBe(1);
+    expect(status.lastFailureKind).toBe('connection');
     expect(status.schemaAvailable).toBe(true);
+    expect(status.privateSql).toBe(true);
     expect(status.eventsSaved).toBeGreaterThanOrEqual(2);
-    expect(batches[1].map((row: any) => row.eventId)).toEqual(
-      batches[0].map((row: any) => row.eventId),
+    expect(state.batches[1].map((row) => row.eventId)).toEqual(
+      state.batches[0].map((row) => row.eventId),
     );
-    expect(batches[1].some((row: any) => row.kind === 'child_exit')).toBe(true);
-    expect(batches[1].some((row: any) => row.kind === 'boot' && row.service === 'backend')).toBe(
-      true,
+    expect(state.batches[1].some((row) => row.kind === 'child_exit')).toBe(true);
+    expect(JSON.stringify(status)).not.toContain('private details');
+    const url = new URL(
+      (state.options as { datasources: { db: { url: string } } }).datasources.db.url,
     );
+    expect(url.searchParams.get('connection_limit')).toBe('1');
+    expect(url.searchParams.get('connect_timeout')).toBe('2');
+    expect(url.searchParams.get('pgbouncer')).toBe('true');
+    await closeRemoteDiagnosticStore();
+    expect(state.disconnect).toHaveBeenCalledTimes(1);
   } finally {
     if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
     if (previous === undefined) delete process.env.RUNTIME_DIAGNOSTICS;
     else process.env.RUNTIME_DIAGNOSTICS = previous;
-    await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 }, 10000);
