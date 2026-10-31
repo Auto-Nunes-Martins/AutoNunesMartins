@@ -2,7 +2,10 @@
   import { photoFallback } from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
   import { linkedRow } from '$lib/linkedRow';
-  import { Car, FileText, Check, Tag } from 'lucide-svelte';
+  import { Car, FileText, Check, Tag, Trash2 } from 'lucide-svelte';
+  import type { ComponentProps } from 'svelte';
+  import BrandLogo from './BrandLogo.svelte';
+  import VehicleDeleteDialog from './VehicleDeleteDialog.svelte';
   import RowActions from '$lib/components/common/RowActions.svelte';
   import WebsiteStatus from './WebsiteStatus.svelte';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
@@ -14,25 +17,48 @@
   }
 
   let { items }: Props = $props();
+  let deleteTarget = $state<VehicleListItem | null>(null);
+  let deleteOpen = $state(false);
+  let deleteOpener: HTMLButtonElement | null = null;
 
   function destination(vehicle: VehicleListItem) {
-    return crmPath(vehicle.status === 'DRAFT'
-      ? `/viaturas/nova?viatura=${vehicle.id}`
-      : `/viaturas/${vehicle.id}`);
+    return crmPath(
+      vehicle.status === 'DRAFT'
+        ? `/viaturas/nova?viatura=${vehicle.id}`
+        : `/viaturas/${vehicle.id}`,
+    );
   }
 
   function actionsFor(vehicle: VehicleListItem) {
-    if (vehicle.status === 'DRAFT') {
-      return [{ label: 'Completar ficha', href: destination(vehicle), icon: Tag }];
-    }
-    return [
-      { label: 'Ver ficha', href: destination(vehicle), icon: FileText },
-      ...(['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(vehicle.status)
-        ? [{ label: 'Registar venda', href: crmPath(`/viaturas/${vehicle.id}/vender`), icon: Check }]
-        : []),
-    ];
+    const actions: ComponentProps<typeof RowActions>['actions'] =
+      vehicle.status === 'DRAFT'
+        ? [{ label: 'Completar ficha', href: destination(vehicle), icon: Tag }]
+        : [
+            { label: 'Ver ficha', href: destination(vehicle), icon: FileText },
+            ...(['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(vehicle.status)
+              ? [
+                  {
+                    label: 'Registar venda',
+                    href: crmPath(`/viaturas/${vehicle.id}/vender`),
+                    icon: Check,
+                  },
+                ]
+              : []),
+          ];
+    actions.push({
+      label: 'Eliminar viatura',
+      icon: Trash2,
+      danger: true,
+      disabled: !!vehicle.sale,
+      title: vehicle.sale ? 'Esta viatura tem uma venda associada.' : undefined,
+      onselect: (trigger) => {
+        deleteOpener = trigger;
+        deleteTarget = vehicle;
+        deleteOpen = true;
+      },
+    });
+    return actions;
   }
-
 </script>
 
 {#snippet rowActions(v: VehicleListItem)}
@@ -75,12 +101,15 @@
           <div class="min-w-0 flex-1">
             <div class="flex items-start justify-between gap-2">
               <div
-                class="font-display font-semibold text-[14px] line-clamp-2 break-words group-hover:text-[var(--color-red)] transition-colors"
+                class="vehicle-name font-display font-semibold text-[14px] group-hover:text-[var(--color-red)] transition-colors"
               >
-                {v.brand}
-                {v.model}
+                <BrandLogo name={v.brand} size={16} /><span class="min-w-0 line-clamp-2 break-words"
+                  >{v.brand} {v.model}</span
+                >
               </div>
-              <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly /></div>
+              <div class="flex flex-wrap items-center gap-2">
+                <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
+              </div>
             </div>
             <!-- Prefer the user-facing license plate on mobile cards; fall back to VIN if it has not been registered. -->
             <div
@@ -219,10 +248,11 @@
               </div>
               <div class="min-w-0">
                 <div
-                  class="font-display font-semibold text-[14px] truncate group-hover:text-[var(--color-red)] transition-colors"
+                  class="vehicle-name font-display font-semibold text-[14px] group-hover:text-[var(--color-red)] transition-colors"
                 >
-                  {v.brand}
-                  {v.model}
+                  <BrandLogo name={v.brand} size={16} /><span class="min-w-0 truncate"
+                    >{v.brand} {v.model}</span
+                  >
                 </div>
                 <div
                   class="font-mono text-[10.5px] tracking-[0.04em] text-[var(--color-text-faint)] truncate"
@@ -250,7 +280,9 @@
             {v.salePrice ? formatEUR(v.salePrice) : '—'}
           </td>
           <td class="px-4 py-3">
-            <div class="flex flex-wrap items-center gap-2"><StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly /></div>
+            <div class="flex flex-wrap items-center gap-2">
+              <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
+            </div>
           </td>
           <td class="px-4 py-3 text-right">
             {@render rowActions(v)}
@@ -260,3 +292,23 @@
     </tbody>
   </table>
 </div>
+
+{#if deleteTarget}<VehicleDeleteDialog
+    id={deleteTarget.id}
+    brand={deleteTarget.brand}
+    model={deleteTarget.model}
+    blocked={!!deleteTarget.sale}
+    bind:open={deleteOpen}
+    oncancel={() => {
+      if (deleteOpener?.isConnected) deleteOpener.focus();
+    }}
+  />{/if}
+
+<style>
+  .vehicle-name {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+  }
+</style>

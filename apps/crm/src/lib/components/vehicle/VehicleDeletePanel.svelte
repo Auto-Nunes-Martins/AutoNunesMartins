@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { enhance } from '$lib/auth/enhance';
-  import { crmPath } from '$lib/paths';
   import { Trash2 } from 'lucide-svelte';
-  import { toast } from 'svelte-sonner';
+  import VehicleDeleteDialog from './VehicleDeleteDialog.svelte';
   let {
     id,
     brand,
@@ -20,6 +18,7 @@
     busy?: boolean;
     onredirect?: () => void;
   } = $props();
+  let confirmationOpen = $state(false);
 </script>
 
 <section class="vehicle-deletion" aria-label="Eliminar viatura">
@@ -31,44 +30,23 @@
         : 'Elimina permanentemente a ficha, as despesas e as fotografias associadas, incluindo os tamanhos derivados. O histórico de atividade é preservado. Para a retirar apenas do website, desative a publicação.'}
     </p>
   </div>
-  <form
-    method="POST"
-    action={crmPath(`/viaturas/${id}/editar?/delete`)}
-    use:enhance={({ cancel }) => {
-      if (
-        blocked ||
-        disabled ||
-        busy ||
-        !window.confirm(
-          `Eliminar definitivamente ${brand} ${model}? A ficha, as despesas e as fotografias associadas serão eliminadas. O histórico de atividade é preservado. Esta ação não pode ser desfeita.`,
-        )
-      ) {
-        cancel();
-        return;
-      }
-      busy = true;
-      return async ({ result, update }) => {
-        try {
-          if (result.type === 'redirect') {
-            onredirect?.();
-            toast.success('Viatura eliminada.');
-          } else if (result.type === 'failure')
-            toast.error(
-              (result.data as { error?: string } | undefined)?.error ??
-                'Não foi possível eliminar a viatura.',
-            );
-          await update({ reset: false });
-        } finally {
-          busy = false;
-        }
-      };
-    }}
+  <button
+    type="button"
+    onclick={() => (confirmationOpen = true)}
+    disabled={blocked || disabled || busy}
+    ><Trash2 size={15} aria-hidden="true" />{busy ? 'A eliminar…' : 'Eliminar viatura'}</button
   >
-    <button type="submit" disabled={blocked || disabled || busy}
-      ><Trash2 size={15} aria-hidden="true" />{busy ? 'A eliminar…' : 'Eliminar viatura'}</button
-    >
-  </form>
 </section>
+<VehicleDeleteDialog
+  {id}
+  {brand}
+  {model}
+  {blocked}
+  {disabled}
+  {onredirect}
+  bind:busy
+  bind:open={confirmationOpen}
+/>
 
 <style>
   .vehicle-deletion {
@@ -93,7 +71,7 @@
     max-width: 75ch;
     margin: 0;
   }
-  form {
+  button {
     flex-shrink: 0;
   }
   button {

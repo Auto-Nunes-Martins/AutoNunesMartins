@@ -42,7 +42,9 @@ const DateInput = component(source('./common/DateInput.svelte'), {
   ChevronRight: DateIcon,
 });
 const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), {
-  BrandCombobox: component('<script>let {value="",name="brand"}=$props();</script><input type="hidden" {name} {value}/>'),
+  BrandCombobox: component(
+    '<script>let {value="",name="brand"}=$props();</script><input type="hidden" {name} {value}/>',
+  ),
   Button,
   DateInput,
   VehicleSpecGlyph: DateIcon,
@@ -115,7 +117,17 @@ describe.each([
     const page = source(`../../routes/(app)/${route}/[id]/editar/+page.svelte`);
     if (route === 'viaturas') {
       const Trash2 = component('<svg></svg>');
-      const DeletePanel = component(source('./vehicle/VehicleDeletePanel.svelte'), { Trash2 });
+      const ConfirmDialog = component(source('./common/ConfirmDialog.svelte'), {
+        Button,
+        AlertTriangle: Trash2,
+      });
+      const VehicleDeleteDialog = component(source('./vehicle/VehicleDeleteDialog.svelte'), {
+        ConfirmDialog,
+      });
+      const DeletePanel = component(source('./vehicle/VehicleDeletePanel.svelte'), {
+        Trash2,
+        VehicleDeleteDialog,
+      });
       const Wrapper = component(
         '<script>import Form from "./Form.svelte"; import DeletePanel from "./DeletePanel.svelte";</script><Form /><DeletePanel id="vehicle" brand="Audi" model="Q5" />',
         { Form, DeletePanel },

@@ -6,7 +6,15 @@
   interface Props {
     label: string;
     editHref: string;
-    actions: { label: string; href: string; icon: IconComponent }[];
+    actions: {
+      label: string;
+      href?: string;
+      icon: IconComponent;
+      onselect?: (trigger: HTMLButtonElement | null) => void;
+      danger?: boolean;
+      disabled?: boolean;
+      title?: string;
+    }[];
   }
   let { label, editHref, actions }: Props = $props();
   const menuId = $props.id();
@@ -30,7 +38,10 @@
         ? anchor.bottom + 6
         : Math.max(12, anchor.top - bounds.height - 6);
     await tick();
-    if (menu.matches(':popover-open')) menu.querySelector('a')?.focus({ preventScroll: true });
+    if (menu.matches(':popover-open'))
+      menu
+        .querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')
+        ?.focus({ preventScroll: true });
   }
   function onMenuKey(event: KeyboardEvent) {
     if (!menu) return;
@@ -38,8 +49,9 @@
       close();
       return;
     }
-    const links = [...menu.querySelectorAll('a')];
-    const index = links.indexOf(document.activeElement as HTMLAnchorElement);
+    const links = [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])')];
+    if (!links.length) return;
+    const index = links.indexOf(document.activeElement as HTMLElement);
     let next: number;
     if (event.key === 'ArrowDown') next = (index + 1) % links.length;
     else if (event.key === 'ArrowUp') next = (index - 1 + links.length) % links.length;
@@ -97,10 +109,20 @@
       ontoggle={onToggle}
       onkeydown={onMenuKey}
     >
-      {#each actions as action (action.href)}
-        <a href={action.href} role="menuitem" onclick={close}
-          ><action.icon class="h-4 w-4" />{action.label}</a
-        >
+      {#each actions as action (action.href ?? action.label)}
+        {#if action.href}<a href={action.href} role="menuitem" onclick={close}
+            ><action.icon class="h-4 w-4" />{action.label}</a
+          >{:else}<button
+            type="button"
+            role="menuitem"
+            class:danger={action.danger}
+            disabled={action.disabled}
+            title={action.title}
+            onclick={() => {
+              close();
+              action.onselect?.(trigger);
+            }}><action.icon class="h-4 w-4" />{action.label}</button
+          >{/if}
       {/each}
     </div>
   {/if}
@@ -150,7 +172,7 @@
   }
   .edit-link:focus-visible,
   .more-button:focus-visible,
-  .action-menu a:focus-visible {
+  .action-menu :is(a, button):focus-visible {
     outline: 2px solid var(--color-red);
     outline-offset: 2px;
   }
@@ -173,7 +195,7 @@
     background: var(--color-bg-elevated);
     box-shadow: var(--shadow-floating);
   }
-  .action-menu a {
+  .action-menu :is(a, button) {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -182,11 +204,22 @@
     font-size: 13px;
     border-radius: var(--radius-btn);
     text-align: left;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
   }
-  .action-menu a:hover,
-  .action-menu a:focus-visible {
+  .action-menu :is(a, button):hover:not(:disabled),
+  .action-menu :is(a, button):focus-visible {
     color: var(--color-red);
     background: color-mix(in oklab, var(--color-red) 6%, transparent);
+  }
+  .action-menu button.danger {
+    color: var(--color-danger, var(--color-red));
+  }
+  .action-menu button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
   @media (pointer: coarse) {
     .edit-link,
@@ -196,7 +229,7 @@
     .more-button {
       width: 44px;
     }
-    .action-menu a {
+    .action-menu :is(a, button) {
       min-height: 44px;
     }
   }

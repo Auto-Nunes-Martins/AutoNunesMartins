@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 // This catches a toast-only callback that silently drops a server redirect.
 const fixtures = [
   ['routes/(app)/viaturas/[id]/publicar/+page.svelte', 'submitting'],
-  ['lib/components/vehicle/VehicleDeletePanel.svelte', 'busy'],
+  ['lib/components/vehicle/VehicleDeleteDialog.svelte', 'busy'],
   ['routes/(app)/clientes/[id]/editar/+page.svelte', 'deleting'],
   ['routes/(app)/tarefas/[id]/editar/+page.svelte', 'deleting'],
   ['routes/(app)/financeiro/+page.svelte', 'submitting', 'savingId', null],
