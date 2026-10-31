@@ -4,6 +4,7 @@ import { vehicleCreateSchema } from '@anm/types';
 import { vehiclesApi } from '$lib/server/vehicles';
 import { ApiError, rethrowAuthError } from '$lib/server/api';
 import { webPublicationAction } from '$lib/server/webPublication';
+import { specificationsFromForm } from '$lib/components/vehicle/vehicleEditDraft';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -47,6 +48,10 @@ function parseFormToVehicleCreate(formData: FormData) {
     status: get('status') || 'AVAILABLE',
     acquisitionDate: get('acquisitionDate'),
     description: getOptional('description'),
+    ...(formData.has('specificationsPresent') ? {
+      publicTransmission: get('publicTransmission') || null,
+      publicSpecifications: specificationsFromForm(formData),
+    } : {}),
     pendingDocFlags: {
       financing: formData.get('pendingDocFlags.financing') === 'true',
       imt: formData.get('pendingDocFlags.imt') === 'true',

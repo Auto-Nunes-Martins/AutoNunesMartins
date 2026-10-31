@@ -79,6 +79,8 @@ export async function createVehicle(
         status: data.status ?? 'AVAILABLE',
         acquisitionDate: data.acquisitionDate,
         description: data.description ?? null,
+        publicTransmission: data.publicTransmission ?? null,
+        publicSpecifications: data.publicSpecifications as Prisma.InputJsonValue | undefined,
         pendingDocFlags: data.pendingDocFlags as unknown as Prisma.InputJsonValue,
       },
     });

@@ -20,21 +20,26 @@ export function publicDraftFromForm(form: FormData) {
     description: get('publicDescription'),
     photoPaths: form.getAll('vehiclePhotoPaths').map(String),
     transmission: get('publicTransmission') || null,
-    specifications: {
-      version: get('version').trim(),
-      ...Object.fromEntries(
-        ['powerHp', 'engineCc', 'doors', 'seats'].map((key) => [
-          key,
-          get(key) ? Number(get(key)) : null,
-        ]),
-      ),
-      category: get('category'),
-      color: get('color'),
-      equipment: get('equipment')
-        .split(/\r?\n/)
-        .map((value) => value.trim())
-        .filter(Boolean),
-    },
+    specifications: specificationsFromForm(form),
+  };
+}
+
+export function specificationsFromForm(form: FormData) {
+  const get = (key: string) => String(form.get(key) ?? '');
+  return {
+    version: get('version').trim(),
+    ...Object.fromEntries(
+      ['powerHp', 'engineCc', 'doors', 'seats'].map((key) => [
+        key,
+        get(key) ? Number(get(key)) : null,
+      ]),
+    ),
+    category: get('category'),
+    color: get('color'),
+    equipment: get('equipment')
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean),
   };
 }
 

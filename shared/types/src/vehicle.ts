@@ -2,6 +2,7 @@ import { registeredBrandSchema } from './brands.js';
 import { z } from 'zod';
 import { FuelEnum, VehicleStatusEnum } from './enums.js';
 import { moneySchema } from './decimal.js';
+import { publicSpecificationsSchema } from './publicSpecifications.js';
 
 export const pendingDocFlagsSchema = z.object({
   financing: z.boolean().default(false),
@@ -69,6 +70,8 @@ export const vehicleCreateSchema = z.object({
   status: VehicleStatusEnum.exclude(['RETURNED']).default('AVAILABLE'),
   acquisitionDate: z.coerce.date(),
   description: z.string().max(2000).optional(),
+  publicTransmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable().optional(),
+  publicSpecifications: publicSpecificationsSchema.optional(),
   pendingDocFlags: pendingDocFlagsSchema.default({
     financing: false,
     imt: false,
@@ -78,7 +81,7 @@ export const vehicleCreateSchema = z.object({
 });
 export type VehicleCreate = z.infer<typeof vehicleCreateSchema>;
 
-export const vehicleUpdateSchema = vehicleCreateSchema.partial().extend({
+export const vehicleUpdateSchema = vehicleCreateSchema.omit({ publicTransmission: true, publicSpecifications: true }).partial().extend({
   id: z.string().min(1),
   status: VehicleStatusEnum.optional(),
 });

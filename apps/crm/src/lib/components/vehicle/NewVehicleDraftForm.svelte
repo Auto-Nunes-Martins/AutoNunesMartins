@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick, untrack, type ComponentProps } from 'svelte';
   import VehicleForm from './VehicleForm.svelte';
+  import VehicleCharacteristics from './VehicleCharacteristics.svelte';
   import { automaticDraft, draftStorage, registerDraftGuard } from '$lib/forms/automaticDraft';
   import { markFormSaved } from '$lib/forms/formFeedback';
 
@@ -10,6 +11,8 @@
   let ready = $state(false);
   let status = $state('');
   let initial = $state<ComponentProps<typeof VehicleForm>['initial']>({});
+  let transmission = $state('');
+  let specs = $state({ version: '', powerHp: '', engineCc: '', doors: '', seats: '', category: '', color: '', equipment: '' });
   type Values = Record<string, string>;
   let lastCapture: Values | undefined;
   let autosave: ReturnType<typeof automaticDraft<Values>> | undefined;
@@ -32,6 +35,8 @@
         const saved = await draftStorage.read<Values>(key);
         if (disposed) return;
         if (saved) {
+          transmission = saved.publicTransmission ?? '';
+          specs = Object.fromEntries(Object.keys(specs).map(key => [key, saved[key] ?? ''])) as typeof specs;
           initial = { ...saved, year: saved.year ? Number(saved.year) : null,
             mileage: saved.mileage ? Number(saved.mileage) : null,
             fuel: saved.fuel as NonNullable<typeof initial>['fuel'],
@@ -59,7 +64,11 @@
 
 <div bind:this={root} oninput={changed} onchange={changed}>
   {#if ready}
-    <VehicleForm {initial} submitLabel="Guardar e continuar" onsaved={completed} />
+    <VehicleForm {initial} submitLabel="Guardar e continuar" onsaved={completed}>
+      {#snippet characteristics()}
+        <VehicleCharacteristics bind:transmission bind:specs />
+      {/snippet}
+    </VehicleForm>
     {#if status}<p class="draft-status" role="status">{status}</p>{/if}
   {:else}<p role="status">A recuperar rascunho…</p>{/if}
 </div>

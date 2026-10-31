@@ -49,6 +49,11 @@ for (const [path, ...states] of fixtures) {
             crmPath: (path: string) => path,
             toast: { success: vi.fn(), error: vi.fn() },
             v: { id: 'vehicle-id', brand: 'Marca', model: 'Modelo' },
+            vehicle: { id: 'vehicle-id', brand: 'Marca', model: 'Modelo', year: 2023, webPublished: false },
+            cover: undefined,
+            PUBLIC_WEBSITE_URL: 'https://website.invalid',
+            publishedVehicleUrl: vi.fn(() => undefined),
+            vehicleSavedFeedback: vi.fn(),
             wasFeatured: false,
             onredirect: vi.fn(),
             showAdd: true,
@@ -96,8 +101,10 @@ for (const [path, ...states] of fixtures) {
             expect(context[state]).toBe(
               state === 'savingId' || state === 'savingKey' ? null : false,
             );
-          if (path.includes('WebPublicationPanel') && type === 'success')
+          if (path.includes('WebPublicationPanel') && type === 'success') {
             expect(context.markFormSaved).toHaveBeenCalledOnce();
+            expect(context.vehicleSavedFeedback).toHaveBeenCalledOnce();
+          }
           if (
             (path.includes('WebPublicationPanel') || path.includes('/vender/')) &&
             type === 'failure'
