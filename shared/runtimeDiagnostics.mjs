@@ -65,6 +65,14 @@ const phases = new Set([
 const noopTrace = Object.freeze({ id: undefined, phase() {}, fields() {}, finish() {} });
 const bounded = (value, fallback, min, max) =>
   Number.isFinite(Number(value)) ? Math.min(max, Math.max(min, Number(value))) : fallback;
+const workerMemoryKeys = new Set([
+  'workerRss',
+  'workerPeakRss',
+  'workerRssAtExit',
+  'workerHeapUsed',
+  'workerExternal',
+  'workerArrayBuffers',
+]);
 export function safeMetrics(value) {
   const output = {};
   if (!value || typeof value !== 'object' || Array.isArray(value)) return output;
@@ -74,7 +82,7 @@ export function safeMetrics(value) {
       typeof n === 'number' &&
       Number.isFinite(n) &&
       n >= 0 &&
-      n <= 100_000_000
+      n <= (workerMemoryKeys.has(key) ? 8 * 1024 * 1024 * 1024 : 100_000_000)
     )
       output[key] = Math.round(n * 100) / 100;
   return output;
@@ -82,7 +90,9 @@ export function safeMetrics(value) {
 export function clientMetrics(header) {
   if (typeof header !== 'string' || header.length > 1024) return {};
   try {
-    return safeMetrics(JSON.parse(header));
+    const metrics = safeMetrics(JSON.parse(header));
+    for (const key of Object.keys(metrics)) if (key.startsWith('worker')) delete metrics[key];
+    return metrics;
   } catch {
     return {};
   }

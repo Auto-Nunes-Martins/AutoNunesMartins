@@ -155,6 +155,25 @@ test('concurrency is bounded and admission rejection logs are throttled', () => 
   assert.equal(f.diagnostics.active.size, 0);
   assert.equal(f.timers.size, 0);
 });
+test('worker memory observations retain realistic RSS above the general client-metric bound', () => {
+  assert.deepEqual(
+    safeMetrics({
+      workerPeakRss: 186245120,
+      workerRssAtExit: 170000000,
+      workerRss: 0,
+      inputBytes: 100000001,
+    }),
+    { workerPeakRss: 186245120, workerRssAtExit: 170000000, workerRss: 0 },
+  );
+  assert.deepEqual(
+    safeMetrics({ workerPeakRss: 9 * 1024 * 1024 * 1024, workerRss: -1, workerExternal: Infinity }),
+    {},
+  );
+  assert.deepEqual(
+    clientMetrics('{"workerPeakRss":186245120,"workerExited":1,"preparedBytes":123}'),
+    { preparedBytes: 123 },
+  );
+});
 test('only known completed correlations accept one bounded client report, with a global rate limit', () => {
   const f = fixture();
   assert.equal(f.diagnostics.clientTransfer(correlationId(), { transferMs: 1 }, 'ok'), false);
