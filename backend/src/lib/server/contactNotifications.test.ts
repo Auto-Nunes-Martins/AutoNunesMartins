@@ -45,8 +45,12 @@ it('broadcasts accepted contacts distinctly with per-user durable read receipts 
     'Revisão ç & visita',
   );
   expect(await markContactNotificationRead(f.query, 'alice', 'contact:' + first.key)).toBe(true);
-  expect((await readContactNotifications(f.query, 'alice')).unread).toBe(1);
+  const afterRead = await readContactNotifications(f.query, 'alice');
+  expect(afterRead.unread).toBe(1);
+  expect(afterRead.items.map((item) => item.id)).toEqual(['contact:' + second.key]);
+  expect((await readContactNotifications(f.query, 'alice')).items).toEqual(afterRead.items);
   expect((await readContactNotifications(f.query, 'bob')).unread).toBe(2);
+  expect((await readContactNotifications(f.query, 'bob')).items).toHaveLength(2);
   expect((await readContactNotifications(f.query, 'inactive')).items).toEqual([]);
   expect(await markContactNotificationRead(f.query, 'inactive', 'contact:' + first.key)).toBe(
     false,
@@ -56,7 +60,11 @@ it('broadcasts accepted contacts distinctly with per-user durable read receipts 
     (await f.db.query('SELECT count(*)::int AS n FROM "ContactNotificationRead"')).rows[0],
   ).toEqual({ n: 1 });
   const stored = await f.db.query('SELECT * FROM "ActivityLog"');
+  expect(stored.rows).toHaveLength(2);
   expect(JSON.stringify(stored.rows)).not.toMatch(/private@example.org|private body|other body/);
+  expect(await markContactNotificationRead(f.query, 'alice', 'contact:' + second.key)).toBe(true);
+  expect(await readContactNotifications(f.query, 'alice')).toEqual({ unread: 0, items: [] });
+  expect((await f.db.query('SELECT * FROM "ActivityLog"')).rows).toHaveLength(2);
 });
 it('does not create notifications for pending or failed sends and rolls acceptance back if event persistence fails', async () => {
   const f = await setup();

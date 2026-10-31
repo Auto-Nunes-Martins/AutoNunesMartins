@@ -28,8 +28,8 @@ export async function readContactNotifications(db: BudgetQuery, userId: string) 
   }>(
     `SELECT e."id",e."metadata",e."createdAt",(r."userId" IS NOT NULL) AS read
     FROM "ActivityLog" e LEFT JOIN "ContactNotificationRead" r ON r."eventId"=e."id" AND r."userId"=$1
-    WHERE e."type"::text='CONTACT_REQUEST_RECEIVED'
-    ORDER BY (r."userId" IS NOT NULL),e."createdAt" DESC,e."id" DESC LIMIT 20`,
+    WHERE e."type"::text='CONTACT_REQUEST_RECEIVED' AND r."userId" IS NULL
+    ORDER BY e."createdAt" DESC,e."id" DESC LIMIT 20`,
     [userId],
   );
   return {
