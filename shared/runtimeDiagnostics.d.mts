@@ -1,4 +1,5 @@
 export type DiagnosticPhase =
+  | 'worker_exit'
   | 'lookup'
   | 'receive'
   | 'metadata'

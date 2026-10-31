@@ -1,4 +1,5 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
+import { PhotoEncodingSession } from '../lib/server/photoEncodingSession.js';
 import { ensurePhotoVariants } from '../lib/server/photoVariants.js';
 import { persistPhotoDimensions, removePhotoDimensions } from '../lib/data/photoDimensions.js';
 import { logger } from '../logger.js';
@@ -88,10 +89,21 @@ router.post('/', requireUser, (req, res, next) => {
   }
   const trace=diagnostics.begin(req.get('x-photo-trace-id'),clientMetrics(req.get('x-photo-metrics')));
   let outcome:'ok'|'error'|'aborted'='error', diagnosticStatus=500;
-  let disconnected=false;
-  const aborted=()=>{disconnected=true;};
-  const closed=()=>{if(!res.writableEnded)aborted();};
-  if(diagnostics.enabled){req.once('aborted',aborted);res.once('close',closed);if(trace.id)res.set('x-photo-trace-id',trace.id);res.set('x-photo-diagnostics-enabled','true');}
+  let disconnected = false;
+  let encoding: PhotoEncodingSession | undefined;
+  const aborted = () => {
+    disconnected = true;
+    encoding?.abort();
+  };
+  const closed = () => {
+    if (!res.writableEnded) aborted();
+  };
+  req.once('aborted', aborted);
+  res.once('close', closed);
+  if (diagnostics.enabled) {
+    if (trace.id) res.set('x-photo-trace-id', trace.id);
+    res.set('x-photo-diagnostics-enabled', 'true');
+  }
   // Release only after the work settles, including disconnects during compression/storage.
   void (async () => {
     try {
@@ -128,7 +140,16 @@ router.post('/', requireUser, (req, res, next) => {
       );
       if (!Buffer.isBuffer(req.body)) throw new PhotoUploadError(400, 'Ficheiro inválido.');
       trace.fields({inputBytes:req.body.length});trace.phase('optimize');
-      const photo = diagnostics.enabled ? await optimizePhoto(req.body as Buffer,trace) : await optimizePhoto(req.body as Buffer);
+      // Production isolates all large pixel decoding/encoding. Explicit inline mode
+      // remains available as a bounded rollback; tests/development keep their existing mode.
+      if (process.env.NODE_ENV === 'production' && process.env.PHOTO_PROCESSING_MODE !== 'inline')
+        encoding = new PhotoEncodingSession(trace);
+      const photo = encoding
+        ? await encoding.optimize(req.body as Buffer)
+        : diagnostics.enabled
+          ? await optimizePhoto(req.body as Buffer, trace)
+          : await optimizePhoto(req.body as Buffer);
+      req.body = undefined;
       trace.fields({outputBytes:photo.buffer.length});
       if (photo.buffer.length > MAX_OUTPUT_BYTES)
         throw new PhotoUploadError(422, 'A fotografia otimizada excede o limite de 2 MB.');
@@ -151,7 +172,18 @@ router.post('/', requireUser, (req, res, next) => {
       } else if (error) throw new PhotoUploadError(502, 'Não foi possível guardar a fotografia.');
       try {
         trace.phase('derivatives');
-        const { manifest } = diagnostics.enabled ? await ensurePhotoVariants(path,storedMaster,trace) : await ensurePhotoVariants(path,storedMaster);
+        const { manifest } = encoding
+          ? await ensurePhotoVariants(path, storedMaster, trace, async (input) => {
+              try {
+                return await encoding!.variants(input);
+              } finally {
+                await encoding!.close();
+              }
+            })
+          : diagnostics.enabled
+            ? await ensurePhotoVariants(path, storedMaster, trace)
+            : await ensurePhotoVariants(path, storedMaster);
+        await encoding?.close();
         trace.fields({width:manifest.width,height:manifest.height,outputWidth:manifest.width,outputHeight:manifest.height,variants:manifest.variants?.length??0});trace.phase('dimensions');
         await persistPhotoDimensions(prisma, vehicleId, path, manifest);
       }
@@ -199,7 +231,9 @@ router.post('/', requireUser, (req, res, next) => {
           .json({ error: 'Ficheiro inválido ou acima do limite de 20 MB.' });
       else next(error);
     } finally {
-      if(diagnostics.enabled){req.off('aborted',aborted);res.off('close',closed);}
+      req.off('aborted', aborted);
+      res.off('close', closed);
+      await encoding?.close();
       trace.finish(disconnected?'aborted':outcome,{status:diagnosticStatus});
       release();
     }

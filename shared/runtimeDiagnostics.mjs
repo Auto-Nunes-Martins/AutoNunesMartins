@@ -5,6 +5,28 @@ import { recordDiagnostic, setDiagnosticSender } from './diagnosticEvents.mjs';
 import { nativeDiagnosticSnapshot } from './nativeDiagnostics.mjs';
 
 const numericKeys = new Set([
+  'workerRssAtExit',
+  'workerExitCode',
+  'workerExitSignal',
+  'workerNoCredentials',
+  'workerNodeMajor',
+  'workerMemoryGuard',
+  'workerTimeout',
+  'workerIsolated',
+  'workerPid',
+  'workerRss',
+  'workerPeakRss',
+  'workerHeapUsed',
+  'workerExternal',
+  'workerArrayBuffers',
+  'workerCpuUserUs',
+  'workerCpuSystemUs',
+  'workerProcessing',
+  'workerQueue',
+  'workerOomPriorityAdjusted',
+  'workerExited',
+  'workerLifetimeMs',
+  'workerExitWaitMs',
   'inputBytes',
   'outputBytes',
   'originalBytes',
@@ -27,6 +49,7 @@ const numericKeys = new Set([
   'preparationCoverage',
 ]);
 const phases = new Set([
+  'worker_exit',
   'lookup',
   'receive',
   'metadata',

@@ -1,27 +1,27 @@
 import sharp from 'sharp';
 import { createHash } from 'node:crypto';
 import { getSupabase, getBucketName } from '../data/storage.js';
-import { MAX_UPLOAD_BYTES, MAX_UPLOAD_PIXELS } from './photoOptimization.js';
-import { vehiclePhotoWidths } from '@anm/types/photoWidths';
+import { MAX_UPLOAD_BYTES } from './photoOptimization.js';
 import { PhotoByteCache, type CachedPhoto } from './photoByteCache.js';
 import { sanitizePhotoMetadata } from './photoMetadata.js';
 import type { UploadTrace } from '../../../../shared/runtimeDiagnostics.mjs';
 
-export const PHOTO_WIDTHS = vehiclePhotoWidths;
-// Schema/paths remain compatible; existing derivatives are regenerated from their master.
-export const PHOTO_ENCODING_VERSION = 3;
-export type PhotoWidth = (typeof PHOTO_WIDTHS)[number];
-export type VariantManifest = {
-  version: 1;
-  encodingVersion?: number;
-  sourceHash: string;
-  width: number;
-  height: number;
-  variants: { width: number; height: number; bytes: number }[];
-};
-export function isPhotoWidth(value: number): value is PhotoWidth {
-  return PHOTO_WIDTHS.includes(value as PhotoWidth);
-}
+export {
+  PHOTO_WIDTHS,
+  PHOTO_ENCODING_VERSION,
+  buildPhotoVariants,
+  isPhotoWidth,
+  validManifest,
+} from './photoVariantEncoding.js';
+export type { PhotoWidth, VariantManifest } from './photoVariantEncoding.js';
+import {
+  PHOTO_ENCODING_VERSION,
+  buildPhotoVariants,
+  inspectDerivative,
+  encodeVariantManifest,
+  validManifest,
+} from './photoVariantEncoding.js';
+import type { PhotoWidth, VariantManifest, EncodedVariants } from './photoVariantEncoding.js';
 /** Derivatives are never valid master-photo paths or publication identifiers. */
 export function variantRoot(path: string) {
   if (!/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\.(?:jpe?g|png|webp)$/i.test(path))
@@ -45,29 +45,6 @@ export function forgetPhotoVariants(path: string) {
 function remember(path: string, value: VariantManifest | null, ttl = value ? 40 * 60_000 : 5_000) {
   if (manifests.size >= 500) manifests.delete(manifests.keys().next().value!);
   manifests.set(path, { until: Date.now() + ttl, value });
-}
-export function validManifest(value: unknown): value is VariantManifest {
-  const v = value as VariantManifest | null;
-  return (
-    !!v &&
-    v.version === 1 &&
-    /^[a-f0-9]{64}$/.test(v.sourceHash) &&
-    Number.isInteger(v.width) &&
-    v.width > 0 &&
-    Number.isInteger(v.height) &&
-    v.height > 0 &&
-    Array.isArray(v.variants) &&
-    v.variants.length <= PHOTO_WIDTHS.length &&
-    v.variants.every(
-      (p) =>
-        isPhotoWidth(p.width) &&
-        p.width < v.width &&
-        Number.isInteger(p.height) &&
-        p.height > 0 &&
-        p.bytes > 0 &&
-        p.bytes <= MAX_UPLOAD_BYTES,
-    )
-  );
 }
 export async function readVariantManifest(path: string): Promise<VariantManifest | null> {
   const cached = manifests.get(path);
@@ -135,56 +112,13 @@ export async function readVariantManifests(paths: string[]) {
   );
   return result;
 }
-/** Sequential decoding/encoding, bounded pixels and time. Masters are never overwritten. */
-export async function buildPhotoVariants(
-  input: Buffer,
-): Promise<{ manifest: VariantManifest; files: { width: number; buffer: Buffer }[] }> {
-  if (!input.length || input.length > MAX_UPLOAD_BYTES)
-    throw new Error('Master exceeds supported byte limit');
-  const options = {
-    limitInputPixels: MAX_UPLOAD_PIXELS,
-    sequentialRead: true,
-    failOn: 'warning' as const,
-  };
-  const metadata = await sharp(input, options).metadata();
-  if (
-    !metadata.width ||
-    !metadata.height ||
-    !['jpeg', 'png', 'webp'].includes(metadata.format || '') ||
-    (metadata.pages ?? 1) !== 1
-  )
-    throw new Error('Unsupported master image');
-  const rotated = !!metadata.orientation && metadata.orientation >= 5;
-  const width = rotated ? metadata.height : metadata.width,
-    height = rotated ? metadata.width : metadata.height;
-  const manifest: VariantManifest = {
-    version: 1,
-    encodingVersion: PHOTO_ENCODING_VERSION,
-    sourceHash: createHash('sha256').update(input).digest('hex'),
-    width,
-    height,
-    variants: [],
-  };
-  const files: { width: number; buffer: Buffer }[] = [];
-  for (const target of PHOTO_WIDTHS) {
-    // The original is the largest srcset candidate; never re-encode/upscale at its native width.
-    if (target >= width) continue;
-    const { data, info } = await sharp(input, options)
-      .rotate()
-      .resize({ width: target, withoutEnlargement: true })
-      .webp({ quality: 84, effort: 6, smartSubsample: true })
-      .timeout({ seconds: 20 })
-      .toBuffer({ resolveWithObject: true });
-    // Pay for a full integrity decode once, before publishing the derivative.
-    // Delivery checks the container/dimensions, not every decoded pixel again.
-    await inspectDerivative(data, target, true);
-    files.push({ width: target, buffer: data });
-    manifest.variants.push({ width: info.width, height: info.height, bytes: data.length });
-  }
-  return { manifest, files };
-}
 /** Publish the manifest last to track complete batches. Individually valid derivatives are reusable. */
-export async function ensurePhotoVariants(path: string, input?: Buffer, trace?:UploadTrace) {
+export async function ensurePhotoVariants(
+  path: string,
+  input?: Buffer,
+  trace?: UploadTrace,
+  encode?: (input: Buffer) => Promise<EncodedVariants>,
+) {
   const bucket = getSupabase().storage.from(getBucketName());
   const existing = await readVariantManifest(path);
   if (existing) {
@@ -207,8 +141,8 @@ export async function ensurePhotoVariants(path: string, input?: Buffer, trace?:U
     input = Buffer.from(await data.arrayBuffer());
   }
   trace?.phase('variant_encode');
-  const built = await buildPhotoVariants(input);
-  trace?.phase('variant_storage',{variants:built.files.length});
+  const built: EncodedVariants = await (encode ?? buildPhotoVariants)(input);
+  trace?.phase('variant_storage', { variants: built.files.length });
   for (const file of built.files) {
     // Deterministic, private derivative namespace; safe to replace partial derivatives only.
     const { error } = await bucket.upload(variantPath(path, file.width), file.buffer, {
@@ -218,13 +152,7 @@ export async function ensurePhotoVariants(path: string, input?: Buffer, trace?:U
     });
     if (error) throw new Error('Derivative upload failed');
   }
-  const encoded = Buffer.from(JSON.stringify(built.manifest)).toString('base64');
-  const sidecar = await sharp({ create: { width: 1, height: 1, channels: 3, background: '#fff' } })
-    .webp({ lossless: true })
-    .withXmp(
-      `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:anm="urn:anm:photo-variants:v1"><anm:manifest>${encoded}</anm:manifest></rdf:Description></rdf:RDF></x:xmpmeta>`,
-    )
-    .toBuffer();
+  const sidecar = built.sidecar ?? (await encodeVariantManifest(built.manifest));
   const { error } = await bucket.upload(manifestPath(path), sidecar, {
     contentType: 'image/webp',
     cacheControl: '0',
@@ -346,8 +274,11 @@ async function loadPhotoBytes(
   // Legacy masters stay immutable in storage. Public zoom/fallback receives a lossless
   // metadata-filtered representation; its ETag is calculated from the delivered bytes.
   if (chosen === path) {
-    try { buffer = await sanitizePhotoMetadata(buffer); }
-    catch { return null; }
+    try {
+      buffer = await sanitizePhotoMetadata(buffer);
+    } catch {
+      return null;
+    }
   }
   const contentType = result.data.type;
   timing?.('photo-storage', performance.now() - storageStart);
@@ -355,43 +286,6 @@ async function loadPhotoBytes(
   const value = { until: Date.now() + 60_000, buffer, contentType, etag };
   if (isCurrent() && width) bytesCache.set(key, value, width, chosen !== path);
   return value;
-}
-
-/** Private derivative paths are written by our encoder. Check the complete RIFF
- * container and dimensions on reads, including old derivatives; full pixel
- * decoding belongs to generation. This does not re-encode or change the bytes. */
-async function inspectDerivative(buffer: Buffer, width: number, decode = false) {
-  if (
-    buffer.length < 20 ||
-    buffer.length > MAX_UPLOAD_BYTES ||
-    buffer.toString('ascii', 0, 4) !== 'RIFF' ||
-    buffer.toString('ascii', 8, 12) !== 'WEBP' ||
-    buffer.readUInt32LE(4) + 8 !== buffer.length
-  )
-    throw new Error('Invalid derivative container');
-  let offset = 12,
-    frames = 0;
-  while (offset < buffer.length) {
-    if (offset + 8 > buffer.length) throw new Error('Truncated derivative chunk');
-    const type = buffer.toString('ascii', offset, offset + 4);
-    const length = buffer.readUInt32LE(offset + 4);
-    if (type === 'ANIM' || type === 'ANMF') throw new Error('Animated derivative');
-    if (type === 'VP8 ' || type === 'VP8L') frames++;
-    offset += 8 + length + (length % 2);
-    if (offset > buffer.length) throw new Error('Truncated derivative chunk');
-  }
-  if (frames !== 1) throw new Error('Invalid derivative frame');
-  const image = sharp(buffer, { limitInputPixels: MAX_UPLOAD_PIXELS, failOn: 'warning' });
-  const metadata = await image.metadata();
-  if (
-    metadata.format !== 'webp' ||
-    metadata.width !== width ||
-    !metadata.height ||
-    metadata.width * metadata.height > MAX_UPLOAD_PIXELS ||
-    (metadata.pages ?? 1) !== 1
-  )
-    throw new Error('Invalid derivative dimensions');
-  if (decode) await image.timeout({ seconds: 20 }).stats();
 }
 
 // Speculation is bounded process-wide (not two downloads per visitor). The base

@@ -29,6 +29,34 @@ O limite observado foi 536870912 bytes = 536,87 MB. Ao último ponto restavam 96
 
 ## Hipóteses e como distingui-las
 
+### Atualização com produção — 31/10/2026
+
+- A amostra fornecida pelo proprietário às 04:25:08 UTC identifica a versão `f74daa5`, Node 22.23.4, glibc mapeada e dez uploads concluídos/zero falhados tanto na API como no CRM. Não havia uploads ativos; Sharp tinha processamento/fila/cache corrente a zero e concorrência 1.
+- Cgroup: 502734848 bytes em uso, limite 536870912, margem 34136064 e pico de vida do cgroup 505925632; contadores OOM/OOM-kill a zero nessa observação. O pico de vida não é necessariamente o pico exato desse lote. O gráfico fornecido mostra CPU a subir durante o envio e a regressar rapidamente, com RAM a permanecer elevada.
+- Backend: RSS 406577152, heap usado 30373592, heap total 34762752, external 15339656 (inclui ArrayBuffers 15287077), memória anónima smaps 327655424. Estes valores sustentam a investigação fora do heap JS, mas não permitem calcular bytes de fragmentação por subtração nem provar fuga. A revisão confirmou a cache de bytes limitada a 12 MiB e a limpeza nativa por pedido no Sharp instalado; não há evidência para atribuir centenas de MB apenas à cache ou corrigir com um `destroy()` arbitrário.
+- O escritor antigo falhava: 470 falhas, zero lotes/eventos guardados. A API de dados de produção recusava `public` com 406/PGRST106. A correção `90eeefd` passou o supervisor para SQL privado, uma conexão e limites de tempo, preservando os esquemas não expostos. Às 04:34 começaram eventos reais na base; a amostra validada tinha zero falhas de escrita, IDs únicos e horas de origem/receção/relógio monotónico presentes.
+- O lote anterior não tem eventos na base. O log e gráfico fornecidos são evidência parcial; os eventos detalhados podem continuar no Render, cujo acesso por Brave foi recusado pela ferramenta. Não foi pedido nem gerado outro upload para validar a escrita.
+- Após o reinício do deploy, não houve novos uploads entre 04:42:04 e 04:45:34. Houve tráfego normal: pedidos HTTP passaram de 2 para 25, incluindo quatro leituras de fotos públicas. O cgroup passou de 135667712 para 165654528 bytes; RSS/heap usados do backend passaram de 105738240/23900104 para 129531904/29162512. Isto inclui aquecimento por leitura, não é uma medição de repouso sem atividade nem demonstra fuga. A queda de RAM após o deploy não valida uma correção da retenção.
+
+Continua por provar: a origem das alocações nativas e a separação entre memória ocupada e páginas livres reservadas pelo allocator. Nenhuma correção ao processamento ou allocator foi aplicada com base nestas amostras.
+
+### Par início/fim recuperado — décima fotografia
+
+O proprietário forneceu os eventos `upload_start` e `upload_end` do backend, mesmo processo/boot e mesmo trace, às 04:23:53.944 e 04:24:01.014 UTC. O início do CRM fornecido separadamente não foi usado para calcular deltas do backend.
+
+| Medida do backend | Início | Fim | Variação |
+| --- | ---: | ---: | ---: |
+| RSS | 372760576 B | 393994240 B | +21233664 B |
+| Heap usado | 28666688 B | 29197376 B | +530688 B |
+| External | 7789942 B | 10898504 B | +3108562 B |
+| ArrayBuffers (incluídos em external) | 3558162 B | 5931880 B | +2373718 B |
+
+A foto tinha 1976×1476 pixels e 543918 bytes de entrada; saíram 543724 bytes de master e cinco derivados. Duração 7069.88 ms, 39 observações, sucesso HTTP 201. O maior RSS observado foi atingido pela primeira vez em `variant_encode`, cerca de 4109 ms após início, e continuava igual no fim. O backend já entrava nesta décima operação com cerca de 372.76 MB; os 393.99 MB não foram todos alocados por essa foto. A variação de cerca de 21.23 MB com heap quase estável reforça a prioridade da geração nativa dos derivados/allocator, sem provar fragmentação, bytes ainda ocupados, nem qual biblioteca reteve cada página. Os detalhes smaps têm cache de até um segundo; não são leituras exatamente simultâneas ao RSS.
+
+O evento geral das 04:24:08 já registava RSS 406577152 B, igual ao das 04:25:08. O crescimento posterior ao fim deste upload pode incluir outras operações/leitura de fotos; não deve ser atribuído automaticamente à codificação da décima foto. Os contadores CPU cumulativos entre o par avançaram cerca de 2.68 s de CPU do processo, que pode incluir outro trabalho concorrente. Os campos `processCpu*` no fim do evento atual cobrem apenas a última fase e não devem ser apresentados como CPU total do upload.
+
+Posteriormente o proprietário autorizou preparar a correção candidata para um teste com uma foto. A implementação, limites e validação estão descritos em [isolamento do codec por fotografia](photo-process-isolation.md). A confirmação do comportamento da RAM em produção continua dependente desse teste; os ensaios isolados de integração não o substituem.
+
 1. **Fragmentação/reserva do allocator nativo: prioridade alta, ainda não confirmada.** É compatível com o padrão RSS alto, heap e external pequenos depois do trabalho. A [documentação Node 22](https://nodejs.org/docs/latest-v22.x/api/process.html#processmemoryusage) descreve esse padrão em glibc. Não se calcula o tamanho da fragmentação subtraindo heapUsed de RSS.
 2. **Memória ainda ocupada por libvips/codecs/pools/finalizadores: prioridade alta a média.** Desligar a cache de operações não obriga o allocator a devolver páginas ao sistema. Os contadores de [cache e concorrência Sharp](https://sharp.pixelplumbing.com/api-utility/) não medem toda a memória nativa; concorrência é por imagem. A [documentação libvips](https://github.com/libvips/libvips/blob/master/doc/libvips-memory.md) distingue alocações rastreadas de memória obtida por bibliotecas externas. Precisamos de perfil nativo ou estatísticas do allocator para separar bytes ocupados de páginas livres reservadas.
 3. **Buffers/objetos JS ainda referenciados: prioridade menor com estes sinais, não excluída.** Comparar GC de teste, heapTotal, external e arrayBuffers com private anonymous RSS. Um exemplo de 24 MP ocupa 72 MB em RGB ou 96 MB em RGBA, antes de trabalho adicional; isto é dimensão teórica, não contagem medida de superfícies simultâneas.

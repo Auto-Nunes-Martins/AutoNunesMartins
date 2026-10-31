@@ -97,6 +97,43 @@ beforeEach(() => {
   mocks.deleteObjects.mockResolvedValue(undefined);
   mocks.upload.mockResolvedValue({ error: null });
 });
+it('production upload uses the isolated codec and waits for its exit before finalizing', async () => {
+  const previous = process.env.NODE_ENV,
+    mode = process.env.PHOTO_PROCESSING_MODE;
+  process.env.NODE_ENV = 'production';
+  delete process.env.PHOTO_PROCESSING_MODE;
+  mocks.diagnostics.enabled = true;
+  try {
+    const input = await sharp({
+      create: { width: 400, height: 300, channels: 3, background: 'blue' },
+    })
+      .jpeg()
+      .toBuffer();
+    mocks.ensureVariants.mockImplementation(async (_path, input, _trace, encode) => {
+      expect(typeof encode).toBe('function');
+      const built = await encode(input);
+      expect(built.files.length).toBeGreaterThan(0);
+      return built;
+    });
+    const response = await fetch(base, {
+      method: 'POST',
+      headers: { 'content-type': 'image/jpeg' },
+      body: input,
+    });
+    expect(response.status).toBe(201);
+    expect(mocks.upload).toHaveBeenCalled();
+    expect(
+      mocks.trace.fields.mock.calls.some(
+        ([fields]) => fields.workerExited === 1 && fields.workerRss === 0,
+      ),
+    ).toBe(true);
+  } finally {
+    if (previous === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous;
+    if (mode === undefined) delete process.env.PHOTO_PROCESSING_MODE;
+    else process.env.PHOTO_PROCESSING_MODE = mode;
+  }
+}, 30000);
 describe('optional diagnostic boundary',()=>{
   it('does not accept telemetry when disabled and bounds enabled numeric reports',async()=>{
     let response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});expect(response.status).toBe(204);expect(mocks.diagnostics.clientTransfer).not.toHaveBeenCalled();

@@ -15,6 +15,7 @@ function state() {
 const uuid = (value) =>
   typeof value === 'string' && /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(value);
 const enums = new Set([
+  'worker_exit',
   'configuration',
   'connection',
   'permission',
