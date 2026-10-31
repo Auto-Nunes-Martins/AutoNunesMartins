@@ -323,7 +323,7 @@
             </div>
           {:else}
             <ul class="divide-y divide-[var(--color-border)]">
-              {#each data.recent as item (item.id)}
+              {#each data.recent.slice(0, 4) as item (item.id)}
                 {@const href = hrefFor(item)}
                 {@const s = styleForType(item.type)}
                 {@const Icon = s.icon}

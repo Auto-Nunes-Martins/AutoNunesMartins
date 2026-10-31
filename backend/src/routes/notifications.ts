@@ -79,7 +79,7 @@ async function buildNotifications(actorId: string): Promise<Omit<Payload, 'conta
     prisma.activityLog.findMany({
       where: { type: { not: 'CONTACT_REQUEST_RECEIVED' } },
       orderBy: { createdAt: 'desc' },
-      take: 5,
+      take: 4,
       include: { actor: { select: { id: true, name: true } } },
     }),
   ]);
