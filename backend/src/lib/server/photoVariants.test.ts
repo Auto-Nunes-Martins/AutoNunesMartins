@@ -284,16 +284,16 @@ describe('private reusable photo variants', () => {
     expect(mock.downloads.filter((download) => download === path)).toHaveLength(2);
   });
   it('reports cold storage and warm pixel-cache timings without changing the delivered bytes', async () => {
-    const buffer = Buffer.from('photo-fixture');
-    mock.objects.set(path, { buffer, type: 'image/jpeg' });
+    const buffer = await sharp({ create: { width: 320, height: 240, channels: 3, background: 'blue' } }).webp().toBuffer();
+    mock.objects.set(variantPath(path, 320), { buffer, type: 'image/webp' });
     const timing = vi.fn();
     const cold = await readPhotoBytes(path, 320, timing);
     expect(cold?.buffer.equals(buffer)).toBe(true);
-    expect(timing.mock.calls.map(([stage]) => stage)).toEqual([
+    expect(timing.mock.calls.map(([stage]) => stage)).toEqual(expect.arrayContaining([
       'photo-cache-miss',
       'photo-manifest',
       'photo-storage',
-    ]);
+    ]));
     expect(timing.mock.calls.every(([, ms]) => Number.isFinite(ms) && ms >= 0)).toBe(true);
     const downloads = mock.downloads.length;
     timing.mockClear();

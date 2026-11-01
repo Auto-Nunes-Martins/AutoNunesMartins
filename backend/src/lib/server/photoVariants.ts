@@ -41,6 +41,9 @@ export function forgetPhotoVariants(path: string) {
   manifestReads.delete(path);
   thumbnailWarmup.delete(path);
   for (const key of photoReads.keys()) if (key.startsWith(path + '|')) photoReads.delete(key);
+  const master = masterReads.get(path);
+  if (master) master.invalidated = true;
+  masterReads.delete(path);
   bytesCache.forget(path);
 }
 function remember(path: string, value: VariantManifest | null, ttl = value ? 40 * 60_000 : 5_000) {
@@ -186,6 +189,14 @@ export async function preferredVariantPath(path: string, width: number) {
 const bytesCache = new PhotoByteCache();
 type PhotoBytes = CachedPhoto;
 const photoReads = new Map<string, { promise: Promise<PhotoBytes | null>; speculative: boolean }>();
+type MasterRead = {
+  promise: Promise<PhotoBytes | null>;
+  invalidated: boolean;
+  published: boolean;
+  users: number;
+};
+// Active reads only. No persistent path/epoch registry; settled work is removed.
+const masterReads = new Map<string, MasterRead>();
 export type PhotoReadTiming = (
   stage: 'photo-cache-hit' | 'photo-cache-miss' | 'photo-manifest' | 'photo-storage',
   ms: number,
@@ -208,11 +219,10 @@ async function readPixels(
     timing?.('photo-cache-hit', 0);
     return hit;
   }
-  timing?.('photo-cache-miss', 0);
-  reads.count('cacheMisses');
   // Share pixels only: every caller must still complete live authorization first.
   const pending = photoReads.get(key);
   if (pending) {
+    recordCacheMiss(timing);
     reads.count('deduplicatedReads');
     const photo = await pending.promise;
     // Warming never downloads a full-size fallback. A real request still may.
@@ -230,6 +240,64 @@ async function readPixels(
     if (photoReads.get(key)?.promise === read) photoReads.delete(key);
   }
 }
+function recordCacheMiss(timing: PhotoReadTiming | undefined) {
+  timing?.('photo-cache-miss', 0);
+  reads.count('cacheMisses');
+}
+async function downloadMaster(path: string): Promise<PhotoBytes | null> {
+  const { data, error } = await reads.measure('masterDownload', () =>
+    getSupabase().storage.from(getBucketName()).download(path),
+  );
+  if (error || !data || data.size > MAX_UPLOAD_BYTES ||
+      !['image/jpeg', 'image/png', 'image/webp'].includes(data.type)) return null;
+  const input = await reads.measure('bufferMaterialize', async () => Buffer.from(await data.arrayBuffer()));
+  let buffer: Buffer;
+  try {
+    buffer = await reads.measure('masterSanitize', () => sanitizePhotoMetadata(input));
+  } catch {
+    return null;
+  }
+  const etag = '"' + createHash('sha256').update(path).update(buffer).digest('hex') + '"';
+  return { until: Date.now() + 60_000, buffer, contentType: data.type, etag };
+}
+async function readResolvedMaster(
+  path: string,
+  width: PhotoWidth | undefined,
+  isCurrent: () => boolean,
+  timing: PhotoReadTiming | undefined,
+): Promise<PhotoBytes | null> {
+  const key = path + '|resolved-master';
+  // A request invalidated while resolving its manifest/derivative must not join
+  // or create reusable work, even if no master flight existed at invalidation.
+  const hit = isCurrent() && width ? bytesCache.get(key) : undefined;
+  if (hit) {
+    reads.count('cacheHits');
+    timing?.('photo-cache-hit', 0);
+    return hit; // Do not refresh TTL on hits.
+  }
+  recordCacheMiss(timing);
+  const reusable = isCurrent();
+  let flight = reusable ? masterReads.get(path) : undefined;
+  if (flight) reads.count('deduplicatedReads');
+  else {
+    flight = { promise: Promise.resolve().then(() => downloadMaster(path)), invalidated: !reusable, published: false, users: 0 };
+    if (reusable) masterReads.set(path, flight);
+  }
+  flight.users++;
+  try {
+    const photo = await flight.promise;
+    if (photo && width && isCurrent() && !flight.invalidated && !flight.published) {
+      flight.published = true;
+      // One physical buffer, one budget charge. Masters never occupy derivative
+      // keys or the thumbnail reservation, including fallbacks requested at 320px.
+      bytesCache.set(key, photo, width, false);
+    }
+    return photo;
+  } finally {
+    flight.users--;
+    if (!flight.users && masterReads.get(path) === flight) masterReads.delete(path);
+  }
+}
 async function loadPhotoBytes(
   path: string,
   width: PhotoWidth | undefined,
@@ -245,7 +313,7 @@ async function loadPhotoBytes(
   const known = manifests.get(path);
   const current = known && known.until > Date.now() ? known : undefined;
   const part = width && current?.value?.variants.find((variant) => variant.width >= width);
-  let chosen = width
+  const chosen = width
     ? current
       ? part
         ? variantPath(path, part.width)
@@ -256,10 +324,18 @@ async function loadPhotoBytes(
     : path;
   if (width) timing?.('photo-manifest', performance.now() - manifestStart);
   // Old/small masters are fetched only on demand, never just to warm a thumbnail.
-  if (speculative && chosen === path) return null;
+  if (speculative && chosen === path) {
+    recordCacheMiss(timing);
+    return null;
+  }
   const storageStart = performance.now();
+  if (chosen === path) {
+    const photo = await readResolvedMaster(path, width, isCurrent, timing);
+    timing?.('photo-storage', performance.now() - storageStart);
+    return photo;
+  }
   const bucket = getSupabase().storage.from(getBucketName());
-  let result = await reads.measure(chosen === path ? 'masterDownload' : 'derivativeDownload', () =>
+  const result = await reads.measure('derivativeDownload', () =>
     bucket.download(chosen),
   );
   let derivative: Buffer | undefined;
@@ -282,12 +358,16 @@ async function loadPhotoBytes(
   const missing = thumbnail ? String(result.error?.statusCode) === '404' : !!result.error;
   const invalidDerivative = !result.error && (!result.data || (thumbnail && !derivative));
   if ((missing || invalidDerivative) && chosen !== path) {
-    if (speculative) return null;
-    chosen = path;
-    derivative = undefined;
+    if (speculative) {
+      recordCacheMiss(timing);
+      return null;
+    }
     reads.count('fallbackToMaster');
-    result = await reads.measure('masterDownload', () => bucket.download(path));
+    const photo = await readResolvedMaster(path, width, isCurrent, timing);
+    timing?.('photo-storage', performance.now() - storageStart);
+    return photo;
   }
+  recordCacheMiss(timing);
   if (
     result.error ||
     !result.data ||
@@ -298,24 +378,14 @@ async function loadPhotoBytes(
     return null;
   }
   const data = result.data;
-  let buffer =
+  const buffer =
     derivative ??
     (await reads.measure('bufferMaterialize', async () => Buffer.from(await data.arrayBuffer())));
-  // Legacy masters stay immutable in storage. Public zoom/fallback receives a lossless
-  // metadata-filtered representation; its ETag is calculated from the delivered bytes.
-  if (chosen === path) {
-    try {
-      const bytes = buffer;
-      buffer = await reads.measure('masterSanitize', () => sanitizePhotoMetadata(bytes));
-    } catch {
-      return null;
-    }
-  }
   const contentType = result.data.type;
   timing?.('photo-storage', performance.now() - storageStart);
   const etag = '"' + createHash('sha256').update(path).update(buffer).digest('hex') + '"';
   const value = { until: Date.now() + 60_000, buffer, contentType, etag };
-  if (isCurrent() && width) bytesCache.set(key, value, width, chosen !== path);
+  if (isCurrent() && width) bytesCache.set(key, value, width, true);
   return value;
 }
 
