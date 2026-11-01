@@ -3,6 +3,7 @@ import sharp from 'sharp';
 /** Remove descriptive/private container metadata without decoding/re-encoding pixels.
  * Retain ICC/colour signalling and, for legacy originals, only the EXIF orientation.
  * Never return an unsanitized fallback if a container cannot be parsed safely.
+ * Already-clean WebP may reuse input; callers must treat photo bytes as immutable.
  */
 export async function sanitizePhotoMetadata(input: Buffer): Promise<Buffer> {
   const meta = await sharp(input, { limitInputPixels: 24_000_000, failOn: 'warning' }).metadata();
@@ -131,7 +132,19 @@ function webp(input: Buffer, orientation?: number) {
   if (pos !== end || (orientation && !extended)) throw Error('Invalid WebP metadata container');
   if (orientation) parts.push(riffChunk('EXIF', orientationTiff(orientation)));
   const header = Buffer.from('RIFF\0\0\0\0WEBP');
-  header.writeUInt32LE(parts.reduce((size, part) => size + part.length, 4), 4);
+  const outputLength = parts.reduce((size, part) => size + part.length, header.length);
+  header.writeUInt32LE(outputLength - 8, 4);
+  // Only reuse fully validated input when the exact sanitized layout is identical.
+  // Check segments directly; constructing an output for comparison would copy it again.
+  if (outputLength === input.length && header.equals(input.subarray(0, header.length))) {
+    let offset = header.length;
+    const unchanged = parts.every(part => {
+      const equal = part.equals(input.subarray(offset, offset + part.length));
+      offset += part.length;
+      return equal;
+    });
+    if (unchanged) return input;
+  }
   // Copy retained chunks directly into the final RIFF, without a full-size temporary body.
   return Buffer.concat([header, ...parts]);
 }

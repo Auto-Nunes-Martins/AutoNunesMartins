@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import { sanitizePhotoMetadata } from './photoMetadata.js';
 import { optimizePhoto } from './photoOptimization.js';
@@ -55,6 +55,68 @@ describe('lossless photo metadata filtering', () => {
 });
 
 describe('WebP byte compatibility with the pre-optimization sanitizer', () => {
+  it.each(webpFixtures.cases)('reuses the already-clean $name without concatenating a new image', async item => {
+    const input = Buffer.from(item.expectedBase64, 'base64'), original = Buffer.from(input);
+    const concat = vi.spyOn(Buffer, 'concat');
+    let output: Buffer;
+    try {
+      output = await sanitizePhotoMetadata(input);
+      expect(concat).not.toHaveBeenCalled();
+    } finally {
+      concat.mockRestore();
+    }
+    expect(output!).toBe(input);
+    expect(input).toEqual(original);
+    expect(await sharp(output!).raw().toBuffer()).toEqual(await sharp(original).raw().toBuffer());
+  });
+
+  it.each(webpFixtures.cases)('fully validates already-clean $name before reuse', async item => {
+    const input = Buffer.from(item.expectedBase64, 'base64');
+    const cuts = new Set([0, 1, 7, 8, 11, 12, input.length - 1]);
+    for (let pos = 12; pos + 8 <= input.length;) {
+      const next = pos + 8 + input.readUInt32LE(pos + 4) + input.readUInt32LE(pos + 4) % 2;
+      cuts.add(pos + 7); cuts.add(next - 1);
+      pos = next;
+    }
+    for (const cut of cuts) await expect(sanitizePhotoMetadata(input.subarray(0, cut))).rejects.toThrow();
+    const oversized = Buffer.from(input); oversized.writeUInt32LE(0xffffffff, 4);
+    await expect(sanitizePhotoMetadata(oversized)).rejects.toThrow();
+  });
+
+  it('still copies when trailing or unknown private bytes must be removed', async () => {
+    const clean = Buffer.from(webpFixtures.cases[0]!.expectedBase64, 'base64');
+    const trailer = Buffer.concat([clean, Buffer.from('PRIVATE_TRAILER')]);
+    const chunk = Buffer.from([0x4a, 0x55, 0x4e, 0x4b, 1, 0, 0, 0, 0x7f, 0xa5]);
+    const unknown = Buffer.concat([clean, chunk]); unknown.writeUInt32LE(unknown.length - 8, 4);
+    for (const input of [trailer, unknown]) {
+      const original = Buffer.from(input), output = await sanitizePhotoMetadata(input);
+      expect(output).not.toBe(input);
+      expect(output).toEqual(clean);
+      expect(input).toEqual(original);
+    }
+  });
+
+  it('does not mistake matching lengths for byte-identical orientation metadata', async () => {
+    const clean = Buffer.from(webpFixtures.cases[0]!.expectedBase64, 'base64');
+    const input = Buffer.from(clean);
+    let changed = false;
+    for (let pos = 12; pos + 8 <= input.length;) {
+      const size = input.readUInt32LE(pos + 4);
+      if (input.toString('ascii', pos, pos + 4) === 'EXIF') {
+        // Unused bytes beside the inline SHORT orientation must still be cleared.
+        input[pos + 8 + 20] = 0x7f; changed = true;
+      }
+      pos += 8 + size + size % 2;
+    }
+    expect(changed).toBe(true);
+    expect((await sharp(input).metadata()).orientation).toBe(6);
+    const original = Buffer.from(input), output = await sanitizePhotoMetadata(input);
+    expect(output.length).toBe(input.length);
+    expect(output).not.toBe(input);
+    expect(output).toEqual(clean);
+    expect(input).toEqual(original);
+  });
+
   it.each(webpFixtures.cases)('preserves the exact output of $name', async item => {
     const input = Buffer.from(item.inputBase64, 'base64'), original = Buffer.from(input);
     const output = await sanitizePhotoMetadata(input);
