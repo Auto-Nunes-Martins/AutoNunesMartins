@@ -1,4 +1,5 @@
 import { createContactBudgetStore } from './lib/server/contactBudget.js';
+import reviewsRouter, { publicReviewsRouter } from './routes/reviews.js';
 import { contactBudgetDatabase } from './lib/server/contactBudgetDatabase.js';
 import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
@@ -90,6 +91,7 @@ app.use((req, res, next) => {
 });
 // Public read-only projection bypasses authenticated CRM auto-provisioning.
 app.use('/api/public/vehicles', publicVehiclesRouter);
+app.use('/api/public/reviews', publicReviewsRouter);
 app.use(timedMiddleware('backend-clerk', clerkMiddleware));
 app.use('/api/diagnostics', diagnosticsRouter);
 app.get('/api/me', requireUser, (req: AuthedRequest, res: Response) => {
@@ -115,6 +117,7 @@ app.use('/api/dashboard', featuredVehicleRouter);
 app.use('/api/operational-expenses', operationalExpensesRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/homepage-highlights', homepageHighlightsRouter);
+app.use('/api/reviews', reviewsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/activity', activityRouter);
 app.use('/api/search', searchRouter);

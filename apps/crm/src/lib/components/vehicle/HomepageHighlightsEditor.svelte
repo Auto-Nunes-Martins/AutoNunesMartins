@@ -9,7 +9,7 @@
   import { formFeedback, markFormSaved, refreshFormFeedback } from '$lib/forms/formFeedback';
   import { prepareVehicleHighlight } from '$lib/highlightSelection';
   import { toast } from 'svelte-sonner';
-  import { ArrowUp, ArrowDown, Check, Image, Plus, Search, Trash2 } from 'lucide-svelte';
+  import { ArrowUp, ArrowDown, Check, Star, Image, Plus, Search, Trash2 } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import Button from '$lib/components/common/Button.svelte';
@@ -72,7 +72,7 @@
 
 <div class="editor-grid">
   <Panel>
-    <PanelHeader icon={Image} title="Carrossel da homepage" meta={`${items.length} / 5`} />
+    <PanelHeader icon={Star} title="Carrossel da homepage" meta={`${items.length} / 5`} />
     <div class="intro">
       Escolha a fotografia de cada viatura e a ordem em que aparece no header do site.
       {#if contextMessage}<p class="context-message" role="status">{contextMessage}</p>{/if}
@@ -235,7 +235,8 @@
         Apenas viaturas publicadas com fotografias. Ao serem vendidas ou retiradas do
         site, deixam de aparecer no carrossel.
       </p>
-      <div class="candidates">
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus enables native scrolling of this overflow region.) -->
+      <div class="candidates" role="region" aria-label="Viaturas publicadas disponíveis para destaque" tabindex="0">
         {#each filtered as vehicle (vehicle.id)}
           {@const selected = items.some((item) => item.vehicleId === vehicle.id)}
           <div class="candidate">
@@ -465,7 +466,13 @@
     display: grid;
     gap: 2px;
     margin-bottom: 18px;
+    max-height: min(50svh, 420px);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    padding-inline: 4px;
   }
+  .candidates:focus-visible {outline:2px solid var(--color-red);outline-offset:3px;}
   .candidate {
     display: flex;
     align-items: center;
@@ -499,6 +506,7 @@
     }
   }
   @media (max-width: 600px) {
+    .candidates {max-height:min(45svh,320px);}
     .selected-row {
       flex-wrap: wrap;
       gap: 10px;

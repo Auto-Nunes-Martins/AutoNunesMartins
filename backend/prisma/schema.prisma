@@ -9,6 +9,21 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+/// Reviews entered manually by the stand; no Google sync or verification claim.
+/// Small normalized avatars live with the row, so replacement/deletion is atomic.
+model WebReview {
+  id            String   @id @default(cuid())
+  authorName    String   @db.VarChar(100)
+  rating        Float
+  text          String   @db.VarChar(5000)
+  avatarData    Bytes?
+  avatarVersion String?  @db.VarChar(64)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([createdAt, id])
+}
+
 /// Sanitized operational diagnostics only. Server access, never public browser access.
 model RuntimeDiagnosticEvent {
   id              BigInt   @id @default(autoincrement())

@@ -6,6 +6,7 @@
   import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import {
     ArrowRightLeft,
+    ArrowUpRight,
     Calendar,
     Car,
     Check,
@@ -127,7 +128,7 @@
           target="_blank"
           rel="noreferrer"
         >
-          Ver ficha pública <span aria-hidden="true">↗</span>
+          <span class="public-view-text">Ver ficha pública</span> <ArrowUpRight size={16} aria-hidden="true" />
         </a>
       {/if}
       {#await highlightStatus}
@@ -367,7 +368,10 @@
 </section>
 
 <style>
-  .public-view-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; white-space:nowrap; font-size:13px; text-decoration:underline; text-underline-offset:4px; color:var(--color-text); }
+  .public-view-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; white-space:nowrap; font-size:13px; text-decoration:none; color:var(--color-text); }
+  .public-view-text { position:relative; text-decoration:none; text-underline-offset:4px; }
+  .public-view-text::after { content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:currentColor; transition:width 420ms ease; }
+  .public-view-link:is(:hover, :focus-visible) .public-view-text::after { width:100%; }
   .public-view-link:focus-visible { outline:2px solid var(--color-red); outline-offset:3px; border-radius:var(--radius-btn); }
   .vehicle-actions :global(.edit-vehicle-action) {border-color:var(--color-text-muted);background:var(--color-bg-2);font-weight:600;color:var(--color-text);}
   .vehicle-actions :global(.edit-vehicle-action:hover) {border-color:var(--color-text);}
@@ -390,4 +394,16 @@
     min-height: 22px;
     align-items: center;
   }
+
+  .public-view-link { align-self:center; align-items:center; min-height:44px; padding-block:0; gap:8px; }
+  .public-view-link:focus-visible :global(svg) { transform:translate(3px,-3px); }
+  @media(hover:hover) { .public-view-link:hover :global(svg) { transform:translate(3px,-3px); } }
+  @media(prefers-reduced-motion:no-preference) {
+    .public-view-link :global(svg) { transition:transform 220ms ease, color 300ms ease; }
+  }
+  @media(prefers-reduced-motion:reduce) {
+    .public-view-link :global(svg),.public-view-link:is(:hover,:focus-visible) :global(svg) { transition:none; transform:none; }
+  }
+@media(prefers-reduced-motion:reduce) { .public-view-text::after { transition:none; } }
+.public-view-link :global(svg) { position:relative; top:-1px; }
 </style>

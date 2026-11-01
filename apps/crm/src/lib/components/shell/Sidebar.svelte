@@ -95,7 +95,7 @@
     {
       heading: 'Recursos',
       items: [
-        { href: crmPath('/site/destaques'), label: 'Site público', icon: Globe },
+        { href: crmPath('/site'), label: 'Site público', icon: Globe },
         { href: crmPath('/guia'), label: 'Guia de Fluxo', icon: BrandDoc },
       ],
     },

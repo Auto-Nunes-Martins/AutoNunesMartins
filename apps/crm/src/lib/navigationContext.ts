@@ -3,8 +3,8 @@ export function contextualParent(path: string): { href: string; label: string } 
   const parts = path.split('/').filter(Boolean);
   const section = parts[0];
   if (path === '/viaturas/nova') return null;
-  if (section === 'site' && parts.length > 1)
-    return { href: '/dashboard', label: 'Voltar ao Dashboard' };
+  // Site sections are peers in the shared workspace; its persistent nav owns the return.
+  if (section === 'site') return null;
   const names: Record<string, string> = {
     viaturas: 'viaturas',
     clientes: 'clientes',

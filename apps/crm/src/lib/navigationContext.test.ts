@@ -6,7 +6,9 @@ describe('safe contextual return', () => {
     expect(contextualParent('/clientes/c1/editar')?.href).toBe('/clientes/c1');
     expect(contextualParent('/tarefas/c1')?.href).toBe('/tarefas');
     expect(contextualParent('/tarefas/c1/editar')?.href).toBe('/tarefas');
-    expect(contextualParent('/site/destaques')?.href).toBe('/dashboard');
+    expect(contextualParent('/site')).toBeNull();
+    expect(contextualParent('/site/destaques')).toBeNull();
+    expect(contextualParent('/site/reviews')).toBeNull();
   });
   it('never derives a destination from external history or an unknown collection', () => {
     expect(contextualParent('/https://external.invalid')).toBeNull();

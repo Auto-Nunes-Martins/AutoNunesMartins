@@ -170,7 +170,7 @@
     [type='search']
   ):not([type='file']):not([type='range']):not([type='color']):not([type='submit']):not(
     [type='button']
-  ):not([type='reset']) {
+  ):not([type='reset']):not([data-inline-edit]) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -197,13 +197,13 @@
     [type='search']
   ):not([type='file']):not([type='range']):not([type='color']):not([type='submit']):not(
     [type='button']
-  ):not([type='reset']) {
+  ):not([type='reset']):not([data-inline-edit]) {
   height: 44px;
 }
 :is(.crm-form-layout, main, dialog)
   :is(input, select, textarea):not([type='hidden']):not([type='checkbox']):not(
     [type='radio']
-  ):focus {
+  ):not([data-inline-edit]):focus {
   border-color: var(--color-red);
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-red) 12%, transparent);
 }

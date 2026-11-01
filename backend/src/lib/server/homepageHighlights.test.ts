@@ -62,6 +62,7 @@ describe('homepage editorial selection', () => {
     mock.appSetting.findUnique.mockResolvedValue({value:selection});
     const result = await readPublicHighlights(db);
     expect(result.items[0]?.framing).toEqual(framing);
+    expect((await readDashboardHighlights(db)).items[0]?.framing).toEqual(framing);
     expect(result.items[0]?.vehicle).not.toHaveProperty('galleryFraming');
     expect(JSON.stringify(result)).not.toContain(otherPhoto);
   });

@@ -91,6 +91,7 @@
   import OrbitPageEnding from './OrbitPageEnding.svelte';
   import FormSelectField from './FormSelectField.svelte';
   import OrbitReviews from './OrbitReviews.svelte';
+  import type { PublicReview } from '@anm/types';
   import { standContact } from './standContact';
   import OrbitSelect from './OrbitSelect.svelte';
   import FavoriteButton from '../FavoriteButton.svelte';
@@ -144,6 +145,7 @@
     errorStatus,
     unavailableVehicle,
     homeHighlights,
+    reviews = [],
     routeContent,
     galleryRuntime,
   }: {
@@ -161,6 +163,7 @@
     errorStatus?: number;
     unavailableVehicle?: UnavailableVehicle;
     homeHighlights?: PublicHighlights;
+    reviews?: PublicReview[];
     routeContent?: Snippet<
       [{ card: Snippet<[PublicCard | null, number]>; contact: (message?: string) => Promise<void> }]
     >;
@@ -1330,7 +1333,7 @@
       />
       <div class="home-choice-group">
         <HomeNextSteps />
-        <OrbitReviews />
+        {#if reviews.length}<OrbitReviews {reviews} />{/if}
       </div>
       <OrbitEditorialPause onContact={contact} background={homeVisualFamily?.pause} />
     </main>

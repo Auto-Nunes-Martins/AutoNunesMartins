@@ -4,6 +4,11 @@
   import { reviewExpansion } from './reviewExpansion';
   import { reviewRevealOffset } from './reviewPosition';
   import { brandMarquee } from '$lib/brandMarquee';
+  import { reviewInitials, reviewAvatarUrl, type PublicReview } from '@anm/types';
+  import { PUBLIC_BACKEND_URL } from '$env/static/public';
+
+  export let reviews: PublicReview[] = [];
+  let failedAvatars: string[] = [];
 
   let section: HTMLElement;
   let visible = false;
@@ -61,6 +66,7 @@
   }
 
   onMount(() => {
+    if (!section) return;
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry?.isIntersecting ?? false;
     });
@@ -89,25 +95,9 @@
     };
   });
 
-  const examples = [
-    {
-      name: 'Marta Silva',
-      text: 'Explicaram tudo com calma e tive tempo para escolher. Gostei da atenção desde a primeira conversa. Antes de visitar o stand, tinha dúvidas sobre qual seria o carro mais adequado para o meu dia a dia e para as viagens em família. Durante a visita consegui comparar várias opções, conhecer os detalhes de cada uma e experimentar a que mais me interessava. Também me explicaram os passos seguintes de forma simples, sem me apressarem a tomar uma decisão. Voltei com algumas perguntas e encontrei a mesma disponibilidade para esclarecer tudo. O que mais valorizei foi poder fazer a escolha ao meu ritmo, com informação clara e atenção aos pormenores que, para mim, faziam a diferença.',
-      rating: 5,
-    },
-    {
-      name: 'Pedro Costa',
-      text: 'Pude ver o carro ao detalhe e esclarecer as minhas dúvidas. Um processo simples, sem pressas.',
-      rating: 5,
-    },
-    {
-      name: 'Ana Martins',
-      text: 'A visita ajudou-me a perceber o que procurava. Atendimento próximo e informação fácil de entender.',
-      rating: 4,
-    },
-  ];
 </script>
 
+{#if reviews.length}
 <section class="reviews" bind:this={section} aria-labelledby="reviews-heading">
   <div class="heading"><h2 id="reviews-heading">Quem veio, conta.</h2></div>
   <div
@@ -124,7 +114,7 @@
     >
       {#each [false, true] as duplicate}
         <div class="review-grid" class:duplicate data-brand-primary={!duplicate ? true : undefined}>
-          {#each examples as review, index}
+          {#each reviews as review, index}
             {@const preview = reviewExcerpt(review.text, compactReviews ? 64 : undefined)}
             {@const expanded = expandedReviews.includes(index)}
             {@const text = expanded ? review.text : preview.text}
@@ -140,37 +130,28 @@
                     <span
                       class="stars"
                       role="img"
-                      aria-label={`Avaliação fictícia: ${review.rating} de 5 estrelas`}
-                      >{'★'.repeat(review.rating)}<span class="empty"
-                        >{'☆'.repeat(5 - review.rating)}</span
+                      aria-label={`${review.rating} de 5 estrelas`}
+                      >{'★'.repeat(Math.floor(review.rating))}{#if review.rating % 1}<span class="half-star" aria-hidden="true">☆</span>{/if}<span class="empty"
+                        >{'☆'.repeat(5 - Math.ceil(review.rating))}</span
                       ></span
                     >
                     <span class="quote" aria-hidden="true">“</span>
                   </div>
                   <div class="review-person">
-                    <span class="avatar" aria-hidden="true"
-                      >{review.name
-                        .split(' ')
-                        .map((part) => part[0])
-                        .join('')}</span
+                    <span class="avatar" aria-hidden="true">
+                      {#if review.avatarVersion && !failedAvatars.includes(review.id)}
+                        <img src={reviewAvatarUrl(PUBLIC_BACKEND_URL, review)} alt="" width="44" height="44" loading="lazy" on:error={() => failedAvatars = [...failedAvatars, review.id]} />
+                      {:else}{reviewInitials(review.authorName)}{/if}
+                    </span
                     >
                     <div class="person-meta">
-                      <h3>{review.name}</h3>
+                      <h3>{review.authorName}</h3>
                       <span
                         class="verification"
-                        title="Selo ilustrativo numa avaliação fictícia; sem verificação real."
+                        title="Review de origem Google inserida manualmente pelo stand; sem sincronização ou verificação automática."
                       >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          aria-hidden="true"
-                          ><path
-                            d="m10 2 6 3v5c0 4-6 7-6 7s-6-3-6-7V5l6-3Z"
-                            stroke="currentColor"
-                          /><path d="m7 9 2 2 4-4" stroke="currentColor" /></svg
-                        >Verificado
+                        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><text x="1" y="10" fill="currentColor" font-size="11" font-weight="700">G</text></svg>
+                        Google
                       </span>
                     </div>
                   </div>
@@ -187,7 +168,7 @@
                           class="review-more"
                           aria-expanded={expanded}
                           aria-controls={`review-text-${duplicate ? 'copy' : 'original'}-${index}`}
-                          aria-label={`${expanded ? 'Ver menos' : 'Ver mais'} da avaliação de ${review.name}`}
+                          aria-label={`${expanded ? 'Ver menos' : 'Ver mais'} da avaliação de ${review.authorName}`}
                           tabindex={duplicate !== activeCopies.includes(index) ? -1 : 0}
                           on:click={(event) => toggleReview(index, duplicate, event)}
                           >{expanded ? 'Ver menos' : 'Ver mais'}</button
@@ -213,6 +194,7 @@
     </div>
   </div>
 </section>
+{/if}
 
 <style>
   .reviews {
@@ -284,6 +266,8 @@
   .empty {
     color: inherit;
   }
+  .half-star { position: relative; display: inline-block; }
+  .half-star::after { content: '★'; position: absolute; left: 0; top: 0; width: 50%; overflow: hidden; }
   .review-top {
     display: flex;
     align-items: center;
@@ -416,6 +400,7 @@
   .avatar {
     grid-area: avatar;
   }
+  .avatar img {width:100%;height:100%;object-fit:cover;border-radius:inherit;}
   .quote {
     display: none;
   }

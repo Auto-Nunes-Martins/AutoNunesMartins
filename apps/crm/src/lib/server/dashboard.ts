@@ -1,6 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { apiJson } from './api.js';
 import type { ActivityContext } from '$lib/activityPresentation';
+import type { PhotoFraming } from '@anm/types';
 
 export interface DashboardKpis {
   vendasMes: { count: number; previousCount: number; deltaPct: number | null };
@@ -146,6 +147,7 @@ export interface DashboardHighlight {
     photos: string[];
   };
   photoIndex: number;
+  framing?: PhotoFraming;
 }
 
 type Ev = Pick<RequestEvent, 'locals' | 'fetch'>;

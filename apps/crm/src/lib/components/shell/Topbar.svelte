@@ -31,7 +31,8 @@
     if (path.startsWith(crmPath('/financeiro'))) return ['Painel', 'Financeiro'];
     if (path.startsWith(crmPath('/atividade'))) return ['Painel', 'Atividade'];
     if (path.startsWith(crmPath('/guia'))) return ['Painel', 'Guia de Fluxo'];
-    if (path.startsWith(crmPath('/site'))) return ['Painel', 'Site público', 'Destaques'];
+    if (path.startsWith(crmPath('/site/reviews'))) return ['Painel', 'Site público', 'Reviews'];
+    if (path.startsWith(crmPath('/site'))) return ['Painel', 'Site público', 'Destaques da homepage'];
     if (path.startsWith(crmPath('/definicoes'))) return ['Painel', 'Definições'];
     return ['Painel'];
   });

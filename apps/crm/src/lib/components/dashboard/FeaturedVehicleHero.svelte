@@ -4,7 +4,9 @@
   import { PUBLIC_BACKEND_URL, PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { publicVehiclePhotoUrl } from '$lib/publicVehiclePhoto';
   import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
-  import { ArrowLeft, ArrowRight, Calendar, Fuel, Gauge, Star, Tag } from 'lucide-svelte';
+  import { framingStyle } from '@anm/types';
+  import { dashboardPhotoFraming } from '$lib/dashboardPhotoFraming';
+  import { ArrowLeft, ArrowRight, ArrowUpRight, Calendar, Fuel, Gauge, Star, Tag } from 'lucide-svelte';
   import type { DashboardHighlight } from '$lib/server/dashboard';
   import { formatEUR, formatInt } from '$lib/utils/format';
   import type { Snippet } from 'svelte';
@@ -89,7 +91,7 @@
         ><a href={crmPath('/site/destaques')}>Gerir destaques</a>
         {#if vehicle.slug}
           <a class="public-view-link" href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.slug)} target="_blank" rel="noopener noreferrer">
-            Ver ficha pública <span aria-hidden="true">↗</span>
+            <span class="public-view-text">Ver ficha pública</span> <ArrowUpRight size={16} aria-hidden="true" />
           </a>
         {/if}
       </div>
@@ -120,6 +122,8 @@
             sizes="(max-width:1050px) 100vw, 800px"
             alt={`${entry.vehicle.brand} ${entry.vehicle.model}`}
             class:is-active={slide === index}
+            style={framingStyle(entry.framing)}
+            use:dashboardPhotoFraming={{ framing: entry.framing, active: slide === index }}
             aria-hidden={slide !== index}
             onerror={() => (failedImages[entry.id] = true)}
             onload={() => (failedImages[entry.id] = false)}
@@ -303,6 +307,10 @@
     border-color: var(--color-red);
   }
   .links .public-view-link {
+    align-self: center;
+    align-items: center;
+    padding-block: 0;
+    min-height: 44px;
     border: 0;
     padding-inline: 0;
     font-family: var(--font-sans);
@@ -311,10 +319,12 @@
     font-style: normal;
     text-transform: none;
     letter-spacing: 0;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-    gap: 4px;
+    text-decoration: none;
+    gap: 8px;
   }
+  .public-view-text { position:relative; text-decoration:none; text-underline-offset:4px; }
+  .public-view-text::after { content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:currentColor; transition:width 420ms ease; }
+  .public-view-link:is(:hover, :focus-visible) .public-view-text::after { width:100%; }
   .links .primary {
     background: var(--color-red);
     border-color: var(--color-red);
@@ -322,6 +332,7 @@
   }
   .hero-photo {
     position: relative;
+    overflow: hidden;
     min-height: 460px;
     background: var(--color-bg-2);
     isolation: isolate;
@@ -331,13 +342,29 @@
     width: 100%;
     height: 100%;
     inset: 0;
+    right: auto;
+    bottom: auto;
     object-fit: cover;
-    object-position: center;
+    object-position: var(--photo-desktop, 50% 53%);
     opacity: 0;
     transition: opacity 180ms ease;
   }
+  /* Empty CSS content is decorative. The active image action supplies its exact currentSrc. */
+  .hero-photo:global([data-dashboard-fit='safe'])::before {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    pointer-events: none;
+    background-image: var(--dashboard-backdrop);
+    background-position: var(--dashboard-backdrop-position, center);
+    background-size: cover;
+    filter: blur(12px) brightness(.55);
+  }
   .hero-photo > img.is-active {
     opacity: 1;
+  }
+  @media (max-width: 700px) {
+    .hero-photo > img { object-position: var(--photo-mobile, 50% 53%); }
   }
   .photo-shade {
     position: absolute;
@@ -552,4 +579,16 @@
       transition: none;
     }
   }
+
+  .public-view-link { align-self:center; align-items:center; min-height:44px; padding-block:0; gap:8px; }
+  .public-view-link:focus-visible :global(svg) { transform:translate(3px,-3px); }
+  @media(hover:hover) { .public-view-link:hover :global(svg) { transform:translate(3px,-3px); } }
+  @media(prefers-reduced-motion:no-preference) {
+    .public-view-link :global(svg) { transition:transform 220ms ease, color 300ms ease; }
+  }
+  @media(prefers-reduced-motion:reduce) {
+    .public-view-link :global(svg),.public-view-link:is(:hover,:focus-visible) :global(svg) { transition:none; transform:none; }
+  }
+@media(prefers-reduced-motion:reduce) { .public-view-text::after { transition:none; } }
+.public-view-link :global(svg) { position:relative; top:-1px; }
 </style>
