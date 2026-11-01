@@ -130,7 +130,8 @@ function webp(input: Buffer, orientation?: number) {
   }
   if (pos !== end || (orientation && !extended)) throw Error('Invalid WebP metadata container');
   if (orientation) parts.push(riffChunk('EXIF', orientationTiff(orientation)));
-  const body = Buffer.concat(parts), header = Buffer.from('RIFF\0\0\0\0WEBP');
-  header.writeUInt32LE(body.length + 4, 4);
-  return Buffer.concat([header, body]);
+  const header = Buffer.from('RIFF\0\0\0\0WEBP');
+  header.writeUInt32LE(parts.reduce((size, part) => size + part.length, 4), 4);
+  // Copy retained chunks directly into the final RIFF, without a full-size temporary body.
+  return Buffer.concat([header, ...parts]);
 }

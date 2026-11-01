@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import { sanitizePhotoMetadata } from './photoMetadata.js';
 import { optimizePhoto } from './photoOptimization.js';
+import webpFixtures from './__fixtures__/photoMetadataWebp.json';
 
 async function fixture(format: 'jpeg' | 'png' | 'webp', orientation = 1) {
   const raw = Buffer.from(Array.from({ length: 48 * 32 * 3 }, (_, i) => i * 37 % 256));
@@ -50,5 +51,59 @@ describe('lossless photo metadata filtering', () => {
   it.each(['jpeg', 'png', 'webp'] as const)('drops trailing private bytes after a complete %s image', async format => {
     const input = await fixture(format), clean = await sanitizePhotoMetadata(input);
     expect(await sanitizePhotoMetadata(Buffer.concat([input, Buffer.from('PRIVATE_TRAILER')]))).toEqual(clean);
+  });
+});
+
+describe('WebP byte compatibility with the pre-optimization sanitizer', () => {
+  it.each(webpFixtures.cases)('preserves the exact output of $name', async item => {
+    const input = Buffer.from(item.inputBase64, 'base64'), original = Buffer.from(input);
+    const output = await sanitizePhotoMetadata(input);
+    expect(output).toEqual(Buffer.from(item.expectedBase64, 'base64'));
+    expect(input).toEqual(original);
+    expect(output.readUInt32LE(4)).toBe(output.length - 8);
+    expect(await sharp(output).raw().toBuffer()).toEqual(await sharp(input).raw().toBuffer());
+  });
+
+  it.each(webpFixtures.cases)('still rejects the recorded truncated boundaries of $name', async item => {
+    const input = Buffer.from(item.inputBase64, 'base64');
+    for (const cut of item.rejectedCuts) {
+      await expect(sanitizePhotoMetadata(input.subarray(0, cut))).rejects.toThrow();
+    }
+  });
+
+  it('rejects malformed RIFF sizes, chunk sizes and animation chunks', async () => {
+    const input = Buffer.from(webpFixtures.cases[0]!.inputBase64, 'base64');
+    for (const size of [0, 1, 3, 4, 5, 7, input.length - 9, input.length - 7, 0xffffffff]) {
+      const invalid = Buffer.from(input); invalid.writeUInt32LE(size, 4);
+      await expect(sanitizePhotoMetadata(invalid)).rejects.toThrow();
+    }
+    // The first chunk is VP8X, whose payload must remain exactly ten bytes.
+    expect(input.toString('ascii', 12, 16)).toBe('VP8X');
+    for (const size of [0, 9, 11, 0xffffffff]) {
+      const invalid = Buffer.from(input); invalid.writeUInt32LE(size, 16);
+      await expect(sanitizePhotoMetadata(invalid)).rejects.toThrow();
+    }
+    for (const type of ['ANIM', 'ANMF']) {
+      const chunk = Buffer.alloc(8); chunk.write(type);
+      const invalid = Buffer.concat([input, chunk]); invalid.writeUInt32LE(invalid.length - 8, 4);
+      await expect(sanitizePhotoMetadata(invalid)).rejects.toThrow();
+    }
+  });
+
+  it('preserves nonzero padding bytes of retained odd-sized chunks', async () => {
+    const input = Buffer.from(webpFixtures.cases[0]!.inputBase64, 'base64');
+    let changed = false;
+    for (let pos = 12; pos + 8 <= input.length;) {
+      const size = input.readUInt32LE(pos + 4), next = pos + 8 + size + size % 2;
+      if (size % 2 && ['ALPH', 'VP8 ', 'VP8L', 'ICCP'].includes(input.toString('ascii', pos, pos + 4))) {
+        input[next - 1] = 0xa5; changed = true;
+      }
+      pos = next;
+    }
+    expect(changed).toBe(true);
+    const output = await sanitizePhotoMetadata(input);
+    expect(output.includes(Buffer.from([0xa5]))).toBe(true);
+    expect(await sanitizePhotoMetadata(output)).toEqual(output);
+    expect(await sharp(output).raw().toBuffer()).toEqual(await sharp(input).raw().toBuffer());
   });
 });
