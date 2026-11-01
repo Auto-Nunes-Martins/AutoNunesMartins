@@ -1,4 +1,6 @@
 import { descriptionPreviewHtml } from '@anm/types/richDescription';
+import { framingStyle } from '@anm/types';
+import { dashboardPhotoFraming } from '$lib/dashboardPhotoFraming';
 import { photoAttrs } from '$lib/vehicleImage';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -36,6 +38,8 @@ function fromSource(source: string, file: string): any {
     else if (specifier === '$env/static/public')
       value = { PUBLIC_BACKEND_URL: 'https://backend.example', PUBLIC_WEBSITE_URL: 'https://website.example' };
     else if (specifier === '@anm/types/richDescription') value = { descriptionPreviewHtml };
+    else if (specifier === '@anm/types') value = { framingStyle };
+    else if (specifier === '$lib/dashboardPhotoFraming') value = { dashboardPhotoFraming };
     else if (specifier === '$lib/publicVehiclePhoto') value = { publicVehiclePhotoUrl };
     else if (specifier === '$lib/utils/publicVehicleUrl') value = { publicVehicleUrl };
     else if (specifier === '$app/navigation') value = { invalidateAll: async () => {} };
