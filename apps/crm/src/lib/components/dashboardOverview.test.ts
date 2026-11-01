@@ -15,6 +15,7 @@ import * as taskPresentation from '$lib/components/task/presentation';
 import { linkedRow } from '$lib/linkedRow';
 import { activityHref } from '$lib/activityNavigation';
 import { publicVehiclePhotoUrl } from '$lib/publicVehiclePhoto';
+import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
 
 // Render the actual overview components. Icons are decorative; panel snippets
 // and all operational text/links are rendered by their real components.
@@ -33,9 +34,10 @@ function fromSource(source: string, file: string): any {
     else if (specifier === 'lucide-svelte') value = new Proxy({}, { get: () => icon });
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
     else if (specifier === '$env/static/public')
-      value = { PUBLIC_BACKEND_URL: 'https://backend.example' };
+      value = { PUBLIC_BACKEND_URL: 'https://backend.example', PUBLIC_WEBSITE_URL: 'https://website.example' };
     else if (specifier === '@anm/types/richDescription') value = { descriptionPreviewHtml };
     else if (specifier === '$lib/publicVehiclePhoto') value = { publicVehiclePhotoUrl };
+    else if (specifier === '$lib/utils/publicVehicleUrl') value = { publicVehicleUrl };
     else if (specifier === '$app/navigation') value = { invalidateAll: async () => {} };
     else if (specifier === '$lib/auth/session')
       value = {

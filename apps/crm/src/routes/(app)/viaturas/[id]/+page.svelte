@@ -367,7 +367,7 @@
 </section>
 
 <style>
-  .public-view-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; white-space:nowrap; font-size:13px; text-decoration:underline; color:var(--color-text); }
+  .public-view-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; white-space:nowrap; font-size:13px; text-decoration:underline; text-underline-offset:4px; color:var(--color-text); }
   .public-view-link:focus-visible { outline:2px solid var(--color-red); outline-offset:3px; border-radius:var(--radius-btn); }
   .vehicle-actions :global(.edit-vehicle-action) {border-color:var(--color-text-muted);background:var(--color-bg-2);font-weight:600;color:var(--color-text);}
   .vehicle-actions :global(.edit-vehicle-action:hover) {border-color:var(--color-text);}

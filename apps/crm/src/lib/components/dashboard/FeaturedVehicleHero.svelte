@@ -1,8 +1,9 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { descriptionPreviewHtml } from '@anm/types/richDescription';
-  import { PUBLIC_BACKEND_URL } from '$env/static/public';
+  import { PUBLIC_BACKEND_URL, PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { publicVehiclePhotoUrl } from '$lib/publicVehiclePhoto';
+  import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { ArrowLeft, ArrowRight, Calendar, Fuel, Gauge, Star, Tag } from 'lucide-svelte';
   import type { DashboardHighlight } from '$lib/server/dashboard';
   import { formatEUR, formatInt } from '$lib/utils/format';
@@ -86,6 +87,11 @@
         <a class="primary" href={crmPath(`/viaturas/${current.id}`)}
           >Ver ficha completa <ArrowRight size={15} /></a
         ><a href={crmPath('/site/destaques')}>Gerir destaques</a>
+        {#if vehicle.slug}
+          <a class="public-view-link" href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.slug)} target="_blank" rel="noopener noreferrer">
+            Ver ficha pública <span aria-hidden="true">↗</span>
+          </a>
+        {/if}
       </div>
     {:else}
       <h2>Sem<br /><span>destaques.</span></h2>
@@ -295,6 +301,19 @@
   }
   .links a:hover {
     border-color: var(--color-red);
+  }
+  .links .public-view-link {
+    border: 0;
+    padding-inline: 0;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    font-style: normal;
+    text-transform: none;
+    letter-spacing: 0;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    gap: 4px;
   }
   .links .primary {
     background: var(--color-red);

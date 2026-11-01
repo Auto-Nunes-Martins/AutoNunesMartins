@@ -351,7 +351,7 @@
           class="public-view-link"
           href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.publicSlug)}
           target="_blank"
-          rel="noreferrer">Ver ficha pública ↗</a
+          rel="noopener noreferrer">Ver ficha pública <span aria-hidden="true">↗</span></a
         >{/if}
       {#if vehicle.webPublished && !unified}<form
           method="POST"
@@ -642,6 +642,7 @@
   }
   a {
     text-decoration: underline;
+    text-underline-offset: 4px;
     font-size: 13px;
   }
   form {

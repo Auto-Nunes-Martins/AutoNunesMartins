@@ -1,6 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
-  import { SignIn, ClerkLoading } from 'svelte-clerk';
+  import { SignIn, ClerkLoading, useClerkContext } from 'svelte-clerk';
   import { dark } from '@clerk/themes';
   import { theme } from '$lib/stores/theme';
   import { page } from '$app/stores';
@@ -8,7 +8,18 @@
   import CrmBrandHead from '$lib/components/brand/CrmBrandHead.svelte';
   import ThemeToggle from '$lib/components/brand/ThemeToggle.svelte';
 
-  // Keep Clerk's authentication, validation, loading and recovery flows unchanged.
+  const clerk = useClerkContext();
+  let entering = $state(false);
+  $effect(() => {
+    if (!entering && clerk.isLoaded && clerk.session) {
+      entering = true;
+      // Re-read the new session on the server, even if Clerk shallow-updated the URL
+      // or the session guard cancelled its client-side redirect during activation.
+      window.location.replace(crmPath('/a-entrar'));
+    }
+  });
+
+  // Clerk continues to own credential validation and the verification steps.
   const clerkAppearance = $derived({
     baseTheme: $theme === 'dark' ? dark : undefined,
     variables: {
@@ -84,12 +95,16 @@
           dia.
         </p>
         <div class="auth-container">
-          <ClerkLoading><p class="intro" role="status">A carregar o acesso seguro…</p></ClerkLoading
-          ><SignIn
-            forceRedirectUrl={crmPath('/a-entrar')}
-            signUpForceRedirectUrl={crmPath('/a-entrar')}
-            appearance={clerkAppearance}
-          />
+          {#if entering}
+            <p class="intro" role="status" aria-live="polite">A entrar no CRM…</p>
+          {:else}
+            <ClerkLoading><p class="intro" role="status">A carregar o acesso seguro…</p></ClerkLoading
+            ><SignIn
+              forceRedirectUrl={crmPath('/a-entrar')}
+              signUpForceRedirectUrl={crmPath('/a-entrar')}
+              appearance={clerkAppearance}
+            />
+          {/if}
         </div>
         <footer>
           <span>© {new Date().getFullYear()} Auto Nunes Martins</span><span>Acesso interno</span>
@@ -190,6 +205,7 @@
     color: #ffffffb8;
   }
   .login-form-side {
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -198,6 +214,7 @@
   .form-content {
     width: 100%;
     max-width: 390px;
+    min-width: 0;
   }
   .eyebrow {
     display: flex;
@@ -245,6 +262,8 @@
   }
   .login-page :global(.login-auth-root) {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
   .login-page :global(.login-auth-card) {
     width: 100%;
@@ -253,6 +272,8 @@
     box-shadow: none;
     border: 0;
     padding: 0;
+    /* With the card padding removed, keep control borders and focus rings visible. */
+    overflow: visible;
   }
   .login-page :global(.cl-cardBox) {
     width: 100%;
@@ -260,6 +281,38 @@
     box-shadow: none;
     border: 0;
     background: transparent;
+    overflow: visible;
+  }
+  .login-page :global(.cl-main) {
+    min-width: 0;
+    overflow: visible;
+  }
+  .login-page :global(.cl-formFieldLabelRow) {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .login-page :global(.cl-badge) {
+    flex-shrink: 0;
+    height: auto;
+    line-height: 1.5;
+    overflow: visible;
+  }
+  .login-page :global(.cl-otpCodeFieldInputs) {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .login-page :global(.cl-otpCodeFieldInput) {
+    box-sizing: border-box;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .login-page :global(.login-social-button),
+  .login-page :global(.login-field-input),
+  .login-page :global(.login-primary-button) {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
   .login-page :global(.login-social-button) {
     min-height: 46px;
