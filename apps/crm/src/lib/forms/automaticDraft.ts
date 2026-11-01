@@ -2,6 +2,8 @@ export interface DraftGuard {
   flush(): Promise<void>;
   discard(): Promise<void>;
   resume?(): void;
+  busy?(): boolean;
+  discardMessage?: string;
 }
 let active: DraftGuard | undefined;
 export const activeDraftGuard = () => active;

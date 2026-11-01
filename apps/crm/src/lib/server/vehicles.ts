@@ -180,8 +180,8 @@ export const vehiclesApi = {
       body: JSON.stringify(body),
     });
   },
-  delete(event: Ev, id: string): Promise<{ ok: true }> {
-    return apiJson(event, `/api/vehicles/${id}`, { method: 'DELETE' });
+  delete(event: Ev, id: string, draftOnly = false): Promise<{ ok: true }> {
+    return apiJson(event, `/api/vehicles/${id}${draftOnly ? '/draft' : ''}`, { method: 'DELETE' });
   },
   /**
    * Promote a DRAFT vehicle to AVAILABLE through the publication flow

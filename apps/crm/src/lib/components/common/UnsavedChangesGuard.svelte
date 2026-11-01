@@ -38,6 +38,10 @@
       return;
     if (activeDraftGuard()) {
       navigation.cancel();
+      if (activeDraftGuard()?.busy?.()) {
+        toast.error('Aguarde que a operação em curso termine antes de sair.');
+        return;
+      }
       destination = navigation.to?.url.href ?? null;
       void protectAndLeave();
       return;
@@ -62,24 +66,29 @@
       toast.error('Não foi possível abrir a página. As alterações continuam neste ecrã.');
     }
   }
+  async function discardAndLeave() {
+    if (pending || activeDraftGuard()?.busy?.()) return;
+    pending = true;
+    try {
+      await activeDraftGuard()?.discard();
+      await leave();
+    } catch (error) {
+      activeDraftGuard()?.resume?.();
+      toast.error(error instanceof Error ? error.message : 'Não foi possível descartar o rascunho. Continue a editar ou tente novamente.');
+    } finally { pending = false; }
+  }
 </script>
 
 <ConfirmDialog
   bind:open
   title={automaticFailure ? 'Não foi possível guardar o rascunho' : 'Sair desta página?'}
-  message={automaticFailure ? 'As últimas alterações ainda não estão protegidas. Pode tentar novamente ou continuar a editar.' : 'Se sair agora, perde as alterações que ainda não guardou.'}
+  message={activeDraftGuard()?.discardMessage ?? (automaticFailure ? 'As últimas alterações ainda não estão protegidas. Pode tentar novamente ou continuar a editar.' : 'Se sair agora, perde as alterações que ainda não guardou.')}
   confirmLabel="Sair sem guardar"
   cancelLabel={automaticFailure ? 'Continuar a editar' : 'Ficar na página'}
   secondaryLabel={automaticFailure ? 'Tentar novamente' : undefined}
   onsecondary={() => void protectAndLeave()}
   busy={pending}
   tone="danger"
-  onconfirm={() => void (async () => {
-    if (automaticFailure) {
-      try { await activeDraftGuard()?.discard(); }
-      catch { toast.error('Não foi possível interromper a gravação do rascunho.'); }
-    }
-    await leave();
-  })()}
+  onconfirm={() => void discardAndLeave()}
   oncancel={() => (destination = null)}
 />

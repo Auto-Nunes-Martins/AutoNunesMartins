@@ -46,7 +46,7 @@
               : []),
           ];
     actions.push({
-      label: 'Eliminar viatura',
+      label: vehicle.status === 'DRAFT' ? 'Eliminar rascunho' : 'Eliminar viatura',
       icon: Trash2,
       danger: true,
       disabled: !!vehicle.sale,
@@ -298,6 +298,7 @@
     brand={deleteTarget.brand}
     model={deleteTarget.model}
     blocked={!!deleteTarget.sale}
+    draftOnly={deleteTarget.status === 'DRAFT'}
     bind:open={deleteOpen}
     oncancel={() => {
       if (deleteOpener?.isConnected) deleteOpener.focus();

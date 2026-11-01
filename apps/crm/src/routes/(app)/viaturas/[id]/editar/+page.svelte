@@ -471,6 +471,7 @@
     brand={v.brand}
     model={v.model}
     blocked={!!v.sale}
+    draftOnly={v.status === 'DRAFT'}
     disabled={saving || needsReload}
     bind:busy={deleting}
     onredirect={() => {

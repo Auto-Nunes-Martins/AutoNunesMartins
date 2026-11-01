@@ -19,10 +19,12 @@ const mocks = vi.hoisted(() => ({
   download: vi.fn(),
   logger: { error: vi.fn() },
   ensureVariants: vi.fn(),
+  lateCleanup: vi.fn(),
   vehiclePhotoDimensions: { createMany: vi.fn(), deleteMany: vi.fn() },
 }));
 vi.mock('../../../shared/runtimeDiagnostics.mjs',async importOriginal=>({...await importOriginal<object>(),getProcessDiagnostics:()=>mocks.diagnostics}));
 vi.mock('../lib/server/photoVariants.js', () => ({ ensurePhotoVariants: mocks.ensureVariants }));
+vi.mock('../lib/server/vehiclePhotoCleanup.js', () => ({ cleanupLateVehicleUpload: mocks.lateCleanup }));
 vi.mock('../db.js', () => ({ prisma: mocks }));
 vi.mock('../logger.js', () => ({ logger: mocks.logger }));
 vi.mock('../middleware/clerk.js', () => ({
@@ -351,6 +353,18 @@ const remove = (photo: string) =>
   });
 
 describe('photo HTTP contract and storage boundary', () => {
+  it('rejects a staged upload finished after draft deletion and hands its exact path to durable cleanup', async () => {
+    const input = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } }).jpeg().toBuffer();
+    mocks.ensureVariants.mockImplementationOnce(async () => {
+      rows.delete(id);
+      return { manifest: { width: 30, height: 20, sourceHash: 'a'.repeat(64) } };
+    });
+    const response = await fetch(base, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-edit-stage': 'true', 'x-upload-id': '12345678-1234-4234-8234-123456789abc' }, body: input });
+    expect(response.status).toBe(409);
+    await vi.waitFor(() => expect(mocks.lateCleanup).toHaveBeenCalledWith(id, `${id}/12345678-1234-4234-8234-123456789abc.jpg`));
+    expect(rows.has(id)).toBe(false);
+    expect(mocks.vehicle.updateMany).not.toHaveBeenCalled();
+  });
   it.each([false, true])('retries an old staged upload only when cleaned image bytes match (different pixels: %s)', async different => {
     const stored = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } }).jpeg().withMetadata().withExifMerge({ IFD0: { Artist: 'PRIVATE_ARTIST' } }).toBuffer();
     const input = different ? await sharp({ create: { width: 30, height: 20, channels: 3, background: 'blue' } }).jpeg().toBuffer() : stored;

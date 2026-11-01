@@ -54,6 +54,8 @@ for (const [path, ...states] of fixtures) {
             PUBLIC_WEBSITE_URL: 'https://website.invalid',
             publishedVehicleUrl: vi.fn(() => undefined),
             vehicleSavedFeedback: vi.fn(),
+            draftsChanged: vi.fn(),
+            draftOnly: false,
             wasFeatured: false,
             onredirect: vi.fn(),
             showAdd: true,

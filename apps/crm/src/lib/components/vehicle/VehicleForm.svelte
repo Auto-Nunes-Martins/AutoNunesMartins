@@ -55,7 +55,9 @@
     unified?: boolean;
     onsaveall?: () => void;
     onstatechange?: (state: { dirty: boolean; valid: boolean }) => void;
-    onsaved?: () => void | Promise<void>;
+    onsaved?: (location?: string) => void | Promise<void>;
+    oncancel?: () => void;
+    cancelLabel?: string;
   }
 
   let {
@@ -73,6 +75,8 @@
     onsaveall,
     onstatechange,
     onsaved,
+    oncancel,
+    cancelLabel = 'Cancelar',
   }: Props = $props();
 
   let dirty = $state(false);
@@ -172,7 +176,7 @@
       return async ({ result, update }) => {
         let guardCleared = false;
         try {
-          if (result.type === 'success' || result.type === 'redirect') await onsaved?.();
+          if (result.type === 'success' || result.type === 'redirect') await onsaved?.(result.type === 'redirect' ? result.location : undefined);
           if (result.type === 'success') {
             toast.success('Dados da viatura guardados. A publicação no site é independente.');
             if (redirectOnSuccess) {
@@ -446,7 +450,8 @@
       {/if}
     </div>
     {#if !unified}<div class="ml-auto flex flex-wrap items-center gap-2">
-        <Button variant="ghost" href={crmPath('/viaturas')}>Cancelar</Button>
+        {#if oncancel}<Button variant="ghost" onclick={oncancel} disabled={submitting || disabled}>{cancelLabel}</Button>
+        {:else}<Button variant="ghost" href={crmPath('/viaturas')}>{cancelLabel}</Button>{/if}
         <Button
           variant="primary"
           type="submit"

@@ -23,6 +23,7 @@ let server,
   holdNext = false,
   held,
   heldReady;
+let drafts = [];
 const event = (letter, name) => ({
   id: 'contact:' + letter.repeat(64),
   name,
@@ -32,6 +33,7 @@ const event = (letter, name) => ({
 });
 const reset = () => {
   events = [event('a', 'Ana')];
+  drafts = [];
   receipts = new Map();
   failAfterRead = false;
   failGet = false;
@@ -39,12 +41,13 @@ const reset = () => {
   holdNext = false;
   held = undefined;
 };
-const payload = (user) => {
+const payload = (user, active) => {
   const items = events.filter((e) => !receipts.get(user)?.has(e.id));
+  const draftVehicles = drafts.filter(id => id !== active).length;
   return {
-    alerts: { stockAged: 2, tasksDueOrOverdue: 0, remindersToday: 0, draftVehicles: 0 },
+    alerts: { stockAged: 2, tasksDueOrOverdue: 0, remindersToday: 0, draftVehicles },
     contacts: { unread: items.length, items },
-    total: 2 + items.length,
+    total: 2 + items.length + draftVehicles,
     recent: [],
   };
 };
@@ -54,6 +57,7 @@ before(async () => {
   const write = (name, text) => writeFile(path.join(directory, name), text);
   await write('package.json', '{"type":"module"}');
   await write('paths.js', "export const base='/crm';");
+  await write('app-stores.js', "import{writable}from'svelte/store';export const page=writable({url:new URL(location.href),data:JSON.parse(sessionStorage.getItem('fixture-notification-data')??'{}')});window.setNotificationPath=(path,data={})=>{sessionStorage.setItem('fixture-notification-data',JSON.stringify(data));history.replaceState({},'',path);page.set({url:new URL(path,location.origin),data});};");
   await write('session.js', 'export const sessionFetch=(...args)=>fetch(...args);');
   await write(
     'App.svelte',
@@ -80,7 +84,7 @@ before(async () => {
         reply(503, { error: 'isolated refresh failure' });
         return;
       }
-      const snapshot = payload(user);
+      const snapshot = payload(user, url.searchParams.get('activeCreationDraftId'));
       if (holdNext) {
         holdNext = false;
         held = () => reply(200, snapshot);
@@ -110,7 +114,7 @@ before(async () => {
       reply(200, { ok: true });
       return;
     }
-    if (['/one', '/two'].includes(url.pathname)) {
+    if (['/one', '/two', '/crm/viaturas/nova', '/crm/viaturas'].includes(url.pathname)) {
       const html = await vite.transformIndexHtml(
         '/',
         `<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div><script type="module" src="/client.js"></script></body></html>`,
@@ -131,6 +135,7 @@ before(async () => {
       alias: [
         { find: '$lib/auth/session', replacement: path.join(directory, 'session.js') },
         { find: '$app/paths', replacement: path.join(directory, 'paths.js') },
+        { find: '$app/stores', replacement: path.join(directory, 'app-stores.js') },
         { find: '$lib', replacement: path.join(crm, 'src/lib') },
       ],
     },
@@ -154,6 +159,37 @@ async function open(page) {
 }
 const mark = (page) => page.getByRole('button', { name: 'Marcar contacto de Ana como lido' });
 const badge = (page) => page.getByRole('button', { name: 'Alertas', exact: true }).locator('span');
+
+test('active creation is excluded through polling and refresh; other drafts/contacts remain and stale responses cannot reapply old route context', async () => {
+  reset();
+  const active = 'c' + 'a'.repeat(24), other = 'c' + 'b'.repeat(24);
+  drafts = [active, other];
+  const context = await browser.newContext(), page = await context.newPage();
+  try {
+    await open(page);
+    await expect(badge(page)).toHaveText('5');
+    await page.evaluate(id => window.setNotificationPath('/crm/viaturas/nova?viatura=' + id, { vehicle: { id, status: 'DRAFT' } }), active);
+    await expect(badge(page)).toHaveText('4');
+    await expect(mark(page)).toHaveCount(1);
+    await page.evaluate(() => window.pollNotifications());
+    await expect(badge(page)).toHaveText('4');
+    await page.reload();
+    await page.getByRole('button', { name: 'Alertas', exact: true }).click();
+    await expect(badge(page)).toHaveText('4');
+    const waiting = new Promise(resolve => heldReady = resolve);
+    holdNext = true;
+    await page.evaluate(() => window.pollNotifications());
+    await waiting;
+    await page.evaluate(() => window.setNotificationPath('/crm/viaturas'));
+    await expect(badge(page)).toHaveText('5');
+    held();
+    await expect(badge(page)).toHaveText('5');
+    await expect(mark(page)).toHaveCount(1);
+    // An arbitrary query ID without server-loaded vehicle context does not mute it.
+    await page.evaluate(id => window.setNotificationPath('/crm/viaturas/nova?viatura=' + id), active);
+    await expect(badge(page)).toHaveText('5');
+  } finally { await context.close(); }
+});
 
 for (const width of [1440, 390])
   test(`confirmed read stays hidden when refresh fails and across reload/navigation/new session at ${width}px`, async () => {

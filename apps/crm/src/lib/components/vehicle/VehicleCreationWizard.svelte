@@ -35,6 +35,9 @@
   import VehicleForm from './VehicleForm.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
+  import Button from '$lib/components/common/Button.svelte';
+  import { Trash2 } from 'lucide-svelte';
+  import { isNewCreation, forgetCreation, discardVehicleDraft, draftsChanged } from './creationLifecycle';
 
   let {
     vehicle,
@@ -57,6 +60,10 @@
     acquisitionDate: vehicle.acquisitionDate.slice(0, 10),
   })));
   let ready = $state(false);
+  let newCreation = $state(false), cancelling = $state(false), confirmCancel = $state(false);
+  let discarded = $state(false);
+  let serverDiscarded = false;
+  let saveStarting = false;
   let savePhase = $state(0), preparedPhotos = $state(0), photoTotal = $state(0);
   let draftState = $state('');
   let recoveredPublication = $state<ReturnType<typeof publicDraftFromForm> | undefined>();
@@ -137,7 +144,7 @@
   }
   async function refresh() {
     await tick();
-    if (saving || needsReload || !root?.isConnected) return;
+    if (saving || cancelling || discarded || needsReload || !root?.isConnected) return;
     crmIssues = snapshot('crm')?.errors ?? [];
     publishIssues = snapshot('publish')?.errors ?? [];
     if (!publishIssues.some((issue) => issue.key === 'photoPrincipal')) {
@@ -156,6 +163,7 @@
     void refresh();
   }
   onMount(() => {
+    newCreation = baseline.status === 'DRAFT' && isNewCreation(draftOwner, baseline.id);
     let disposed = false;
     const urls: string[] = [];
     void (async () => {
@@ -195,12 +203,48 @@
         state: value => { draftState = value === 'saved' ? 'Rascunho guardado neste dispositivo' : value === 'saving' ? 'A guardar rascunho…' : 'Não foi possível guardar o rascunho'; },
       });
       protectForms();
-      unregister = registerDraftGuard({ flush: autosave.flush, discard: autosave.abandon, resume: autosave.resume });
+      unregister = registerDraftGuard({ flush: autosave.flush, discard: () => discardCreation(false), resume: () => {
+        if (!serverDiscarded) { discarded = false; autosave?.resume(); }
+      },
+        busy: () => saving || saveStarting || cancelling,
+        discardMessage: newCreation ? 'Sair sem guardar elimina esta nova criação e as suas fotografias. Pode tentar guardar o rascunho ou continuar a editar.' : undefined });
     })();
-    return () => { disposed = true; unregister?.(); autosave?.dispose(); urls.forEach(url => URL.revokeObjectURL(url)); };
+    return () => { disposed = true; forgetCreation(draftOwner, baseline.id); unregister?.(); autosave?.dispose(); urls.forEach(url => URL.revokeObjectURL(url)); };
   });
+  // Only an explicitly confirmed new creation (or explicit delete button) deletes the server row.
+  // A resumed/existing draft's "Sair sem guardar" removes this editing session's recovery only.
+  async function discardCreation(explicitDelete: boolean) {
+    if (saving || saveStarting) throw Error('Aguarde que a gravação e o envio de fotografias terminem.');
+    cancelling = true;
+    await autosave?.abandon();
+    try {
+      if (!serverDiscarded && (newCreation || explicitDelete)) {
+        await discardVehicleDraft(baseline.id, baseline.updatedAt);
+        serverDiscarded = true;
+        discarded = true;
+      }
+      await autosave?.discard();
+      discarded = true;
+      forgetCreation(draftOwner, baseline.id);
+      protectForms();
+    } catch (error) { if (!serverDiscarded) autosave?.resume(); throw error; }
+    finally { cancelling = false; }
+  }
+  async function cancelCreation() {
+    if (saving || saveStarting || cancelling) return;
+    cancelling = true;
+    try {
+      await discardCreation(true);
+      unregister?.();
+      confirmCancel = false;
+      await goto(crmPath('/viaturas'), { invalidateAll: true });
+    } catch (error) {
+      message = error instanceof Error ? error.message : 'Não foi possível descartar o rascunho. Tente novamente.';
+      toast.error(message);
+    } finally { cancelling = false; }
+  }
   async function changeStep(next: number) {
-    if (saving || needsReload) return;
+    if (saving || cancelling || discarded || needsReload) return;
     if (next === 2) {
       const draft = snapshot('crm');
       const errors = draft?.errors.filter((issue) => internalVehicleFields.has(issue.key)) ?? [];
@@ -228,8 +272,9 @@
     focusEditIssue(root, issue);
   }
   async function save(action: CreationAction, confirmed = false) {
-    if (saving || needsReload) return;
+    if (saving || saveStarting || cancelling || discarded || needsReload) return;
     await tick();
+    if (saving || saveStarting || cancelling || discarded || needsReload) return;
     const draft = snapshot(action);
     if (!draft) return;
     if (draft.errors.length) {
@@ -242,12 +287,14 @@
       return;
     }
     confirmNoPhoto = false;
+    saveStarting = true;
     // Preserve the editable state before locking controls or making network requests.
     try { await autosave?.flush(); } catch { /* explicit final save can still succeed */ }
     clearEditIssueMarks(root);
     issues = [];
     message = '';
     saving = true;
+    saveStarting = false;
     savePhase = 0; preparedPhotos = 0; photoTotal = 0;
     await tick();
     root.querySelector<HTMLElement>('[data-save-progress]')?.scrollIntoView({ block: 'start', behavior: 'instant' });
@@ -327,6 +374,8 @@
         );
       }
       committed = true;
+      forgetCreation(draftOwner, baseline.id);
+      draftsChanged();
       let onlineUrl:string|undefined;
       if(action==='publish')try{const confirmed=await sessionFetch(endpoint,{cache:'no-store'});if(confirmed.ok){const state=await confirmed.json();onlineUrl=publishedVehicleUrl(PUBLIC_WEBSITE_URL,state.vehicle);}}catch{/* The save succeeded; a link is optional if confirmation is unavailable. */}
       unregister?.();
@@ -370,13 +419,13 @@
     <button
       type="button"
       aria-current={step === 1 ? 'step' : undefined}
-      disabled={saving || needsReload}
+      disabled={saving || cancelling || discarded || needsReload}
       onclick={() => void changeStep(1)}><span>1</span><strong>Dados da viatura</strong></button
     >
     <button
       type="button"
       aria-current={step === 2 ? 'step' : undefined}
-      disabled={saving || needsReload}
+      disabled={saving || cancelling || discarded || needsReload}
       onclick={() => void changeStep(2)}
       ><span>2</span><strong>Fotografias e website</strong></button
     >
@@ -410,7 +459,7 @@
       {vehicle}
       {photos}
       bind:photoDraft
-      disabled={saving || needsReload}
+      disabled={saving || cancelling || discarded || needsReload}
       onsaveall={() => void save('crm')}
       onstatechange={() => void refresh()}
     >
@@ -422,7 +471,7 @@
                 {initial}
                 {characteristics}
                 unified
-                disabled={saving || needsReload}
+                disabled={saving || cancelling || discarded || needsReload}
                 onsaveall={() => void changeStep(2)}
                 onstatechange={() => void refresh()}
               />
@@ -440,27 +489,33 @@
     {#if draftState}<p role="status">{draftState}</p>{/if}
     {#if saving}<p role="status">{progress || 'A guardar…'}</p>{/if}
     <div class="creation-actions">
+      {#if baseline.status === 'DRAFT'}
+        {#if newCreation}<button type="button" disabled={saving || cancelling || discarded || needsReload} onclick={() => confirmCancel = true}>Cancelar criação</button>
+        {:else}<Button variant="danger" size="lg" disabled={saving || cancelling || discarded || needsReload} onclick={() => confirmCancel = true}>
+          <Trash2 size={15} aria-hidden="true" />Eliminar rascunho
+        </Button>{/if}
+      {/if}
       {#if step === 1}<button
           class="strong"
           type="button"
-          disabled={saving || needsReload}
+          disabled={saving || cancelling || discarded || needsReload}
           onclick={() => void changeStep(2)}>Continuar para fotografias →</button
         >
       {:else}
-        <button type="button" disabled={saving || needsReload} onclick={() => void changeStep(1)}
+        <button type="button" disabled={saving || cancelling || discarded || needsReload} onclick={() => void changeStep(1)}
           >← Voltar ao passo 1</button
         >
         <button
           class="strong"
           type="button"
-          disabled={saving || needsReload || crmIssues.length > 0}
+          disabled={saving || cancelling || discarded || needsReload || crmIssues.length > 0}
           aria-describedby="creation-requirements"
           onclick={() => void save('crm')}>Concluir no CRM</button
         >
         <button
           class="publish"
           type="button"
-          disabled={saving || needsReload || publishIssues.length > 0}
+          disabled={saving || cancelling || discarded || needsReload || publishIssues.length > 0}
           aria-describedby="creation-requirements"
           onclick={() => void save('publish')}>Concluir e publicar</button
         >
@@ -485,6 +540,10 @@
     </div>{/if}
   {:else}<p role="status">A recuperar rascunho…</p>{/if}
 </section>
+<ConfirmDialog bind:open={confirmCancel} title={newCreation ? 'Cancelar criação?' : 'Eliminar rascunho?'}
+  message="Os dados e as fotografias deste rascunho serão descartados. Esta ação não pode ser desfeita."
+  confirmLabel={newCreation ? 'Descartar criação' : 'Eliminar rascunho'} cancelLabel="Continuar a editar"
+  tone="danger" busy={cancelling} onconfirm={() => void cancelCreation()} />
 <ConfirmDialog
   bind:open={confirmNoPhoto}
   title="Publicar sem fotografia?"

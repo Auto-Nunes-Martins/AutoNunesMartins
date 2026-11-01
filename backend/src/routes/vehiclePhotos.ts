@@ -3,6 +3,7 @@ import { PhotoEncodingSession } from '../lib/server/photoEncodingSession.js';
 import { ensurePhotoVariants } from '../lib/server/photoVariants.js';
 import { persistPhotoDimensions, removePhotoDimensions } from '../lib/data/photoDimensions.js';
 import { logger } from '../logger.js';
+import { cleanupLateVehicleUpload } from '../lib/server/vehiclePhotoCleanup.js';
 import { getProcessDiagnostics, clientMetrics } from '../../../shared/runtimeDiagnostics.mjs';
 import { sanitizePhotoMetadata } from '../lib/server/photoMetadata.js';
 import express from 'express';
@@ -92,6 +93,7 @@ router.post('/', requireUser, (req, res, next) => {
   let outcome:'ok'|'error'|'aborted'='error', diagnosticStatus=500;
   let disconnected = false;
   let encoding: PhotoEncodingSession | undefined;
+  let storedPath: string | undefined;
   const aborted = () => {
     disconnected = true;
     encoding?.abort();
@@ -155,6 +157,7 @@ router.post('/', requireUser, (req, res, next) => {
       if (photo.buffer.length > MAX_OUTPUT_BYTES)
         throw new PhotoUploadError(422, 'A fotografia otimizada excede o limite de 2 MB.');
       const path = vehicleId + '/' + (uploadId ?? randomUUID()) + '.' + photo.extension;
+      storedPath = path;
       let storedMaster = photo.buffer;
       trace.phase('storage');
       const { error } = await getSupabase()
@@ -191,6 +194,8 @@ router.post('/', requireUser, (req, res, next) => {
       catch { throw new PhotoUploadError(502,'Não foi possível preparar os tamanhos da fotografia. Tente guardar novamente.'); }
       trace.phase('finalize');
       if (staged) {
+        const current = await prisma.vehicle.findUnique({ where: { id: vehicleId }, select: { id: true } });
+        if (!current) throw new PhotoMutationError(409, 'O rascunho foi eliminado entretanto. A fotografia não foi associada.');
         outcome='ok';diagnosticStatus=201;
         res.status(201).json({ path, staged: true, bytes: photo.buffer.length, optimized: photo.optimized });
         return;
@@ -235,6 +240,10 @@ router.post('/', requireUser, (req, res, next) => {
       req.off('aborted', aborted);
       res.off('close', closed);
       await encoding?.close();
+      if (storedPath) {
+        try { await cleanupLateVehicleUpload(param(req, 'vehicleId'), storedPath); }
+        catch { logger.error('Late vehicle upload cleanup unavailable; retry required'); }
+      }
       trace.finish(disconnected?'aborted':outcome,{status:diagnosticStatus});
       release();
     }

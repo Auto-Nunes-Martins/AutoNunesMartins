@@ -82,7 +82,8 @@ export const actions: Actions = {
   },
   delete: async (event) => {
     try {
-      await vehiclesApi.delete(event, event.params.id);
+      const form = await event.request.formData();
+      await vehiclesApi.delete(event, event.params.id, form.get('draftOnly') === 'true');
     } catch (err) {
       if (err instanceof ApiError) {
         return fail(err.status, {

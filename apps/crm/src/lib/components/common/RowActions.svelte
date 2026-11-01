@@ -5,7 +5,7 @@
 
   interface Props {
     label: string;
-    editHref: string;
+    editHref?: string;
     actions: {
       label: string;
       href?: string;
@@ -75,9 +75,9 @@
 </script>
 
 <div class="row-actions">
-  <a href={editHref} class="edit-link" aria-label={`Editar ${label}`}
+  {#if editHref}<a href={editHref} class="edit-link" aria-label={`Editar ${label}`}
     ><Pencil class="h-3.5 w-3.5" />Editar</a
-  >
+  >{/if}
   {#if actions.length > 0}
     <button
       bind:this={trigger}

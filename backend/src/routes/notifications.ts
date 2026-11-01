@@ -8,6 +8,7 @@ import { prisma } from '../db.js';
 import { appSettings } from '../lib/data/appSettings.js';
 import { cache } from '../lib/data/cache.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
+import { z } from 'zod';
 
 const router = Router();
 
@@ -30,7 +31,7 @@ interface Payload {
     stockAged: number;
     tasksDueOrOverdue: number;
     remindersToday: number;
-    /** DRAFT vehicles awaiting a price (see dashboardService.SmartAlerts). */
+    /** DRAFT vehicles awaiting completion, excluding only this request's active creation. */
     draftVehicles: number;
   };
   contacts: Awaited<ReturnType<typeof readContactNotifications>>;
@@ -46,14 +47,17 @@ interface Payload {
   }>;
 }
 
-async function buildNotifications(actorId: string): Promise<Omit<Payload, 'contacts'>> {
+type CachedNotifications = Omit<Payload, 'contacts' | 'alerts'> & {
+  alerts: Omit<Payload['alerts'], 'draftVehicles'>;
+};
+async function buildNotifications(actorId: string): Promise<CachedNotifications> {
   const now = new Date();
   const todayStart = startOfToday();
   const todayEnd = endOfToday();
   const thresholdDays = await appSettings.stockAgingDays();
   const cutoff = new Date(now.getTime() - thresholdDays * MS_PER_DAY);
 
-  const [stockAged, tasksDueOrOverdue, remindersToday, draftVehicles, recent] = await Promise.all([
+  const [stockAged, tasksDueOrOverdue, remindersToday, recent] = await Promise.all([
     prisma.vehicle.count({
       where: { status: 'AVAILABLE', acquisitionDate: { lt: cutoff } },
     }),
@@ -75,7 +79,6 @@ async function buildNotifications(actorId: string): Promise<Omit<Payload, 'conta
         reminderDate: { gte: todayStart, lte: todayEnd },
       },
     }),
-    prisma.vehicle.count({ where: { status: 'DRAFT' } }),
     prisma.activityLog.findMany({
       where: { type: { not: 'CONTACT_REQUEST_RECEIVED' } },
       orderBy: { createdAt: 'desc' },
@@ -84,8 +87,8 @@ async function buildNotifications(actorId: string): Promise<Omit<Payload, 'conta
     }),
   ]);
 
-  const alerts = { stockAged, tasksDueOrOverdue, remindersToday, draftVehicles };
-  const total = stockAged + tasksDueOrOverdue + remindersToday + draftVehicles;
+  const alerts = { stockAged, tasksDueOrOverdue, remindersToday };
+  const total = stockAged + tasksDueOrOverdue + remindersToday;
 
   return {
     alerts,
@@ -111,8 +114,13 @@ router.get(
       return;
     }
     const actorId = req.user.id;
+    const context = z.string().regex(/^c[a-z0-9]{24}$/).optional().safeParse(req.query.activeCreationDraftId);
+    if (!context.success) {
+      res.status(400).json({ error: 'Invalid creation context' });
+      return;
+    }
     // Contact read state stays fresh across replicas; only operational aggregates use the cache.
-    const [payload, contacts] = await Promise.all([
+    const [payload, contacts, draftVehicles] = await Promise.all([
       cache.wrap(`notifications:${actorId}`, NOTIFICATIONS_TTL_MS, () =>
         buildNotifications(actorId),
       ),
@@ -120,9 +128,12 @@ router.get(
         { query: (sql, values = []) => prisma.$queryRawUnsafe(sql, ...values) },
         actorId,
       ),
+      // Fresh and request-scoped: leaving/completing a creation must not reuse
+      // an excluded aggregate, and arbitrary contexts must not create cache keys.
+      prisma.vehicle.count({ where: { status: 'DRAFT', ...(context.data ? { id: { not: context.data } } : {}) } }),
     ]);
     res.set('Cache-Control', 'private, no-store');
-    res.json({ ...payload, contacts, total: payload.total + contacts.unread });
+    res.json({ ...payload, alerts: { ...payload.alerts, draftVehicles }, contacts, total: payload.total + draftVehicles + contacts.unread });
   }),
 );
 

@@ -7,6 +7,7 @@
     model,
     blocked = false,
     disabled = false,
+    draftOnly = false,
     busy = $bindable(false),
     onredirect,
   }: {
@@ -15,6 +16,7 @@
     model: string;
     blocked?: boolean;
     disabled?: boolean;
+    draftOnly?: boolean;
     busy?: boolean;
     onredirect?: () => void;
   } = $props();
@@ -23,7 +25,7 @@
 
 <section class="vehicle-deletion" aria-label="Eliminar viatura">
   <div>
-    <h2>Eliminar viatura</h2>
+    <h2>{draftOnly ? 'Eliminar rascunho' : 'Eliminar viatura'}</h2>
     <p>
       {blocked
         ? 'A eliminação está indisponível enquanto existir uma venda associada.'
@@ -34,7 +36,7 @@
     type="button"
     onclick={() => (confirmationOpen = true)}
     disabled={blocked || disabled || busy}
-    ><Trash2 size={15} aria-hidden="true" />{busy ? 'A eliminar…' : 'Eliminar viatura'}</button
+    ><Trash2 size={15} aria-hidden="true" />{busy ? 'A eliminar…' : draftOnly ? 'Eliminar rascunho' : 'Eliminar viatura'}</button
   >
 </section>
 <VehicleDeleteDialog
@@ -43,6 +45,7 @@
   {model}
   {blocked}
   {disabled}
+  {draftOnly}
   {onredirect}
   bind:busy
   bind:open={confirmationOpen}

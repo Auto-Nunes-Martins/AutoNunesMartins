@@ -249,7 +249,7 @@ router.post(
 );
 
 router.delete(
-  '/:id',
+  ['/:id', '/:id/draft'],
   requireUser,
   asyncHandler(async (req: AuthedRequest, res: Response) => {
     if (!req.user) {
@@ -257,12 +257,19 @@ router.delete(
       return;
     }
     try {
+      const expected = z.string().datetime().optional().safeParse(req.get('x-expected-updated-at'));
+      if (!expected.success) { res.status(400).json({ error: 'Versão de rascunho inválida.' }); return; }
       await deleteVehicle(param(req, 'id'), {
         actorId: req.user.id,
         actorName: req.user.name,
-      });
+      }, { draftOnly: req.path.endsWith('/draft'), expectedUpdatedAt: expected.data });
       res.json({ ok: true });
     } catch (err) {
+      if (err instanceof VehicleStateConflict) { res.status(err.status).json({ error: err.message }); return; }
+      if (err instanceof VehicleNotDraft) {
+        res.status(409).json({ error: 'Esta ficha já não é um rascunho por publicar. Atualize a página; a viatura foi preservada.' });
+        return;
+      }
       if (['P2003', 'P2014'].includes((err as { code?: string }).code ?? '')) {
         res.status(409).json({
           error: 'Esta viatura tem histórico de vendas ou retoma associado e deve ser preservada.',

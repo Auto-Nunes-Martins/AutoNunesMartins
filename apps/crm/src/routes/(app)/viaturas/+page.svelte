@@ -15,6 +15,7 @@
   import ExportMenu from '$lib/components/common/ExportMenu.svelte';
   import VehicleFilters from '$lib/components/vehicle/VehicleFilters.svelte';
   import VehicleTable from '$lib/components/vehicle/VehicleTable.svelte';
+  import DraftDeleteButton from '$lib/components/vehicle/DraftDeleteButton.svelte';
   import VehicleTableSkeleton from '$lib/components/vehicle/VehicleTableSkeleton.svelte';
   import { formatDate, formatDateLong, formatInt } from '$lib/utils/format';
   import type { PageData } from './$types';
@@ -115,7 +116,7 @@
           icon={Tag}
           iconClass="text-[var(--color-warning)]"
           title="Rascunhos"
-          meta={`${drafts.items.length} POR COMPLETAR`}
+          meta={`${drafts.total} POR COMPLETAR`}
         />
         <div
           class="px-5 py-2.5 text-[12px] text-[var(--color-text-muted)] border-b border-[var(--color-border)] bg-[var(--color-bg-2)]"
@@ -184,9 +185,11 @@
                 Completar ficha
                 <ArrowRight class="h-3.5 w-3.5" />
               </a>
+              <DraftDeleteButton id={v.id} label={`${v.brand} ${v.model}`} />
             </li>
           {/each}
         </ul>
+        {#if drafts.total > drafts.items.length}<p class="px-5 py-3 text-sm text-[var(--color-text-muted)]">A mostrar os {drafts.items.length} rascunhos mais recentes de {drafts.total}. <a class="underline" href={crmPath('/viaturas?status=DRAFT')}>Ver todos os rascunhos</a></p>{/if}
       </Panel>
     {/if}
   {/await}

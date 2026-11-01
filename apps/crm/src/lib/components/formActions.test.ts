@@ -20,6 +20,7 @@ function component(source: string, imports: Record<string, unknown> = {}) {
     .replace(/^import \{ goto \} from '\$app\/navigation';/m, '')
     .replace(/^import \{ ([^}]+) \} from 'svelte';/m, 'const { $1 } = imports.svelte;')
     .replace(/^import \{ toast \} from 'svelte-sonner';/m, '')
+    .replace(/^import \{ draftsChanged \} from '\.\/creationLifecycle';/m, '')
     .replace(
       /^import \{ isValidNIF \} from '@anm\/types';/m,
       'const isValidNIF = imports.isValidNIF;',

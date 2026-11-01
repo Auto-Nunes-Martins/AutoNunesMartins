@@ -3,6 +3,7 @@
   import { crmPath } from '$lib/paths';
   import { toast } from 'svelte-sonner';
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
+  import { draftsChanged } from './creationLifecycle';
 
   let {
     id,
@@ -12,6 +13,7 @@
     busy = $bindable(false),
     blocked = false,
     disabled = false,
+    draftOnly = false,
     onredirect,
     oncancel,
   }: {
@@ -22,6 +24,7 @@
     busy?: boolean;
     blocked?: boolean;
     disabled?: boolean;
+    draftOnly?: boolean;
     onredirect?: () => void;
     oncancel?: () => void;
   } = $props();
@@ -49,9 +52,10 @@
     return async ({ result, update }) => {
       try {
         if (result.type === 'redirect') {
+          draftsChanged();
           onredirect?.();
           open = false;
-          toast.success('Viatura eliminada.');
+          toast.success(draftOnly ? 'Rascunho eliminado.' : 'Viatura eliminada.');
         } else if (result.type === 'failure') {
           toast.error(
             (result.data as { error?: string } | undefined)?.error ??
@@ -64,13 +68,13 @@
       }
     };
   }}
-></form>
+><input type="hidden" name="draftOnly" value={String(draftOnly)} /></form>
 
 <ConfirmDialog
   bind:open
-  title={`Eliminar ${brand} ${model}?`}
+  title={draftOnly ? `Eliminar rascunho ${brand} ${model}?` : `Eliminar ${brand} ${model}?`}
   message="A ficha, as despesas e as fotografias associadas serão eliminadas. O histórico de atividade é preservado. Esta ação não pode ser desfeita."
-  confirmLabel="Eliminar viatura"
+  confirmLabel={draftOnly ? 'Eliminar rascunho' : 'Eliminar viatura'}
   cancelLabel="Cancelar"
   tone="danger"
   {busy}

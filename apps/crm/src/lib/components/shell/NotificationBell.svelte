@@ -2,7 +2,10 @@
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import { activityHref as hrefFor } from '$lib/activityNavigation';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
+  import { page } from '$app/stores';
+  import { activeCreationDraftId } from '$lib/activeCreationDraft';
+  import { draftNotificationsRevision } from '$lib/components/vehicle/creationLifecycle';
   import {
     Activity,
     ArrowRightLeft,
@@ -26,6 +29,13 @@
   let isOpen = $state(false);
   let data = $state<NotificationsPayload | null>(null);
   let loading = $state(false);
+  let mounted = $state(false);
+  const activeDraft = $derived(activeCreationDraftId($page.url, crmPath('/viaturas/nova'), $page.data?.vehicle));
+  $effect(() => {
+    const context = activeDraft;
+    $draftNotificationsRevision;
+    if (mounted) untrack(() => { void load(context); });
+  });
   let loadError = $state('');
   let controller: AbortController | undefined;
   let contactReading = $state('');
@@ -35,20 +45,21 @@
   let panelEl = $state<HTMLDivElement | null>(null);
   let buttonEl = $state<HTMLButtonElement | null>(null);
 
-  async function load() {
+  async function load(context = activeDraft) {
     controller?.abort();
     controller = new AbortController();
     const signal = controller.signal;
     loading = true;
     loadError = '';
     try {
-      const res = await sessionFetch(crmPath('/api/notifications'), {
+      const query = context ? '?activeCreationDraftId=' + encodeURIComponent(context) : '';
+      const res = await sessionFetch(crmPath('/api/notifications') + query, {
         signal,
         headers: { accept: 'application/json' },
       });
       if (!res.ok) throw new Error('Não foi possível atualizar os alertas.');
       const result = (await res.json()) as NotificationsPayload;
-      if (!signal.aborted) data = result;
+      if (!signal.aborted && context === activeDraft) data = result;
     } catch {
       if (!signal.aborted) loadError = 'Não foi possível atualizar os alertas.';
     } finally {
@@ -128,7 +139,7 @@
 
   onMount(() => {
     // Eagerly load so the badge count is correct on first paint
-    void load();
+    mounted = true;
     refreshTimer = setInterval(() => {
       if (document.visibilityState === 'visible' && !loading) void load();
     }, 60_000);

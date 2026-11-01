@@ -280,7 +280,7 @@ export async function publishVehicle(
   });
 }
 
-export async function deleteVehicle(id: string, actor: ActorContext): Promise<void> {
+export async function deleteVehicle(id: string, actor: ActorContext, options: { draftOnly?: boolean; expectedUpdatedAt?: string } = {}): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await lockVehicle(tx, id);
     const existing = await tx.vehicle.findUnique({
@@ -288,6 +288,11 @@ export async function deleteVehicle(id: string, actor: ActorContext): Promise<vo
       include: { sale: true },
     });
     if (!existing) throw new VehicleNotFound(id);
+    if (options.draftOnly && (existing.status !== 'DRAFT' || existing.webPublished)) {
+      throw new VehicleNotDraft(id, existing.status);
+    }
+    if (options.expectedUpdatedAt && existing.updatedAt.toISOString() !== options.expectedUpdatedAt)
+      throw new VehicleStateConflict('O rascunho foi alterado entretanto. Atualize a ficha antes de decidir eliminá-lo.');
     if (existing.sale) {
       throw new VehicleHasSale(id);
     }
