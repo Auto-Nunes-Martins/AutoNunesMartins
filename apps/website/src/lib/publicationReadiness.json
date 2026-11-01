@@ -90,7 +90,7 @@
   "checks": [
     {
       "id": "contacts",
-      "label": "Contactos, moradas, ligações de mapa, horários, equipa e redes oficiais confirmados pelo proprietário em 25/10/2026",
+      "label": "Contactos, moradas, ligações de mapa, horários, equipa e redes oficiais confirmados pelo proprietário em 25/10/2026; primeira morada corrigida em 01/11/2026",
       "status": "verified"
     },
     {

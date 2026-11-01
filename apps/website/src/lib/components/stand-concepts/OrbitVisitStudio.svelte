@@ -56,6 +56,64 @@
   let section: HTMLElement;
   let useReferenceTone = $state(true);
   let selectedLocation = $state(0);
+  const embeddedMapActive = $derived(selectedLocation === 0 && !!contact.mapEmbedUrl);
+  let mapCard = $state<HTMLDivElement>();
+  let mapContent = $state<HTMLDivElement>();
+  let mapMinimum = $state(0);
+  let mapMaximum = $state(0);
+  let mapExpansion = $state(0);
+  let resizePointer: number | null = null;
+  let resizeStartY = 0;
+  let resizeStartExpansion = 0;
+
+  function clampMapExpansion(value: number) {
+    return Math.min(Math.max(0, mapMaximum - mapMinimum), Math.max(0, value));
+  }
+  function startMapResize(event: PointerEvent & { currentTarget: HTMLDivElement }) {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    resizePointer = event.pointerId;
+    resizeStartY = event.clientY;
+    resizeStartExpansion = mapExpansion;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function moveMapResize(event: PointerEvent) {
+    if (event.pointerId !== resizePointer) return;
+    mapExpansion = clampMapExpansion(resizeStartExpansion + event.clientY - resizeStartY);
+  }
+  function finishMapResize(event: PointerEvent & { currentTarget: HTMLDivElement }) {
+    if (event.pointerId !== resizePointer) return;
+    resizePointer = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+  function keyMapResize(event: KeyboardEvent) {
+    const changes: Record<string, number> = { ArrowDown: 20, ArrowUp: -20, PageDown: 80, PageUp: -80 };
+    const change = changes[event.key];
+    if (event.key === 'Home') mapExpansion = 0;
+    else if (event.key === 'End') mapExpansion = mapMaximum - mapMinimum;
+    else if (change !== undefined) mapExpansion = clampMapExpansion(mapExpansion + change);
+    else return;
+    event.preventDefault();
+  }
+  onMount(() => {
+    if (!mapCard || !mapContent) return;
+    const card = mapCard, content = mapContent;
+    const measure = () => {
+      const style = getComputedStyle(card);
+      // The original card is its normal-flow content plus padding/borders; the map is absolute.
+      mapMinimum = Math.max(parseFloat(style.minHeight) || 0,
+        content.getBoundingClientRect().height + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+        + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth));
+      mapMaximum = Math.max(mapMinimum, Math.min(720, Math.floor(window.innerHeight * 0.75)));
+      mapExpansion = clampMapExpansion(mapExpansion);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(card);
+    observer.observe(content);
+    window.addEventListener('resize', measure);
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); resizePointer = null; };
+  });
   const submission = createContactForm();
   const sending = $derived(submission.state.phase === 'sending');
   let fields = $state({ name: '', email: '', subject: 'Informações gerais', message: '' });
@@ -146,7 +204,9 @@
         </h2>
       </div>
 
-      <div class="location" id={`${id}-map-preview`} class:original-map={mapArtwork === 'original'}>
+      <div class="location" id={`${id}-map-preview`} class:original-map={mapArtwork === 'original'} class:has-embedded-map={embeddedMapActive}
+        bind:this={mapCard} style:height={mapExpansion > 0 && mapMinimum > 0 ? `${mapMinimum + mapExpansion}px` : undefined}>
+        {#if !embeddedMapActive}
         {#if mapArtwork === 'original'}
           {#if background?.theme}<span class="location-map" data-map-image="0" class:is-active={selectedLocation===0} aria-hidden="true"
               ><VisitMapArtwork {id} /></span
@@ -199,7 +259,8 @@
         {/if}
         {#if background?.theme}<span class="location-map" data-map-image="1" class:is-active={selectedLocation===1} aria-hidden="true"><VisitMapArtwork id={`${id}-alternate`} alternate/></span>
         {:else}<img class="location-map" data-map-image="1" class:is-active={selectedLocation===1} src={alternateLocationMap} alt="" width="1728" height="684" loading="eager" decoding="async"/>{/if}
-        <div class="location-copy">
+        {/if}
+        <div class="location-copy" bind:this={mapContent}>
           <h3><MapPin size={15} aria-hidden="true" /> Encontre-nos</h3>
           <address>{#if contact.address}<button class="address-choice" type="button" aria-pressed={selectedLocation===0} aria-controls={`${id}-map-preview`} onclick={()=>selectedLocation=0}>{contact.address}</button>{:else}Morada por confirmar.{/if}</address>
           {#if contact.directionsUrl}
@@ -228,8 +289,30 @@
             </a>
           {/if}
         </div>
-        <span class="map-preview-note">Mapa ilustrativo</span>
-        <span class="sr-only" role="status" aria-live="polite" aria-atomic="true">Pré-visualização ilustrativa: {(selectedLocation===1?contact.additionalAddress:contact.address)?.replace(/\n/g,', ')}</span>
+        {#if embeddedMapActive}
+          <iframe
+            class="location-map location-embed is-active"
+            data-map-image="0"
+            src={contact.mapEmbedUrl}
+            title={`Google Maps — ${contact.name}, ${contact.address?.replace(/\n/g, ', ')}`}
+            width="800"
+            height="600"
+            allowfullscreen
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+        {:else}
+          <span class="map-preview-note">Mapa ilustrativo</span>
+        {/if}
+        <span class="sr-only" role="status" aria-live="polite" aria-atomic="true">{embeddedMapActive ? 'Mapa Google Maps' : 'Pré-visualização ilustrativa'}: {(selectedLocation===1?contact.additionalAddress:contact.address)?.replace(/\n/g,', ')}</span>
+        <div class="map-resize-handle" role="spinbutton"
+          aria-label="Redimensionar altura do mapa" aria-describedby={`${id}-resize-help`}
+          aria-controls={`${id}-map-preview`} aria-valuemin={Math.round(mapMinimum)} aria-valuemax={Math.round(mapMaximum)}
+          aria-valuenow={Math.round(mapMinimum + mapExpansion)} aria-valuetext={`${Math.round(mapMinimum + mapExpansion)} píxeis de altura`}
+          tabindex="0" onpointerdown={startMapResize} onpointermove={moveMapResize}
+          onpointerup={finishMapResize} onpointercancel={finishMapResize}
+          onlostpointercapture={() => resizePointer = null} onkeydown={keyMapResize}></div>
+        <span id={`${id}-resize-help`} class="sr-only">Arraste para ajustar a altura. Use as setas para cima e para baixo, Page Up e Page Down, Home para a altura mínima ou End para a máxima.</span>
       </div>
 
       <div class="contact-details">
@@ -608,6 +691,7 @@
     position: absolute;
     inset: 0;
     z-index: -1;
+    pointer-events: none;
     background: linear-gradient(90deg, var(--studio-soft) 34%, transparent 84%);
   }
   h3 {
@@ -1431,6 +1515,24 @@
   }
 
   .location .location-map[data-map-image] {opacity:0;pointer-events:none;}
+  /* Keep the original layers and geometry while gestures reach the map below the fade. */
+  .location .location-embed[data-map-image] {
+    border: 0;
+    pointer-events: auto;
+  }
+  .map-resize-handle {position:absolute;right:0;bottom:0;width:24px;height:24px;z-index:2;cursor:ns-resize;touch-action:none;user-select:none;color:var(--text);}
+  .map-resize-handle::after {content:'';position:absolute;right:3px;bottom:3px;width:12px;height:12px;clip-path:polygon(100% 0,100% 100%,0 100%);background:repeating-linear-gradient(135deg,transparent 0 3px,currentColor 3px 4px);pointer-events:none;}
+  .map-resize-handle:focus-visible {outline:2px solid currentColor;outline-offset:-3px;background:var(--studio-soft);}
+  .has-embedded-map .location-copy {pointer-events:none;}
+  .has-embedded-map .location-copy :is(button,a) {pointer-events:auto;}
+  /* Owner-selected tuning: 97% strength, stops 0/18/49; same 0.9/0.22 alpha factors. */
+  .visit-studio .location::before,
+  .visit-studio .location.original-map::before {
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--visit-map-surface, var(--studio-soft)) 97%, transparent) 0%,
+      color-mix(in srgb, var(--visit-map-surface, var(--studio-soft)) 87.3%, transparent) 18%,
+      color-mix(in srgb, var(--visit-map-surface, var(--studio-soft)) 21.34%, transparent) 49%);
+  }
   .location .location-map[data-map-image].is-active {opacity:var(--map-preview-opacity,.8);}
   .location.original-map {--map-preview-opacity:1;}
   .address-choice {display:block;width:calc(100% + 12px);margin:-4px -6px;padding:4px 6px;border:0;border-radius:3px;background:transparent;color:inherit;font:inherit;line-height:inherit;white-space:pre-line;text-align:left;cursor:pointer;}
