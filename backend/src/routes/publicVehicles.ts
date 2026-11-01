@@ -3,7 +3,6 @@ import { withCoverPhotoDimensions } from '../lib/data/photoDimensions.js';
 import {
   isPhotoWidth,
   readPhotoBytes,
-  preparePublicThumbnails,
 } from '../lib/server/photoVariants.js';
 import { readPublicHighlights } from '../lib/server/homepageHighlights.js';
 import { Router } from 'express';
@@ -164,7 +163,7 @@ router.get(
       return;
     }
     try {
-      const vehicle = await getPublicVehicle(prisma, slug.data, preparePublicThumbnails);
+      const vehicle = await getPublicVehicle(prisma, slug.data);
       if (!vehicle) {
         const unavailableVehicle = await readUnavailableVehicle(prisma, slug.data);
         res.status(404).json({
