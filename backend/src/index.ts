@@ -7,6 +7,7 @@ import { registerDiagnosticProvider } from '../../shared/nativeDiagnostics.mjs';
 import { diagnosticStoreStatus } from './lib/server/diagnosticStore.js';
 import sharp from 'sharp';
 import { startVehiclePhotoCleanup } from './lib/server/vehiclePhotoCleanup.js';
+import './lib/server/allocatorDiagnostics.js';
 installDiagnosticStore(prisma);
 registerDiagnosticProvider('persistence', () => ({ ...diagnosticStoreStatus }));
 registerDiagnosticProvider('sharp', () => {

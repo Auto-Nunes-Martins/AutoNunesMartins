@@ -50,9 +50,9 @@ Upload counters, Sharp queue/processing/cache and OOM counters remained zero in 
 
 The installed Sharp 0.34.5 source describes `metadata()` as header access without decoding compressed pixel data, consistent with the [official metadata documentation](https://sharp.pixelplumbing.com/api-input/#metadata). Native allocation remains possible; a full-pixel decode in the public delivery path has not been demonstrated.
 
-## Prepared local observability patch
+## Observability patch and activation
 
-Not deployed. Production already has `RUNTIME_DIAGNOSTICS=true`; after a reviewed deployment, the new `native.photoreads` provider will join the existing application snapshots. It adds no timer, event per photo, queue, URL/ID map, database migration or new flag. Disabled diagnostics do not sample memory or clocks.
+The patch was prepared and reviewed locally, then published in `b1e6d8b8d1527dbb4881ab6e1b06a132c9a40978`. Production already has `RUNTIME_DIAGNOSTICS=true`; the new `native.photoreads` provider joins the existing application snapshots. It adds no timer, event per photo, queue, URL/ID map, database migration or new flag. Disabled diagnostics do not sample memory or clocks.
 
 Fixed numeric counters distinguish byte-cache hit/miss, pending-read deduplication, manifest hit/miss/deduplication, fallback and background warming. Seven fixed phases separate manifest/derivative/master Storage downloads, Blob-to-Buffer materialization, manifest metadata, derivative metadata validation and master sanitization. Manifest helpers are shared with maintenance/upload code; their counts are not exclusively public HTTP requests.
 
@@ -62,4 +62,120 @@ Counters are lifetime aggregates for one process boot, with finite saturation an
 
 The provider has 105 numeric fields: 14 counters and seven phases with 13 metrics each. Its JSON is 1,974 bytes initially and 3,549 bytes with every number at `Number.MAX_SAFE_INTEGER`; that saturated structure also survives sanitization unchanged. The fixed numeric shape stays conservatively below 8 KiB. Backend registration uses five of the eight available provider slots (the existing persistence registrations replace the same named slot). A typical cold thumbnail has three measured phases / six `process.memoryUsage()` and six clock calls; a byte-cache hit has no memory/clock sampling. Disabled mode retains only flag checks and small async wrappers around the existing operations. No per-photo smaps, `/proc` inventory or filesystem inspection is added.
 
-Validation: 39 focused tests passed (provider, reusable variants, delivery metadata), plus backend typecheck. Tests cover opt-out overhead, bounded serialized structure, signed deltas, overlap/errors/finally, cache hits avoiding Sharp, deduplicated cold reads and background warming. Production attribution requires this patch to be reviewed and deployed; no causal fix to image delivery has been claimed.
+Validation: 39 focused tests passed (provider, reusable variants, delivery metadata), plus backend typecheck. Tests cover opt-out overhead, bounded serialized structure, signed deltas, overlap/errors/finally, cache hits avoiding Sharp, deduplicated cold reads and background warming. No causal fix to image delivery has been claimed.
+
+## Measurements after activation, 10:38–10:44 UTC
+
+The final release `5b8d43e146fcd01aeda010f695fae1d31d5e93bf` (which also contains the authorized photo-framing and notification fixes) appeared at 10:38:05.433 in instance `94c904f3-b7c2-41c6-a7b5-52b2255407c4`, backend PID 61 / boot `600077c4-21c8-4d90-9ec0-578bf203e5ca`. All seven phases and all counters were persisted initially at zero. Public health returned 200 / Render / `{"ok":true}`. Do not compare the restarted process's lower RSS with the old boot as evidence of a memory fix.
+
+Three bounded photo GETs were made against the same existing approved photo, without browser fan-out, upload, cache reset or cache-busting identity:
+
+| Operation | Result | Attribution window |
+| --- | --- | --- |
+| 10:39:57, width 800 | 200 / 116,510 bytes / cache miss | Exactly one HTTP request and one photo read; no warming, overlapping measured phases, errors or uploads |
+| 10:40:42, same width, conditional | 304 / zero bytes / cache hit | Other natural master-photo reads occurred in the same aggregate interval; their work is separate from this cache hit |
+| 10:43:49, existing width 384 variant | 200 / 34,342 bytes / cache miss | Exactly one HTTP request and one photo read, after two quiet snapshots with unchanged counters and zero active work |
+
+The first operation's observed phase deltas were:
+
+| Phase | Duration | RSS | Heap used | External |
+| --- | ---: | ---: | ---: | ---: |
+| Derivative download | 347.25 ms | +9.434 MiB | +0.738 MiB | +0.320 MiB |
+| Blob-to-Buffer materialization | 1.03 ms | +0.250 MiB | +0.0066 MiB | +0.2222 MiB |
+| Derivative metadata validation | 2.53 ms | −1.301 MiB | +0.0956 MiB | 0 |
+
+Across the containing snapshots, backend RSS increased 3.934 MiB, heap used 0.876 MiB, external 0.092 MiB and anonymous memory 2.773 MiB. V8 physical heap also increased 1.164 MiB and heap total 1.398 MiB: RSS outside **used** heap alone does not establish a non-V8 allocation. The phase deltas are not an accounting partition of the final snapshot delta.
+
+The second cold download (smaller width-384 file) had download RSS +0.125 MiB, materialization RSS zero and metadata RSS zero, with no measured overlap. Its containing interval was exactly one request: RSS +0.125 MiB, external −2.287 MiB and heap used −0.098 MiB. During 10:44:05–10:44:35 there were zero new requests, zero active requests at both ends, unchanged phase counters and unchanged RSS. OOM counters remained zero.
+
+This does not reproduce the first download's large increase on every small cold read. It is consistent with initial warm-up/reuse, but compares different sizes and does not establish TLS, allocator or SDK causality. The earlier multi-hour growth remains unresolved. Natural master reads also produced materialization/sanitization deltas largely accompanied by external-buffer growth; neither their content nor identities were logged.
+
+A false idle interpretation was excluded: at 10:41:05 one master download was still active, and its later Buffer/sanitization phases appeared by 10:41:35 despite no **new** HTTP starts. Compare both active/completed counts and phase counters before declaring an interval quiet.
+
+Source audit: the installed Storage SDK's `BlobDownloadBuilder` awaits `response.blob()`; the application subsequently calls `Blob.arrayBuffer()` and `Buffer.from(arrayBuffer)`. The latter creates a view rather than an additional byte copy. The cached Supabase client uses global Node fetch with a 30-second abort signal, without creating an Agent/dispatcher per request in application code. The download phase therefore includes network/TLS, full body consumption and Blob construction; response compression and connection/session allocation are not distinguished by these counters. Avoid naming one as the culprit without further evidence.
+
+## Read-only SSH inspection, 11:06–11:08 UTC
+
+The owner authorized a dedicated local SSH key and supplied the live service's Frankfurt SSH command. The server key was checked against the [official Render fingerprint](https://render.com/docs/ssh) before adding the matching public server key to local known_hosts; strict host checking remained enabled. No private key contents, full environment, customer paths, IP addresses or raw mappings were printed. No remote file, dependency, flag, debugger, process or allocator configuration was changed.
+
+The real gateway is PID 6, running `deployment/container-start.mjs`, which imports the combined service after migrations. The backend PID 61 / kernel startTicks 308263523 exactly matches the stored diagnostics and backend boot `600077c4-21c8-4d90-9ec0-578bf203e5ca`; the shell reports final release `5b8d43e`. This is a running-service shell, not a new test instance.
+
+| Process | smaps RSS | PSS | Anonymous | Threads | FDs | Socket FDs | TCP established | CLOSE_WAIT |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Gateway PID 6 | 95.13 MiB | 49.01 MiB | 33.49 MiB | 14 | 32 | 8 | 1 | 0 |
+| Backend PID 61 | 133.40 MiB | 85.87 MiB | 62.16 MiB | 14 | 31 | 7 | 2 | 0 |
+| Website PID 62 | 85.60 MiB | 43.28 MiB | 31.60 MiB | 11 | 36 | 2 | 0 | 0 |
+| CRM PID 63 | 68.44 MiB | 28.61 MiB | 19.76 MiB | 11 | 32 | 2 | 0 | 0 |
+
+Backend thread/FD/socket counts were unchanged between 11:06:36 and 11:08:31. Unix/IPC sockets and duplicate descriptors explain why socket-FD totals need not equal unique TCP rows. No connection backlog or CLOSE_WAIT accumulation is demonstrated by these two samples; that does not exclude a longer-term leak.
+
+Numeric mapping aggregation for the backend found 15.50 MiB resident in the main `[heap]` mapping, 44.69 MiB in accessible anonymous mappings and 73.14 MiB file-backed RSS (25.61 MiB PSS). Another 11,490.79 MiB was inaccessible **virtual reservation with zero RSS**, not RAM usage and not a measurement of arena count or fragmentation. Mapping categories do not distinguish occupied malloc chunks from reusable/free chunks within a resident arena.
+
+The SSH collector itself temporarily had 55.23 MiB RSS and finished its read-only collection in 34 ms. Cgroup readings while a collector/shell is active include that overhead; do not attribute them to the application. Linux process RSS and smaps RSS can differ due to accounting/sampling, so compare the same metric consistently. Neither sum of RSS nor sum of PSS is the measured cgroup charge.
+
+The installed SDK is Supabase/storage-js 2.106.0; the production Node is 22.23.4 with glibc, no detected jemalloc and no configured MALLOC_ARENA_MAX. The SDK streaming API exists but returns only the body stream, losing headers needed by the current MIME/length validation; it is not a safe drop-in replacement without additional work and equivalence tests. The byte cache is bounded to 12 MiB, whereas the separate CRM signed-URL cache stores strings without a hard entry cap and expires entries on lookup. Its role and small observed JavaScript heap do not explain the full native/anonymous growth on their own.
+
+These reads establish working access and add descriptor/socket/mapping evidence. They do not solve the previous multi-hour increase. If renewed growth occurs with stable heap, connection counts and bounded photo cache, a useful next discriminator is in-process allocator totals for non-free versus free/reserved chunks across all arenas. A separate Node helper's allocator statistics would describe the helper, not the backend. No native allocator probe has been deployed.
+
+## Total-container growth from the final boot, through 11:11 UTC
+
+The owner correctly observed total growth after restart. Backend stability over a short quiet interval is not total-container stability. Historical components are available, so the following uses actual cgroup samples rather than subtracting RSS totals:
+
+| Time UTC | Cgroup current | Backend HTTP starts | Photo reads | Context |
+| --- | ---: | ---: | ---: | --- |
+| 10:38:05 | 138.73 MiB | 2 | 0 | Warm-up; first cooperative snapshots |
+| 10:39:35 | 152.02 MiB | 4 | 0 | Before photo testing; two other requests / SSR startup |
+| 10:44:35 | 170.60 MiB | 11 | 7 | Three controlled photo GETs plus four other master reads |
+| 10:47:05 | 172.02 MiB | 11 | 7 | Before SSH inspection |
+| 11:11:35 | 180.61 MiB | 13 | 7 | SSH collector commands have exited; two additional non-photo requests |
+
+The total increase is 41.88 MiB, not a no-request interval. Cgroup anonymous memory rose 110.27 → 149.41 MiB (+39.14), file memory 17.15 → 18.57 (+1.42), and kernel memory 10.32 → 11.64 (+1.32). Slab, page-table and kernel-stack counters are kernel subcomponents, not additional independent quantities to sum.
+
+Resident anonymous changes across the four application processes were gateway +7.76 MiB, backend +17.32, website +10.67 and CRM +1.29. Their combined change is approximately 37.04 MiB, leaving approximately 2.10 MiB of the anonymous cgroup change unassigned to these application-process measurements. Other processes, SSH/shell infrastructure and non-atomic accounting are possible contributions; an exact owner is not established by this difference.
+
+V8 physical-heap changes were +2.42 / +2.88 / +4.63 / +0.43 MiB respectively. External memory was approximately unchanged in gateway and CRM, +2.12 MiB in backend and +0.13 in website. These observations explain part of the resident growth but are not an accounting equation for allocator occupancy or a proof that the remainder is leaked.
+
+After the last SSH collector command, the 11:10:05 and 11:10:35 samples had cgroup usage 180.52 / 180.55 MiB, identical backend smaps RSS 133.43 MiB and anonymous memory 62.19 MiB, 14 backend threads, seven lifetime photo reads and zero active HTTP requests. This excludes assigning the whole +41.88 MiB to the transient collector, and does not establish a long-term plateau or explain the old boot's 125 MiB photo-associated increase.
+
+## Additional instrumentation: allocator free versus non-free memory
+
+Status at preparation: the owner authorized implementation and publication after the read-only SSH inspection. The C parser/addon, backend loader/provider, tests and Linux Docker compile/smoke gate are implemented. Local Windows validation covers JS behavior/typechecking, not glibc or the Linux binary. Deployment and valid production samples must be confirmed separately after publication. No live SSH installation or manual process intervention is used.
+
+### Measurement and interpretation
+
+Use an N-API addon **inside the existing backend process**, calling glibc `malloc_info(0, stream)`. The [documented interface](https://man7.org/linux/man-pages/man3/malloc_info.3.html) reports all allocator arenas and is MT-Safe. Another process's invocation would measure that other process and cannot answer the backend question.
+
+Keep only global XML totals outside each `<heap>`; do not sum per-arena and global totals together. Return these eleven fixed numeric fields: `available`, `reasonCode`, `arenaCount`, `arenaSystemBytes`, `arenaFreeFastBytes`, `arenaFreeRestBytes`, `arenaNonFreeBytes`, `mmapBytes`, `mmapCount`, `xmlBytes`, `outputLimitBytes`. Non-free means system arena bytes minus reported fast/rest free bytes, not proven live application objects. Thread-local caches, allocator bookkeeping and observation skew limit that interpretation. The separate malloc mmap total excludes arbitrary direct mmap allocations by V8 or other libraries. These totals describe allocator memory, not resident pages; do not add them to RSS, V8 physical heap or external memory as independent quantities.
+
+- Free/reserved arena bytes rising while non-free stays broadly level supports allocator retention/reuse/fragmentation as an explanation for resident growth. It does not identify the allocating library or guarantee pages are returnable.
+- Non-free or malloc-mmap bytes rising persistently shifts attention toward retained allocations; it still does not prove a leak or identify their owner. Compare with photo cache capacity, V8/external metrics and request phases.
+- RSS rising without corresponding allocator totals points toward direct mappings, another allocator, shared/file/kernel charge or missing coverage. Preserve unavailable/unsupported states rather than converting failure into zero usage.
+
+### Bounds and failure behavior to implement and review
+
+- Use a fixed 64 KiB scratch buffer with `fmemopen`, no file or unbounded `open_memstream`. Keep only parsed numbers; never persist XML, addresses, paths or allocation contents. Reject truncation, unknown format, missing/duplicate totals, invalid arithmetic and non-finite/unsafe numbers.
+- Register one provider in the backend's existing snapshot flow (six of eight provider slots). Cache the sample for at least 30 seconds, including during upload-phase diagnostics; no new timer, per-photo sample, event queue or background worker.
+- Existing `RUNTIME_DIAGNOSTICS=false` must avoid loading the addon. Unsupported platform, missing binary, other detected allocator, native failure, parsing failure or output cap must produce an explicit numeric unavailable/reason state and leave the application working.
+- The JS wrapper allow-lists and validates fields, reports sample age/count and last/max probe duration, and avoids repeating a probe that exceeds 25 ms until process restart. The first valid result is retained during its 30-second cache window; subsequent snapshots mark it unavailable/reason7 once the circuit is open. This does **not** hard-timeout the first synchronous native call. `malloc_info` takes allocator locks and can pause the backend; measure that cost and state it honestly. No `malloc_trim`, GC, allocator tuning or process attachment is used.
+- Sampling itself adds a fixed scratch area, small stdio/N-API bookkeeping and one temporary result object. Its observed baseline and probe cost must be considered; it is not a zero-cost observer.
+
+### Files/build/test viability before any publication
+
+The native files are `allocator_parser.h`, `allocator_snapshot.c` and `allocator_parser_test.c`. The backend registers `allocatorDiagnostics.ts`; Docker compiles against stable [Node-API](https://nodejs.org/api/n-api.html) version 8 and runs the parser plus `check-native-allocator.mjs` against the emitted JS and real addon. No new npm dependency is used. `gcc` and libc development headers are installed **only in the Linux Docker build stage**; the existing Node headers supply N-API. Only the small `.node` output passes through the existing backend-dist copy into runtime. No compiler/Docker/WSL is installed on the user's Windows computer or live server.
+
+Checks: C parser fixtures cover multiple arenas without double-counting, malformed/truncated/duplicate/overflow output; compilation treats warnings as errors. The Linux build smoke loads the actual binary, requires valid arithmetic and a probe within 25 ms, and exercises provider serialization without credentials or application imports. Fifteen JS tests cover disabled/no-load, 30-second cache, missing/unsupported/alternate/invalid/failing probe, finite numeric shape, circuit behavior and real diagnostic sanitization. They pass locally with backend typecheck; four existing photo-diagnostic tests also pass. Windows tests cannot validate glibc or claim the native binary works. A Linux compile/smoke failure stops deployment instead of silently shipping a broken probe.
+
+Activation requires **the authorized new code deployment**, replacing the application instance and therefore starting a new memory baseline. The existing diagnostic flag is already on; no flag or allocator tuning is changed. Preserve current evidence before that reset. This commit does not fix the RAM issue or establish whether it is fragmentation versus retained allocations.
+
+Provider fields are the eleven native fields above plus `sampleAgeMs`, `samples`, `probeMs`, `probeMaxMs`, `circuitOpen`. Reason codes: 0 valid, 1 unsupported platform/libc, 2 binary missing/unloadable, 3 native call/I/O failure, 4 XML cap, 5 XML format, 6 invalid binding/data, 7 slow circuit, 8 diagnostics off, 9 known preloaded alternate allocator. Missing/unsupported data is not zero usage. The alternate-allocator guard checks known names in LD_PRELOAD; direct/private allocators remain outside this glibc-only view. Native XML is never returned. `arenaNonFreeBytes` is deliberately not called live allocated bytes; the [glibc implementation](https://codebrowser.dev/glibc/glibc/malloc/malloc.c.html) counts arena bins/top chunks rather than an application-object ownership graph, and tcache/bookkeeping limit interpretation.
+
+## Resume after about five hours of normal demand
+
+This is a continuation checklist, not a scheduled automation. No reminder or recurring task was created here.
+
+1. Read the stored snapshots covering the intervening period, including cgroup components and each process's heap, V8 physical heap, external/ArrayBuffers, smaps RSS/PSS/anonymous memory, HTTP active/completed counters and `photoreads` phase increments. Paginate if needed; do not silently truncate to the first hour.
+2. Verify release, instance and process boot/startTicks first. Current reference is final release `5b8d43e`, instance `94c904f3-b7c2-41c6-a7b5-52b2255407c4`, gateway PID 6, backend PID 61 / startTicks 308263523 / boot `600077c4-21c8-4d90-9ec0-578bf203e5ca`. A new boot requires separate comparisons.
+3. Use existing natural demand before considering further loads. Baseline 11:11:35 had cgroup 180.61 MiB, backend smaps RSS 133.43 / anonymous 62.19 / V8 physical 27.62 / external 5.83 MiB, seven photo reads and zero active HTTP. The controlled three-photo sequence has ended.
+4. If another SSH snapshot adds information, use the owner-provided live-service connection with the verified Frankfurt host key and dedicated local key, then the read-only `backend/scripts/runtime-process-inspection.mjs` via stdin, passing the newly verified gateway PID. Do not upload the script or print private key/environment contents. Compare FD/socket/TCP states and mapping categories against the 11:08 snapshot; read telemetry before and after the short helper to separate its memory cost.
+5. Report which process and which cgroup component changed, alongside actual activity and phase deltas/overlap. An interval with no new HTTP starts can still contain earlier in-flight work. Absence of human interaction is not absence of requests.
+6. If anonymous resident memory rises again while queues/FDs/threads remain bounded and the present counters cannot explain occupancy, review the in-process allocator proposal above. Current metrics do not measure allocator free versus occupied bytes. Do not infer a fixed leak rate, promise stability, restart to make the graph look better or enable a native probe without its code/build review.

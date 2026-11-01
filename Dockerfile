@@ -23,6 +23,14 @@ ENV PUBLIC_CLERK_PUBLISHABLE_KEY=$PUBLIC_CLERK_PUBLISHABLE_KEY
 ENV CRM_BASE_PATH=$CRM_BASE_PATH
 ENV PUBLIC_WEBSITE_URL=$PUBLIC_WEBSITE_URL
 RUN yarn build:service && mkdir -p apps/crm/node_modules apps/website/node_modules backend/node_modules
+# Build-only compiler; the runtime image receives only the small stable N-API addon.
+# Parser and real Linux loader/sanitizer smoke checks gate deployment without credentials.
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev
+RUN mkdir -p backend/dist/native && \
+    gcc -std=c11 -O2 -Wall -Wextra -Werror backend/src/native/allocator_parser_test.c -o /tmp/anm-allocator-parser-test && \
+    /tmp/anm-allocator-parser-test && \
+    gcc -std=c11 -O2 -Wall -Wextra -Werror -fPIC -shared -DNAPI_VERSION=8 -I/usr/local/include/node backend/src/native/allocator_snapshot.c -o backend/dist/native/allocator.node && \
+    node backend/scripts/check-native-allocator.mjs
 # Fail the Linux image build if the native Sharp runtime cannot load/process an image.
 RUN node --input-type=module -e "import sharp from 'sharp'; await sharp({create:{width:2,height:2,channels:3,background:'white'}}).webp().toBuffer()"
 
