@@ -42,14 +42,24 @@ async function decoded(photo: Photo, record: Entry, width: number) {
   if (previous) return previous;
   const pending = (async () => {
     for (const url of [...new Set([candidate.url, photo.url].filter(Boolean) as string[])]) {
-      const image = new Image();
-      image.decoding = 'async';
-      image.src = url;
-      try {
-        await image.decode();
-        return { url, width: image.naturalWidth };
-      } catch {
-        /* One native-master fallback, shared by the group. */
+      // A transient local decoder failure must not permanently poison a valid
+      // draft preview. One retry is shared by this group; remote requests keep
+      // their existing single candidate/master fallback behavior.
+      const attempts = url.startsWith('blob:') ? 2 : 1;
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        if (attempt) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          if (!record.nodes.size || record.identity !== photo.url) break;
+        }
+        const image = new Image();
+        image.decoding = 'async';
+        image.src = url;
+        try {
+          await image.decode();
+          return { url, width: image.naturalWidth };
+        } catch {
+          /* Bounded local retry or one native-master fallback. */
+        }
       }
     }
   })();
