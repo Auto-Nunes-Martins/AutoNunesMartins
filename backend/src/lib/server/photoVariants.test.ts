@@ -1,5 +1,6 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import sharp from 'sharp';
+import { photoReadDiagnostics as reads } from './photoReadDiagnostics.js';
 // These tests isolate cache/storage behaviour with synthetic byte strings.
 // Real container sanitization and public fallback are covered in photoDeliveryMetadata.test.ts.
 vi.mock('./photoMetadata.js', () => ({ sanitizePhotoMetadata: async (input: Buffer) => input }));
@@ -60,6 +61,51 @@ beforeEach(() => {
   forgetPhotoVariants(path);
 });
 describe('private reusable photo variants', () => {
+  it('observes one cold read shared by concurrent callers and no metadata work on its cache hit', async () => {
+    vi.stubEnv('RUNTIME_DIAGNOSTICS', 'true');
+    const metadata = vi.spyOn(sharp.prototype, 'metadata');
+    try {
+      const bytes = await sharp({
+        create: { width: 320, height: 240, channels: 3, background: 'blue' },
+      })
+        .webp()
+        .toBuffer();
+      mock.objects.set(variantPath(path, 320), { buffer: bytes, type: 'image/webp' });
+      let release!: () => void;
+      mock.pause = () => new Promise<void>((resolve) => (release = resolve));
+      const before = reads.snapshot();
+      const first = readPhotoBytes(path, 320);
+      await vi.waitFor(() => expect(mock.downloads).toHaveLength(1));
+      const second = readPhotoBytes(path, 320);
+      release();
+      await Promise.all([first, second]);
+      mock.pause = undefined;
+      const cold = reads.snapshot();
+      expect(cold.deduplicatedReads - before.deduplicatedReads).toBe(1);
+      expect(
+        cold.phases.derivativeDownload.started - before.phases.derivativeDownload.started,
+      ).toBe(1);
+      expect(
+        cold.phases.derivativeMetadata.started - before.phases.derivativeMetadata.started,
+      ).toBe(1);
+      await readPhotoBytes(path, 320);
+      expect(reads.snapshot().cacheHits - cold.cacheHits).toBe(1);
+      expect(reads.snapshot().phases).toEqual(cold.phases);
+      expect(metadata).toHaveBeenCalledTimes(1);
+      expect(mock.downloads).toHaveLength(1);
+      forgetPhotoVariants(path);
+      const warm = reads.snapshot();
+      preparePublicThumbnails([path]);
+      await vi.waitFor(() =>
+        expect(reads.snapshot().warmupsCompleted - warm.warmupsCompleted).toBe(1),
+      );
+      expect(reads.snapshot().warmupsStarted - warm.warmupsStarted).toBe(1);
+      expect(reads.snapshot().speculativeReads - warm.speculativeReads).toBe(1);
+    } finally {
+      metadata.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
   it('validates generated pixels before publication but does not decode them again on delivery', async () => {
     const input = await sharp({
       create: { width: 400, height: 300, channels: 3, background: 'blue' },

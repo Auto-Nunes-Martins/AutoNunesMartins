@@ -4,6 +4,7 @@ import { getSupabase, getBucketName } from '../data/storage.js';
 import { MAX_UPLOAD_BYTES } from './photoOptimization.js';
 import { PhotoByteCache, type CachedPhoto } from './photoByteCache.js';
 import { sanitizePhotoMetadata } from './photoMetadata.js';
+import { photoReadDiagnostics as reads } from './photoReadDiagnostics.js';
 import type { UploadTrace } from '../../../../shared/runtimeDiagnostics.mjs';
 
 export {
@@ -48,9 +49,16 @@ function remember(path: string, value: VariantManifest | null, ttl = value ? 40 
 }
 export async function readVariantManifest(path: string): Promise<VariantManifest | null> {
   const cached = manifests.get(path);
-  if (cached && cached.until > Date.now()) return cached.value;
+  if (cached && cached.until > Date.now()) {
+    reads.count('manifestHits');
+    return cached.value;
+  }
+  reads.count('manifestMisses');
   const pending = manifestReads.get(path);
-  if (pending) return pending;
+  if (pending) {
+    reads.count('manifestDeduplicated');
+    return pending;
+  }
   const read: Promise<VariantManifest | null> = Promise.resolve().then(() =>
     loadVariantManifest(path, () => manifestReads.get(path) === read),
   );
@@ -71,9 +79,9 @@ async function loadVariantManifest(
     if (isCurrent()) remember(path, value, ttl);
   };
   try {
-    const { data, error } = await getSupabase()
-      .storage.from(getBucketName())
-      .download(manifestPath(path));
+    const { data, error } = await reads.measure('manifestDownload', () =>
+      getSupabase().storage.from(getBucketName()).download(manifestPath(path)),
+    );
     if (error || !data || data.size > 8192) {
       // Immutable masters keep successful manifests useful for the signed-URL
       // lifetime. Missing legacy sidecars can be retried after one minute;
@@ -81,9 +89,14 @@ async function loadVariantManifest(
       store(null, String(error?.statusCode) === '404' ? 60_000 : 5_000);
       return null;
     }
-    const meta = await sharp(Buffer.from(await data.arrayBuffer()), {
-      limitInputPixels: 1,
-    }).metadata();
+    const bytes = await reads.measure('bufferMaterialize', async () =>
+      Buffer.from(await data.arrayBuffer()),
+    );
+    const meta = await reads.measure('manifestMetadata', () =>
+      sharp(bytes, {
+        limitInputPixels: 1,
+      }).metadata(),
+    );
     const xmp = meta.xmpAsString ?? meta.xmp?.toString('utf8') ?? '';
     const encoded = /<anm:manifest>([A-Za-z0-9+/=]+)<\/anm:manifest>/.exec(xmp)?.[1];
     const value: unknown = encoded
@@ -186,16 +199,21 @@ async function readPixels(
   timing: PhotoReadTiming | undefined,
   speculative: boolean,
 ): Promise<PhotoBytes | null> {
+  reads.count('reads');
+  if (speculative) reads.count('speculativeReads');
   const key = path + '|' + (width ?? 'original'),
     hit = bytesCache.get(key);
   if (width && hit && hit.until > Date.now()) {
+    reads.count('cacheHits');
     timing?.('photo-cache-hit', 0);
     return hit;
   }
   timing?.('photo-cache-miss', 0);
+  reads.count('cacheMisses');
   // Share pixels only: every caller must still complete live authorization first.
   const pending = photoReads.get(key);
   if (pending) {
+    reads.count('deduplicatedReads');
     const photo = await pending.promise;
     // Warming never downloads a full-size fallback. A real request still may.
     if (!photo && pending.speculative && !speculative)
@@ -241,14 +259,22 @@ async function loadPhotoBytes(
   if (speculative && chosen === path) return null;
   const storageStart = performance.now();
   const bucket = getSupabase().storage.from(getBucketName());
-  let result = await bucket.download(chosen);
+  let result = await reads.measure(chosen === path ? 'masterDownload' : 'derivativeDownload', () =>
+    bucket.download(chosen),
+  );
   let derivative: Buffer | undefined;
   if (thumbnail && !result.error && result.data && chosen !== path) {
     try {
       if (result.data.size > MAX_UPLOAD_BYTES || result.data.type !== 'image/webp')
         throw new Error('Invalid derivative');
-      derivative = Buffer.from(await result.data.arrayBuffer());
-      await inspectDerivative(derivative, part ? part.width : width!);
+      const data = result.data;
+      derivative = await reads.measure('bufferMaterialize', async () =>
+        Buffer.from(await data.arrayBuffer()),
+      );
+      const bytes = derivative;
+      await reads.measure('derivativeMetadata', () =>
+        inspectDerivative(bytes, part ? part.width : width!),
+      );
     } catch {
       derivative = undefined;
     }
@@ -259,7 +285,8 @@ async function loadPhotoBytes(
     if (speculative) return null;
     chosen = path;
     derivative = undefined;
-    result = await bucket.download(path);
+    reads.count('fallbackToMaster');
+    result = await reads.measure('masterDownload', () => bucket.download(path));
   }
   if (
     result.error ||
@@ -270,12 +297,16 @@ async function loadPhotoBytes(
     timing?.('photo-storage', performance.now() - storageStart);
     return null;
   }
-  let buffer = derivative ?? Buffer.from(await result.data.arrayBuffer());
+  const data = result.data;
+  let buffer =
+    derivative ??
+    (await reads.measure('bufferMaterialize', async () => Buffer.from(await data.arrayBuffer())));
   // Legacy masters stay immutable in storage. Public zoom/fallback receives a lossless
   // metadata-filtered representation; its ETag is calculated from the delivered bytes.
   if (chosen === path) {
     try {
-      buffer = await sanitizePhotoMetadata(buffer);
+      const bytes = buffer;
+      buffer = await reads.measure('masterSanitize', () => sanitizePhotoMetadata(bytes));
     } catch {
       return null;
     }
@@ -299,6 +330,7 @@ export function preparePublicThumbnails(approved: string[]) {
     if (bytesCache.get(key, false) || photoReads.has(key) || thumbnailWarmup.has(path)) continue;
     if (thumbnailWarmup.size >= 36) break;
     thumbnailWarmup.set(path, Date.now() + 5_000);
+    reads.count('warmupsQueued');
   }
   drainThumbnailWarmup();
 }
@@ -306,10 +338,21 @@ function drainThumbnailWarmup() {
   while (warming < 2 && thumbnailWarmup.size) {
     const [path, until] = thumbnailWarmup.entries().next().value!;
     thumbnailWarmup.delete(path);
-    if (until <= Date.now()) continue;
+    if (until <= Date.now()) {
+      reads.count('warmupsExpired');
+      continue;
+    }
     warming++;
+    reads.count('warmupsStarted');
     void readPixels(path, 320, undefined, true)
-      .catch(() => null)
+      .then((result) => {
+        reads.count('warmupsCompleted');
+        return result;
+      })
+      .catch(() => {
+        reads.count('warmupsFailed');
+        return null;
+      })
       .finally(() => {
         warming--;
         drainThumbnailWarmup();
