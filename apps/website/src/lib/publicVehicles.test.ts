@@ -26,13 +26,25 @@ export const vehicle = {
 };
 describe('Public website projection', () => {
   it('uses fresh approved identities for the photo URL while keeping the vehicle address', () => {
-    const first = publicVehicleSchema.parse({ ...vehicle, photos: [vehicle.photos[0] + '?v=' + 'a'.repeat(64)] });
-    const replaced = publicVehicleSchema.parse({ ...vehicle, photos: [vehicle.photos[0] + '?v=' + 'b'.repeat(64)] });
+    const first = publicVehicleSchema.parse({
+      ...vehicle,
+      photos: [vehicle.photos[0] + '?v=' + 'a'.repeat(64)],
+    });
+    const replaced = publicVehicleSchema.parse({
+      ...vehicle,
+      photos: [vehicle.photos[0] + '?v=' + 'b'.repeat(64)],
+    });
     expect(publicPhoto(first, 0)).toBe(`/viaturas/${vehicle.slug}/photos/0?v=${'a'.repeat(64)}`);
     expect(publicCard(first).image).not.toBe(publicCard(replaced).image);
     expect(publicCard(first).href).toBe(publicCard(replaced).href);
-    for (const suffix of ['?v=bad', '?v=' + 'a'.repeat(64) + '&token=secret', '?v=' + 'a'.repeat(64) + '&v=' + 'b'.repeat(64)])
-      expect(publicVehicleSchema.safeParse({ ...vehicle, photos: [vehicle.photos[0] + suffix] }).success).toBe(false);
+    for (const suffix of [
+      '?v=bad',
+      '?v=' + 'a'.repeat(64) + '&token=secret',
+      '?v=' + 'a'.repeat(64) + '&v=' + 'b'.repeat(64),
+    ])
+      expect(
+        publicVehicleSchema.safeParse({ ...vehicle, photos: [vehicle.photos[0] + suffix] }).success,
+      ).toBe(false);
   });
   it('keeps explicit version separate without guessing from existing model names', () => {
     const existing = publicCard(
@@ -140,4 +152,20 @@ describe('Public website projection', () => {
         .noindex,
     ).toBe(true);
   });
+});
+
+it('uses only the principal photo card crop, with an unchanged fallback for legacy detail coordinates', () => {
+  const detail = { desktop: { x: 50, y: 90 }, mobile: { x: 50, y: 95 } },
+    card = { desktop: { x: 50, y: 15 }, mobile: { x: 50, y: 25 } };
+  const legacy = publicVehicleSchema.parse({ ...vehicle, galleryFraming: [detail] });
+  expect(publicCard(legacy).cardFraming).toBeUndefined();
+  const both = publicVehicleSchema.parse({ ...vehicle, galleryFraming: [{ ...detail, card }] });
+  expect(publicCard(both).cardFraming).toEqual(card);
+  expect(both.galleryFraming?.[0]?.desktop).toEqual(detail.desktop);
+  expect(
+    publicCard({ ...both, galleryFraming: [detail, { ...detail, card }] }).cardFraming,
+  ).toBeUndefined();
+  expect(
+    publicCard({ ...both, galleryFraming: [{ ...detail, card: null }] }).cardFraming,
+  ).toBeUndefined();
 });

@@ -77,6 +77,12 @@ it('saves gallery positions with the same edit transaction and validates ownersh
   value.galleryFraming = {'foreign/photo.jpg':value.galleryFraming[a]!};
   await expect(saveVehicleEdit(id, value, actor)).rejects.toThrow('Enquadramento');
 });
+it('preserves card coordinates when an older edit only updates detail coordinates',async()=>{
+  const detail={desktop:{x:50,y:70},mobile:{x:50,y:80}},card={desktop:{x:50,y:20},mobile:{x:50,y:30}};
+  tx.vehicle.findUnique.mockResolvedValue({...row,galleryFraming:{[a]:{...detail,card}}});
+  const value=input();value.galleryFraming={[a]:detail};await saveVehicleEdit(id,value,actor);
+  expect(tx.vehicle.update).toHaveBeenCalledWith(expect.objectContaining({data:expect.objectContaining({galleryFraming:{[a]:{...detail,card}},photos:{set:[a,b]}})}));
+});
 beforeEach(() => {
   vi.clearAllMocks();
   row = {

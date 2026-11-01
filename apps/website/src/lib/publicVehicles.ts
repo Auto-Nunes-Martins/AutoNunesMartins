@@ -1,6 +1,6 @@
 import { catalogPlaceholder } from '$lib/localAssets';
 import { z } from 'zod';
-import { publicSpecificationsSchema, photoFramingSchema } from '@anm/types';
+import { publicSpecificationsSchema, galleryPhotoFramingSchema } from '@anm/types';
 
 export const fuelLabels = {
   GASOLINE: 'Gasolina',
@@ -30,7 +30,7 @@ export const publicVehicleSchema = z
     availability: z.enum(['AVAILABLE', 'RESERVED']),
     photos: z.array(z.string()).max(20),
     photoDimensions:z.array(z.object({version:z.string().regex(/^[a-f0-9]{64}$/),width:z.number().int().positive(),height:z.number().int().positive()}).refine(v=>v.width*v.height<=24_000_000).nullable()).max(20).optional().catch(undefined),
-    galleryFraming: z.array(photoFramingSchema.nullable()).max(20).optional(),
+    galleryFraming: z.array(galleryPhotoFramingSchema.nullable()).max(20).optional(),
     // Optional during rolling deployment/backfill. Never trust a dimension for another version.
     coverPhotoDimensions: z
       .object({
@@ -142,6 +142,7 @@ export function publicCard(vehicle: PublicVehicle) {
       vehicle.coverPhotoDimensions?.version === vehicle.photos[0]?.match(/\?v=([a-f0-9]{64})$/)?.[1]
         ? vehicle.coverPhotoDimensions
         : undefined,
+    cardFraming: vehicle.galleryFraming?.[0]?.card ?? undefined,
     approved: true as const,
   };
 }

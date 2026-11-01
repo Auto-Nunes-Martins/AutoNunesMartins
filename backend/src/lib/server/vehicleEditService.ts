@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { descriptionText } from '@anm/types/richDescription';
-import { publicSpecificationsSchema, vehicleUpdateSchema, licensePlatePtSchema, galleryFramingSchema } from '@anm/types';
+import { publicSpecificationsSchema, vehicleUpdateSchema, licensePlatePtSchema, galleryFramingSchema, mergeGalleryPhotoFraming } from '@anm/types';
 import { lockVehicle, saleMutation } from './saleFinancials.js';
 import {
   updateVehicleInTransaction,
@@ -104,7 +104,7 @@ export async function saveVehicleEdit(
         await lockVehicle(tx, id);
         const current = await tx.vehicle.findUnique({
           where: { id },
-          select: { updatedAt: true, photos: true, webPublished: true },
+          select: { updatedAt: true, photos: true, webPublished: true, galleryFraming: true },
         });
         if (!current) throw new VehicleNotFound(id);
         if (current.updatedAt.toISOString() !== input.expectedUpdatedAt)
@@ -127,7 +127,11 @@ export async function saveVehicleEdit(
         await tx.vehicle.update({
           where: { id },
           data: {
-            ...(input.galleryFraming ? { galleryFraming: input.galleryFraming } : {}),
+            ...(input.galleryFraming ? { galleryFraming: Object.fromEntries(input.photos.flatMap(path => {
+              const existing=galleryFramingSchema.safeParse(current.galleryFraming).data?.[path];
+              const value=mergeGalleryPhotoFraming(existing,input.galleryFraming?.[path]);
+              return value ? [[path,value]] : [];
+            })) } : {}),
             photos: { set: input.photos },
             publicPhotoPaths: {
               set: input.photos,

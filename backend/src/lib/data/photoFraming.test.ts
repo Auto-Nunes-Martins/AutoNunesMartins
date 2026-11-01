@@ -8,7 +8,7 @@ it('projects only approved photo positions in current order, without exposing pr
   const id = 'c123456789012345678901234';
   const a = `${id}/12345678-1234-1234-1234-123456789abc.jpg`;
   const b = `${id}/12345678-1234-1234-1234-123456789abd.jpg`;
-  const framing = { desktop: { x: 50, y: 80 }, mobile: { x: 40, y: 70 } };
+  const framing = { desktop: { x: 50, y: 80 }, mobile: { x: 40, y: 70 },card:{desktop:{x:50,y:20},mobile:{x:50,y:30}} };
   const row = {
     id,
     photos: [a, b],

@@ -11,7 +11,7 @@ import { chromium } from '@playwright/test';
 
 test(
   'drag, keyboard, independent devices, reset, gallery selection and public crops',
-  { timeout: 90000 },
+  { timeout: 120000 },
   async () => {
     const root = fileURLToPath(new URL('../../../', import.meta.url));
     const output = path.join(root, 'apps/crm/.svelte-kit');
@@ -23,7 +23,10 @@ test(
     const src = 'data:image/svg+xml,' + encodeURIComponent(svg);
     await write('package.json', '{"type":"module"}');
     await write('paths.js', "export const base='';");
-    await write('navigation.js','export const invalidateAll=async()=>{};');
+    await write('navigation.js','export const invalidateAll=async()=>{};export const goto=async()=>{};export const afterNavigate=()=>{};export const beforeNavigate=()=>{};');
+    await write('stores.js',"import{writable}from'svelte/store';export const page=writable({url:new URL('http://fixture.test/viaturas'),data:{},params:{},state:{}});export const navigating=writable(null);");
+    await write('state.js',"export const page={url:new URL('http://fixture.test/viaturas'),data:{}};");
+    await write('public.js',"export const PUBLIC_BACKEND_URL='http://backend.fixture';");
     await write('review.css', "@import '../../src/app.css';\n@source '../../src';");
     await write(
       'App.svelte',
@@ -33,23 +36,33 @@ import Picker from '@crm/components/vehicle/PublicPhotoPicker.svelte';
 import Featured from '@website/components/stand-concepts/FeaturedPhoto.svelte';
 import Rail from '@website/components/VehiclePhotoRail.svelte';
 import Gallery from '@crm/components/vehicle/PhotoGallery.svelte';
+import Design from '@website/components/stand-concepts/DesignEdition.svelte';
+import {emptyStock,publicCard} from '@website/publicVehicles';
 import '@website/components/stand-concepts/homeHeroDirections.css';
 const src=${JSON.stringify(src)};
+import {setContext} from 'svelte';
+import {createFavorites,favoritesContext} from '@website/favorites';
+import {createComparison,comparisonContext} from '@website/comparison';
+import {createNotifications,notificationContext} from '@website/notifications';
+import {createPublicTheme,publicThemeContext} from '@website/publicTheme';
+const notifications=createNotifications();setContext(notificationContext,notifications);setContext(favoritesContext,createFavorites(notifications.push));setContext(comparisonContext,createComparison(notifications.push));setContext(publicThemeContext,createPublicTheme(true));
 const session={attach(){},detach(){},hasCopy(){return true;},async read(){return {url:src};}};
 let value=$state(), framing=$state(JSON.parse(localStorage.getItem('framing-fixture')||'{}')), selected=$state(['a','b','draft:new']);
-const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertical',photos:['/api/public/vehicles/fixture-123456abcdef/photos/0'],galleryFraming:[value]});
+const vehicle=$derived({year:2026,fuel:'DIESEL',mileage:100,price:'1000.00',currency:'EUR',description:null,transmission:null,availability:'AVAILABLE',slug:'fixture-123456abcdef',brand:'Teste',model:'Vertical',photos:['/api/public/vehicles/fixture-123456abcdef/photos/0'],galleryFraming:[value]});
+const cardVehicle=$derived({...vehicle,galleryFraming:[framing[selected[0]]??null]});
+const stock=$derived({...emptyStock('ready'),catalog:{...emptyStock('ready').catalog,items:[cardVehicle],total:1}});
 </script>
 <main style="max-width:900px;margin:auto;padding:20px">
 <Editor {src} {value} context="gallery" onchange={next=>value=next}/>
 <output id="value">{JSON.stringify(value??null)}</output>
 <Picker bind:selected allowed={['a','b','draft:new']} persisted={['a','b']} staged photos={[{path:'a',url:src},{path:'b',url:src},{path:'draft:new',url:src}]} {framing} onframing={(path,value)=>framing={...framing,[path]:value}}/>
 <button type="button" onclick={()=>localStorage.setItem('framing-fixture',JSON.stringify(framing))}>Guardar ficha</button>
-<output id="gallery">{JSON.stringify(framing)}</output>
+<output id="gallery">{JSON.stringify(framing)}</output><button onclick={()=>selected=['b','a','draft:new']}>Trocar principal</button><button onclick={()=>selected=['a','b','draft:new']}>Repor principal</button>
 <div id="crm-gallery"><Gallery vehicleId="fixture" photos={[{path:'a',url:src},{path:'b',url:src}]} {framing} editable={false}/></div>
 <section class="hd-root hd-1"><div class="hd-photo" style="width:100%;height:300px"><Featured source={src} framing={value} alt="Destaque" onfailure={()=>{}} ondisplay={()=>{}}/></div></section>
 <div id="inline" style="height:300px"><Rail {vehicle} index={0} onContact={()=>{}}/></div>
 <div id="full" style="height:300px"><Rail {vehicle} {session} index={0} fullscreen onContact={()=>{}}/></div>
-</main>`,
+</main><div id="public-card"><Design catalog {stock}>{#snippet routeContent({card})}<div style="width:min(380px,100%)">{@render card(publicCard(cardVehicle),0,false)}</div>{/snippet}</Design></div>`,
     );
     await write(
       'client.js',
@@ -87,6 +100,7 @@ const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertica
           alias: [
             { find: '@crm', replacement: path.join(root, 'apps/crm/src/lib') },
             { find: '@website', replacement: path.join(root, 'apps/website/src/lib') },
+            {find:'$app/stores',replacement:path.join(directory,'stores.js')},{find:'$app/state',replacement:path.join(directory,'state.js')},{find:'$env/static/public',replacement:path.join(directory,'public.js')},
             { find: '$app/paths', replacement: path.join(directory, 'paths.js') },
             { find: '$app/navigation', replacement: path.join(directory, 'navigation.js') },
           ],
@@ -103,7 +117,7 @@ const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertica
       for (const width of [1280, 390]) {
         const page = await browser.newPage({ viewport: { width, height: 1000 } }),
           errors = [];
-        page.on('pageerror', (error) => errors.push(error.message));
+        page.on('pageerror', (error) => {errors.push(error.message);console.error('Fixture page error:',error.message);});
         await page.route('**/viaturas/**/photos/**', (route) =>
           route.fulfill({ contentType: 'image/svg+xml', body: svg }),
         );
@@ -165,33 +179,48 @@ const vehicle=$derived({slug:'fixture-123456abcdef',brand:'Teste',model:'Vertica
           width === 390 ? '50% 100%' : `50% ${value.desktop.y}%`,
         );
         await page.getByRole('button', { name: 'Enquadrar', exact: true }).first().click();
-        const gallery = page.locator('.framing-editor');
+        const gallery = page.locator('.framing-editor'),detail=gallery.getByRole('region',{name:'Enquadramento na ficha pública'}),cardFrame=gallery.getByRole('region',{name:'Enquadramento do cartão'});
         const card=page.locator('.photo-card').first().locator('.photo-media img');
         const cardPosition=()=>card.evaluate(img=>getComputedStyle(img).objectPosition);
         assert.equal(await cardPosition(),'50% 50%');
         const ratio=await page.locator('.photo-media').first().evaluate(node=>node.clientWidth/node.clientHeight);
         assert.ok(Math.abs(ratio-(width===390?4/3:1.4))<.025);
         assert.equal(await card.evaluate(img=>getComputedStyle(img).objectFit),'cover');
-        if(width===390)await gallery.getByRole('button',{name:'Telemóvel',exact:true}).click();
-        await gallery.getByRole('slider', { name: 'Posição da fotografia' }).focus();
+        if(width===390)await detail.getByRole('button',{name:'Telemóvel',exact:true}).click();
+        await detail.getByRole('slider', { name: 'Posição da fotografia' }).focus();
         await page.keyboard.press('End');
         assert.equal(await cardPosition(),'50% 100%','card follows the open editor before applying');
         await gallery.getByRole('button',{name:'Cancelar',exact:true}).click();
         assert.equal(await cardPosition(),'50% 50%','cancel restores the previous card crop');
         await page.getByRole('button', { name: 'Enquadrar', exact: true }).first().click();
-        if(width===390)await gallery.getByRole('button',{name:'Telemóvel',exact:true}).click();
-        await gallery.getByRole('slider', { name: 'Posição da fotografia' }).focus();await page.keyboard.press('End');
+        if(width===390)await detail.getByRole('button',{name:'Telemóvel',exact:true}).click();
+        await detail.getByRole('slider', { name: 'Posição da fotografia' }).focus();await page.keyboard.press('End');
         await gallery.getByRole('button', { name: 'Aplicar enquadramento' }).click();
         assert.equal(JSON.parse(await page.locator('#gallery').textContent()).a[width===390?'mobile':'desktop'].y, 100);
         assert.equal(JSON.parse(await page.locator('#gallery').textContent()).b, undefined);
         assert.equal(await cardPosition(),'50% 100%');
+        await page.getByRole('button', { name: 'Enquadrar', exact: true }).first().click();
+        assert.equal(await cardFrame.count(),1);
+        if(width===390)await cardFrame.getByRole('button',{name:'Telemóvel',exact:true}).click();
+        const cardPreview=cardFrame.locator('.preview');const size=await cardPreview.boundingBox();assert.ok(Math.abs(size.height-(size.width/1.4+60))<1);
+        const detailBefore=JSON.parse(await page.locator('#gallery').textContent()).a;
+        await cardFrame.getByRole('slider',{name:'Posição da fotografia'}).focus();await page.keyboard.press('Home');
+        await gallery.getByRole('button', {name:'Aplicar enquadramento'}).click();
+        const both=JSON.parse(await page.locator('#gallery').textContent()).a;assert.equal(both.card[width===390?'mobile':'desktop'].y,0);assert.equal(both[width===390?'mobile':'desktop'].y,detailBefore[width===390?'mobile':'desktop'].y);
+        const publicCard=page.locator('#public-card .public-card .card-image').first();await publicCard.locator('img').waitFor();assert.equal(await publicCard.locator('img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 0%');
+        const publicSize=await publicCard.boundingBox();assert.ok(Math.abs(publicSize.height-(publicSize.width/1.4+60))<1);
+        await page.getByRole('button',{name:'Trocar principal',exact:true}).click();
+        await page.getByRole('button',{name:'Enquadrar',exact:true}).first().click();assert.equal(await cardFrame.count(),0);await gallery.getByRole('button',{name:'Cancelar',exact:true}).click();
+        assert.equal(JSON.parse(await page.locator('#gallery').textContent()).a.card[width===390?'mobile':'desktop'].y,0);
+        assert.equal(await publicCard.locator('img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 50%');
+        await page.getByRole('button',{name:'Repor principal',exact:true}).click();assert.equal(await publicCard.locator('img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 0%');
         await page.getByRole('button', { name: 'Enquadrar', exact: true }).nth(2).click();
-        if(width===390)await gallery.getByRole('button',{name:'Telemóvel',exact:true}).click();
-        await gallery.getByRole('slider', { name: 'Posição da fotografia' }).focus();await page.keyboard.press('End');
+        if(width===390)await detail.getByRole('button',{name:'Telemóvel',exact:true}).click();
+        await detail.getByRole('slider', { name: 'Posição da fotografia' }).focus();await page.keyboard.press('End');
         await gallery.getByRole('button', { name: 'Aplicar enquadramento' }).click();
         await page.getByRole('button',{name:'Guardar ficha',exact:true}).click();await page.reload();
         await page.locator('.photo-card').first().waitFor();
-        assert.equal(await cardPosition(),'50% 100%','existing crop reopens from saved state');
+        assert.equal(await cardPosition(),'50% 100%','existing crop reopens from saved state');assert.equal(await publicCard.locator('img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 0%','card crop reopens independently from the detail crop');
         const crmImage=page.locator('#crm-gallery .photo-preview img');
         assert.equal(await crmImage.evaluate(img=>getComputedStyle(img).objectPosition),'50% 100%');
         const crmRatio=await page.locator('#crm-gallery .photo-preview').evaluate(node=>node.clientWidth/node.clientHeight);

@@ -65,6 +65,19 @@
         { method: 'POST' },
       );
       if (!res.ok) throw new Error('Notification update failed');
+      // The receipt is committed. Do not keep its old preview if revalidation fails,
+      // and do not let an earlier poll restore the pre-read snapshot.
+      controller?.abort();
+      if (data?.contacts?.items.some((item) => item.id === id)) {
+        data = {
+          ...data,
+          total: Math.max(0, data.total - 1),
+          contacts: {
+            unread: Math.max(0, data.contacts.unread - 1),
+            items: data.contacts.items.filter((item) => item.id !== id),
+          },
+        };
+      }
       await load();
     } catch {
       loadError = 'N\u00e3o foi poss\u00edvel marcar o contacto como lido.';

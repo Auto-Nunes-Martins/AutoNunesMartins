@@ -2,7 +2,7 @@
   import { PHOTO_ACCEPT, preparePhoto } from '$lib/photoPreparation';
   import { photoUpload } from '$lib/photoDiagnostics';
   import {reusablePhoto} from '$lib/reusablePhoto';
-  import { framingStyle, type PhotoFraming } from '@anm/types';
+  import { framingStyle, type GalleryPhotoFraming } from '@anm/types';
   import { onDestroy } from 'svelte';
   import { sessionFetch } from '$lib/auth/session';
  import {photoAttrs,type SignedVariantPhoto} from "$lib/vehicleImage";
@@ -20,7 +20,7 @@
   }
 
   interface Props {
-    framing?:Record<string,PhotoFraming>;
+    framing?:Record<string,GalleryPhotoFraming>;
     vehicleId: string;
     photos: SignedPhoto[];
     busy?: boolean;

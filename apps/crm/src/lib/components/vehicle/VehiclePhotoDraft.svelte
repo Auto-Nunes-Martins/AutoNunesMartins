@@ -7,11 +7,11 @@
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
   import { getPreparationMetrics } from '$lib/photoDiagnostics';
-  import { framingStyle, type PhotoFraming } from '@anm/types';
+  import { framingStyle, type GalleryPhotoFraming } from '@anm/types';
   import { PHOTO_ACCEPT, validatePhoto, preparePhoto } from '$lib/photoPreparation';
   import { crmPath } from '$lib/paths';
-  let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, form, disabled = false, framing = $bindable<Record<string, PhotoFraming>>({}) }:
-    { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; form: string; disabled?: boolean; framing?: Record<string, PhotoFraming> } = $props();
+  let { photos = $bindable<EditPhoto[]>([]), selected = $bindable<string[]>([]), persisted, persistedCoverPath, form, disabled = false, framing = $bindable<Record<string, GalleryPhotoFraming>>({}) }:
+    { photos: EditPhoto[]; selected: string[]; persisted: string[]; persistedCoverPath?: string; form: string; disabled?: boolean; framing?: Record<string, GalleryPhotoFraming> } = $props();
   let notice = $state<{ accepted: EditPhoto[]; rejected: string[] } | null>(null);
   let fileInput: HTMLInputElement;
   let uploadButton: HTMLButtonElement;

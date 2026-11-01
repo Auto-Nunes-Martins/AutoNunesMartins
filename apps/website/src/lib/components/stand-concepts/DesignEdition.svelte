@@ -6,6 +6,7 @@
   let galleryPointerFocus = $state(false);
   let mainPhotoLoading = $state(true);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
+  import { framingStyle } from '@anm/types';
   import { homePhotoPlaceholder, homePhotoPriority } from '$lib/homePhotoPriority';
   import { publicPhotoVersions } from '$lib/publicVehicles';
   import UnavailableVehiclePanel from './UnavailableVehiclePanel.svelte';
@@ -1644,6 +1645,7 @@
                 src: 'approved' in vehicle ? cardPhoto(vehicle.image) : photo(vehicle.image, 1100),
                 srcset: 'approved' in vehicle ? cardPhotoSet(vehicle.image) : responsivePhoto(vehicle.image, 1600),
               }}
+              style={'approved' in vehicle ? framingStyle(vehicle.cardFraming) : undefined}
               src={'approved' in vehicle ? cardPhoto(vehicle.image) : photo(vehicle.image, 1100)}
               srcset={'approved' in vehicle ? cardPhotoSet(vehicle.image) : responsivePhoto(vehicle.image, 1600)}
               sizes={'approved' in vehicle
@@ -4531,4 +4533,6 @@
       transition: none;
     }
   }
+  .public-card .card-image img { object-position:var(--photo-desktop,50% 50%); }
+  @media(max-width:700px) { .public-card .card-image img { object-position:var(--photo-mobile,50% 50%); } }
 </style>

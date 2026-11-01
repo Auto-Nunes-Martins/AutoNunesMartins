@@ -149,6 +149,17 @@ describe('optional diagnostic boundary',()=>{
 });
 describe('photo framing', () => {
   const framing = {desktop:{x:50,y:84},mobile:{x:35,y:75}};
+  it('persists independent card coordinates and preserves them for legacy detail updates and resets',async()=>{
+    const card={desktop:{x:50,y:20},mobile:{x:50,y:30}};
+    mocks.vehicle.findUnique.mockResolvedValue({photos:[a,b],galleryFraming:{[a]:{...framing,card}}});
+    const send=(value:unknown)=>fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:a,framing:value})});
+    const changedCard={desktop:{x:50,y:25},mobile:{x:50,y:35}};
+    const saved=await send({...framing,card:changedCard});expect((await saved.json()).galleryFraming[a]).toEqual({...framing,card:changedCard});
+    const legacy=await send(framing);expect((await legacy.json()).galleryFraming[a]).toEqual({...framing,card});
+    const resetDetail=await send(null);expect((await resetDetail.json()).galleryFraming[a]).toEqual({desktop:{x:50,y:50},mobile:{x:50,y:50},card});
+    const resetCard=await send({...framing,card:null});expect((await resetCard.json()).galleryFraming[a]).toEqual({...framing,card:null});
+    expect(mocks.upload).not.toHaveBeenCalled();expect(mocks.deleteObjects).not.toHaveBeenCalled();
+  });
   it('saves metadata only, preserves other photos, and resets without touching storage', async () => {
     mocks.vehicle.findUnique.mockResolvedValue({photos:[a,b],galleryFraming:{[b]:framing}});
     let response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:a,framing})});

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {reusablePhoto} from '$lib/reusablePhoto';
+  import { reusablePhoto } from '$lib/reusablePhoto';
   import type { PhotoFraming } from '@anm/types';
   let {
     src,
@@ -10,9 +10,14 @@
     onchange,
   }: {
     src: string;
-    photo?:{url:string|null;width?:number;height?:number;variants?:{url:string;width:number;height?:number}[]};
+    photo?: {
+      url: string | null;
+      width?: number;
+      height?: number;
+      variants?: { url: string; width: number; height?: number }[];
+    };
     value?: PhotoFraming;
-    context: 'gallery' | 'featured';
+    context: 'gallery' | 'featured' | 'card';
     disabled?: boolean;
     onchange: (value: PhotoFraming | undefined) => void;
   } = $props();
@@ -92,13 +97,17 @@
   class="framing"
   aria-label={context === 'featured'
     ? 'Enquadramento do destaque'
-    : 'Enquadramento na ficha pública'}
+    : context === 'card'
+      ? 'Enquadramento do cartão'
+      : 'Enquadramento na ficha pública'}
 >
   <div class="heading">
     <strong
       >{context === 'featured'
         ? 'Enquadramento do destaque'
-        : 'Enquadramento na ficha pública'}</strong
+        : context === 'card'
+          ? 'Cartão'
+          : 'Ficha pública'}</strong
     ><button type="button" {disabled} onclick={() => onchange(undefined)}>Repor original</button>
   </div>
   <div class="devices" role="group" aria-label="Pré-visualização por dispositivo">
@@ -110,37 +119,42 @@
     >
   </div>
   <p>Arraste a fotografia para cima ou para baixo, até o carro ficar bem enquadrado.</p>
-  <div
-    class="preview"
-    style:aspect-ratio={ratio}
-    class:mobile={device === 'mobile'}
-    role="slider"
-    tabindex={disabled ? -1 : 0}
-    aria-label="Posição da fotografia"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    aria-valuenow={position.y}
-    aria-disabled={disabled}
-    onkeydown={keydown}
-    onpointerdown={begin}
-    onpointermove={move}
-    onpointerup={() => (start = undefined)}
-    onpointercancel={() => (start = undefined)}
-    onlostpointercapture={() => (start = undefined)}
-  >
-    <img
-      bind:this={image}
-      src={photo?undefined:src}
-      use:reusablePhoto={{photo:photo??{url:src}}}
-      alt=""
-      draggable="false"
-      style:object-position={`${position.x}% ${position.y}%`}
-    />
+  <div class="preview-shell" class:mobile={device === 'mobile'}>
+    <div
+      class="preview"
+      class:card={context === 'card'}
+      style:aspect-ratio={context === 'card' ? undefined : ratio}
+      class:mobile={device === 'mobile'}
+      role="slider"
+      tabindex={disabled ? -1 : 0}
+      aria-label="Posição da fotografia"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow={position.y}
+      aria-disabled={disabled}
+      onkeydown={keydown}
+      onpointerdown={begin}
+      onpointermove={move}
+      onpointerup={() => (start = undefined)}
+      onpointercancel={() => (start = undefined)}
+      onlostpointercapture={() => (start = undefined)}
+    >
+      <img
+        bind:this={image}
+        src={photo ? undefined : src}
+        use:reusablePhoto={{ photo: photo ?? { url: src } }}
+        alt=""
+        draggable="false"
+        style:object-position={`${position.x}% ${position.y}%`}
+      />
+    </div>
   </div>
   <p class="note">
     {context === 'featured'
       ? 'Só altera o destaque da homepage.'
-      : 'Só altera a imagem grande da ficha pública. A ampliação mostra a fotografia inteira.'} Pré-visualização
+      : context === 'card'
+        ? 'Só altera a fotografia principal no cartão da viatura.'
+        : 'Só altera a imagem grande da ficha pública. A ampliação mostra a fotografia inteira.'} Pré-visualização
     de referência; o espaço disponível varia com o ecrã.
   </p>
 </section>
@@ -213,6 +227,17 @@
   .preview.mobile {
     max-width: 390px;
     margin-inline: auto;
+  }
+  .preview-shell {
+    container-type: inline-size;
+    min-width: 0;
+  }
+  .preview-shell.mobile {
+    max-width: 390px;
+    margin-inline: auto;
+  }
+  .preview.card {
+    height: calc(100cqw / 1.4 + 60px);
   }
   img {
     display: block;

@@ -2,7 +2,7 @@
   import { ArrowUpRight } from 'lucide-svelte';
   import {reusablePhoto} from '$lib/reusablePhoto';
   import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
-  import type { PhotoFraming } from '@anm/types';
+  import type { GalleryPhotoFraming } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import { invalidateAll } from '$app/navigation';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
@@ -65,9 +65,9 @@
   let description = $state('');
   let transmission = $state('');
   let selected = $state<string[]>([]);
-  let framing = $state<Record<string, PhotoFraming>>({});
+  let framing = $state<Record<string, GalleryPhotoFraming>>({});
   let framingBusy = $state(false);
-  async function saveFraming(path: string, value: PhotoFraming | undefined) {
+  async function saveFraming(path: string, value: GalleryPhotoFraming | undefined) {
     framingBusy = true;
     try {
       const response = await sessionFetch(crmPath(`/viaturas/${vehicle.id}/photos/framing`), { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({path, framing: value ?? null}) });

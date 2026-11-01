@@ -14,26 +14,23 @@ export async function readContactNotifications(db: BudgetQuery, userId: string) 
     [userId],
   );
   if (!access.length) return { unread: 0, items: [] as ContactNotification[] };
-  const counts = await db.query<{ count: number }>(
-    `SELECT count(*)::int AS count FROM "ActivityLog" e
-    WHERE e."type"::text='CONTACT_REQUEST_RECEIVED' AND NOT EXISTS (
-      SELECT 1 FROM "ContactNotificationRead" r WHERE r."eventId"=e."id" AND r."userId"=$1)`,
-    [userId],
-  );
   const rows = await db.query<{
     id: string;
     metadata: { name: string; subject: string };
     createdAt: Date;
     read: boolean;
+    unread: number;
   }>(
-    `SELECT e."id",e."metadata",e."createdAt",(r."userId" IS NOT NULL) AS read
+    // Count before LIMIT, in the same statement/snapshot as the displayed items.
+    `SELECT e."id",e."metadata",e."createdAt",(r."userId" IS NOT NULL) AS read,
+      count(*) OVER ()::int AS unread
     FROM "ActivityLog" e LEFT JOIN "ContactNotificationRead" r ON r."eventId"=e."id" AND r."userId"=$1
     WHERE e."type"::text='CONTACT_REQUEST_RECEIVED' AND r."userId" IS NULL
     ORDER BY e."createdAt" DESC,e."id" DESC LIMIT 20`,
     [userId],
   );
   return {
-    unread: counts[0]?.count ?? 0,
+    unread: rows[0]?.unread ?? 0,
     items: rows.map((row) => ({
       id: row.id,
       name: row.metadata.name,

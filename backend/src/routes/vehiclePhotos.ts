@@ -17,7 +17,7 @@ import { randomUUID } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import { Router, type Response, type Request, type NextFunction } from 'express';
 import { z } from 'zod';
-import { photoFramingSchema, galleryFramingSchema } from '@anm/types';
+import { galleryPhotoFramingSchema, galleryFramingSchema, mergeGalleryPhotoFraming } from '@anm/types';
 import { lockVehicle } from '../lib/server/saleFinancials.js';
 import { cache } from '../lib/data/cache.js';
 import { prisma } from '../db.js';
@@ -46,7 +46,7 @@ router.post('/diagnostics',requireUser,(req,res)=>{
   const {trace,outcome,...metrics}=parsed.data;
   res.status(diagnostics.clientTransfer(trace,metrics,outcome)?204:429).end();
 });
-const framingInput = z.object({ path: z.string().min(1).max(160), framing: photoFramingSchema.nullable() }).strict();
+const framingInput = z.object({ path: z.string().min(1).max(160), framing: galleryPhotoFramingSchema.nullable() }).strict();
 router.post('/framing', requireUser, asyncHandler(async (req: AuthedRequest, res: Response) => {
   const parsed = framingInput.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: 'Enquadramento inválido.', issues: parsed.error.issues }); return; }
@@ -56,7 +56,8 @@ router.post('/framing', requireUser, asyncHandler(async (req: AuthedRequest, res
     const vehicle = await tx.vehicle.findUnique({ where: { id }, select: { photos: true, galleryFraming: true } });
     if (!vehicle || !vehicle.photos.includes(parsed.data.path)) return null;
     const framing = galleryFramingSchema.parse(vehicle.galleryFraming);
-    if (parsed.data.framing) framing[parsed.data.path] = parsed.data.framing;
+    const next = mergeGalleryPhotoFraming(framing[parsed.data.path], parsed.data.framing);
+    if (next) framing[parsed.data.path] = next;
     else delete framing[parsed.data.path];
     const cleaned = Object.fromEntries(Object.entries(framing).filter(([path]) => vehicle.photos.includes(path)));
     await tx.vehicle.update({ where: { id }, data: { galleryFraming: cleaned } });
