@@ -60,6 +60,11 @@ html:has(dialog.gallery-dialog[open]) {
 .design.orbit .gallery-dialog .viewer-controls {
   display: contents;
 }
+@media (max-width: 700px), (pointer: coarse) {
+  .design.orbit .gallery-dialog .viewer-stage > .viewer-controls .viewer-step {
+    display: none;
+  }
+}
 .design.orbit .gallery-dialog #gallery-caption {
   text-align: center;
   margin: 0;
@@ -349,6 +354,10 @@ html:has(dialog.gallery-dialog[open]) {
 }
 .design.orbit .gallery-dialog button:focus-visible {
   outline: none;
+}
+.design.orbit:not(.gallery-pointer-focus) .gallery-dialog button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
 }
 .design.orbit:not(.gallery-pointer-focus)
   .gallery-dialog

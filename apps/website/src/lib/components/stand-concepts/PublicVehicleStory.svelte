@@ -123,6 +123,11 @@
   .visit :global(.answer > p) {
     max-width: 58ch;
   }
+  @media (min-width: 701px) {
+    li {
+      font-size: 16px;
+    }
+  }
   @media (max-width: 700px) {
     .story-section {
       padding-block: 48px;

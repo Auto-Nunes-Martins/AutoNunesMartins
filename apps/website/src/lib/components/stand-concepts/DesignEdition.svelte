@@ -871,6 +871,7 @@
             <div
               class="vehicle-photo-stage"
               use:photoSwipe={{
+                mouse: true,
                 enabled: !!publicVehicle && galleryCount > 1,
                 previous: () => stepGallery(-1),
                 next: () => stepGallery(1),
@@ -1558,6 +1559,7 @@
         role="group"
         aria-label="Fotografias em ecrã inteiro"
         use:photoSwipe={{
+          mouse: true,
           enabled: !!publicVehicle && galleryCount > 1,
           previous: () => stepGallery(-1),
           next: () => stepGallery(1),

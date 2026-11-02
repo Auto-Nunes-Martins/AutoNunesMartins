@@ -22,13 +22,14 @@ class Surface extends EventTarget {
 function setup(touchEvents = false) {
   vi.stubGlobal('Element', Surface);
   const viewport = Object.assign(new EventTarget(), { scale: 1 });
-  vi.stubGlobal('window', {
+  const windowTarget = Object.assign(new EventTarget(), {
     visualViewport: viewport,
     ...(touchEvents ? { TouchEvent: Event } : {}),
   });
+  vi.stubGlobal('window', windowTarget);
   const node = Object.assign(new Surface(), {
     clientWidth: 400,
-    style: { touchAction: 'manipulation' },
+    style: { touchAction: 'manipulation', userSelect: 'text' },
     setPointerCapture: vi.fn(),
     hasPointerCapture: () => true,
     releasePointerCapture: vi.fn(),
@@ -37,17 +38,25 @@ function setup(touchEvents = false) {
     previous = vi.fn();
   const action = photoSwipe(node as unknown as HTMLElement, { enabled: true, next, previous });
   cleanup = action.destroy;
-  function pointer(type: string, x: number, y: number, extra = {}, target: Surface = node) {
+  function pointer(
+    type: string,
+    x: number,
+    y: number,
+    extra = {},
+    target: Surface = node,
+    dispatch: EventTarget = node,
+  ) {
     const event = Object.assign(new Event(type, { cancelable: true }), {
       clientX: x,
       clientY: y,
       pointerId: 1,
       pointerType: 'touch',
       button: 0,
+      buttons: type === 'pointerup' || type === 'pointercancel' ? 0 : 1,
       ...extra,
     });
     if (target !== node) Object.defineProperty(event, 'target', { value: target });
-    node.dispatchEvent(event);
+    dispatch.dispatchEvent(event);
     return event;
   }
   function click(detail = 1, target: Surface = node) {
@@ -61,7 +70,7 @@ function setup(touchEvents = false) {
     pointer('pointermove', to, 105);
     pointer('pointerup', to, 105);
   }
-  return { node, viewport, next, previous, action, pointer, click, swipe };
+  return { node, windowTarget, viewport, next, previous, action, pointer, click, swipe };
 }
 
 it('changes one photo per deliberate swipe and suppresses only the following pointer click', () => {
@@ -123,6 +132,86 @@ it('ignores mouse drags and interactive controls, but permits the marked photo b
   pointer('pointermove', 100, 100, {}, control);
   pointer('pointerup', 100, 100, {}, control);
   expect(next).toHaveBeenCalledTimes(1);
+});
+
+it('preserves mouse clicks without capture, including browsers with TouchEvent support', () => {
+  const { node, action, pointer, next, previous, click } = setup(true);
+  action.update({ enabled: true, mouse: true, next, previous });
+  pointer('pointerdown', 240, 100, { pointerType: 'mouse' });
+  expect(node.style.userSelect).toBe('none');
+  pointer('pointermove', 237, 102, { pointerType: 'mouse' });
+  expect(node.setPointerCapture).not.toHaveBeenCalled();
+  pointer('pointerup', 237, 102, { pointerType: 'mouse' });
+  expect(node.style.userSelect).toBe('text');
+  expect(click()).toBe(false);
+  expect(next).not.toHaveBeenCalled();
+});
+
+it('navigates both ways with an opted-in primary mouse drag, blocking native drag and ghost clicks', () => {
+  const { node, action, pointer, next, previous, click } = setup();
+  action.update({ enabled: true, mouse: true, next, previous });
+  for (const [from, to] of [
+    [240, 100],
+    [100, 240],
+  ] as const) {
+    pointer('pointerdown', from, 100, { pointerType: 'mouse' });
+    const native = new Event('dragstart', { cancelable: true });
+    node.dispatchEvent(native);
+    expect(native.defaultPrevented).toBe(true);
+    expect(pointer('pointermove', to, 100, { pointerType: 'mouse' }).defaultPrevented).toBe(true);
+    expect(node.setPointerCapture).toHaveBeenCalledWith(1);
+    pointer('pointerup', to, 100, { pointerType: 'mouse' });
+  }
+  expect(next).toHaveBeenCalledOnce();
+  expect(previous).toHaveBeenCalledOnce();
+  expect(click()).toBe(true);
+  expect(click(0)).toBe(false);
+  expect(node.style.userSelect).toBe('text');
+});
+
+it('finishes fast mouse drags outside the surface before capture, without leaving a selection lock', () => {
+  const { node, windowTarget, action, pointer, next, previous } = setup();
+  action.update({ enabled: true, mouse: true, next, previous });
+  pointer('pointerdown', 240, 100, { pointerType: 'mouse' });
+  pointer('pointermove', 80, 100, { pointerType: 'mouse' }, node, windowTarget);
+  pointer('pointerup', 80, 100, { pointerType: 'mouse' }, node, windowTarget);
+  expect(next).toHaveBeenCalledOnce();
+  expect(node.style.userSelect).toBe('text');
+});
+
+it('rejects secondary mouse buttons and control drags even when mouse navigation is enabled', () => {
+  const { action, pointer, next, previous } = setup();
+  action.update({ enabled: true, mouse: true, next, previous });
+  const control = Object.assign(new Surface(), { control: true });
+  for (const [extra, target] of [
+    [{ button: 2 }, undefined],
+    [{ isPrimary: false }, undefined],
+    [{}, control],
+  ] as const) {
+    pointer('pointerdown', 240, 100, { pointerType: 'mouse', ...extra }, target);
+    pointer('pointermove', 80, 100, { pointerType: 'mouse' });
+    pointer('pointerup', 80, 100, { pointerType: 'mouse' });
+  }
+  expect(next).not.toHaveBeenCalled();
+});
+
+it('cancels mouse navigation on lost capture, cancellation, lost button, blur or disabling mouse', () => {
+  const { node, windowTarget, action, pointer, next, previous } = setup();
+  for (const cancel of [
+    () => pointer('lostpointercapture', 160, 100, { pointerType: 'mouse' }),
+    () => pointer('pointercancel', 160, 100, { pointerType: 'mouse' }),
+    () => pointer('pointermove', 160, 100, { pointerType: 'mouse', buttons: 0 }),
+    () => windowTarget.dispatchEvent(new Event('blur')),
+    () => action.update({ enabled: true, mouse: false, next, previous }),
+  ]) {
+    action.update({ enabled: true, mouse: true, next, previous });
+    pointer('pointerdown', 240, 100, { pointerType: 'mouse' });
+    pointer('pointermove', 160, 100, { pointerType: 'mouse' });
+    cancel();
+    pointer('pointerup', 80, 100, { pointerType: 'mouse' });
+    expect(node.style.userSelect).toBe('text');
+  }
+  expect(next).not.toHaveBeenCalled();
 });
 
 it('abandons multi-finger and cancelled gestures so pinch cannot change a photo', () => {

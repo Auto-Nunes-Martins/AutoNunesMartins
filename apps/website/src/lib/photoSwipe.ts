@@ -3,17 +3,19 @@ type Options = {
   previous: () => void;
   next: () => void;
   drag?: (offset: number | undefined) => void;
+  mouse?: boolean;
 };
 type Point = { id: number; x: number; y: number };
 
-/** Arbitrate touch before native scrolling starts; retain native vertical scroll and pinch. */
+/** Arbitrate horizontal gestures; retain taps, native vertical scrolling and pinch. */
 export function photoSwipe(node: HTMLElement, initial: Options) {
   let options = initial;
-  let gesture: (Point & { horizontal: boolean }) | undefined;
+  let gesture: (Point & { horizontal: boolean; mouse: boolean }) | undefined;
   const pointers = new Set<number>();
   const viewport = window.visualViewport;
   const touchEvents = 'TouchEvent' in window;
   const originalTouchAction = node.style.touchAction;
+  const originalUserSelect = node.style.userSelect;
   let suppressClickUntil = 0;
   let multipleTouches = false;
   const zoomed = () => (viewport?.scale ?? 1) > 1.01;
@@ -26,11 +28,13 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     return !control || control.hasAttribute('data-swipe-surface');
   }
   function reset() {
-    if (gesture) {
-      if (gesture.horizontal) suppressClickUntil = Date.now() + 450;
-      if (node.hasPointerCapture?.(gesture.id)) node.releasePointerCapture(gesture.id);
-    }
+    const current = gesture;
     gesture = undefined;
+    if (current) {
+      if (current.horizontal) suppressClickUntil = Date.now() + 450;
+      if (node.hasPointerCapture?.(current.id)) node.releasePointerCapture(current.id);
+    }
+    node.style.userSelect = originalUserSelect;
     options.drag?.(undefined);
   }
   function syncZoom() {
@@ -40,9 +44,10 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     wasZoomed = next;
     node.style.touchAction = touchEvents || next ? 'auto' : 'pan-y pinch-zoom';
   }
-  function start(point: Point, target: EventTarget | null) {
+  function start(point: Point, target: EventTarget | null, mouse = false) {
     if (!options.enabled || zoomed() || !surface(target)) return;
-    gesture = { ...point, horizontal: false };
+    gesture = { ...point, horizontal: false, mouse };
+    if (mouse) node.style.userSelect = 'none';
   }
   function movePoint(point: Point, event: Event, capture = false) {
     if (!gesture || gesture.id !== point.id) return;
@@ -88,7 +93,8 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     if (
       (touchEvents && e.pointerType === 'touch') ||
       e.button !== 0 ||
-      !['touch', 'pen'].includes(e.pointerType)
+      e.isPrimary === false ||
+      !(['touch', 'pen'].includes(e.pointerType) || (options.mouse && e.pointerType === 'mouse'))
     )
       return;
     pointers.add(e.pointerId);
@@ -96,10 +102,15 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
       reset();
       return;
     }
-    start(pointerPoint(e), e.target);
+    start(pointerPoint(e), e.target, e.pointerType === 'mouse');
   }
   function move(e: PointerEvent) {
     if (touchEvents && e.pointerType === 'touch') return;
+    if (gesture?.mouse && !(e.buttons & 1)) {
+      reset();
+      pointers.delete(e.pointerId);
+      return;
+    }
     movePoint(pointerPoint(e), e, true);
   }
   function up(e: PointerEvent) {
@@ -112,6 +123,25 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     if (touchEvents && e.pointerType === 'touch') return;
     pointers.delete(e.pointerId);
     if (gesture?.id === e.pointerId) reset();
+  }
+  // Capture only after horizontal intent, so a simple click keeps its button target.
+  // Before capture, a fast mouse movement/release can already be outside the photo.
+  function outsideMove(e: PointerEvent) {
+    if (gesture?.mouse && !e.composedPath().includes(node)) move(e);
+  }
+  function outsideUp(e: PointerEvent) {
+    if (gesture?.mouse && !e.composedPath().includes(node)) up(e);
+  }
+  function lostCapture(e: PointerEvent) {
+    pointers.delete(e.pointerId);
+    if (gesture?.id === e.pointerId) reset();
+  }
+  function blur() {
+    reset();
+    pointers.clear();
+  }
+  function nativeDrag(e: DragEvent) {
+    if (gesture?.mouse) e.preventDefault();
   }
   const touchPoint = (t: Touch): Point => ({ id: t.identifier, x: t.clientX, y: t.clientY });
   function touchStart(e: TouchEvent) {
@@ -148,6 +178,12 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
   node.addEventListener('pointermove', move, { passive: false });
   node.addEventListener('pointerup', up);
   node.addEventListener('pointercancel', cancel);
+  node.addEventListener('lostpointercapture', lostCapture);
+  node.addEventListener('dragstart', nativeDrag);
+  window.addEventListener('pointermove', outsideMove, { passive: false });
+  window.addEventListener('pointerup', outsideUp);
+  window.addEventListener('pointercancel', cancel);
+  window.addEventListener('blur', blur);
   if (touchEvents) {
     node.addEventListener('touchstart', touchStart, { passive: true });
     node.addEventListener('touchmove', touchMove, { passive: false });
@@ -158,7 +194,7 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
   return {
     update(next: Options) {
       options = next;
-      if (!next.enabled) {
+      if (!next.enabled || (gesture?.mouse && !next.mouse)) {
         reset();
         pointers.clear();
       }
@@ -171,6 +207,12 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
       node.removeEventListener('pointermove', move);
       node.removeEventListener('pointerup', up);
       node.removeEventListener('pointercancel', cancel);
+      node.removeEventListener('lostpointercapture', lostCapture);
+      node.removeEventListener('dragstart', nativeDrag);
+      window.removeEventListener('pointermove', outsideMove);
+      window.removeEventListener('pointerup', outsideUp);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('blur', blur);
       node.removeEventListener('touchstart', touchStart);
       node.removeEventListener('touchmove', touchMove);
       node.removeEventListener('touchend', touchEnd);

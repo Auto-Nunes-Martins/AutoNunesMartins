@@ -1067,6 +1067,28 @@
   outline-offset: 3px;
   box-shadow: 0 0 0 4px #0009;
 }
+/* Restoring the opener keeps its place in the tab order without a touch focus halo.
+   The existing modality switches back on keyboard input, including Tab after a tap. */
+.design.orbit.orbit-detail.public-detail.gallery-pointer-focus
+  :is(.photo-image-actions, .detail-photo-compare)
+  button:focus-visible {
+  outline: none;
+}
+.design.orbit.orbit-detail.public-detail.gallery-pointer-focus
+  .photo-image-actions
+  button:focus-visible {
+  box-shadow: none;
+}
+.design.orbit.orbit-detail.public-detail.gallery-pointer-focus
+  .detail-photo-compare
+  button:focus-visible {
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+}
+@media (max-width: 700px), (pointer: coarse) {
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step {
+    display: none;
+  }
+}
 @media (hover: hover) {
   .design.orbit.orbit-detail.public-detail
     .photo-image-actions

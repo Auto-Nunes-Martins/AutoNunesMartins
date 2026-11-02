@@ -34,6 +34,12 @@ const vehicles = Array.from({ length: 5 }, (_, i) => {
     description: 'Viatura de teste local.',
     transmission: 'MANUAL',
     availability: 'AVAILABLE',
+    specifications: {
+      equipment: [
+        'Ar condicionado automático',
+        'Sistema de navegação com informação de trânsito e integração de dispositivos móveis',
+      ],
+    },
     photos: [0, 1, 2].map(
       (n) => `/api/public/vehicles/${slug}/photos/${n}?v=${String(n + 1).repeat(64)}`,
     ),
@@ -153,7 +159,61 @@ try {
           () =>
             document.querySelector('.vehicle-photo .photo-rail-track')?.dataset.moving === 'false',
         );
-        await opener.click();
+        const stage = page.locator('.vehicle-photo-stage');
+        const expand = page.locator('.photo-expand');
+        const favorite = page.locator('.detail-photo-favorite button');
+        const compare = page.locator('.detail-photo-compare button');
+        const touch = width === 390 ? await context.newCDPSession(page) : undefined;
+        const activate = (button) => (width === 390 ? button.tap() : button.click());
+        const swipe = async (surface, direction) => {
+          await surface.scrollIntoViewIfNeeded();
+          const rect = await surface.boundingBox();
+          const x = rect.x + rect.width / 2 + direction * 90;
+          const y = rect.y + rect.height / 2;
+          if (touch) {
+            await touch.send('Input.dispatchTouchEvent', {
+              type: 'touchStart',
+              touchPoints: [{ x, y }],
+            });
+            for (let step = 1; step <= 8; step++)
+              await touch.send('Input.dispatchTouchEvent', {
+                type: 'touchMove',
+                touchPoints: [{ x: x - direction * step * 22.5, y: y + 2 }],
+              });
+            await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          } else {
+            await page.mouse.move(x, y);
+            await page.mouse.down();
+            await page.mouse.move(x - direction * 180, y + 2, { steps: 8 });
+            await page.mouse.up();
+          }
+          await surface.locator('.photo-rail-track').evaluate(async (rail) => {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            await Promise.all(
+              rail.getAnimations().map((animation) => animation.finished.catch(() => {})),
+            );
+          });
+        };
+        const inlineSelected = (index) => page.locator('.detail-thumbnails button').nth(index);
+        const equipment = page.locator('.public-story li').first();
+        assert.equal(
+          await equipment.evaluate((item) => getComputedStyle(item).fontSize),
+          width > 700 ? '16px' : '14px',
+        );
+        assert.ok(
+          await equipment.locator('..').evaluate((list) => list.scrollWidth <= list.clientWidth),
+        );
+        assert.equal(await stage.locator('.photo-next').isVisible(), width > 700);
+        await swipe(stage, 1);
+        assert.equal(await inlineSelected(1).getAttribute('aria-pressed'), 'true');
+        assert.equal(
+          await page.locator('dialog.gallery-dialog').isVisible(),
+          false,
+          'drag must not open fullscreen',
+        );
+        await swipe(stage, -1);
+        assert.equal(await inlineSelected(0).getAttribute('aria-pressed'), 'true');
+        await activate(expand);
         const dialog = page.locator('dialog.gallery-dialog');
         await dialog.waitFor({ state: 'visible' });
         const style = async (target) =>
@@ -180,16 +240,74 @@ try {
               );
           }
         };
-        const previous = dialog.getByRole('button', { name: 'Fotografia anterior', exact: true }),
-          next = dialog.getByRole('button', { name: 'Fotografia seguinte', exact: true }),
+        const previous = dialog.locator('.viewer-previous'),
+          next = dialog.locator('.viewer-next'),
           close = dialog.getByRole('button', { name: 'Fechar fotografia', exact: true });
+        assert.equal(await next.isVisible(), width > 700);
+        await activate(close);
+        await dialog.waitFor({ state: 'hidden' });
+        assert.equal(await expand.evaluate((button) => document.activeElement === button), true);
+        assert.equal((await style(expand)).outlineStyle, 'none');
+        assert.equal((await style(expand)).shadow, 'none');
+        for (const control of [favorite, compare]) {
+          await activate(control);
+          assert.equal(await control.getAttribute('aria-pressed'), 'true');
+          assert.equal((await style(control)).outlineStyle, 'none');
+          const pointerShadow = (await style(control)).shadow;
+          await control.evaluate((button) => button.blur());
+          assert.equal(
+            pointerShadow,
+            (await style(control)).shadow,
+            'no additional pointer focus halo',
+          );
+        }
+        await page.keyboard.press('Tab');
+        await expand.focus();
+        assert.equal((await style(expand)).outlineStyle, 'solid');
+        await page.keyboard.press('Tab');
+        assert.equal(await favorite.evaluate((button) => document.activeElement === button), true);
+        assert.equal((await style(favorite)).outlineStyle, 'solid');
+        await page.keyboard.press('Tab');
+        assert.equal(await compare.evaluate((button) => document.activeElement === button), true);
+        assert.equal((await style(compare)).outlineStyle, 'solid');
+        await expand.focus();
+        await page.keyboard.press('Enter');
+        await dialog.waitFor({ state: 'visible' });
+        await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'hidden' });
+        assert.equal(await expand.evaluate((button) => document.activeElement === button), true);
+        assert.equal(
+          (await style(expand)).outlineStyle,
+          'solid',
+          'keyboard return keeps focus visible',
+        );
+        await page.waitForTimeout(500);
+        await activate(opener);
+        await dialog.waitFor({ state: 'visible' });
+        await swipe(dialog.locator('.viewer-stage'), 1);
+        assert.equal(
+          await dialog
+            .getByRole('button', { name: 'Ver fotografia 2', exact: true })
+            .getAttribute('aria-pressed'),
+          'true',
+        );
+        await swipe(dialog.locator('.viewer-stage'), -1);
+        assert.equal(
+          await dialog
+            .getByRole('button', { name: 'Ver fotografia 1', exact: true })
+            .getAttribute('aria-pressed'),
+          'true',
+        );
+        assert.equal(await dialog.isVisible(), true, 'horizontal drag must not dismiss fullscreen');
         assert.equal(await previous.getAttribute('aria-disabled'), 'true');
-        await page.mouse.move(0, 0);
-        const disabled = await style(previous);
-        await previous.hover();
-        await page.waitForTimeout(200);
-        assert.equal((await style(previous)).background, disabled.background);
-        for (const control of [next, close]) {
+        if (width > 700) {
+          await page.mouse.move(0, 0);
+          const disabled = await style(previous);
+          await previous.hover();
+          await page.waitForTimeout(200);
+          assert.equal((await style(previous)).background, disabled.background);
+        }
+        for (const control of width > 700 ? [next, close] : [close]) {
           await page.mouse.move(0, 0);
           await page.waitForTimeout(200);
           const base = await style(control);
@@ -203,15 +321,20 @@ try {
           assert.ok(bounds.width >= 44 && bounds.height >= 44);
           if (reducedMotion === 'reduce') assert.equal(hover.transition, '0s');
         }
-        await next.hover();
-        await page.mouse.down();
-        const active = await style(next);
-        neutral(active);
-        await page.mouse.up();
-        assert.equal(await previous.getAttribute('aria-disabled'), 'false');
-        await previous.hover();
-        await page.waitForTimeout(180);
-        neutral(await style(previous));
+        if (width > 700) {
+          await next.hover();
+          await page.mouse.down();
+          const active = await style(next);
+          neutral(active);
+          await page.mouse.up();
+          assert.equal(await previous.getAttribute('aria-disabled'), 'false');
+          await previous.hover();
+          await page.waitForTimeout(180);
+          neutral(await style(previous));
+        } else {
+          await swipe(dialog.locator('.viewer-stage'), 1);
+          assert.equal(await previous.getAttribute('aria-disabled'), 'false');
+        }
         const thumb = dialog.getByRole('button', { name: 'Ver fotografia 1', exact: true });
         await thumb.hover();
         await page.waitForTimeout(180);
