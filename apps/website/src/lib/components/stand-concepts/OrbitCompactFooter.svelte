@@ -405,6 +405,22 @@
     .condensed .baseline {
       margin-top: 12px;
     }
+    .baseline .legal-links {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, auto);
+      grid-auto-flow: column;
+      column-gap: 16px;
+      row-gap: 0;
+      padding-block: 4px;
+      width: 100%;
+    }
+    .baseline .legal-links a {
+      min-width: 0;
+      min-height: 36px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
   }
   @media (max-width: 480px) {
     .condensed .baseline {
