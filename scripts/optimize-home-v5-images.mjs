@@ -42,6 +42,12 @@ const encoding = {
   'curves-wide': { webp: 88, avif: 65 },
   'curves-portrait': { webp: 88, avif: 65 },
 };
+// Only these delivery variants passed the native-density rendered comparison.
+// Preserve the previous recipe for unreviewed sizes and every WebP fallback.
+const reviewedAvif = {
+  'forest-wide': { 3840: 50 },
+  'catalog-portrait': { 480: 30, 810: 30, 960: 30 },
+};
 const reviewedOnly = process.argv.includes('--reviewed');
 const rows =
   process.argv.includes('--module-only') || only || reviewedOnly
@@ -68,8 +74,8 @@ for (const [name, source, widths] of process.argv.includes('--module-only') ? []
         format === 'webp'
           ? base.clone().webp({ quality: quality.webp, effort: 6, smartSubsample: true })
           : base.clone().avif({
-              quality: quality.avif,
-              effort: 5,
+              quality: reviewedAvif[name]?.[width] ?? quality.avif,
+              effort: reviewedAvif[name]?.[width] ? 8 : 5,
               chromaSubsampling: ['forest-wide', 'forest-portrait', 'catalog-portrait'].includes(
                 name,
               )
