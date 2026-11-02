@@ -217,7 +217,7 @@ it('cancels mouse navigation on lost capture, cancellation, lost button, blur or
 it('abandons multi-finger and cancelled gestures so pinch cannot change a photo', () => {
   const { pointer, next } = setup();
   pointer('pointerdown', 240, 100);
-  pointer('pointerdown', 280, 100, { pointerId: 2 });
+  pointer('pointerdown', 280, 100, { pointerId: 2, isPrimary: false });
   pointer('pointermove', 100, 100);
   pointer('pointerup', 100, 100);
   pointer('pointerup', 280, 100, { pointerId: 2 });

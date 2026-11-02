@@ -93,7 +93,7 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     if (
       (touchEvents && e.pointerType === 'touch') ||
       e.button !== 0 ||
-      e.isPrimary === false ||
+      (e.pointerType === 'mouse' && e.isPrimary === false) ||
       !(['touch', 'pen'].includes(e.pointerType) || (options.mouse && e.pointerType === 'mouse'))
     )
       return;
