@@ -52,7 +52,7 @@
 
   const base = () => (loops ? -(items.length + first) * step : 0);
   const reset = () => {
-    if (track) track.style.transform = `translateX(${base()}px)`;
+    if (track) track.style.transform = `translate3d(${base()}px, 0, 0)`;
   };
   async function move(direction: number, from = base(), velocity = 0) {
     if (!loops || !step) return;
@@ -86,8 +86,8 @@
     const duration = reduced ? 0 : direction === 0 ? 160 : movementDuration;
     animation = track.animate(
       [
-        { transform: `translateX(${from}px)` },
-        { transform: `translateX(${base() - direction * step}px)` },
+        { transform: `translate3d(${from}px, 0, 0)` },
+        { transform: `translate3d(${base() - direction * step}px, 0, 0)` },
       ],
       { duration, easing: movementEasing, fill: 'forwards' },
     );
@@ -134,11 +134,17 @@
     void move(forward <= items.length / 2 ? forward : forward - items.length);
   }
   function down(event: PointerEvent) {
-    if (!loops || busy || event.button !== 0) return;
-    if (event.target instanceof Element && event.target.closest('button, input, select, textarea'))
+    if (event.button !== 0) return;
+    // A new press is never the compatibility click from the previous drag,
+    // including a tap arriving while that drag is still settling.
+    suppressClick = false;
+    if (!loops || busy) return;
+    if (
+      event.target instanceof Element &&
+      event.target.closest('input, select, textarea, [contenteditable="true"]')
+    )
       return;
     if (event.pointerType === 'mouse') event.preventDefault();
-    suppressClick = false;
     pointer = {
       id: event.pointerId,
       x: event.clientX,
@@ -168,7 +174,7 @@
     event.preventDefault();
     const limit = (items.length - 1) * step;
     pointer.delta = Math.max(-limit, Math.min(limit, dx));
-    track.style.transform = `translateX(${base() + pointer.delta}px)`;
+    track.style.transform = `translate3d(${base() + pointer.delta}px, 0, 0)`;
     suppressClick = true;
   }
   function up(event: PointerEvent) {
@@ -185,12 +191,12 @@
     void move(nearest, base() + gesture.delta, velocity);
   }
   function cancel() {
+    suppressClick = pointer?.dragging ?? suppressClick;
     pointer = undefined;
-    suppressClick = false;
     reset();
   }
   function click(event: MouseEvent) {
-    if (suppressClick) {
+    if (suppressClick && event.detail !== 0) {
       event.preventDefault();
       event.stopPropagation();
       suppressClick = false;
@@ -265,6 +271,7 @@
   <div
     class="carousel"
     class:looping={loops}
+    data-moving={busy || pointer?.dragging || undefined}
     role="region"
     aria-roledescription="carrossel"
     aria-label="Viaturas com preços próximos"
@@ -497,6 +504,8 @@
     );
   }
   .track {
+    /* Keep the card/control paint layer across capture release and WAAPI settle. */
+    will-change: transform;
     display: flex;
     align-items: stretch;
     gap: var(--gap);

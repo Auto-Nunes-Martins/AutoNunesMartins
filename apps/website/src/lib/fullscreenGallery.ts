@@ -43,18 +43,24 @@ export function fullscreenGallery(dialog: HTMLDialogElement, options?: { close: 
       top = rect.top + (rect.height - height) / 2;
     return point.x < left || point.x > left + width || point.y < top || point.y > top + height;
   }
+  const dismissDistance = () => Math.max(100, Math.min(180, dialog.clientHeight * 0.2));
   function pose(offset: number, dragging = false) {
     dialog.toggleAttribute('data-dismiss-dragging', dragging);
     dialog.style.setProperty('--viewer-dismiss-y', offset + 'px');
+    dialog.style.setProperty(
+      '--viewer-photo-opacity',
+      String(1 - 0.55 * Math.min(1, Math.max(0, offset) / dismissDistance())),
+    );
     dialog.style.setProperty(
       '--viewer-dismiss-opacity',
       String(Math.max(0, 1 - offset / Math.max(240, dialog.clientHeight * 0.65))),
     );
   }
-  function reset() {
+  function reset(restore = true) {
     if (gesture?.axis || multiple) suppressUntil = Date.now() + 500;
     gesture = undefined;
-    pose(0);
+    if (restore) pose(0);
+    else dialog.toggleAttribute('data-dismiss-dragging', false);
   }
   function start(point: Point, target: EventTarget | null) {
     if (!dialog.open || closeTimer || zoomed() || !surface(target)) return;
@@ -100,9 +106,10 @@ export function fullscreenGallery(dialog: HTMLDialogElement, options?: { close: 
     const dismiss =
       current.axis === 'down' &&
       !zoomed() &&
-      (dy > Math.max(100, Math.min(180, dialog.clientHeight * 0.2)) ||
-        (dy > 55 && recent && current.velocity > 0.65));
-    reset();
+      (dy > dismissDistance() || (dy > 55 && recent && current.velocity > 0.65));
+    // Hand the current pose to the closing animation; resetting here flashes
+    // the photo opaque and jumps it upwards before that animation can capture it.
+    reset(!dismiss);
     if (dismiss) {
       if (options?.close) options.close();
       else if (reduced.matches) close();
@@ -243,6 +250,7 @@ export function fullscreenGallery(dialog: HTMLDialogElement, options?: { close: 
       dialog.removeAttribute('data-dismiss-dragging');
       dialog.style.removeProperty('--viewer-dismiss-y');
       dialog.style.removeProperty('--viewer-dismiss-opacity');
+      dialog.style.removeProperty('--viewer-photo-opacity');
     },
   };
 }

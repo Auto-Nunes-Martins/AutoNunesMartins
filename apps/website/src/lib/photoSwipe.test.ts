@@ -214,6 +214,35 @@ it('cancels mouse navigation on lost capture, cancellation, lost button, blur or
   expect(next).not.toHaveBeenCalled();
 });
 
+it('commits a short deliberate detail drag while keeping tiny movements as taps', () => {
+  const { action, pointer, next, previous, click } = setup();
+  action.update({ enabled: true, mouse: true, commitDistance: 24, next, previous });
+  pointer('pointerdown', 240, 100, { pointerType: 'mouse' });
+  pointer('pointermove', 210, 102, { pointerType: 'mouse' });
+  pointer('pointerup', 210, 102, { pointerType: 'mouse' });
+  expect(next).toHaveBeenCalledOnce();
+  expect(click()).toBe(true);
+});
+
+it('does not cancel a swipe when capture loss bubbles from its child', () => {
+  const { node, action, pointer, next, previous } = setup();
+  action.update({ enabled: true, mouse: true, next, previous });
+  pointer('pointerdown', 240, 100, { pointerType: 'mouse' });
+  pointer('pointermove', 100, 100, { pointerType: 'mouse' });
+  pointer('lostpointercapture', 100, 100, { pointerType: 'mouse' }, new Surface());
+  pointer('pointerup', 100, 100, { pointerType: 'mouse' });
+  expect(next).toHaveBeenCalledOnce();
+});
+
+it('lets touchend commit even when native pointer capture ends with the same touch identifier', () => {
+  const { node, pointer, next } = setup(true);
+  touch(node, 'touchstart', [[240, 100, 1]]);
+  touch(node, 'touchmove', [[100, 100, 1]]);
+  pointer('lostpointercapture', 100, 100, { pointerType: 'touch', pointerId: 1 });
+  touch(node, 'touchend', [], [[100, 100, 1]]);
+  expect(next).toHaveBeenCalledOnce();
+});
+
 it('abandons multi-finger and cancelled gestures so pinch cannot change a photo', () => {
   const { pointer, next } = setup();
   pointer('pointerdown', 240, 100);

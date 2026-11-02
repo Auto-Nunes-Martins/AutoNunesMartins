@@ -202,7 +202,10 @@ export function animateGalleryOpening(
   // carrying a fully opaque duplicate all the way back to its crop.
   const frameKeys = [
       { ...pixels(origin), opacity: closing ? 0 : 1 },
-      { ...pixels(end), opacity: 1 },
+      {
+        ...pixels(end),
+        opacity: closing ? Number(dialog.style.getPropertyValue('--viewer-photo-opacity') || 1) : 1,
+      },
     ],
     paintKeys = [pixels(canvasOrigin), pixels(canvasEnd)];
   const animations = [

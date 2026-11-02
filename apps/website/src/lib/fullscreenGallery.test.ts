@@ -172,6 +172,46 @@ it('suppresses the synthetic click after a cancelled drag', () => {
   expect(dialog.close).not.toHaveBeenCalled();
 });
 
+it('fades the photo continuously to a visible floor and restores it as the finger returns', () => {
+  const { dialog, send, values } = setup();
+  send('pointerdown');
+  send('pointermove', 200, 390);
+  expect(Number(values.get('--viewer-photo-opacity'))).toBeCloseTo(0.8625);
+  send('pointermove', 200, 510);
+  expect(Number(values.get('--viewer-photo-opacity'))).toBeCloseTo(0.45);
+  send('pointermove', 200, 750);
+  expect(Number(values.get('--viewer-photo-opacity'))).toBeCloseTo(0.45);
+  vi.advanceTimersByTime(1000);
+  expect(dialog.close).not.toHaveBeenCalled();
+  expect(Number(values.get('--viewer-photo-opacity'))).toBeCloseTo(0.45);
+  send('pointermove', 200, 390);
+  expect(Number(values.get('--viewer-photo-opacity'))).toBeCloseTo(0.8625);
+  send('pointermove', 200, 350);
+  expect(Number(values.get('--viewer-photo-opacity'))).toBe(1);
+  send('pointerup', 200, 350);
+  expect(dialog.close).not.toHaveBeenCalled();
+  send('pointerdown');
+  send('pointermove', 200, 500);
+  send('pointercancel');
+  expect(Number(values.get('--viewer-photo-opacity'))).toBe(1);
+});
+
+it('hands the faded pose to custom dismissal without a bright reset on release', () => {
+  const { dialog, send, values } = setup();
+  cleanup!();
+  const close = vi.fn();
+  const action = fullscreenGallery(dialog as unknown as HTMLDialogElement, { close });
+  cleanup = action.destroy;
+  send('pointerdown');
+  send('pointermove', 200, 540);
+  send('pointerup', 200, 540);
+  expect(close).toHaveBeenCalledOnce();
+  expect(Number(values.get('--viewer-photo-opacity'))).toBeCloseTo(0.45);
+  expect(values.get('--viewer-dismiss-y')).toBe('190px');
+  dialog.dispatchEvent(new Event('close'));
+  expect(Number(values.get('--viewer-photo-opacity'))).toBe(1);
+});
+
 it('accepts a short deliberate flick but rejects the same distance after a pause', () => {
   let now = 0;
   vi.stubGlobal('performance', { now: () => now });

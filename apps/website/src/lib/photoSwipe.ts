@@ -4,6 +4,7 @@ type Options = {
   next: () => void;
   drag?: (offset: number | undefined) => void;
   mouse?: boolean;
+  commitDistance?: number;
 };
 type Point = { id: number; x: number; y: number };
 
@@ -79,7 +80,7 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     reset();
     if (!current.horizontal) return;
     const dx = point.x - current.x;
-    const threshold = Math.max(36, Math.min(72, node.clientWidth * 0.12));
+    const threshold = options.commitDistance ?? Math.max(36, Math.min(72, node.clientWidth * 0.12));
     if (!options.enabled || zoomed() || Math.abs(dx) < threshold) return;
     if (dx < 0) options.next();
     else options.previous();
@@ -133,6 +134,9 @@ export function photoSwipe(node: HTMLElement, initial: Options) {
     if (gesture?.mouse && !e.composedPath().includes(node)) up(e);
   }
   function lostCapture(e: PointerEvent) {
+    // Capture transfer from a child is not cancellation of our surface. Native
+    // touch capture can also end before touchend, which owns that gesture.
+    if (e.target !== node || (touchEvents && e.pointerType === 'touch')) return;
     pointers.delete(e.pointerId);
     if (gesture?.id === e.pointerId) reset();
   }

@@ -257,7 +257,10 @@ html:has(dialog.gallery-dialog[open]) {
 /* Move the photo with the finger while controls and page focus stay in place. */
 .design.orbit .gallery-dialog .viewer-stage > :is(.photo-rail, img) {
   transform: translate3d(0, var(--viewer-dismiss-y, 0px), 0);
-  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  opacity: var(--viewer-photo-opacity, 1);
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 180ms ease-out;
 }
 .design.orbit .gallery-dialog[data-dismiss-dragging] .viewer-stage > :is(.photo-rail, img) {
   transition: none;
