@@ -48,7 +48,8 @@ export async function cleanupLateVehicleUpload(vehicleId: string, path: string):
   // Wait for an older sweep before installing a new durable job, so that sweep
   // cannot delete the retry inventory for an upload it never saw.
   await running.get(vehicleId);
-  await prisma.vehiclePhotoCleanup.upsert({ where: { vehicleId },
+  await prisma.vehiclePhotoCleanup.upsert({
+    where: { vehicleId },
     create: { vehicleId, photos: [path] },
     update: { photos: { push: path }, nextAttemptAt: new Date() },
   });
@@ -76,15 +77,23 @@ async function clean(vehicleId: string): Promise<void> {
       ]);
       // Namespace ownership alone is not permission to remove a file referenced
       // by another record (including legacy or restored public data).
-      if (photos.length && await prisma.vehicle.findFirst({
-        where: { OR: [{ photos: { hasSome: photos } }, { publicPhotoPaths: { hasSome: photos } }] },
-        select: { id: true },
-      })) throw new Error('Photo still referenced; cleanup deferred');
+      if (
+        photos.length &&
+        (await prisma.vehicle.findFirst({
+          where: {
+            OR: [{ photos: { hasSome: photos } }, { publicPhotoPaths: { hasSome: photos } }],
+          },
+          select: { id: true },
+        }))
+      )
+        throw new Error('Photo still referenced; cleanup deferred');
       // Bound each Storage request, including generated variants and the sidecar.
       for (let i = 0; i < photos.length; i += 50) await deleteObjects(photos.slice(i, i + 50));
       // A late upload in another process may extend the job while this sweep runs.
       // Only acknowledge the exact inventory that was read; newer work must survive.
-      await prisma.vehiclePhotoCleanup.deleteMany({ where: { vehicleId, photos: { equals: job.photos } } });
+      await prisma.vehiclePhotoCleanup.deleteMany({
+        where: { vehicleId, photos: { equals: job.photos } },
+      });
     } catch {
       // Keep the complete inventory on partial failures. Exact-object removal is idempotent.
       await prisma.vehiclePhotoCleanup.updateMany({

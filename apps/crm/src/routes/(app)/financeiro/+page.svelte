@@ -128,7 +128,6 @@
           De
         </span>
         <DateInput
-
           value={data.expensesFilters.dateFrom ?? ''}
           onchange={(e) => setParam('dateFrom', e.currentTarget.value || undefined)}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -142,7 +141,6 @@
           Até
         </span>
         <DateInput
-
           value={data.expensesFilters.dateTo ?? ''}
           onchange={(e) => setParam('dateTo', e.currentTarget.value || undefined)}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -240,7 +238,6 @@
           </span>
           <DateInput
             name="date"
-
             required
             value={todayISO}
             class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -270,14 +267,16 @@
           Sem despesas registadas
         </div>
       {:else}
-        <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard access to native horizontal scrolling.) -->
+        <!-- Keyboard access to native horizontal scrolling. -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
           class="expense-table-wrap overflow-x-auto"
           tabindex="0"
           role="region"
           aria-label="Despesas operacionais"
         >
-          <!-- svelte-ignore a11y_no_redundant_roles (Preserve table semantics when mobile rows use CSS grid.) -->
+          <!-- Preserve table semantics when mobile rows use CSS grid. -->
+          <!-- svelte-ignore a11y_no_redundant_roles -->
           <table role="table" class="crm-table expense-table w-full text-[13px] min-w-[640px]">
             <thead>
               <tr class="border-b border-[var(--color-border)]">
@@ -394,7 +393,6 @@
                           </span>
                           <DateInput
                             name="date"
-
                             required
                             value={e.date.slice(0, 10)}
                             class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"

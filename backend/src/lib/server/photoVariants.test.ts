@@ -1,6 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import sharp from 'sharp';
-import { photoReadDiagnostics as reads } from './photoReadDiagnostics.js';
 // These tests isolate cache/storage behaviour with synthetic byte strings.
 // Real container sanitization and public fallback are covered in photoDeliveryMetadata.test.ts.
 vi.mock('./photoMetadata.js', () => ({ sanitizePhotoMetadata: async (input: Buffer) => input }));
@@ -12,7 +11,7 @@ const mock = vi.hoisted(() => ({
   downloads: [] as string[],
   pause: undefined as undefined | (() => Promise<void>),
 }));
-vi.mock('../data/storage.js', () => ({
+vi.mock('../data/storageClient.js', () => ({
   getBucketName: () => 'private',
   getSupabase: () => ({
     storage: {
@@ -48,7 +47,6 @@ import {
   variantRoot,
   preferredVariantPath,
   PHOTO_ENCODING_VERSION,
-  preparePublicThumbnails,
 } from './photoVariants';
 const path = 'cabcdefghijklmnopqrstuvwx/12345678-1234-1234-1234-123456789abc.jpg';
 beforeEach(() => {
@@ -62,7 +60,6 @@ beforeEach(() => {
 });
 describe('private reusable photo variants', () => {
   it('observes one cold read shared by concurrent callers and no metadata work on its cache hit', async () => {
-    vi.stubEnv('RUNTIME_DIAGNOSTICS', 'true');
     const metadata = vi.spyOn(sharp.prototype, 'metadata');
     try {
       const bytes = await sharp({
@@ -73,37 +70,19 @@ describe('private reusable photo variants', () => {
       mock.objects.set(variantPath(path, 320), { buffer: bytes, type: 'image/webp' });
       let release!: () => void;
       mock.pause = () => new Promise<void>((resolve) => (release = resolve));
-      const before = reads.snapshot();
       const first = readPhotoBytes(path, 320);
       await vi.waitFor(() => expect(mock.downloads).toHaveLength(1));
       const second = readPhotoBytes(path, 320);
       release();
       await Promise.all([first, second]);
       mock.pause = undefined;
-      const cold = reads.snapshot();
-      expect(cold.deduplicatedReads - before.deduplicatedReads).toBe(1);
-      expect(
-        cold.phases.derivativeDownload.started - before.phases.derivativeDownload.started,
-      ).toBe(1);
-      expect(
-        cold.phases.derivativeMetadata.started - before.phases.derivativeMetadata.started,
-      ).toBe(1);
+
       await readPhotoBytes(path, 320);
-      expect(reads.snapshot().cacheHits - cold.cacheHits).toBe(1);
-      expect(reads.snapshot().phases).toEqual(cold.phases);
+
       expect(metadata).toHaveBeenCalledTimes(1);
       expect(mock.downloads).toHaveLength(1);
-      forgetPhotoVariants(path);
-      const warm = reads.snapshot();
-      preparePublicThumbnails([path]);
-      await vi.waitFor(() =>
-        expect(reads.snapshot().warmupsCompleted - warm.warmupsCompleted).toBe(1),
-      );
-      expect(reads.snapshot().warmupsStarted - warm.warmupsStarted).toBe(1);
-      expect(reads.snapshot().speculativeReads - warm.speculativeReads).toBe(1);
     } finally {
       metadata.mockRestore();
-      vi.unstubAllEnvs();
     }
   });
   it('validates generated pixels before publication but does not decode them again on delivery', async () => {
@@ -143,40 +122,9 @@ describe('private reusable photo variants', () => {
       expect((await readPhotoBytes(path, 320))?.buffer.toString()).toBe('original');
     },
   );
-  it('warms only nine base thumbnails with two process-wide workers and shares foreground reads', async () => {
-    const paths = Array.from({ length: 12 }, (_, i) => `warm/photo-${i}.jpg`);
-    const buffer = await sharp({
-      create: { width: 320, height: 200, channels: 3, background: 'blue' },
-    })
-      .webp()
-      .toBuffer();
-    for (const p of paths) mock.objects.set(variantPath(p, 320), { buffer, type: 'image/webp' });
-    let release!: () => void;
-    const barrier = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    mock.pause = () => barrier;
-    try {
-      preparePublicThumbnails(paths);
-      preparePublicThumbnails(paths); // A second visitor must not create another worker pool.
-      await vi.waitFor(() => expect(mock.downloads).toHaveLength(2));
-      const foreground = readPhotoBytes(paths[0]!, 320);
-      release();
-      expect((await foreground)?.buffer.equals(buffer)).toBe(true);
-      await vi.waitFor(() => expect(mock.downloads).toHaveLength(9));
-      // Drain workers before resetting the mocked storage.
-      await Promise.all(paths.slice(0, 9).map((p) => readPhotoBytes(p, 320)));
-      expect(new Set(mock.downloads).size).toBe(9);
-      expect(mock.downloads.every((p) => p.endsWith('/320.webp'))).toBe(true);
-    } finally {
-      release();
-      for (const p of paths) forgetPhotoVariants(p);
-    }
-  });
-  it('never speculates a legacy master; a joining real request can still use its fallback', async () => {
-    const p = 'warm/legacy.jpg';
+  it('downloads a legacy master only when its requested derivative needs a fallback', async () => {
+    const p = 'legacy/photo.jpg';
     mock.objects.set(p, { buffer: Buffer.from('legacy'), type: 'image/jpeg' });
-    preparePublicThumbnails([p]);
     const foreground = await readPhotoBytes(p, 320);
     expect(foreground?.buffer.toString()).toBe('legacy');
     expect(mock.downloads.filter((file) => file === p)).toHaveLength(1);
@@ -283,25 +231,7 @@ describe('private reusable photo variants', () => {
     expect((await readPhotoBytes(path, 320))?.buffer.toString()).toBe('new');
     expect(mock.downloads.filter((download) => download === path)).toHaveLength(2);
   });
-  it('reports cold storage and warm pixel-cache timings without changing the delivered bytes', async () => {
-    const buffer = await sharp({ create: { width: 320, height: 240, channels: 3, background: 'blue' } }).webp().toBuffer();
-    mock.objects.set(variantPath(path, 320), { buffer, type: 'image/webp' });
-    const timing = vi.fn();
-    const cold = await readPhotoBytes(path, 320, timing);
-    expect(cold?.buffer.equals(buffer)).toBe(true);
-    expect(timing.mock.calls.map(([stage]) => stage)).toEqual(expect.arrayContaining([
-      'photo-cache-miss',
-      'photo-manifest',
-      'photo-storage',
-    ]));
-    expect(timing.mock.calls.every(([, ms]) => Number.isFinite(ms) && ms >= 0)).toBe(true);
-    const downloads = mock.downloads.length;
-    timing.mockClear();
-    const warm = await readPhotoBytes(path, 320, timing);
-    expect(warm?.buffer.equals(buffer)).toBe(true);
-    expect(timing.mock.calls).toEqual([['photo-cache-hit', 0]]);
-    expect(mock.downloads).toHaveLength(downloads);
-  });
+
   it('shares concurrent missing-manifest reads, caches legacy misses and invalidates explicitly', async () => {
     await Promise.all(Array.from({ length: 10 }, () => readVariantManifest(path)));
     expect(mock.downloads).toEqual([manifestPath(path)]);
@@ -433,51 +363,61 @@ describe('private reusable photo variants', () => {
     expect(await preferredVariantPath(path, 1074)).toBe(variantPath(path, 1280));
     expect(mock.objects.get(path)!.buffer.equals(input)).toBe(true);
   });
-  it.each([undefined, 1, 2])('upgrades complete recipe %s rather than silently reusing its compression', async (encodingVersion) => {
-    const input = await sharp({
-      create: { width: 1000, height: 700, channels: 3, background: '#385b61' },
-    })
-      .jpeg()
-      .toBuffer();
-    const built = await ensurePhotoVariants(path, input);
-    const old = { ...built.manifest, encodingVersion };
-    const encoded = Buffer.from(JSON.stringify(old)).toString('base64');
-    const sidecar = await sharp({
-      create: { width: 1, height: 1, channels: 3, background: '#fff' },
-    })
-      .webp({ lossless: true })
-      .withXmp(
-        `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:anm="urn:anm:photo-variants:v1"><anm:manifest>${encoded}</anm:manifest></rdf:Description></rdf:RDF></x:xmpmeta>`,
-      )
-      .toBuffer();
-    mock.objects.set(manifestPath(path), { buffer: sidecar, type: 'image/webp' });
-    forgetPhotoVariants(path);
-    const upgraded = await ensurePhotoVariants(path, input);
-    expect(upgraded.reused).toBe(false);
-    expect(upgraded.manifest.encodingVersion).toBe(PHOTO_ENCODING_VERSION);
-    expect(mock.uploads.at(-1)).toBe(manifestPath(path));
-    const uploads = mock.uploads.length;
-    forgetPhotoVariants(path);
-    expect((await ensurePhotoVariants(path, input)).reused).toBe(true);
-    expect(mock.uploads).toHaveLength(uploads);
-  });
+  it.each([undefined, 1, 2])(
+    'upgrades complete recipe %s rather than silently reusing its compression',
+    async (encodingVersion) => {
+      const input = await sharp({
+        create: { width: 1000, height: 700, channels: 3, background: '#385b61' },
+      })
+        .jpeg()
+        .toBuffer();
+      const built = await ensurePhotoVariants(path, input);
+      const old = { ...built.manifest, encodingVersion };
+      const encoded = Buffer.from(JSON.stringify(old)).toString('base64');
+      const sidecar = await sharp({
+        create: { width: 1, height: 1, channels: 3, background: '#fff' },
+      })
+        .webp({ lossless: true })
+        .withXmp(
+          `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:anm="urn:anm:photo-variants:v1"><anm:manifest>${encoded}</anm:manifest></rdf:Description></rdf:RDF></x:xmpmeta>`,
+        )
+        .toBuffer();
+      mock.objects.set(manifestPath(path), { buffer: sidecar, type: 'image/webp' });
+      forgetPhotoVariants(path);
+      const upgraded = await ensurePhotoVariants(path, input);
+      expect(upgraded.reused).toBe(false);
+      expect(upgraded.manifest.encodingVersion).toBe(PHOTO_ENCODING_VERSION);
+      expect(mock.uploads.at(-1)).toBe(manifestPath(path));
+      const uploads = mock.uploads.length;
+      forgetPhotoVariants(path);
+      expect((await ensurePhotoVariants(path, input)).reused).toBe(true);
+      expect(mock.uploads).toHaveLength(uploads);
+    },
+  );
 
   it('reduces transfer of detailed photos while keeping the decoded derivative close to the legacy recipe', async () => {
-    const width = 1400, height = 1000;
+    const width = 1400,
+      height = 1000;
     const pixels = Buffer.alloc(width * height * 3);
     let seed = 123456;
-    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      const noise = (seed >>> 24) / 12;
-      const i = (y * width + x) * 3;
-      pixels[i] = 95 + Math.sin(x / 13) * 45 + noise;
-      pixels[i + 1] = 80 + Math.sin(y / 19) * 55 + noise;
-      pixels[i + 2] = 65 + Math.sin((x + y) / 31) * 45 + noise;
-    }
-    const input = await sharp(pixels, { raw: { width, height, channels: 3 } }).png().toBuffer();
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        const noise = (seed >>> 24) / 12;
+        const i = (y * width + x) * 3;
+        pixels[i] = 95 + Math.sin(x / 13) * 45 + noise;
+        pixels[i + 1] = 80 + Math.sin(y / 19) * 55 + noise;
+        pixels[i + 2] = 65 + Math.sin((x + y) / 31) * 45 + noise;
+      }
+    const input = await sharp(pixels, { raw: { width, height, channels: 3 } })
+      .png()
+      .toBuffer();
     const result = await buildPhotoVariants(input);
-    const current = result.files.find(file => file.width === 800)!.buffer;
-    const legacy = await sharp(input).resize({ width: 800 }).webp({ quality: 90, effort: 6, smartSubsample: true }).toBuffer();
+    const current = result.files.find((file) => file.width === 800)!.buffer;
+    const legacy = await sharp(input)
+      .resize({ width: 800 })
+      .webp({ quality: 90, effort: 6, smartSubsample: true })
+      .toBuffer();
     expect(current.length).toBeLessThan(legacy.length * 0.9);
     const a = await sharp(current).removeAlpha().raw().toBuffer();
     const b = await sharp(legacy).removeAlpha().raw().toBuffer();

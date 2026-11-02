@@ -19,19 +19,30 @@
     if (!browser || type !== 'link' || !to || to.url.origin !== location.origin) return;
     const match = /^\/viaturas\/([^/]+)$/.exec(to.url.pathname);
     if (match?.[1] && match[1].length <= 180 && slugPattern.test(match[1])) {
-      const links = [...document.querySelectorAll<HTMLAnchorElement>('a[data-photo-count]')]
-        .filter(link => link.origin === location.origin && link.pathname === to.url.pathname);
+      const links = [...document.querySelectorAll<HTMLAnchorElement>('a[data-photo-count]')].filter(
+        (link) => link.origin === location.origin && link.pathname === to.url.pathname,
+      );
       const focusedCard = document.activeElement?.closest('.vehicle-card');
-      const card = links.find(link => focusedCard?.contains(link)) ?? links.find(link => {
-        const bounds = link.getBoundingClientRect();
-        return bounds.bottom > 0 && bounds.top < innerHeight && bounds.right > 0 && bounds.left < innerWidth;
-      }) ?? links[0];
+      const card =
+        links.find((link) => focusedCard?.contains(link)) ??
+        links.find((link) => {
+          const bounds = link.getBoundingClientRect();
+          return (
+            bounds.bottom > 0 &&
+            bounds.top < innerHeight &&
+            bounds.right > 0 &&
+            bounds.left < innerWidth
+          );
+        }) ??
+        links[0];
       const count = card ? Number(card.dataset.photoCount) : undefined;
-      const decodedCard=captureCardPhoto(card?.querySelector('img:not([aria-hidden="true"])'));
-      warmNavigationThumbnails(match[1], innerWidth, devicePixelRatio, count,decodedCard);
+      const decodedCard = captureCardPhoto(card?.querySelector('img:not([aria-hidden="true"])'));
+      warmNavigationThumbnails(match[1], innerWidth, devicePixelRatio, count, decodedCard);
     }
   });
-  afterNavigate(({ type, to }) => { if (to) anchors?.afterNavigate(type, to.url); });
+  afterNavigate(({ type, to }) => {
+    if (to) anchors?.afterNavigate(type, to.url);
+  });
   import { comparisonContext, createComparison, COMPARISON_KEY } from '$lib/comparison';
   import { createFavorites, favoritesContext, FAVORITES_KEY } from '$lib/favorites';
   import { createNotifications, notificationContext } from '$lib/notifications';
@@ -44,31 +55,55 @@
   const favorites = createFavorites(notifications.push);
   setContext(favoritesContext, favorites);
   let { children }: { children: import('svelte').Snippet } = $props();
-  const theme = createPublicTheme(browser ? document.documentElement.getAttribute('data-theme') !== 'light' : true, browser ? dark => {
-    const value = dark ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', value);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0a0a0b' : '#f5f5f1');
-  } : undefined);
+  const theme = createPublicTheme(
+    browser ? document.documentElement.getAttribute('data-theme') !== 'light' : true,
+    browser
+      ? (dark) => {
+          const value = dark ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', value);
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute('content', dark ? '#0a0a0b' : '#f5f5f1');
+        }
+      : undefined,
+  );
   // Restore before child components hydrate, rather than after the first painted frame.
   if (browser) theme.initialize(() => localStorage);
   setContext(publicThemeContext, theme);
   const { ids: comparisonIds } = comparison;
   $effect.pre(() => notifications.setCurrentPath($page.url.pathname));
   $effect(() => {
-    if ($comparisonIds.length < 2) notifications.invalidateActions('comparison', { label: 'Ver seleção', href: '/comparar' });
+    if ($comparisonIds.length < 2)
+      notifications.invalidateActions('comparison', { label: 'Ver seleção', href: '/comparar' });
   });
   onMount(() => {
     // Keep focus until the anchor arrives; Kit's hash focus fallback otherwise emits a synthetic popstate.
-    anchors = installAnchorNavigation({ tick, push: url => pushState(url, $page.state), navigate: url => goto(url, { noScroll: true, keepFocus: true }) });
-    comparison.initialize(() => localStorage, () => sessionStorage);
+    anchors = installAnchorNavigation({
+      tick,
+      push: (url) => pushState(url, $page.state),
+      navigate: (url) => goto(url, { noScroll: true, keepFocus: true }),
+    });
+    comparison.initialize(
+      () => localStorage,
+      () => sessionStorage,
+    );
     favorites.initialize(() => localStorage);
     const sync = (event: StorageEvent) => {
-      try { if (event.storageArea !== localStorage) return; } catch { return; }
+      try {
+        if (event.storageArea !== localStorage) return;
+      } catch {
+        return;
+      }
       if (event.key === COMPARISON_KEY || event.key === null) comparison.sync(event.newValue);
       if (event.key === FAVORITES_KEY || event.key === null) favorites.sync(event.newValue);
     };
     window.addEventListener('storage', sync);
-    return () => { cancelNavigationThumbnails(); anchors?.destroy(); window.removeEventListener('storage', sync); notifications.destroy(); };
+    return () => {
+      cancelNavigationThumbnails();
+      anchors?.destroy();
+      window.removeEventListener('storage', sync);
+      notifications.destroy();
+    };
   });
 </script>
 

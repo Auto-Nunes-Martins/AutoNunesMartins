@@ -70,7 +70,11 @@
                 <span
                   class="activity-message text-[13px] text-[var(--color-text-muted)] group-hover:text-[var(--color-text)] transition-colors min-w-0 break-words flex-1"
                 >
-                  {item.message}{#if activityContextText(item)}<span class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1" title={activityContextText(item) ?? undefined}>{activityContextText(item)}</span>{/if}
+                  {item.message}{#if activityContextText(item)}<span
+                      class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1"
+                      title={activityContextText(item) ?? undefined}
+                      >{activityContextText(item)}</span
+                    >{/if}
                 </span>
                 <span
                   class="activity-actor hidden md:flex font-mono text-[9.5px] uppercase tracking-[0.18em] text-[var(--color-text-faint)] flex-shrink-0 items-center gap-1.5"
@@ -91,7 +95,11 @@
                 <span
                   class="activity-message text-[13px] text-[var(--color-text-muted)] min-w-0 break-words flex-1"
                 >
-                  {item.message}{#if activityContextText(item)}<span class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1" title={activityContextText(item) ?? undefined}>{activityContextText(item)}</span>{/if}
+                  {item.message}{#if activityContextText(item)}<span
+                      class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1"
+                      title={activityContextText(item) ?? undefined}
+                      >{activityContextText(item)}</span
+                    >{/if}
                 </span>
                 <span
                   class="activity-actor hidden md:flex font-mono text-[9.5px] uppercase tracking-[0.18em] text-[var(--color-text-faint)] flex-shrink-0 items-center gap-1.5"

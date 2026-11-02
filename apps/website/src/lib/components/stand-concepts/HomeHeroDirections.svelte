@@ -1,8 +1,14 @@
 <script lang="ts">
   import { ArrowUpRight, ArrowDown } from 'lucide-svelte';
   import { photoSwipe } from '$lib/photoSwipe';
-  import type { PublicHighlights } from '$lib/homepageHighlights';
-  import { publicPhoto, publicHref, publicPrice, fuelLabels } from '$lib/publicVehicles';
+  import { highlightPhotoDimensions, type PublicHighlights } from '$lib/homepageHighlights';
+  import {
+    publicPhoto,
+    publicHref,
+    publicPrice,
+    fuelLabels,
+    type PublicVehicle,
+  } from '$lib/publicVehicles';
   import FeaturedPhoto from './FeaturedPhoto.svelte';
   import { cardPhoto, cardPhotoSet } from '$lib/vehiclePhotoSources';
   import { usePublicTheme } from '$lib/publicTheme';
@@ -16,7 +22,7 @@
   import FeaturedBacklight from './FeaturedBacklight.svelte';
   import { featuredAutoplay } from './featuredAutoplay';
   import { scrollCue } from './scrollCue';
-  import { featuredPhotoSizes } from './images';
+  import { featuredPhotoSizesForRatio } from './images';
   import { scrollFrame, setScrollStyle } from './scrollFrame';
   import { mobileHeroImages } from '$lib/mobileHeroImages';
   import {
@@ -29,7 +35,10 @@
   } from './mobileHero';
 
   const version = 5;
-  let { homeHighlights }: { homeHighlights?: PublicHighlights } = $props();
+  let {
+    homeHighlights,
+    stockVehicles = [],
+  }: { homeHighlights?: PublicHighlights; stockVehicles?: readonly PublicVehicle[] } = $props();
   const { dark } = usePublicTheme();
   const items = $derived(homeHighlights?.items ?? []);
   let index = $state(0);
@@ -42,6 +51,8 @@
   const car = $derived(active?.vehicle);
   const image = $derived(requested ? publicPhoto(requested.vehicle, requested.photoIndex) : '');
   const firstImage = $derived(items[0] ? publicPhoto(items[0].vehicle, items[0].photoIndex) : '');
+  const firstDimensions = $derived(highlightPhotoDimensions(items[0], stockVehicles));
+  const requestedDimensions = $derived(highlightPhotoDimensions(requested, stockVehicles));
   const copy = [
     'Há mais caminho',
     'pela frente.',
@@ -49,6 +60,11 @@
   ];
   const background = heroBackgrounds[5];
   function anchorStart(node: HTMLElement) {
+    // Hydration replaces this element's inline style with its Svelte directives.
+    // Restore the startup measurement before reading canvas geometry; otherwise
+    // the background briefly keeps the uncompressed hero height for one frame.
+    const feature = node.querySelector<HTMLElement>('.hd-feature');
+    if (feature) setScrollStyle(node, '--v5-feature-height', `${feature.offsetHeight}px`);
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const task = scrollFrame(() => {
       // Complete geometry reads before changing canvas styles or any label pivot.
@@ -190,7 +206,9 @@
       as="image"
       href={cardPhoto(firstImage)}
       imagesrcset={cardPhotoSet(firstImage)}
-      imagesizes={featuredPhotoSizes}
+      imagesizes={featuredPhotoSizesForRatio(
+        firstDimensions ? firstDimensions.width / firstDimensions.height : 0,
+      )}
       fetchpriority="high"
     />
   {/if}
@@ -238,6 +256,7 @@
         >
           <FeaturedPhoto
             source={image}
+            dimensions={requestedDimensions}
             framing={requested?.framing}
             alt={requested ? `${requested.vehicle.brand} ${requested.vehicle.model}` : ''}
             onfailure={(value) => (failed = value)}
@@ -364,6 +383,7 @@
         role="status"
         aria-live={automaticChange ? 'off' : 'polite'}
         aria-atomic="true"
+        data-hero-layout-ready
         >Destaque {displayedIndex + 1} de {items.length}: {car.brand}
         {car.model}. {publicPrice(car.price)}{car.availability === 'RESERVED'
           ? '. Reservada'

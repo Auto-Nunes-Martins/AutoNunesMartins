@@ -92,13 +92,8 @@ export async function applyWebPublication(
         'Only unsold available or reserved vehicles can be published',
       );
     }
-    if (
-      vehicle.photos.some((path) => !isApprovedPhotoPath(id, path))
-    ) {
-      throw new WebPublicationError(
-        409,
-        'Photos must belong to this vehicle',
-      );
+    if (vehicle.photos.some((path) => !isApprovedPhotoPath(id, path))) {
+      throw new WebPublicationError(409, 'Photos must belong to this vehicle');
     }
   }
   const slug =
@@ -126,7 +121,15 @@ export async function applyWebPublication(
     entityType: 'vehicle',
     entityId: id,
     message: `${input.published ? 'Publicação web aprovada' : 'Publicação web desativada'}: ${activityVehicleLabel(vehicle)}`,
-    metadata: { webPublished: input.published, vehicle: { brand: vehicle.brand, model: vehicle.model, year: vehicle.year, licensePlate: vehicle.licensePlate } },
+    metadata: {
+      webPublished: input.published,
+      vehicle: {
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year,
+        licensePlate: vehicle.licensePlate,
+      },
+    },
   });
   return { published: updated.webPublished, slug: updated.publicSlug };
 }

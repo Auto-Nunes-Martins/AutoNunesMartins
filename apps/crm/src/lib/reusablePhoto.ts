@@ -38,33 +38,38 @@ export function selectPhoto(photo: Photo, pixels: number): Copy | undefined {
 async function decoded(photo: Photo, record: Entry, width: number) {
   const candidate = selectPhoto(photo, width);
   if (!candidate) return;
-  const previous = record.requests.get(candidate.url);
-  if (previous) return previous;
-  const pending = (async () => {
-    for (const url of [...new Set([candidate.url, photo.url].filter(Boolean) as string[])]) {
-      // A transient local decoder failure must not permanently poison a valid
-      // draft preview. One retry is shared by this group; remote requests keep
-      // their existing single candidate/master fallback behavior.
-      const attempts = url.startsWith('blob:') ? 2 : 1;
-      for (let attempt = 0; attempt < attempts; attempt++) {
-        if (attempt) {
-          await new Promise(resolve => setTimeout(resolve, 50));
-          if (!record.nodes.size || record.identity !== photo.url) break;
+  const active = () => record.nodes.size > 0 && record.identity === photo.url;
+  for (const url of [...new Set([candidate.url, photo.url].filter(Boolean) as string[])]) {
+    if (!active()) return;
+    let pending = record.requests.get(url);
+    if (!pending) {
+      pending = (async () => {
+        // A transient local decoder failure must not permanently poison a valid
+        // draft preview. One retry is shared by this group; remote requests keep
+        // their existing single candidate/master fallback behavior.
+        const attempts = url.startsWith('blob:') ? 2 : 1;
+        for (let attempt = 0; attempt < attempts; attempt++) {
+          if (attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+          if (!active()) return;
+          const image = new Image();
+          image.decoding = 'async';
+          image.src = url;
+          try {
+            await image.decode();
+            return { url, width: image.naturalWidth };
+          } catch {
+            /* Bounded local retry or one native-master fallback. */
+          }
         }
-        const image = new Image();
-        image.decoding = 'async';
-        image.src = url;
-        try {
-          await image.decode();
-          return { url, width: image.naturalWidth };
-        } catch {
-          /* Bounded local retry or one native-master fallback. */
-        }
-      }
+      })();
+      // Share the actual URL, including a master reached by different candidates.
+      record.requests.set(url, pending);
     }
-  })();
-  record.requests.set(candidate.url, pending);
-  return pending;
+    const copy = await pending;
+    if (copy) return copy;
+  }
 }
 /** Current signed payload only; no retained credentials/authorization across photo objects. */
 export function reusablePhoto(
@@ -76,7 +81,8 @@ export function reusablePhoto(
     alive = true,
     generation = 0,
     removePreview: (() => void) | undefined,
-    displayed: Copy | undefined;
+    displayed: Copy | undefined,
+    displayedReady = false;
   record.nodes.add(node);
   function snapshot() {
     removePreview?.();
@@ -144,15 +150,19 @@ export function reusablePhoto(
     }
     node.removeAttribute('srcset');
     if (!source.fullscreen || !displayed || displayed.width < copy.width) {
-      node.src = copy.url;
+      if (node.getAttribute('src') !== copy.url) {
+        node.src = copy.url;
+        displayedReady = false;
+      }
       displayed = copy;
     }
     try {
-      await node.decode();
+      if (!displayedReady) await node.decode();
     } catch {
       return;
     }
     if (!alive || token !== generation) return;
+    displayedReady = true;
     removePreview?.();
     removePreview = undefined;
     if (needed() > record.width) {
@@ -173,9 +183,19 @@ export function reusablePhoto(
     if (!alive || token !== generation || !larger) return;
     node.src = larger.url;
     displayed = larger;
+    displayedReady = false;
   }
   function refresh() {
-    void show();
+    if (alive) void show();
+  }
+  function detach() {
+    record.nodes.delete(node);
+    record.listeners.delete(refresh);
+    if (!record.nodes.size) {
+      record.requests.clear();
+      // Failures belong to this mounted group, not to every future use of Photo.
+      if (entries.get(source.photo) === record) entries.delete(source.photo);
+    }
   }
   record.listeners.add(refresh);
   const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(refresh);
@@ -187,20 +207,22 @@ export function reusablePhoto(
   window.visualViewport?.addEventListener('resize', refresh);
   return {
     update(next: typeof initial) {
-      if (
-        next.photo === source.photo &&
-        next.photo.url === record.identity &&
-        next.fullscreen === source.fullscreen
-      )
+      if (next.photo === source.photo && next.photo.url === record.identity) {
+        if (next.fullscreen !== source.fullscreen) {
+          source = next;
+          refresh();
+        }
         return;
-      record.nodes.delete(node);
-      record.listeners.delete(refresh);
+      }
+      detach();
       source = next;
       displayed = undefined;
+      displayedReady = false;
       record = entry(source.photo);
       record.nodes.add(node);
       record.listeners.add(refresh);
       removePreview?.();
+      removePreview = undefined;
       refresh();
     },
     destroy() {
@@ -209,9 +231,9 @@ export function reusablePhoto(
       observer?.disconnect();
       window.removeEventListener('resize', refresh);
       window.visualViewport?.removeEventListener('resize', refresh);
-      record.nodes.delete(node);
-      record.listeners.delete(refresh);
+      detach();
       removePreview?.();
+      removePreview = undefined;
     },
   };
 }

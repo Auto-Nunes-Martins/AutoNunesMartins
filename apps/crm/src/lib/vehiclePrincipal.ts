@@ -1,1 +1,4 @@
-export { vehiclePrincipalPath, orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
+export {
+  vehiclePrincipalPath,
+  orderedPublicPhotos,
+} from '../../../../shared/vehiclePhotoPrincipal.mjs';

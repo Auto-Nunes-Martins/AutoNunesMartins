@@ -9,7 +9,11 @@ export const GET: RequestHandler = async ({ url }) => {
   } catch {
     return new Response('Sitemap temporariamente indisponível.', {
       status: 503,
-      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'retry-after': '120' },
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': 'no-store',
+        'retry-after': '120',
+      },
     });
   }
 };

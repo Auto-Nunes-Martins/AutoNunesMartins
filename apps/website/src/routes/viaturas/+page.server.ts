@@ -10,7 +10,9 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
     redirect(307, url.pathname + (params.size ? `?${params}` : ''));
   }
   const yearParams = new URLSearchParams(params);
-  yearParams.delete('ano_min'); yearParams.delete('ano_max'); yearParams.delete('pagina');
+  yearParams.delete('ano_min');
+  yearParams.delete('ano_max');
+  yearParams.delete('pagina');
   const [stock, yearStock, brandDirectory] = await Promise.all([
     loadPublicStock(params),
     params.has('ano_min') ? loadPublicStock(yearParams) : Promise.resolve(null),
@@ -22,7 +24,11 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
     error(503, 'Catálogo temporariamente indisponível.');
   }
   // Shared/outdated URLs must not land on an empty page beyond the current stock.
-  if (stock.status === 'ready' && stock.catalog.totalPages > 0 && stock.catalog.page > stock.catalog.totalPages) {
+  if (
+    stock.status === 'ready' &&
+    stock.catalog.totalPages > 0 &&
+    stock.catalog.page > stock.catalog.totalPages
+  ) {
     const next = new URL(url);
     next.searchParams.set('pagina', String(stock.catalog.totalPages));
     redirect(307, next.pathname + next.search);

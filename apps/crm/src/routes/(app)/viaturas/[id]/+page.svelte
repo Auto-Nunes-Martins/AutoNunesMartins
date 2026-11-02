@@ -1,5 +1,5 @@
 <script lang="ts">
- import BrandLogo from '$lib/components/vehicle/BrandLogo.svelte';
+  import BrandLogo from '$lib/components/vehicle/BrandLogo.svelte';
   import { crmPath } from '$lib/paths';
   import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
@@ -18,7 +18,7 @@
     Tag,
   } from 'lucide-svelte';
   import WebsiteStatus from '$lib/components/vehicle/WebsiteStatus.svelte';
-  import {websiteVisibility} from '$lib/websiteVisibility';
+  import { websiteVisibility } from '$lib/websiteVisibility';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
   import SpecRow from '$lib/components/brand/SpecRow.svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -41,7 +41,12 @@
   // Reactive: when SvelteKit re-runs the load function after a form action,
   // `data` is reassigned and these derived values pick up the new vehicle.
   const v = $derived(data.vehicle);
-  const highlightStatus = $derived(data.homepageHighlight ?? Promise.resolve(data.isFeatured).then<HighlightStatus>(featured => featured ? 'live' : 'none'));
+  const highlightStatus = $derived(
+    data.homepageHighlight ??
+      Promise.resolve(data.isFeatured).then<HighlightStatus>((featured) =>
+        featured ? 'live' : 'none',
+      ),
+  );
 
   const FUEL_LABELS: Record<string, string> = {
     GASOLINE: 'Gasolina',
@@ -58,7 +63,9 @@
     { key: 'registration', label: 'Registo' },
     { key: 'docs', label: 'Documentação' },
   ];
-  const pendingDocs = $derived(docFlags.filter(f => v.pendingDocFlags?.[f.key as keyof typeof v.pendingDocFlags] === true));
+  const pendingDocs = $derived(
+    docFlags.filter((f) => v.pendingDocFlags?.[f.key as keyof typeof v.pendingDocFlags] === true),
+  );
   const pendingCount = $derived(pendingDocs.length);
   const docsKnown = $derived(v.pendingDocFlags != null);
 </script>
@@ -368,26 +375,126 @@
 </section>
 
 <style>
-  .public-view-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; white-space:nowrap; font-size:13px; text-decoration:none; color:var(--color-text); }
-  .public-view-text { position:relative; text-decoration:none; text-underline-offset:4px; }
-  .public-view-text::after { content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:currentColor; transition:width 420ms ease; }
-  .public-view-link:is(:hover, :focus-visible) .public-view-text::after { width:100%; }
-  .public-view-link:focus-visible { outline:2px solid var(--color-red); outline-offset:3px; border-radius:var(--radius-btn); }
-  .vehicle-actions :global(.edit-vehicle-action) {border-color:var(--color-text-muted);background:var(--color-bg-2);font-weight:600;color:var(--color-text);}
-  .vehicle-actions :global(.edit-vehicle-action:hover) {border-color:var(--color-text);}
-  .vehicle-actions :global(.sell-vehicle-action) {margin-left:auto;}
-  .document-summary {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;font-size:12px;color:var(--color-text-muted);}
-  .document-summary p {min-width:0;}
-  .document-summary a {display:inline-flex;align-items:center;min-height:44px;flex-shrink:0;text-decoration:underline;text-underline-offset:3px;color:var(--color-text-muted);}
-  .document-summary a:focus-visible {outline:2px solid var(--color-red);outline-offset:3px;}
-  .pending-doc-body {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px;}
-  .pending-document-list {display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:150px;}
-  .vehicle-document-status :global(h3) {white-space:normal;overflow:visible;text-overflow:clip;line-height:1.15;}
-  .pending-document-list li {display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid color-mix(in srgb,var(--color-warning) 35%,var(--color-border));border-radius:var(--radius-btn);font-size:12px;color:var(--color-warning);background:color-mix(in srgb,var(--color-warning) 7%,transparent);}
-  .highlight-status {color:var(--color-warning);background:color-mix(in srgb,var(--color-warning) 10%,var(--color-bg-1));border:1px solid color-mix(in srgb,var(--color-warning) 45%,transparent);}
-  .highlight-hidden {color:var(--color-text-muted);background:var(--color-bg-2);border-color:var(--color-border-strong);}
-  .highlight-loading {font:11px var(--font-mono);color:var(--color-text-muted);}
-  .vehicle-actions :global(.featured-vehicle-action) {border-color:var(--color-warning);color:var(--color-warning);}
+  .public-view-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    white-space: nowrap;
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--color-text);
+  }
+  .public-view-text {
+    position: relative;
+    text-decoration: none;
+    text-underline-offset: 4px;
+  }
+  .public-view-text::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 1px;
+    background: currentColor;
+    transition: width 420ms ease;
+  }
+  .public-view-link:is(:hover, :focus-visible) .public-view-text::after {
+    width: 100%;
+  }
+  .public-view-link:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 3px;
+    border-radius: var(--radius-btn);
+  }
+  .vehicle-actions :global(.edit-vehicle-action) {
+    border-color: var(--color-text-muted);
+    background: var(--color-bg-2);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .vehicle-actions :global(.edit-vehicle-action:hover) {
+    border-color: var(--color-text);
+  }
+  .vehicle-actions :global(.sell-vehicle-action) {
+    margin-left: auto;
+  }
+  .document-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+  .document-summary p {
+    min-width: 0;
+  }
+  .document-summary a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    flex-shrink: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    color: var(--color-text-muted);
+  }
+  .document-summary a:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 3px;
+  }
+  .pending-doc-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+  }
+  .pending-document-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+    min-width: 150px;
+  }
+  .vehicle-document-status :global(h3) {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.15;
+  }
+  .pending-document-list li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border: 1px solid color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
+    border-radius: var(--radius-btn);
+    font-size: 12px;
+    color: var(--color-warning);
+    background: color-mix(in srgb, var(--color-warning) 7%, transparent);
+  }
+  .highlight-status {
+    color: var(--color-warning);
+    background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-1));
+    border: 1px solid color-mix(in srgb, var(--color-warning) 45%, transparent);
+  }
+  .highlight-hidden {
+    color: var(--color-text-muted);
+    background: var(--color-bg-2);
+    border-color: var(--color-border-strong);
+  }
+  .highlight-loading {
+    font: 11px var(--font-mono);
+    color: var(--color-text-muted);
+  }
+  .vehicle-actions :global(.featured-vehicle-action) {
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+  }
   .featured-slot {
     display: inline-flex;
     min-width: 130px;
@@ -395,15 +502,42 @@
     align-items: center;
   }
 
-  .public-view-link { align-self:center; align-items:center; min-height:44px; padding-block:0; gap:8px; }
-  .public-view-link:focus-visible :global(svg) { transform:translate(3px,-3px); }
-  @media(hover:hover) { .public-view-link:hover :global(svg) { transform:translate(3px,-3px); } }
-  @media(prefers-reduced-motion:no-preference) {
-    .public-view-link :global(svg) { transition:transform 220ms ease, color 300ms ease; }
+  .public-view-link {
+    align-self: center;
+    align-items: center;
+    min-height: 44px;
+    padding-block: 0;
+    gap: 8px;
   }
-  @media(prefers-reduced-motion:reduce) {
-    .public-view-link :global(svg),.public-view-link:is(:hover,:focus-visible) :global(svg) { transition:none; transform:none; }
+  .public-view-link:focus-visible :global(svg) {
+    transform: translate(3px, -3px);
   }
-@media(prefers-reduced-motion:reduce) { .public-view-text::after { transition:none; } }
-.public-view-link :global(svg) { position:relative; top:-1px; }
+  @media (hover: hover) {
+    .public-view-link:hover :global(svg) {
+      transform: translate(3px, -3px);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .public-view-link :global(svg) {
+      transition:
+        transform 220ms ease,
+        color 300ms ease;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .public-view-link :global(svg),
+    .public-view-link:is(:hover, :focus-visible) :global(svg) {
+      transition: none;
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .public-view-text::after {
+      transition: none;
+    }
+  }
+  .public-view-link :global(svg) {
+    position: relative;
+    top: -1px;
+  }
 </style>

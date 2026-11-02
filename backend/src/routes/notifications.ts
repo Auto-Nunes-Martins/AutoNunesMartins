@@ -114,7 +114,11 @@ router.get(
       return;
     }
     const actorId = req.user.id;
-    const context = z.string().regex(/^c[a-z0-9]{24}$/).optional().safeParse(req.query.activeCreationDraftId);
+    const context = z
+      .string()
+      .regex(/^c[a-z0-9]{24}$/)
+      .optional()
+      .safeParse(req.query.activeCreationDraftId);
     if (!context.success) {
       res.status(400).json({ error: 'Invalid creation context' });
       return;
@@ -130,10 +134,17 @@ router.get(
       ),
       // Fresh and request-scoped: leaving/completing a creation must not reuse
       // an excluded aggregate, and arbitrary contexts must not create cache keys.
-      prisma.vehicle.count({ where: { status: 'DRAFT', ...(context.data ? { id: { not: context.data } } : {}) } }),
+      prisma.vehicle.count({
+        where: { status: 'DRAFT', ...(context.data ? { id: { not: context.data } } : {}) },
+      }),
     ]);
     res.set('Cache-Control', 'private, no-store');
-    res.json({ ...payload, alerts: { ...payload.alerts, draftVehicles }, contacts, total: payload.total + draftVehicles + contacts.unread });
+    res.json({
+      ...payload,
+      alerts: { ...payload.alerts, draftVehicles },
+      contacts,
+      total: payload.total + draftVehicles + contacts.unread,
+    });
   }),
 );
 

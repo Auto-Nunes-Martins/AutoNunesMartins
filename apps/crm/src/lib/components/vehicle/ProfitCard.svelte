@@ -28,14 +28,14 @@
 
   const profitNum = $derived(effective ? Number(effective.realProfit) : null);
   const isLoss = $derived(profitNum !== null && profitNum < 0);
-  const hasCommission = $derived(
-    effective ? Number(effective.commission) > 0 : false,
-  );
+  const hasCommission = $derived(effective ? Number(effective.commission) > 0 : false);
 </script>
 
 <section
   class="profit-card overflow-hidden border bg-[var(--color-bg-1)]"
-  style="border-radius: var(--radius-card); border-color: {isLoss ? 'color-mix(in oklab, var(--color-red) 40%, transparent)' : 'var(--color-border)'};"
+  style="border-radius: var(--radius-card); border-color: {isLoss
+    ? 'color-mix(in oklab, var(--color-red) 40%, transparent)'
+    : 'var(--color-border)'};"
 >
   <PanelHeader icon={Receipt} title="Margem · IVA" meta={sale ? 'PERSISTIDO' : 'PROJEÇÃO'} />
 
@@ -83,9 +83,7 @@
   </div>
 
   <!-- Bottom row: VAT, optional commission and real profit. Show the commission column only when it has a value so cash sales retain the cleaner two-column layout. -->
-  <div
-    class="profit-results grid px-5 pb-5 gap-4 pt-1"
-  >
+  <div class="profit-results grid px-5 pb-5 gap-4 pt-1">
     <div class="border-t border-[var(--color-border)] pt-4">
       <div
         class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mb-1.5"
@@ -136,16 +134,38 @@
 
 <style>
   /* Keep the shared num-value typography and currency formatter used throughout the CRM. */
-  .profit-summary {grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));}
-  .profit-results {grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));}
-  .profit-summary > div, .profit-results > div {min-width: 0;}
-  .profit-card .num-value {line-height: 1.3;overflow-wrap: anywhere;}
-  .profit-summary .num-value {font-size: 20px;}
-  .profit-results .num-value {font-size: 24px;}
-  .profit-results > div:last-child .num-value {font-size: 28px;}
+  .profit-summary {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  }
+  .profit-results {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  }
+  .profit-summary > div,
+  .profit-results > div {
+    min-width: 0;
+  }
+  .profit-card .num-value {
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .profit-summary .num-value {
+    font-size: 20px;
+  }
+  .profit-results .num-value {
+    font-size: 24px;
+  }
+  .profit-results > div:last-child .num-value {
+    font-size: 28px;
+  }
   @media (max-width: 600px) {
-    .profit-summary .num-value {font-size: 18px;}
-    .profit-results .num-value {font-size: 22px;}
-    .profit-results > div:last-child .num-value {font-size: 26px;}
+    .profit-summary .num-value {
+      font-size: 18px;
+    }
+    .profit-results .num-value {
+      font-size: 22px;
+    }
+    .profit-results > div:last-child .num-value {
+      font-size: 26px;
+    }
   }
 </style>

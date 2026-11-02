@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma, type PrismaClient } from '@prisma/client';
 vi.mock('../data/storage.js', () => ({
-  signedPhoto: vi.fn(async(path:string)=>({path,url:'signed:'+path})),
+  signedPhoto: vi.fn(async (path: string) => ({ path, url: 'signed:' + path })),
   createSignedReadUrls: vi.fn(
     async (paths: string[]) => new Map(paths.map((path) => [path, 'signed:' + path])),
   ),
@@ -55,11 +55,18 @@ beforeEach(() => {
 });
 describe('homepage editorial selection', () => {
   it('validates and carries a highlight crop separately from gallery framing without private paths', async () => {
-    const framing = {desktop:{x:50,y:80},mobile:{x:50,y:65}};
-    const selection = {revision,items:[{vehicleId:id,photoPath:otherPhoto,framing}]};
+    const framing = { desktop: { x: 50, y: 80 }, mobile: { x: 50, y: 65 } };
+    const selection = { revision, items: [{ vehicleId: id, photoPath: otherPhoto, framing }] };
     expect(highlightsInputSchema.parse(selection)).toEqual(selection);
-    expect(highlightsInputSchema.safeParse({...selection, items:[{...selection.items[0],framing:{desktop:{x:101,y:0},mobile:{x:0,y:0}}}]}).success).toBe(false);
-    mock.appSetting.findUnique.mockResolvedValue({value:selection});
+    expect(
+      highlightsInputSchema.safeParse({
+        ...selection,
+        items: [
+          { ...selection.items[0], framing: { desktop: { x: 101, y: 0 }, mobile: { x: 0, y: 0 } } },
+        ],
+      }).success,
+    ).toBe(false);
+    mock.appSetting.findUnique.mockResolvedValue({ value: selection });
     const result = await readPublicHighlights(db);
     expect(result.items[0]?.framing).toEqual(framing);
     expect((await readDashboardHighlights(db)).items[0]?.framing).toEqual(framing);
@@ -123,7 +130,7 @@ describe('homepage editorial selection', () => {
   });
   it('recomputes the independent homepage selection index when vehicle order changes', async () => {
     mock.vehicle.findMany.mockResolvedValue([
-      { ...fixture(), photos:[otherPhoto,photo], publicPhotoPaths: [otherPhoto, photo] },
+      { ...fixture(), photos: [otherPhoto, photo], publicPhotoPaths: [otherPhoto, photo] },
     ]);
     expect((await readPublicHighlights(db)).items[0]?.photoIndex).toBe(0);
   });
@@ -187,6 +194,8 @@ describe('homepage editorial selection', () => {
       { ...fixture(), publicPhotoPaths: [photo, `${id}/private.pdf`, 'other/private.jpg'] },
     ]);
     const editor = await readHighlightsEditor(db);
-    expect(editor.candidates[0]?.photos).toEqual([photo,otherPhoto].map(path=>({path,url:'signed:'+path})));
+    expect(editor.candidates[0]?.photos).toEqual(
+      [photo, otherPhoto].map((path) => ({ path, url: 'signed:' + path })),
+    );
   });
 });

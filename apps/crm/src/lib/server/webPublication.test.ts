@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RequestEvent } from '@sveltejs/kit';
 vi.mock('$env/static/public', () => ({ PUBLIC_BACKEND_URL: 'http://backend.test' }));
-vi.mock('./vehicles', () => ({ vehiclesApi: { webPublication: vi.fn(), get: vi.fn(async () => ({photos:["stored-photo"]})) } }));
+vi.mock('./vehicles', () => ({
+  vehiclesApi: { webPublication: vi.fn(), get: vi.fn(async () => ({ photos: ['stored-photo'] })) },
+}));
 import { vehiclesApi } from './vehicles';
 import { webPublicationAction } from './webPublication';
 const id = 'clabcdefghijklmnopqrstuvw';
@@ -61,7 +63,7 @@ describe('Shared create/edit publication action', () => {
     });
   });
   it('requires explicit confirmation when the stored vehicle has no photos', async () => {
-    vi.mocked(vehiclesApi.get).mockResolvedValueOnce({photos:[]} as any);
+    vi.mocked(vehiclesApi.get).mockResolvedValueOnce({ photos: [] } as any);
     const result = await webPublicationAction(
       event({ operation: 'publish', publicPrice: '10000', publicDescription: 'Factual' }),
       id,

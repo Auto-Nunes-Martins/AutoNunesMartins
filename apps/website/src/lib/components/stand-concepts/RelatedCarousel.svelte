@@ -6,7 +6,8 @@
   let {
     vehicles,
     card,
-  }: { vehicles: PublicVehicle[]; card: Snippet<[PublicCard, number, boolean?, number?]> } = $props();
+  }: { vehicles: PublicVehicle[]; card: Snippet<[PublicCard, number, boolean?, number?]> } =
+    $props();
   const items = $derived([...new Map(vehicles.map((v) => [v.slug, v])).values()].slice(0, 5));
   let first = $state(0);
   let indicated = $state(0);

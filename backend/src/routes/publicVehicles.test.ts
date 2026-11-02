@@ -27,12 +27,17 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('../db.js', () => ({ prisma: mocks.db }));
 vi.mock('../logger.js', () => ({ logger: { error: vi.fn(), warn: vi.fn() } }));
-vi.mock('../lib/data/storage.js', () => ({
+vi.mock('../lib/data/storageClient.js', () => ({
   getBucketName: () => 'private-vehicle-photos',
   getSupabase: () => ({ storage: { from: () => ({ download: mocks.download }) } }),
 }));
 vi.mock('../middleware/clerk.js', () => ({ requireUser: mocks.auth }));
 
+vi.mock('../lib/server/photoLifecycleStore.js', () => ({
+  assertStagedPhotos: vi.fn(),
+  forgetAttachedPhotos: vi.fn(),
+  queuePhotoRemovals: vi.fn(),
+}));
 import router from './publicVehicles.js';
 import { forgetPhotoVariants, readPhotoBytes, variantPath } from '../lib/server/photoVariants.js';
 import publicationRouter from './vehicleWebPublication.js';
@@ -96,7 +101,11 @@ let base: string;
 let photoBytes: Buffer;
 
 beforeAll(async () => {
-  photoBytes = await sharp({ create: { width: 48, height: 32, channels: 3, background: '#428a91' } }).jpeg().toBuffer();
+  photoBytes = await sharp({
+    create: { width: 48, height: 32, channels: 3, background: '#428a91' },
+  })
+    .jpeg()
+    .toBuffer();
   const app = express();
   app.use(express.json());
   app.use('/api/public/vehicles', router);
@@ -148,11 +157,23 @@ beforeEach(() => {
 
 describe('public query validation and search boundary', () => {
   it('adds dimensions only for an approved current cover, without reading storage or leaking private metadata', async () => {
-    mocks.db.vehiclePhotoDimensions.findMany.mockResolvedValue([{ version: publicPhotoVersion(photo), width: 1600, height: 900, sourceHash: 'PRIVATE', vehicleId: id }]);
+    mocks.db.vehiclePhotoDimensions.findMany.mockResolvedValue([
+      {
+        version: publicPhotoVersion(photo),
+        width: 1600,
+        height: 900,
+        sourceHash: 'PRIVATE',
+        vehicleId: id,
+      },
+    ]);
     const response = await fetch(base + '/api/public/vehicles');
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.items[0].coverPhotoDimensions).toEqual({ version: publicPhotoVersion(photo), width: 1600, height: 900 });
+    expect(body.items[0].coverPhotoDimensions).toEqual({
+      version: publicPhotoVersion(photo),
+      width: 1600,
+      height: 900,
+    });
     expect(JSON.stringify(body)).not.toContain('PRIVATE');
     expect(JSON.stringify(body)).not.toContain(photo);
     expect(mocks.download).not.toHaveBeenCalled();
@@ -234,7 +255,11 @@ describe('public query validation and search boundary', () => {
   });
   it('orders homepage entries by stock arrival, with deterministic ties, without exposing private dates', () => {
     const query = publicVehicleQuerySchema.parse({});
-    expect(publicVehicleOrder(query.ordem)).toEqual([{ acquisitionDate: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }]);
+    expect(publicVehicleOrder(query.ordem)).toEqual([
+      { acquisitionDate: 'desc' },
+      { createdAt: 'desc' },
+      { id: 'asc' },
+    ]);
     expect(Object.keys(publicVehicleSelect)).not.toContain('acquisitionDate');
     expect(Object.keys(publicVehicleSelect)).not.toContain('createdAt');
   });
@@ -427,7 +452,7 @@ describe('public HTTP responses never disclose private inventory', () => {
     expect(mocks.db.vehicle.update).not.toHaveBeenCalled();
     const entry = readFileSync(new URL('../app.ts', import.meta.url), 'utf8');
     expect(entry.indexOf("app.use('/api/public/vehicles', publicVehiclesRouter)")).toBeLessThan(
-      entry.indexOf("app.use(timedMiddleware('backend-clerk', clerkMiddleware))"),
+      entry.indexOf('app.use(clerkMiddleware)'),
     );
     expect(entry).toContain("app.use('/api/vehicles', vehiclesRouter)");
   });
@@ -584,7 +609,8 @@ describe('private photo storage boundary', () => {
     expect(mocks.download).toHaveBeenCalledTimes(1);
     expect(mocks.download).toHaveBeenCalledWith(photo);
     expect(mocks.db.vehicle.findFirst.mock.calls[0]?.[0].select).toEqual({
-      id: true, photos: true,
+      id: true,
+      photos: true,
     });
     expect(mocks.db.vehicle.findFirst.mock.calls[0]?.[0].where).toEqual({
       ...publicVehicleWhere(),
@@ -615,25 +641,14 @@ describe('private photo storage boundary', () => {
     );
     const etag = first.headers.get('etag')!;
     expect(etag).toBeTruthy();
-    const timing = first.headers.get('server-timing')!;
-    expect(timing).toMatch(/photo-check;dur=\d+\.\d/);
-    expect(timing).toMatch(/photo-total;dur=\d+\.\d/);
-    expect(
-      timing
-        .split(', ')
-        .every((entry) =>
-          /^photo-(?:check|manifest|storage|total|cache-hit|cache-miss);dur=\d+(?:\.\d+)?$/.test(
-            entry,
-          ),
-        ),
-    ).toBe(true);
-    expect(timing).not.toMatch(/SECRET|PRIVATE|private-vehicle-photos|12345678/);
+
+    expect(first.headers.get('server-timing')).toBeNull();
+
     const second = await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`, {
       headers: { 'if-none-match': etag },
     });
     expect(second.status).toBe(304);
-    expect(second.headers.get('server-timing')).toContain('photo-cache-hit;dur=0.0');
-    expect(second.headers.get('server-timing')).toMatch(/photo-check;dur=\d/);
+
     mocks.db.vehicle.findFirst.mockResolvedValue(null);
     const revoked = await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320`, {
       headers: { 'if-none-match': etag },
@@ -648,15 +663,21 @@ describe('private photo storage boundary', () => {
     const original = publicVehicleDto(fixture()).photos[0];
     const first = await fetch(path);
     expect(first.status).toBe(200);
-    expect(first.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
+    expect(first.headers.get('cache-control')).toBe(
+      'private, no-cache, max-age=0, must-revalidate',
+    );
     expect(first.headers.get('x-photo-version')).toBe(version);
     const etag = first.headers.get('etag')!;
     const conditional = await fetch(path, { headers: { 'if-none-match': etag } });
     expect(conditional.status).toBe(304);
     expect(mocks.db.vehicle.findFirst).toHaveBeenCalledTimes(2);
-    expect(conditional.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
+    expect(conditional.headers.get('cache-control')).toBe(
+      'private, no-cache, max-age=0, must-revalidate',
+    );
     const originalSize = await fetch(path.replace('&w=320', ''));
-    expect(originalSize.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
+    expect(originalSize.headers.get('cache-control')).toBe(
+      'private, no-cache, max-age=0, must-revalidate',
+    );
     const changed = { ...fixture(), photos: [other, photo], publicPhotoPaths: [other, photo] };
     mocks.db.vehicle.findFirst.mockResolvedValue(changed);
     expect(publicVehicleDto(changed).photos[0]).not.toBe(original);
@@ -672,8 +693,11 @@ describe('private photo storage boundary', () => {
     expect(revoked.headers.get('cache-control')).toBe('no-store');
   });
   it.each(['invalid', 'a'.repeat(63), 'A'.repeat(64), `${'a'.repeat(64)}&v=${'b'.repeat(64)}`])(
-    'rejects malformed or repeated photo identity %s before reading pixels', async (version) => {
-      expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320&v=${version}`)).status).toBe(400);
+    'rejects malformed or repeated photo identity %s before reading pixels',
+    async (version) => {
+      expect(
+        (await fetch(`${base}/api/public/vehicles/${slug}/photos/0?w=320&v=${version}`)).status,
+      ).toBe(400);
       expect(mocks.download).not.toHaveBeenCalled();
     },
   );
@@ -717,43 +741,68 @@ describe('explicit publication and stable unique slugs', () => {
     const current = { ...fixture(), publicPhotoPaths: [] as string[] };
     mocks.db.vehicle.findUnique.mockImplementation(async () => current);
     mocks.db.vehicle.findFirst.mockImplementation(async () =>
-      current.webPublished && ['AVAILABLE', 'RESERVED'].includes(current.status) && !current.sale && !current.soldDate ? current : null);
-    mocks.db.vehicle.updateMany.mockImplementation(async ({where,data}) => {
-      if (JSON.stringify(where.photos.equals) !== JSON.stringify(current.photos)) return {count:0};
+      current.webPublished &&
+      ['AVAILABLE', 'RESERVED'].includes(current.status) &&
+      !current.sale &&
+      !current.soldDate
+        ? current
+        : null,
+    );
+    mocks.db.vehicle.updateMany.mockImplementation(async ({ where, data }) => {
+      if (JSON.stringify(where.photos.equals) !== JSON.stringify(current.photos))
+        return { count: 0 };
       expect(data).not.toHaveProperty('webPublished');
       current.photos = data.photos.set;
       current.publicPhotoPaths = data.publicPhotoPaths.set;
-      return {count:1};
+      return { count: 1 };
     });
-    const versions = async () => (await (await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).json()).versions;
+    const versions = async () =>
+      (await (await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).json()).versions;
     expect(await versions()).toEqual([publicPhotoVersion(photo)]);
-    await mutateVehiclePhotos(db,id,{type:'append',path:next});
+    await mutateVehiclePhotos(db, id, { type: 'append', path: next });
     // Even a stale/empty compatibility column cannot suppress an attached photo.
     current.publicPhotoPaths = [];
-    expect(await versions()).toEqual([photo,next].map(publicPhotoVersion));
-    expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/1?v=${publicPhotoVersion(next)}`)).status).toBe(200);
-    await mutateVehiclePhotos(db,id,{type:'reorder',photos:[next,photo]});
-    expect(await versions()).toEqual([next,photo].map(publicPhotoVersion));
+    expect(await versions()).toEqual([photo, next].map(publicPhotoVersion));
+    expect(
+      (await fetch(`${base}/api/public/vehicles/${slug}/photos/1?v=${publicPhotoVersion(next)}`))
+        .status,
+    ).toBe(200);
+    await mutateVehiclePhotos(db, id, { type: 'reorder', photos: [next, photo] });
+    expect(await versions()).toEqual([next, photo].map(publicPhotoVersion));
     const detail = await (await fetch(`${base}/api/public/vehicles/${slug}`)).json();
-    expect(detail.photos).toEqual([next,photo].map((path,index)=>`/api/public/vehicles/${slug}/photos/${index}?v=${publicPhotoVersion(path)}`));
-    await mutateVehiclePhotos(db,id,{type:'remove',path:photo});
+    expect(detail.photos).toEqual(
+      [next, photo].map(
+        (path, index) =>
+          `/api/public/vehicles/${slug}/photos/${index}?v=${publicPhotoVersion(path)}`,
+      ),
+    );
+    await mutateVehiclePhotos(db, id, { type: 'remove', path: photo });
     expect(await versions()).toEqual([publicPhotoVersion(next)]);
     expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/1`)).status).toBe(404);
-    expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/0?v=${publicPhotoVersion(photo)}`)).status).toBe(404);
+    expect(
+      (await fetch(`${base}/api/public/vehicles/${slug}/photos/0?v=${publicPhotoVersion(photo)}`))
+        .status,
+    ).toBe(404);
     current.webPublished = false;
-    await mutateVehiclePhotos(db,id,{type:'append',path:photo});
+    await mutateVehiclePhotos(db, id, { type: 'append', path: photo });
     expect(current.webPublished).toBe(false);
     expect((await fetch(`${base}/api/public/vehicles/${slug}/photos/access`)).status).toBe(404);
   });
   it('accepts omitted or stale legacy subsets but derives publication solely from current owned photos', async () => {
     const canonical = `${id}/12345678-1234-1234-1234-123456789abd.jpg`;
-    mocks.db.vehicle.findUnique.mockResolvedValue({...fixture(),photos:[canonical,photo]});
-    const {photoPaths: _legacy, ...payload} = publication;
+    mocks.db.vehicle.findUnique.mockResolvedValue({ ...fixture(), photos: [canonical, photo] });
+    const { photoPaths: _legacy, ...payload } = publication;
     const input = webPublicationSchema.parse(payload);
-    await setWebPublication(db,id,input,'admin-id');
-    expect(mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data.publicPhotoPaths).toEqual([canonical,photo]);
-    await setWebPublication(db,id,{...input,photoPaths:['other/ignored.jpg']},'admin-id');
-    expect(mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data.publicPhotoPaths).toEqual([canonical,photo]);
+    await setWebPublication(db, id, input, 'admin-id');
+    expect(mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data.publicPhotoPaths).toEqual([
+      canonical,
+      photo,
+    ]);
+    await setWebPublication(db, id, { ...input, photoPaths: ['other/ignored.jpg'] }, 'admin-id');
+    expect(mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data.publicPhotoPaths).toEqual([
+      canonical,
+      photo,
+    ]);
   });
   it('normalizes accents and punctuation, distinguishes identical titles and never includes private identifiers', () => {
     expect(slug).toMatch(/^bmw-serie-1-2019-[a-f0-9]{12}$/);
@@ -803,14 +852,42 @@ describe('explicit publication and stable unique slugs', () => {
   });
   it('prepares legacy dimensions before entering the approval transaction', async () => {
     forgetPhotoVariants(photo);
-    const manifest = { version: 1, encodingVersion: 2, sourceHash: 'a'.repeat(64), width: 1600, height: 900, variants: [] };
+    const manifest = {
+      version: 1,
+      encodingVersion: 2,
+      sourceHash: 'a'.repeat(64),
+      width: 1600,
+      height: 900,
+      variants: [],
+    };
     const encoded = Buffer.from(JSON.stringify(manifest)).toString('base64');
-    const sidecar = await sharp({ create: { width: 1, height: 1, channels: 3, background: '#fff' } }).webp().withXmp(`<anm:manifest>${encoded}</anm:manifest>`).toBuffer();
-    mocks.download.mockResolvedValue({ data: new Blob([new Uint8Array(sidecar)], { type: 'image/webp' }), error: null });
+    const sidecar = await sharp({
+      create: { width: 1, height: 1, channels: 3, background: '#fff' },
+    })
+      .webp()
+      .withXmp(`<anm:manifest>${encoded}</anm:manifest>`)
+      .toBuffer();
+    mocks.download.mockResolvedValue({
+      data: new Blob([new Uint8Array(sidecar)], { type: 'image/webp' }),
+      error: null,
+    });
     mocks.db.vehiclePhotoDimensions.createMany.mockResolvedValue({ count: 1 });
     await setWebPublication(db, id, publication, 'admin-id');
-    expect(mocks.db.vehiclePhotoDimensions.createMany).toHaveBeenCalledWith({ data: [{ version: publicPhotoVersion(photo), vehicleId: id, width: 1600, height: 900, sourceHash: manifest.sourceHash }], skipDuplicates: true });
-    expect(mocks.db.vehiclePhotoDimensions.createMany.mock.invocationCallOrder[0]).toBeLessThan(mocks.db.$transaction.mock.invocationCallOrder[0]!);
+    expect(mocks.db.vehiclePhotoDimensions.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          version: publicPhotoVersion(photo),
+          vehicleId: id,
+          width: 1600,
+          height: 900,
+          sourceHash: manifest.sourceHash,
+        },
+      ],
+      skipDuplicates: true,
+    });
+    expect(mocks.db.vehiclePhotoDimensions.createMany.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.db.$transaction.mock.invocationCallOrder[0]!,
+    );
     expect(mocks.db.vehicle.update.mock.calls[0]?.[0].data.publicPhotoPaths).toEqual([photo]);
   });
   it('preserves the slug through title changes, unpublishing and republication', async () => {
@@ -872,7 +949,10 @@ describe('explicit publication and stable unique slugs', () => {
     await expect(setWebPublication(db, id, publication, 'admin-id')).rejects.toMatchObject({
       status: 409,
     });
-    mocks.db.vehicle.findUnique.mockResolvedValue({...fixture(), photos:[`other/${photo.split('/')[1]}`]});
+    mocks.db.vehicle.findUnique.mockResolvedValue({
+      ...fixture(),
+      photos: [`other/${photo.split('/')[1]}`],
+    });
     await expect(
       setWebPublication(
         db,

@@ -62,8 +62,12 @@ export function publicVehicleOrder(
   order: PublicVehicleQuery['ordem'],
 ): Prisma.VehicleOrderByWithRelationInput[] {
   // Homepage and catalog share stock-arrival order. Dates stay outside the public DTO.
-  if (order === 'relevancia') return [{ acquisitionDate: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }];
-  const orders: Record<Exclude<typeof order, 'relevancia'>, Prisma.VehicleOrderByWithRelationInput> = {
+  if (order === 'relevancia')
+    return [{ acquisitionDate: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }];
+  const orders: Record<
+    Exclude<typeof order, 'relevancia'>,
+    Prisma.VehicleOrderByWithRelationInput
+  > = {
     preco_asc: { publicPrice: { sort: 'asc', nulls: 'last' } },
     preco_desc: { publicPrice: { sort: 'desc', nulls: 'last' } },
     ano: { year: 'desc' },
@@ -81,7 +85,7 @@ export function approvedPaths(row: Pick<PublicRow, 'id' | 'photos'>): string[] {
 /** Explicit JSON allowlist, even if a future query accidentally over-selects. */
 export function publicVehicleDto(row: PublicRow) {
   const framing = galleryFramingSchema.safeParse(row.galleryFraming).data ?? {};
-  const positions = approvedPaths(row).map(path => framing[path] ?? null);
+  const positions = approvedPaths(row).map((path) => framing[path] ?? null);
   if (
     !row.webPublished ||
     !row.publicSlug ||
@@ -107,7 +111,8 @@ export function publicVehicleDto(row: PublicRow) {
     // Immutable upload identities invalidate browser cache after replacement/reorder.
     // Storage paths/tokens stay private; every request reaching the server checks approval.
     photos: approvedPaths(row).map(
-      (path, index) => `/api/public/vehicles/${row.publicSlug}/photos/${index}?v=${publicPhotoVersion(path)}`,
+      (path, index) =>
+        `/api/public/vehicles/${row.publicSlug}/photos/${index}?v=${publicPhotoVersion(path)}`,
     ),
   };
 }
@@ -120,7 +125,7 @@ export async function listAvailablePublicBrands(db: PrismaClient) {
     _count: { _all: true },
     orderBy: { brand: 'asc' },
   });
-  return brands.map(brand => ({ value: brand.brand, count: brand._count._all }));
+  return brands.map((brand) => ({ value: brand.brand, count: brand._count._all }));
 }
 
 export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQuery) {
@@ -195,7 +200,9 @@ export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQ
 }
 
 export async function getPublicVehicle(
-  db: PrismaClient, slug: string, preparePhotos?: (paths: string[]) => void,
+  db: PrismaClient,
+  slug: string,
+  preparePhotos?: (paths: string[]) => void,
 ) {
   const row = await db.vehicle.findFirst({
     where: { ...publicVehicleWhere(), publicSlug: slug },
@@ -205,43 +212,66 @@ export async function getPublicVehicle(
   const vehicle = publicVehicleDto(row);
   // Reuse this live public query; never expose private paths in the DTO and
   // never cache its authorization. Warming is optional and cannot fail the page.
-  try { preparePhotos?.(approvedPaths(row)); } catch { /* Best-effort pixels only. */ }
+  try {
+    preparePhotos?.(approvedPaths(row));
+  } catch {
+    /* Best-effort pixels only. */
+  }
   return vehicle;
 }
 
 /** The nearest five must be among the nearest five on either side of the price. */
 export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
-  return db.$transaction(async (tx) => {
-    const current = await tx.vehicle.findFirst({
-      where: { ...publicVehicleWhere(), publicSlug: slug },
-      select: publicVehicleSelect,
-    });
-    if (!current) return null;
-    const price = current.publicPrice;
-    if (!price || !price.isFinite() || !price.gt(0)) return [];
-    const where = { ...publicVehicleWhere(), id: { not: current.id } };
-    const [below, above] = await Promise.all([
-      tx.vehicle.findMany({
-        where: { ...where, publicPrice: { gt: 0, lte: price } },
+  return db.$transaction(
+    async (tx) => {
+      const current = await tx.vehicle.findFirst({
+        where: { ...publicVehicleWhere(), publicSlug: slug },
         select: publicVehicleSelect,
-        orderBy: [{ publicPrice: 'desc' }, { publicSlug: 'asc' }], take: 5,
-      }),
-      tx.vehicle.findMany({
-        where: { ...where, publicPrice: { gt: price } },
-        select: publicVehicleSelect,
-        orderBy: [{ publicPrice: 'asc' }, { publicSlug: 'asc' }], take: 5,
-      }),
-    ]);
-    return [...new Map([...below, ...above]
-      .filter(row => row.id !== current.id && row.publicPrice?.isFinite() && row.publicPrice.gt(0))
-      .map(row => [row.publicSlug, row])).values()]
-      .sort((a, b) => a.publicPrice!.minus(price).abs().comparedTo(b.publicPrice!.minus(price).abs())
-        || a.publicSlug!.localeCompare(b.publicSlug!))
-      .slice(0, 5).map(publicVehicleDto);
-  }, { isolationLevel: 'RepeatableRead' });
+      });
+      if (!current) return null;
+      const price = current.publicPrice;
+      if (!price || !price.isFinite() || !price.gt(0)) return [];
+      const where = { ...publicVehicleWhere(), id: { not: current.id } };
+      const [below, above] = await Promise.all([
+        tx.vehicle.findMany({
+          where: { ...where, publicPrice: { gt: 0, lte: price } },
+          select: publicVehicleSelect,
+          orderBy: [{ publicPrice: 'desc' }, { publicSlug: 'asc' }],
+          take: 5,
+        }),
+        tx.vehicle.findMany({
+          where: { ...where, publicPrice: { gt: price } },
+          select: publicVehicleSelect,
+          orderBy: [{ publicPrice: 'asc' }, { publicSlug: 'asc' }],
+          take: 5,
+        }),
+      ]);
+      return [
+        ...new Map(
+          [...below, ...above]
+            .filter(
+              (row) =>
+                row.id !== current.id && row.publicPrice?.isFinite() && row.publicPrice.gt(0),
+            )
+            .map((row) => [row.publicSlug, row]),
+        ).values(),
+      ]
+        .sort(
+          (a, b) =>
+            a.publicPrice!.minus(price).abs().comparedTo(b.publicPrice!.minus(price).abs()) ||
+            a.publicSlug!.localeCompare(b.publicSlug!),
+        )
+        .slice(0, 5)
+        .map(publicVehicleDto);
+    },
+    { isolationLevel: 'RepeatableRead' },
+  );
 }
 
-const pendingPhotoAuthorizations = new WeakMap<PrismaClient, Map<string, Promise<string[] | null>>>();
+const pendingPhotoAuthorizations = new WeakMap<
+  PrismaClient,
+  Map<string, Promise<string[] | null>>
+>();
 /** Share only a currently running query. Settled permissions are never cached.
  * Later requests (including another wave from the same gallery) query again.
  */
@@ -254,12 +284,17 @@ function currentPublicPhotoPaths(db: PrismaClient, slug: string): Promise<string
   const existing = pending.get(slug);
   if (existing) return existing;
   // Defer invocation so even a synchronous client failure runs cleanup after set().
-  const request = Promise.resolve().then(() => db.vehicle.findFirst({
-    where: { ...publicVehicleWhere(), publicSlug: slug },
-    select: { id: true, photos: true },
-  })).then(row => row ? approvedPaths(row) : null).finally(() => {
-    pending.delete(slug);
-  });
+  const request = Promise.resolve()
+    .then(() =>
+      db.vehicle.findFirst({
+        where: { ...publicVehicleWhere(), publicSlug: slug },
+        select: { id: true, photos: true },
+      }),
+    )
+    .then((row) => (row ? approvedPaths(row) : null))
+    .finally(() => {
+      pending.delete(slug);
+    });
   pending.set(slug, request);
   return request;
 }
@@ -269,19 +304,28 @@ export async function getPublicPhotoPath(db: PrismaClient, slug: string, index: 
   return paths?.[index] ?? null;
 }
 
-export const publicPhotoVersion = (path:string) => createHash('sha256').update(path).digest('hex');
+export const publicPhotoVersion = (path: string) => createHash('sha256').update(path).digest('hex');
 /** One fresh, bounded query for a comparison; no retained vehicle/permission snapshot. */
 export async function getPublicSelection(db: PrismaClient, ids: string[]) {
   if (!ids.length) return [];
-  const rows = await db.vehicle.findMany({ where: { ...publicVehicleWhere(), publicSlug: { in: ids } }, select: publicVehicleSelect });
-  return ids.map(id => {
-    const row = rows.find(row => row.publicSlug === id);
-    return row ? { id, status: 200, vehicle: publicVehicleDto(row), photoVersions: approvedPaths(row).map(publicPhotoVersion) }
+  const rows = await db.vehicle.findMany({
+    where: { ...publicVehicleWhere(), publicSlug: { in: ids } },
+    select: publicVehicleSelect,
+  });
+  return ids.map((id) => {
+    const row = rows.find((row) => row.publicSlug === id);
+    return row
+      ? {
+          id,
+          status: 200,
+          vehicle: publicVehicleDto(row),
+          photoVersions: approvedPaths(row).map(publicPhotoVersion),
+        }
       : { id, status: 404, vehicle: null };
   });
 }
 /** Fresh permission snapshot for reusing already-downloaded public thumbnails, never Storage URLs. */
-export async function getPublicPhotoVersions(db:PrismaClient,slug:string){
-  const paths=await currentPublicPhotoPaths(db,slug);
-  return paths?paths.map(publicPhotoVersion):null;
+export async function getPublicPhotoVersions(db: PrismaClient, slug: string) {
+  const paths = await currentPublicPhotoPaths(db, slug);
+  return paths ? paths.map(publicPhotoVersion) : null;
 }

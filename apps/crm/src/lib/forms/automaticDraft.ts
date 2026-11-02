@@ -9,7 +9,9 @@ let active: DraftGuard | undefined;
 export const activeDraftGuard = () => active;
 export function registerDraftGuard(guard: DraftGuard) {
   active = guard;
-  return () => { if (active === guard) active = undefined; };
+  return () => {
+    if (active === guard) active = undefined;
+  };
 }
 
 const database = 'anm-vehicle-recovery';
@@ -22,7 +24,10 @@ async function openDatabase() {
     request.onblocked = () => reject(Error('Armazenamento indisponível.'));
   });
 }
-async function transaction<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>) {
+async function transaction<T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => IDBRequest<T>,
+) {
   const db = await openDatabase();
   try {
     return await new Promise<T>((resolve, reject) => {
@@ -32,12 +37,14 @@ async function transaction<T>(mode: IDBTransactionMode, run: (store: IDBObjectSt
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error ?? Error('Não foi possível guardar.'));
     });
-  } finally { db.close(); }
+  } finally {
+    db.close();
+  }
 }
 export const draftStorage = {
-  read: <T>(key: string) => transaction<T | undefined>('readonly', store => store.get(key)),
-  write: <T>(key: string, data: T) => transaction('readwrite', store => store.put(data, key)),
-  remove: (key: string) => transaction('readwrite', store => store.delete(key)),
+  read: <T>(key: string) => transaction<T | undefined>('readonly', (store) => store.get(key)),
+  write: <T>(key: string, data: T) => transaction('readwrite', (store) => store.put(data, key)),
+  remove: (key: string) => transaction('readwrite', (store) => store.delete(key)),
 };
 
 export function draftFingerprint(value: unknown) {
@@ -64,7 +71,10 @@ export function automaticDraft<T>(options: {
   async function flush() {
     clearTimeout(timer);
     if (stopped) return;
-    if (running) { await running; return flush(); }
+    if (running) {
+      await running;
+      return flush();
+    }
     const work = async () => {
       while (!stopped) {
         const value = options.capture();
@@ -80,25 +90,54 @@ export function automaticDraft<T>(options: {
         }
       }
     };
-    running = work().catch(error => { options.state('error'); throw error; });
-    try { await running; } finally { running = undefined; }
+    running = work().catch((error) => {
+      options.state('error');
+      throw error;
+    });
+    try {
+      await running;
+    } finally {
+      running = undefined;
+    }
   }
   function update() {
     if (stopped || draftFingerprint(options.capture()) === saved) return;
     options.state('saving');
     clearTimeout(timer);
-    timer = setTimeout(() => { void flush().catch(() => {}); }, 350);
+    timer = setTimeout(() => {
+      void flush().catch(() => {});
+    }, 350);
   }
   async function discard() {
     stopped = true;
     clearTimeout(timer);
-    try { await running; } catch { /* deletion still follows the failed write */ }
+    try {
+      await running;
+    } catch {
+      /* deletion still follows the failed write */
+    }
     await options.remove();
   }
   async function abandon() {
     stopped = true;
     clearTimeout(timer);
-    try { await running; } catch { /* Keep the last successfully stored recovery copy. */ }
+    try {
+      await running;
+    } catch {
+      /* Keep the last successfully stored recovery copy. */
+    }
   }
-  return { flush, update, discard, abandon, resume() { stopped = false; }, dispose() { stopped = true; clearTimeout(timer); } };
+  return {
+    flush,
+    update,
+    discard,
+    abandon,
+    resume() {
+      stopped = false;
+    },
+    dispose() {
+      stopped = true;
+      clearTimeout(timer);
+    },
+  };
 }

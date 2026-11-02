@@ -29,10 +29,11 @@ export const load: LayoutServerLoad = async (event) => {
   }
 
   // These authenticated reads are independent; avoid an extra serial roundtrip.
-  const optionalStats = <T>(path: string) => apiJson<T>(event, path).catch((err) => {
-    rethrowAuthError(err);
-    return null;
-  });
+  const optionalStats = <T>(path: string) =>
+    apiJson<T>(event, path).catch((err) => {
+      rethrowAuthError(err);
+      return null;
+    });
   const [me, vehicleStats, taskStats] = await Promise.all([
     apiJson<MeResponse>(event, '/api/me').catch((err) => {
       const status = err instanceof ApiError && [401, 403].includes(err.status) ? err.status : 503;

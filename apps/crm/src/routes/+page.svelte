@@ -115,7 +115,16 @@
 </main>
 
 <style>
-  .account-deleted-note {padding:14px;margin-bottom:20px;border:1px solid var(--color-border-strong);border-left:3px solid var(--color-success);border-radius:var(--radius-btn);font-size:13px;line-height:1.6;color:var(--color-text);}
+  .account-deleted-note {
+    padding: 14px;
+    margin-bottom: 20px;
+    border: 1px solid var(--color-border-strong);
+    border-left: 3px solid var(--color-success);
+    border-radius: var(--radius-btn);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text);
+  }
   .login-page :global(.cl-footer) {
     background: transparent !important;
     border-top: 1px solid var(--color-border);

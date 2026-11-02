@@ -216,19 +216,24 @@
 
     <!-- User footer -->
     <div class="user-footer">
-      <a class="user-profile-link" href={crmPath('/definicoes')} aria-label={`Definições de ${userName}`} aria-current={isActive(crmPath('/definicoes'), $page.url.pathname) ? 'page' : undefined}>
-      <div class="user-avatar" title={collapsed ? userName : undefined}>
-        {#if avatarUrl}
-          <img src={avatarUrl} alt={userName} referrerpolicy="no-referrer" />
-        {:else}
-          <span class="user-avatar-initials">{initials || 'A'}</span>
-        {/if}
-        <span class="user-presence"></span>
-      </div>
-      <div class="user-meta">
-        <div class="user-name">{userName}</div>
-        <div class="user-role">Gerente</div>
-      </div>
+      <a
+        class="user-profile-link"
+        href={crmPath('/definicoes')}
+        aria-label={`Definições de ${userName}`}
+        aria-current={isActive(crmPath('/definicoes'), $page.url.pathname) ? 'page' : undefined}
+      >
+        <div class="user-avatar" title={collapsed ? userName : undefined}>
+          {#if avatarUrl}
+            <img src={avatarUrl} alt={userName} referrerpolicy="no-referrer" />
+          {:else}
+            <span class="user-avatar-initials">{initials || 'A'}</span>
+          {/if}
+          <span class="user-presence"></span>
+        </div>
+        <div class="user-meta">
+          <div class="user-name">{userName}</div>
+          <div class="user-role">Gerente</div>
+        </div>
       </a>
       <SignOutButton class="sign-out" redirectUrl={crmPath('/')}>
         <BrandLogout class="h-4 w-4" />
@@ -594,9 +599,26 @@
     /* Subtle ring so the photo doesn't melt into the dark footer background. */
     box-shadow: 0 0 0 1px var(--color-border);
   }
-  .user-profile-link {display:flex;align-items:center;gap:12px;flex:1;min-width:0;min-height:44px;border-radius:var(--radius-btn);color:inherit;text-decoration:none;cursor:pointer;transition:background-color 140ms;}
-  .user-profile-link:hover {background:var(--color-interaction-hover);}
-  .user-profile-link:focus-visible {outline:2px solid var(--color-red);outline-offset:4px;}
+  .user-profile-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    border-radius: var(--radius-btn);
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 140ms;
+  }
+  .user-profile-link:hover {
+    background: var(--color-interaction-hover);
+  }
+  .user-profile-link:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 4px;
+  }
   .user-avatar img {
     width: 100%;
     height: 100%;

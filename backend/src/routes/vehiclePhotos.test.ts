@@ -7,8 +7,6 @@ import type { PrismaClient } from '@prisma/client';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  diagnostics:{enabled:false,begin:vi.fn(),rejection:vi.fn(),clientTransfer:vi.fn()},
-  trace:{id:'12345678-1234-4234-8234-123456789abc',phase:vi.fn(),fields:vi.fn(),finish:vi.fn()},
   vehicle: { findUnique: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
   $queryRaw: vi.fn(),
   $transaction: vi.fn(),
@@ -20,11 +18,36 @@ const mocks = vi.hoisted(() => ({
   logger: { error: vi.fn() },
   ensureVariants: vi.fn(),
   lateCleanup: vi.fn(),
+  info: vi.fn(),
+  beginLease: vi.fn(),
+  finishLease: vi.fn(),
+  failLease: vi.fn(),
+  checkLease: vi.fn(),
+  retainLease: vi.fn(),
+  discardLease: vi.fn(),
+  cleanupPhoto: vi.fn(),
+  assertStaged: vi.fn(),
+  attached: vi.fn(),
+  queueRemoved: vi.fn(),
   vehiclePhotoDimensions: { createMany: vi.fn(), deleteMany: vi.fn() },
 }));
-vi.mock('../../../shared/runtimeDiagnostics.mjs',async importOriginal=>({...await importOriginal<object>(),getProcessDiagnostics:()=>mocks.diagnostics}));
+vi.mock('../lib/server/photoLifecycleStore.js', async (original) => ({
+  ...(await original<object>()),
+  beginPhotoUpload: mocks.beginLease,
+  checkPhotoUpload: mocks.checkLease,
+  finishPhotoUpload: mocks.finishLease,
+  failPhotoUpload: mocks.failLease,
+  retainStagedPhotos: mocks.retainLease,
+  discardStagedPhotos: mocks.discardLease,
+  processPhotoJob: mocks.cleanupPhoto,
+  assertStagedPhotos: mocks.assertStaged,
+  forgetAttachedPhotos: mocks.attached,
+  queuePhotoRemovals: mocks.queueRemoved,
+}));
 vi.mock('../lib/server/photoVariants.js', () => ({ ensurePhotoVariants: mocks.ensureVariants }));
-vi.mock('../lib/server/vehiclePhotoCleanup.js', () => ({ cleanupLateVehicleUpload: mocks.lateCleanup }));
+vi.mock('../lib/server/vehiclePhotoCleanup.js', () => ({
+  cleanupLateVehicleUpload: mocks.lateCleanup,
+}));
 vi.mock('../db.js', () => ({ prisma: mocks }));
 vi.mock('../logger.js', () => ({ logger: mocks.logger }));
 vi.mock('../middleware/clerk.js', () => ({
@@ -35,7 +58,9 @@ vi.mock('../lib/data/storage.js', () => ({
   createSignedReadUrl: mocks.createSignedReadUrl,
   signedPhotos: mocks.signedPhotos,
   getBucketName: () => 'photos',
-  getSupabase: () => ({ storage: { from: () => ({ upload: mocks.upload, download: mocks.download }) } }),
+  getSupabase: () => ({
+    storage: { from: () => ({ upload: mocks.upload, download: mocks.download, info: mocks.info }) },
+  }),
 }));
 import router from './vehiclePhotos.js';
 import { errorHandler } from '../middleware/errorHandler.js';
@@ -68,8 +93,10 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.diagnostics.enabled=false;mocks.diagnostics.begin.mockReturnValue(mocks.trace);
-  mocks.ensureVariants.mockResolvedValue({ manifest: { width: 30, height: 20, sourceHash: 'a'.repeat(64) } });
+
+  mocks.ensureVariants.mockResolvedValue({
+    manifest: { width: 30, height: 20, sourceHash: 'a'.repeat(64) },
+  });
   mocks.vehiclePhotoDimensions.createMany.mockResolvedValue({ count: 1 });
   mocks.vehiclePhotoDimensions.deleteMany.mockResolvedValue({ count: 1 });
   mocks.$transaction.mockImplementation(async (work) => work(mocks));
@@ -87,16 +114,27 @@ beforeEach(() => {
   });
   mocks.vehicle.updateMany.mockImplementation(async ({ where, data }) => {
     const current = rows.get(where.id);
-    if (
-      !current ||
-      JSON.stringify(current) !== JSON.stringify(where.photos.equals)
-    )
+    if (!current || JSON.stringify(current) !== JSON.stringify(where.photos.equals))
       return { count: 0 };
     rows.set(where.id, [...data.photos.set]);
     publicRows.set(where.id, [...data.publicPhotoPaths.set]);
     return { count: 1 };
   });
   mocks.deleteObjects.mockResolvedValue(undefined);
+  mocks.beginLease.mockImplementation(async (_id, path) => ({ path, token: 'fixture-token' }));
+  mocks.checkLease.mockResolvedValue(undefined);
+  mocks.finishLease.mockResolvedValue(undefined);
+  mocks.failLease.mockResolvedValue(undefined);
+  mocks.retainLease.mockResolvedValue({ adopted: [] });
+  mocks.info.mockResolvedValue({ data: {}, error: null });
+  mocks.cleanupPhoto.mockImplementation(async (path) => {
+    try {
+      await mocks.deleteObjects([path]);
+      return true;
+    } catch {
+      return false;
+    }
+  });
   mocks.upload.mockResolvedValue({ error: null });
 });
 it('production upload uses the isolated codec and waits for its exit before finalizing', async () => {
@@ -104,14 +142,14 @@ it('production upload uses the isolated codec and waits for its exit before fina
     mode = process.env.PHOTO_PROCESSING_MODE;
   process.env.NODE_ENV = 'production';
   delete process.env.PHOTO_PROCESSING_MODE;
-  mocks.diagnostics.enabled = true;
+
   try {
     const input = await sharp({
       create: { width: 400, height: 300, channels: 3, background: 'blue' },
     })
       .jpeg()
       .toBuffer();
-    mocks.ensureVariants.mockImplementation(async (_path, input, _trace, encode) => {
+    mocks.ensureVariants.mockImplementation(async (_path, input, encode) => {
       expect(typeof encode).toBe('function');
       const built = await encode(input);
       expect(built.files.length).toBeGreaterThan(0);
@@ -124,11 +162,6 @@ it('production upload uses the isolated codec and waits for its exit before fina
     });
     expect(response.status).toBe(201);
     expect(mocks.upload).toHaveBeenCalled();
-    expect(
-      mocks.trace.fields.mock.calls.some(
-        ([fields]) => fields.workerExited === 1 && fields.workerRss === 0,
-      ),
-    ).toBe(true);
   } finally {
     if (previous === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previous;
@@ -136,47 +169,75 @@ it('production upload uses the isolated codec and waits for its exit before fina
     else process.env.PHOTO_PROCESSING_MODE = mode;
   }
 }, 30000);
-describe('optional diagnostic boundary',()=>{
-  it('does not accept telemetry when disabled and bounds enabled numeric reports',async()=>{
-    let response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});expect(response.status).toBe(204);expect(mocks.diagnostics.clientTransfer).not.toHaveBeenCalled();
-    mocks.diagnostics.enabled=true;
-    response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({trace:mocks.trace.id,transferMs:20,status:201,outcome:'ok',filename:'private.jpg'})});expect(response.status).toBe(400);
-    mocks.diagnostics.clientTransfer.mockReturnValue(false);
-    const report={trace:mocks.trace.id,transferMs:20,status:201,outcome:'ok'};
-    response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(report)});expect(response.status).toBe(429);
-    mocks.diagnostics.clientTransfer.mockReturnValue(true);
-    response=await fetch(base+'/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(report)});expect(response.status).toBe(204);
-    expect(mocks.diagnostics.clientTransfer).toHaveBeenCalledWith(mocks.trace.id,{transferMs:20,status:201},'ok');
-  });
-});
+
 describe('photo framing', () => {
-  const framing = {desktop:{x:50,y:84},mobile:{x:35,y:75}};
-  it('persists independent card coordinates and preserves them for legacy detail updates and resets',async()=>{
-    const card={desktop:{x:50,y:20},mobile:{x:50,y:30}};
-    mocks.vehicle.findUnique.mockResolvedValue({photos:[a,b],galleryFraming:{[a]:{...framing,card}}});
-    const send=(value:unknown)=>fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:a,framing:value})});
-    const changedCard={desktop:{x:50,y:25},mobile:{x:50,y:35}};
-    const saved=await send({...framing,card:changedCard});expect((await saved.json()).galleryFraming[a]).toEqual({...framing,card:changedCard});
-    const legacy=await send(framing);expect((await legacy.json()).galleryFraming[a]).toEqual({...framing,card});
-    const resetDetail=await send(null);expect((await resetDetail.json()).galleryFraming[a]).toEqual({desktop:{x:50,y:50},mobile:{x:50,y:50},card});
-    const resetCard=await send({...framing,card:null});expect((await resetCard.json()).galleryFraming[a]).toEqual({...framing,card:null});
-    expect(mocks.upload).not.toHaveBeenCalled();expect(mocks.deleteObjects).not.toHaveBeenCalled();
+  const framing = { desktop: { x: 50, y: 84 }, mobile: { x: 35, y: 75 } };
+  it('persists independent card coordinates and preserves them for legacy detail updates and resets', async () => {
+    const card = { desktop: { x: 50, y: 20 }, mobile: { x: 50, y: 30 } };
+    mocks.vehicle.findUnique.mockResolvedValue({
+      photos: [a, b],
+      galleryFraming: { [a]: { ...framing, card } },
+    });
+    const send = (value: unknown) =>
+      fetch(base + '/framing', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ path: a, framing: value }),
+      });
+    const changedCard = { desktop: { x: 50, y: 25 }, mobile: { x: 50, y: 35 } };
+    const saved = await send({ ...framing, card: changedCard });
+    expect((await saved.json()).galleryFraming[a]).toEqual({ ...framing, card: changedCard });
+    const legacy = await send(framing);
+    expect((await legacy.json()).galleryFraming[a]).toEqual({ ...framing, card });
+    const resetDetail = await send(null);
+    expect((await resetDetail.json()).galleryFraming[a]).toEqual({
+      desktop: { x: 50, y: 50 },
+      mobile: { x: 50, y: 50 },
+      card,
+    });
+    const resetCard = await send({ ...framing, card: null });
+    expect((await resetCard.json()).galleryFraming[a]).toEqual({ ...framing, card: null });
+    expect(mocks.upload).not.toHaveBeenCalled();
+    expect(mocks.deleteObjects).not.toHaveBeenCalled();
   });
   it('saves metadata only, preserves other photos, and resets without touching storage', async () => {
-    mocks.vehicle.findUnique.mockResolvedValue({photos:[a,b],galleryFraming:{[b]:framing}});
-    let response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:a,framing})});
+    mocks.vehicle.findUnique.mockResolvedValue({
+      photos: [a, b],
+      galleryFraming: { [b]: framing },
+    });
+    let response = await fetch(base + '/framing', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path: a, framing }),
+    });
     expect(response.status).toBe(200);
-    expect((await response.json()).galleryFraming).toEqual({[a]:framing,[b]:framing});
-    expect(mocks.vehicle.update).toHaveBeenCalledWith({where:{id},data:{galleryFraming:{[a]:framing,[b]:framing}}});
-    response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:b,framing:null})});
+    expect((await response.json()).galleryFraming).toEqual({ [a]: framing, [b]: framing });
+    expect(mocks.vehicle.update).toHaveBeenCalledWith({
+      where: { id },
+      data: { galleryFraming: { [a]: framing, [b]: framing } },
+    });
+    response = await fetch(base + '/framing', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path: b, framing: null }),
+    });
     expect((await response.json()).galleryFraming).toEqual({});
-    expect(mocks.upload).not.toHaveBeenCalled(); expect(mocks.deleteObjects).not.toHaveBeenCalled();
+    expect(mocks.upload).not.toHaveBeenCalled();
+    expect(mocks.deleteObjects).not.toHaveBeenCalled();
   });
   it('rejects unknown photos and invalid coordinates before writing', async () => {
-    let response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:a,framing:{...framing,desktop:{x:50,y:101}}})});
+    let response = await fetch(base + '/framing', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path: a, framing: { ...framing, desktop: { x: 50, y: 101 } } }),
+    });
     expect(response.status).toBe(400);
-    mocks.vehicle.findUnique.mockResolvedValue({photos:[a,b],galleryFraming:{}});
-    response = await fetch(base+'/framing',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:c,framing})});
+    mocks.vehicle.findUnique.mockResolvedValue({ photos: [a, b], galleryFraming: {} });
+    response = await fetch(base + '/framing', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path: c, framing }),
+    });
     expect(response.status).toBe(404);
     expect(mocks.vehicle.update).not.toHaveBeenCalled();
   });
@@ -184,7 +245,10 @@ describe('photo framing', () => {
 
 describe('atomic photo changes across shared database callers', () => {
   it('returns the signed gallery through one batch and keeps missing vehicles as 404', async () => {
-    mocks.signedPhotos.mockResolvedValue([{ path: a, url: 'signed:a' }, { path: b, url: 'signed:b' }]);
+    mocks.signedPhotos.mockResolvedValue([
+      { path: a, url: 'signed:a' },
+      { path: b, url: 'signed:b' },
+    ]);
     const response = await fetch(`${base}/signed`);
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ photos: [{ path: a }, { path: b }] });
@@ -259,6 +323,22 @@ describe('atomic photo changes across shared database callers', () => {
     expect(rows.get(id)).toEqual([b, a, c]);
   });
   it('rejects a reorder overtaken by an upload rather than removing its new photo', async () => {
+    // Hold the stale reorder at the CAS boundary until the upload has committed;
+    // validation now awaits a staging lease and must not define the interleaving.
+    const update = mocks.vehicle.updateMany.getMockImplementation()!;
+    let committed!: () => void;
+    const appended = new Promise<void>((resolve) => {
+      committed = resolve;
+    });
+    mocks.vehicle.updateMany.mockImplementation(async (args) => {
+      if (args.data.photos.set.includes(c)) {
+        const result = await update(args);
+        committed();
+        return result;
+      }
+      await appended;
+      return update(args);
+    });
     const result = await Promise.allSettled([
       mutateVehiclePhotos(db, id, { type: 'append', path: c }),
       mutateVehiclePhotos(db, id, { type: 'reorder', photos: [b, a] }),
@@ -354,28 +434,74 @@ const remove = (photo: string) =>
 
 describe('photo HTTP contract and storage boundary', () => {
   it('rejects a staged upload finished after draft deletion and hands its exact path to durable cleanup', async () => {
-    const input = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } }).jpeg().toBuffer();
+    const input = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } })
+      .jpeg()
+      .toBuffer();
     mocks.ensureVariants.mockImplementationOnce(async () => {
       rows.delete(id);
       return { manifest: { width: 30, height: 20, sourceHash: 'a'.repeat(64) } };
     });
-    const response = await fetch(base, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-edit-stage': 'true', 'x-upload-id': '12345678-1234-4234-8234-123456789abc' }, body: input });
+    const response = await fetch(base, {
+      method: 'POST',
+      headers: {
+        'content-type': 'image/jpeg',
+        'x-edit-stage': 'true',
+        'x-upload-id': '12345678-1234-4234-8234-123456789abc',
+      },
+      body: input,
+    });
     expect(response.status).toBe(409);
-    await vi.waitFor(() => expect(mocks.lateCleanup).toHaveBeenCalledWith(id, `${id}/12345678-1234-4234-8234-123456789abc.jpg`));
+    await vi.waitFor(() =>
+      expect(mocks.lateCleanup).toHaveBeenCalledWith(
+        id,
+        `${id}/12345678-1234-4234-8234-123456789abc.jpg`,
+      ),
+    );
     expect(rows.has(id)).toBe(false);
     expect(mocks.vehicle.updateMany).not.toHaveBeenCalled();
   });
-  it.each([false, true])('retries an old staged upload only when cleaned image bytes match (different pixels: %s)', async different => {
-    const stored = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } }).jpeg().withMetadata().withExifMerge({ IFD0: { Artist: 'PRIVATE_ARTIST' } }).toBuffer();
-    const input = different ? await sharp({ create: { width: 30, height: 20, channels: 3, background: 'blue' } }).jpeg().toBuffer() : stored;
-    mocks.upload.mockResolvedValue({ error: { message: 'already exists' } });
-    mocks.download.mockResolvedValue({ data: new Blob([new Uint8Array(stored)], { type: 'image/jpeg' }), error: null });
-    const response = await fetch(base, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-edit-stage': 'true', 'x-upload-id': '12345678-1234-4234-8234-123456789abc' }, body: input });
-    expect(response.status).toBe(different ? 502 : 201);
-    if (different) expect(mocks.ensureVariants).not.toHaveBeenCalled();
-    else expect(mocks.ensureVariants).toHaveBeenCalledWith(`${id}/12345678-1234-4234-8234-123456789abc.jpg`, stored);
-    expect(rows.get(id)).toEqual([a, b]); expect(publicRows.get(id)).toEqual([a, b]);
-  });
+  it.each([false, true])(
+    'retries an old staged upload only when cleaned image bytes match (different pixels: %s)',
+    async (different) => {
+      const stored = await sharp({
+        create: { width: 30, height: 20, channels: 3, background: 'red' },
+      })
+        .jpeg()
+        .withMetadata()
+        .withExifMerge({ IFD0: { Artist: 'PRIVATE_ARTIST' } })
+        .toBuffer();
+      const input = different
+        ? await sharp({ create: { width: 30, height: 20, channels: 3, background: 'blue' } })
+            .jpeg()
+            .toBuffer()
+        : stored;
+      mocks.upload.mockResolvedValue({ error: { message: 'already exists' } });
+      mocks.download.mockResolvedValue({
+        data: new Blob([new Uint8Array(stored)], { type: 'image/jpeg' }),
+        error: null,
+      });
+      const response = await fetch(base, {
+        method: 'POST',
+        headers: {
+          'content-type': 'image/jpeg',
+          'x-edit-stage': 'true',
+          'x-upload-id': '12345678-1234-4234-8234-123456789abc',
+        },
+        body: input,
+      });
+      expect(response.status).toBe(different ? 502 : 201);
+      if (different) expect(mocks.ensureVariants).not.toHaveBeenCalled();
+      else
+        expect(mocks.ensureVariants).toHaveBeenCalledWith(
+          `${id}/12345678-1234-4234-8234-123456789abc.jpg`,
+          stored,
+          undefined,
+          expect.any(Function),
+        );
+      expect(rows.get(id)).toEqual([a, b]);
+      expect(publicRows.get(id)).toEqual([a, b]);
+    },
+  );
   it.each([2, 20])(
     'prepares a private edit upload without associating/approving it, even with %i existing photos',
     async (count) => {
@@ -423,7 +549,14 @@ describe('photo HTTP contract and storage boundary', () => {
     expect(data.photos[2]).toMatch(new RegExp(`^${id}/.*\\.jpg$`));
     expect(publicRows.get(id)).toEqual(data.photos);
     expect(mocks.vehiclePhotoDimensions.createMany).toHaveBeenCalledWith({
-      data: [expect.objectContaining({ vehicleId: id, width: 30, height: 20, version: expect.stringMatching(/^[a-f0-9]{64}$/) })],
+      data: [
+        expect.objectContaining({
+          vehicleId: id,
+          width: 30,
+          height: 20,
+          version: expect.stringMatching(/^[a-f0-9]{64}$/),
+        }),
+      ],
       skipDuplicates: true,
     });
     expect(mocks.upload).toHaveBeenCalledWith(data.photos[2], input, {
@@ -456,14 +589,15 @@ describe('photo HTTP contract and storage boundary', () => {
     expect(rows.get(id)).toEqual([a, b]);
     expect((await upload(input)).status).toBe(201);
   });
-  it('cleans up only its own unreferenced object on CAS failure and keeps old photos', async () => {
+  it('durably schedules only its own failed upload and keeps old photos', async () => {
     const input = await sharp({ create: { width: 30, height: 20, channels: 3, background: 'red' } })
       .jpeg()
       .toBuffer();
     mocks.vehicle.updateMany.mockResolvedValue({ count: 0 });
     expect((await upload(input)).status).toBe(409);
     expect(rows.get(id)).toEqual([a, b]);
-    expect(mocks.deleteObjects).toHaveBeenCalledWith([mocks.upload.mock.calls[0][0]]);
+    expect(mocks.failLease).toHaveBeenCalledWith(mocks.upload.mock.calls[0][0], 'fixture-token');
+    expect(mocks.deleteObjects).not.toHaveBeenCalled();
   });
   it('rejects stale lists with 409, duplicates with 400 and accepts valid primary selection', async () => {
     rows.set(id, [a, b, c]);
@@ -537,5 +671,40 @@ describe('photo HTTP contract and storage boundary', () => {
     expect((await remove(a)).status).toBe(404);
     expect(mocks.vehicle.updateMany).not.toHaveBeenCalled();
     expect(mocks.deleteObjects).not.toHaveBeenCalled();
+  });
+});
+
+describe('prepared photo lifecycle HTTP boundary', () => {
+  const staging = (body: unknown) =>
+    fetch(base + '/staging', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  it('retains and discards only an explicit bounded list without modifying the gallery', async () => {
+    expect((await staging({ action: 'retain', paths: [c] })).status).toBe(200);
+    expect(mocks.retainLease).toHaveBeenCalledWith(id, [c]);
+    expect((await staging({ action: 'discard', paths: [c] })).status).toBe(200);
+    expect(mocks.discardLease).toHaveBeenCalledWith(id, [c]);
+    expect(rows.get(id)).toEqual([a, b]);
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+  it('rejects extra fields, unknown actions and excessive paths before lifecycle access', async () => {
+    for (const body of [
+      { action: 'retain', paths: [c], arbitrary: true },
+      { action: 'remove-all', paths: [] },
+      { action: 'discard', paths: Array(21).fill(c) },
+    ])
+      expect((await staging(body)).status).toBe(400);
+    expect(mocks.retainLease).not.toHaveBeenCalled();
+    expect(mocks.discardLease).not.toHaveBeenCalled();
+  });
+  it('reports a missing legacy prepared object for re-upload instead of associating a dead path', async () => {
+    mocks.retainLease.mockResolvedValue({ adopted: [c] });
+    mocks.info.mockResolvedValue({ data: null, error: { statusCode: 404 } });
+    const response = await staging({ action: 'retain', paths: [c] });
+    expect(await response.json()).toEqual({ ok: true, missingPaths: [c] });
+    expect(mocks.discardLease).toHaveBeenCalledWith(id, [c]);
+    expect(rows.get(id)).toEqual([a, b]);
   });
 });

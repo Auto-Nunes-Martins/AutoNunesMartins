@@ -370,7 +370,11 @@
                     <div
                       class="text-[14px] text-[var(--color-text)] break-words group-hover:text-[var(--color-red)] transition-colors"
                     >
-                      {item.message}{#if activityContextText(item)}<span class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1" title={activityContextText(item) ?? undefined}>{activityContextText(item)}</span>{/if}
+                      {item.message}{#if activityContextText(item)}<span
+                          class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1"
+                          title={activityContextText(item) ?? undefined}
+                          >{activityContextText(item)}</span
+                        >{/if}
                     </div>
                     <div
                       class="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)] mt-0.5"
@@ -408,7 +412,11 @@
                   ></span>
                   <div class="min-w-0">
                     <div class="text-[14px] text-[var(--color-text)] break-words">
-                      {item.message}{#if activityContextText(item)}<span class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1" title={activityContextText(item) ?? undefined}>{activityContextText(item)}</span>{/if}
+                      {item.message}{#if activityContextText(item)}<span
+                          class="block text-[12px] font-normal text-[var(--color-text-muted)] mt-1"
+                          title={activityContextText(item) ?? undefined}
+                          >{activityContextText(item)}</span
+                        >{/if}
                     </div>
                     <div
                       class="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)] mt-0.5"

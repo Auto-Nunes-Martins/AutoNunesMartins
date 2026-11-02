@@ -11,7 +11,18 @@
   import AccountVerification from './AccountVerification.svelte';
   import AccountDeletion from './AccountDeletion.svelte';
   import { securityModalHost } from '$lib/account/securityModal';
-  import { accountSettings, accountFailure, avatarProblem, extraAccountOptions, needsReverification, passwordProblem, passwordRequirements, verificationLevel, type AccountUser, type Email } from '$lib/account/profile';
+  import {
+    accountSettings,
+    accountFailure,
+    avatarProblem,
+    extraAccountOptions,
+    needsReverification,
+    passwordProblem,
+    passwordRequirements,
+    verificationLevel,
+    type AccountUser,
+    type Email,
+  } from '$lib/account/profile';
   import { clearFormErrors, showFormErrors, showInvalidFormFields } from '$lib/forms/formFeedback';
   import '$lib/styles/accountProfile.css';
 
@@ -22,57 +33,134 @@
   let verify: AccountVerification;
   let portalHost: HTMLDivElement;
   let securityPortal: ReturnType<typeof securityModalHost> | undefined;
-  onMount(() => { securityPortal = securityModalHost(portalHost); return () => securityPortal?.destroy(); });
+  onMount(() => {
+    securityPortal = securityModalHost(portalHost);
+    return () => securityPortal?.destroy();
+  });
   function openSecurity(path: string) {
     if (locked || !ctx.clerk) return;
-    securityPortal?.open(getContainer => ctx.clerk?.openUserProfile({ getContainer, __experimental_startPath: path, apiKeysProps: { hide: true }, appearance: { baseTheme: $theme === 'dark' ? dark : undefined } }));
+    securityPortal?.open((getContainer) =>
+      ctx.clerk?.openUserProfile({
+        getContainer,
+        __experimental_startPath: path,
+        apiKeysProps: { hide: true },
+        appearance: { baseTheme: $theme === 'dark' ? dark : undefined },
+      }),
+    );
   }
   let identity = $state('');
-  let firstName = $state(''); let lastName = $state(''); let username = $state('');
-  let busy = $state(''); let success = $state('');
-  let pendingConfirmation = $state<{ account: AccountUser; message: string; after?: () => void } | null>(null);
+  let firstName = $state('');
+  let lastName = $state('');
+  let username = $state('');
+  let busy = $state('');
+  let success = $state('');
+  let pendingConfirmation = $state<{
+    account: AccountUser;
+    message: string;
+    after?: () => void;
+  } | null>(null);
   const locked = $derived(!!busy || !!pendingConfirmation);
-  let currentPassword = $state(''); let newPassword = $state(''); let confirmation = $state('');
-  let visiblePasswords = $state(false); let signOutOthers = $state(false);
-  let avatar = $state<File | null>(null); let preview = $state('');
-  let email = $state(''); let code = $state(''); let verifyingEmail = $state<Email | null>(null);
+  let currentPassword = $state('');
+  let newPassword = $state('');
+  let confirmation = $state('');
+  let visiblePasswords = $state(false);
+  let signOutOthers = $state(false);
+  let avatar = $state<File | null>(null);
+  let preview = $state('');
+  let email = $state('');
+  let code = $state('');
+  let verifyingEmail = $state<Email | null>(null);
   let sessions = $state<Awaited<ReturnType<AccountUser['getSessions']>>>([]);
-  let sessionsLoading = $state(false); let sessionsError = $state('');
+  let sessionsLoading = $state(false);
+  let sessionsError = $state('');
   let sessionRequest = 0;
-  let profileForm = $state<HTMLFormElement>(null!); let avatarForm = $state<HTMLFormElement>(null!);
-  let passwordForm = $state<HTMLFormElement>(null!); let emailForm = $state<HTMLFormElement>(null!); let securityForm = $state<HTMLFormElement>(null!);
+  let profileForm = $state<HTMLFormElement>(null!);
+  let avatarForm = $state<HTMLFormElement>(null!);
+  let passwordForm = $state<HTMLFormElement>(null!);
+  let emailForm = $state<HTMLFormElement>(null!);
+  let securityForm = $state<HTMLFormElement>(null!);
   let active = true;
   const enabled = (field: string) => !!settings?.attributes[field]?.enabled;
   const required = (field: string) => !!settings?.attributes[field]?.required;
-  const emailCodeEnabled = $derived(settings?.attributes.email_address?.verifications?.includes('email_code') ?? false);
+  const emailCodeEnabled = $derived(
+    settings?.attributes.email_address?.verifications?.includes('email_code') ?? false,
+  );
   const displayName = $derived(user?.fullName || user?.username || 'A sua conta');
-  const initials = $derived(displayName.split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase());
-  const profileDirty = $derived(!!user && (firstName !== (user.firstName ?? '') || lastName !== (user.lastName ?? '') || username !== (user.username ?? '')));
+  const initials = $derived(
+    displayName
+      .split(/\s+/)
+      .map((s) => s[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase(),
+  );
+  const profileDirty = $derived(
+    !!user &&
+      (firstName !== (user.firstName ?? '') ||
+        lastName !== (user.lastName ?? '') ||
+        username !== (user.username ?? '')),
+  );
 
-  function clearPreview() { if (preview) URL.revokeObjectURL(preview); preview = ''; avatar = null; }
-  function clearSecrets() { currentPassword = ''; newPassword = ''; confirmation = ''; code = ''; visiblePasswords = false; }
-  onDestroy(() => { active = false; clearPreview(); clearSecrets(); });
+  function clearPreview() {
+    if (preview) URL.revokeObjectURL(preview);
+    preview = '';
+    avatar = null;
+  }
+  function clearSecrets() {
+    currentPassword = '';
+    newPassword = '';
+    confirmation = '';
+    code = '';
+    visiblePasswords = false;
+  }
+  onDestroy(() => {
+    active = false;
+    clearPreview();
+    clearSecrets();
+  });
   $effect(() => {
     const id = user?.id ?? '';
-    if (id !== identity) untrack(() => {
-      identity = id; firstName = user?.firstName ?? ''; lastName = user?.lastName ?? ''; username = user?.username ?? '';
-      verify?.cancel(); pendingConfirmation = null; clearPreview(); clearSecrets(); email = ''; verifyingEmail = null; success = ''; sessions = [];
-      sessionRequest++; sessionsLoading = false;
-      if (id) void loadSessions();
-    });
+    if (id !== identity)
+      untrack(() => {
+        identity = id;
+        firstName = user?.firstName ?? '';
+        lastName = user?.lastName ?? '';
+        username = user?.username ?? '';
+        verify?.cancel();
+        pendingConfirmation = null;
+        clearPreview();
+        clearSecrets();
+        email = '';
+        verifyingEmail = null;
+        success = '';
+        sessions = [];
+        sessionRequest++;
+        sessionsLoading = false;
+        if (id) void loadSessions();
+      });
   });
 
   async function protectedAction<T>(action: () => Promise<T>): Promise<T> {
-    try { return await action(); }
-    catch (error) {
+    try {
+      return await action();
+    } catch (error) {
       if (!needsReverification(error)) throw error;
       if (!(await verify.verify(verificationLevel(error)))) throw new Error('Verification cancelled');
       return await action(); // Clerk still authorizes the retried request; never skip its checks.
     }
   }
-  async function run(form: HTMLFormElement, key: string, action: (account: AccountUser) => Promise<unknown>, message: string, after?: () => void) {
+  async function run(
+    form: HTMLFormElement,
+    key: string,
+    action: (account: AccountUser) => Promise<unknown>,
+    message: string,
+    after?: () => void,
+  ) {
     if (locked || !user) return;
-    const account = user; busy = key; success = ''; clearFormErrors(form);
+    const account = user;
+    busy = key;
+    success = '';
+    clearFormErrors(form);
     let sent = false;
     try {
       await protectedAction(() => action(account));
@@ -81,103 +169,247 @@
       // Mutations and their fresh read must both succeed before announcing success.
       await account.reload();
       if (!active || ctx.user?.id !== account.id) return;
-      after?.(); success = message;
-      try { await ctx.session?.getToken({ skipCache: true }); await invalidateAll(); }
-      catch { success += ' Os dados foram guardados; não foi possível atualizar o restante painel. Recarregue a página.'; }
+      after?.();
+      success = message;
+      try {
+        await ctx.session?.getToken({ skipCache: true });
+        await invalidateAll();
+      } catch {
+        success +=
+          ' Os dados foram guardados; não foi possível atualizar o restante painel. Recarregue a página.';
+      }
     } catch (error) {
       if (active && ctx.user?.id === account.id) {
         if (sent) pendingConfirmation = { account, message, after };
-        else showFormErrors(form, error instanceof Error && error.message === 'Verification cancelled'
-          ? { error: 'Confirmação cancelada. A alteração não foi concluída.' }
-          : accountFailure(error, key === 'avatar' ? 'avatar' : undefined));
+        else
+          showFormErrors(
+            form,
+            error instanceof Error && error.message === 'Verification cancelled'
+              ? { error: 'Confirmação cancelada. A alteração não foi concluída.' }
+              : accountFailure(error, key === 'avatar' ? 'avatar' : undefined),
+          );
       }
-    } finally { busy = ''; }
+    } finally {
+      busy = '';
+    }
   }
   async function confirmCurrentAccount() {
-    const pending = pendingConfirmation; if (!pending || busy) return;
+    const pending = pendingConfirmation;
+    if (!pending || busy) return;
     busy = 'confirm';
     try {
       await pending.account.reload();
       if (!active || ctx.user?.id !== pending.account.id) return;
-      pending.after?.(); pendingConfirmation = null; success = pending.message;
-      try { await ctx.session?.getToken({ skipCache: true }); await invalidateAll(); }
-      catch { success += ' Recarregue a página para atualizar o restante painel.'; }
-    } catch { success = 'Ainda não foi possível confirmar os dados atuais. Verifique a ligação e repita a confirmação.'; }
-    finally { busy = ''; }
+      pending.after?.();
+      pendingConfirmation = null;
+      success = pending.message;
+      try {
+        await ctx.session?.getToken({ skipCache: true });
+        await invalidateAll();
+      } catch {
+        success += ' Recarregue a página para atualizar o restante painel.';
+      }
+    } catch {
+      success =
+        'Ainda não foi possível confirmar os dados atuais. Verifique a ligação e repita a confirmação.';
+    } finally {
+      busy = '';
+    }
   }
   async function saveProfile(event: SubmitEvent) {
-    event.preventDefault(); if (busy || !settings || showInvalidFormFields(profileForm)) return;
+    event.preventDefault();
+    if (busy || !settings || showInvalidFormFields(profileForm)) return;
     const payload: Parameters<AccountUser['update']>[0] = {};
-    if (enabled('first_name') && firstName !== (user?.firstName ?? '')) payload.firstName = firstName.trim() || null;
-    if (enabled('last_name') && lastName !== (user?.lastName ?? '')) payload.lastName = lastName.trim() || null;
-    if (enabled('username') && username !== (user?.username ?? '')) payload.username = username.trim() || null;
+    if (enabled('first_name') && firstName !== (user?.firstName ?? ''))
+      payload.firstName = firstName.trim() || null;
+    if (enabled('last_name') && lastName !== (user?.lastName ?? ''))
+      payload.lastName = lastName.trim() || null;
+    if (enabled('username') && username !== (user?.username ?? ''))
+      payload.username = username.trim() || null;
     if (!Object.keys(payload).length) return;
-    await run(profileForm, 'profile', account => account.update(payload), 'Perfil atualizado.', () => {
-      firstName = user?.firstName ?? ''; lastName = user?.lastName ?? ''; username = user?.username ?? '';
-    });
+    await run(
+      profileForm,
+      'profile',
+      (account) => account.update(payload),
+      'Perfil atualizado.',
+      () => {
+        firstName = user?.firstName ?? '';
+        lastName = user?.lastName ?? '';
+        username = user?.username ?? '';
+      },
+    );
   }
   async function chooseAvatar(event: Event) {
-    const input = event.currentTarget as HTMLInputElement, file = input.files?.[0]; input.value = '';
+    const input = event.currentTarget as HTMLInputElement,
+      file = input.files?.[0];
+    input.value = '';
     if (!file || busy) return;
-    success = ''; clearFormErrors(avatarForm);
+    success = '';
+    clearFormErrors(avatarForm);
     const problem = avatarProblem(file);
-    if (problem) { showFormErrors(avatarForm, { issues: [{ path: ['avatar'], message: problem }] }); return; }
-    busy = 'avatar-preview'; const accountId = user?.id;
+    if (problem) {
+      showFormErrors(avatarForm, { issues: [{ path: ['avatar'], message: problem }] });
+      return;
+    }
+    busy = 'avatar-preview';
+    const accountId = user?.id;
     const candidate = URL.createObjectURL(file);
     try {
-      const image = new Image(); image.src = candidate; await image.decode();
+      const image = new Image();
+      image.src = candidate;
+      await image.decode();
       if (image.naturalWidth < 1 || image.naturalHeight < 1) throw new Error('Invalid image');
-      if (!active || ctx.user?.id !== accountId) { URL.revokeObjectURL(candidate); return; }
-      clearPreview(); avatar = file; preview = candidate;
-    } catch { URL.revokeObjectURL(candidate); showFormErrors(avatarForm, { issues: [{ path: ['avatar'], message: 'Não foi possível abrir esta fotografia. Escolha outra imagem válida.' }] }); }
-    finally { busy = ''; }
+      if (!active || ctx.user?.id !== accountId) {
+        URL.revokeObjectURL(candidate);
+        return;
+      }
+      clearPreview();
+      avatar = file;
+      preview = candidate;
+    } catch {
+      URL.revokeObjectURL(candidate);
+      showFormErrors(avatarForm, {
+        issues: [
+          {
+            path: ['avatar'],
+            message: 'Não foi possível abrir esta fotografia. Escolha outra imagem válida.',
+          },
+        ],
+      });
+    } finally {
+      busy = '';
+    }
   }
   async function saveAvatar(event: SubmitEvent) {
-    event.preventDefault(); if (!avatar) return;
+    event.preventDefault();
+    if (!avatar) return;
     const file = avatar;
-    await run(avatarForm, 'avatar', account => account.setProfileImage({ file }), 'Fotografia atualizada.', clearPreview);
+    await run(
+      avatarForm,
+      'avatar',
+      (account) => account.setProfileImage({ file }),
+      'Fotografia atualizada.',
+      clearPreview,
+    );
   }
   async function savePassword(event: SubmitEvent) {
-    event.preventDefault(); if (busy || !settings) return; clearFormErrors(passwordForm);
+    event.preventDefault();
+    if (busy || !settings) return;
+    clearFormErrors(passwordForm);
     const issues: { path: string[]; message: string }[] = [];
-    if (user?.passwordEnabled && !currentPassword) issues.push({ path: ['currentPassword'], message: 'Introduza a palavra-passe atual.' });
-    const problem = passwordProblem(newPassword, settings); if (problem) issues.push({ path: ['newPassword'], message: problem });
-    if (newPassword !== confirmation || !confirmation) issues.push({ path: ['confirmation'], message: 'A confirmação deve ser igual à nova palavra-passe.' });
-    if (issues.length) { showFormErrors(passwordForm, { issues }); return; }
-    await run(passwordForm, 'password', account => account.updatePassword({ ...(account.passwordEnabled ? { currentPassword } : {}), newPassword, signOutOfOtherSessions: signOutOthers }), 'Palavra-passe atualizada.', () => { clearSecrets(); void loadSessions(); });
+    if (user?.passwordEnabled && !currentPassword)
+      issues.push({ path: ['currentPassword'], message: 'Introduza a palavra-passe atual.' });
+    const problem = passwordProblem(newPassword, settings);
+    if (problem) issues.push({ path: ['newPassword'], message: problem });
+    if (newPassword !== confirmation || !confirmation)
+      issues.push({
+        path: ['confirmation'],
+        message: 'A confirmação deve ser igual à nova palavra-passe.',
+      });
+    if (issues.length) {
+      showFormErrors(passwordForm, { issues });
+      return;
+    }
+    await run(
+      passwordForm,
+      'password',
+      (account) =>
+        account.updatePassword({
+          ...(account.passwordEnabled ? { currentPassword } : {}),
+          newPassword,
+          signOutOfOtherSessions: signOutOthers,
+        }),
+      'Palavra-passe atualizada.',
+      () => {
+        clearSecrets();
+        void loadSessions();
+      },
+    );
   }
   async function sendCode(address: Email) {
     if (!emailCodeEnabled) return;
-    await run(emailForm, 'email', async () => { verifyingEmail = address; await address.prepareVerification({ strategy: 'email_code' }); }, 'Código enviado. Confirme o email para o poder utilizar.', () => { code = ''; });
-    await tick(); if (verifyingEmail) document.getElementById('account-email-code')?.focus();
+    await run(
+      emailForm,
+      'email',
+      async () => {
+        verifyingEmail = address;
+        await address.prepareVerification({ strategy: 'email_code' });
+      },
+      'Código enviado. Confirme o email para o poder utilizar.',
+      () => {
+        code = '';
+      },
+    );
+    await tick();
+    if (verifyingEmail) document.getElementById('account-email-code')?.focus();
   }
   async function addEmail(event: SubmitEvent) {
-    event.preventDefault(); if (busy || showInvalidFormFields(emailForm) || !emailCodeEnabled) return;
+    event.preventDefault();
+    if (busy || showInvalidFormFields(emailForm) || !emailCodeEnabled) return;
     const value = email.trim();
-    await run(emailForm, 'email', async account => {
-      // Reuse an existing pending address after a failed send/read; do not create duplicates.
-      const existing = verifyingEmail?.emailAddress === value ? verifyingEmail : account.emailAddresses.find(a => a.emailAddress.toLowerCase() === value.toLowerCase());
-      const address = existing ?? await account.createEmailAddress({ email: value });
-      verifyingEmail = address;
-      await address.prepareVerification({ strategy: 'email_code' });
-    }, 'Código enviado para o novo email. A conta ainda mantém o email principal atual.', () => { code = ''; });
+    await run(
+      emailForm,
+      'email',
+      async (account) => {
+        // Reuse an existing pending address after a failed send/read; do not create duplicates.
+        const existing =
+          verifyingEmail?.emailAddress === value
+            ? verifyingEmail
+            : account.emailAddresses.find(
+                (a) => a.emailAddress.toLowerCase() === value.toLowerCase(),
+              );
+        const address = existing ?? (await account.createEmailAddress({ email: value }));
+        verifyingEmail = address;
+        await address.prepareVerification({ strategy: 'email_code' });
+      },
+      'Código enviado para o novo email. A conta ainda mantém o email principal atual.',
+      () => {
+        code = '';
+      },
+    );
   }
   async function confirmEmail(event: SubmitEvent) {
-    event.preventDefault(); if (busy || !verifyingEmail) return; clearFormErrors(emailForm);
-    if (!code.trim()) { showFormErrors(emailForm, { issues: [{ path: ['code'], message: 'Introduza o código recebido por email.' }] }); return; }
+    event.preventDefault();
+    if (busy || !verifyingEmail) return;
+    clearFormErrors(emailForm);
+    if (!code.trim()) {
+      showFormErrors(emailForm, {
+        issues: [{ path: ['code'], message: 'Introduza o código recebido por email.' }],
+      });
+      return;
+    }
     const address = verifyingEmail;
-    await run(emailForm, 'email', async () => {
-      const result = await address.attemptVerification({ code: code.trim() });
-      if (result.verification.status !== 'verified') throw new Error('Email not verified');
-    }, 'Email verificado. Pode agora defini-lo como principal.', () => { verifyingEmail = null; code = ''; email = ''; });
+    await run(
+      emailForm,
+      'email',
+      async () => {
+        const result = await address.attemptVerification({ code: code.trim() });
+        if (result.verification.status !== 'verified') throw new Error('Email not verified');
+      },
+      'Email verificado. Pode agora defini-lo como principal.',
+      () => {
+        verifyingEmail = null;
+        code = '';
+        email = '';
+      },
+    );
   }
   async function loadSessions() {
-    const account = ctx.user; if (!account || sessionsLoading) return;
+    const account = ctx.user;
+    if (!account || sessionsLoading) return;
     const request = ++sessionRequest;
-    sessionsLoading = true; sessionsError = '';
-    try { const result = await account.getSessions(); if (active && request === sessionRequest && ctx.user?.id === account.id) sessions = result.filter(s => s.status === 'active'); }
-    catch { if (active && request === sessionRequest) sessionsError = 'Não foi possível carregar as sessões. Tente novamente.'; }
-    finally { if (request === sessionRequest) sessionsLoading = false; }
+    sessionsLoading = true;
+    sessionsError = '';
+    try {
+      const result = await account.getSessions();
+      if (active && request === sessionRequest && ctx.user?.id === account.id)
+        sessions = result.filter((s) => s.status === 'active');
+    } catch {
+      if (active && request === sessionRequest)
+        sessionsError = 'Não foi possível carregar as sessões. Tente novamente.';
+    } finally {
+      if (request === sessionRequest) sessionsLoading = false;
+    }
   }
 </script>
 

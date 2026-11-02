@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { createPhotoStaging } from '$lib/photoStaging';
   import { readyPhoto } from '$lib/photoPreparation';
-  import { photoUpload } from '$lib/photoDiagnostics';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { onMount, tick, untrack, type ComponentProps } from 'svelte';
@@ -37,7 +37,12 @@
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
   import Button from '$lib/components/common/Button.svelte';
   import { Trash2 } from 'lucide-svelte';
-  import { isNewCreation, forgetCreation, discardVehicleDraft, draftsChanged } from './creationLifecycle';
+  import {
+    isNewCreation,
+    forgetCreation,
+    discardVehicleDraft,
+    draftsChanged,
+  } from './creationLifecycle';
 
   let {
     vehicle,
@@ -51,20 +56,26 @@
     draftOwner: string | null;
   } = $props();
   const baseline = untrack(() => JSON.parse(JSON.stringify(vehicle)) as VehicleDetailResponse);
-  let initial = $state<NonNullable<ComponentProps<typeof VehicleForm>['initial']>>(untrack(() => ({
-    ...vehicle,
-    status: intendedStatus,
-    salePrice: vehicle.salePrice ?? '',
-    licensePlate: vehicle.licensePlate ?? '',
-    description: vehicle.description ?? '',
-    acquisitionDate: vehicle.acquisitionDate.slice(0, 10),
-  })));
+  let initial = $state<NonNullable<ComponentProps<typeof VehicleForm>['initial']>>(
+    untrack(() => ({
+      ...vehicle,
+      status: intendedStatus,
+      salePrice: vehicle.salePrice ?? '',
+      licensePlate: vehicle.licensePlate ?? '',
+      description: vehicle.description ?? '',
+      acquisitionDate: vehicle.acquisitionDate.slice(0, 10),
+    })),
+  );
   let ready = $state(false);
-  let newCreation = $state(false), cancelling = $state(false), confirmCancel = $state(false);
+  let newCreation = $state(false),
+    cancelling = $state(false),
+    confirmCancel = $state(false);
   let discarded = $state(false);
   let serverDiscarded = false;
   let saveStarting = false;
-  let savePhase = $state(0), preparedPhotos = $state(0), photoTotal = $state(0);
+  let savePhase = $state(0),
+    preparedPhotos = $state(0),
+    photoTotal = $state(0);
   let draftState = $state('');
   let recoveredPublication = $state<ReturnType<typeof publicDraftFromForm> | undefined>();
   let autosave: ReturnType<typeof automaticDraft<Recovery>> | undefined;
@@ -75,18 +86,36 @@
     details: ReturnType<typeof vehicleDetailsFromForm>;
     publication: ReturnType<typeof publicDraftFromForm>;
     step: number;
-    photos: { path: string; file?: File; preparedFile?: File; uploadId?: string; uploadedPath?: string; preparationMetrics?: Record<string, number> }[];
+    photos: {
+      path: string;
+      file?: File;
+      preparedFile?: File;
+      uploadId?: string;
+      uploadedPath?: string;
+    }[];
   };
   function captureRecovery(): Recovery {
     const draft = snapshot('draft')!;
-    return { baseUpdatedAt: baseline.updatedAt, details: draft.details, publication: draft.publication,
-      step, photos: draft.paths.map(path => {
-        const photo = photoDraft.find(item => item.path === path)!;
-        return { path, file: photo.file, preparedFile: photo.preparedFile, uploadId: photo.uploadId, uploadedPath: photo.uploadedPath, preparationMetrics: photo.preparationMetrics };
-      }) };
+    return {
+      baseUpdatedAt: baseline.updatedAt,
+      details: draft.details,
+      publication: draft.publication,
+      step,
+      photos: draft.paths.map((path) => {
+        const photo = photoDraft.find((item) => item.path === path)!;
+        return {
+          path,
+          file: photo.file,
+          preparedFile: photo.preparedFile,
+          uploadId: photo.uploadId,
+          uploadedPath: photo.uploadedPath,
+        };
+      }),
+    };
   }
   function protectForms() {
-    for (const form of Object.values(forms())) if (form) markFormSaved(form, { preserveErrors: true });
+    for (const form of Object.values(forms()))
+      if (form) markFormSaved(form, { preserveErrors: true });
   }
   let photoDraft = $state<EditPhoto[]>(
     untrack(() =>
@@ -162,7 +191,17 @@
     }
     void refresh();
   }
+  const photoStaging = createPhotoStaging({
+    endpoint: () => crmPath('/viaturas/' + baseline.id + '/photos/staging'),
+    paths: () => photoDraft.flatMap((photo) => (photo.uploadedPath ? [photo.uploadedPath] : [])),
+    missing: (paths) => {
+      for (const photo of photoDraft)
+        if (photo.uploadedPath && paths.includes(photo.uploadedPath))
+          photo.uploadedPath = undefined;
+    },
+  });
   onMount(() => {
+    const stopPhotoStaging = photoStaging.start();
     newCreation = baseline.status === 'DRAFT' && isNewCreation(draftOwner, baseline.id);
     let disposed = false;
     const urls: string[] = [];
@@ -173,48 +212,90 @@
         if (disposed) return;
         if (saved && saved.baseUpdatedAt === baseline.updatedAt) {
           const details = saved.details;
-          initial = { ...initial, ...details, year: details.year ? Number(details.year) : null,
+          initial = {
+            ...initial,
+            ...details,
+            year: details.year ? Number(details.year) : null,
             mileage: details.mileage ? Number(details.mileage) : null,
-            fuel: details.fuel as typeof initial.fuel, status: details.status as typeof initial.status,
-            licensePlate: details.licensePlate ?? '', salePrice: details.salePrice ?? '',
-            pendingDocFlags: { financing: !!details.pendingDocFlags.financing, imt: !!details.pendingDocFlags.imt,
-              registration: !!details.pendingDocFlags.registration, docs: !!details.pendingDocFlags.docs } };
+            fuel: details.fuel as typeof initial.fuel,
+            status: details.status as typeof initial.status,
+            licensePlate: details.licensePlate ?? '',
+            salePrice: details.salePrice ?? '',
+            pendingDocFlags: {
+              financing: !!details.pendingDocFlags.financing,
+              imt: !!details.pendingDocFlags.imt,
+              registration: !!details.pendingDocFlags.registration,
+              docs: !!details.pendingDocFlags.docs,
+            },
+          };
           recoveredPublication = saved.publication;
           step = saved.step;
-          photoDraft = saved.photos.map(photo => {
-            const signed = photos.find(item => item.path === photo.path);
+          photoDraft = saved.photos.map((photo) => {
+            const signed = photos.find((item) => item.path === photo.path);
             const localFile = photo.preparedFile ?? photo.file;
-            const url = localFile ? URL.createObjectURL(localFile) : signed?.url ?? '';
+            const url = localFile ? URL.createObjectURL(localFile) : (signed?.url ?? '');
             if (localFile) urls.push(url);
             return { ...signed, ...photo, url };
           });
           draftState = 'Rascunho recuperado neste dispositivo';
         } else if (saved) {
-          message = 'A ficha foi alterada desde o rascunho anterior. Mantivemos a versão atual do CRM.';
+          message =
+            'A ficha foi alterada desde o rascunho anterior. Mantivemos a versão atual do CRM.';
         }
-      } catch { draftState = 'Não foi possível aceder ao rascunho automático'; }
+      } catch {
+        draftState = 'Não foi possível aceder ao rascunho automático';
+      }
       if (disposed) return;
       ready = true;
       await tick();
       await refresh();
-      autosave = automaticDraft({ capture: captureRecovery,
-        persist: value => draftOwner ? draftStorage.write(recoveryKey, value) : Promise.reject(Error('Sessão indisponível.')),
-        remove: () => draftStorage.remove(recoveryKey), protected: protectForms,
-        state: value => { draftState = value === 'saved' ? 'Rascunho guardado neste dispositivo' : value === 'saving' ? 'A guardar rascunho…' : 'Não foi possível guardar o rascunho'; },
+      autosave = automaticDraft({
+        capture: captureRecovery,
+        persist: (value) =>
+          draftOwner
+            ? draftStorage.write(recoveryKey, value)
+            : Promise.reject(Error('Sessão indisponível.')),
+        remove: () => draftStorage.remove(recoveryKey),
+        protected: protectForms,
+        state: (value) => {
+          draftState =
+            value === 'saved'
+              ? 'Rascunho guardado neste dispositivo'
+              : value === 'saving'
+                ? 'A guardar rascunho…'
+                : 'Não foi possível guardar o rascunho';
+        },
       });
       protectForms();
-      unregister = registerDraftGuard({ flush: autosave.flush, discard: () => discardCreation(false), resume: () => {
-        if (!serverDiscarded) { discarded = false; autosave?.resume(); }
-      },
+      unregister = registerDraftGuard({
+        flush: autosave.flush,
+        discard: () => discardCreation(false),
+        resume: () => {
+          if (!serverDiscarded) {
+            discarded = false;
+            autosave?.resume();
+          }
+        },
         busy: () => saving || saveStarting || cancelling,
-        discardMessage: newCreation ? 'Sair sem guardar elimina esta nova criação e as suas fotografias. Pode tentar guardar o rascunho ou continuar a editar.' : undefined });
+        discardMessage: newCreation
+          ? 'Sair sem guardar elimina esta nova criação e as suas fotografias. Pode tentar guardar o rascunho ou continuar a editar.'
+          : undefined,
+      });
     })();
-    return () => { disposed = true; forgetCreation(draftOwner, baseline.id); unregister?.(); autosave?.dispose(); urls.forEach(url => URL.revokeObjectURL(url)); };
+    return () => {
+      stopPhotoStaging();
+      disposed = true;
+      forgetCreation(draftOwner, baseline.id);
+      unregister?.();
+      autosave?.dispose();
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
   });
   // Only an explicitly confirmed new creation (or explicit delete button) deletes the server row.
   // A resumed/existing draft's "Sair sem guardar" removes this editing session's recovery only.
   async function discardCreation(explicitDelete: boolean) {
-    if (saving || saveStarting) throw Error('Aguarde que a gravação e o envio de fotografias terminem.');
+    if (saving || saveStarting)
+      throw Error('Aguarde que a gravação e o envio de fotografias terminem.');
     cancelling = true;
     await autosave?.abandon();
     try {
@@ -223,12 +304,17 @@
         serverDiscarded = true;
         discarded = true;
       }
+      if (!serverDiscarded) await photoStaging.discard();
       await autosave?.discard();
       discarded = true;
       forgetCreation(draftOwner, baseline.id);
       protectForms();
-    } catch (error) { if (!serverDiscarded) autosave?.resume(); throw error; }
-    finally { cancelling = false; }
+    } catch (error) {
+      if (!serverDiscarded) autosave?.resume();
+      throw error;
+    } finally {
+      cancelling = false;
+    }
   }
   async function cancelCreation() {
     if (saving || saveStarting || cancelling) return;
@@ -239,9 +325,14 @@
       confirmCancel = false;
       await goto(crmPath('/viaturas'), { invalidateAll: true });
     } catch (error) {
-      message = error instanceof Error ? error.message : 'Não foi possível descartar o rascunho. Tente novamente.';
+      message =
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível descartar o rascunho. Tente novamente.';
       toast.error(message);
-    } finally { cancelling = false; }
+    } finally {
+      cancelling = false;
+    }
   }
   async function changeStep(next: number) {
     if (saving || cancelling || discarded || needsReload) return;
@@ -289,15 +380,23 @@
     confirmNoPhoto = false;
     saveStarting = true;
     // Preserve the editable state before locking controls or making network requests.
-    try { await autosave?.flush(); } catch { /* explicit final save can still succeed */ }
+    try {
+      await autosave?.flush();
+    } catch {
+      /* explicit final save can still succeed */
+    }
     clearEditIssueMarks(root);
     issues = [];
     message = '';
     saving = true;
     saveStarting = false;
-    savePhase = 0; preparedPhotos = 0; photoTotal = 0;
+    savePhase = 0;
+    preparedPhotos = 0;
+    photoTotal = 0;
     await tick();
-    root.querySelector<HTMLElement>('[data-save-progress]')?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    root
+      .querySelector<HTMLElement>('[data-save-progress]')
+      ?.scrollIntoView({ block: 'start', behavior: 'instant' });
     let sent = false,
       responded = false,
       committed = false;
@@ -312,21 +411,23 @@
           'A ficha foi alterada entretanto. Mantivemos o rascunho neste ecrã; confirme a versão guardada antes de continuar.',
         );
       }
+      await photoStaging.retain();
       const files = photoDraft.filter((photo) => photo.file);
-      photoTotal = files.length; preparedPhotos = files.filter(photo => photo.preparedFile || photo.uploadedPath).length;
+      photoTotal = files.length;
+      preparedPhotos = files.filter((photo) => photo.preparedFile || photo.uploadedPath).length;
       if (files.length) savePhase = 1;
       for (const photo of files) {
         if (photo.uploadedPath) continue;
         progress = `A preparar fotografias: ${preparedPhotos} de ${files.length}…`;
         await readyPhoto(photo);
-        preparedPhotos = files.filter(item => item.preparedFile || item.uploadedPath).length;
+        preparedPhotos = files.filter((item) => item.preparedFile || item.uploadedPath).length;
       }
-      preparedPhotos = files.filter(photo => photo.uploadedPath).length;
+      preparedPhotos = files.filter((photo) => photo.uploadedPath).length;
       if (files.length) savePhase = 2;
       for (const [index, photo] of files.entries()) {
         if (photo.uploadedPath) continue;
         progress = `A enviar fotografias: ${index + 1} de ${files.length}…`;
-        const response = await photoUpload(crmPath(`/viaturas/${baseline.id}/photos`), {
+        const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/photos`), {
           method: 'POST',
           headers: {
             'content-type': photo.preparedFile!.type,
@@ -334,18 +435,23 @@
             'x-edit-stage': 'true',
           },
           body: photo.preparedFile,
-        }, photo.preparationMetrics);
+        });
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.path)
           throw Error(
             result.error ?? 'Não foi possível preparar esta fotografia. O rascunho foi mantido.',
           );
         photo.uploadedPath = result.path;
+        await autosave?.flush();
         preparedPhotos += 1;
       }
       const resolve = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
-      const { photoPaths: _legacyPhotoPaths, galleryFraming, ...publicationData } = draft.publication;
+      const {
+        photoPaths: _legacyPhotoPaths,
+        galleryFraming,
+        ...publicationData
+      } = draft.publication;
       savePhase = 3;
       progress = action === 'publish' ? 'A concluir e publicar…' : 'A guardar a viatura…';
       sent = true;
@@ -356,7 +462,11 @@
           expectedUpdatedAt: baseline.updatedAt,
           data: { ...draft.details, status: creationStatus(action, draft.details.status) },
           photos: draft.paths.map(resolve),
-          galleryFraming: Object.fromEntries(Object.entries(galleryFraming).filter(([path]) => draft.paths.includes(path)).map(([path, value]) => [resolve(path), value])),
+          galleryFraming: Object.fromEntries(
+            Object.entries(galleryFraming)
+              .filter(([path]) => draft.paths.includes(path))
+              .map(([path, value]) => [resolve(path), value]),
+          ),
           uploadedPhotos: files.map((photo) => photo.uploadedPath!),
           publication: publicationData,
         }),
@@ -376,18 +486,37 @@
       committed = true;
       forgetCreation(draftOwner, baseline.id);
       draftsChanged();
-      let onlineUrl:string|undefined;
-      if(action==='publish')try{const confirmed=await sessionFetch(endpoint,{cache:'no-store'});if(confirmed.ok){const state=await confirmed.json();onlineUrl=publishedVehicleUrl(PUBLIC_WEBSITE_URL,state.vehicle);}}catch{/* The save succeeded; a link is optional if confirmation is unavailable. */}
+      let onlineUrl: string | undefined;
+      if (action === 'publish')
+        try {
+          const confirmed = await sessionFetch(endpoint, { cache: 'no-store' });
+          if (confirmed.ok) {
+            const state = await confirmed.json();
+            onlineUrl = publishedVehicleUrl(PUBLIC_WEBSITE_URL, state.vehicle);
+          }
+        } catch {
+          /* The save succeeded; a link is optional if confirmation is unavailable. */
+        }
       unregister?.();
-      try { await autosave?.discard(); } catch { /* CRM save has already succeeded */ }
+      try {
+        await autosave?.discard();
+      } catch {
+        /* CRM save has already succeeded */
+      }
       saving = false;
       await tick();
       for (const form of Object.values(forms())) if (form) markFormSaved(form);
       listNavigationCache.clear();
-      const savedFeedback={ title: action === 'publish' ? 'Viatura publicada' : 'Viatura adicionada ao CRM',
-        brand: draft.details.brand, model: draft.details.model, year: draft.details.year,
-        detail: action === 'publish' ? 'O anúncio já está disponível no website.' : 'Entrada confirmada. Ainda não publicada no website.',
-        photo: photoDraft.find(photo => photo.path === draft.paths[0]),
+      const savedFeedback = {
+        title: action === 'publish' ? 'Viatura publicada' : 'Viatura adicionada ao CRM',
+        brand: draft.details.brand,
+        model: draft.details.model,
+        year: draft.details.year,
+        detail:
+          action === 'publish'
+            ? 'O anúncio já está disponível no website.'
+            : 'Entrada confirmada. Ainda não publicada no website.',
+        photo: photoDraft.find((photo) => photo.path === draft.paths[0]),
         onlineUrl,
       };
       await goto(crmPath(action === 'draft' ? '/viaturas' : `/viaturas/${baseline.id}`), {
@@ -415,135 +544,161 @@
 
 <section bind:this={root} class="creation-wizard" oninput={changed} onchange={changed}>
   {#if ready}
-  <nav class="wizard-steps" aria-label="Etapas da criação de viatura">
-    <button
-      type="button"
-      aria-current={step === 1 ? 'step' : undefined}
-      disabled={saving || cancelling || discarded || needsReload}
-      onclick={() => void changeStep(1)}><span>1</span><strong>Dados da viatura</strong></button
-    >
-    <button
-      type="button"
-      aria-current={step === 2 ? 'step' : undefined}
-      disabled={saving || cancelling || discarded || needsReload}
-      onclick={() => void changeStep(2)}
-      ><span>2</span><strong>Fotografias e website</strong></button
-    >
-  </nav>
-  <p class="flow-note">
-    {baseline.status === 'DRAFT'
-      ? 'A ficha mantém-se em rascunho até escolher «Concluir no CRM» ou «Concluir e publicar».'
-      : 'Esta viatura já tem uma ficha no CRM. As alterações deste ecrã só são aplicadas na ação final escolhida.'}
-    Pode voltar ao passo 1 sem perder o que preencheu aqui.
-  </p>
-  {#if saving}<VehicleSaveProgress phase={savePhase} completed={preparedPhotos} total={photoTotal} label={progress || 'A guardar a viatura…'} />{/if}
-  {#if issues.length}<div class="creation-errors" role="alert" tabindex="-1">
-      <strong>Reveja os campos indicados:</strong>
-      <ul>
-        {#each issues as issue}<li>
-            <button type="button" onclick={() => void visitIssue(issue)}>{issue.message}</button>
-          </li>{/each}
-      </ul>
-      <p>As fotografias e os dados preenchidos foram mantidos.</p>
-    </div>{/if}
-  <h2 data-step-heading tabindex="-1">
-    {step === 1 ? 'Dados da viatura' : 'Fotografias e website'}
-  </h2>
-  <!-- Keep both panels mounted: File/blob references, selection and editor history survive back/next. -->
-  <div class:step-one={step === 1} class:step-two={step === 2}>
-    <WebPublicationPanel
-      creation
-      recoveredDraft={recoveredPublication}
-      unified
-      managePhotos
-      {vehicle}
-      {photos}
-      bind:photoDraft
-      disabled={saving || cancelling || discarded || needsReload}
-      onsaveall={() => void save('crm')}
-      onstatechange={() => void refresh()}
-    >
-      {#snippet vehicleDetails(characteristics)}
-        <div class="creation-internal" hidden={step !== 1} inert={step !== 1}>
-          <Panel
-            ><div class="p-6">
-              <VehicleForm
-                {initial}
-                {characteristics}
-                unified
-                disabled={saving || cancelling || discarded || needsReload}
-                onsaveall={() => void changeStep(2)}
-                onstatechange={() => void refresh()}
-              />
-            </div></Panel
-          >
-        </div>
-      {/snippet}
-    </WebPublicationPanel>
-  </div>
-  {#if message}<p class="creation-errors" role="alert">{message}</p>{/if}
-  {#if needsReload}<a href={crmPath(`/viaturas/${baseline.id}`)}
-      >Abrir ficha guardada para confirmar →</a
-    >{/if}
-  <footer class="creation-footer">
-    {#if draftState}<p role="status">{draftState}</p>{/if}
-    {#if saving}<p role="status">{progress || 'A guardar…'}</p>{/if}
-    <div class="creation-actions">
-      {#if baseline.status === 'DRAFT'}
-        {#if newCreation}<button type="button" disabled={saving || cancelling || discarded || needsReload} onclick={() => confirmCancel = true}>Cancelar criação</button>
-        {:else}<Button variant="danger" size="lg" disabled={saving || cancelling || discarded || needsReload} onclick={() => confirmCancel = true}>
-          <Trash2 size={15} aria-hidden="true" />Eliminar rascunho
-        </Button>{/if}
-      {/if}
-      {#if step === 1}<button
-          class="strong"
-          type="button"
-          disabled={saving || cancelling || discarded || needsReload}
-          onclick={() => void changeStep(2)}>Continuar para fotografias →</button
-        >
-      {:else}
-        <button type="button" disabled={saving || cancelling || discarded || needsReload} onclick={() => void changeStep(1)}
-          >← Voltar ao passo 1</button
-        >
-        <button
-          class="strong"
-          type="button"
-          disabled={saving || cancelling || discarded || needsReload || crmIssues.length > 0}
-          aria-describedby="creation-requirements"
-          onclick={() => void save('crm')}>Concluir no CRM</button
-        >
-        <button
-          class="publish"
-          type="button"
-          disabled={saving || cancelling || discarded || needsReload || publishIssues.length > 0}
-          aria-describedby="creation-requirements"
-          onclick={() => void save('publish')}>Concluir e publicar</button
-        >
-      {/if}
+    <nav class="wizard-steps" aria-label="Etapas da criação de viatura">
+      <button
+        type="button"
+        aria-current={step === 1 ? 'step' : undefined}
+        disabled={saving || cancelling || discarded || needsReload}
+        onclick={() => void changeStep(1)}><span>1</span><strong>Dados da viatura</strong></button
+      >
+      <button
+        type="button"
+        aria-current={step === 2 ? 'step' : undefined}
+        disabled={saving || cancelling || discarded || needsReload}
+        onclick={() => void changeStep(2)}
+        ><span>2</span><strong>Fotografias e website</strong></button
+      >
+    </nav>
+    <p class="flow-note">
+      {baseline.status === 'DRAFT'
+        ? 'A ficha mantém-se em rascunho até escolher «Concluir no CRM» ou «Concluir e publicar».'
+        : 'Esta viatura já tem uma ficha no CRM. As alterações deste ecrã só são aplicadas na ação final escolhida.'}
+      Pode voltar ao passo 1 sem perder o que preencheu aqui.
+    </p>
+    {#if saving}<VehicleSaveProgress
+        phase={savePhase}
+        completed={preparedPhotos}
+        total={photoTotal}
+        label={progress || 'A guardar a viatura…'}
+      />{/if}
+    {#if issues.length}<div class="creation-errors" role="alert" tabindex="-1">
+        <strong>Reveja os campos indicados:</strong>
+        <ul>
+          {#each issues as issue}<li>
+              <button type="button" onclick={() => void visitIssue(issue)}>{issue.message}</button>
+            </li>{/each}
+        </ul>
+        <p>As fotografias e os dados preenchidos foram mantidos.</p>
+      </div>{/if}
+    <h2 data-step-heading tabindex="-1">
+      {step === 1 ? 'Dados da viatura' : 'Fotografias e website'}
+    </h2>
+    <!-- Keep both panels mounted: File/blob references, selection and editor history survive back/next. -->
+    <div class:step-one={step === 1} class:step-two={step === 2}>
+      <WebPublicationPanel
+        creation
+        recoveredDraft={recoveredPublication}
+        unified
+        managePhotos
+        {vehicle}
+        {photos}
+        onDiscardPrepared={(paths) => photoStaging.discard(paths)}
+        bind:photoDraft
+        disabled={saving || cancelling || discarded || needsReload}
+        onsaveall={() => void save('crm')}
+        onstatechange={() => void refresh()}
+      >
+        {#snippet vehicleDetails(characteristics)}
+          <div class="creation-internal" hidden={step !== 1} inert={step !== 1}>
+            <Panel
+              ><div class="p-6">
+                <VehicleForm
+                  {initial}
+                  {characteristics}
+                  unified
+                  disabled={saving || cancelling || discarded || needsReload}
+                  onsaveall={() => void changeStep(2)}
+                  onstatechange={() => void refresh()}
+                />
+              </div></Panel
+            >
+          </div>
+        {/snippet}
+      </WebPublicationPanel>
     </div>
-  </footer>
-  {#if step === 2}<div id="creation-requirements" class="creation-requirements">
-      {#if crmIssues.length}<strong>Para concluir no CRM:</strong>
-        <ul>
-          {#each crmIssues as issue}<li>
-              <button type="button" onclick={() => void visitIssue(issue)}>{issue.message}</button>
-            </li>{/each}
-        </ul>{/if}
-      {#if publishIssues.length}<strong>Para publicar no site:</strong>
-        <ul>
-          {#each publishIssues as issue}<li>
-              <button type="button" onclick={() => void visitIssue(issue)}>{issue.message}</button>
-            </li>{/each}
-        </ul>{:else}<p>
-          Publicação pronta para validar ao guardar. Todas as fotografias da viatura serão públicas.
-        </p>{/if}
-    </div>{/if}
+    {#if message}<p class="creation-errors" role="alert">{message}</p>{/if}
+    {#if needsReload}<a href={crmPath(`/viaturas/${baseline.id}`)}
+        >Abrir ficha guardada para confirmar →</a
+      >{/if}
+    <footer class="creation-footer">
+      {#if draftState}<p role="status">{draftState}</p>{/if}
+      {#if saving}<p role="status">{progress || 'A guardar…'}</p>{/if}
+      <div class="creation-actions">
+        {#if baseline.status === 'DRAFT'}
+          {#if newCreation}<button
+              type="button"
+              disabled={saving || cancelling || discarded || needsReload}
+              onclick={() => (confirmCancel = true)}>Cancelar criação</button
+            >
+          {:else}<Button
+              variant="danger"
+              size="lg"
+              disabled={saving || cancelling || discarded || needsReload}
+              onclick={() => (confirmCancel = true)}
+            >
+              <Trash2 size={15} aria-hidden="true" />Eliminar rascunho
+            </Button>{/if}
+        {/if}
+        {#if step === 1}<button
+            class="strong"
+            type="button"
+            disabled={saving || cancelling || discarded || needsReload}
+            onclick={() => void changeStep(2)}>Continuar para fotografias →</button
+          >
+        {:else}
+          <button
+            type="button"
+            disabled={saving || cancelling || discarded || needsReload}
+            onclick={() => void changeStep(1)}>← Voltar ao passo 1</button
+          >
+          <button
+            class="strong"
+            type="button"
+            disabled={saving || cancelling || discarded || needsReload || crmIssues.length > 0}
+            aria-describedby="creation-requirements"
+            onclick={() => void save('crm')}>Concluir no CRM</button
+          >
+          <button
+            class="publish"
+            type="button"
+            disabled={saving || cancelling || discarded || needsReload || publishIssues.length > 0}
+            aria-describedby="creation-requirements"
+            onclick={() => void save('publish')}>Concluir e publicar</button
+          >
+        {/if}
+      </div>
+    </footer>
+    {#if step === 2}<div id="creation-requirements" class="creation-requirements">
+        {#if crmIssues.length}<strong>Para concluir no CRM:</strong>
+          <ul>
+            {#each crmIssues as issue}<li>
+                <button type="button" onclick={() => void visitIssue(issue)}>{issue.message}</button
+                >
+              </li>{/each}
+          </ul>{/if}
+        {#if publishIssues.length}<strong>Para publicar no site:</strong>
+          <ul>
+            {#each publishIssues as issue}<li>
+                <button type="button" onclick={() => void visitIssue(issue)}>{issue.message}</button
+                >
+              </li>{/each}
+          </ul>{:else}<p>
+            Publicação pronta para validar ao guardar. Todas as fotografias da viatura serão
+            públicas.
+          </p>{/if}
+      </div>{/if}
   {:else}<p role="status">A recuperar rascunho…</p>{/if}
 </section>
-<ConfirmDialog bind:open={confirmCancel} title={newCreation ? 'Cancelar criação?' : 'Eliminar rascunho?'}
+<ConfirmDialog
+  bind:open={confirmCancel}
+  title={newCreation ? 'Cancelar criação?' : 'Eliminar rascunho?'}
   message="Os dados e as fotografias deste rascunho serão descartados. Esta ação não pode ser desfeita."
-  confirmLabel={newCreation ? 'Descartar criação' : 'Eliminar rascunho'} cancelLabel="Continuar a editar"
-  tone="danger" busy={cancelling} onconfirm={() => void cancelCreation()} />
+  confirmLabel={newCreation ? 'Descartar criação' : 'Eliminar rascunho'}
+  cancelLabel="Continuar a editar"
+  tone="danger"
+  busy={cancelling}
+  onconfirm={() => void cancelCreation()}
+/>
 <ConfirmDialog
   bind:open={confirmNoPhoto}
   title="Publicar sem fotografia?"

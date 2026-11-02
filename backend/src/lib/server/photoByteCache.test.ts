@@ -66,7 +66,12 @@ it('keeps original fallbacks out of the thumbnail reservation', () => {
 
 it('bounds entries independently of their byte size', () => {
   const cache = new PhotoByteCache();
-  for (let index = 0; index < 1025; index++) cache.set(`master${index}|resolved-master`, photo(1), 800, false);
+  for (let index = 0; index < 1025; index++)
+    cache.set(`master${index}|resolved-master`, photo(1), 800, false);
   expect(cache.get('master0|resolved-master')).toBeUndefined();
-  expect(Array.from({ length: 1025 }, (_, index) => cache.get(`master${index}|resolved-master`)).filter(Boolean)).toHaveLength(1024);
+  expect(
+    Array.from({ length: 1025 }, (_, index) => cache.get(`master${index}|resolved-master`)).filter(
+      Boolean,
+    ),
+  ).toHaveLength(1024);
 });

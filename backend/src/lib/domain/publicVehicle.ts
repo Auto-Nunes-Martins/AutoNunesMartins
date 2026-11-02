@@ -53,7 +53,11 @@ export const publicVehicleQuerySchema = z
   .strict()
   .superRefine((v, ctx) => {
     if (v.modelo && !v.marca) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['modelo'], message: 'Choose a brand before a model' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['modelo'],
+        message: 'Choose a brand before a model',
+      });
     }
     for (const [min, max] of [
       ['ano_min', 'ano_max'],
@@ -80,7 +84,7 @@ export const vehicleIdSchema = z.string().regex(/^c[a-z0-9]{24}$/);
 
 /** No storage URL, traversal, encoded separator, or object in another namespace. */
 export function isApprovedPhotoPath(id: string, path: string): boolean {
-  return isVehiclePhotoPath(id,path);
+  return isVehiclePhotoPath(id, path);
 }
 
 const publicPrice = z
@@ -94,10 +98,7 @@ export const webPublicationSchema = z.discriminatedUnion('published', [
       published: z.literal(true),
       price: publicPrice.nullable(),
       description: z.string().trim().min(1).max(6000),
-      photoPaths: z
-        .array(z.string().max(160))
-        .max(20)
-        .optional().default([]), // Deprecated compatibility input; never filters Vehicle.photos.
+      photoPaths: z.array(z.string().max(160)).max(20).optional().default([]), // Deprecated compatibility input; never filters Vehicle.photos.
       transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
       specifications: publicSpecificationsSchema.optional(),
     })

@@ -32,7 +32,8 @@
     if (path.startsWith(crmPath('/atividade'))) return ['Painel', 'Atividade'];
     if (path.startsWith(crmPath('/guia'))) return ['Painel', 'Guia de Fluxo'];
     if (path.startsWith(crmPath('/site/reviews'))) return ['Painel', 'Site público', 'Reviews'];
-    if (path.startsWith(crmPath('/site'))) return ['Painel', 'Site público', 'Destaques da homepage'];
+    if (path.startsWith(crmPath('/site')))
+      return ['Painel', 'Site público', 'Destaques da homepage'];
     if (path.startsWith(crmPath('/definicoes'))) return ['Painel', 'Definições'];
     return ['Painel'];
   });
@@ -88,7 +89,9 @@
     <!-- Breadcrumbs (desktop) -->
     <div class="tb-breadcrumbs items-center gap-2" title={resolvedCrumbs.join(' / ')}>
       <span class="h-1.5 w-1.5 bg-[var(--color-red)]"></span>
-      <div class="crumb-trail flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em]">
+      <div
+        class="crumb-trail flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em]"
+      >
         {#each resolvedCrumbs as crumb, i (i)}
           {#if i > 0}
             <span class="text-[var(--color-text-faint)]">/</span>
@@ -196,15 +199,35 @@
       animation: search-expand 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
     }
     @keyframes search-expand {
-      from { opacity: 0; transform: translateX(8px) scaleX(0.94); }
-      to { opacity: 1; transform: none; }
+      from {
+        opacity: 0;
+        transform: translateX(8px) scaleX(0.94);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
     }
   }
   /* Reserve one label column across routes; text length cannot move search. */
-  .tb-breadcrumbs { flex: 0 0 clamp(180px, 22cqw, 280px); min-width: 0; }
-  .crumb-trail { min-width: 0; overflow: hidden; white-space: nowrap; }
-  .crumb-trail > span { flex-shrink: 0; }
-  .crumb-trail > span:last-child { min-width: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
+  .tb-breadcrumbs {
+    flex: 0 0 clamp(180px, 22cqw, 280px);
+    min-width: 0;
+  }
+  .crumb-trail {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .crumb-trail > span {
+    flex-shrink: 0;
+  }
+  .crumb-trail > span:last-child {
+    min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .tb-breadcrumbs,
   .tb-search-inline {
     display: flex;

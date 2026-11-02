@@ -1,5 +1,7 @@
 # Public photo reads and backend memory — 1 November 2026
 
+> Estado em 02/11/2026: documento histórico. A telemetria temporária detalhada, os endpoints de diagnóstico e os scripts associados foram removidos no código local; a publicação desta remoção está pendente. Em produção, os registos de diagnóstico foram apagados e o writer SQL ficou compatível mas sem persistência. Os comandos antigos de diagnóstico não se aplicam ao novo código. Mantêm-se as otimizações funcionais, os limites de segurança e uma medição leve de memória por minuto no supervisor.
+
 ## Scope and production identity
 
 Read-only investigation, without uploads, customer-data mutations, restart, configuration changes or deployment. The existing upload isolation is already deployed; this investigation does not repeat it or change the WebP84 recipe, masters, derivatives, publication selection or cache policy.

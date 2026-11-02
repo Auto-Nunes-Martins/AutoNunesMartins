@@ -83,10 +83,10 @@
       >
         <span class="h-1.5 w-1.5 rounded-full bg-[var(--color-red)]"></span>
         {formatDateLong(today)}
-        {#await ($listView.value ?? data.list) then list}
+        {#await $listView.value ?? data.list then list}
           {#if !list._error}
-          <span class="text-[var(--color-text-faint)]">·</span>
-          <span class="tabular-nums">{list.total} registadas</span>
+            <span class="text-[var(--color-text-faint)]">·</span>
+            <span class="tabular-nums">{list.total} registadas</span>
           {/if}
         {/await}
       </div>
@@ -153,7 +153,6 @@
           Venda desde
         </span>
         <DateInput
-
           value={data.filters.dateFrom ?? ''}
           onchange={(e) => setParam('dateFrom', e.currentTarget.value || undefined)}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -168,7 +167,6 @@
           Venda até
         </span>
         <DateInput
-
           value={data.filters.dateTo ?? ''}
           onchange={(e) => setParam('dateTo', e.currentTarget.value || undefined)}
           class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
@@ -195,7 +193,7 @@
   <ListFreshness snapshot={$listView} />
   <!-- Streamed table -->
   <Panel>
-    {#await ($listView.value ?? data.list)}
+    {#await $listView.value ?? data.list}
       <div class="p-4 space-y-2">
         {#each Array(6) as _, i (i)}
           <Skeleton width="100%" height="44px" />
@@ -206,9 +204,8 @@
         <div class="p-4 flex items-center gap-3 text-[var(--color-red)] text-[13px]">
           <strong class="font-mono uppercase tracking-[0.2em] text-[10px]">Erro</strong>
           <span>{list._error}</span>
-          </div>
-          <div class="px-4 pb-4"><ErrorRecovery status={list._status ?? 503} />
         </div>
+        <div class="px-4 pb-4"><ErrorRecovery status={list._status ?? 503} /></div>
       {:else if list.items.length === 0}
         <EmptyState
           icon={Receipt}
@@ -304,7 +301,8 @@
         <!-- Desktop: full table with margin breakdown columns. Mirrors the
              layout the financeiro/Lucro tab used to show, so margin analysis
              happens here on the same screen as the rest of the sale data. -->
-        <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard access to native horizontal scrolling.) -->
+        <!-- Keyboard access to native horizontal scrolling. -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
           class="hidden md:block overflow-x-auto"
           tabindex="0"

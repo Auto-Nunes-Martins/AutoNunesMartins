@@ -17,9 +17,10 @@
       cancelAnimationFrame(frame);
       observer?.disconnect();
       progress = 1;
+      animateEntrance = false;
       entered = true;
     };
-    if (!reduced.matches) {
+    if (!reduced.matches && typeof IntersectionObserver === 'function') {
       progress = 0;
       observer = new IntersectionObserver(
         (entries) => {
@@ -78,6 +79,7 @@
   .orbit-stats {
     width: 100%;
     border-block: 1px solid var(--line);
+    border-top-color: transparent;
     background: radial-gradient(
       ellipse at 50% 0,
       color-mix(in srgb, var(--red) 4%, transparent),
@@ -136,8 +138,14 @@
     white-space: nowrap;
   }
   @media (prefers-reduced-motion: no-preference) {
+    /* The labels are already visible before hydration: start them where the
+       entrance starts, so activating it never moves visible text backwards. */
+    :global(html[data-orbit-stats-motion]) .orbit-stats:not(.entered) .stat {
+      opacity: 0.35;
+      translate: 0 12px;
+    }
     /* Reserve the final geometry, but do not flash the final values before counting. */
-    :global(.motion-on) .orbit-stats:not(.entered) .stat-value {
+    :global(html[data-orbit-stats-motion]) .orbit-stats:not(.entered) .stat-value {
       opacity: 0;
     }
     .entered.animateEntrance .stat {
@@ -158,23 +166,11 @@
     .orbit-stats {
       position: relative;
       border-bottom: 0;
-      border-top-color: color-mix(in srgb, var(--red) 22%, var(--line));
       background: radial-gradient(
         ellipse at 50% 0,
         color-mix(in srgb, var(--red) 12%, transparent),
         transparent 78%
       );
-    }
-    .orbit-stats::before {
-      content: '';
-      position: absolute;
-      top: -1px;
-      left: 16%;
-      right: 16%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--red), transparent);
-      box-shadow: 0 0 18px #e3061340;
-      pointer-events: none;
     }
     .orbit-stats::after {
       content: '';

@@ -1163,7 +1163,9 @@
     overflow-y: auto;
   }
   @media (max-width: 700px) {
-    .edit-card textarea { max-height: max(130px, min(240px, 35svh)); }
+    .edit-card textarea {
+      max-height: max(130px, min(240px, 35svh));
+    }
   }
   .edit-card input:focus-visible,
   .edit-card textarea:focus-visible {

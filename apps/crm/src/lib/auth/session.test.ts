@@ -7,9 +7,16 @@ import { listNavigationCache } from '$lib/lists/navigationCache';
 let cleanup: () => void;
 beforeEach(() => {
   vi.stubGlobal('window', { location: new URL('https://crm.example.test/crm/viaturas') });
-  vi.stubGlobal('fetch', vi.fn(async () => Response.json({ items: [1] })));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.json({ items: [1] })),
+  );
 });
-afterEach(() => { cleanup?.(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+afterEach(() => {
+  cleanup?.();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 describe('Clerk session recovery', () => {
   it('bounds waiting for the provider during hydration and allows a later retry', async () => {
     vi.useFakeTimers();
@@ -31,16 +38,22 @@ describe('Clerk session recovery', () => {
     await Promise.resolve();
     expect(fetch).not.toHaveBeenCalled();
   });
-  it.each(['POST', 'PATCH', 'DELETE'])('clears saved list snapshots after a successful %s', async method => {
-    cleanup = bindCrmSession(async () => 'token');
-    const clear = vi.spyOn(listNavigationCache, 'clear');
-    await sessionFetch('/crm/api/test', { method });
-    expect(clear).toHaveBeenCalledOnce();
-    clear.mockRestore();
-  });
+  it.each(['POST', 'PATCH', 'DELETE'])(
+    'clears saved list snapshots after a successful %s',
+    async (method) => {
+      cleanup = bindCrmSession(async () => 'token');
+      const clear = vi.spyOn(listNavigationCache, 'clear');
+      await sessionFetch('/crm/api/test', { method });
+      expect(clear).toHaveBeenCalledOnce();
+      clear.mockRestore();
+    },
+  );
   it('clears cached lists when the provider unbinds or the session identity changes', async () => {
     let identity = 'session-a';
-    cleanup = bindCrmSession(async () => 'token', () => identity);
+    cleanup = bindCrmSession(
+      async () => 'token',
+      () => identity,
+    );
     await refreshCrmSession(false);
     const clear = vi.spyOn(listNavigationCache, 'clear');
     identity = 'session-b';
@@ -52,7 +65,12 @@ describe('Clerk session recovery', () => {
   });
   it('discards a token completed after the provider/session binding changes', async () => {
     let resolve!: (value: string) => void;
-    cleanup = bindCrmSession(() => new Promise<string>((done) => { resolve = done; }));
+    cleanup = bindCrmSession(
+      () =>
+        new Promise<string>((done) => {
+          resolve = done;
+        }),
+    );
     const request = sessionFetch('/crm/api/tasks');
     cleanup();
     cleanup = bindCrmSession(async () => 'new-user-token');
@@ -64,8 +82,16 @@ describe('Clerk session recovery', () => {
   it('discards an in-flight response after switching accounts', async () => {
     let identity = 'session-1';
     let resolve!: (value: Response) => void;
-    cleanup = bindCrmSession(async () => 'token', () => identity);
-    vi.mocked(fetch).mockImplementationOnce(() => new Promise<Response>((done) => { resolve = done; }));
+    cleanup = bindCrmSession(
+      async () => 'token',
+      () => identity,
+    );
+    vi.mocked(fetch).mockImplementationOnce(
+      () =>
+        new Promise<Response>((done) => {
+          resolve = done;
+        }),
+    );
     const request = sessionFetch('/crm/api/tasks');
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     identity = 'session-2';
@@ -74,13 +100,23 @@ describe('Clerk session recovery', () => {
   });
   it('does not send a request cancelled while the token was renewing', async () => {
     const controller = new AbortController();
-    cleanup = bindCrmSession(async () => { controller.abort(); return 'token'; });
-    await expect(sessionFetch('/crm/api/tasks', { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+    cleanup = bindCrmSession(async () => {
+      controller.abort();
+      return 'token';
+    });
+    await expect(
+      sessionFetch('/crm/api/tasks', { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
     expect(fetch).not.toHaveBeenCalled();
   });
   it('shares concurrent refreshes without storing tokens', async () => {
     let resolve!: (token: string) => void;
-    const getter = vi.fn(() => new Promise<string>((done) => { resolve = done; }));
+    const getter = vi.fn(
+      () =>
+        new Promise<string>((done) => {
+          resolve = done;
+        }),
+    );
     cleanup = bindCrmSession(getter);
     const first = refreshCrmSession();
     const second = refreshCrmSession();
@@ -98,13 +134,16 @@ describe('Clerk session recovery', () => {
     expect(getter.mock.calls).toEqual([[{ skipCache: false }], [{ skipCache: true }]]);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
-  it.each(['POST', 'PATCH', 'DELETE'])('never replays %s and makes expired sessions visible', async (method) => {
-    cleanup = bindCrmSession(async () => 'token');
-    vi.mocked(fetch).mockResolvedValue(Response.json({}, { status: 401 }));
-    expect((await sessionFetch('/crm/api/tasks', { method, body: '{}' })).status).toBe(401);
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(get(crmSessionState)).toBe('expired');
-  });
+  it.each(['POST', 'PATCH', 'DELETE'])(
+    'never replays %s and makes expired sessions visible',
+    async (method) => {
+      cleanup = bindCrmSession(async () => 'token');
+      vi.mocked(fetch).mockResolvedValue(Response.json({}, { status: 401 }));
+      expect((await sessionFetch('/crm/api/tasks', { method, body: '{}' })).status).toBe(401);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(get(crmSessionState)).toBe('expired');
+    },
+  );
   it('keeps403 distinct from an expired session and does not retry', async () => {
     const getter = vi.fn(async () => 'token');
     cleanup = bindCrmSession(getter);
@@ -115,11 +154,16 @@ describe('Clerk session recovery', () => {
   });
   it('does not submit without a live session', async () => {
     cleanup = bindCrmSession(async () => null);
-    await expect(sessionFetch('/crm/api/tasks', { method: 'POST' })).rejects.toMatchObject({ status: 401 });
+    await expect(sessionFetch('/crm/api/tasks', { method: 'POST' })).rejects.toMatchObject({
+      status: 401,
+    });
     expect(fetch).not.toHaveBeenCalled();
   });
   it('reports offline failures as unavailable, then recovers without logout', async () => {
-    const getter = vi.fn().mockRejectedValueOnce(new TypeError('offline')).mockResolvedValueOnce('fresh');
+    const getter = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockResolvedValueOnce('fresh');
     cleanup = bindCrmSession(getter);
     await expect(refreshCrmSession()).rejects.toMatchObject({ status: 503 });
     expect(get(crmSessionState)).toBe('unavailable');
@@ -128,7 +172,10 @@ describe('Clerk session recovery', () => {
   });
   it('bounds a hung SDK request and permits a subsequent retry', async () => {
     vi.useFakeTimers();
-    const getter = vi.fn().mockImplementationOnce(() => new Promise(() => {})).mockResolvedValueOnce('fresh');
+    const getter = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockResolvedValueOnce('fresh');
     cleanup = bindCrmSession(getter);
     const rejected = expect(refreshCrmSession()).rejects.toMatchObject({ status: 503 });
     await vi.advanceTimersByTimeAsync(12000);

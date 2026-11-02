@@ -33,7 +33,11 @@ it('selects a coherent gallery group from the detail slot and density', async ()
   expect(navigationThumbnailWidth(1400, 8)).toBe(2560);
 });
 
-it.each([[320, 1, 320], [390, 2, 800], [1440, 1, 1280]])(
+it.each([
+  [320, 1, 320],
+  [390, 2, 800],
+  [1440, 1, 1280],
+])(
   'prepares every photo at viewport %s and DPR %s with width %s',
   async (viewport, density, chosen) => {
     const request = vi.fn(async (url: string) =>
@@ -47,7 +51,7 @@ it.each([[320, 1, 320], [390, 2, 800], [1440, 1, 1280]])(
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(13));
     const urls = request.mock.calls.map(([url]) => url).filter((url) => !url.endsWith('/access'));
     expect(urls).toHaveLength(12);
-    expect(urls.every((url)=>url.endsWith('&w='+chosen))).toBe(true);
+    expect(urls.every((url) => url.endsWith('&w=' + chosen))).toBe(true);
     module.cancelNavigationThumbnails();
   },
 );

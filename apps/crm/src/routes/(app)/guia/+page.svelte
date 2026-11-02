@@ -1,13 +1,5 @@
 <script lang="ts">
-  import {
-    BookOpen,
-    Check,
-    ChevronRight,
-    FileCheck,
-    FileText,
-    Landmark,
-    Stamp,
-  } from 'lucide-svelte';
+  import { BookOpen, Check, ChevronRight, FileCheck, FileText, Landmark, Stamp } from 'lucide-svelte';
   import type { IconComponent } from '$lib/types/ui';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';

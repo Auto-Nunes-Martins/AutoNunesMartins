@@ -1,10 +1,7 @@
 import { vehiclesFilters } from '$lib/listFilters';
 import type { RequestEvent } from '@sveltejs/kit';
 import { apiFailure } from '$lib/server/api';
-import {
-  vehiclesApi,
-  type VehicleListResponse,
-} from '$lib/server/vehicles';
+import { vehiclesApi, type VehicleListResponse } from '$lib/server/vehicles';
 
 export type VehicleListStream =
   | (VehicleListResponse & { _error?: undefined; _status?: undefined })

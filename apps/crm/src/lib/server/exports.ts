@@ -1,9 +1,7 @@
-import { PDFDocument, StandardFonts, rgb, PageSizes } from 'pdf-lib';
-
 /* pdf-lib StandardFonts.Helvetica supports only WinAnsi (Windows-1252). Unsupported characters cause drawText to throw an EncodingError, breaking the export. Sanitize strings before rendering: map common unsupported characters to ASCII alternatives and replace other unsupported characters with ?. Preserve ASCII, supported Latin-1 accents and Windows-1252 punctuation. */
 const WINANSI_REPLACEMENTS: Record<string, string> = {
-  'Δ': 'D',
-  'δ': 'd',
+  Δ: 'D',
+  δ: 'd',
   '→': '->',
   '←': '<-',
   '↑': '^',
@@ -22,9 +20,9 @@ const WINANSI_REPLACEMENTS: Record<string, string> = {
 // Windows-1252 characters above 0x7F that are absent from Latin-1 but
 // valid for this encoding: smart quotes, dashes, ellipsis and euro.
 const WIN1252_EXTRAS = new Set<number>([
-  0x152, 0x153, 0x160, 0x161, 0x178, 0x17D, 0x17E, 0x192, 0x2C6, 0x2DC,
-  0x2013, 0x2014, 0x2018, 0x2019, 0x201A, 0x2039, 0x201C, 0x201D, 0x201E,
-  0x2020, 0x2021, 0x2022, 0x2026, 0x2030, 0x203A, 0x20AC, 0x2122,
+  0x152, 0x153, 0x160, 0x161, 0x178, 0x17d, 0x17e, 0x192, 0x2c6, 0x2dc, 0x2013, 0x2014, 0x2018,
+  0x2019, 0x201a, 0x2039, 0x201c, 0x201d, 0x201e, 0x2020, 0x2021, 0x2022, 0x2026, 0x2030, 0x203a,
+  0x20ac, 0x2122,
 ]);
 
 export function sanitizeForWinAnsi(s: string): string {
@@ -39,10 +37,10 @@ export function sanitizeForWinAnsi(s: string): string {
     // Tab, LF, CR — preserva.
     if (code === 9 || code === 10 || code === 13) {
       out += ch;
-    } else if (code >= 0x20 && code <= 0x7E) {
+    } else if (code >= 0x20 && code <= 0x7e) {
       // Printable ASCII.
       out += ch;
-    } else if (code >= 0xA0 && code <= 0xFF) {
+    } else if (code >= 0xa0 && code <= 0xff) {
       // Latin-1 supplement
       out += ch;
     } else if (WIN1252_EXTRAS.has(code)) {
@@ -60,7 +58,7 @@ export function sanitizeForWinAnsi(s: string): string {
 export function csvEscape(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return '';
   const s = String(value);
-  if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  if (/[",\r\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
@@ -80,6 +78,8 @@ interface PdfTableOptions {
 }
 
 export async function buildPdfTable(opts: PdfTableOptions): Promise<Uint8Array> {
+  // CSV and text sanitization do not need to load the PDF engine.
+  const { PDFDocument, StandardFonts, rgb, PageSizes } = await import('pdf-lib');
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -122,16 +122,28 @@ export async function buildPdfTable(opts: PdfTableOptions): Promise<Uint8Array> 
   });
 
   y = height - 90;
-  page.drawText(sanitizeForWinAnsi(opts.title.toUpperCase()), { x: margin, y, size: 16, font: bold });
+  page.drawText(sanitizeForWinAnsi(opts.title.toUpperCase()), {
+    x: margin,
+    y,
+    size: 16,
+    font: bold,
+  });
   y -= 18;
   if (opts.subtitle) {
-    page.drawText(sanitizeForWinAnsi(opts.subtitle), { x: margin, y, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+    page.drawText(sanitizeForWinAnsi(opts.subtitle), {
+      x: margin,
+      y,
+      size: 9,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
     y -= 18;
   }
   y -= 8;
 
   const colWidths =
-    opts.columnWidths ?? new Array(opts.headers.length).fill((width - margin * 2) / opts.headers.length);
+    opts.columnWidths ??
+    new Array(opts.headers.length).fill((width - margin * 2) / opts.headers.length);
 
   // Table header
   let x = margin;
@@ -165,9 +177,7 @@ export async function buildPdfTable(opts: PdfTableOptions): Promise<Uint8Array> 
     x = margin;
     for (let i = 0; i < row.length; i++) {
       const cell = row[i] ?? '';
-      const trimmed = sanitizeForWinAnsi(
-        cell.length > 36 ? cell.slice(0, 33) + '…' : cell,
-      );
+      const trimmed = sanitizeForWinAnsi(cell.length > 36 ? cell.slice(0, 33) + '…' : cell);
       page.drawText(trimmed, { x, y, size: fontSize, font, color: rgb(0.15, 0.15, 0.17) });
       x += colWidths[i] ?? 80;
     }

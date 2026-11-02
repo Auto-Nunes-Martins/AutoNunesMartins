@@ -54,6 +54,63 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers());
 
+describe('search invalidation at the transaction boundary', () => {
+  const mutations = ['create', 'update', 'status', 'move', 'delete'] as const;
+  it.each(mutations)(
+    'invalidates cached and in-flight search only after %s commits',
+    async (kind) => {
+      const service = await import('./taskService.js');
+      const { cache } = await import('../data/cache.js');
+      cache.clearAll();
+      cache.set('search:cached', 'old', 60_000);
+      let finishRead!: (value: string) => void;
+      const oldRead = cache.wrap(
+        'search:pending',
+        60_000,
+        () =>
+          new Promise<string>((resolve) => {
+            finishRead = resolve;
+          }),
+      );
+      let commit!: (value: { id: string }) => void;
+      mocks.transaction.mockImplementation(
+        () =>
+          new Promise<{ id: string }>((resolve) => {
+            commit = resolve;
+          }),
+      );
+      const action =
+        kind === 'create'
+          ? service.createTask({ title: 'Fixture' }, actor)
+          : kind === 'update'
+            ? service.updateTask('task', { assigneeId: null }, actor)
+            : kind === 'status'
+              ? service.changeTaskStatus('task', 'DONE', actor)
+              : kind === 'move'
+                ? service.moveTask('task', { status: 'TODO', expectedVersion: 1 }, actor)
+                : service.deleteTask('task', actor);
+      expect(cache.get('search:cached')).toBe('old');
+      commit({ id: 'created' });
+      await action;
+      expect(cache.get('search:cached')).toBeUndefined();
+      finishRead('stale');
+      await oldRead;
+      expect(cache.get('search:pending')).toBeUndefined();
+    },
+  );
+
+  it('keeps valid cached results when the transaction rolls back', async () => {
+    const service = await import('./taskService.js');
+    const { cache } = await import('../data/cache.js');
+    cache.set('search:valid', 'current', 60_000);
+    mocks.transaction.mockRejectedValueOnce(new Error('rolled back'));
+    await expect(service.updateTask('task', { title: 'Fixture' }, actor)).rejects.toThrow(
+      'rolled back',
+    );
+    expect(cache.get('search:valid')).toBe('current');
+  });
+});
+
 describe('weekly completed-task cleanup', () => {
   it('deletes only DONE history strictly before Sunday, preserving recent, boundary and undated tasks after restart', async () => {
     const rows = [

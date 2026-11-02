@@ -20,9 +20,7 @@
       Sem registos
     </span>
   </div>
-  <h3
-    class="font-display text-[28px] font-black italic uppercase tracking-[-0.025em] mb-2"
-  >
+  <h3 class="font-display text-[28px] font-black italic uppercase tracking-[-0.025em] mb-2">
     {title}
   </h3>
   {#if description}

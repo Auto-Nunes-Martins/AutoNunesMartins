@@ -62,7 +62,10 @@ export function formatGreeting(date: Date = new Date()): string {
  *   formatCompactEUR("1500000") → { value: "€1.5", suffix: "M" }
  *   formatCompactEUR("420")     → { value: "€420", suffix: undefined }
  */
-export function formatCompactEUR(input: number | string | null | undefined): { value: string; suffix?: string } {
+export function formatCompactEUR(input: number | string | null | undefined): {
+  value: string;
+  suffix?: string;
+} {
   if (input === null || input === undefined || input === '') return { value: '—' };
   const n = typeof input === 'string' ? Number(input) : input;
   if (!Number.isFinite(n)) return { value: '—' };

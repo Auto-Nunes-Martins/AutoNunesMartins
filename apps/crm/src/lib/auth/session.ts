@@ -22,9 +22,18 @@ async function waitForSessionBinding(signal?: AbortSignal | null): Promise<void>
       bindingWaiters.delete(ready);
       signal?.removeEventListener('abort', abort);
     };
-    const ready = () => { cleanup(); resolve(); };
-    const abort = () => { cleanup(); reject(signal?.reason ?? new DOMException('Aborted', 'AbortError')); };
-    const timeout = setTimeout(() => { cleanup(); reject(new SessionUnavailable(503)); }, 12000);
+    const ready = () => {
+      cleanup();
+      resolve();
+    };
+    const abort = () => {
+      cleanup();
+      reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'));
+    };
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new SessionUnavailable(503));
+    }, 12000);
     bindingWaiters.add(ready);
     signal?.addEventListener('abort', abort, { once: true });
   });
@@ -36,18 +45,27 @@ export function currentCrmSessionIdentity() {
   lastIdentity = identity;
   return identity;
 }
-export function deferSessionNavigation(value: boolean) { navigationDeferred = value; }
-export function isSessionNavigationDeferred() { return navigationDeferred; }
+export function deferSessionNavigation(value: boolean) {
+  navigationDeferred = value;
+}
+export function isSessionNavigationDeferred() {
+  return navigationDeferred;
+}
 
 export class SessionUnavailable extends Error {
   constructor(public readonly status: number) {
-    super(status === 401
-      ? 'A sessão terminou. Entre novamente para continuar.'
-      : 'Não foi possível validar a sessão. Verifique a ligação e tente novamente.');
+    super(
+      status === 401
+        ? 'A sessão terminou. Entre novamente para continuar.'
+        : 'Não foi possível validar a sessão. Verifique a ligação e tente novamente.',
+    );
   }
 }
 
-export function bindCrmSession(getter: TokenGetter, identity: () => string | null | undefined = () => null) {
+export function bindCrmSession(
+  getter: TokenGetter,
+  identity: () => string | null | undefined = () => null,
+) {
   tokenGetter = getter;
   sessionIdentity = identity;
   pending = null;
@@ -87,7 +105,8 @@ export async function refreshCrmSession(force = true): Promise<string | null> {
     } catch (error) {
       const failure = error instanceof SessionUnavailable ? error : new SessionUnavailable(503);
       if (failure.status === 401) listNavigationCache.clear(401);
-      if (tokenGetter === getter) crmSessionState.set(failure.status === 401 ? 'expired' : 'unavailable');
+      if (tokenGetter === getter)
+        crmSessionState.set(failure.status === 401 ? 'expired' : 'unavailable');
       throw failure;
     } finally {
       clearTimeout(timeout);
@@ -131,7 +150,10 @@ export async function sessionFetch(input: string, init: RequestInit = {}): Promi
     response = await send(true);
   }
   if (response.status === 401) sessionRejected();
-  if (response.status === 403 || (response.ok && !['GET', 'HEAD', 'OPTIONS'].includes((init.method ?? 'GET').toUpperCase()))) {
+  if (
+    response.status === 403 ||
+    (response.ok && !['GET', 'HEAD', 'OPTIONS'].includes((init.method ?? 'GET').toUpperCase()))
+  ) {
     listNavigationCache.clear();
   }
   return response;

@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { createPhotoStaging } from '$lib/photoStaging';
   import { readyPhoto } from '$lib/photoPreparation';
-  import { photoUpload } from '$lib/photoDiagnostics';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { sessionFetch } from '$lib/auth/session';
@@ -58,7 +58,9 @@
   onDestroy(() => answerConfirmation(false));
   let root: HTMLElement;
   const publicationEditorId = $props.id();
-  let savePhase = $state(0), preparedPhotos = $state(0), photoTotal = $state(0);
+  let savePhase = $state(0),
+    preparedPhotos = $state(0),
+    photoTotal = $state(0);
   let deleting = $state(false);
   let publicationIntent = $state<boolean | undefined>();
   const v = $derived(data.vehicle);
@@ -138,8 +140,18 @@
     internalDirty = false;
     publicDirty = false;
   }
+  const photoStaging = createPhotoStaging({
+    endpoint: () => crmPath('/viaturas/' + baseline.id + '/photos/staging'),
+    paths: () => photoDraft.flatMap((photo) => (photo.uploadedPath ? [photo.uploadedPath] : [])),
+    missing: (paths) => {
+      for (const photo of photoDraft)
+        if (photo.uploadedPath && paths.includes(photo.uploadedPath))
+          photo.uploadedPath = undefined;
+    },
+  });
   onMount(() => {
     void rememberSavedForms();
+    return photoStaging.start();
   });
   async function freshState() {
     const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/editar/save`), {
@@ -153,7 +165,8 @@
   }
   async function saveAll(published?: boolean) {
     const changingPublication = published !== undefined && published !== baseline.webPublished;
-    if (saving || deleting || needsReload || confirmationOpen || (!dirty && !changingPublication)) return;
+    if (saving || deleting || needsReload || confirmationOpen || (!dirty && !changingPublication))
+      return;
     const current = forms();
     if (!current.internal || !current.publication) return;
     const internal = new FormData(current.internal),
@@ -210,11 +223,14 @@
       return;
     saving = true;
     publicationIntent = published;
-    savePhase = 0; preparedPhotos = 0; photoTotal = 0;
+    savePhase = 0;
+    preparedPhotos = 0;
+    photoTotal = 0;
     await tick();
     const progressPanel = root.querySelector<HTMLElement>('[data-save-progress]');
     if (progressPanel) {
-      const toolbarHeight = root.querySelector('#vehicle-edit-actions')?.getBoundingClientRect().height ?? 0;
+      const toolbarHeight =
+        root.querySelector('#vehicle-edit-actions')?.getBoundingClientRect().height ?? 0;
       progressPanel.style.scrollMarginTop = `${96 + toolbarHeight}px`;
       progressPanel.scrollIntoView({ block: 'start', behavior: 'instant' });
     }
@@ -227,28 +243,30 @@
       saveRequestStarted = false,
       saveResponseReceived = false,
       uncertainResult = false;
-    let savedFeedback:Parameters<typeof vehicleSavedFeedback>[0]|undefined;
+    let savedFeedback: Parameters<typeof vehicleSavedFeedback>[0] | undefined;
     try {
       const latest = await freshState();
       if (latest.vehicle.updatedAt !== baseline.updatedAt)
         throw new Error(
           'A viatura foi alterada entretanto. O rascunho foi mantido. Atualize a ficha e reveja as alterações antes de guardar.',
         );
+      await photoStaging.retain();
       const files = photoDraft.filter((photo) => photo.file);
-      photoTotal = files.length; preparedPhotos = files.filter(photo => photo.preparedFile || photo.uploadedPath).length;
+      photoTotal = files.length;
+      preparedPhotos = files.filter((photo) => photo.preparedFile || photo.uploadedPath).length;
       if (files.length) savePhase = 1;
       for (const photo of files) {
         if (photo.uploadedPath) continue;
         progress = `A preparar fotografias: ${preparedPhotos} de ${files.length}…`;
         await readyPhoto(photo);
-        preparedPhotos = files.filter(item => item.preparedFile || item.uploadedPath).length;
+        preparedPhotos = files.filter((item) => item.preparedFile || item.uploadedPath).length;
       }
-      preparedPhotos = files.filter(photo => photo.uploadedPath).length;
+      preparedPhotos = files.filter((photo) => photo.uploadedPath).length;
       if (files.length) savePhase = 2;
       for (const [index, photo] of files.entries()) {
         if (photo.uploadedPath) continue;
         progress = `A enviar fotografias: ${index + 1} de ${files.length}…`;
-        const response = await photoUpload(crmPath(`/viaturas/${baseline.id}/photos`), {
+        const response = await sessionFetch(crmPath(`/viaturas/${baseline.id}/photos`), {
           method: 'POST',
           headers: {
             'content-type': photo.preparedFile!.type,
@@ -256,7 +274,7 @@
             'x-edit-stage': 'true',
           },
           body: photo.preparedFile,
-        }, photo.preparationMetrics);
+        });
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.path) {
           editIssues = [
@@ -284,9 +302,13 @@
           expectedUpdatedAt: baseline.updatedAt,
           data: details,
           photos: orderedPhotos.map(resolvePath),
-          galleryFraming: Object.fromEntries(Object.entries(galleryFraming).filter(([path]) => orderedPhotos.includes(path)).map(([path, value]) => [resolvePath(path), value])),
+          galleryFraming: Object.fromEntries(
+            Object.entries(galleryFraming)
+              .filter(([path]) => orderedPhotos.includes(path))
+              .map(([path, value]) => [resolvePath(path), value]),
+          ),
           uploadedPhotos: files.map((photo) => photo.uploadedPath!),
-          ...((publicDirty || changingPublication) ? { publication: publicationData } : {}),
+          ...(publicDirty || changingPublication ? { publication: publicationData } : {}),
         }),
       });
       saveResponseReceived = true;
@@ -308,12 +330,29 @@
       photoDraft = initialPhotos();
       revision += 1;
       await invalidateAll().catch(() => {});
-      message = removing ? 'Viatura retirada do website. Alterações guardadas.' : publishing ? 'Viatura publicada no website. Alterações guardadas.' : 'Alterações guardadas.';
-      savedFeedback={ title: removing ? 'Viatura retirada do website' : publishing ? (previouslyPublished ? 'Publicação atualizada' : 'Viatura publicada') : 'Alterações guardadas',
-        brand: saved.vehicle.brand, model: saved.vehicle.model, year: saved.vehicle.year,
-        detail: removing ? 'A ficha deixou de estar visível no website.' : publishing ? 'O website já reflete as alterações confirmadas.' : 'A ficha da viatura foi atualizada no CRM.',
-        photo: saved.signedPhotos.find(photo => photo.path === saved.vehicle.photos[0]),
-        onlineUrl:publishedVehicleUrl(PUBLIC_WEBSITE_URL,saved.vehicle),
+      message = removing
+        ? 'Viatura retirada do website. Alterações guardadas.'
+        : publishing
+          ? 'Viatura publicada no website. Alterações guardadas.'
+          : 'Alterações guardadas.';
+      savedFeedback = {
+        title: removing
+          ? 'Viatura retirada do website'
+          : publishing
+            ? previouslyPublished
+              ? 'Publicação atualizada'
+              : 'Viatura publicada'
+            : 'Alterações guardadas',
+        brand: saved.vehicle.brand,
+        model: saved.vehicle.model,
+        year: saved.vehicle.year,
+        detail: removing
+          ? 'A ficha deixou de estar visível no website.'
+          : publishing
+            ? 'O website já reflete as alterações confirmadas.'
+            : 'A ficha da viatura foi atualizada no CRM.',
+        photo: saved.signedPhotos.find((photo) => photo.path === saved.vehicle.photos[0]),
+        onlineUrl: publishedVehicleUrl(PUBLIC_WEBSITE_URL, saved.vehicle),
       };
       confirmed = true;
     } catch (error) {
@@ -342,9 +381,12 @@
       if (committed) await rememberSavedForms();
     }
     if (confirmed) {
-      try { await goto(returnDestination, { invalidateAll: true }); }
-      catch { toast.error('As alterações foram guardadas, mas não foi possível abrir a página anterior.'); }
-      if(savedFeedback)vehicleSavedFeedback(savedFeedback);
+      try {
+        await goto(returnDestination, { invalidateAll: true });
+      } catch {
+        toast.error('As alterações foram guardadas, mas não foi possível abrir a página anterior.');
+      }
+      if (savedFeedback) vehicleSavedFeedback(savedFeedback);
     }
   }
   async function discard() {
@@ -357,6 +399,12 @@
       ))
     )
       return;
+    try {
+      await photoStaging.discard();
+    } catch (error) {
+      toast.error((error as Error).message);
+      return;
+    }
     const current = forms();
     if (current.internal) markFormSaved(current.internal);
     if (current.publication) markFormSaved(current.publication);
@@ -367,32 +415,70 @@
 <svelte:head
   ><title>Editar {data.vehicle.brand} {data.vehicle.model} · Auto Nunes Martins</title></svelte:head
 >
-<section
-  class="vehicle-edit-page pt-8 pb-12 space-y-6"
-  bind:this={root}
-  oninput={editChanged}
->
+<section class="vehicle-edit-page pt-8 pb-12 space-y-6" bind:this={root} oninput={editChanged}>
   <div>
     <a class="edit-back" href={crmPath(`/viaturas/${data.vehicle.id}`)}
       >← Voltar à ficha da viatura</a
     ><ItalicHero text="Editar" accent=" {data.vehicle.brand} {data.vehicle.model}" size="lg" />
     <p class="edit-note">
-      Edite a ficha e as fotografias. As escolhas de publicação no website também são aplicadas ao guardar.
+      Edite a ficha e as fotografias. As escolhas de publicação no website também são aplicadas ao
+      guardar.
     </p>
   </div>
   <div id="vehicle-edit-actions" class="edit-save edit-save-top">
     <div class="edit-state">
-      <p role="status">{saving ? progress || 'A guardar…' : needsReload ? 'Recarregue a ficha para continuar.' : dirty ? `Alterações por guardar${removedCount ? ` · ${removedCount} fotografia(s) por eliminar` : ''}` : 'Sem alterações por guardar'}</p>
-      {#if needsReload}<span class="publication-state publication-unknown">Publicação por confirmar · recarregue a ficha.</span>{:else}<WebsiteStatus vehicle={baseline} />{/if}
-      {#if websiteVisibility(baseline).state === 'blocked'}<span class="publication-state publication-warning">{websiteVisibility(baseline).detail}</span>{/if}
+      <p role="status">
+        {saving
+          ? progress || 'A guardar…'
+          : needsReload
+            ? 'Recarregue a ficha para continuar.'
+            : dirty
+              ? `Alterações por guardar${removedCount ? ` · ${removedCount} fotografia(s) por eliminar` : ''}`
+              : 'Sem alterações por guardar'}
+      </p>
+      {#if needsReload}<span class="publication-state publication-unknown"
+          >Publicação por confirmar · recarregue a ficha.</span
+        >{:else}<WebsiteStatus vehicle={baseline} />{/if}
+      {#if websiteVisibility(baseline).state === 'blocked'}<span
+          class="publication-state publication-warning">{websiteVisibility(baseline).detail}</span
+        >{/if}
     </div>
     <div class="edit-actions">
-      <button type="button" class="publication-action" data-error-field="published" disabled={saving || deleting || needsReload} onclick={() => void saveAll(!baseline.webPublished)}>{saving && publicationIntent !== undefined ? (publicationIntent ? 'A publicar…' : 'A retirar…') : baseline.webPublished ? (dirty ? 'Guardar e retirar do website' : 'Retirar do website') : (dirty ? 'Guardar e publicar no website' : 'Publicar no website')}</button>
-      <button type="button" disabled={saving || deleting} onclick={discard}>Cancelar e voltar</button>
-      <button type="button" class="primary" disabled={saving || deleting || needsReload || !dirty} onclick={() => void saveAll()}>{saving ? 'A guardar…' : 'Guardar alterações'}</button>
+      <button
+        type="button"
+        class="publication-action"
+        data-error-field="published"
+        disabled={saving || deleting || needsReload}
+        onclick={() => void saveAll(!baseline.webPublished)}
+        >{saving && publicationIntent !== undefined
+          ? publicationIntent
+            ? 'A publicar…'
+            : 'A retirar…'
+          : baseline.webPublished
+            ? dirty
+              ? 'Guardar e retirar do website'
+              : 'Retirar do website'
+            : dirty
+              ? 'Guardar e publicar no website'
+              : 'Publicar no website'}</button
+      >
+      <button type="button" disabled={saving || deleting} onclick={discard}
+        >Cancelar e voltar</button
+      >
+      <button
+        type="button"
+        class="primary"
+        disabled={saving || deleting || needsReload || !dirty}
+        onclick={() => void saveAll()}>{saving ? 'A guardar…' : 'Guardar alterações'}</button
+      >
     </div>
   </div>
-  {#if saving}<VehicleSaveProgress phase={savePhase} completed={preparedPhotos} total={photoTotal} label={progress || 'A guardar as alterações…'} />{/if}
+  {#if saving}<VehicleSaveProgress
+      phase={savePhase}
+      completed={preparedPhotos}
+      total={photoTotal}
+      label={progress || 'A guardar as alterações…'}
+    />{/if}
   {#if editIssues.length}<div class="edit-errors" role="alert">
       <strong>Não foi possível guardar. Corrija os seguintes pontos:</strong>
       <ul>
@@ -412,6 +498,7 @@
       managePhotos
       vehicle={data.vehicle}
       photos={data.signedPhotos}
+      onDiscardPrepared={(paths) => photoStaging.discard(paths)}
       bind:photoDraft
       disabled={saving || deleting || needsReload}
       onsaveall={() => void saveAll()}
@@ -499,24 +586,92 @@
     margin-inline: auto;
     min-width: 0;
   }
-  .edit-save.edit-save-top { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 16px;position: sticky; top: 76px; z-index: 15; background: var(--color-bg-elevated); box-shadow: 0 6px 18px #0001; scroll-margin-top: 88px; flex-wrap: wrap; }
-  .edit-save-top .edit-state {display:contents;}
-  .edit-save-top .edit-state > p {grid-column:1 / -1;grid-row:1;}
-  .edit-save-top .edit-state > :global(.website-status), .edit-save-top .publication-unknown {grid-column:1;grid-row:2;justify-self:start;max-width:100%;min-width:0;min-height:44px;box-sizing:border-box;display:inline-flex;align-items:center;}
-  .edit-save-top .publication-warning {grid-column:1 / -1;grid-row:3;}
-  .edit-save-top .edit-actions {grid-column:2;grid-row:2;align-items:stretch;}
-  @media (max-width:900px) {
-    .edit-save.edit-save-top {grid-template-columns:minmax(0,1fr);}
-    .edit-save-top .edit-state > p, .edit-save-top .edit-state > :global(.website-status), .edit-save-top .publication-unknown, .edit-save-top .publication-warning, .edit-save-top .edit-actions {grid-column:1;grid-row:auto;}
-    .edit-save-top .edit-state > :global(.website-status), .edit-save-top .publication-unknown {justify-self:stretch;}
-    .edit-save-top .edit-actions {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
-    .edit-save-top .publication-action {grid-column:1 / -1;}
-    .edit-save-top button {width:100%;}
+  .edit-save.edit-save-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 16px;
+    position: sticky;
+    top: 76px;
+    z-index: 15;
+    background: var(--color-bg-elevated);
+    box-shadow: 0 6px 18px #0001;
+    scroll-margin-top: 88px;
+    flex-wrap: wrap;
   }
-  .publication-state {font-size: 12px;color: var(--color-text-muted);}
-  .edit-actions {flex-shrink: 0;}
-  .publication-action {font-weight: 600;border-color: var(--color-red);}
-  .edit-top-link {display: inline-flex;align-items: center;min-height: 44px;font-size: 13px;color: var(--color-text-muted);}
+  .edit-save-top .edit-state {
+    display: contents;
+  }
+  .edit-save-top .edit-state > p {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .edit-save-top .edit-state > :global(.website-status),
+  .edit-save-top .publication-unknown {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+  }
+  .edit-save-top .publication-warning {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  .edit-save-top .edit-actions {
+    grid-column: 2;
+    grid-row: 2;
+    align-items: stretch;
+  }
+  @media (max-width: 900px) {
+    .edit-save.edit-save-top {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .edit-save-top .edit-state > p,
+    .edit-save-top .edit-state > :global(.website-status),
+    .edit-save-top .publication-unknown,
+    .edit-save-top .publication-warning,
+    .edit-save-top .edit-actions {
+      grid-column: 1;
+      grid-row: auto;
+    }
+    .edit-save-top .edit-state > :global(.website-status),
+    .edit-save-top .publication-unknown {
+      justify-self: stretch;
+    }
+    .edit-save-top .edit-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .edit-save-top .publication-action {
+      grid-column: 1 / -1;
+    }
+    .edit-save-top button {
+      width: 100%;
+    }
+  }
+  .publication-state {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+  .edit-actions {
+    flex-shrink: 0;
+  }
+  .publication-action {
+    font-weight: 600;
+    border-color: var(--color-red);
+  }
+  .edit-top-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
   .edit-errors {
     padding: 16px;
     border: 1px solid var(--color-warning);
@@ -611,8 +766,15 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
     }
-    .edit-save-top .edit-actions {display: grid;grid-template-columns: 1fr 1fr;}
-    .edit-save-top .publication-action {grid-column: 1 / -1;}
-    .edit-save-top button { width: 100%; }
+    .edit-save-top .edit-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .edit-save-top .publication-action {
+      grid-column: 1 / -1;
+    }
+    .edit-save-top button {
+      width: 100%;
+    }
   }
 </style>

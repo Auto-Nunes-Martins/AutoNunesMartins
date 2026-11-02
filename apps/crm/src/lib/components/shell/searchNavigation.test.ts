@@ -11,9 +11,15 @@ describe('search context', () => {
   });
   it('deduplicates recent navigation and bounds the in-memory list', () => {
     let recent = [] as typeof searchShortcuts;
-    for (let i = 0; i < 10; i++) recent = rememberSearchHit(recent, { id: String(i), primary: 'Fixture', secondary: null, href: `/viaturas/${i}` });
+    for (let i = 0; i < 10; i++)
+      recent = rememberSearchHit(recent, {
+        id: String(i),
+        primary: 'Fixture',
+        secondary: null,
+        href: `/viaturas/${i}`,
+      });
     expect(recent).toHaveLength(6);
     recent = rememberSearchHit(recent, recent[3]!);
-    expect(new Set(recent.map(hit => hit.href)).size).toBe(6);
+    expect(new Set(recent.map((hit) => hit.href)).size).toBe(6);
   });
 });

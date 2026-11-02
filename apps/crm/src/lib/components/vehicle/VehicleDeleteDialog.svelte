@@ -68,7 +68,9 @@
       }
     };
   }}
-><input type="hidden" name="draftOnly" value={String(draftOnly)} /></form>
+>
+  <input type="hidden" name="draftOnly" value={String(draftOnly)} />
+</form>
 
 <ConfirmDialog
   bind:open

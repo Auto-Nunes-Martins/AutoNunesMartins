@@ -1,10 +1,7 @@
 import { salesFilters } from '$lib/listFilters';
 import { apiFailure } from '$lib/server/api';
 import type { RequestEvent } from '@sveltejs/kit';
-import {
-  salesApi,
-  type SaleListResponse,
-} from '$lib/server/sales';
+import { salesApi, type SaleListResponse } from '$lib/server/sales';
 
 export type SaleListStream = SaleListResponse & { _error?: string; _status?: number };
 

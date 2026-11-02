@@ -10,7 +10,8 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async (event) => {
   const draftOwner = event.locals.auth().userId;
   const id = event.url.searchParams.get('viatura');
-  if (!id) return { vehicle: null, signedPhotos: [], intendedStatus: 'AVAILABLE' as const, draftOwner };
+  if (!id)
+    return { vehicle: null, signedPhotos: [], intendedStatus: 'AVAILABLE' as const, draftOwner };
   if (!/^c[a-z0-9]{24}$/.test(id)) error(400, 'Viatura inválida.');
   const vehicle = await vehiclesApi.get(event, id);
   const signedPhotos = await vehiclesApi
@@ -48,10 +49,12 @@ function parseFormToVehicleCreate(formData: FormData) {
     status: get('status') || 'AVAILABLE',
     acquisitionDate: get('acquisitionDate'),
     description: getOptional('description'),
-    ...(formData.has('specificationsPresent') ? {
-      publicTransmission: get('publicTransmission') || null,
-      publicSpecifications: specificationsFromForm(formData),
-    } : {}),
+    ...(formData.has('specificationsPresent')
+      ? {
+          publicTransmission: get('publicTransmission') || null,
+          publicSpecifications: specificationsFromForm(formData),
+        }
+      : {}),
     pendingDocFlags: {
       financing: formData.get('pendingDocFlags.financing') === 'true',
       imt: formData.get('pendingDocFlags.imt') === 'true',

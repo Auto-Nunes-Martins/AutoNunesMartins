@@ -239,6 +239,7 @@ export function prismaForPglite(db: any, ids = { next: 0 }): any {
     };
   }
   api.task = { findMany: async () => [], count: async () => 0 };
+  api.$queryRawUnsafe = async (sql: string, ...values: any[]) => (await db.query(sql, values)).rows;
   api.$queryRaw = async (strings: TemplateStringsArray, ...values: any[]) => {
     const sql = strings.reduce((s, p, i) => s + p + (i < values.length ? '$' + (i + 1) : ''), '');
     return (await db.query(sql, values.map(normalize))).rows;

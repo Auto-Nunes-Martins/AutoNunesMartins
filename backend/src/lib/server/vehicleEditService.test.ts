@@ -6,6 +6,13 @@ const mocked = vi.hoisted(() => ({
   lock: vi.fn(),
   download: vi.fn(),
   dimensions: vi.fn(),
+  queuePhotos: vi.fn(),
+}));
+vi.mock('./photoLifecycleStore.js', () => ({
+  retainStagedPhotos: vi.fn(async () => ({ adopted: [] })),
+  assertStagedPhotos: vi.fn(),
+  forgetAttachedPhotos: vi.fn(),
+  queuePhotoRemovals: mocked.queuePhotos,
 }));
 vi.mock('./preparePhotoDimensions.js', () => ({ preparePhotoDimensions: mocked.dimensions }));
 vi.mock('../../db.js', () => ({ prisma: {} }));
@@ -70,18 +77,32 @@ it('rejects a formatted description with no visible text when publishing, but pe
 });
 it('saves gallery positions with the same edit transaction and validates ownership', async () => {
   const value = input();
-  value.galleryFraming = {[a]: {desktop:{x:50,y:75},mobile:{x:50,y:80}}};
+  value.galleryFraming = { [a]: { desktop: { x: 50, y: 75 }, mobile: { x: 50, y: 80 } } };
   await saveVehicleEdit(id, value, actor);
-  expect(tx.vehicle.update).toHaveBeenCalledWith(expect.objectContaining({data:expect.objectContaining({galleryFraming:value.galleryFraming})}));
+  expect(tx.vehicle.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({ galleryFraming: value.galleryFraming }),
+    }),
+  );
   value.expectedUpdatedAt = row.updatedAt.toISOString();
-  value.galleryFraming = {'foreign/photo.jpg':value.galleryFraming[a]!};
+  value.galleryFraming = { 'foreign/photo.jpg': value.galleryFraming[a]! };
   await expect(saveVehicleEdit(id, value, actor)).rejects.toThrow('Enquadramento');
 });
-it('preserves card coordinates when an older edit only updates detail coordinates',async()=>{
-  const detail={desktop:{x:50,y:70},mobile:{x:50,y:80}},card={desktop:{x:50,y:20},mobile:{x:50,y:30}};
-  tx.vehicle.findUnique.mockResolvedValue({...row,galleryFraming:{[a]:{...detail,card}}});
-  const value=input();value.galleryFraming={[a]:detail};await saveVehicleEdit(id,value,actor);
-  expect(tx.vehicle.update).toHaveBeenCalledWith(expect.objectContaining({data:expect.objectContaining({galleryFraming:{[a]:{...detail,card}},photos:{set:[a,b]}})}));
+it('preserves card coordinates when an older edit only updates detail coordinates', async () => {
+  const detail = { desktop: { x: 50, y: 70 }, mobile: { x: 50, y: 80 } },
+    card = { desktop: { x: 50, y: 20 }, mobile: { x: 50, y: 30 } };
+  tx.vehicle.findUnique.mockResolvedValue({ ...row, galleryFraming: { [a]: { ...detail, card } } });
+  const value = input();
+  value.galleryFraming = { [a]: detail };
+  await saveVehicleEdit(id, value, actor);
+  expect(tx.vehicle.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        galleryFraming: { [a]: { ...detail, card } },
+        photos: { set: [a, b] },
+      }),
+    }),
+  );
 });
 beforeEach(() => {
   vi.clearAllMocks();
@@ -124,13 +145,19 @@ beforeEach(() => {
 describe('single vehicle edit transaction', () => {
   it('ignores a legacy subset and publishes the complete current list atomically', async () => {
     await saveVehicleEdit(id, input(), actor);
-    expect(row.photos).toEqual([a,b]);
-    expect(row.publicPhotoPaths).toEqual([a,b]);
-    expect(mocked.publication.mock.calls[0]?.[2].photoPaths).toEqual([a,b]);
+    expect(row.photos).toEqual([a, b]);
+    expect(row.publicPhotoPaths).toEqual([a, b]);
+    expect(mocked.publication.mock.calls[0]?.[2].photoPaths).toEqual([a, b]);
   });
   it('rejects clearing the now-required plate and accepts clearing an optional VIN', async () => {
-    expect(vehicleEditSchema.safeParse({ ...input(), data: { licensePlate: null } }).success).toBe(false);
-    const value = vehicleEditSchema.parse({ ...input(), publication: undefined, data: { vin: '' } });
+    expect(vehicleEditSchema.safeParse({ ...input(), data: { licensePlate: null } }).success).toBe(
+      false,
+    );
+    const value = vehicleEditSchema.parse({
+      ...input(),
+      publication: undefined,
+      data: { vin: '' },
+    });
     await saveVehicleEdit(id, value, actor);
     expect(mocked.update.mock.calls[0]?.[2]).toEqual({ vin: null });
   });
@@ -140,7 +167,9 @@ describe('single vehicle edit transaction', () => {
     await saveVehicleEdit(id, value, actor);
     expect(mocked.work).toHaveBeenCalledTimes(1);
     expect(mocked.dimensions).toHaveBeenCalledWith({}, id, [b, a]);
-    expect(mocked.dimensions.mock.invocationCallOrder[0]).toBeLessThan(mocked.work.mock.invocationCallOrder[0]!);
+    expect(mocked.dimensions.mock.invocationCallOrder[0]).toBeLessThan(
+      mocked.work.mock.invocationCallOrder[0]!,
+    );
     expect(row.brand).toBe('Nissan');
     expect(row.photos).toEqual([b, a]);
     expect(row.publicPhotoPaths).toEqual([b, a]);
@@ -173,9 +202,9 @@ describe('single vehicle edit transaction', () => {
     expect(mocked.update).not.toHaveBeenCalled();
   });
   it('reorders every photo on an already published vehicle without requiring publication edits', async () => {
-    await saveVehicleEdit(id, { ...input(), photos: [b,a], publication: undefined }, actor);
-    expect(row.photos).toEqual([b,a]);
-    expect(row.publicPhotoPaths).toEqual([b,a]);
+    await saveVehicleEdit(id, { ...input(), photos: [b, a], publication: undefined }, actor);
+    expect(row.photos).toEqual([b, a]);
+    expect(row.publicPhotoPaths).toEqual([b, a]);
     expect(row.webPublished).toBe(true);
     expect(mocked.publication).not.toHaveBeenCalled();
   });
@@ -219,4 +248,16 @@ describe('single vehicle edit transaction', () => {
     );
     expect(mocked.work).not.toHaveBeenCalled();
   });
+});
+
+it('persists revoked photo cleanup through the same edit transaction and rolls back if persistence fails', async () => {
+  const value = input();
+  value.photos = [a];
+  await saveVehicleEdit(id, value, actor);
+  expect(mocked.queuePhotos).toHaveBeenCalledWith(tx, id, [b]);
+  row.photos = [a, b];
+  row.updatedAt = new Date(value.expectedUpdatedAt);
+  mocked.queuePhotos.mockRejectedValueOnce(new Error('outbox unavailable'));
+  await expect(saveVehicleEdit(id, value, actor)).rejects.toThrow('outbox unavailable');
+  expect(row.photos).toEqual([a, b]);
 });

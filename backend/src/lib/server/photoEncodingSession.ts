@@ -1,42 +1,27 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { PhotoUploadError, MAX_OUTPUT_BYTES, MAX_UPLOAD_BYTES } from './photoOptimization.js';
 import { validManifest } from './photoVariantEncoding.js';
 import type { EncodedVariants } from './photoVariantEncoding.js';
 import type { optimizePhoto } from './photoOptimization.js';
-import type { UploadTrace, DiagnosticPhase } from '../../../../shared/runtimeDiagnostics.mjs';
+import {
+  MAX_REVIEW_AVATAR_BYTES,
+  MAX_REVIEW_AVATAR_OUTPUT_BYTES,
+  type normalizeReviewAvatar,
+} from './reviewAvatar.js';
 import { createCgroupReader } from '../../../../shared/containerMemory.mjs';
-import { registerDiagnosticProvider } from '../../../../shared/nativeDiagnostics.mjs';
-const activity = { created: 0, closed: 0, active: 0, peakWorkerRss: 0 };
-registerDiagnosticProvider('codec', () => ({
-  ...activity,
-  isolatedProduction:
-    process.env.NODE_ENV === 'production' && process.env.PHOTO_PROCESSING_MODE !== 'inline',
-}));
 type Photo = Awaited<ReturnType<typeof optimizePhoto>>;
+type ReviewAvatar = Awaited<ReturnType<typeof normalizeReviewAvatar>>;
+type EncodingJob = 'optimize' | 'variants' | 'avatar';
 type Pending = {
   id: number;
-  kind: 'optimize' | 'variants';
+  kind: EncodingJob;
   resolve: (value: unknown) => void;
   reject: (error: Error) => void;
   timer: NodeJS.Timeout;
 };
-const workerKeys = new Set([
-  'workerPid',
-  'workerRss',
-  'workerPeakRss',
-  'workerHeapUsed',
-  'workerExternal',
-  'workerArrayBuffers',
-  'workerCpuUserUs',
-  'workerCpuSystemUs',
-  'workerProcessing',
-  'workerQueue',
-  'workerOomPriorityAdjusted',
-  'workerNoCredentials',
-  'workerNodeMajor',
-]);
 export class PhotoEncodingSession {
   private child: ChildProcess;
   private pending?: Pending;
@@ -45,11 +30,9 @@ export class PhotoEncodingSession {
   private exited = false;
   private closed: Promise<void>;
   private closePromise?: Promise<void>;
-  private started = performance.now();
-  private metrics: Record<string, number> = { workerIsolated: 1 };
   private guard?: NodeJS.Timeout;
   private lifetime?: NodeJS.Timeout;
-  constructor(private trace: UploadTrace) {
+  constructor() {
     let entry = fileURLToPath(new URL('./photoEncodingWorker.js', import.meta.url));
     if (!existsSync(entry)) entry = entry.replace(/\.js$/, '.ts');
     const env: NodeJS.ProcessEnv = { NODE_ENV: 'production' };
@@ -79,23 +62,14 @@ export class PhotoEncodingSession {
         windowsHide: true,
       },
     );
-    activity.created++;
-    activity.active++;
+
     this.closed = new Promise((resolve) =>
-      this.child.once('close', (code, signal) => {
+      this.child.once('close', () => {
         this.exited = true;
-        activity.active--;
-        activity.closed++;
+
         clearInterval(this.guard);
         clearTimeout(this.lifetime);
-        this.metrics.workerExited = 1;
-        this.metrics.workerRssAtExit = this.metrics.workerRss ?? 0;
-        this.metrics.workerRss = 0;
-        if (code !== null && code >= 0) this.metrics.workerExitCode = code;
-        this.metrics.workerExitSignal =
-          signal === 'SIGKILL' ? 9 : signal === 'SIGTERM' ? 15 : signal === 'SIGABRT' ? 6 : 0;
-        this.metrics.workerLifetimeMs = Math.max(0, performance.now() - this.started);
-        this.trace.fields(this.metrics);
+
         this.fail();
         resolve();
       }),
@@ -113,8 +87,6 @@ export class PhotoEncodingSession {
       }
       const headroom = memory.effectiveHeadroomBytes ?? memory.headroomBytes;
       if (memory.available && typeof headroom === 'number' && headroom < 16 * 1024 * 1024) {
-        this.metrics.workerMemoryGuard = 1;
-        this.trace.fields(this.metrics);
         this.fail(503);
         this.child.kill('SIGKILL');
         void this.close();
@@ -124,7 +96,6 @@ export class PhotoEncodingSession {
     queueMicrotask(checkBudget);
     this.guard.unref();
     this.lifetime = setTimeout(() => {
-      this.metrics.workerTimeout = 1;
       this.fail(504);
       void this.close();
     }, 180000);
@@ -156,31 +127,10 @@ export class PhotoEncodingSession {
     const value = message as {
       type?: string;
       id?: number;
-      name?: string;
-      metrics?: Record<string, number>;
       result?: unknown;
       status?: number;
     };
-    if (value.type === 'sample' && value.metrics) {
-      for (const [key, n] of Object.entries(value.metrics))
-        if (workerKeys.has(key) && Number.isFinite(n) && n >= 0)
-          this.metrics[key] = key === 'workerPeakRss' ? Math.max(this.metrics[key] ?? 0, n) : n;
-      activity.peakWorkerRss = Math.max(activity.peakWorkerRss, this.metrics.workerPeakRss ?? 0);
-      this.trace.fields(this.metrics);
-      return;
-    }
     if (this.closing) return;
-    if (
-      value.type === 'phase' &&
-      ['metadata', 'optimize', 'sanitize', 'variant_encode'].includes(value.name ?? '')
-    ) {
-      this.trace.phase(value.name as DiagnosticPhase, value.metrics);
-      return;
-    }
-    if (value.type === 'fields' && value.metrics) {
-      this.trace.fields(value.metrics);
-      return;
-    }
     const pending = this.pending;
     if (!pending || pending.id !== value.id) return;
     if (value.type === 'failure') {
@@ -193,7 +143,7 @@ export class PhotoEncodingSession {
       pending.resolve(value.result);
     }
   }
-  private request(kind: 'optimize' | 'variants', input: Buffer) {
+  private request(kind: EncodingJob, input: Buffer) {
     if (
       this.pending ||
       this.closing ||
@@ -209,7 +159,7 @@ export class PhotoEncodingSession {
           this.fail(504);
           void this.close();
         },
-        kind === 'optimize' ? 55000 : 125000,
+        kind === 'variants' ? 125000 : 55000,
       );
       this.pending = { id, kind, resolve, reject, timer };
       try {
@@ -259,6 +209,23 @@ export class PhotoEncodingSession {
       throw new PhotoUploadError(502, 'Resposta de tamanhos inválida.');
     return result;
   }
+  async avatar(input: Buffer): Promise<ReviewAvatar> {
+    if (input.length > MAX_REVIEW_AVATAR_BYTES)
+      throw new PhotoUploadError(422, 'Fotografia inválida para processamento.');
+    const result = (await this.request('avatar', input)) as ReviewAvatar;
+    if (
+      !result ||
+      !Buffer.isBuffer(result.avatarData) ||
+      result.avatarData.length < 12 ||
+      result.avatarData.length > MAX_REVIEW_AVATAR_OUTPUT_BYTES ||
+      result.avatarData.toString('ascii', 0, 4) !== 'RIFF' ||
+      result.avatarData.toString('ascii', 8, 12) !== 'WEBP' ||
+      typeof result.avatarVersion !== 'string' ||
+      result.avatarVersion !== createHash('sha256').update(result.avatarData).digest('hex')
+    )
+      throw new PhotoUploadError(502, 'Resposta de avatar inválida.');
+    return result;
+  }
   abort() {
     void this.close();
   }
@@ -269,8 +236,7 @@ export class PhotoEncodingSession {
     this.closing = true;
     this.fail();
     if (this.exited) return;
-    const start = performance.now();
-    this.trace.phase('worker_exit');
+
     const force = setTimeout(() => {
       if (!this.exited) this.child.kill('SIGKILL');
     }, 1000);
@@ -287,8 +253,6 @@ export class PhotoEncodingSession {
       await this.closed;
     } finally {
       clearTimeout(force);
-      this.metrics.workerExitWaitMs = Math.max(0, performance.now() - start);
-      this.trace.fields(this.metrics);
     }
   }
 }

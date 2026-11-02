@@ -36,7 +36,11 @@
     type="button"
     onclick={() => (confirmationOpen = true)}
     disabled={blocked || disabled || busy}
-    ><Trash2 size={15} aria-hidden="true" />{busy ? 'A eliminar…' : draftOnly ? 'Eliminar rascunho' : 'Eliminar viatura'}</button
+    ><Trash2 size={15} aria-hidden="true" />{busy
+      ? 'A eliminar…'
+      : draftOnly
+        ? 'Eliminar rascunho'
+        : 'Eliminar viatura'}</button
   >
 </section>
 <VehicleDeleteDialog

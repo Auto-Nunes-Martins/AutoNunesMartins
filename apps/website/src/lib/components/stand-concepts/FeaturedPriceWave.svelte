@@ -5,14 +5,27 @@
 
 <span class="featured-price">
   <span class="readable-price">{value}</span><span class="visual-price" aria-hidden="true"
-    ><span class="price-sizer">{value}</span><span class="price-amount" use:priceEmphasis={vehicle}>{value}</span></span
+    ><span class="price-sizer">{value}</span><span class="price-amount" use:priceEmphasis={vehicle}
+      >{value}</span
+    ></span
   >
 </span>
 
 <style>
-  .featured-price, .visual-price { white-space: pre; }
-  .visual-price { display: inline-block; position: relative; vertical-align: bottom; }
-  .price-sizer { display: block; font-size: 1.06em; visibility: hidden; }
+  .featured-price,
+  .visual-price {
+    white-space: pre;
+  }
+  .visual-price {
+    display: inline-block;
+    position: relative;
+    vertical-align: bottom;
+  }
+  .price-sizer {
+    display: block;
+    font-size: 1.06em;
+    visibility: hidden;
+  }
   .price-amount {
     position: absolute;
     right: 0;
@@ -32,6 +45,9 @@
     white-space: nowrap;
   }
   @media (max-width: 700px) {
-    .price-amount { left: 0; right: auto; }
+    .price-amount {
+      left: 0;
+      right: auto;
+    }
   }
 </style>

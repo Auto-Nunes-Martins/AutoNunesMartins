@@ -20,15 +20,19 @@ describe('public contact email subject', () => {
   });
 
   it('adds readable public vehicle context without the opaque slug suffix', () => {
-    const result = contactEmailSubject({ requestId: first, subject: 'Conhecer uma viatura',
-      page: '/viaturas/renault-clio-2022-012345abcdef' });
+    const result = contactEmailSubject({
+      requestId: first,
+      subject: 'Conhecer uma viatura',
+      page: '/viaturas/renault-clio-2022-012345abcdef',
+    });
     expect(result).toContain('Conhecer uma viatura — renault clio 2022 [Ref. ');
     expect(result).not.toContain('012345abcdef');
   });
 
   it('does not invent a vehicle from a generic or noncanonical page', () => {
     const data = { requestId: first, subject: 'Informações gerais' };
-    expect(contactEmailSubject({ ...data, page: '/viaturas' }))
-      .toBe(contactEmailSubject({ ...data, page: '/viaturas/not-a-public-slug' }));
+    expect(contactEmailSubject({ ...data, page: '/viaturas' })).toBe(
+      contactEmailSubject({ ...data, page: '/viaturas/not-a-public-slug' }),
+    );
   });
 });

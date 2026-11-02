@@ -16,8 +16,11 @@ export const load: PageServerLoad = async (event) => {
     .catch((err): DashboardStream => ({ kind: 'error', message: (err as Error).message }));
   const highlights = await dashboardApi
     .highlights(event)
-    .then(result => result.items)
-    .catch(err => { rethrowAuthError(err); return [] as DashboardHighlight[]; });
+    .then((result) => result.items)
+    .catch((err) => {
+      rethrowAuthError(err);
+      return [] as DashboardHighlight[];
+    });
   // Await the showcase so its photo and dimensions are present in the first HTML.
   return { dashboard, highlights };
 };

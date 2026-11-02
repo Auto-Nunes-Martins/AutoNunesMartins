@@ -1,5 +1,9 @@
 import type { PageServerLoad } from './$types';
-import { activityApi, type ActivityListParams, type ActivityListResult } from '$lib/server/activity';
+import {
+  activityApi,
+  type ActivityListParams,
+  type ActivityListResult,
+} from '$lib/server/activity';
 import { usersApi, type TaskAssignee } from '$lib/server/tasks';
 import { error } from '@sveltejs/kit';
 import { apiFailure } from '$lib/server/api';

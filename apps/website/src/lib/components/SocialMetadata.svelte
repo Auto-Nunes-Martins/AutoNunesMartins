@@ -1,6 +1,13 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  let { title, description, canonical, image = '/images/social/auto-nunes-martins-v1.png', imageAlt = 'Logótipo Auto Nunes Martins — comércio de automóveis', brandImage = true }: {
+  let {
+    title,
+    description,
+    canonical,
+    image = '/images/social/auto-nunes-martins-v1.png',
+    imageAlt = 'Logótipo Auto Nunes Martins — comércio de automóveis',
+    brandImage = true,
+  }: {
     title: string;
     description: string;
     canonical: string;

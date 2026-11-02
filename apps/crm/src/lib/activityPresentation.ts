@@ -45,10 +45,17 @@ const events: Record<string, EventStyle> = {
 };
 
 export function activityStyle(type: string, semanticAction?: string): EventStyle {
-  if (semanticAction === 'website-enabled') return { icon: Globe, color: 'var(--color-website)', label: 'Publicação no website' };
-  if (semanticAction === 'website-disabled') return { icon: Globe, color: neutral, label: 'Publicação retirada do website' };
-  if (semanticAction === 'homepage-highlights') return { icon: Star, color: 'var(--color-warning)', label: 'Destaques da homepage' };
-  if (semanticAction === 'dashboard-highlight-set' || semanticAction === 'dashboard-highlight-removed') return { icon: Star, color: 'var(--color-warning)', label: 'Destaque do painel' };
+  if (semanticAction === 'website-enabled')
+    return { icon: Globe, color: 'var(--color-website)', label: 'Publicação no website' };
+  if (semanticAction === 'website-disabled')
+    return { icon: Globe, color: neutral, label: 'Publicação retirada do website' };
+  if (semanticAction === 'homepage-highlights')
+    return { icon: Star, color: 'var(--color-warning)', label: 'Destaques da homepage' };
+  if (
+    semanticAction === 'dashboard-highlight-set' ||
+    semanticAction === 'dashboard-highlight-removed'
+  )
+    return { icon: Star, color: 'var(--color-warning)', label: 'Destaque do painel' };
   return events[type] ?? { icon: Activity, color: neutral, label: 'Atividade' };
 }
 

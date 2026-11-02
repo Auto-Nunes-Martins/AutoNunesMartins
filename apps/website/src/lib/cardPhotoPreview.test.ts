@@ -1,12 +1,28 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { captureCardPhoto, takeCardPhotoPreview } from './cardPhotoPreview';
 const src = '/viaturas/test-abcdef123456/photos/0?v=' + 'a'.repeat(64);
-afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 function setup() {
   vi.stubGlobal('location', { href: 'https://site.test/viaturas', origin: 'https://site.test' });
   const drawImage = vi.fn();
-  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ({ drawImage }), toDataURL: () => 'data:image/webp;base64,pixels' }) });
-  return { image: { complete: true, naturalWidth: 800, naturalHeight: 600, currentSrc: src + '&w=800' } as HTMLImageElement, drawImage };
+  vi.stubGlobal('document', {
+    createElement: () => ({
+      getContext: () => ({ drawImage }),
+      toDataURL: () => 'data:image/webp;base64,pixels',
+    }),
+  });
+  return {
+    image: {
+      complete: true,
+      naturalWidth: 800,
+      naturalHeight: 600,
+      currentSrc: src + '&w=800',
+    } as HTMLImageElement,
+    drawImage,
+  };
 }
 it('uses decoded card pixels once only for the same fresh version and first photo', () => {
   const { image, drawImage } = setup();
@@ -22,12 +38,14 @@ it('uses decoded card pixels once only for the same fresh version and first phot
 it('rejects expired, cross-origin and undecoded pixels and clears on unrelated navigation', () => {
   vi.useFakeTimers();
   const { image, drawImage } = setup();
-  captureCardPhoto(image); vi.advanceTimersByTime(15001);
+  captureCardPhoto(image);
+  vi.advanceTimersByTime(15001);
   expect(takeCardPhotoPreview(src)).toBeUndefined();
   captureCardPhoto({ ...image, currentSrc: 'https://other.test' + src } as HTMLImageElement);
   expect(drawImage).toHaveBeenCalledTimes(1);
   captureCardPhoto({ ...image, complete: false } as HTMLImageElement);
   expect(takeCardPhotoPreview(src)).toBeUndefined();
-  captureCardPhoto(image); captureCardPhoto();
+  captureCardPhoto(image);
+  captureCardPhoto();
   expect(takeCardPhotoPreview(src)).toBeUndefined();
 });

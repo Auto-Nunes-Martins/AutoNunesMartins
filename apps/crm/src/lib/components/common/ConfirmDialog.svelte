@@ -84,10 +84,7 @@
         </div>
       {/if}
       <div class="min-w-0">
-        <h2
-          id={uid + '-title'}
-          class="dialog-title"
-        >
+        <h2 id={uid + '-title'} class="dialog-title">
           {title}
         </h2>
         {#if message}
@@ -102,7 +99,9 @@
     </div>
 
     <div class="dialog-actions">
-      {#if secondaryLabel}<Button variant="outline" onclick={onsecondary} disabled={busy}>{secondaryLabel}</Button>{/if}
+      {#if secondaryLabel}<Button variant="outline" onclick={onsecondary} disabled={busy}
+          >{secondaryLabel}</Button
+        >{/if}
       <Button variant="ghost" onclick={handleCancel} disabled={busy}>
         {cancelLabel}
       </Button>
@@ -132,14 +131,41 @@
     border-radius: var(--radius-card);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   }
-  .dialog-content { padding: 28px; }
-  .dialog-title { font-family: var(--font-display, inherit); font-size: 20px; font-weight: 600; line-height: 1.3; }
-  .dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 28px; }
-  .dialog-actions :global(button) { max-width: 100%; white-space: normal; height: auto; min-height: 44px; padding-block: 10px; line-height: 1.4; }
+  .dialog-content {
+    padding: 28px;
+  }
+  .dialog-title {
+    font-family: var(--font-display, inherit);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .dialog-actions :global(button) {
+    max-width: 100%;
+    white-space: normal;
+    height: auto;
+    min-height: 44px;
+    padding-block: 10px;
+    line-height: 1.4;
+  }
   @media (max-width: 480px) {
-    .dialog-content { padding: 24px 20px; }
-    .dialog-actions { flex-direction: column; align-items: stretch; }
-    .dialog-actions :global(button) { width: 100%; }
+    .dialog-content {
+      padding: 24px 20px;
+    }
+    .dialog-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .dialog-actions :global(button) {
+      width: 100%;
+    }
   }
   .confirm-dialog::backdrop {
     background: rgba(0, 0, 0, 0.55);

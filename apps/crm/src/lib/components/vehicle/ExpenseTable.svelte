@@ -55,21 +55,27 @@
   class="expense-layout overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-1)]"
   style="border-radius: var(--radius-card);"
 >
-  <div class="expense-heading"><PanelHeader icon={Wallet} title="Despesas" meta={`${expenses.length} ${expenses.length === 1 ? 'REGISTO' : 'REGISTOS'}`}>
-    {#snippet actions()}
-      <button
-        type="button"
-        aria-expanded={showForm}
-        aria-controls={addFormId}
-        onclick={() => (showForm = !showForm)}
-        class="inline-flex items-center gap-1.5 px-3 h-8 min-h-11 border border-[var(--color-border)] hover:border-[var(--color-border-strong)] font-mono text-[10px] uppercase tracking-[0.2em] transition-colors"
-        style="border-radius: var(--radius-btn);"
-      >
-        <Plus class="h-3.5 w-3.5" />
-        Adicionar
-      </button>
-    {/snippet}
-  </PanelHeader></div>
+  <div class="expense-heading">
+    <PanelHeader
+      icon={Wallet}
+      title="Despesas"
+      meta={`${expenses.length} ${expenses.length === 1 ? 'REGISTO' : 'REGISTOS'}`}
+    >
+      {#snippet actions()}
+        <button
+          type="button"
+          aria-expanded={showForm}
+          aria-controls={addFormId}
+          onclick={() => (showForm = !showForm)}
+          class="inline-flex items-center gap-1.5 px-3 h-8 min-h-11 border border-[var(--color-border)] hover:border-[var(--color-border-strong)] font-mono text-[10px] uppercase tracking-[0.2em] transition-colors"
+          style="border-radius: var(--radius-btn);"
+        >
+          <Plus class="h-3.5 w-3.5" />
+          Adicionar
+        </button>
+      {/snippet}
+    </PanelHeader>
+  </div>
 
   {#if showForm}
     <form
@@ -158,7 +164,6 @@
         <DateInput
           name="date"
           required
-
           value={today}
           class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
           style="border-radius: var(--radius-btn);"
@@ -191,14 +196,16 @@
       Sem despesas registadas
     </div>
   {:else}
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard access to native horizontal scrolling.) -->
+    <!-- Keyboard access to native horizontal scrolling. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="expense-table-wrap overflow-x-auto"
       tabindex="0"
       role="region"
       aria-label="Despesas da viatura"
     >
-      <!-- svelte-ignore a11y_no_redundant_roles (Preserve table semantics when mobile rows use CSS grid.) -->
+      <!-- Preserve table semantics when mobile rows use CSS grid. -->
+      <!-- svelte-ignore a11y_no_redundant_roles -->
       <table role="table" class="crm-table expense-table w-full text-[13px] min-w-[560px]">
         <thead>
           <tr class="border-b border-[var(--color-border)]">
@@ -322,7 +329,6 @@
                       <DateInput
                         name="date"
                         required
-
                         value={e.date.slice(0, 10)}
                         class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] outline-none focus:border-[var(--color-red)]"
                         style="border-radius: var(--radius-btn);"
@@ -460,7 +466,14 @@
       column-gap: 8px;
       row-gap: 3px;
     }
-    .expense-heading :global(h3) {grid-column: 3;grid-row: 1;}
-    .expense-heading :global(h3 + span) {grid-column: 3;grid-row: 2;margin-left: 0;}
+    .expense-heading :global(h3) {
+      grid-column: 3;
+      grid-row: 1;
+    }
+    .expense-heading :global(h3 + span) {
+      grid-column: 3;
+      grid-row: 2;
+      margin-left: 0;
+    }
   }
 </style>

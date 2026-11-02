@@ -24,32 +24,62 @@ import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 import { param } from '../lib/http.js';
 import { saveVehicleEdit, vehicleEditSchema } from '../lib/server/vehicleEditService.js';
 import { WebPublicationError } from '../lib/server/webPublicationService.js';
-import { deleteObjects } from '../lib/data/storage.js';
 import { readCrmList } from '../lib/data/crmListCache.js';
-import { removePhotoDimensions } from '../lib/data/photoDimensions.js';
+import { processPhotoJob, PhotoLifecycleError } from '../lib/server/photoLifecycleStore.js';
 
 const router = Router();
 
-router.put('/:id/edit', requireUser, asyncHandler(async (req: AuthedRequest, res: Response) => {
-  res.set('Cache-Control', 'no-store');
-  if (!req.user || req.user.role !== 'ADMIN') { res.status(403).json({ error: 'Forbidden' }); return; }
-  const parsed = vehicleEditSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: 'Reveja os dados da viatura e da publicação.', issues: parsed.error.issues }); return; }
-  try {
-    const result = await saveVehicleEdit(param(req, 'id'), parsed.data, { actorId: req.user.id, actorName: req.user.name });
-    // Database references and public approval have already been revoked atomically.
-    try { await removePhotoDimensions(prisma, result.removedPhotos); }
-    catch { logger.error('Unreferenced photo dimensions cleanup failed after vehicle edit'); }
-    if (result.removedPhotos.length) try { await deleteObjects(result.removedPhotos); }
-    catch { logger.error('Unreferenced photo cleanup failed after vehicle edit'); }
-    res.json({ ok: true });
-  } catch (error) {
-    if (error instanceof VehicleNotFound) { res.status(404).json({ error: 'Viatura não encontrada.' }); return; }
-    if (error instanceof VehicleStateConflict || error instanceof WebPublicationError) { res.status(error.status).json({ error: error.message, ...(error.field ? {issues:[{path:error.field.split('.'),message:error.message}]} : {}) }); return; }
-    if ((error as { code?: string }).code === 'P2002') { res.status(409).json(duplicateVehicleFeedback(error)); return; }
-    throw error;
-  }
-}));
+router.put(
+  '/:id/edit',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    if (!req.user || req.user.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+    const parsed = vehicleEditSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: 'Reveja os dados da viatura e da publicação.',
+        issues: parsed.error.issues,
+      });
+      return;
+    }
+    try {
+      const result = await saveVehicleEdit(param(req, 'id'), parsed.data, {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      // Every revoked path already has a durable job in the same commit.
+      const cleaned = await Promise.all(result.removedPhotos.map(processPhotoJob));
+      res.json({ ok: true, cleanupPending: cleaned.some((done) => !done) });
+    } catch (error) {
+      if (error instanceof VehicleNotFound) {
+        res.status(404).json({ error: 'Viatura não encontrada.' });
+        return;
+      }
+      if (
+        error instanceof VehicleStateConflict ||
+        error instanceof WebPublicationError ||
+        error instanceof PhotoLifecycleError
+      ) {
+        res.status(error.status).json({
+          error: error.message,
+          ...(error.field
+            ? { issues: [{ path: error.field.split('.'), message: error.message }] }
+            : {}),
+        });
+        return;
+      }
+      if ((error as { code?: string }).code === 'P2002') {
+        res.status(409).json(duplicateVehicleFeedback(error));
+        return;
+      }
+      throw error;
+    }
+  }),
+);
 
 const listQuerySchema = vehicleFilterSchema.extend({
   page: z.coerce.number().int().min(1).default(1),
@@ -258,16 +288,29 @@ router.delete(
     }
     try {
       const expected = z.string().datetime().optional().safeParse(req.get('x-expected-updated-at'));
-      if (!expected.success) { res.status(400).json({ error: 'Versão de rascunho inválida.' }); return; }
-      await deleteVehicle(param(req, 'id'), {
-        actorId: req.user.id,
-        actorName: req.user.name,
-      }, { draftOnly: req.path.endsWith('/draft'), expectedUpdatedAt: expected.data });
+      if (!expected.success) {
+        res.status(400).json({ error: 'Versão de rascunho inválida.' });
+        return;
+      }
+      await deleteVehicle(
+        param(req, 'id'),
+        {
+          actorId: req.user.id,
+          actorName: req.user.name,
+        },
+        { draftOnly: req.path.endsWith('/draft'), expectedUpdatedAt: expected.data },
+      );
       res.json({ ok: true });
     } catch (err) {
-      if (err instanceof VehicleStateConflict) { res.status(err.status).json({ error: err.message }); return; }
+      if (err instanceof VehicleStateConflict) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
       if (err instanceof VehicleNotDraft) {
-        res.status(409).json({ error: 'Esta ficha já não é um rascunho por publicar. Atualize a página; a viatura foi preservada.' });
+        res.status(409).json({
+          error:
+            'Esta ficha já não é um rascunho por publicar. Atualize a página; a viatura foi preservada.',
+        });
         return;
       }
       if (['P2003', 'P2014'].includes((err as { code?: string }).code ?? '')) {

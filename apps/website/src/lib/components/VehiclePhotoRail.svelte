@@ -3,7 +3,7 @@
   import { framingStyle } from '@anm/types';
   import type { PublicVehicle } from '$lib/publicVehicles';
   import { publicPhoto } from '$lib/publicVehicles';
-  import { sizedPhoto,vehiclePhotoSet,galleryPhotoSizes } from '$lib/vehiclePhotoSources';
+  import { sizedPhoto, vehiclePhotoSet, galleryPhotoSizes } from '$lib/vehiclePhotoSources';
   import type { PublicGallerySession } from '$lib/publicGallerySession';
   import { publicGalleryPhoto } from '$lib/publicGalleryPhoto';
   import { photoRail } from '$lib/photoRail';
@@ -59,7 +59,7 @@
             use:publicGalleryPhoto={{
               src,
               session,
-              fullscreen:i===index,
+              fullscreen: i === index,
               onLoading: (loading) => (pending[i] = loading),
             }}
             alt={`${vehicle.brand} ${vehicle.model} — fotografia ${i + 1}`}
@@ -69,8 +69,11 @@
         {:else}
           <button type="button" data-swipe-surface onclick={open} tabindex={i === index ? 0 : -1}>
             <img
-              {...(session?.attrs(src,vehiclePhotoSet(publicPhoto(vehicle,i)))??{src,srcset:vehiclePhotoSet(publicPhoto(vehicle,i))})}
-              sizes={galleryPhotoSizes(vehicle,i)}
+              {...session?.attrs(src, vehiclePhotoSet(publicPhoto(vehicle, i))) ?? {
+                src,
+                srcset: vehiclePhotoSet(publicPhoto(vehicle, i)),
+              }}
+              sizes={galleryPhotoSizes(vehicle, i)}
               use:publicGalleryPhoto={{
                 src,
                 session,
@@ -92,8 +95,13 @@
       inert={index !== sources.length}
     >
       <img
-        {...(fullscreen?{src:undefined,srcset:undefined}:session?.attrs(sources[0]!,vehiclePhotoSet(publicPhoto(vehicle,0)))??{src:sources[0],srcset:vehiclePhotoSet(publicPhoto(vehicle,0))})}
-        sizes={galleryPhotoSizes(vehicle,0)}
+        {...fullscreen
+          ? { src: undefined, srcset: undefined }
+          : (session?.attrs(sources[0]!, vehiclePhotoSet(publicPhoto(vehicle, 0))) ?? {
+              src: sources[0],
+              srcset: vehiclePhotoSet(publicPhoto(vehicle, 0)),
+            })}
+        sizes={galleryPhotoSizes(vehicle, 0)}
         use:publicGalleryPhoto={{ src: sources[0]!, session }}
         alt=""
         loading="eager"
@@ -105,8 +113,14 @@
 </div>
 
 <style>
-  .photo-rail:not(.fullscreen) img { object-position: var(--photo-desktop, 50% 50%); }
-  @media (max-width: 700px) { .photo-rail:not(.fullscreen) img { object-position: var(--photo-mobile, 50% 50%); } }
+  .photo-rail:not(.fullscreen) img {
+    object-position: var(--photo-desktop, 50% 50%);
+  }
+  @media (max-width: 700px) {
+    .photo-rail:not(.fullscreen) img {
+      object-position: var(--photo-mobile, 50% 50%);
+    }
+  }
   .photo-rail {
     width: 100%;
     height: 100%;

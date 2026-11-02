@@ -2,17 +2,27 @@ import { vehiclePhotoWidths } from '@anm/types/photoWidths';
 export { detailPhotoSizes, detailPhotoWidth } from '../../../../shared/photoResolution.mjs';
 import { detailPhotoSizesForRatio } from '../../../../shared/photoResolution.mjs';
 import { detailPhotoWidth } from '../../../../shared/photoResolution.mjs';
-type Dimensions = { version: string; width: number; height: number };
+export type PhotoDimensions = { version: string; width: number; height: number };
 export function detailPhotoDimensions(
   vehicle: {
     photos: string[];
-    photoDimensions?: (Dimensions | null)[];
-    coverPhotoDimensions?: Dimensions | null;
+    photoDimensions?: (PhotoDimensions | null)[];
+    coverPhotoDimensions?: PhotoDimensions | null;
   },
   index: number,
 ) {
   const dimensions =
     vehicle.photoDimensions?.[index] ?? (index === 0 ? vehicle.coverPhotoDimensions : undefined);
+  if (
+    !dimensions ||
+    !/^[a-f0-9]{64}$/.test(dimensions.version) ||
+    !Number.isSafeInteger(dimensions.width) ||
+    !Number.isSafeInteger(dimensions.height) ||
+    dimensions.width <= 0 ||
+    dimensions.height <= 0 ||
+    dimensions.width * dimensions.height > 24_000_000
+  )
+    return undefined;
   return dimensions?.version === vehicle.photos[index]?.match(/\?v=([a-f0-9]{64})$/)?.[1]
     ? dimensions
     : undefined;

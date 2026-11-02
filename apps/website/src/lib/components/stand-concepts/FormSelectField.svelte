@@ -11,7 +11,12 @@
 </span>
 
 <style>
-  .form-select-field { display: block; position: relative; width: 100%; min-width: 0; }
+  .form-select-field {
+    display: block;
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
   .form-select-field :global(select[name]) {
     width: 100%;
     appearance: none;

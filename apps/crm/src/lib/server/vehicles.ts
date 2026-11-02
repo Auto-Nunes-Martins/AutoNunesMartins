@@ -1,4 +1,4 @@
-import type {SignedVariantPhoto} from "$lib/vehicleImage";
+import type { SignedVariantPhoto } from '$lib/vehicleImage';
 import type { PublicSpecifications } from '@anm/types';
 import type { VehicleCreate, VehicleFilter, VehicleStatus, Fuel } from '@anm/types';
 import type { RequestEvent } from '@sveltejs/kit';

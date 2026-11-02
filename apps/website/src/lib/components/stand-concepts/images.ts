@@ -28,10 +28,22 @@ export const cardImageSizes =
  * frames are conservative when a scrollbar narrows the containing block.
  * Leave DPR to the browser; retain the unknown-photo fallback.
  */
-export function publicCardImageSizes(dimensions?: { width: number; height: number } | null, catalog = false, favorites = false) {
-  if (!dimensions || !Number.isFinite(dimensions.width) || !Number.isFinite(dimensions.height) || dimensions.width <= 0 || dimensions.height <= 0) return cardImageSizes;
+export function publicCardImageSizes(
+  dimensions?: { width: number; height: number } | null,
+  catalog = false,
+  favorites = false,
+) {
+  if (
+    !dimensions ||
+    !Number.isFinite(dimensions.width) ||
+    !Number.isFinite(dimensions.height) ||
+    dimensions.width <= 0 ||
+    dimensions.height <= 0
+  )
+    return cardImageSizes;
   const ratio = dimensions.width / dimensions.height;
-  const cover = (vw: number, px: number) => `max(calc(${vw}vw + ${px}px), calc(${(vw / 1.4 * ratio).toFixed(6)}vw + ${((px / 1.4 + 60) * ratio).toFixed(6)}px))`;
+  const cover = (vw: number, px: number) =>
+    `max(calc(${vw}vw + ${px}px), calc(${((vw / 1.4) * ratio).toFixed(6)}vw + ${((px / 1.4 + 60) * ratio).toFixed(6)}px))`;
   // Catalogue has two columns and a 24px gap between 541 and 700px.
   const mobile = catalog
     ? `(max-width: 540px) ${cover(90, 0)}, (max-width: 700px) ${cover(45, -12)}, `
@@ -62,18 +74,27 @@ export function publicCardImageSizes(dimensions?: { width: number; height: numbe
           ['(max-width: 1920px)', columns(1320, 3, 24, homeSidebar)],
           ['', columns(1440, 3, 24, homeSidebar)],
         ];
-  return mobile + desktop.map(([media, width]) => `${media} ${desktopCover(width)}`.trim()).join(', ');
+  return (
+    mobile + desktop.map(([media, width]) => `${media} ${desktopCover(width)}`.trim()).join(', ')
+  );
 }
 export const heroImageSizes =
   '(max-width: 700px) 100vw, (max-width: 1050px) 70vw, (min-width: 1920px) 980px, 56vw';
 
 /** Match RelatedCarousel's fractional slots, static cap and cover crop. */
-export function relatedCardImageSizes(dimensions: { width: number; height: number } | null | undefined, count: number) {
-  const ratio = dimensions && dimensions.width > 0 && dimensions.height > 0 ? dimensions.width / dimensions.height : 1.5;
+export function relatedCardImageSizes(
+  dimensions: { width: number; height: number } | null | undefined,
+  count: number,
+) {
+  const ratio =
+    dimensions && dimensions.width > 0 && dimensions.height > 0
+      ? dimensions.width / dimensions.height
+      : 1.5;
   const frame = 'min(95vw, 1640px)';
-  const slot = (capacity: number) => count > capacity
-    ? `calc((${frame} - ${capacity * 20 + 8}px) / ${capacity === 3 ? 3.22 : 2.2})`
-    : `min(440px, calc((${frame} - ${(count - 1) * 20}px) / ${count}))`;
+  const slot = (capacity: number) =>
+    count > capacity
+      ? `calc((${frame} - ${capacity * 20 + 8}px) / ${capacity === 3 ? 3.22 : 2.2})`
+      : `min(440px, calc((${frame} - ${(count - 1) * 20}px) / ${count}))`;
   const cover = (width: string) => `max(${width}, calc((${width} / 1.4 + 60px) * ${ratio}))`;
   const mobile = count > 1 ? 'calc((90vw - 8px) * .86)' : 'min(90vw, 440px)';
   return `(max-width: 700px) ${cover(mobile)}, (max-width: 1000px) ${cover(slot(2))}, ${cover(slot(3))}`;
@@ -83,3 +104,20 @@ export function relatedCardImageSizes(dimensions: { width: number; height: numbe
 // sizes describes CSS pixels; the browser applies device density.
 export const featuredPhotoSizes =
   '(max-width: 700px) calc(100vw - 40px), (max-width: 1050px) 40.022vw, min(38.337vw, 682px)';
+
+/** Seed the same cover demand in preload and img before the first decode.
+ * Keep the existing conservative grid width for portraits and missing metadata.
+ */
+export function featuredPhotoSizesForRatio(ratio = 0) {
+  if (!Number.isFinite(ratio) || ratio <= 1.65) return featuredPhotoSizes;
+  const cover = (width: string, frameRatio: number) => {
+    if (ratio <= frameRatio) return width;
+    const factor = Math.ceil((ratio / frameRatio) * 1_000_000) / 1_000_000;
+    return `max(${width}, calc(${width} * ${factor}))`;
+  };
+  return (
+    `(max-width: 700px) ${cover('calc(100vw - 40px)', 1.85)}, ` +
+    `(max-width: 1050px) ${cover('40.022vw', 1.65)}, ` +
+    cover('min(38.337vw, 682px)', 1.65)
+  );
+}

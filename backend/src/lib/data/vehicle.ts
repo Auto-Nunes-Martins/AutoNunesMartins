@@ -99,7 +99,7 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
         acquisitionDate: true,
         soldDate: true,
         photos: true,
-        webPublished:true,
+        webPublished: true,
         publicSlug: true,
         publicPrice: true,
         sale: { select: { id: true } },

@@ -189,7 +189,12 @@
             </li>
           {/each}
         </ul>
-        {#if drafts.total > drafts.items.length}<p class="px-5 py-3 text-sm text-[var(--color-text-muted)]">A mostrar os {drafts.items.length} rascunhos mais recentes de {drafts.total}. <a class="underline" href={crmPath('/viaturas?status=DRAFT')}>Ver todos os rascunhos</a></p>{/if}
+        {#if drafts.total > drafts.items.length}<p
+            class="px-5 py-3 text-sm text-[var(--color-text-muted)]"
+          >
+            A mostrar os {drafts.items.length} rascunhos mais recentes de {drafts.total}.
+            <a class="underline" href={crmPath('/viaturas?status=DRAFT')}>Ver todos os rascunhos</a>
+          </p>{/if}
       </Panel>
     {/if}
   {/await}

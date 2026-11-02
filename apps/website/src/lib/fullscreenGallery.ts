@@ -9,7 +9,7 @@ type Gesture = Point & {
 
 /** Keep native pinch/pan and horizontal navigation; own only deliberate downward dismissal. */
 export function fullscreenGallery(dialog: HTMLDialogElement, options?: { close: () => void }) {
-  const close = () => options?.close ? options.close() : dialog.close();
+  const close = () => (options?.close ? options.close() : dialog.close());
   const viewport = window.visualViewport;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const nativeTouch = 'TouchEvent' in window;

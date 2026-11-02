@@ -33,7 +33,7 @@ before(async () => {
   await write('package.json','{"type":"module"}');
   await write('review.css',"@import '../../src/app.css';\n@source '../../src';");
   await write('App.svelte',`<script>import {onMount} from 'svelte';import EditPage from '$edit';import DetailPage from '$detail';import HomepageHighlightsEditor from '$lib/components/vehicle/HomepageHighlightsEditor.svelte';import VehicleTable from '$lib/components/vehicle/VehicleTable.svelte';import {Toaster} from 'svelte-sonner';let {data,detail=false,mode=""}=$props();let returned=$state(false);onMount(()=>{const navigate=()=>returned=true;window.addEventListener("fixture-navigate",navigate);return()=>window.removeEventListener("fixture-navigate",navigate);});onMount(()=>{const refresh=()=>{if(window.reviewNextData)data=structuredClone(window.reviewNextData);};window.addEventListener('fixture-invalidate',refresh);return()=>window.removeEventListener('fixture-invalidate',refresh);});</script><main style="max-width:1280px;margin:auto;padding:96px 20px 40px">{#if returned}<h1>Destino confirmado</h1><p>{window.reviewSavedModel}</p>{:else if mode === "highlights"}<HomepageHighlightsEditor editor={data.editor} selectedVehicleId={data.selectedVehicleId}/>{:else if mode === "list"}<VehicleTable items={data.items}/>{:else if detail}<DetailPage {data}/>{:else}<EditPage {data}/>{/if}</main><Toaster/>`);
-  await write('client.js',`import './review.css';import {hydrate} from 'svelte';import App from './App.svelte';hydrate(App,{target:document.querySelector('#app'),props:{data:window.reviewData,detail:window.reviewDetail,mode:window.reviewMode}});window.reviewReady=true;`);
+  await write('client.js',`import './review.css';import {hydrate} from 'svelte';import App from './App.svelte';import {hasUnsavedForms} from '$lib/forms/formFeedback';window.reviewHasUnsavedForms=hasUnsavedForms;hydrate(App,{target:document.querySelector('#app'),props:{data:window.reviewData,detail:window.reviewDetail,mode:window.reviewMode}});window.reviewReady=true;`);
   await write('ssr.js',`import {render} from 'svelte/server';import App from './App.svelte';export const html=(data,detail,mode)=>render(App,{props:{data,detail,mode}}).body;`);
   await write('paths.js',"export const base='';");
   await write('navigation.js',"import {hasUnsavedForms} from '$lib/forms/formFeedback';export const afterNavigate=(callback)=>{if(typeof window!=='undefined')queueMicrotask(()=>callback({from:window.reviewFrom?{url:new URL(window.reviewFrom,location.origin)}:null,to:{url:new URL(location.href)}}));};export const goto=async(href,options)=>{window.reviewNavigation={href,options,dirty:hasUnsavedForms()};if(window.reviewSimulateNavigation){history.pushState({},'',href);window.dispatchEvent(new Event('fixture-navigate'));}};export const invalidateAll=async()=>{if(typeof window!=='undefined')window.dispatchEvent(new Event('fixture-invalidate'));};");
@@ -64,6 +64,49 @@ before(async () => {
 after(async()=>{
   await browser?.close();await vite?.close();if(server)await new Promise(r=>server.close(r));
   // Retain fixtures and screenshots for inspection; do not initiate cleanup.
+});
+
+for (const spaced of [true,false]) test(`description initialization and Undo preserve saved whitespace ${spaced}`, {timeout:90000}, async()=>{
+  // Synthetic equivalents of the regression: four paragraph-edge spaces versus none.
+  const key=`description-spacing-${spaced}`,data=fixture(),edge=spaced?' ':'';
+  const original=`<!--anm:rich-description:v1--><p>${edge}Viatura de teste.${edge}</p><p>Segundo parágrafo.</p><p>Terceiro parágrafo.</p><p>${edge}Informação final.${edge}</p>`;
+  data.vehicle.publicDescription=original;
+  data.vehicle.galleryFraming={[photo]:{desktop:{x:50,y:72},mobile:{x:50,y:65}}};
+  fixtureStates.set(key,data);
+  const context=await browser.newContext({viewport:{width:1366,height:950},extraHTTPHeaders:{'x-review-case':key}});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
+  const assertDirty=async(expected)=>{
+    await page.waitForFunction(value=>!document.querySelector('.edit-save-top button.primary').disabled===value,expected);
+    const guards=await page.evaluate(()=>{
+      const event=new Event('beforeunload',{cancelable:true});window.dispatchEvent(event);
+      return {unsaved:window.reviewHasUnsavedForms(),beforeUnload:event.defaultPrevented};
+    });
+    assert.deepEqual(guards,{unsaved:expected,beforeUnload:expected});
+  };
+  try {
+    await page.goto(origin);
+    const editor=page.locator('.editor-host [role="textbox"][contenteditable="true"]');
+    await editor.waitFor();
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    assert.equal(await page.locator('[name=publicDescription]').inputValue(),original);
+    await assertDirty(false);
+    await page.locator('[name=model]').fill('Edição real');await assertDirty(true);
+    await page.locator('[name=model]').fill(data.vehicle.model);await assertDirty(false);
+    await editor.press('Control+End');await editor.pressSequentially(' Edição real');await assertDirty(true);
+    await page.getByRole('button',{name:'Desfazer',exact:true}).click();await assertDirty(false);
+    assert.equal(await page.locator('[name=publicDescription]').inputValue(),original);
+    await editor.press('Control+Home');await editor.press('ArrowRight');await editor.press('Control+Shift+ArrowRight');
+    await page.getByRole('button',{name:'Negrito',exact:true}).click();await assertDirty(true);
+    await page.getByRole('button',{name:'Desfazer',exact:true}).click();await assertDirty(false);
+    assert.equal(await page.locator('[name=publicDescription]').inputValue(),original);
+    const publication=await page.locator('form[data-edit-publication]').evaluate(form=>({
+      photos:new FormData(form).getAll('vehiclePhotoPaths'),framing:JSON.parse(new FormData(form).get('galleryFraming')),
+    }));
+    assert.deepEqual(publication,{photos:data.vehicle.photos,framing:data.vehicle.galleryFraming});
+    assert.deepEqual(errors,[]);
+  } finally {fixtureStates.delete(key);await context.close();}
 });
 
 for (const width of [1366,390]) test(`confirmed save returns safely with visible feedback ${width}px`, {timeout:120000}, async()=>{

@@ -1,7 +1,6 @@
 import {
   fuelLabels,
   publicHref,
-  publicPhoto,
   slugPattern,
   transmissionLabels,
   type PublicVehicle,
@@ -51,7 +50,8 @@ export function vehicleStructuredData(input: unknown, origin: string) {
     ? vehicle.photos
         .slice(0, 20)
         .flatMap((path, index) =>
-          typeof path === 'string' && (path === `/api/public/vehicles/${slug}/photos/${index}` ||
+          typeof path === 'string' &&
+          (path === `/api/public/vehicles/${slug}/photos/${index}` ||
             (path.startsWith(`/api/public/vehicles/${slug}/photos/${index}?v=`) &&
               /^[a-f0-9]{64}$/.test(path.split('?v=')[1] ?? '')))
             ? [new URL(path.replace('/api/public/vehicles/', '/viaturas/'), base.origin).href]

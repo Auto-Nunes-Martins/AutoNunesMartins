@@ -14,12 +14,21 @@
   --orbit-nav-surface: #f2f2ef;
 }
 
-:where(html)[data-theme='light'] .design.orbit :is(
-  .vehicle-card, .related-grid > a, .trust-services article,
-  .services article, .reviews article, .orbit-perspective, .orbit-faq,
-  .contact-dialog, .favorites-page .empty, .comparison-page .empty,
-  .catalog .empty-state
-) {
+:where(html)[data-theme='light']
+  .design.orbit
+  :is(
+    .vehicle-card,
+    .related-grid > a,
+    .trust-services article,
+    .services article,
+    .reviews article,
+    .orbit-perspective,
+    .orbit-faq,
+    .contact-dialog,
+    .favorites-page .empty,
+    .comparison-page .empty,
+    .catalog .empty-state
+  ) {
   --bg: var(--orbit-gray-surface);
   --surface: var(--orbit-gray-surface);
   --text: #222325;
@@ -32,10 +41,14 @@
 }
 
 /* Match the specificity of the existing home, inner-page and pinned navbar variants. */
-:where(html)[data-theme='light'] .design.orbit:is(.orbit-home, .orbit-inner, .porsche-lab) > header.stand-header {
+:where(html)[data-theme='light']
+  .design.orbit:is(.orbit-home, .orbit-inner, .porsche-lab)
+  > header.stand-header {
   --bg: var(--orbit-nav-surface);
   background: var(--orbit-nav-surface);
-  box-shadow: 0 1px 0 #25272a12, 0 6px 18px #17171908;
+  box-shadow:
+    0 1px 0 #25272a12,
+    0 6px 18px #17171908;
 }
 :where(html)[data-theme='light'] .design.orbit .stand-header #stand-navigation {
   background: transparent;
@@ -44,32 +57,60 @@
   :where(html)[data-theme='light'] .design.orbit .stand-header #stand-navigation {
     --bg: var(--orbit-nav-surface);
     background: var(--orbit-nav-surface);
-    box-shadow: 0 1px 0 #25272a12, 0 12px 24px #1717190d;
+    box-shadow:
+      0 1px 0 #25272a12,
+      0 12px 24px #1717190d;
   }
 }
-:where(html)[data-theme='light'] .design.orbit:is(.orbit-home, .orbit-inner, .porsche-lab) > header.stand-header {
+:where(html)[data-theme='light']
+  .design.orbit:is(.orbit-home, .orbit-inner, .porsche-lab)
+  > header.stand-header {
   transition-property: height, min-height, transform;
 }
-:where(html)[data-theme='light'] .design.orbit.orbit-inner > .stand-header.stand-header.stand-header {
+:where(html)[data-theme='light']
+  .design.orbit.orbit-inner
+  > .stand-header.stand-header.stand-header {
   transition-property: height, min-height, transform;
 }
-:where(html)[data-theme='light'] .design.orbit .trust-services article { transition-property: border-color; }
-:where(html)[data-theme='light'] .design.orbit .about { background: var(--orbit-gray-surface); }
+:where(html)[data-theme='light'] .design.orbit .trust-services article {
+  transition-property: border-color;
+}
+:where(html)[data-theme='light'] .design.orbit .about {
+  background: var(--orbit-gray-surface);
+}
 :where(html)[data-theme='light'] .design.orbit > .services {
   background: var(--orbit-gray-surface);
   box-shadow: 0 0 0 100vmax var(--orbit-gray-surface);
   clip-path: inset(0 -100vmax);
 }
 
-:where(html)[data-theme='light'] .design.orbit :is(.select-trigger:not(.visit-studio *), .select-list:not(.visit-studio *),
-  .catalog-filters input, .pair-picker select, .contact-dialog input,
-  .contact-dialog select, .contact-dialog textarea) {
+:where(html)[data-theme='light']
+  .design.orbit
+  :is(
+    .select-trigger:not(.visit-studio *),
+    .select-list:not(.visit-studio *),
+    .catalog-filters input,
+    .pair-picker select,
+    .contact-dialog input,
+    .contact-dialog select,
+    .contact-dialog textarea
+  ) {
   background: var(--orbit-gray-surface);
   border-color: #999a97;
 }
-:where(html)[data-theme='light'] .design.orbit :is(.comparison-page .summary-row th, .legal aside,
-  .comparison-page .fact-value, .empty-slots span, .second-option,
-  .privacy .publication-note, .company .timeline, .detail-facts, .visit-ticket) {
+:where(html)[data-theme='light']
+  .design.orbit
+  :is(
+    .comparison-page .summary-row th,
+    .legal aside,
+    .comparison-page .fact-value,
+    .empty-slots span,
+    .second-option,
+    .privacy .publication-note,
+    .company .timeline,
+    .detail-facts,
+    .visit-ticket
+  ) {
   background: var(--orbit-gray-surface);
 }
 :where(html)[data-theme='light'] .design.orbit .comparison-page .empty {
@@ -78,10 +119,19 @@
 }
 
 /* Give the vehicle facts their own breathing room within the photo column. */
-:where(html)[data-theme='light'] .design.orbit .comparison-page .summary-row th {background:var(--orbit-page-background);}
-:where(html)[data-theme='light'] .design.orbit .comparison-page .fact-value {background:transparent;}
-:where(html)[data-theme='light'] .design.orbit .comparison-page .second-option {background:color-mix(in srgb,var(--orbit-page-background) 70%,var(--orbit-gray-surface));}
-:where(html)[data-theme='light'] .design.orbit.orbit-detail.public-detail .vehicle-layout > .detail-facts {
+:where(html)[data-theme='light'] .design.orbit .comparison-page .summary-row th {
+  background: var(--orbit-page-background);
+}
+:where(html)[data-theme='light'] .design.orbit .comparison-page .fact-value {
+  background: transparent;
+}
+:where(html)[data-theme='light'] .design.orbit .comparison-page .second-option {
+  background: color-mix(in srgb, var(--orbit-page-background) 70%, var(--orbit-gray-surface));
+}
+:where(html)[data-theme='light']
+  .design.orbit.orbit-detail.public-detail
+  .vehicle-layout
+  > .detail-facts {
   padding-inline: clamp(20px, 3vw, 48px);
   background: var(--orbit-gray-surface);
   border-bottom: 1px solid var(--line);
@@ -94,16 +144,24 @@
   background-image: linear-gradient(135deg, #fff 0%, var(--orbit-review-paper) 48%, #f1f1ed 100%);
   border-color: #cececa;
   border-bottom-color: #bdbdb7;
-  box-shadow: inset 0 1px 2px #ffffff55, 0 2px 0 #bcbcb733, 0 10px 22px #17171914;
+  box-shadow:
+    inset 0 1px 2px #ffffff55,
+    0 2px 0 #bcbcb733,
+    0 10px 22px #17171914;
 }
 /* Original light quote: historical --muted from DesignEdition, opacity from OrbitReviews. */
-:where(html)[data-theme='light'] .design.orbit .reviews .quote { color: #6b6b70; opacity: .35; }
+:where(html)[data-theme='light'] .design.orbit .reviews .quote {
+  color: #6b6b70;
+  opacity: 0.35;
+}
 :where(html)[data-theme='light'] .design.orbit .reviews .avatar {
   background: var(--orbit-gray-surface);
   color: #48494b;
   box-shadow: inset 0 0 0 1px #bcbcb64d;
 }
-:where(html)[data-theme='light'] .design.orbit .visit-ticket { border-color: #c2c2be; }
+:where(html)[data-theme='light'] .design.orbit .visit-ticket {
+  border-color: #c2c2be;
+}
 :where(html)[data-theme='light'] .design.orbit .original-tone .call-action,
 :where(html)[data-theme='light'] .design.orbit .original-tone .button.primary {
   background: var(--orbit-gray-surface);
@@ -118,7 +176,12 @@
   /* Keep top and lateral feathering; the photograph stays opaque at its bottom edge. */
   --stand-vertical-mask: linear-gradient(180deg, transparent, #000 4%, #000);
   --stand-bottom-fade: none;
-  --stand-mobile-vertical-fade: linear-gradient(180deg, color-mix(in srgb, var(--hero-base) 94%, transparent), color-mix(in srgb, var(--hero-base) 85%, transparent) 34%, transparent 62%);
+  --stand-mobile-vertical-fade: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hero-base) 94%, transparent),
+    color-mix(in srgb, var(--hero-base) 85%, transparent) 34%,
+    transparent 62%
+  );
   --bg: var(--hero-base);
   background: var(--hero-base);
 }
@@ -133,11 +196,17 @@
 }
 .design.orbit.orbit-home[data-hero-version='1'] .orbit-copy {
   /* Bound the copy's decorative paint at the intro floor, leaving the tilted photo free. */
-  clip-path: inset(-100vmax -100vmax calc(100% + var(--copy-top) - var(--intro-height) - var(--hero-shadow-tail) + 0.5px) -100vmax);
+  clip-path: inset(
+    -100vmax -100vmax
+      calc(100% + var(--copy-top) - var(--intro-height) - var(--hero-shadow-tail) + 0.5px) -100vmax
+  );
 }
 @media (min-width: 701px) and (prefers-reduced-motion: no-preference) {
   .design.orbit.orbit-home[data-hero-version='1'] .orbit-intro {
-    --hero-shadow-tail: calc(4svh - clamp(0px, calc((100svh - var(--intro-height)) / 2 - var(--hero-nav-space, 94px)), 3.5svh));
+    --hero-shadow-tail: calc(
+      4svh -
+        clamp(0px, calc((100svh - var(--intro-height)) / 2 - var(--hero-nav-space, 94px)), 3.5svh)
+    );
   }
 }
 .design.orbit.orbit-home[data-hero-version='1'] .orbit-copy::before {
@@ -146,5 +215,9 @@
   min-height: calc(var(--intro-height) - var(--copy-top) + 26px + 4svh + 16px);
 }
 :where(html)[data-theme='light'] .design.orbit.orbit-home .orbit-stats {
-  background: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--red) 10%, transparent), transparent 85%);
+  background: radial-gradient(
+    ellipse at 50% 0,
+    color-mix(in srgb, var(--red) 10%, transparent),
+    transparent 85%
+  );
 }

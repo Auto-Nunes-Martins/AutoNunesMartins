@@ -50,7 +50,7 @@ async function loadFeaturedVehicle(): Promise<FeaturedVehiclePayload | null> {
   const v = await prisma.vehicle.findUnique({ where: { id } });
   if (!v) return null;
   let photoUrl: string | null = null;
-  const principal=vehiclePrincipalPath(v);
+  const principal = vehiclePrincipalPath(v);
   if (principal) {
     try {
       photoUrl = await createSignedReadUrl(principal);

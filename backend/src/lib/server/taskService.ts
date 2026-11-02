@@ -3,6 +3,7 @@ import { activeAssignee } from './userLifecycle.js';
 import type { TaskCreate, TaskMove, TaskStatus, TaskUpdate } from '@anm/types';
 import { prisma } from '../../db.js';
 import { emitActivity } from '../data/activity.js';
+import { cache } from '../data/cache.js';
 import { mostRecentSundayMidnight } from '../domain/sunday.js';
 import { shiftRecurrence } from '../domain/task.js';
 import { logger } from '../../logger.js';
@@ -44,6 +45,7 @@ export function purgeStaleCompletedTasks(): Promise<number> {
       // Record the boundary actually processed, even if this call crossed Sunday.
       lastPurgeAt = sunday.getTime();
       if (result.count > 0) {
+        cache.clearPrefix('search:');
         logger.info(
           { deletedTasks: result.count, runFor: sunday.toISOString() },
           'Weekly Sunday purge of DONE tasks',
@@ -118,6 +120,7 @@ export async function createTask(data: TaskCreate, actor: ActorContext): Promise
     });
     return task;
   });
+  cache.clearPrefix('search:');
   return { id: created.id };
 }
 
@@ -173,6 +176,7 @@ export async function updateTask(
       );
     }
   });
+  cache.clearPrefix('search:');
 }
 
 /**
@@ -277,7 +281,7 @@ async function applyTaskStatus(
 }
 
 export async function changeTaskStatus(id: string, nextStatus: TaskStatus, actor: ActorContext) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     await lockTaskBoard(tx);
     const existing = await visibleTask(tx, id, actor);
     if (existing.status === nextStatus) return { spawnedTaskId: null, nextOccurrenceDate: null };
@@ -289,10 +293,12 @@ export async function changeTaskStatus(id: string, nextStatus: TaskStatus, actor
       await appendTaskPosition(tx, nextStatus),
     );
   });
+  cache.clearPrefix('search:');
+  return result;
 }
 
 export async function moveTask(id: string, move: TaskMove, actor: ActorContext) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     await lockTaskBoard(tx);
     const existing = await visibleTask(tx, id, actor);
     if (existing.boardVersion !== move.expectedVersion) throw new TaskBoardConflict();
@@ -315,6 +321,8 @@ export async function moveTask(id: string, move: TaskMove, actor: ActorContext) 
     const result = await applyTaskStatus(tx, existing, move.status, actor, position);
     return { ...result, boardVersion: existing.boardVersion + 1 };
   });
+  cache.clearPrefix('search:');
+  return result;
 }
 
 export async function deleteTask(id: string, actor: ActorContext): Promise<void> {
@@ -331,4 +339,5 @@ export async function deleteTask(id: string, actor: ActorContext): Promise<void>
       metadata: { deleted: true },
     });
   });
+  cache.clearPrefix('search:');
 }

@@ -12,7 +12,11 @@ export default [
     },
     plugins: { '@typescript-eslint': tsPlugin },
     rules: {
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // A rest object deliberately excludes its destructured siblings (e.g. a DTO id).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', ignoreRestSiblings: true },
+      ],
       '@typescript-eslint/no-explicit-any': 'error',
     },
   },

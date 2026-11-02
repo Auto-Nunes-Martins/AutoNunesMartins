@@ -8,7 +8,10 @@ describe('review preview', () => {
     }
   });
   it('truncates longer reviews at a word boundary', () => {
-    expect(reviewExcerpt('Muito bom atendimento e atenção.', 16)).toEqual({ text: 'Muito bom…', truncated: true });
+    expect(reviewExcerpt('Muito bom atendimento e atenção.', 16)).toEqual({
+      text: 'Muito bom…',
+      truncated: true,
+    });
   });
   it('never exceeds the limit, including the ellipsis', () => {
     const result = reviewExcerpt('a'.repeat(200));

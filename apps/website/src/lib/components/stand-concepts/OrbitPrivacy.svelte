@@ -3,10 +3,19 @@
   import LegalFields from '../LegalFields.svelte';
   import PrivacyPreferences from '../PrivacyPreferences.svelte';
   import readiness from '$lib/publicationReadiness.json';
-  import {legalValue} from '$lib/publicLegal';
+  import { legalValue } from '$lib/publicLegal';
   import { standContact } from './standContact';
-  const controller=legalValue('controller'),privacyContact=legalValue('privacyContact');
-  const sections=[{id:'responsavel',label:'Responsável e contacto'},{id:'pedidos',label:'Os seus pedidos'},{id:'finalidades',label:'Finalidades e fundamento'},{id:'conservacao',label:'Acesso e conservação'},{id:'navegacao',label:'Navegação e terceiros'},{id:'preferencias',label:'Cookies e preferências'},{id:'direitos',label:'Direitos e reclamação'}];
+  const controller = legalValue('controller'),
+    privacyContact = legalValue('privacyContact');
+  const sections = [
+    { id: 'responsavel', label: 'Responsável e contacto' },
+    { id: 'pedidos', label: 'Os seus pedidos' },
+    { id: 'finalidades', label: 'Finalidades e fundamento' },
+    { id: 'conservacao', label: 'Acesso e conservação' },
+    { id: 'navegacao', label: 'Navegação e terceiros' },
+    { id: 'preferencias', label: 'Cookies e preferências' },
+    { id: 'direitos', label: 'Direitos e reclamação' },
+  ];
 </script>
 <PublicLegalPage title="Privacidade e cookies" description="Os dados que partilha, o percurso dos seus pedidos e as escolhas que mantém no navegador." path="/politica-de-privacidade" {sections} note="A identidade jurídica, os fundamentos e as condições finais de tratamento assinaladas abaixo ainda precisam de confirmação. Esta informação descreve o funcionamento implementado; não confirma a configuração de produção.">
   <section id="responsavel"><h2>Responsável e contacto</h2><p>Responsável pelo tratamento: {controller??'Auto Nunes Martins — identidade jurídica por confirmar'}. A identificação e a morada do operador estão centralizadas na <a href="/informacao-legal#operador">Informação legal</a>.</p><p>Contacto de privacidade: {privacyContact??'por confirmar'}. {#if !privacyContact && standContact.email}<a href={`mailto:${standContact.email}`}>Email comercial para encaminhamento</a>.{/if}</p></section>

@@ -44,7 +44,9 @@ self.onmessage = async ({ data: file }: MessageEvent<File>) => {
     // Leave already suitable originals untouched. The backend removes metadata
     // and applies the established master/variant recipe after upload.
     if (!heic && pixels <= 24_000_000 && file.size <= 20 * 1024 * 1024) {
-      self.postMessage({ file,metrics:{originalWidth:bitmap.width,originalHeight:bitmap.height,preparedWidth:bitmap.width,preparedHeight:bitmap.height} });
+      self.postMessage({
+        unchanged: true,
+      });
       return;
     }
     const scale = Math.min(1, Math.sqrt(23_500_000 / pixels));
@@ -65,7 +67,6 @@ self.onmessage = async ({ data: file }: MessageEvent<File>) => {
     if (output.size > 20 * 1024 * 1024)
       throw Error('Não foi possível reduzir esta fotografia. Escolha outra fotografia.');
     self.postMessage({
-      metrics:{originalWidth:bitmap.width,originalHeight:bitmap.height,preparedWidth:canvas.width,preparedHeight:canvas.height},
       file: new File([output], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
         type: 'image/jpeg',
         lastModified: file.lastModified,

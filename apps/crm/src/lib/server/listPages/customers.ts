@@ -1,10 +1,7 @@
 import { customersFilters } from '$lib/listFilters';
 import { apiFailure } from '$lib/server/api';
 import type { RequestEvent } from '@sveltejs/kit';
-import {
-  customersApi,
-  type CustomerListResponse,
-} from '$lib/server/customers';
+import { customersApi, type CustomerListResponse } from '$lib/server/customers';
 
 export type CustomerListStream = CustomerListResponse & { _error?: string; _status?: number };
 

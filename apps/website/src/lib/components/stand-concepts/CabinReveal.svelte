@@ -28,9 +28,26 @@
 
 {#snippet photograph(panel: number)}
   <picture class="cabin-image">
-    <source type="image/avif" media={`(min-width: ${sceneCrops.cabin.minViewport}px)`} srcset={cabinImages.avif} sizes="(min-width: 1920px) 1720px, 96vw" />
-    <source media={`(min-width: ${sceneCrops.cabin.minViewport}px)`} srcset={cabinImages.webp} sizes="(min-width: 1920px) 1720px, 96vw" />
-    <img src={interior} srcset={responsivePhoto('photo-1652453822981-653a9a522a5b')} sizes="(min-width: 1920px) 1720px, 96vw" alt="" loading="lazy" decoding="async" style={`--panel: ${panel}`} />
+    <source
+      type="image/avif"
+      media={`(min-width: ${sceneCrops.cabin.minViewport}px)`}
+      srcset={cabinImages.avif}
+      sizes="(min-width: 1920px) 1720px, 96vw"
+    />
+    <source
+      media={`(min-width: ${sceneCrops.cabin.minViewport}px)`}
+      srcset={cabinImages.webp}
+      sizes="(min-width: 1920px) 1720px, 96vw"
+    />
+    <img
+      src={interior}
+      srcset={responsivePhoto('photo-1652453822981-653a9a522a5b')}
+      sizes="(min-width: 1920px) 1720px, 96vw"
+      alt=""
+      loading="lazy"
+      decoding="async"
+      style={`--panel: ${panel}`}
+    />
   </picture>
 {/snippet}
 
@@ -73,15 +90,16 @@
           onclick={() => (active = index)}
         >
           <span class="point-icon"
-            >{#if active === index}<Minus size={15} aria-hidden="true" />{:else}<Plus size={15} aria-hidden="true" />{/if}</span
+            >{#if active === index}<Minus size={15} aria-hidden="true" />{:else}<Plus
+                size={15}
+                aria-hidden="true"
+              />{/if}</span
           >
           <span class="point-label">{point.label}</span>
         </button>
       {/each}
     </div>
-    <span
-      class="cabin-coordinate"
-      aria-hidden="true"
+    <span class="cabin-coordinate" aria-hidden="true"
       ><span class="coordinate-active">{String(active + 1).padStart(2, '0')}</span> de {String(
         points.length,
       ).padStart(2, '0')}</span
@@ -111,7 +129,9 @@
 </section>
 
 <style>
-  .cabin-image { display: contents; }
+  .cabin-image {
+    display: contents;
+  }
   .cabin-reveal {
     --approach: 1;
     --reveal-a: 1;
@@ -194,6 +214,7 @@
     position: relative;
     width: calc(100% / 3);
     height: 100%;
+    transform-style: preserve-3d;
     backface-visibility: hidden;
   }
   .cabin-panel-face {

@@ -12,7 +12,10 @@ export const load: PageServerLoad = async (event) => {
     const signedPhotos = await vehiclesApi
       .signedPhotos(event, vehicle.id)
       .then((result) => result.photos)
-      .catch((err) => { rethrowAuthError(err); return []; });
+      .catch((err) => {
+        rethrowAuthError(err);
+        return [];
+      });
     return { vehicle, signedPhotos };
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {

@@ -74,10 +74,13 @@ describe('dashboard-only framing adaptation', () => {
       }
   });
   it('fills matching 16:9 and 4:3 panels without adding artificial margins', () => {
-    for(const image of [{width:1600,height:900},{width:1200,height:900}]) {
-      for(const width of [360,800]) {
-        const frame={width,height:width*image.height/image.width};
-        const result=dashboardPhotoGeometry(image,frame,width===360,framing)!;
+    for (const image of [
+      { width: 1600, height: 900 },
+      { width: 1200, height: 900 },
+    ]) {
+      for (const width of [360, 800]) {
+        const frame = { width, height: (width * image.height) / image.width };
+        const result = dashboardPhotoGeometry(image, frame, width === 360, framing)!;
         expect(result.width).toBeCloseTo(frame.width);
         expect(result.height).toBeCloseTo(frame.height);
         expect(result.left).toBeCloseTo(0);
@@ -85,10 +88,21 @@ describe('dashboard-only framing adaptation', () => {
       }
     }
     // A 4:3 photo can fill the actual mobile panel with a small, bounded crop.
-    const close=dashboardPhotoGeometry({width:1200,height:900},{width:346,height:280},true,framing)!;
-    expect(close.width).toBeGreaterThanOrEqual(346);expect(close.height).toBeGreaterThanOrEqual(280);
+    const close = dashboardPhotoGeometry(
+      { width: 1200, height: 900 },
+      { width: 346, height: 280 },
+      true,
+      framing,
+    )!;
+    expect(close.width).toBeGreaterThanOrEqual(346);
+    expect(close.height).toBeGreaterThanOrEqual(280);
     // A 16:9 photo in that taller panel needs a compromise, not a large blind crop.
-    const different=dashboardPhotoGeometry({width:1600,height:900},{width:346,height:280},true,framing)!;
-    expect(different.width).toBeLessThan(1600*(280/900));
+    const different = dashboardPhotoGeometry(
+      { width: 1600, height: 900 },
+      { width: 346, height: 280 },
+      true,
+      framing,
+    )!;
+    expect(different.width).toBeLessThan(1600 * (280 / 900));
   });
 });

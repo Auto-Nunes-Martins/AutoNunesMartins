@@ -30,25 +30,21 @@
       return [x, y] as const;
     });
 
-    const line = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
-    const area = `${line} L${(width).toFixed(2)},${height} L0,${height} Z`;
+    const line = points
+      .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`)
+      .join(' ');
+    const area = `${line} L${width.toFixed(2)},${height} L0,${height} Z`;
 
     return { line, area };
   });
 </script>
 
-<svg
-  viewBox="0 0 {width} {height}"
-  width={width}
-  height={height}
-  aria-hidden="true"
-  class="block"
->
-  <path d={path.area} fill={fill} />
+<svg viewBox="0 0 {width} {height}" {width} {height} aria-hidden="true" class="block">
+  <path d={path.area} {fill} />
   <path
     d={path.line}
     fill="none"
-    stroke={stroke}
+    {stroke}
     stroke-width={strokeWidth}
     stroke-linecap="round"
     stroke-linejoin="round"

@@ -30,11 +30,16 @@
   let data = $state<NotificationsPayload | null>(null);
   let loading = $state(false);
   let mounted = $state(false);
-  const activeDraft = $derived(activeCreationDraftId($page.url, crmPath('/viaturas/nova'), $page.data?.vehicle));
+  const activeDraft = $derived(
+    activeCreationDraftId($page.url, crmPath('/viaturas/nova'), $page.data?.vehicle),
+  );
   $effect(() => {
     const context = activeDraft;
     $draftNotificationsRevision;
-    if (mounted) untrack(() => { void load(context); });
+    if (mounted)
+      untrack(() => {
+        void load(context);
+      });
   });
   let loadError = $state('');
   let controller: AbortController | undefined;

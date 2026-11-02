@@ -2,7 +2,10 @@ import { publicRequest } from '$lib/server/publicVehicles';
 import { slugPattern } from '$lib/publicVehicles';
 import type { RequestHandler } from './$types';
 import { photoWidths } from '$lib/vehiclePhotoSources';
-import { isPublicPhotoVersion, REVALIDATE_PUBLIC_PHOTO } from '../../../../../../../../shared/publicPhotoCache.mjs';
+import {
+  isPublicPhotoVersion,
+  REVALIDATE_PUBLIC_PHOTO,
+} from '../../../../../../../../shared/publicPhotoCache.mjs';
 export const GET: RequestHandler = async ({ params, url, request }) => {
   const width = url.searchParams.get('w');
   const requestedVersion = url.searchParams.get('v');
@@ -10,11 +13,19 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
     'cache-control': 'no-store',
     'x-content-type-options': 'nosniff',
   };
-  const fail = (status = 503) => new Response(null, { status, headers: {
-    'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
-  } });
-  if ((requestedVersion !== null && !isPublicPhotoVersion(requestedVersion)) ||
-    url.searchParams.getAll('v').length > 1 || url.searchParams.getAll('w').length > 1)
+  const fail = (status = 503) =>
+    new Response(null, {
+      status,
+      headers: {
+        'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff',
+      },
+    });
+  if (
+    (requestedVersion !== null && !isPublicPhotoVersion(requestedVersion)) ||
+    url.searchParams.getAll('v').length > 1 ||
+    url.searchParams.getAll('w').length > 1
+  )
     return fail(400);
   if (width !== null && !photoWidths.some((candidate) => String(candidate) === width))
     return new Response(null, { status: 400, headers });
@@ -34,22 +45,8 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
         ? { 'if-none-match': request.headers.get('if-none-match')! }
         : {},
     );
-    // Numeric photo-stage diagnostics only; never forward arbitrary backend metadata.
-    const timing = response.headers.get('server-timing');
     if (response.headers.get('x-photo-cache-policy') === 'shared-v1')
       headers['x-photo-cache-policy'] = 'shared-v1';
-    if (
-      timing &&
-      timing.length <= 512 &&
-      timing
-        .split(', ')
-        .every((entry) =>
-          /^photo-(?:check|manifest|storage|total|cache-hit|cache-miss);dur=\d+(?:\.\d+)?$/.test(
-            entry,
-          ),
-        )
-    )
-      headers['server-timing'] = timing;
     if ((width || requestedVersion) && (response.ok || response.status === 304)) {
       const version = response.headers.get('x-photo-version');
       if (requestedVersion && requestedVersion !== version) {
@@ -62,11 +59,9 @@ export const GET: RequestHandler = async ({ params, url, request }) => {
       if (version && /^[a-f0-9]{64}$/.test(version)) headers['x-photo-version'] = version;
       if (response.status === 304) return new Response(null, { status: 304, headers });
     }
-    if (!response.ok)
-      return fail(response.status === 404 ? 404 : 503);
+    if (!response.ok) return fail(response.status === 404 ? 404 : 503);
     const contentType = response.headers.get('content-type')?.split(';')[0] ?? '';
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType))
-      return fail();
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) return fail();
     const length = response.headers.get('content-length');
     // The authorized backend sends a complete, bounded Buffer with Content-Length.
     // Forward its chunks without retaining a second full copy in the website.

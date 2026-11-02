@@ -79,4 +79,3 @@ export function customersFilters(url: URL): CustomerListParams {
   };
   return params;
 }
-

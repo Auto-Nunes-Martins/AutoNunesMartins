@@ -1202,9 +1202,18 @@
     border-color: var(--color-red);
     background: color-mix(in oklab, var(--color-red) 14%, transparent);
   }
-  .qt-date-wrap {flex:0 1 176px;min-width:160px;max-width:100%;}
-  .qt-date-wrap :global(.qt-date-input) {font-size:13px;}
-  .qt-date-wrap.is-active :global(.qt-date-input) {border-color:var(--color-red);background:color-mix(in srgb,var(--color-red) 8%,var(--color-bg-1));}
+  .qt-date-wrap {
+    flex: 0 1 176px;
+    min-width: 160px;
+    max-width: 100%;
+  }
+  .qt-date-wrap :global(.qt-date-input) {
+    font-size: 13px;
+  }
+  .qt-date-wrap.is-active :global(.qt-date-input) {
+    border-color: var(--color-red);
+    background: color-mix(in srgb, var(--color-red) 8%, var(--color-bg-1));
+  }
 
   .qt-assignee-wrap {
     position: relative;

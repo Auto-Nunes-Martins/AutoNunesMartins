@@ -1,4 +1,10 @@
-type Position = { index: number; count: number; drag?: number; fullscreen?: boolean; instant?: boolean };
+type Position = {
+  index: number;
+  count: number;
+  drag?: number;
+  fullscreen?: boolean;
+  instant?: boolean;
+};
 
 /** Slide one or two photos; distant fullscreen selections swap with a short fade. */
 export function photoRail(node: HTMLElement, initial: Position) {
@@ -61,7 +67,8 @@ export function photoRail(node: HTMLElement, initial: Position) {
       selected = target;
       node.style.transform = position(selected);
       const jump = next.fullscreen && distance > 2;
-      const image = next.fullscreen && distance > 1 ? node.children[target]?.querySelector('img') : undefined;
+      const image =
+        next.fullscreen && distance > 1 ? node.children[target]?.querySelector('img') : undefined;
       if (reduced.matches || next.instant || (image && (!image.complete || !image.naturalWidth))) {
         animation = undefined;
         node.dataset.moving = 'false';
@@ -70,10 +77,15 @@ export function photoRail(node: HTMLElement, initial: Position) {
       // A distant fullscreen selection changes position immediately. A brief,
       // shallow fade softens the swap without travelling through other photos.
       const move = node.animate(
-        jump ? [{ opacity: 0.55 }, { opacity: 1 }] :
-          [{ transform: from }, { transform: position(selected) }],
+        jump
+          ? [{ opacity: 0.55 }, { opacity: 1 }]
+          : [{ transform: from }, { transform: position(selected) }],
         {
-          duration: jump ? 120 : wasDragging ? 220 : Math.min(1400, 360 + Math.max(0, distance - 1) * 120),
+          duration: jump
+            ? 120
+            : wasDragging
+              ? 220
+              : Math.min(1400, 360 + Math.max(0, distance - 1) * 120),
           easing: jump ? 'ease-out' : 'cubic-bezier(0.4, 0, 0.2, 1)',
         },
       );

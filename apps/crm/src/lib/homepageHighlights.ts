@@ -6,7 +6,12 @@ export type HighlightCandidate = {
   model: string;
   year: number;
   slug: string;
-  photos: { path: string; url: string | null; width?:number; variants?:{width:number;url:string}[] }[];
+  photos: {
+    path: string;
+    url: string | null;
+    width?: number;
+    variants?: { width: number; url: string }[];
+  }[];
 };
 export type HighlightsEditor = {
   revision: string | null;

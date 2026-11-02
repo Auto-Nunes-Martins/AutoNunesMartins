@@ -1,6 +1,6 @@
 <script lang="ts">
-  import {reusablePhoto} from '$lib/reusablePhoto';
-  import {photoAttrs} from '$lib/vehicleImage';
+  import { reusablePhoto } from '$lib/reusablePhoto';
+  import { photoAttrs } from '$lib/vehicleImage';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
   import { crmPath } from '$lib/paths';
   import { untrack, onMount } from 'svelte';
@@ -15,7 +15,10 @@
   import Button from '$lib/components/common/Button.svelte';
   import type { HighlightsEditor, HighlightItem } from '$lib/homepageHighlights';
 
-  let { editor, selectedVehicleId = null }: { editor: HighlightsEditor; selectedVehicleId?: string | null } = $props();
+  let {
+    editor,
+    selectedVehicleId = null,
+  }: { editor: HighlightsEditor; selectedVehicleId?: string | null } = $props();
   let items = $state<HighlightItem[]>(untrack(() => editor.items.map((item) => ({ ...item }))));
   let query = $state('');
   let saving = $state(false);
@@ -25,7 +28,9 @@
   let appliedContext = '';
   let contextMessage = $state('');
   let selectionForm: HTMLFormElement;
-  onMount(() => { mounted = true; });
+  onMount(() => {
+    mounted = true;
+  });
   $effect(() => {
     items = editor.items.map((item) => ({ ...item }));
   });
@@ -38,13 +43,17 @@
       items = prepared.items;
       choosing = prepared.choosing;
       contextMessage = prepared.message;
-      const vehicle = editor.candidates.find(candidate => candidate.id === id);
+      const vehicle = editor.candidates.find((candidate) => candidate.id === id);
       if (!prepared.choosing && vehicle) query = `${vehicle.brand} ${vehicle.model}`;
       void tick().then(() => {
         if (selectionForm) refreshFormFeedback(selectionForm);
-        const row = selectionForm?.parentElement?.querySelector<HTMLElement>(`[data-highlight-vehicle="${CSS.escape(id)}"]`);
+        const row = selectionForm?.parentElement?.querySelector<HTMLElement>(
+          `[data-highlight-vehicle="${CSS.escape(id)}"]`,
+        );
         row?.scrollIntoView({ block: 'center' });
-        row?.querySelector<HTMLButtonElement>('.photo-picker button[aria-pressed="true"]')?.focus({ preventScroll: true });
+        row
+          ?.querySelector<HTMLButtonElement>('.photo-picker button[aria-pressed="true"]')
+          ?.focus({ preventScroll: true });
       });
     });
   });
@@ -275,7 +284,12 @@
 </div>
 
 <style>
-  .context-message {margin-top:10px;color:var(--color-text);font-size:14px;line-height:1.6;}
+  .context-message {
+    margin-top: 10px;
+    color: var(--color-text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
   .editor-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr);
@@ -472,7 +486,10 @@
     scrollbar-gutter: stable;
     padding-inline: 4px;
   }
-  .candidates:focus-visible {outline:2px solid var(--color-red);outline-offset:3px;}
+  .candidates:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 3px;
+  }
   .candidate {
     display: flex;
     align-items: center;
@@ -506,7 +523,9 @@
     }
   }
   @media (max-width: 600px) {
-    .candidates {max-height:min(45svh,320px);}
+    .candidates {
+      max-height: min(45svh, 320px);
+    }
     .selected-row {
       flex-wrap: wrap;
       gap: 10px;

@@ -28,8 +28,17 @@ vi.mock('../../env.js', () => ({
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({ storage: { from: () => ({ remove: mocks.remove, list: mocks.list }) } }),
 }));
-import { deleteVehicle, VehicleHasSale, VehicleNotFound, VehicleNotDraft } from './vehicleService.js';
-import { cleanupVehiclePhotos, cleanupLateVehicleUpload, startVehiclePhotoCleanup } from './vehiclePhotoCleanup.js';
+import {
+  deleteVehicle,
+  VehicleHasSale,
+  VehicleNotFound,
+  VehicleNotDraft,
+} from './vehicleService.js';
+import {
+  cleanupVehiclePhotos,
+  cleanupLateVehicleUpload,
+  startVehiclePhotoCleanup,
+} from './vehiclePhotoCleanup.js';
 import { PHOTO_WIDTHS, manifestPath, variantPath } from './photoVariants.js';
 
 const actor = { actorId: 'admin', actorName: 'Admin' };
@@ -101,7 +110,8 @@ beforeEach(() => {
   );
   mocks.db.vehiclePhotoCleanup.deleteMany.mockImplementation(async ({ where }) => {
     const job = jobs.get(where.vehicleId);
-    if (!where.photos || JSON.stringify(job?.photos) === JSON.stringify(where.photos.equals)) jobs.delete(where.vehicleId);
+    if (!where.photos || JSON.stringify(job?.photos) === JSON.stringify(where.photos.equals))
+      jobs.delete(where.vehicleId);
   });
   mocks.db.vehiclePhotoCleanup.updateMany.mockImplementation(async ({ where, data }) => {
     const row = jobs.get(where.vehicleId);
@@ -132,16 +142,31 @@ beforeEach(() => {
 
 it('deletes only an unpublished draft under the same row lock, protecting status/version races', async () => {
   vehicle.status = 'AVAILABLE';
-  await expect(deleteVehicle('vehicle', actor, { draftOnly: true })).rejects.toBeInstanceOf(VehicleNotDraft);
-  vehicle.status = 'DRAFT'; vehicle.webPublished = true;
-  await expect(deleteVehicle('vehicle', actor, { draftOnly: true })).rejects.toBeInstanceOf(VehicleNotDraft);
+  await expect(deleteVehicle('vehicle', actor, { draftOnly: true })).rejects.toBeInstanceOf(
+    VehicleNotDraft,
+  );
+  vehicle.status = 'DRAFT';
+  vehicle.webPublished = true;
+  await expect(deleteVehicle('vehicle', actor, { draftOnly: true })).rejects.toBeInstanceOf(
+    VehicleNotDraft,
+  );
   vehicle.webPublished = false;
-  await expect(deleteVehicle('vehicle', actor, { draftOnly: true, expectedUpdatedAt: '2026-10-31T00:00:00.000Z' })).rejects.toThrow('alterado entretanto');
+  await expect(
+    deleteVehicle('vehicle', actor, {
+      draftOnly: true,
+      expectedUpdatedAt: '2026-10-31T00:00:00.000Z',
+    }),
+  ).rejects.toThrow('alterado entretanto');
   expect(mocks.remove).not.toHaveBeenCalled();
   expect(mocks.db.vehicle.delete).not.toHaveBeenCalled();
-  await deleteVehicle('vehicle', actor, { draftOnly: true, expectedUpdatedAt: vehicle.updatedAt.toISOString() });
+  await deleteVehicle('vehicle', actor, {
+    draftOnly: true,
+    expectedUpdatedAt: vehicle.updatedAt.toISOString(),
+  });
   expect(vehicle).toBeNull();
-  expect(mocks.db.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(mocks.db.vehicle.findUnique.mock.invocationCallOrder[0]);
+  expect(mocks.db.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+    mocks.db.vehicle.findUnique.mock.invocationCallOrder[0],
+  );
 });
 
 it('preserves referenced photos even when they occupy the deleted draft namespace', async () => {

@@ -10,16 +10,27 @@ const read = (query = 'w=320') =>
   } as Parameters<typeof GET>[0]);
 afterEach(() => vi.resetAllMocks());
 
-it.each([200, 304])('forwards a confirmed version and preserves HTTP access policy on %i', async status => {
-  const version = 'a'.repeat(64);
-  mock.request.mockResolvedValue(new Response(status === 200 ? 'bytes' : null, {
-    status, headers: { 'content-type': 'image/webp', 'x-photo-version': version },
-  }));
-  const result = await read(`v=${version}&w=1280`);
-  expect(result.status).toBe(status);
-  expect(mock.request).toHaveBeenCalledWith(`/dacia-jogger-abcdef123456/photos/0?w=1280&v=${version}`, {});
-  expect(result.headers.get('cache-control')).toBe('private, no-cache, max-age=0, must-revalidate');
-});
+it.each([200, 304])(
+  'forwards a confirmed version and preserves HTTP access policy on %i',
+  async (status) => {
+    const version = 'a'.repeat(64);
+    mock.request.mockResolvedValue(
+      new Response(status === 200 ? 'bytes' : null, {
+        status,
+        headers: { 'content-type': 'image/webp', 'x-photo-version': version },
+      }),
+    );
+    const result = await read(`v=${version}&w=1280`);
+    expect(result.status).toBe(status);
+    expect(mock.request).toHaveBeenCalledWith(
+      `/dacia-jogger-abcdef123456/photos/0?w=1280&v=${version}`,
+      {},
+    );
+    expect(result.headers.get('cache-control')).toBe(
+      'private, no-cache, max-age=0, must-revalidate',
+    );
+  },
+);
 it('never caches mismatched identities or invalid photo content', async () => {
   const version = 'a'.repeat(64);
   for (const headers of [
@@ -96,9 +107,9 @@ it('cancels upstream delivery when the browser cancels', async () => {
   await result.body!.cancel();
   await vi.waitFor(() => expect(cancel).toHaveBeenCalled());
 });
-describe('public photo diagnostics', () => {
+describe('public photo response metadata', () => {
   it.each([200, 304])(
-    'preserves numeric timings on %i without changing cache policy or image bytes',
+    'omits retired timings on %i while preserving cache policy and image bytes',
     async (status) => {
       const timing = 'photo-check;dur=12.3, photo-cache-hit;dur=0.0, photo-total;dur=12.4';
       mock.request.mockResolvedValue(
@@ -109,7 +120,7 @@ describe('public photo diagnostics', () => {
       );
       const result = await read();
       expect(result.status).toBe(status);
-      expect(result.headers.get('server-timing')).toBe(timing);
+      expect(result.headers.get('server-timing')).toBeNull();
       expect(result.headers.get('cache-control')).toBe(
         'private, no-cache, max-age=0, must-revalidate',
       );

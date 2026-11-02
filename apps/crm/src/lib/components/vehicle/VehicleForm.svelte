@@ -176,7 +176,8 @@
       return async ({ result, update }) => {
         let guardCleared = false;
         try {
-          if (result.type === 'success' || result.type === 'redirect') await onsaved?.(result.type === 'redirect' ? result.location : undefined);
+          if (result.type === 'success' || result.type === 'redirect')
+            await onsaved?.(result.type === 'redirect' ? result.location : undefined);
           if (result.type === 'success') {
             toast.success('Dados da viatura guardados. A publicação no site é independente.');
             if (redirectOnSuccess) {
@@ -450,7 +451,9 @@
       {/if}
     </div>
     {#if !unified}<div class="ml-auto flex flex-wrap items-center gap-2">
-        {#if oncancel}<Button variant="ghost" onclick={oncancel} disabled={submitting || disabled}>{cancelLabel}</Button>
+        {#if oncancel}<Button variant="ghost" onclick={oncancel} disabled={submitting || disabled}
+            >{cancelLabel}</Button
+          >
         {:else}<Button variant="ghost" href={crmPath('/viaturas')}>{cancelLabel}</Button>{/if}
         <Button
           variant="primary"
@@ -496,7 +499,7 @@
     gap: 6px;
   }
   .document-checklist {
-    scroll-margin-top:96px;
+    scroll-margin-top: 96px;
     border: 0;
     border-top: 1px solid var(--color-border);
     padding: 18px 0 0;

@@ -3,22 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { config } from './routing.mjs';
 import { createGateway } from './gateway.mjs';
 import { clientAddressHeader } from './client-address.mjs';
-import { randomUUID } from 'node:crypto';
-import { getProcessDiagnostics } from '../shared/runtimeDiagnostics.mjs';
-import { ApplicationMemoryMonitor } from '../shared/applicationMemory.mjs';
-import { acceptDiagnosticEvents, flushDiagnosticEvents } from '../shared/diagnosticEvents.mjs';
-
-process.env.RUNTIME_DIAGNOSTICS_INSTANCE ||= randomUUID();
-process.env.RUNTIME_DIAGNOSTICS_MANAGED = 'true';
-const diagnostics = getProcessDiagnostics('gateway');
-const memoryMonitor = new ApplicationMemoryMonitor({ diagnostics });
-let closeDiagnosticStore = async () => {};
-if (diagnostics.enabled) {
-  const { installRemoteDiagnosticStore, closeRemoteDiagnosticStore } =
-    await import('../backend/dist/lib/server/diagnosticRemoteStore.js');
-  installRemoteDiagnosticStore();
-  closeDiagnosticStore = closeRemoteDiagnosticStore;
-}
+import { startMemoryHeartbeat } from '../shared/memoryHeartbeat.mjs';
+const stopMemoryHeartbeat = startMemoryHeartbeat();
 
 const settings = config(process.env);
 const manifest = JSON.parse(await readFile(new URL('./build.json', import.meta.url), 'utf8'));
@@ -46,47 +32,35 @@ const websiteEnv = Object.fromEntries(
   ),
 );
 const launch = (service, file, extra) => {
-  const child = spawn(
-    process.execPath,
-    ['--conditions=anm-runtime', '--import', './deployment/diagnostics-preload.mjs', file],
-    {
-      stdio: diagnostics.enabled ? ['inherit', 'inherit', 'inherit', 'ipc'] : 'inherit',
-      env: {
-        ...(service === 'website' ? websiteEnv : common),
-        ...extra,
-        RUNTIME_DIAGNOSTICS_SERVICE: service,
-      },
+  const child = spawn(process.execPath, ['--conditions=anm-runtime', file], {
+    stdio: 'inherit',
+    env: {
+      ...(service === 'website' ? websiteEnv : common),
+      ...extra,
     },
-  );
-  children.push(child);
-  child.on('message', (message) => {
-    if (message?.type === 'anm:diagnostic:events') acceptDiagnosticEvents(message.events);
   });
-  memoryMonitor.register(service, child);
+  children.push(child);
   child.on('error', () => {
-    diagnostics.marker('child_error', {}, { child: service });
+    console.error('Service failed to start', { service });
     shutdown(1);
   });
   child.on('exit', (code, signal) => {
-    diagnostics.marker('child_exit', code === null ? {} : { status: code }, {
-      child: service,
-      signal,
-    });
+    if (!stopping) console.error('Service exited unexpectedly', { service, code, signal });
     if (!stopping) shutdown(1);
   });
 };
 function shutdown(code = 0) {
   if (stopping) return;
   stopping = true;
-  memoryMonitor.stop();
-  diagnostics.marker('shutdown_requested');
+  stopMemoryHeartbeat();
+
   ready = false;
   gateway.close();
   gateway.closeIdleConnections();
   for (const child of children) child.kill('SIGTERM');
   const deadline = setTimeout(() => {
     for (const child of children) child.kill('SIGKILL');
-    diagnostics.stop();
+
     process.exit(1);
   }, 18000);
   Promise.all(
@@ -96,9 +70,6 @@ function shutdown(code = 0) {
         : new Promise((resolve) => child.once('exit', resolve)),
     ),
   ).then(async () => {
-    diagnostics.stop();
-    await flushDiagnosticEvents();
-    await closeDiagnosticStore();
     clearTimeout(deadline);
     process.exit(code);
   });
@@ -131,7 +102,7 @@ launch('crm', 'apps/crm/build/index.js', {
   PUBLIC_CLERK_SIGN_IN_URL: settings.base + '/',
   BODY_SIZE_LIMIT: '20971520',
 });
-void memoryMonitor.collect();
+
 gateway.on('error', () => shutdown(1));
 gateway.listen(Number(process.env.PORT || 10000), '0.0.0.0');
 // Probe each internal listener without touching the database or sending email.
@@ -152,8 +123,7 @@ for (let attempt = 0; attempt < 120 && !stopping; attempt++) {
   );
   if (checks.every(Boolean)) {
     ready = true;
-    memoryMonitor.ready();
-    void memoryMonitor.collect();
+
     console.info('Combined service ready');
     break;
   }

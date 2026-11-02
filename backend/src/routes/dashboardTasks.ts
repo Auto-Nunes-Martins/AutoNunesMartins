@@ -8,10 +8,14 @@ const router = Router();
 
 const ScopeEnum = z.enum(['mine', 'general', 'all', 'byUser']);
 
-const querySchema = z.object({
-  scope: ScopeEnum.optional().default('mine'),
-  assigneeId: z.string().optional(),
-}).refine(query => query.scope !== 'byUser' || Boolean(query.assigneeId?.trim()), { message: 'Responsável obrigatório' });
+const querySchema = z
+  .object({
+    scope: ScopeEnum.optional().default('mine'),
+    assigneeId: z.string().optional(),
+  })
+  .refine((query) => query.scope !== 'byUser' || Boolean(query.assigneeId?.trim()), {
+    message: 'Responsável obrigatório',
+  });
 
 interface TaskRow {
   id: string;
@@ -75,7 +79,12 @@ async function buildTodayTasks(
   });
 
   rows.sort((a, b) => {
-    const group = (task: typeof a) => task.dueDate && task.dueDate < todayStart ? 0 : task.dueDate && task.dueDate <= todayEnd ? 1 : 2;
+    const group = (task: typeof a) =>
+      task.dueDate && task.dueDate < todayStart
+        ? 0
+        : task.dueDate && task.dueDate <= todayEnd
+          ? 1
+          : 2;
     if (group(a) !== group(b)) return group(a) - group(b);
     const aIp = a.status === 'IN_PROGRESS' ? 0 : 1;
     const bIp = b.status === 'IN_PROGRESS' ? 0 : 1;

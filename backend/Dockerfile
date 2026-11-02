@@ -29,6 +29,8 @@ RUN node --input-type=module -e "import sharp from 'sharp'; await sharp({create:
 FROM node:22-bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates tini && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production PORT=10000
+# Limit glibc arenas per runtime process; preserve the existing allocator.
+ENV MALLOC_ARENA_MAX=2
 WORKDIR /app
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/apps/crm/package.json ./apps/crm/package.json

@@ -3,7 +3,6 @@ import { clerkMiddleware as baseClerkMiddleware, createClerkClient, getAuth } fr
 import { getEnv } from '../env.js';
 import { logger } from '../logger.js';
 import { asyncHandler } from './asyncHandler.js';
-import { recordRequestTiming } from './requestTiming.js';
 import { attemptWindow } from '../lib/data/singleFlight.js';
 import { readLocalUser, syncLocalUser, backfillLocalAvatar } from '../lib/server/userLifecycle.js';
 
@@ -59,7 +58,6 @@ function pickName(u: ClerkUserShape, fallbackEmail: string): string {
  */
 export const requireUser = asyncHandler(
   async (req: AuthedRequest, res: Response, next: NextFunction): Promise<void> => {
-    const authStarted = performance.now();
     const auth = getAuth(req);
     if (!auth?.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -119,7 +117,6 @@ export const requireUser = asyncHandler(
       name: user.name,
       role: user.role,
     };
-    recordRequestTiming(res, 'backend-auth', performance.now() - authStarted);
     next();
   },
 );

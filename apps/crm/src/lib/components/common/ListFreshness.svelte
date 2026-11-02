@@ -6,7 +6,11 @@
   async function retry() {
     if (retrying) return;
     retrying = true;
-    try { await invalidate('crm:overview'); } finally { retrying = false; }
+    try {
+      await invalidate('crm:overview');
+    } finally {
+      retrying = false;
+    }
   }
 </script>
 
@@ -19,7 +23,22 @@
 {/if}
 
 <style>
-  .list-freshness { min-height: 28px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; color: var(--color-text-muted); font-size: 12px; }
-  button { min-height: 28px; text-decoration: underline; text-underline-offset: 3px; }
-  button:focus-visible { outline: 2px solid var(--color-red); outline-offset: 3px; }
+  .list-freshness {
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+  button {
+    min-height: 28px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: 3px;
+  }
 </style>

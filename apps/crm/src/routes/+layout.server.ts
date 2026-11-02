@@ -6,4 +6,3 @@ export const load: LayoutServerLoad = ({ locals }) => {
     ...buildClerkProps(locals.auth()),
   };
 };
-

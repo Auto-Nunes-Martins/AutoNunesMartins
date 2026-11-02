@@ -16,7 +16,7 @@
     font-size: 10px;
     font-weight: 400;
     line-height: 1.65;
-    letter-spacing: .14em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
 </style>

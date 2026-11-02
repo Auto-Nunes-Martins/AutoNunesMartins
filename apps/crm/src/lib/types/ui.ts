@@ -13,8 +13,8 @@ import type { Component, ComponentType, SvelteComponent } from 'svelte';
  * (KPICard, PanelHeader, etc.) accept this union and don't care which
  * library the icon came from.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type IconComponent =
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   | ComponentType<SvelteComponent<any>>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   | Component<any>;

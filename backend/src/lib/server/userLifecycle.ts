@@ -97,6 +97,8 @@ export async function deactivateLocalUser(clerkId: string) {
     return { released: tasks.length };
   });
   invalidateUserViews();
+  // Pending tasks become shared only after the deactivation transaction commits.
+  cache.clearPrefix('search:');
   return result;
 }
 

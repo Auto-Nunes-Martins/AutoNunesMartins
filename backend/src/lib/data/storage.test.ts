@@ -1,14 +1,47 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ sign: vi.fn(), manifests: vi.fn() }));
-vi.mock('../../env.js', () => ({ getEnv: () => ({ SUPABASE_URL: 'https://storage.test', SUPABASE_STORAGE_BUCKET: 'photos' }), getSupabaseServerKey: () => 'fixture' }));
-vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ storage: { from: () => ({ createSignedUrls: mocks.sign }) } }) }));
-vi.mock('../server/photoVariants.js', () => ({ readVariantManifests: mocks.manifests, variantPath: (path: string, width: number) => `${path}/${width}.webp` }));
-import { signedPhotos, signedThumbnails, invalidateSignedReadUrl } from './storage.js';
+vi.mock('../../env.js', () => ({
+  getEnv: () => ({ SUPABASE_URL: 'https://storage.test', SUPABASE_STORAGE_BUCKET: 'photos' }),
+  getSupabaseServerKey: () => 'fixture',
+}));
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({ storage: { from: () => ({ createSignedUrls: mocks.sign }) } }),
+}));
+vi.mock('../server/photoVariants.js', () => ({
+  readVariantManifests: mocks.manifests,
+  variantPath: (path: string, width: number) => `${path}/${width}.webp`,
+}));
+import {
+  createSignedReadUrls,
+  signedPhotos,
+  signedThumbnails,
+  invalidateSignedReadUrl,
+} from './storage.js';
+afterEach(() => vi.useRealTimers());
 beforeEach(() => {
   vi.clearAllMocks();
-  for (const path of ['a.jpg', 'b.jpg', 'a.jpg/320.webp', 'a.jpg/800.webp']) invalidateSignedReadUrl(path);
-  mocks.manifests.mockResolvedValue(new Map([['a.jpg', { width: 1200, height: 800, variants: [{ width: 320, height: 213 }, { width: 800, height: 533 }] }], ['b.jpg', null]]));
-  mocks.sign.mockImplementation(async (paths: string[]) => ({ data: paths.map(path => ({ path, signedUrl: `signed:${path}` })), error: null }));
+  for (const path of ['a.jpg', 'b.jpg', 'a.jpg/320.webp', 'a.jpg/800.webp'])
+    invalidateSignedReadUrl(path);
+  mocks.manifests.mockResolvedValue(
+    new Map([
+      [
+        'a.jpg',
+        {
+          width: 1200,
+          height: 800,
+          variants: [
+            { width: 320, height: 213 },
+            { width: 800, height: 533 },
+          ],
+        },
+      ],
+      ['b.jpg', null],
+    ]),
+  );
+  mocks.sign.mockImplementation(async (paths: string[]) => ({
+    data: paths.map((path) => ({ path, signedUrl: `signed:${path}` })),
+    error: null,
+  }));
 });
 describe('batched private photo signatures', () => {
   it('signs covers and original fallbacks in one call, preserving legacy photos', async () => {
@@ -24,8 +57,22 @@ describe('batched private photo signatures', () => {
   it('signs all gallery originals and variants once and preserves photo order', async () => {
     const photos = await signedPhotos(['b.jpg', 'a.jpg']);
     expect(mocks.sign).toHaveBeenCalledTimes(1);
-    expect(photos.map(photo => photo.path)).toEqual(['b.jpg', 'a.jpg']);
+    expect(photos.map((photo) => photo.path)).toEqual(['b.jpg', 'a.jpg']);
     expect(photos[0].variants).toEqual([]);
-    expect(photos[1].variants.map(v => v.width)).toEqual([320, 800]);
+    expect(photos[1].variants.map((v) => v.width)).toEqual([320, 800]);
+  });
+  it('bounds retained signatures while preserving batching and the 40-minute TTL', async () => {
+    vi.useFakeTimers();
+    const paths = Array.from({ length: 2049 }, (_, index) => `fixture-${index}.jpg`);
+    await createSignedReadUrls(paths);
+    expect(mocks.sign.mock.calls[0]).toEqual([paths, 3600]);
+    await createSignedReadUrls([paths.at(-1)!]);
+    expect(mocks.sign).toHaveBeenCalledTimes(1);
+    await createSignedReadUrls([paths[0]!]);
+    expect(mocks.sign.mock.calls[1][0]).toEqual([paths[0]]);
+    vi.advanceTimersByTime(40 * 60 * 1000);
+    await createSignedReadUrls([paths[0]!]);
+    expect(mocks.sign).toHaveBeenCalledTimes(3);
+    for (const path of paths) invalidateSignedReadUrl(path);
   });
 });

@@ -1,7 +1,11 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { cache } from '../lib/data/cache.js';
-import { loadDashboard, loadTodayTasks, type DashboardPayload } from '../lib/server/dashboardService.js';
+import {
+  loadDashboard,
+  loadTodayTasks,
+  type DashboardPayload,
+} from '../lib/server/dashboardService.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 
 const router = Router();

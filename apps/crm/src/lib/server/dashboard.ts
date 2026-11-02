@@ -153,7 +153,11 @@ export interface DashboardHighlight {
 type Ev = Pick<RequestEvent, 'locals' | 'fetch'>;
 
 export const dashboardApi = {
-  highlights(event: Ev): Promise<{ configured: boolean; configuredVehicleIds?: string[]; items: DashboardHighlight[] }> {
+  highlights(event: Ev): Promise<{
+    configured: boolean;
+    configuredVehicleIds?: string[];
+    items: DashboardHighlight[];
+  }> {
     return apiJson(event, '/api/homepage-highlights/showcase');
   },
   get(event: Ev): Promise<DashboardPayload> {

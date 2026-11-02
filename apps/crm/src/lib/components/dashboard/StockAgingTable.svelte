@@ -44,7 +44,8 @@
       Sem viaturas em stock prolongado
     </div>
   {:else}
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native horizontal scrolling by keyboard.) -->
+    <!-- Native horizontal scrolling by keyboard. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="overflow-x-auto"
       tabindex="0"

@@ -4,6 +4,67 @@
 // app.html sets the document palette before this bundled script is inlined.
 // CSS uses that document state, independently of the SSR component's class.
 
+// A streamed response can paint the complete hero before the end-of-body script.
+// Observe only its initial assembly and publish its natural size before rendering;
+// the normal document/component initialization takes over once parsing finishes.
+(function () {
+  if (typeof IntersectionObserver === 'function') {
+    document.documentElement.setAttribute('data-orbit-stats-motion', '');
+  }
+  if (
+    location.pathname !== '/' ||
+    typeof MutationObserver !== 'function' ||
+    typeof ResizeObserver !== 'function'
+  )
+    return;
+  var hero;
+  var feature;
+  var resize;
+  var assembly = new MutationObserver(connect);
+  function stylesReady() {
+    var sheets = document.querySelectorAll('link[rel="stylesheet"]');
+    for (var i = 0; i < sheets.length; i++) {
+      var sheet = sheets[i];
+      if (!sheet.disabled && (!sheet.media || matchMedia(sheet.media).matches) && !sheet.sheet)
+        return false;
+    }
+    return !!getComputedStyle(hero).getPropertyValue('--v5-frame-height-saved');
+  }
+  function measure(entry) {
+    if (!feature || !stylesReady()) return;
+    var box = entry && entry.borderBoxSize && entry.borderBoxSize[0];
+    var height = box ? Math.round(box.blockSize) : feature.offsetHeight;
+    var value = height + 'px';
+    if (height > 0 && hero.style.getPropertyValue('--v5-feature-height') !== value) {
+      hero.style.setProperty('--v5-feature-height', value);
+    }
+  }
+  function connect() {
+    var marker = document.querySelector('[data-hero-layout-ready]');
+    if (!marker) return;
+    hero = marker.closest('.hd-root');
+    feature = marker.closest('.hd-feature');
+    assembly.disconnect();
+    if (!hero || !feature) return;
+    resize = new ResizeObserver(function (entries) {
+      measure(entries[0]);
+    });
+    resize.observe(feature);
+    measure();
+  }
+  function stylesheetLoaded(event) {
+    if (event.target.tagName === 'LINK' || event.target.tagName === 'STYLE') measure();
+  }
+  function finish() {
+    assembly.disconnect();
+    if (resize) resize.disconnect();
+    document.removeEventListener('load', stylesheetLoaded, true);
+  }
+  assembly.observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('load', stylesheetLoaded, true);
+  document.addEventListener('DOMContentLoaded', finish, { once: true });
+})();
+
 // Restoring a document is not a user-requested smooth scroll.
 if (
   location.pathname === '/' ||
@@ -87,7 +148,14 @@ window.initializeHomePhotoPriority = function (scope) {
 };
 
 window.initializeOrbitDocument = function () {
-  // The full SSR layout exists here, before the first paint and framework hydration.
+  // The full SSR layout exists here; streamed heroes may already have painted.
+  // The featured card's approved scale also reduces its occupied layout height.
+  // Seed the same untransformed measurement as anchorStart before scroll/nav
+  // restoration; waiting for hydration would visibly shorten the whole hero.
+  document.querySelectorAll('.hd-root[data-featured-card]').forEach(function (hero) {
+    var feature = hero.querySelector('.hd-feature');
+    if (feature) hero.style.setProperty('--v5-feature-height', feature.offsetHeight + 'px');
+  });
   document.querySelectorAll('.design.orbit').forEach(function (root) {
     var dark = document.documentElement.getAttribute('data-theme') !== 'light';
     root.classList.toggle('dark', dark);

@@ -1,13 +1,19 @@
 <script lang="ts">
   import type { SceneBackground } from './homeVisualFamilies';
   import { coverImageSizes } from '$lib/coverImageSizes';
-  let { background, bounded = false }: { background: SceneBackground; bounded?: boolean } = $props();
+  let { background, bounded = false }: { background: SceneBackground; bounded?: boolean } =
+    $props();
   function density(node: HTMLPictureElement, enabled: boolean) {
     if (!enabled) return;
-    const update = () => node.style.setProperty('--scene-density', String(window.devicePixelRatio || 1));
+    const update = () =>
+      node.style.setProperty('--scene-density', String(window.devicePixelRatio || 1));
     update();
     window.addEventListener('resize', update);
-    return { destroy() { window.removeEventListener('resize', update); } };
+    return {
+      destroy() {
+        window.removeEventListener('resize', update);
+      },
+    };
   }
 </script>
 
@@ -16,7 +22,9 @@
   use:density={bounded}
   use:coverImageSizes={{
     desktop: background.width / background.height,
-    portrait: bounded ? background.width / background.height : background.portraitAspectRatio ?? 0.75,
+    portrait: bounded
+      ? background.width / background.height
+      : (background.portraitAspectRatio ?? 0.75),
   }}
   style:--scene-focus={background.focus}
   style:--scene-mobile-focus={background.mobileFocus}
@@ -28,7 +36,11 @@
       srcset={bounded ? background.avifDesktop : background.avifPortrait}
       sizes="max(100vw, 90vh)"
     />{/if}
-  <source media="(max-width: 700px)" srcset={bounded ? background.desktop : background.portrait} sizes="max(100vw, 90vh)" />
+  <source
+    media="(max-width: 700px)"
+    srcset={bounded ? background.desktop : background.portrait}
+    sizes="max(100vw, 90vh)"
+  />
   {#if background.avifDesktop}<source
       type="image/avif"
       srcset={background.avifDesktop}

@@ -136,10 +136,12 @@
   onblur={leave}
 >
   <span class="discover-landscape" aria-hidden="true"
-    ><picture use:coverImageSizes={{
-      desktop: background?.portraitAspectRatio ?? 0.75,
-      portrait: background?.portraitAspectRatio ?? 0.75,
-    }}>
+    ><picture
+      use:coverImageSizes={{
+        desktop: background?.portraitAspectRatio ?? 0.75,
+        portrait: background?.portraitAspectRatio ?? 0.75,
+      }}
+    >
       {#if background?.avifPortrait}<source
           type="image/avif"
           srcset={background.avifPortrait}

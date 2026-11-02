@@ -1,6 +1,11 @@
 <script lang="ts">
   import PublicLegalPage from './PublicLegalPage.svelte';
-  const sections=[{id:'ambito',label:'Âmbito do site'},{id:'viaturas',label:'Informação das viaturas'},{id:'contactos',label:'Pedidos e visitas'},{id:'utilizacao',label:'Utilização e direitos'}];
+  const sections = [
+    { id: 'ambito', label: 'Âmbito do site' },
+    { id: 'viaturas', label: 'Informação das viaturas' },
+    { id: 'contactos', label: 'Pedidos e visitas' },
+    { id: 'utilizacao', label: 'Utilização e direitos' },
+  ];
 </script>
 <PublicLegalPage title="Termos de utilização" description="Como funciona esta montra de viaturas e o que significa enviar um pedido ao stand." path="/termos-de-utilizacao" {sections} note="A identificação jurídica do operador está por confirmar na página Informação legal.">
     <section id="ambito"><h2>Uma montra, sem compra online</h2><p>O website Auto Nunes Martins permite consultar viaturas usadas, pesquisar o stock publicado, guardar favoritos, comparar viaturas e contactar o stand. Não existe checkout, pagamento, contratação de compra ou pedido de crédito através do site.</p><p>A <a href="/informacao-legal">identificação jurídica do operador</a> contém os dados que ainda precisam de confirmação. Os contactos comerciais apresentados são os fornecidos pelo stand.</p></section>

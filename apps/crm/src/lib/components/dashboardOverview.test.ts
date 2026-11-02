@@ -36,7 +36,10 @@ function fromSource(source: string, file: string): any {
     else if (specifier === 'lucide-svelte') value = new Proxy({}, { get: () => icon });
     else if (specifier === '$lib/paths') value = { crmPath: (path: string) => path };
     else if (specifier === '$env/static/public')
-      value = { PUBLIC_BACKEND_URL: 'https://backend.example', PUBLIC_WEBSITE_URL: 'https://website.example' };
+      value = {
+        PUBLIC_BACKEND_URL: 'https://backend.example',
+        PUBLIC_WEBSITE_URL: 'https://website.example',
+      };
     else if (specifier === '@anm/types/richDescription') value = { descriptionPreviewHtml };
     else if (specifier === '@anm/types') value = { framingStyle };
     else if (specifier === '$lib/dashboardPhotoFraming') value = { dashboardPhotoFraming };

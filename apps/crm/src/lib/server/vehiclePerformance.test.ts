@@ -1,16 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('$env/static/public', () => ({ PUBLIC_BACKEND_URL: 'https://api.test' }));
-const mocks = vi.hoisted(() => ({ get: vi.fn(), photos: vi.fn(), highlights: vi.fn(), api: vi.fn() }));
-vi.mock('$lib/server/vehicles', () => ({ vehiclesApi: { get: mocks.get, signedPhotos: mocks.photos } }));
+const mocks = vi.hoisted(() => ({
+  get: vi.fn(),
+  photos: vi.fn(),
+  highlights: vi.fn(),
+  api: vi.fn(),
+}));
+vi.mock('$lib/server/vehicles', () => ({
+  vehiclesApi: { get: mocks.get, signedPhotos: mocks.photos },
+}));
 vi.mock('$lib/server/dashboard', () => ({ dashboardApi: { highlights: mocks.highlights } }));
-vi.mock('$lib/server/api', async (original) => ({ ...await original<typeof import('./api')>(), apiJson: mocks.api }));
+vi.mock('$lib/server/api', async (original) => ({
+  ...(await original<typeof import('./api')>()),
+  apiJson: mocks.api,
+}));
 import { ApiError } from './api';
 import { load as detailLoad } from '../../routes/(app)/viaturas/[id]/+page.server';
 import { load as layoutLoad } from '../../routes/(app)/+layout.server';
 const event = { params: { id: 'car' }, locals: { auth: () => ({ userId: 'user' }) } } as any;
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>(done => { resolve = done; });
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
   return { promise, resolve };
 }
 beforeEach(() => {
@@ -25,7 +37,7 @@ describe('CRM load latency boundaries', () => {
     const highlights = deferred<{ items: { id: string }[] }>();
     mocks.photos.mockReturnValue(gallery.promise);
     mocks.highlights.mockReturnValue(highlights.promise);
-    const result = await detailLoad(event) as any;
+    const result = (await detailLoad(event)) as any;
     expect(result.vehicle.id).toBe('car');
     expect(mocks.photos).toHaveBeenCalledOnce();
     expect(mocks.highlights).toHaveBeenCalledOnce();
@@ -37,16 +49,16 @@ describe('CRM load latency boundaries', () => {
   });
   it('keeps a persisted but hidden selection distinct from live and from a failed read', async () => {
     mocks.highlights.mockResolvedValueOnce({ items: [], configuredVehicleIds: ['car'] });
-    const hidden = await detailLoad(event) as any;
+    const hidden = (await detailLoad(event)) as any;
     expect(await hidden.homepageHighlight).toBe('hidden');
     expect(await hidden.isFeatured).toBe(false);
     mocks.highlights.mockRejectedValueOnce(new ApiError(503, null));
-    const failed = await detailLoad(event) as any;
+    const failed = (await detailLoad(event)) as any;
     expect(await failed.homepageHighlight).toBe('unknown');
   });
   it.each([401, 403])('retains gallery access failures (%s) as streamed errors', async (status) => {
     mocks.photos.mockRejectedValue(new ApiError(status, null));
-    const result = await detailLoad(event) as any;
+    const result = (await detailLoad(event)) as any;
     await expect(result.signedPhotos).rejects.toMatchObject({ status });
   });
   it('keeps missing vehicles as a page 404', async () => {
@@ -64,10 +76,21 @@ describe('CRM load latency boundaries', () => {
     const pending = layoutLoad(event);
     expect(mocks.api).toHaveBeenCalledTimes(3);
     me.resolve({ user: { id: 'user' } });
-    expect(await pending).toMatchObject({ currentUser: { id: 'user' }, vehicleStats: { active: 12 }, taskStats: null });
+    expect(await pending).toMatchObject({
+      currentUser: { id: 'user' },
+      vehicleStats: { active: 12 },
+      taskStats: null,
+    });
   });
-  it.each([401, 403])('does not hide authorization failures in sidebar badges (%s)', async (status) => {
-    mocks.api.mockImplementation((_event: unknown, path: string) => path === '/api/me' ? Promise.resolve({ user: { id: 'user' } }) : Promise.reject(new ApiError(status, null)));
-    await expect(layoutLoad(event)).rejects.toMatchObject({ status });
-  });
+  it.each([401, 403])(
+    'does not hide authorization failures in sidebar badges (%s)',
+    async (status) => {
+      mocks.api.mockImplementation((_event: unknown, path: string) =>
+        path === '/api/me'
+          ? Promise.resolve({ user: { id: 'user' } })
+          : Promise.reject(new ApiError(status, null)),
+      );
+      await expect(layoutLoad(event)).rejects.toMatchObject({ status });
+    },
+  );
 });

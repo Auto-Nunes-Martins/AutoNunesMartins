@@ -27,11 +27,6 @@ export interface ListTasksParams {
   order?: 'board' | 'priority';
 }
 
-/**
- * Tasks are visible to a user when:
- *   - they have no assignee (Geral — shared inbox), OR
- *   - they are assigned to that user
- */
 export function taskAttentionWhere(
   attention: 'due' | 'reminders',
   now = new Date(),
@@ -48,7 +43,11 @@ export function taskAttentionWhere(
   };
 }
 
-function visibilityFilter(actorId: string, scope: TaskScope = 'all'): Prisma.TaskWhereInput {
+/** The shared inbox and the actor's own tasks, regardless of their staff role. */
+export function taskVisibilityWhere(
+  actorId: string,
+  scope: TaskScope = 'all',
+): Prisma.TaskWhereInput {
   if (scope === 'mine') return { assigneeId: actorId };
   if (scope === 'general') return { assigneeId: null };
   return { OR: [{ assigneeId: null }, { assigneeId: actorId }] };
@@ -85,7 +84,7 @@ export function buildTaskWhere(filter: ListTasksParams): Prisma.TaskWhereInput {
   }
 
   if (filter.actorId) {
-    clauses.push(visibilityFilter(filter.actorId, filter.scope));
+    clauses.push(taskVisibilityWhere(filter.actorId, filter.scope));
   }
 
   return clauses.length === 1 ? clauses[0]! : { AND: clauses };
@@ -104,19 +103,12 @@ export async function listAllTasks(tx: TxClient, params: ListTasksParams = {}) {
   });
 }
 
-export async function getTaskById(tx: TxClient, id: string) {
-  return tx.task.findUnique({
-    where: { id },
-    include: { assignee: { select: { id: true, name: true, email: true, imageUrl: true } } },
-  });
-}
-
 /** Returns the task only if visible to `actorId` (own or unassigned), else null. */
 export async function getTaskByIdForActor(tx: TxClient, id: string, actorId: string) {
   return tx.task.findFirst({
     where: {
       id,
-      OR: [{ assigneeId: null }, { assigneeId: actorId }],
+      ...taskVisibilityWhere(actorId),
     },
     include: { assignee: { select: { id: true, name: true, email: true, imageUrl: true } } },
   });

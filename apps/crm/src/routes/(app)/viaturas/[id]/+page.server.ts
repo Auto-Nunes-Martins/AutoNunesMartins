@@ -31,12 +31,12 @@ export const load: PageServerLoad = async (event) => {
     // authoritative read as the homepage, never from contextual editor drafts.
     const homepageHighlight = dashboardApi
       .highlights(event)
-      .then(selection => homepageHighlightStatus(selection, vehicle.id))
+      .then((selection) => homepageHighlightStatus(selection, vehicle.id))
       .catch((err) => {
         rethrowAuthError(err);
         return 'unknown' as HighlightStatus;
       });
-    const isFeatured = homepageHighlight.then(status => status === 'live');
+    const isFeatured = homepageHighlight.then((status) => status === 'live');
     // SvelteKit owns delivery of streamed rejections. Attach handlers now as
     // either lookup can fail before the initial response has been serialized.
     void signedPhotos.catch(() => {});

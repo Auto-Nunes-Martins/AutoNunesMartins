@@ -10,7 +10,12 @@ export const MAX_NOTIFICATIONS = 20;
 
 /** One lifecycle for all site notices. Timers belong to the root layout, not a page. */
 export function createNotifications() {
-  type Running = Notification & { timer?: ReturnType<typeof setTimeout>; remaining: number; deadline: number; pauses: Set<string> };
+  type Running = Notification & {
+    timer?: ReturnType<typeof setTimeout>;
+    remaining: number;
+    deadline: number;
+    pauses: Set<string>;
+  };
   const notices = writable<Notification[]>([]);
   const running = new Map<number, Running>();
   let nextId = 0;
@@ -18,10 +23,12 @@ export function createNotifications() {
   const publish = () => {
     const items = [...running.values()].reverse();
     // Keep the notice being read or operated in front during a burst.
-    const held = items.filter(item => item.pauses.size);
+    const held = items.filter((item) => item.pauses.size);
     for (const item of held) items.splice(items.indexOf(item), 1);
     items.unshift(...held);
-    notices.set(items.map(({ id, message, channel, action }) => ({ id, message, channel, action })));
+    notices.set(
+      items.map(({ id, message, channel, action }) => ({ id, message, channel, action })),
+    );
   };
   function dismiss(id: number) {
     const item = running.get(id);
@@ -31,7 +38,8 @@ export function createNotifications() {
     publish();
   }
   function start(item: Running) {
-    if (item.timer !== undefined || item.pauses.size) return;
+    // A full queue of paused notices rejects the new item. It owns no timer.
+    if (!running.has(item.id) || item.timer !== undefined || item.pauses.size) return;
     item.deadline = Date.now() + item.remaining;
     item.timer = setTimeout(() => dismiss(item.id), item.remaining);
   }
@@ -42,37 +50,60 @@ export function createNotifications() {
       let changed = false;
       for (const [id, item] of running) {
         if (currentPath === '/comparar' && item.channel === 'comparison') {
-          clearTimeout(item.timer); running.delete(id); changed = true;
-        } else if (item.action?.href === currentPath) { item.action = undefined; changed = true; }
+          clearTimeout(item.timer);
+          running.delete(id);
+          changed = true;
+        } else if (item.action?.href === currentPath) {
+          item.action = undefined;
+          changed = true;
+        }
       }
       if (changed) publish();
     },
     push(input: NotificationInput) {
       const id = ++nextId;
       if (currentPath === '/comparar' && input.channel === 'comparison') return id;
-      const item: Running = { ...input, action: input.action?.href === currentPath ? undefined : input.action, id, remaining: NOTIFICATION_DURATION, deadline: 0, pauses: new Set() };
+      const item: Running = {
+        ...input,
+        action: input.action?.href === currentPath ? undefined : input.action,
+        id,
+        remaining: NOTIFICATION_DURATION,
+        deadline: 0,
+        pauses: new Set(),
+      };
       running.set(item.id, item);
       if (running.size > MAX_NOTIFICATIONS) {
-        const oldest = [...running.values()].find(candidate => !candidate.pauses.size) ?? item;
-        clearTimeout(oldest.timer); running.delete(oldest.id);
+        const oldest = [...running.values()].find((candidate) => !candidate.pauses.size) ?? item;
+        clearTimeout(oldest.timer);
+        running.delete(oldest.id);
       }
-      start(item); publish(); return item.id;
+      start(item);
+      publish();
+      return item.id;
     },
     dismiss,
     pause(id: number, reason: 'pointer' | 'focus') {
-      const item = running.get(id); if (!item) return;
+      const item = running.get(id);
+      if (!item) return;
       if (!item.pauses.size) {
         item.remaining = Math.max(0, item.deadline - Date.now());
-        clearTimeout(item.timer); item.timer = undefined;
+        clearTimeout(item.timer);
+        item.timer = undefined;
       }
       item.pauses.add(reason);
     },
     resume(id: number, reason: 'pointer' | 'focus') {
-      const item = running.get(id); if (!item) return;
-      item.pauses.delete(reason); start(item); publish();
+      const item = running.get(id);
+      if (!item) return;
+      item.pauses.delete(reason);
+      start(item);
+      publish();
     },
     resumeAfterNavigation() {
-      for (const item of running.values()) { item.pauses.clear(); start(item); }
+      for (const item of running.values()) {
+        item.pauses.clear();
+        start(item);
+      }
       publish();
     },
     invalidateActions(channel: string, fallback: NotificationAction) {
@@ -82,14 +113,17 @@ export function createNotifications() {
       for (const item of running.values()) {
         if (item.channel !== channel || !item.action) continue;
         if (item.action.label === fallback.label && item.action.href === fallback.href) continue;
-        item.action = { ...fallback }; changed = true;
+        item.action = { ...fallback };
+        changed = true;
       }
       if (changed) publish();
     },
     destroy() {
       for (const item of running.values()) clearTimeout(item.timer);
-      running.clear(); publish();
+      running.clear();
+      publish();
     },
   };
 }
-export const useNotifications = () => getContext<ReturnType<typeof createNotifications>>(notificationContext);
+export const useNotifications = () =>
+  getContext<ReturnType<typeof createNotifications>>(notificationContext);

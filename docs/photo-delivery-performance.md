@@ -1,5 +1,7 @@
 # Public photo delivery diagnostics
 
+> Estado em 02/11/2026: documento histórico. A telemetria temporária detalhada, os endpoints de diagnóstico e os scripts associados foram removidos no código local; a publicação desta remoção está pendente. Em produção, os registos de diagnóstico foram apagados e o writer SQL ficou compatível mas sem persistência. Os comandos antigos de diagnóstico não se aplicam ao novo código. Mantêm-se as otimizações funcionais, os limites de segurança e uma medição leve de memória por minuto no supervisor.
+
 ## Gallery copies for the current visit
 
 The detail gallery now retains each acquired photograph as a Blob and object URL for the current mounted vehicle page. It never revalidates or downloads a replacement on a later visit to that photograph, including after a browser GC. A missing, failed or discarded local copy stays unavailable for that visit; it does not fall back to HTTP. The spinner still follows actual acquisition and decode work, independently of the existing fade.

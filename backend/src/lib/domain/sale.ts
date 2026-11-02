@@ -66,18 +66,13 @@ export function computeSaleFigures(input: SaleFiguresInput): SaleFigures {
   const salePrice = new Decimal(input.salePrice);
   const purchasePrice = new Decimal(input.purchasePrice);
   const expensesTotal = new Decimal(input.expensesTotal);
-  const commission = new Decimal(input.commission ?? 0).toDecimalPlaces(
-    2,
-    Decimal.ROUND_HALF_UP,
-  );
+  const commission = new Decimal(input.commission ?? 0).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
   const buyerType: BuyerType = input.buyerType ?? 'PARTICULAR';
 
   const margin = salePrice.minus(purchasePrice).minus(expensesTotal);
 
   if (margin.lte(0) || buyerType === 'COMERCIANTE') {
-    const realProfit = margin
-      .plus(commission)
-      .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    const realProfit = margin.plus(commission).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
     return {
       margin: margin.toDecimalPlaces(2, Decimal.ROUND_HALF_UP),
       vatAmount: new Decimal(0).toDecimalPlaces(2),

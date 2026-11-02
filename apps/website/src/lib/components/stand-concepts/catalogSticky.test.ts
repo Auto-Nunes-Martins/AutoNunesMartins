@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { catalogSidebarPosition, type CatalogSidebarFrame } from './catalogSticky';
 
-const base: CatalogSidebarFrame = { width: 1366, viewportHeight: 720, scrollY: 0, start: 350, end: 1650, panelHeight: 910 };
-const at = (scrollY: number, previous?: ReturnType<typeof catalogSidebarPosition>, overrides: Partial<CatalogSidebarFrame> = {}) => catalogSidebarPosition({ ...base, scrollY, ...overrides }, previous);
+const base: CatalogSidebarFrame = {
+  width: 1366,
+  viewportHeight: 720,
+  scrollY: 0,
+  start: 350,
+  end: 1650,
+  panelHeight: 910,
+};
+const at = (
+  scrollY: number,
+  previous?: ReturnType<typeof catalogSidebarPosition>,
+  overrides: Partial<CatalogSidebarFrame> = {},
+) => catalogSidebarPosition({ ...base, scrollY, ...overrides }, previous);
 
 describe('directional catalogue sidebar without nested scrolling', () => {
   it('keeps a fitting panel below the visible navigation and its breathing room', () => {
@@ -49,14 +60,17 @@ describe('directional catalogue sidebar without nested scrolling', () => {
     expect(state.offset).toBe(274);
     expect(base.start + state.offset - 600).toBe(24);
   });
-  it.each([720, 900])('follows tall panels at viewport height %i', viewportHeight => {
+  it.each([720, 900])('follows tall panels at viewport height %i', (viewportHeight) => {
     const state = at(800, undefined, { viewportHeight });
     expect(state.offset).toBeGreaterThan(0);
     expect(state.offset).toBeLessThanOrEqual(390);
   });
-  it.each([0, 300, 900])('keeps a complete panel in normal flow for only %ipx of results', height => {
-    expect(at(600, undefined, { end: base.start + height }).offset).toBe(0);
-  });
+  it.each([0, 300, 900])(
+    'keeps a complete panel in normal flow for only %ipx of results',
+    (height) => {
+      expect(at(600, undefined, { end: base.start + height }).offset).toBe(0);
+    },
+  );
   it('preserves mobile disclosure at and below 800px', () => {
     expect(at(700, undefined, { width: 390 }).offset).toBe(0);
     expect(at(700, undefined, { width: 800 }).offset).toBe(0);

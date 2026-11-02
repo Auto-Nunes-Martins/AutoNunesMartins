@@ -11,7 +11,14 @@
   import { ArrowUpRight, Plus, X, RotateCcw } from 'lucide-svelte';
   import { useComparison, comparisonRows } from '$lib/comparison';
   import { publicHref, publicPhoto, publicPrice } from '$lib/publicVehicles';
-  import { loadSelectedVehicles, rememberSelectionIdentity, retainSelectionIdentity, selectionIdentity, type SelectionIdentity, type SelectedVehicle as Entry } from '$lib/selectedVehicles';
+  import {
+    loadSelectedVehicles,
+    rememberSelectionIdentity,
+    retainSelectionIdentity,
+    selectionIdentity,
+    type SelectionIdentity,
+    type SelectedVehicle as Entry,
+  } from '$lib/selectedVehicles';
   const comparison = useComparison();
   const { ids, ready } = comparison;
   const memory = new Map<string, SelectionIdentity>();
@@ -31,7 +38,9 @@
   ] as const;
   // Keep the actual table geometry while fresh data is fetched; never display cached inventory.
   const displayEntries = $derived(
-    $ids.map(id => entries.find(entry => entry.id === id) ?? { id, status: 0, vehicle: null } as Entry),
+    $ids.map(
+      (id) => entries.find((entry) => entry.id === id) ?? ({ id, status: 0, vehicle: null } as Entry),
+    ),
   );
   const visible = $derived(
     compact && displayEntries.length === 3
@@ -67,7 +76,9 @@
     return () => media.removeEventListener('change', update);
   });
   const name = (entry: Entry) =>
-    selectionIdentity(entry) ? `${selectionIdentity(entry)!.brand} ${selectionIdentity(entry)!.model}` : `Viatura selecionada ${$ids.indexOf(entry.id) + 1}`;
+    selectionIdentity(entry)
+      ? `${selectionIdentity(entry)!.brand} ${selectionIdentity(entry)!.model}`
+      : `Viatura selecionada ${$ids.indexOf(entry.id) + 1}`;
   $effect(() => {
     const selected = [...$ids];
     const requestedReload = reload;
@@ -86,8 +97,12 @@
       entries = current.filter((entry) => selected.includes(entry.id));
       return;
     }
-    rememberSelectionIdentity(current.filter(entry => selected.includes(entry.id)), memory, document.querySelector('.comparison-page'));
-    entries = current.filter(entry => selected.includes(entry.id));
+    rememberSelectionIdentity(
+      current.filter((entry) => selected.includes(entry.id)),
+      memory,
+      document.querySelector('.comparison-page'),
+    );
+    entries = current.filter((entry) => selected.includes(entry.id));
     loading = true;
     void (async () => {
       try {
@@ -99,7 +114,10 @@
         }
       } catch {
         if (!controller.signal.aborted)
-          entries = retainSelectionIdentity(selected.map((id) => ({ id, status: 503, vehicle: null })), memory);
+          entries = retainSelectionIdentity(
+            selected.map((id) => ({ id, status: 503, vehicle: null })),
+            memory,
+          );
       } finally {
         if (!controller.signal.aborted) loading = false;
       }
@@ -335,10 +353,31 @@
 </main>
 
 <style>
-  .retry-item { border: 0; background: transparent; color: var(--text); cursor: pointer; min-height: 44px; padding: 0; font: inherit; }
-  .retry-item:disabled { opacity: .5; cursor: wait; }
-  .unavailable.lookup-error, .lookup-detail { font-size: 12px; line-height: 1.5; color: var(--muted); }
-  .unavailable-year { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .retry-item {
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    min-height: 44px;
+    padding: 0;
+    font: inherit;
+  }
+  .retry-item:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+  .unavailable.lookup-error,
+  .lookup-detail {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .unavailable-year {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
   .pending-photo {
     height: clamp(150px, 12vw, 210px);
     background: var(--surface);
@@ -484,7 +523,8 @@
   .vehicle-photo a {
     display: block;
   }
-  .vehicle-photo img, .vehicle-photo :global(canvas) {
+  .vehicle-photo img,
+  .vehicle-photo :global(canvas) {
     display: block;
     width: 100%;
     height: clamp(150px, 12vw, 210px);
@@ -765,7 +805,8 @@
       position: absolute;
       inset: -4px;
     }
-    .vehicle-photo img, .vehicle-photo :global(canvas),
+    .vehicle-photo img,
+    .vehicle-photo :global(canvas),
     .pending-photo {
       height: clamp(100px, 28vw, 150px);
     }

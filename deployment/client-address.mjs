@@ -10,7 +10,8 @@ export function normaliseAddress(value) {
   // Treat IPv4 and IPv4-mapped IPv6 as the same rate-limit identity.
   const mapped = /^::ffff:([\da-f]+):([\da-f]+)$/.exec(canonical);
   if (mapped) {
-    const high = parseInt(mapped[1], 16), low = parseInt(mapped[2], 16);
+    const high = parseInt(mapped[1], 16),
+      low = parseInt(mapped[2], 16);
     return [high >> 8, high & 255, low >> 8, low & 255].join('.');
   }
   return canonical;
@@ -21,7 +22,7 @@ export function clientAddress(req, source) {
   // Never infer trust from the hostname, XFF, CF-Ray or a caller-supplied flag.
   // Missing/malformed trusted metadata fails closed instead of using proxy IP.
   if (source !== 'render' && source !== 'socket') return null;
-  return normaliseAddress(source === 'render'
-    ? req.headers['cf-connecting-ip']
-    : req.socket.remoteAddress);
+  return normaliseAddress(
+    source === 'render' ? req.headers['cf-connecting-ip'] : req.socket.remoteAddress,
+  );
 }

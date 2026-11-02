@@ -19,7 +19,7 @@
   use:submission.enhance
   aria-busy={sending}
 >
-  <ContactFeedback {submission}/>
+  <ContactFeedback {submission} />
   <p class="eyebrow">COMECE A CONVERSA</p>
   <h3 id={`${id}-heading`}>O que tem em mente?</h3>
   <div class="form-row">
@@ -66,9 +66,19 @@
     ></textarea></label
   >
   <ContactFormFooter>
-    <button type="submit" aria-busy={sending} disabled={sending || submission.state.kind === "conflict"} class="button primary"
+    <button
+      type="submit"
+      aria-busy={sending}
+      disabled={sending || submission.state.kind === 'conflict'}
+      class="button primary"
       ><span class="action-text">{sending ? 'A enviar…' : 'Enviar pedido'}</span>
-      <span class="action-arrow">{#if sending}<LoaderCircle class="contact-submit-spinner" size={17} aria-hidden="true" />{:else}<ArrowUpRight size={17} aria-hidden="true" />{/if}</span></button
+      <span class="action-arrow"
+        >{#if sending}<LoaderCircle
+            class="contact-submit-spinner"
+            size={17}
+            aria-hidden="true"
+          />{:else}<ArrowUpRight size={17} aria-hidden="true" />{/if}</span
+      ></button
     >
   </ContactFormFooter>
   <p id={`${id}-note`} class="form-confirmation" class:sr-only={!showDemoNote}>
@@ -184,8 +194,23 @@
         box-shadow 180ms ease;
     }
   }
-  .form-confirmation { margin-top:12px; color:#b7c1b9; font-size:11px; line-height:1.6; }
-  .sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
+  .form-confirmation {
+    margin-top: 12px;
+    color: #b7c1b9;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
   .button {
     display: inline-flex;
     align-items: center;

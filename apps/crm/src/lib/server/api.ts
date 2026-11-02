@@ -1,7 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
 import { error as httpError, type RequestEvent } from '@sveltejs/kit';
-import { measureNavigation, backendNavigationTiming } from './navigationTiming';
 
 export class ApiError extends Error {
   constructor(
@@ -15,7 +14,8 @@ export class ApiError extends Error {
 }
 
 export function apiErrorMessage(status?: number): string {
-  if (status === 401) return 'Não foi possível validar a sessão. Tente novamente ou entre na sua conta.';
+  if (status === 401)
+    return 'Não foi possível validar a sessão. Tente novamente ou entre na sua conta.';
   if (status === 403) return 'A sua conta não tem acesso a estes dados.';
   return 'Não foi possível carregar os dados. Verifique a ligação e tente novamente.';
 }
@@ -60,7 +60,7 @@ export async function apiFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const token = await measureNavigation(event.locals, 'token', () => getApiToken(event));
+  const token = await getApiToken(event);
   if (!token) return Response.json({ error: apiErrorMessage(401) }, { status: 401 });
 
   const headers = new Headers(init.headers);
@@ -72,19 +72,22 @@ export async function apiFetch(
   }
 
   const url = `${env.INTERNAL_BACKEND_URL || PUBLIC_BACKEND_URL}${path}`;
-  const candidate = (path.split('?')[0] ?? '').split('/')[2] ?? '';
-  const service = ['me', 'vehicles', 'vehicle-expenses', 'sales', 'customers', 'tasks', 'users', 'dashboard', 'homepage-highlights', 'notifications', 'activity', 'settings', 'search', 'operational-expenses'].includes(candidate) ? candidate : 'other';
-  const send = () => measureNavigation(event.locals, `api-${service}`, async () => {
-    const response = await event.fetch(url, { ...init, cache: 'no-store', headers, credentials: 'omit', redirect: 'manual' });
-    backendNavigationTiming(event.locals, response.headers.get('server-timing'));
-    return response;
-  });
+  const send = () =>
+    event.fetch(url, {
+      ...init,
+      cache: 'no-store',
+      headers,
+      credentials: 'omit',
+      redirect: 'manual',
+    });
   let response = await send();
   // A JWT can expire between the CRM and the API. Retry a read once using
   // Clerk, but never replay a mutation or a streamed upload.
   if (response.status === 401 && ['GET', 'HEAD'].includes((init.method ?? 'GET').toUpperCase())) {
     const freshToken = await getApiToken(event, true);
     if (freshToken && freshToken !== token) {
+      // This response is being replaced. Release its unread body before retrying.
+      await response.body?.cancel().catch(() => {});
       headers.set('authorization', `Bearer ${freshToken}`);
       response = await send();
     }
@@ -103,7 +106,9 @@ export async function apiJson<T>(
     let body: unknown = text;
     try {
       body = JSON.parse(text);
-    } catch { /* Non-JSON errors still retain their HTTP status. */ }
+    } catch {
+      /* Non-JSON errors still retain their HTTP status. */
+    }
     const status = res.status >= 400 ? res.status : 502;
     throw new ApiError(status, body, apiErrorMessage(status));
   }

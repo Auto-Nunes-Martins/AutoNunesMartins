@@ -24,10 +24,19 @@
   outline-offset: 5px;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .design .conversation-pill { transition: transform 250ms ease, background 250ms ease; }
+  .design .conversation-pill {
+    transition:
+      transform 250ms ease,
+      background 250ms ease;
+  }
   .design .conversation-pill:hover,
-  .design .conversation-pill:focus-visible { transform: translateY(-3px); }
+  .design .conversation-pill:focus-visible {
+    transform: translateY(-3px);
+  }
 }
 @media (max-width: 700px) {
-  .design .conversation-pill { font-size: 12px; padding: 12px 18px; }
+  .design .conversation-pill {
+    font-size: 12px;
+    padding: 12px 18px;
+  }
 }

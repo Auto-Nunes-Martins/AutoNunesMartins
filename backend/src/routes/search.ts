@@ -3,6 +3,7 @@ import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { cache } from '../lib/data/cache.js';
+import { taskVisibilityWhere } from '../lib/data/task.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 
 const router = Router();
@@ -28,10 +29,8 @@ interface SearchPayload {
   total: number;
 }
 
-// 60s in-process cache — search hits are read-only and small, so a generous
-// TTL is fine. The frontend has its own LRU cache on top of this so the
-// hot path for typing/backspacing within the same session never even
-// touches the backend.
+// Results are actor-specific. Task mutations also invalidate these entries
+// after committing so reassignment cannot retain a previous actor's access.
 const SEARCH_TTL_MS = 60_000;
 
 /**
@@ -44,6 +43,10 @@ router.get(
   '/',
   requireUser,
   asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
     const parsed = querySchema.safeParse(req.query);
     if (!parsed.success) {
       res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
@@ -56,7 +59,8 @@ router.get(
       return;
     }
 
-    const cacheKey = `search:${needle.toLowerCase()}:${limit}`;
+    const actorId = req.user.id;
+    const cacheKey = `search:${JSON.stringify([actorId, needle.toLowerCase(), limit])}`;
     const payload = await cache.wrap<SearchPayload>(cacheKey, SEARCH_TTL_MS, async () => {
       const [vehicles, customers, tasks] = await Promise.all([
         prisma.vehicle.findMany({
@@ -111,9 +115,14 @@ router.get(
         }),
         prisma.task.findMany({
           where: {
-            OR: [
-              { title: { contains: needle, mode: 'insensitive' } },
-              { description: { contains: needle, mode: 'insensitive' } },
+            AND: [
+              taskVisibilityWhere(actorId),
+              {
+                OR: [
+                  { title: { contains: needle, mode: 'insensitive' } },
+                  { description: { contains: needle, mode: 'insensitive' } },
+                ],
+              },
             ],
           },
           orderBy: { updatedAt: 'desc' },

@@ -4,10 +4,7 @@ import {
   operationalExpenseCreateSchema,
   operationalExpenseUpdateSchema,
 } from '@anm/types';
-import {
-  opExpensesApi,
-  type OperationalExpenseListParams,
-} from '$lib/server/operationalExpenses';
+import { opExpensesApi, type OperationalExpenseListParams } from '$lib/server/operationalExpenses';
 import { ApiError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 

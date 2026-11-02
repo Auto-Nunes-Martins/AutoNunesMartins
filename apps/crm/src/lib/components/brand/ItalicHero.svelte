@@ -20,7 +20,9 @@
 </script>
 
 <h1
-  class="font-display font-black italic uppercase tracking-[-0.025em] text-[var(--color-text)] {sizes[size]}"
+  class="font-display font-black italic uppercase tracking-[-0.025em] text-[var(--color-text)] {sizes[
+    size
+  ]}"
 >
   {text}{#if accent}
     <span class="text-[var(--color-red)]">{accent}</span>

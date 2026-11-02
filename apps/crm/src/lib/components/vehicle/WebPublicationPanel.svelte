@@ -1,13 +1,13 @@
 <script lang="ts">
   import { ArrowUpRight } from 'lucide-svelte';
-  import {reusablePhoto} from '$lib/reusablePhoto';
+  import { reusablePhoto } from '$lib/reusablePhoto';
   import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
   import type { GalleryPhotoFraming } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import { invalidateAll } from '$app/navigation';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import WebsiteStatus from './WebsiteStatus.svelte';
-  import {websiteVisibility} from '$lib/websiteVisibility';
+  import { websiteVisibility } from '$lib/websiteVisibility';
   import { crmPath } from '$lib/paths';
   import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
   import { enhance } from '$lib/auth/enhance';
@@ -41,6 +41,7 @@
     busy = $bindable(false),
     unified = false,
     photoDraft = $bindable<EditPhoto[]>([]),
+    onDiscardPrepared,
     onsaveall,
     onstatechange,
     creation = false,
@@ -55,6 +56,7 @@
     busy?: boolean;
     unified?: boolean;
     photoDraft?: EditPhoto[];
+    onDiscardPrepared?: (paths: string[]) => Promise<void>;
     onsaveall?: () => void;
     onstatechange?: (state: { dirty: boolean; valid: boolean }) => void;
     creation?: boolean;
@@ -70,14 +72,24 @@
   async function saveFraming(path: string, value: GalleryPhotoFraming | undefined) {
     framingBusy = true;
     try {
-      const response = await sessionFetch(crmPath(`/viaturas/${vehicle.id}/photos/framing`), { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({path, framing: value ?? null}) });
+      const response = await sessionFetch(crmPath(`/viaturas/${vehicle.id}/photos/framing`), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ path, framing: value ?? null }),
+      });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? 'Não foi possível guardar o enquadramento.');
+      if (!response.ok)
+        throw new Error(result.error ?? 'Não foi possível guardar o enquadramento.');
       framing = result.galleryFraming;
       await invalidateAll().catch(() => {});
       toast.success('Enquadramento guardado.');
       return true;
-    } catch (error) { toast.error((error as Error).message); return false; } finally { framingBusy = false; }
+    } catch (error) {
+      toast.error((error as Error).message);
+      return false;
+    } finally {
+      framingBusy = false;
+    }
   }
   let photoDragging = $state(false);
   let photoBusy = $state(false);
@@ -146,15 +158,24 @@
   );
   function savedPublicationDraft() {
     if (creation && recoveredDraft) {
-      const details = recoveredDraft.specifications as typeof recoveredDraft.specifications & Record<string, unknown>;
+      const details = recoveredDraft.specifications as typeof recoveredDraft.specifications &
+        Record<string, unknown>;
       return {
-        price: recoveredDraft.price ?? '', description: recoveredDraft.description,
-        transmission: recoveredDraft.transmission ?? '', selected: allowedPhotos,
+        price: recoveredDraft.price ?? '',
+        description: recoveredDraft.description,
+        transmission: recoveredDraft.transmission ?? '',
+        selected: allowedPhotos,
         galleryFraming: recoveredDraft.galleryFraming ?? {},
-        specs: { version: details.version, powerHp: String(details.powerHp ?? ''),
-          engineCc: String(details.engineCc ?? ''), doors: String(details.doors ?? ''),
-          seats: String(details.seats ?? ''), category: details.category, color: details.color,
-          equipment: details.equipment.join('\n') },
+        specs: {
+          version: details.version,
+          powerHp: String(details.powerHp ?? ''),
+          engineCc: String(details.engineCc ?? ''),
+          doors: String(details.doors ?? ''),
+          seats: String(details.seats ?? ''),
+          category: details.category,
+          color: details.color,
+          equipment: details.equipment.join('\n'),
+        },
       };
     }
     const details = vehicle.publicSpecifications;
@@ -182,7 +203,10 @@
     };
   }
   function resetPublicationDraft() {
-    framing = creation && recoveredDraft ? recoveredDraft.galleryFraming ?? {} : vehicle.galleryFraming ?? {};
+    framing =
+      creation && recoveredDraft
+        ? (recoveredDraft.galleryFraming ?? {})
+        : (vehicle.galleryFraming ?? {});
     const saved = savedPublicationDraft();
     price = saved.price;
     description = saved.description;
@@ -192,7 +216,14 @@
     draftPublished = creation ? false : vehicle.webPublished;
   }
   const draftKey = $derived(
-    publicationDraftKey({ price, description, transmission, selected, specs, galleryFraming: framing }),
+    publicationDraftKey({
+      price,
+      description,
+      transmission,
+      selected,
+      specs,
+      galleryFraming: framing,
+    }),
   );
   const publicationDirty = $derived(
     (unified ? draftPublished !== vehicle.webPublished : !vehicle.webPublished) ||
@@ -268,7 +299,15 @@
           if (formElement === publicationForm) resetPublicationDraft();
           await tick();
           message = 'Visibilidade no site atualizada.';
-          vehicleSavedFeedback({title:vehicle.webPublished?'Publicação atualizada':'Viatura retirada do website',brand:vehicle.brand,model:vehicle.model,year:vehicle.year,detail:message,photo:cover,onlineUrl:publishedVehicleUrl(PUBLIC_WEBSITE_URL,vehicle)});
+          vehicleSavedFeedback({
+            title: vehicle.webPublished ? 'Publicação atualizada' : 'Viatura retirada do website',
+            brand: vehicle.brand,
+            model: vehicle.model,
+            year: vehicle.year,
+            detail: message,
+            photo: cover,
+            onlineUrl: publishedVehicleUrl(PUBLIC_WEBSITE_URL, vehicle),
+          });
         } else if (result.type === 'failure') {
           showFormErrors(formElement, result.data);
           message =
@@ -288,17 +327,22 @@
 </script>
 
 {#snippet vehicleCharacteristics()}
-  <VehicleCharacteristics form={publicationFormId} disabled={disabled || pending} bind:transmission bind:specs />
+  <VehicleCharacteristics
+    form={publicationFormId}
+    disabled={disabled || pending}
+    bind:transmission
+    bind:specs
+  />
 {/snippet}
 
 {#if managePhotos}
   {#if unified}
     <VehiclePhotoDraft
+      {onDiscardPrepared}
       bind:photos={photoDraft}
       bind:selected
       persisted={vehicle.photos}
       persistedCoverPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
-
       form={publicationFormId}
       bind:framing
       {disabled}
@@ -318,7 +362,6 @@
           allowed={allowedPhotos}
           {photos}
           persisted={vehicle.photos}
-
           pending={disabled || pending || controls.busy || framingBusy}
           form={publicationFormId}
           primaryPath={controls.primaryPath}
@@ -326,12 +369,12 @@
           onreorder={controls.reorder}
           ondelete={controls.deletePhoto}
           onpreview={controls.preview}
-          {framing} onframing={saveFraming}
+          {framing}
+          onframing={saveFraming}
         />
       {/snippet}
     </PhotoGallery>
   {/if}
-
 {/if}
 
 <div class:editing-panels={unified}>
@@ -342,167 +385,184 @@
   {/if}
 
   <div class="publication-editor" id={editorId}>
-  <section class="web-publication" aria-labelledby="web-publication-title">
-    <div class="heading">
-      <div>
-        <h2 id="web-publication-title" tabindex="-1">Publicação no website</h2>
-        {#if creation}<p class="publication-status">Escolha uma das ações finais para guardar ou publicar.</p>{:else}<WebsiteStatus {vehicle} />{#if !websiteVisibility(vehicle).visible}<p class="publication-status">{websiteVisibility(vehicle).detail}</p>{/if}{/if}
-      </div>
-      {#if websiteVisibility(vehicle).visible && vehicle.publicSlug}<a
-          class="public-view-link"
-          href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.publicSlug)}
-          target="_blank"
-          rel="noopener noreferrer"><span class="public-view-text">Ver ficha pública</span> <ArrowUpRight size={16} aria-hidden="true" /></a
-        >{/if}
-      {#if vehicle.webPublished && !unified}<form
-          method="POST"
-          action="?/webPublication"
-          use:enhance={submit}
-        >
-          <input type="hidden" name="operation" value="remove" /><button
-            type="submit"
-            disabled={disabled || pending || photoBusy || photoDragging}>Remover do site</button
-          >
-        </form>{/if}
-    </div>
-    <form
-      id={publicationFormId}
-      class="crm-form-layout"
-      data-edit-publication
-      novalidate={unified}
-      method="POST"
-      action="?/webPublication"
-      use:formFeedback={{
-        onstatechange: (state) => {
-          formValid = state.valid;
-          onstatechange?.(state);
-        },
-      }}
-      use:enhance={submit}
-      bind:this={publicationForm}
-    >
-      <fieldset class="publication-lock" data-save-lock disabled={disabled || pending}>
-        <input type="hidden" name="vehicleId" value={vehicle.id} />
-        {#if unified}<input type="hidden" name="galleryFraming" value={JSON.stringify(Object.fromEntries(Object.entries(framing).filter(([path]) => allowedPhotos.includes(path))))} />{/if}
-        <input type="hidden" name="operation" value="publish" />
-        {#if unified}
-          <input type="hidden" name="published" value={String(draftPublished)} />
-
-        {/if}
-        <h3 class="publication-group-title">Dados do anúncio</h3>
-        <div class="fields crm-compact-fields">
-          <label class="public-price-field" style="--field-width: 170px"
-            >Preço público (€)<input
-              name="publicPrice"
-              type="number"
-              min="0.01"
-              max="9999999999.99"
-              step="0.01"
-              bind:value={price}
-            /></label
-          >
-        </div>
-        <DescriptionEditor
-          bind:value={description}
-          disabled={disabled || pending}
-          required={!creation && (!unified || draftPublished)}
-        />
-        {#if creation}<p class="note">
-            <span class="required-marker" style="color:var(--color-red)" aria-hidden="true">*</span> A
-            descrição pública é obrigatória apenas para «Concluir e publicar». As características opcionais
-            podem ficar vazias.
-          </p>{/if}
-        <p class="note">
-          Visível no website. Não inclua notas internas, matrícula, VIN ou dados pessoais. O preço
-          público é independente do interno.
-        </p>
-        {#if !managePhotos}<fieldset>
-            <legend>Fotografias da viatura</legend>
-            <p class="note">
-              A foto principal do anúncio e do CRM é a mesma. Para a alterar, use o editor de
-              fotografias. Todas acompanham a publicação global da viatura.
-            </p>
-            <PublicPhotoPicker
-              bind:selected
-              bind:dragging={photoDragging}
-              allowed={allowedPhotos}
-              {photos}
-              persisted={vehicle.photos}
-              {framing} onframing={saveFraming}
-
-              primaryPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
-              pending={disabled || pending || photoBusy || framingBusy}
-            />
-          </fieldset>{/if}
-        <details class="publication-help">
-          <summary>Como funciona a publicação</summary>
-          <p class="note">
-            Retirar do site não altera o estado nem a venda. As viaturas reservadas aparecem como
-            «Reservada».
-            {unified
-              ? '«Guardar alterações» aplica os dados, as fotografias e a publicação em conjunto.'
-              : 'Guarde primeiro as alterações à ficha interna.'}
-          </p>
-        </details>
-        <details class="publication-preview">
-          <summary>Pré-visualizar o anúncio · {selected.length} fotografias</summary>
-          <div class="preview-card">
-            {#if cover}<img
-                {...photoAttrs(cover, 800, '(max-width:700px) 80vw, 600px')}
-                use:reusablePhoto={{photo:cover}}
-                alt="Foto principal do anúncio"
-              />{:else}<div class="preview-empty">Imagem indisponível</div>{/if}
-            <div>
-              <span class="preview-kicker"
-                >Pré-visualização · só muda no site depois de guardar</span
+    <section class="web-publication" aria-labelledby="web-publication-title">
+      <div class="heading">
+        <div>
+          <h2 id="web-publication-title" tabindex="-1">Publicação no website</h2>
+          {#if creation}<p class="publication-status">
+              Escolha uma das ações finais para guardar ou publicar.
+            </p>{:else}<WebsiteStatus {vehicle} />{#if !websiteVisibility(vehicle).visible}<p
+                class="publication-status"
               >
-              <h3>{vehicle.brand} {vehicle.model}</h3>
-              <p>{vehicle.year} · {vehicle.mileage.toLocaleString('pt-PT')} km</p>
-              <strong>{price && Number(price) > 0 ? formatEUR(price) : 'Preço sob consulta'}</strong
-              >
-              <div class="preview-description"><RichDescription value={description} /></div>
-            </div>
-          </div>
-        </details>
-        <div class="requirements" aria-live="polite">
-          {#if !eligible}<p>
-              Requer estado Disponível ou Reservado, sem venda registada.
-            </p>{/if}{#if !price}<p>
-              Sem preço indicado, o site mostrará «Preço sob consulta».
-            </p>{:else if !(Number(price) > 0)}<p>
-              Indique um preço positivo ou deixe o campo vazio.
-            </p>{/if}{#if !descriptionText(description)}<p>
-              Falta uma descrição pública.
-            </p>{/if}{#if !selected.length}<p>
-              Sem fotografias na viatura, será pedida confirmação para publicar com «Imagem
-              indisponível».
-            </p>{/if}
+                {websiteVisibility(vehicle).detail}
+              </p>{/if}{/if}
         </div>
-        {#if !unified}<p class="note" role="status">
-            {publicationDirty
-              ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos.'
-              : 'Publicação guardada · sem alterações.'}
-          </p>
-          <button
-            type="submit"
-            class="primary"
-            disabled={disabled ||
-              pending ||
-              photoBusy ||
-              photoDragging ||
-              !ready ||
-              !formValid ||
-              !publicationDirty}
-            >{pending
-              ? 'A guardar…'
-              : vehicle.webPublished
-                ? 'Guardar publicação no site'
-                : 'Publicar no site'}</button
+        {#if websiteVisibility(vehicle).visible && vehicle.publicSlug}<a
+            class="public-view-link"
+            href={publicVehicleUrl(PUBLIC_WEBSITE_URL, vehicle.publicSlug)}
+            target="_blank"
+            rel="noopener noreferrer"
+            ><span class="public-view-text">Ver ficha pública</span>
+            <ArrowUpRight size={16} aria-hidden="true" /></a
           >{/if}
-      </fieldset>
-    </form>
-    <p role="status" aria-live="polite">{message}</p>
-  </section>
+        {#if vehicle.webPublished && !unified}<form
+            method="POST"
+            action="?/webPublication"
+            use:enhance={submit}
+          >
+            <input type="hidden" name="operation" value="remove" /><button
+              type="submit"
+              disabled={disabled || pending || photoBusy || photoDragging}>Remover do site</button
+            >
+          </form>{/if}
+      </div>
+      <form
+        id={publicationFormId}
+        class="crm-form-layout"
+        data-edit-publication
+        novalidate={unified}
+        method="POST"
+        action="?/webPublication"
+        use:formFeedback={{
+          onstatechange: (state) => {
+            formValid = state.valid;
+            onstatechange?.(state);
+          },
+        }}
+        use:enhance={submit}
+        bind:this={publicationForm}
+      >
+        <fieldset class="publication-lock" data-save-lock disabled={disabled || pending}>
+          <input type="hidden" name="vehicleId" value={vehicle.id} />
+          {#if unified}<input
+              type="hidden"
+              name="galleryFraming"
+              value={JSON.stringify(
+                Object.fromEntries(
+                  Object.entries(framing).filter(([path]) => allowedPhotos.includes(path)),
+                ),
+              )}
+            />{/if}
+          <input type="hidden" name="operation" value="publish" />
+          {#if unified}
+            <input type="hidden" name="published" value={String(draftPublished)} />
+          {/if}
+          <h3 class="publication-group-title">Dados do anúncio</h3>
+          <div class="fields crm-compact-fields">
+            <label class="public-price-field" style="--field-width: 170px"
+              >Preço público (€)<input
+                name="publicPrice"
+                type="number"
+                min="0.01"
+                max="9999999999.99"
+                step="0.01"
+                bind:value={price}
+              /></label
+            >
+          </div>
+          <DescriptionEditor
+            bind:value={description}
+            disabled={disabled || pending}
+            required={!creation && (!unified || draftPublished)}
+          />
+          {#if creation}<p class="note">
+              <span class="required-marker" style="color:var(--color-red)" aria-hidden="true"
+                >*</span
+              > A descrição pública é obrigatória apenas para «Concluir e publicar». As características
+              opcionais podem ficar vazias.
+            </p>{/if}
+          <p class="note">
+            Visível no website. Não inclua notas internas, matrícula, VIN ou dados pessoais. O preço
+            público é independente do interno.
+          </p>
+          {#if !managePhotos}<fieldset>
+              <legend>Fotografias da viatura</legend>
+              <p class="note">
+                A foto principal do anúncio e do CRM é a mesma. Para a alterar, use o editor de
+                fotografias. Todas acompanham a publicação global da viatura.
+              </p>
+              <PublicPhotoPicker
+                bind:selected
+                bind:dragging={photoDragging}
+                allowed={allowedPhotos}
+                {photos}
+                persisted={vehicle.photos}
+                {framing}
+                onframing={saveFraming}
+                primaryPath={vehiclePrincipalPath(vehicle) ?? vehicle.photos[0]}
+                pending={disabled || pending || photoBusy || framingBusy}
+              />
+            </fieldset>{/if}
+          <details class="publication-help">
+            <summary>Como funciona a publicação</summary>
+            <p class="note">
+              Retirar do site não altera o estado nem a venda. As viaturas reservadas aparecem como
+              «Reservada».
+              {unified
+                ? '«Guardar alterações» aplica os dados, as fotografias e a publicação em conjunto.'
+                : 'Guarde primeiro as alterações à ficha interna.'}
+            </p>
+          </details>
+          <details class="publication-preview">
+            <summary>Pré-visualizar o anúncio · {selected.length} fotografias</summary>
+            <div class="preview-card">
+              {#if cover}<img
+                  {...photoAttrs(cover, 800, '(max-width:700px) 80vw, 600px')}
+                  use:reusablePhoto={{ photo: cover }}
+                  alt="Foto principal do anúncio"
+                />{:else}<div class="preview-empty">Imagem indisponível</div>{/if}
+              <div>
+                <span class="preview-kicker"
+                  >Pré-visualização · só muda no site depois de guardar</span
+                >
+                <h3>{vehicle.brand} {vehicle.model}</h3>
+                <p>{vehicle.year} · {vehicle.mileage.toLocaleString('pt-PT')} km</p>
+                <strong
+                  >{price && Number(price) > 0 ? formatEUR(price) : 'Preço sob consulta'}</strong
+                >
+                <div class="preview-description"><RichDescription value={description} /></div>
+              </div>
+            </div>
+          </details>
+          <div class="requirements" aria-live="polite">
+            {#if !eligible}<p>
+                Requer estado Disponível ou Reservado, sem venda registada.
+              </p>{/if}{#if !price}<p>
+                Sem preço indicado, o site mostrará «Preço sob consulta».
+              </p>{:else if !(Number(price) > 0)}<p>
+                Indique um preço positivo ou deixe o campo vazio.
+              </p>{/if}{#if !descriptionText(description)}<p>
+                Falta uma descrição pública.
+              </p>{/if}{#if !selected.length}<p>
+                Sem fotografias na viatura, será pedida confirmação para publicar com «Imagem
+                indisponível».
+              </p>{/if}
+          </div>
+          {#if !unified}<p class="note" role="status">
+              {publicationDirty
+                ? 'Alterações da publicação por guardar. Este botão guarda apenas os dados públicos.'
+                : 'Publicação guardada · sem alterações.'}
+            </p>
+            <button
+              type="submit"
+              class="primary"
+              disabled={disabled ||
+                pending ||
+                photoBusy ||
+                photoDragging ||
+                !ready ||
+                !formValid ||
+                !publicationDirty}
+              >{pending
+                ? 'A guardar…'
+                : vehicle.webPublished
+                  ? 'Guardar publicação no site'
+                  : 'Publicar no site'}</button
+            >{/if}
+        </fieldset>
+      </form>
+      <p role="status" aria-live="polite">{message}</p>
+    </section>
   </div>
 </div>
 
@@ -531,8 +591,15 @@
 </dialog>
 
 <style>
-  .publication-editor {min-width: 0;scroll-margin-top: 190px;}
-  @media (max-width: 600px) {.publication-editor {scroll-margin-top: 260px;}}
+  .publication-editor {
+    min-width: 0;
+    scroll-margin-top: 190px;
+  }
+  @media (max-width: 600px) {
+    .publication-editor {
+      scroll-margin-top: 260px;
+    }
+  }
   .standalone-characteristics {
     padding: 20px;
     border: 1px solid var(--color-border);
@@ -648,9 +715,24 @@
     gap: 4px;
     font-size: 13px;
   }
-  .public-view-text { position:relative; text-decoration:none; text-underline-offset:4px; }
-  .public-view-text::after { content:''; position:absolute; left:0; bottom:0; width:0; height:1px; background:currentColor; transition:width 420ms ease; }
-  .public-view-link:is(:hover, :focus-visible) .public-view-text::after { width:100%; }
+  .public-view-text {
+    position: relative;
+    text-decoration: none;
+    text-underline-offset: 4px;
+  }
+  .public-view-text::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 1px;
+    background: currentColor;
+    transition: width 420ms ease;
+  }
+  .public-view-link:is(:hover, :focus-visible) .public-view-text::after {
+    width: 100%;
+  }
   form {
     margin-top: 20px;
   }
@@ -785,15 +867,42 @@
     }
   }
 
-  .public-view-link { align-self:center; align-items:center; min-height:44px; padding-block:0; gap:8px; }
-  .public-view-link:focus-visible :global(svg) { transform:translate(3px,-3px); }
-  @media(hover:hover) { .public-view-link:hover :global(svg) { transform:translate(3px,-3px); } }
-  @media(prefers-reduced-motion:no-preference) {
-    .public-view-link :global(svg) { transition:transform 220ms ease, color 300ms ease; }
+  .public-view-link {
+    align-self: center;
+    align-items: center;
+    min-height: 44px;
+    padding-block: 0;
+    gap: 8px;
   }
-  @media(prefers-reduced-motion:reduce) {
-    .public-view-link :global(svg),.public-view-link:is(:hover,:focus-visible) :global(svg) { transition:none; transform:none; }
+  .public-view-link:focus-visible :global(svg) {
+    transform: translate(3px, -3px);
   }
-@media(prefers-reduced-motion:reduce) { .public-view-text::after { transition:none; } }
-.public-view-link :global(svg) { position:relative; top:-1px; }
+  @media (hover: hover) {
+    .public-view-link:hover :global(svg) {
+      transform: translate(3px, -3px);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .public-view-link :global(svg) {
+      transition:
+        transform 220ms ease,
+        color 300ms ease;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .public-view-link :global(svg),
+    .public-view-link:is(:hover, :focus-visible) :global(svg) {
+      transition: none;
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .public-view-text::after {
+      transition: none;
+    }
+  }
+  .public-view-link :global(svg) {
+    position: relative;
+    top: -1px;
+  }
 </style>

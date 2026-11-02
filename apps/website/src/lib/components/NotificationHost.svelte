@@ -99,10 +99,16 @@
     let hasNotices = false;
     const positioning = notificationPosition(
       () => hasNotices || !!stack?.querySelector('.notice-slot'),
-      (nextOffset, nextLimit) => { offset = nextOffset; visibleLimit = nextLimit; },
+      (nextOffset, nextLimit) => {
+        offset = nextOffset;
+        visibleLimit = nextLimit;
+      },
     );
     const schedule = positioning.schedule;
-    const unsubscribe = notices.subscribe(items => { hasNotices = items.length > 0; schedule(); });
+    const unsubscribe = notices.subscribe((items) => {
+      hasNotices = items.length > 0;
+      schedule();
+    });
     const changes = new MutationObserver(schedule);
     changes.observe(document.body, {
       childList: true,

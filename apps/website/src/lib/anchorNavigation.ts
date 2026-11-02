@@ -1,12 +1,24 @@
-import { anchorTarget, createAnchorScroller, internalAnchor } from './components/stand-concepts/slowAnchor';
+import {
+  anchorTarget,
+  createAnchorScroller,
+  internalAnchor,
+} from './components/stand-concepts/slowAnchor';
 import type { AnchorScrollProfile } from './components/stand-concepts/slowAnchor';
 
-type Options = { tick: () => Promise<void>; push: (url: URL) => void; navigate: (url: URL) => Promise<void> };
+type Options = {
+  tick: () => Promise<void>;
+  push: (url: URL) => void;
+  navigate: (url: URL) => Promise<void>;
+};
 export function installAnchorNavigation({ tick, push, navigate }: Options) {
   const scroller = createAnchorScroller();
   let version = 0;
   let frame = 0;
-  const stop = () => { ++version; cancelAnimationFrame(frame); scroller.stop(); };
+  const stop = () => {
+    ++version;
+    cancelAnimationFrame(frame);
+    scroller.stop();
+  };
   const reveal = async (hash: string, profile: AnchorScrollProfile = 'default') => {
     stop();
     const request = version;
@@ -28,22 +40,28 @@ export function installAnchorNavigation({ tick, push, navigate }: Options) {
     if (!url) return;
     const samePage = url.pathname === current.pathname && url.search === current.search;
     if (!samePage) {
-      event.preventDefault(); stop();
+      event.preventDefault();
+      stop();
       // A newer router navigation may cancel this one; never redirect back to its stale URL.
       void navigate(url).catch(() => {});
       return;
     }
-    if (samePage && !anchorTarget(url.hash)) { stop(); return; }
+    if (samePage && !anchorTarget(url.hash)) {
+      stop();
+      return;
+    }
     event.preventDefault();
     stop();
     if (url.hash !== current.hash) push(url);
-    const profile = current.pathname === '/' && url.hash === '#selecao' &&
-      link.matches('.hd-scroll, .cabin-link') ? 'discovery' : 'default';
+    const profile =
+      current.pathname === '/' && url.hash === '#selecao' && link.matches('.hd-scroll, .cabin-link')
+        ? 'discovery'
+        : 'default';
     void reveal(url.hash, profile);
   };
   const events = ['wheel', 'touchstart', 'pointerdown', 'keydown', 'popstate'] as const;
   document.addEventListener('click', click, true);
-  events.forEach(event => window.addEventListener(event, stop, { passive: true }));
+  events.forEach((event) => window.addEventListener(event, stop, { passive: true }));
   return {
     stop,
     afterNavigate(type: string, url: URL) {
@@ -52,9 +70,10 @@ export function installAnchorNavigation({ tick, push, navigate }: Options) {
       void reveal(url.hash);
     },
     destroy() {
-      stop(); scroller.destroy();
+      stop();
+      scroller.destroy();
       document.removeEventListener('click', click, true);
-      events.forEach(event => window.removeEventListener(event, stop));
+      events.forEach((event) => window.removeEventListener(event, stop));
     },
   };
 }

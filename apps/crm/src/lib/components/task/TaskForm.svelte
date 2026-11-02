@@ -211,7 +211,6 @@
       <span class={label()}>Data início</span>
       <DateInput
         name="startDate"
-
         value={initial.startDate?.slice(0, 10) ?? ''}
         class={input()}
         style="border-radius: var(--radius-btn);"
@@ -221,7 +220,6 @@
       <span class={label()}>Prazo</span>
       <DateInput
         name="dueDate"
-
         bind:value={dueDate}
         required={recurrence !== 'NONE'}
         class={input()}
@@ -232,7 +230,6 @@
       <span class={label()}>Lembrete</span>
       <DateInput
         name="reminderDate"
-
         value={initial.reminderDate?.slice(0, 10) ?? ''}
         class={input()}
         style="border-radius: var(--radius-btn);"

@@ -8,7 +8,6 @@ export type EditPhoto = SignedVariantPhoto & {
   preparationError?: string;
   uploadId?: string;
   uploadedPath?: string;
-  preparationMetrics?: Record<string, number>;
 };
 
 export function publicDraftFromForm(form: FormData) {

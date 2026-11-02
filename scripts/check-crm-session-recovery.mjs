@@ -130,7 +130,9 @@ try {
   assert.equal(await p.evaluate(() => window.__gotoCalls?.length ?? 0), 0);
   assert.equal(await p.locator('[name=model]').inputValue(), 'Cancelar saída após recuperação');
   await p.locator('.error-recovery').getByRole('button', { name: 'Tentar novamente' }).click();
-  await p.getByText('A sessão foi validada. Guarde ou termine a edição antes de atualizar os dados.').waitFor();
+  await p
+    .getByText('A sessão foi validada. Guarde ou termine a edição antes de atualizar os dados.')
+    .waitFor();
   assert.equal(await p.evaluate(() => window.__invalidateCalls), 1);
   assert.equal(await p.locator('[name=model]').inputValue(), 'Cancelar saída após recuperação');
   assert.deepEqual(errors, []);

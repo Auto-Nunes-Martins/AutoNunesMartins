@@ -1,9 +1,24 @@
 import { it, expect, vi } from 'vitest';
 import sharp from 'sharp';
+const workers = vi.hoisted(() => ({
+  children: [] as import('node:child_process').ChildProcess[],
+  environments: [] as NodeJS.ProcessEnv[],
+}));
+vi.mock('node:child_process', async (original) => {
+  const actual = await original<typeof import('node:child_process')>();
+  return {
+    ...actual,
+    spawn: (file: string, args: string[], options: import('node:child_process').SpawnOptions) => {
+      const child = actual.spawn(file, args, options);
+      workers.children.push(child);
+      workers.environments.push(options.env ?? {});
+      return child;
+    },
+  };
+});
 import { PhotoEncodingSession } from './photoEncodingSession';
 import { optimizePhoto, MAX_UPLOAD_BYTES } from './photoOptimization';
 import { buildPhotoVariants, encodeVariantManifest } from './photoVariantEncoding';
-import type { UploadTrace } from '../../../../shared/runtimeDiagnostics.mjs';
 import { readFile } from 'node:fs/promises';
 const memory = vi.hoisted(() => ({ headroom: null as number | null }));
 vi.mock('../../../../shared/containerMemory.mjs', async (importOriginal) => {
@@ -16,15 +31,6 @@ vi.mock('../../../../shared/containerMemory.mjs', async (importOriginal) => {
         : { read: () => ({ available: true, effectiveHeadroomBytes: memory.headroom }) },
   };
 });
-function telemetry() {
-  const values: Record<string, number> = {};
-  const trace: UploadTrace = {
-    phase: vi.fn(),
-    fields: (fields) => Object.assign(values, fields),
-    finish: vi.fn(),
-  };
-  return { trace, values };
-}
 it('preserves photographic pixels, EXIF rotation and bytes through the same isolated recipe', async () => {
   const fixture = await readFile(
     new URL(
@@ -35,8 +41,14 @@ it('preserves photographic pixels, EXIF rotation and bytes through the same isol
   const input = await sharp(fixture).jpeg().withMetadata({ orientation: 6 }).toBuffer();
   const inline = await optimizePhoto(input),
     expected = await buildPhotoVariants(inline.buffer);
-  const { trace, values } = telemetry();
-  const session = new PhotoEncodingSession(trace);
+
+  const session = new PhotoEncodingSession();
+  const child = workers.children.at(-1)!;
+  expect(
+    Object.keys(workers.environments.at(-1)!).some((key) =>
+      /DATABASE|DIRECT_URL|SUPABASE|CLERK|SECRET|TOKEN|PASSWORD/.test(key),
+    ),
+  ).toBe(false);
   try {
     const result = await session.optimize(input);
     expect(result).toEqual(inline);
@@ -45,11 +57,10 @@ it('preserves photographic pixels, EXIF rotation and bytes through the same isol
     expect(built.files.map((f) => f.buffer)).toEqual(expected.files.map((f) => f.buffer));
   } finally {
     await session.close();
+    expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
   }
-  expect(values.workerRss).toBe(0);
-  expect(values.workerExited).toBe(1);
 }, 30000);
-it('real isolated codec produces identical master, five variants and sidecar, reports memory, then exits', async () => {
+it('real isolated codec produces identical master, five variants and sidecar, then exits', async () => {
   const input = await sharp({
     create: { width: 1976, height: 1476, channels: 3, background: '#42759d' },
   })
@@ -57,8 +68,14 @@ it('real isolated codec produces identical master, five variants and sidecar, re
     .toBuffer();
   const inline = await optimizePhoto(input),
     expected = await buildPhotoVariants(inline.buffer);
-  const { trace, values } = telemetry();
-  const session = new PhotoEncodingSession(trace);
+
+  const session = new PhotoEncodingSession();
+  const child = workers.children.at(-1)!;
+  expect(
+    Object.keys(workers.environments.at(-1)!).some((key) =>
+      /DATABASE|DIRECT_URL|SUPABASE|CLERK|SECRET|TOKEN|PASSWORD/.test(key),
+    ),
+  ).toBe(false);
   try {
     const actual = await session.optimize(input);
     expect(actual).toEqual(inline);
@@ -71,31 +88,39 @@ it('real isolated codec produces identical master, five variants and sidecar, re
     ).not.toContain(false);
     expect(variants.sidecar).toEqual(await encodeVariantManifest(expected.manifest));
     expect(variants.files).toHaveLength(5);
-    expect(values.workerNoCredentials).toBe(1);
-    expect(values.workerPeakRss).toBeGreaterThan(0);
+
     await session.close();
-    expect(values.workerExited).toBe(1);
-    expect(() => process.kill(values.workerPid!, 0)).toThrow();
-    expect(trace.phase).toHaveBeenCalledWith('worker_exit');
+    expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
   } finally {
     await session.close();
+    expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
   }
 }, 30000);
 it('invalid input rejects with the bounded photo status and cleanup still waits for exit', async () => {
-  const { trace, values } = telemetry();
-  const session = new PhotoEncodingSession(trace);
+  const session = new PhotoEncodingSession();
+  const child = workers.children.at(-1)!;
+  expect(
+    Object.keys(workers.environments.at(-1)!).some((key) =>
+      /DATABASE|DIRECT_URL|SUPABASE|CLERK|SECRET|TOKEN|PASSWORD/.test(key),
+    ),
+  ).toBe(false);
   try {
     await expect(session.optimize(Buffer.from('not-an-image'))).rejects.toMatchObject({
       status: 422,
     });
   } finally {
     await session.close();
+    expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
   }
-  expect(values.workerExited).toBe(1);
 });
 it('rejects overlapping commands and oversized input, and aborts a pending process without keeping it alive', async () => {
-  const { trace, values } = telemetry();
-  const session = new PhotoEncodingSession(trace);
+  const session = new PhotoEncodingSession();
+  const child = workers.children.at(-1)!;
+  expect(
+    Object.keys(workers.environments.at(-1)!).some((key) =>
+      /DATABASE|DIRECT_URL|SUPABASE|CLERK|SECRET|TOKEN|PASSWORD/.test(key),
+    ),
+  ).toBe(false);
   try {
     await expect(session.optimize(Buffer.alloc(MAX_UPLOAD_BYTES + 1))).rejects.toMatchObject({
       status: 422,
@@ -107,20 +132,24 @@ it('rejects overlapping commands and oversized input, and aborts a pending proce
     await rejected;
   } finally {
     await session.close();
+    expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
   }
-  expect(values.workerExited).toBe(1);
 });
 it('terminates only its disposable child on cgroup pressure and releases the waiting request', async () => {
   memory.headroom = 0;
-  const { trace, values } = telemetry();
-  const session = new PhotoEncodingSession(trace);
+
+  const session = new PhotoEncodingSession();
+  const child = workers.children.at(-1)!;
+  expect(
+    Object.keys(workers.environments.at(-1)!).some((key) =>
+      /DATABASE|DIRECT_URL|SUPABASE|CLERK|SECRET|TOKEN|PASSWORD/.test(key),
+    ),
+  ).toBe(false);
   try {
     await expect(session.optimize(Buffer.from('invalid'))).rejects.toMatchObject({ status: 503 });
   } finally {
     await session.close();
+    expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
     memory.headroom = null;
   }
-  expect(values.workerMemoryGuard).toBe(1);
-  expect(values.workerExited).toBe(1);
-  expect(values.workerExitSignal).toBe(9);
 });

@@ -7,9 +7,18 @@ describe('automatic vehicle recovery drafts', () => {
     let release!: () => void;
     const saved: string[] = [];
     const protectedState = vi.fn();
-    const draft = automaticDraft({ capture: () => text,
-      persist: async value => { saved.push(value); if (saved.length === 1) await new Promise<void>(resolve => { release = resolve; }); },
-      remove: async () => {}, protected: protectedState, state: () => {},
+    const draft = automaticDraft({
+      capture: () => text,
+      persist: async (value) => {
+        saved.push(value);
+        if (saved.length === 1)
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+      },
+      remove: async () => {},
+      protected: protectedState,
+      state: () => {},
     });
     text = 'first';
     const writing = draft.flush();
@@ -26,8 +35,15 @@ describe('automatic vehicle recovery drafts', () => {
   it('keeps a failed write pending and permits a real retry', async () => {
     let text = 'initial';
     const persist = vi.fn().mockRejectedValueOnce(Error('Quota')).mockResolvedValue(undefined);
-    const state = vi.fn(), protectedState = vi.fn();
-    const draft = automaticDraft({ capture: () => text, persist, remove: async () => {}, protected: protectedState, state });
+    const state = vi.fn(),
+      protectedState = vi.fn();
+    const draft = automaticDraft({
+      capture: () => text,
+      persist,
+      remove: async () => {},
+      protected: protectedState,
+      state,
+    });
     text = 'edited';
     await expect(draft.flush()).rejects.toThrow('Quota');
     expect(state).toHaveBeenLastCalledWith('error');
@@ -41,9 +57,19 @@ describe('automatic vehicle recovery drafts', () => {
     let value = 0;
     let release!: () => void;
     const events: string[] = [];
-    const draft = automaticDraft({ capture: () => value,
-      persist: async () => { await new Promise<void>(resolve => { release = resolve; }); events.push('write'); },
-      remove: async () => { events.push('remove'); }, protected: () => {}, state: () => {},
+    const draft = automaticDraft({
+      capture: () => value,
+      persist: async () => {
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        events.push('write');
+      },
+      remove: async () => {
+        events.push('remove');
+      },
+      protected: () => {},
+      state: () => {},
     });
     value = 1;
     const writing = draft.flush();
@@ -68,9 +94,18 @@ describe('automatic vehicle recovery drafts', () => {
 
   it('leaves the last protected copy intact when abandoning failed newer changes', async () => {
     let text = 'initial';
-    const persist = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(Error('Offline'));
+    const persist = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(Error('Offline'));
     const remove = vi.fn();
-    const draft = automaticDraft({ capture: () => text, persist, remove, protected: () => {}, state: () => {} });
+    const draft = automaticDraft({
+      capture: () => text,
+      persist,
+      remove,
+      protected: () => {},
+      state: () => {},
+    });
     text = 'protected';
     await draft.flush();
     text = 'unprotected';

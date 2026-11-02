@@ -7,7 +7,12 @@ export const customerCreateSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{9}$/, 'Telefone deve ter 9 dígitos'),
-  email: z.string().email('Email inválido').optional().or(z.literal('')).transform((v) => (v ? v : undefined)),
+  email: z
+    .string()
+    .email('Email inválido')
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => (v ? v : undefined)),
   address: z.string().max(240).optional(),
   nif: nifSchema,
   notes: z.string().max(4000).optional(),

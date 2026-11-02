@@ -1,5 +1,6 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { getEnv, getSupabaseServerKey } from '../../env.js';
+import { getSupabase, getBucketName, getCleanupSupabase } from './storageClient.js';
+export { getSupabase, getBucketName } from './storageClient.js';
+import { createTtlCache } from './cache.js';
 import {
   preferredVariantPath,
   readVariantManifests,
@@ -9,31 +10,6 @@ import {
   PHOTO_WIDTHS,
 } from '../server/photoVariants.js';
 
-let cached: SupabaseClient | null = null;
-
-export function getSupabase(): SupabaseClient {
-  if (cached) return cached;
-  const env = getEnv();
-  cached = createClient(env.SUPABASE_URL, getSupabaseServerKey(), {
-    auth: { persistSession: false },
-    global: {
-      fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(30_000) }),
-    },
-  });
-  return cached;
-}
-
-export function getBucketName(): string {
-  return getEnv().SUPABASE_STORAGE_BUCKET;
-}
-
-export async function createSignedUploadUrl(path: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.storage.from(getBucketName()).createSignedUploadUrl(path);
-  if (error) throw error;
-  return data;
-}
-
 // ───────── Signed-URL cache ─────────
 // Supabase signed URLs are stateless tokens valid for `expiresInSeconds` (we
 // always pass 3600). We cache them for 40 min so subsequent reads of the same
@@ -42,25 +18,20 @@ export async function createSignedUploadUrl(path: string) {
 // load), the vehicle detail gallery, and the dashboard stock-aged thumbnails.
 
 const SIGNED_URL_TTL_MS = 40 * 60 * 1000;
-const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+// Separate budget: these are small strings, not the public pixel-byte cache.
+const signedUrlCache = createTtlCache(2048);
 
 function cacheGet(path: string): string | undefined {
-  const hit = signedUrlCache.get(path);
-  if (!hit) return undefined;
-  if (hit.expiresAt < Date.now()) {
-    signedUrlCache.delete(path);
-    return undefined;
-  }
-  return hit.url;
+  return signedUrlCache.get<string>(path);
 }
 
 function cacheSet(path: string, url: string): void {
-  signedUrlCache.set(path, { url, expiresAt: Date.now() + SIGNED_URL_TTL_MS });
+  signedUrlCache.set(path, url, SIGNED_URL_TTL_MS);
 }
 
 /** Bust the cached URL for a single path (call after deleting the underlying object). */
 export function invalidateSignedReadUrl(path: string): void {
-  signedUrlCache.delete(path);
+  signedUrlCache.invalidate(path);
 }
 
 export async function createSignedReadUrl(
@@ -175,7 +146,7 @@ export async function signedThumbnails(paths: string[], width = 320) {
   };
 }
 
-export async function deleteObjects(paths: string[]) {
+export async function deleteObjects(paths: string[], boundedCleanup = false) {
   if (paths.length === 0) return;
   const supabase = getSupabase();
   const all = paths.flatMap((path) => {
@@ -185,7 +156,9 @@ export async function deleteObjects(paths: string[]) {
       return [path];
     }
   });
-  const { error } = await supabase.storage.from(getBucketName()).remove(all);
+  const { error } = await (boundedCleanup ? getCleanupSupabase() : supabase).storage
+    .from(getBucketName())
+    .remove(all);
   if (error) throw error;
   // Drop cached URLs for deleted objects so we don't serve dead links.
   for (const p of all) invalidateSignedReadUrl(p);

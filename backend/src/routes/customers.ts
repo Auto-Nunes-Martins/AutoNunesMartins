@@ -36,7 +36,9 @@ router.get(
       res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
       return;
     }
-    const result = await readCrmList('customers', req.user, parsed.data, () => listCustomers(prisma, parsed.data));
+    const result = await readCrmList('customers', req.user, parsed.data, () =>
+      listCustomers(prisma, parsed.data),
+    );
     res.set('Cache-Control', 'private, no-store');
     res.json(result);
   }),

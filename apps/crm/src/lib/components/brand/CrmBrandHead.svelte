@@ -4,10 +4,6 @@
 </script>
 
 <svelte:head>
-  <link
-    rel="icon"
-    type="image/png"
-    href={$theme === 'dark' ? faviconDark : faviconLight}
-  />
+  <link rel="icon" type="image/png" href={$theme === 'dark' ? faviconDark : faviconLight} />
   <meta name="application-name" content="Auto Nunes Martins" />
 </svelte:head>

@@ -72,10 +72,14 @@
   $effect(() => {
     const current = editor;
     if (current) {
-      current.setEditable(!disabled);
+      // Changing interaction state is not a content edit.
+      current.setEditable(!disabled, false);
       if (value !== lastValue) {
         lastValue = value;
-        current.commands.setContent(descriptionHtml(value), { emitUpdate: false });
+        current.commands.setContent(descriptionHtml(value), {
+          emitUpdate: false,
+          parseOptions: { preserveWhitespace: true },
+        });
       }
     }
   });
@@ -118,6 +122,8 @@
             }),
           ],
           content: descriptionHtml(value),
+          // Preserve saved paragraph spacing through editing and Undo.
+          parseOptions: { preserveWhitespace: true },
           editorProps: {
             attributes: {
               id: id + '-surface',

@@ -30,7 +30,9 @@ export function heroScrollProgress(
   stageHeight: number,
   viewport: number,
 ) {
-  const resting = clamp((Math.max(0, (viewport - stageHeight) / 2) - documentTop) / Math.max(1, viewport * 0.04));
+  const resting = clamp(
+    (Math.max(0, (viewport - stageHeight) / 2) - documentTop) / Math.max(1, viewport * 0.04),
+  );
   const travel = Math.max(1, Math.min(stageHeight * 0.75, viewport * 0.6));
   return resting + (1 - resting) * clamp((documentTop - top) / travel);
 }

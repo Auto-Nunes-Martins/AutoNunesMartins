@@ -76,13 +76,11 @@ export function catalogEditorial(params: URLSearchParams, stock: PublicStock) {
     price,
     hasResults,
     vehicles: hasResults
-      ? items
-          .slice(0, 3)
-          .map((v) => ({
-            label: `${v.brand} ${v.model}`,
-            detail: `${v.year} · ${publicPrice(v.price)}${v.availability === 'RESERVED' ? ' · Reservada' : ''}`,
-            href: publicHref(v.slug),
-          }))
+      ? items.slice(0, 3).map((v) => ({
+          label: `${v.brand} ${v.model}`,
+          detail: `${v.year} · ${publicPrice(v.price)}${v.availability === 'RESERVED' ? ' · Reservada' : ''}`,
+          href: publicHref(v.slug),
+        }))
       : [],
     pageLabel: `Algumas viaturas nesta página${page > 1 ? ` · ${page}` : ''}`,
     resetHref: base,

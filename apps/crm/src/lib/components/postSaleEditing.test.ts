@@ -28,7 +28,9 @@ const DateInput = component(source('./common/DateInput.svelte'), {
   ChevronRight: DateIcon,
 });
 const VehicleForm = component(source('./vehicle/VehicleForm.svelte'), {
-  BrandCombobox: component('<script>let {value="",name="brand"}=$props();</script><input type="hidden" {name} {value}/>'),
+  BrandCombobox: component(
+    '<script>let {value="",name="brand"}=$props();</script><input type="hidden" {name} {value}/>',
+  ),
   Button,
   DateInput,
   VehicleSpecGlyph: DateIcon,
@@ -50,6 +52,11 @@ const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page
   VehicleDeletePanel: Empty,
   ConfirmDialog: Empty,
   untrack: (fn: () => unknown) => fn(),
+  createPhotoStaging: () => ({
+    retain: async () => {},
+    discard: async () => {},
+    start: () => () => {},
+  }),
   onMount: () => {},
   onDestroy: () => {},
   afterNavigate: () => {},

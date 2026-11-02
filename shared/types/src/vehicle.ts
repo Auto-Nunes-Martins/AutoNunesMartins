@@ -60,9 +60,14 @@ export const vehicleCreateSchema = z.object({
   fuel: FuelEnum,
   mileage: z.coerce.number().int().min(0, 'Quilometragem não pode ser negativa').max(2_000_000),
   vin: z.preprocess(
-    (value) => typeof value === 'string' && !value.trim() ? null : value,
-    z.string().trim().length(17, 'VIN deve ter 17 caracteres')
-      .regex(/^[A-HJ-NPR-Z0-9]{17}$/, 'VIN inválido (sem I, O, Q)').nullable().optional(),
+    (value) => (typeof value === 'string' && !value.trim() ? null : value),
+    z
+      .string()
+      .trim()
+      .length(17, 'VIN deve ter 17 caracteres')
+      .regex(/^[A-HJ-NPR-Z0-9]{17}$/, 'VIN inválido (sem I, O, Q)')
+      .nullable()
+      .optional(),
   ),
   licensePlate: licensePlatePtSchema,
   purchasePrice: moneySchema,
@@ -81,10 +86,13 @@ export const vehicleCreateSchema = z.object({
 });
 export type VehicleCreate = z.infer<typeof vehicleCreateSchema>;
 
-export const vehicleUpdateSchema = vehicleCreateSchema.omit({ publicTransmission: true, publicSpecifications: true }).partial().extend({
-  id: z.string().min(1),
-  status: VehicleStatusEnum.optional(),
-});
+export const vehicleUpdateSchema = vehicleCreateSchema
+  .omit({ publicTransmission: true, publicSpecifications: true })
+  .partial()
+  .extend({
+    id: z.string().min(1),
+    status: VehicleStatusEnum.optional(),
+  });
 export type VehicleUpdate = z.infer<typeof vehicleUpdateSchema>;
 
 export const vehicleFilterSchema = z.object({

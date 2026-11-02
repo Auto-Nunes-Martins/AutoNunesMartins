@@ -16,7 +16,6 @@
 
   let { data }: Props = $props();
   let savingKey = $state<string | null>(null);
-
 </script>
 
 <svelte:head>

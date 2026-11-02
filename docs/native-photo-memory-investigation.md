@@ -1,5 +1,7 @@
 # Investigação de memória nativa das fotografias — 30/10/2026
 
+> Estado em 02/11/2026: documento histórico. A telemetria temporária detalhada, os endpoints de diagnóstico e os scripts associados foram removidos no código local; a publicação desta remoção está pendente. Em produção, os registos de diagnóstico foram apagados e o writer SQL ficou compatível mas sem persistência. Os comandos antigos de diagnóstico não se aplicam ao novo código. Mantêm-se as otimizações funcionais, os limites de segurança e uma medição leve de memória por minuto no supervisor.
+
 Investigação separada da entrega responsiva. Não foi aplicado um fix ao processamento, alterado o allocator de produção, reiniciado Render ou instalada virtualização. Só os logs fornecidos pelo proprietário representam produção; não há acesso de profiling ao serviço.
 
 ## Evidência disponível

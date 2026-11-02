@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { descriptionText } from '@anm/types/richDescription';
-import { publicSpecificationsSchema, vehicleUpdateSchema, licensePlatePtSchema, galleryFramingSchema, mergeGalleryPhotoFraming } from '@anm/types';
+import {
+  publicSpecificationsSchema,
+  vehicleUpdateSchema,
+  licensePlatePtSchema,
+  galleryFramingSchema,
+  mergeGalleryPhotoFraming,
+} from '@anm/types';
 import { lockVehicle, saleMutation } from './saleFinancials.js';
 import {
   updateVehicleInTransaction,
@@ -15,6 +21,12 @@ import sharp from 'sharp';
 import { MAX_OUTPUT_BYTES, MAX_UPLOAD_PIXELS } from './photoOptimization.js';
 import { prisma } from '../../db.js';
 import { preparePhotoDimensions } from './preparePhotoDimensions.js';
+import {
+  retainStagedPhotos,
+  assertStagedPhotos,
+  forgetAttachedPhotos,
+  queuePhotoRemovals,
+} from './photoLifecycleStore.js';
 
 export const vehicleEditSchema = z
   .object({
@@ -47,10 +59,7 @@ export const vehicleEditSchema = z
           .refine((value) => Number(value) > 0)
           .nullable(),
         description: z.string().trim().max(6000),
-        photoPaths: z
-          .array(z.string().max(160))
-          .max(20)
-          .optional().default([]), // Legacy input ignored; photos is the source of truth.
+        photoPaths: z.array(z.string().max(160)).max(20).optional().default([]), // Legacy input ignored; photos is the source of truth.
         transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
         specifications: publicSpecificationsSchema,
       })
@@ -69,6 +78,7 @@ export async function saveVehicleEdit(
   input: z.infer<typeof vehicleEditSchema>,
   actor: ActorContext,
 ) {
+  await retainStagedPhotos(id, input.uploadedPhotos);
   // Immutable staged objects have no vehicle/public association until the transaction commits.
   for (const path of input.uploadedPhotos) {
     if (!input.photos.includes(path) || !isApprovedPhotoPath(id, path))
@@ -121,17 +131,35 @@ export async function saveVehicleEdit(
             409,
             'photos',
           );
+        await assertStagedPhotos(tx, id, input.uploadedPhotos);
         await updateVehicleInTransaction(tx, id, input.data, actor);
-        if (input.galleryFraming && Object.keys(input.galleryFraming).some(path => !input.photos.includes(path)))
-          throw new VehicleStateConflict('Enquadramento de uma fotografia inválida.', 409, 'photos');
+        if (
+          input.galleryFraming &&
+          Object.keys(input.galleryFraming).some((path) => !input.photos.includes(path))
+        )
+          throw new VehicleStateConflict(
+            'Enquadramento de uma fotografia inválida.',
+            409,
+            'photos',
+          );
         await tx.vehicle.update({
           where: { id },
           data: {
-            ...(input.galleryFraming ? { galleryFraming: Object.fromEntries(input.photos.flatMap(path => {
-              const existing=galleryFramingSchema.safeParse(current.galleryFraming).data?.[path];
-              const value=mergeGalleryPhotoFraming(existing,input.galleryFraming?.[path]);
-              return value ? [[path,value]] : [];
-            })) } : {}),
+            ...(input.galleryFraming
+              ? {
+                  galleryFraming: Object.fromEntries(
+                    input.photos.flatMap((path) => {
+                      const existing = galleryFramingSchema.safeParse(current.galleryFraming)
+                        .data?.[path];
+                      const value = mergeGalleryPhotoFraming(
+                        existing,
+                        input.galleryFraming?.[path],
+                      );
+                      return value ? [[path, value]] : [];
+                    }),
+                  ),
+                }
+              : {}),
             photos: { set: input.photos },
             publicPhotoPaths: {
               set: input.photos,
@@ -143,7 +171,9 @@ export async function saveVehicleEdit(
           await applyWebPublication(
             tx,
             id,
-            publication.published ? { ...publication, photoPaths: input.photos, published: true } : { published: false },
+            publication.published
+              ? { ...publication, photoPaths: input.photos, published: true }
+              : { published: false },
             actor.actorId,
             suffixLength,
           );
@@ -163,7 +193,10 @@ export async function saveVehicleEdit(
           where: { id },
           data: { updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)) },
         });
-        return { removedPhotos: current.photos.filter((path) => !input.photos.includes(path)) };
+        const removedPhotos = current.photos.filter((path) => !input.photos.includes(path));
+        await forgetAttachedPhotos(tx, input.uploadedPhotos);
+        await queuePhotoRemovals(tx, id, removedPhotos);
+        return { removedPhotos };
       });
     } catch (error) {
       const conflict = error as { code?: string; meta?: { target?: unknown } };

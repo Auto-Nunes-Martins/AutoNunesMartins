@@ -176,7 +176,8 @@
   Desktop (md+): the original wide table. Wrapped so it never renders on
   mobile (saves the layout from horizontal-scrolling its way off-screen).
 -->
-<!-- svelte-ignore a11y_no_noninteractive_tabindex (Native horizontal scrolling by keyboard.) -->
+<!-- Native horizontal scrolling by keyboard. -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   class="hidden md:block overflow-x-auto"
   tabindex="0"

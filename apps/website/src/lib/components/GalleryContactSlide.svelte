@@ -93,9 +93,17 @@
     cursor: pointer;
   }
   @media (hover: hover) {
-    button:hover { background:#dfe3e1; color:#151815; box-shadow:0 0 0 3px #ffffff30; }
+    button:hover {
+      background: #dfe3e1;
+      color: #151815;
+      box-shadow: 0 0 0 3px #ffffff30;
+    }
   }
-  button:active { background:#c5cbc7; color:#151815; box-shadow:inset 0 0 0 2px #15181530; }
+  button:active {
+    background: #c5cbc7;
+    color: #151815;
+    box-shadow: inset 0 0 0 2px #15181530;
+  }
   button:focus-visible {
     outline: 2px solid white;
     outline-offset: 4px;

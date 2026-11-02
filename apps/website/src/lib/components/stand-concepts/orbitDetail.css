@@ -955,7 +955,11 @@
   border-color: #ffffff90;
   color: white;
   box-shadow: 0 2px 10px #0007;
-  transition: opacity 220ms ease, transform 280ms cubic-bezier(.2,.7,.2,1), background-color 150ms ease, border-color 150ms ease;
+  transition:
+    opacity 220ms ease,
+    transform 280ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    background-color 150ms ease,
+    border-color 150ms ease;
 }
 .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-previous {
   --photo-arrow-enter-x: calc(-100% - var(--photo-arrow-inset));
@@ -970,50 +974,114 @@
   height: 26px;
 }
 .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step[aria-disabled='true'] {
-  opacity: .35;
+  opacity: 0.35;
 }
 .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step:focus-visible {
   outline: 2px solid white;
   outline-offset: 3px;
 }
 @media (hover: hover) and (pointer: fine) {
-  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage:not(:hover):not(:focus-within) > .photo-step,
-  .design.orbit.orbit-detail.public-detail.gallery-pointer-focus .vehicle-photo-stage:not(:hover) > .photo-step {
+  .design.orbit.orbit-detail.public-detail
+    .vehicle-photo-stage:not(:hover):not(:focus-within)
+    > .photo-step,
+  .design.orbit.orbit-detail.public-detail.gallery-pointer-focus
+    .vehicle-photo-stage:not(:hover)
+    > .photo-step {
     opacity: 0;
     pointer-events: none;
     transform: translate3d(var(--photo-arrow-enter-x), -50%, 0);
   }
-  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step:not([aria-disabled='true']):hover {
+  .design.orbit.orbit-detail.public-detail
+    .vehicle-photo-stage
+    > .photo-step:not([aria-disabled='true']):hover {
     background: #42464c;
     border-color: white;
   }
 }
-.design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step:not([aria-disabled='true']):active {
+.design.orbit.orbit-detail.public-detail
+  .vehicle-photo-stage
+  > .photo-step:not([aria-disabled='true']):active {
   background: #60656b;
 }
 @media (max-width: 700px), (pointer: coarse) {
-  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage { --photo-arrow-inset: 16px; }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage {
+    --photo-arrow-inset: 16px;
+  }
   .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step {
     width: 48px;
     height: 48px;
     min-width: 48px;
     min-height: 48px;
   }
-  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step svg { width: 24px; height: 24px; }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step svg {
+    width: 24px;
+    height: 24px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step { transition: none; }
+  .design.orbit.orbit-detail.public-detail .vehicle-photo-stage > .photo-step {
+    transition: none;
+  }
 }
 
 /* Only the principal photo uses this paired treatment; other favourite hearts stay unchanged. */
-.design.orbit.orbit-detail.public-detail .photo-image-actions {position:absolute;top:var(--photo-arrow-inset);right:var(--photo-arrow-inset);z-index:3;display:flex;align-items:center;gap:4px;}
-.design.orbit.orbit-detail.public-detail .photo-image-actions .detail-photo-favorite {position:static;}
-.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand {display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:white;box-shadow:none;cursor:pointer;}
-.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand svg {width:20px;height:20px;filter:drop-shadow(0 1px 1px #000e) drop-shadow(0 0 2px #000b);}
-.design.orbit.orbit-detail.public-detail .photo-image-actions .detail-photo-favorite svg {width:22px;height:22px;stroke-width:1.7;}
-.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand:focus-visible {outline:2px solid white;outline-offset:3px;box-shadow:0 0 0 4px #0009;}
-@media(hover:hover) {
-  .design.orbit.orbit-detail.public-detail .photo-image-actions :is(.photo-expand,.detail-photo-favorite button):hover {background:#0004;}
-  .design.orbit.orbit-detail.public-detail .photo-image-actions :is(.photo-expand,.detail-photo-favorite button):hover svg {stroke-width:2;}
+.design.orbit.orbit-detail.public-detail .photo-image-actions {
+  position: absolute;
+  top: var(--photo-arrow-inset);
+  right: var(--photo-arrow-inset);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-.design.orbit.orbit-detail.public-detail .photo-image-actions :is(.photo-expand,.detail-photo-favorite button):active {background:#0007;}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .detail-photo-favorite {
+  position: static;
+}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: white;
+  box-shadow: none;
+  cursor: pointer;
+}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand svg {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 1px 1px #000e) drop-shadow(0 0 2px #000b);
+}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .detail-photo-favorite svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.7;
+}
+.design.orbit.orbit-detail.public-detail .photo-image-actions .photo-expand:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px #0009;
+}
+@media (hover: hover) {
+  .design.orbit.orbit-detail.public-detail
+    .photo-image-actions
+    :is(.photo-expand, .detail-photo-favorite button):hover {
+    background: #0004;
+  }
+  .design.orbit.orbit-detail.public-detail
+    .photo-image-actions
+    :is(.photo-expand, .detail-photo-favorite button):hover
+    svg {
+    stroke-width: 2;
+  }
+}
+.design.orbit.orbit-detail.public-detail
+  .photo-image-actions
+  :is(.photo-expand, .detail-photo-favorite button):active {
+  background: #0007;
+}

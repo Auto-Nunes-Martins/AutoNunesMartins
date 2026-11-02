@@ -9,7 +9,7 @@ export function createAnchorScroller() {
   const stop = () => {
     cancelAnimationFrame(frame);
     frame = 0;
-    events.forEach(event => window.removeEventListener(event, stop));
+    events.forEach((event) => window.removeEventListener(event, stop));
     const cancel = cancelNative;
     cancelNative = undefined;
     cancel?.();
@@ -22,9 +22,17 @@ export function createAnchorScroller() {
       const header = document.querySelector<HTMLElement>('.design header');
       const rect = header?.getBoundingClientRect();
       const visibleHeader = rect && rect.top <= 1 && rect.bottom > 0 ? rect.bottom + 20 : 0;
-      const margin = Math.max(parseFloat(getComputedStyle(target).scrollMarginTop) || 0, visibleHeader);
-      return Math.max(0, Math.min(window.scrollY + target.getBoundingClientRect().top - margin,
-        document.documentElement.scrollHeight - window.innerHeight));
+      const margin = Math.max(
+        parseFloat(getComputedStyle(target).scrollMarginTop) || 0,
+        visibleHeader,
+      );
+      return Math.max(
+        0,
+        Math.min(
+          window.scrollY + target.getBoundingClientRect().top - margin,
+          document.documentElement.scrollHeight - window.innerHeight,
+        ),
+      );
     };
     const finish = () => {
       stop();
@@ -40,12 +48,15 @@ export function createAnchorScroller() {
       }
       target.focus({ preventScroll: true });
     };
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || Math.abs(destination() - start) < 1) {
+    if (
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      Math.abs(destination() - start) < 1
+    ) {
       window.scrollTo({ top: destination(), behavior: 'instant' });
       finish();
       return;
     }
-    events.forEach(event => window.addEventListener(event, stop, { passive: true }));
+    events.forEach((event) => window.addEventListener(event, stop, { passive: true }));
     if (profile === 'discovery') {
       // Let the browser move the viewport independently of the reveal callbacks.
       // Re-reading geometry and writing scrollY each frame forces extra layouts.
@@ -53,16 +64,25 @@ export function createAnchorScroller() {
       let settleTimer: ReturnType<typeof setTimeout>;
       let deadline: ReturnType<typeof setTimeout>;
       const cleanup = () => {
-        clearTimeout(settleTimer); clearTimeout(deadline);
+        clearTimeout(settleTimer);
+        clearTimeout(deadline);
         window.removeEventListener('scroll', settle);
         window.removeEventListener('scrollend', complete);
       };
       const complete = () => {
-        if (!target.isConnected) { stop(); return; }
+        if (!target.isConnected) {
+          stop();
+          return;
+        }
         if (Math.abs(window.scrollY - end) > 1) return;
-        cancelNative = undefined; cleanup(); finish();
+        cancelNative = undefined;
+        cleanup();
+        finish();
       };
-      const settle = () => { clearTimeout(settleTimer); settleTimer = setTimeout(complete, 160); };
+      const settle = () => {
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(complete, 160);
+      };
       cancelNative = () => {
         cleanup();
         window.scrollTo({ top: window.scrollY, behavior: 'instant' });
@@ -71,35 +91,66 @@ export function createAnchorScroller() {
       window.addEventListener('scrollend', complete);
       // The idle fallback covers browsers without scrollend; the deadline only
       // cleans up an interrupted/blocked trip and never forces a late jump.
-      deadline = setTimeout(() => { complete(); if (cancelNative) stop(); }, 3000);
+      deadline = setTimeout(() => {
+        complete();
+        if (cancelNative) stop();
+      }, 3000);
       settle();
       window.scrollTo({ top: end, behavior: 'smooth' });
       return;
     }
     const began = performance.now();
     const step = (now: number) => {
-      if (!target.isConnected) { stop(); return; }
+      if (!target.isConnected) {
+        stop();
+        return;
+      }
       const progress = Math.min(1, (now - began) / 800);
-      const eased = progress < .5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
+      const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
       window.scrollTo({ top: start + (destination() - start) * eased, behavior: 'instant' });
       if (progress < 1) frame = requestAnimationFrame(step);
       else finish();
     };
     frame = requestAnimationFrame(step);
   };
-  return { scroll, stop, destroy() { stop(); removeFocusTarget?.(); } };
+  return {
+    scroll,
+    stop,
+    destroy() {
+      stop();
+      removeFocusTarget?.();
+    },
+  };
 }
 
 export function anchorTarget(hash: string): HTMLElement | null {
-  try { return hash.length > 1 ? document.getElementById(decodeURIComponent(hash.slice(1))) : null; }
-  catch { return null; }
+  try {
+    return hash.length > 1 ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+  } catch {
+    return null;
+  }
 }
 
-export function internalAnchor(event: MouseEvent, link: HTMLAnchorElement, current: URL): URL | null {
-  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey ||
-    event.altKey || link.hasAttribute('download') || (link.target && link.target !== '_self')) return null;
+export function internalAnchor(
+  event: MouseEvent,
+  link: HTMLAnchorElement,
+  current: URL,
+): URL | null {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    link.hasAttribute('download') ||
+    (link.target && link.target !== '_self')
+  )
+    return null;
   const url = new URL(link.href, current);
-  return url.origin === current.origin && url.hash.length > 1 && /^https?:$/.test(url.protocol) ? url : null;
+  return url.origin === current.origin && url.hash.length > 1 && /^https?:$/.test(url.protocol)
+    ? url
+    : null;
 }
 
 /** Small adapter for isolated consumers; the public site uses one delegated controller. */
@@ -116,7 +167,12 @@ export function slowAnchor(node: HTMLAnchorElement, recordHistory: (url: URL) =>
   };
   node.addEventListener('click', click);
   return {
-    update(next: (url: URL) => void) { recordHistory = next; },
-    destroy() { scroller.destroy(); node.removeEventListener('click', click); },
+    update(next: (url: URL) => void) {
+      recordHistory = next;
+    },
+    destroy() {
+      scroller.destroy();
+      node.removeEventListener('click', click);
+    },
   };
 }

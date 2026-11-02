@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { sizedPhoto, vehiclePhotoSet, cardPhoto, cardPhotoSet,galleryPhotoSizes } from '$lib/vehiclePhotoSources';
+  import {
+    sizedPhoto,
+    vehiclePhotoSet,
+    cardPhoto,
+    cardPhotoSet,
+    galleryPhotoSizes,
+  } from '$lib/vehiclePhotoSources';
   import type { Snippet } from 'svelte';
   import type { VehicleDetailRuntime } from '$lib/vehicleDetailRuntime';
   let galleryOpen = $state(false);
@@ -71,7 +77,12 @@
     Maximize,
   } from 'lucide-svelte';
   import { cars, photo, eur, number } from './data';
-  import { responsivePhoto, cardImageSizes, publicCardImageSizes, relatedCardImageSizes } from './images';
+  import {
+    responsivePhoto,
+    cardImageSizes,
+    publicCardImageSizes,
+    relatedCardImageSizes,
+  } from './images';
   import { coverPhotoSizes } from '$lib/coverPhotoSizes';
   import { designMotion, entrance, conditionalEntrance } from './designMotion';
   import OrbitPerspective from './OrbitPerspective.svelte';
@@ -321,7 +332,8 @@
   onDestroy(() => stopOpening?.());
   async function openGallery() {
     if (preparingViewer || galleryOpen) return;
-    galleryOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    galleryOpener =
+      document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     stopOpening?.();
     galleryScroll = { x: window.scrollX, y: window.scrollY };
     const source = inlineGalleryPhoto();
@@ -337,13 +349,21 @@
     }
   }
   function inlineGalleryPhoto() {
-    return galleryDialog?.closest('.design')?.querySelector<HTMLImageElement>('.vehicle-photo .photo-rail-slide:not([inert]):not(.rail-contact) img, button.vehicle-photo > img') ?? null;
+    return (
+      galleryDialog
+        ?.closest('.design')
+        ?.querySelector<HTMLImageElement>(
+          '.vehicle-photo .photo-rail-slide:not([inert]):not(.rail-contact) img, button.vehicle-photo > img',
+        ) ?? null
+    );
   }
   function closeGallery() {
     if (!galleryDialog.open || closingViewer) return;
     stopOpening?.();
     closingViewer = true;
-    stopOpening = galleryRuntime?.animateGalleryClosing(galleryDialog, inlineGalleryPhoto(), () => galleryDialog.close());
+    stopOpening = galleryRuntime?.animateGalleryClosing(galleryDialog, inlineGalleryPhoto(), () =>
+      galleryDialog.close(),
+    );
   }
   const gallerySession = $derived(
     publicVehicle?.photos.length ? createPublicGallerySession(publicVehicle) : undefined,
@@ -378,7 +398,10 @@
     if (publicVehicle) zoom = Math.max(0, Math.min(galleryCount - 1, zoom + direction));
   }
   function galleryKeydown(event: KeyboardEvent) {
-    if (closingViewer) { event.preventDefault(); return; }
+    if (closingViewer) {
+      event.preventDefault();
+      return;
+    }
     trapDialogTab(event, galleryDialog);
     if (!publicVehicle || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     const count = galleryCount;
@@ -448,9 +471,10 @@
   }
   async function contact(message?: string) {
     if (submission.state.phase === 'success') submission.reset();
-    if (submission.state.phase === 'idle') reason =
-      message ||
-      (car ? `Gostava de conhecer o ${car.brand} ${car.model}.` : 'Gostava de saber mais.');
+    if (submission.state.phase === 'idle')
+      reason =
+        message ||
+        (car ? `Gostava de conhecer o ${car.brand} ${car.model}.` : 'Gostava de saber mais.');
     await tick();
     contactDialog.showModal();
     contactName?.focus({ preventScroll: true });
@@ -526,7 +550,7 @@
           as="image"
           href={sizedPhoto(publicPhoto(publicVehicle, i), 1600)}
           imagesrcset={vehiclePhotoSet(publicPhoto(publicVehicle, i))}
-          imagesizes={galleryPhotoSizes(publicVehicle,i)}
+          imagesizes={galleryPhotoSizes(publicVehicle, i)}
           fetchpriority="low"
         />
       {/each}
@@ -608,7 +632,8 @@
   <div class="read-line" aria-hidden="true"></div>
   {#if standContact.address || standContact.email || standContact.hours.length}
     <div class="nav-contact-strip">
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users must be able to scroll the contact strip.) -->
+      <!-- Keyboard users must be able to scroll the contact strip. -->
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         class="nav-contact-inner"
         role="region"
@@ -841,7 +866,8 @@
       <section class="vehicle-layout" data-scene>
         <div class="vehicle-photography">
           <div class="vehicle-gallery">
-            <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Arrow keys coordinate the gallery's focused buttons; explicit previous/next controls remain available.) -->
+            <!-- Arrow keys coordinate the gallery's focused buttons; explicit previous/next controls remain available. -->
+            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
             <div
               class="vehicle-photo-stage"
               use:photoSwipe={{
@@ -923,11 +949,13 @@
               {#if publicVehicle && !isContactSlide}
                 <div class="photo-image-actions">
                   {#if publicVehicle.photos.length}<button
-                    type="button"
-                    class="photo-expand"
-                    aria-label="Abrir em ecrã inteiro"
-                    title="Abrir em ecrã inteiro"
-                    onclick={openGallery}><Maximize size={20} strokeWidth={1.6} aria-hidden="true" /></button>{/if}
+                      type="button"
+                      class="photo-expand"
+                      aria-label="Abrir em ecrã inteiro"
+                      title="Abrir em ecrã inteiro"
+                      onclick={openGallery}
+                      ><Maximize size={20} strokeWidth={1.6} aria-hidden="true" /></button
+                    >{/if}
                   <div class="detail-photo-favorite">
                     <FavoriteButton
                       id={publicVehicle.slug}
@@ -983,12 +1011,15 @@
                         aria-pressed={zoom === i}
                         onclick={() => (zoom = i)}
                         ><img
-                          {...gallerySession!.attrs(sizedPhoto(publicPhoto(publicVehicle,i),1600),vehiclePhotoSet(publicPhoto(publicVehicle,i)))}
+                          {...gallerySession!.attrs(
+                            sizedPhoto(publicPhoto(publicVehicle, i), 1600),
+                            vehiclePhotoSet(publicPhoto(publicVehicle, i)),
+                          )}
                           use:publicGalleryPhoto={{
                             session: gallerySession!,
                             src: sizedPhoto(publicPhoto(publicVehicle, i), 1600),
                           }}
-                          sizes={galleryPhotoSizes(publicVehicle,i)}
+                          sizes={galleryPhotoSizes(publicVehicle, i)}
                           alt=""
                           loading="eager"
                           fetchpriority="auto"
@@ -1001,9 +1032,15 @@
                       aria-pressed={isContactSlide}
                       onclick={() => (zoom = galleryPhotoCount)}
                       ><img
-                        {...gallerySession!.attrs(sizedPhoto(publicPhoto(publicVehicle,0),1600),vehiclePhotoSet(publicPhoto(publicVehicle,0)))}
-                        use:publicGalleryPhoto={{session:gallerySession,src:sizedPhoto(publicPhoto(publicVehicle,0),1600)}}
-                        sizes={galleryPhotoSizes(publicVehicle,0)}
+                        {...gallerySession!.attrs(
+                          sizedPhoto(publicPhoto(publicVehicle, 0), 1600),
+                          vehiclePhotoSet(publicPhoto(publicVehicle, 0)),
+                        )}
+                        use:publicGalleryPhoto={{
+                          session: gallerySession,
+                          src: sizedPhoto(publicPhoto(publicVehicle, 0), 1600),
+                        }}
+                        sizes={galleryPhotoSizes(publicVehicle, 0)}
                         alt=""
                         loading="eager"
                       /><ArrowUpRight size={24} aria-hidden="true" /><span>Fale connosco</span
@@ -1227,7 +1264,7 @@
     </main>
   {:else}
     <main>
-      <HomeHeroDirections {homeHighlights} />
+      <HomeHeroDirections {homeHighlights} stockVehicles={stock?.catalog.items ?? []} />
       <OrbitStats />
 
       <section class="showroom" id="selecao">
@@ -1416,51 +1453,62 @@
     >
     <p class="kicker">VAMOS CONVERSAR</p>
     <h2 id="contact-heading">O que tem<br />em mente?</h2>
-      <form use:submission.enhance aria-busy={sending}>
-        <ContactFeedback {submission}/>
-        <label
-          >Nome<input
-            bind:this={contactName}
-            required
-            name="name"
-            maxlength="120"
-            autocomplete="name"
-            placeholder="O seu nome"
-          /></label
-        ><label
-          >Email<input
-            required
-            type="email"
-            name="email"
-            maxlength="254"
-            autocomplete="email"
-            placeholder="nome@exemplo.pt"
-          /></label
-        ><label
-          >Assunto<FormSelectField
-            ><select name="subject">
-              <option>Informações gerais</option>
-              <option>Conhecer uma viatura</option>
-              <option>Marcar uma visita</option>
-              <option>Falar sobre uma retoma</option>
-            </select></FormSelectField
-          ></label
-        ><label
-          >Mensagem<textarea name="message" required maxlength="5000" rows="3" bind:value={reason}
-          ></textarea></label
-        ><ContactFormFooter>
-        <button class="pill primary" type="submit" aria-busy={sending} disabled={sending || submission.state.kind === "conflict"}
+    <form use:submission.enhance aria-busy={sending}>
+      <ContactFeedback {submission} />
+      <label
+        >Nome<input
+          bind:this={contactName}
+          required
+          name="name"
+          maxlength="120"
+          autocomplete="name"
+          placeholder="O seu nome"
+        /></label
+      ><label
+        >Email<input
+          required
+          type="email"
+          name="email"
+          maxlength="254"
+          autocomplete="email"
+          placeholder="nome@exemplo.pt"
+        /></label
+      ><label
+        >Assunto<FormSelectField
+          ><select name="subject">
+            <option>Informações gerais</option>
+            <option>Conhecer uma viatura</option>
+            <option>Marcar uma visita</option>
+            <option>Falar sobre uma retoma</option>
+          </select></FormSelectField
+        ></label
+      ><label
+        >Mensagem<textarea name="message" required maxlength="5000" rows="3" bind:value={reason}
+        ></textarea></label
+      ><ContactFormFooter>
+        <button
+          class="pill primary"
+          type="submit"
+          aria-busy={sending}
+          disabled={sending || submission.state.kind === 'conflict'}
           >{sending ? 'A enviar…' : 'Enviar pedido'}
-          {#if sending}<LoaderCircle class="contact-submit-spinner" size={18} aria-hidden="true" />{:else}<ArrowUpRight size={18} aria-hidden="true" />{/if}</button
+          {#if sending}<LoaderCircle
+              class="contact-submit-spinner"
+              size={18}
+              aria-hidden="true"
+            />{:else}<ArrowUpRight size={18} aria-hidden="true" />{/if}</button
         >
-        </ContactFormFooter>
-      </form>
+      </ContactFormFooter>
+    </form>
   </dialog>
   <dialog
     bind:this={galleryDialog}
     use:galleryBackdrop={{ close: closeGallery }}
     data-closing={closingViewer || undefined}
-    oncancel={(event) => { event.preventDefault(); closeGallery(); }}
+    oncancel={(event) => {
+      event.preventDefault();
+      closeGallery();
+    }}
     onclose={() => {
       stopOpening?.();
       galleryOpen = false;
@@ -1469,9 +1517,13 @@
       // Visiting the contact slide can replace the original inline opener.
       if (!document.querySelector('dialog[open]')) {
         const root = galleryDialog.closest('.design');
-        const opener = galleryOpener?.isConnected && !galleryOpener.closest('[inert]') ? galleryOpener :
-          root?.querySelector<HTMLElement>('.photo-expand') ??
-          root?.querySelector<HTMLElement>('.vehicle-photo .photo-rail-slide:not([inert]) button');
+        const opener =
+          galleryOpener?.isConnected && !galleryOpener.closest('[inert]')
+            ? galleryOpener
+            : (root?.querySelector<HTMLElement>('.photo-expand') ??
+              root?.querySelector<HTMLElement>(
+                '.vehicle-photo .photo-rail-slide:not([inert]) button',
+              ));
         opener?.focus({ preventScroll: true });
       }
     }}
@@ -1482,8 +1534,16 @@
     {#if car && galleryOpen}
       <div class="viewer-heading">
         <p id="gallery-caption">
-          <span class="viewer-vehicle-name" title={car.brand + ' ' + car.model}>{car.brand} {car.model}</span>
-          <span class="viewer-photo-position">{isContactSlide ? 'Fale connosco' : publicVehicle ? (zoom + 1) + ' / ' + galleryPhotoCount : 'Fotografia ilustrativa'}</span>
+          <span class="viewer-vehicle-name" title={car.brand + ' ' + car.model}
+            >{car.brand} {car.model}</span
+          >
+          <span class="viewer-photo-position"
+            >{isContactSlide
+              ? 'Fale connosco'
+              : publicVehicle
+                ? zoom + 1 + ' / ' + galleryPhotoCount
+                : 'Fotografia ilustrativa'}</span
+          >
         </p>
         <div class="viewer-controls">
           <button
@@ -1528,7 +1588,6 @@
             alt={`${car.brand} ${car.model}${publicVehicle ? '' : ' — fotografia ilustrativa'}`}
           />{/if}
         <div class="viewer-controls">
-
           {#if publicVehicle && galleryCount > 1}
             <button
               type="button"
@@ -1640,24 +1699,35 @@
                 srcset={waitingPhoto}
               />{/if}
             <img
-              use:coverPhotoSizes
+              use:coverPhotoSizes={'approved' in vehicle && vehicle.photoDimensions
+                ? { source: vehicle.image, dimensions: vehicle.photoDimensions }
+                : undefined}
               use:vehiclePhoto={{
                 src: 'approved' in vehicle ? cardPhoto(vehicle.image) : photo(vehicle.image, 1100),
-                srcset: 'approved' in vehicle ? cardPhotoSet(vehicle.image) : responsivePhoto(vehicle.image, 1600),
+                srcset:
+                  'approved' in vehicle
+                    ? cardPhotoSet(vehicle.image)
+                    : responsivePhoto(vehicle.image, 1600),
               }}
               style={'approved' in vehicle ? framingStyle(vehicle.cardFraming) : undefined}
               src={'approved' in vehicle ? cardPhoto(vehicle.image) : photo(vehicle.image, 1100)}
-              srcset={'approved' in vehicle ? cardPhotoSet(vehicle.image) : responsivePhoto(vehicle.image, 1600)}
+              srcset={'approved' in vehicle
+                ? cardPhotoSet(vehicle.image)
+                : responsivePhoto(vehicle.image, 1600)}
               sizes={'approved' in vehicle
-                ? relatedCount ? relatedCardImageSizes(vehicle.photoDimensions, relatedCount) : publicCardImageSizes(vehicle.photoDimensions, catalog, favorites)
+                ? relatedCount
+                  ? relatedCardImageSizes(vehicle.photoDimensions, relatedCount)
+                  : publicCardImageSizes(vehicle.photoDimensions, catalog, favorites)
                 : cardImageSizes}
               fetchpriority={catalog || favorites ? undefined : 'low'}
               alt={`${vehicle.brand} ${vehicle.model}${'approved' in vehicle ? (vehicle.image === catalogPlaceholder ? ' — imagem indisponível' : '') : ' — imagem ilustrativa'}`}
               loading="lazy"
             /></picture
-          >{#if vehicle.category}<span class="image-category" class:reserved-status={'approved' in vehicle && vehicle.category === 'Reservada'}>{vehicle.category}</span>{/if}<span
-            class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span
-          ></a
+          >{#if vehicle.category}<span
+              class="image-category"
+              class:reserved-status={'approved' in vehicle && vehicle.category === 'Reservada'}
+              >{vehicle.category}</span
+            >{/if}<span class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span></a
         >
         {#if 'approved' in vehicle}<div class="card-compare">
             <CompareButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} overlay />
@@ -4533,6 +4603,12 @@
       transition: none;
     }
   }
-  .public-card .card-image img { object-position:var(--photo-desktop,50% 50%); }
-  @media(max-width:700px) { .public-card .card-image img { object-position:var(--photo-mobile,50% 50%); } }
+  .public-card .card-image img {
+    object-position: var(--photo-desktop, 50% 50%);
+  }
+  @media (max-width: 700px) {
+    .public-card .card-image img {
+      object-position: var(--photo-mobile, 50% 50%);
+    }
+  }
 </style>

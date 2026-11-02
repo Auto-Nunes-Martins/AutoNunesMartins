@@ -240,6 +240,19 @@ describe('Global notification lifecycle', () => {
     vi.advanceTimersByTime(NOTIFICATION_DURATION - 1000);
     expect(get(host.notices)).toEqual([]);
   });
+  it('does not leave timers behind when every retained notice is paused', () => {
+    const host = createNotifications();
+    for (let index = 0; index < MAX_NOTIFICATIONS; index++) {
+      host.pause(host.push({ message: `Reading ${index}` }), 'focus');
+    }
+    const retained = get(host.notices);
+    for (let index = 0; index < 3; index++) host.push({ message: 'No room' });
+    // Publishing applies the existing newest-first order once every notice is held.
+    expect(get(host.notices)).toEqual([...retained].sort((a, b) => b.id - a.id));
+    expect(vi.getTimerCount()).toBe(0);
+    host.destroy();
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it('keeps all seven ordinary burst events in newest-first order with original individual deadlines', () => {
     const host = createNotifications();
     for (let i = 1; i <= 7; i++) {

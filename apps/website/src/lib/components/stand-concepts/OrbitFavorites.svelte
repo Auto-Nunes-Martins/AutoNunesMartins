@@ -6,7 +6,13 @@
   import { Heart, ArrowUpRight, ArrowLeft, ArrowRight } from 'lucide-svelte';
   import { useFavorites } from '$lib/favorites';
   import { publicCard, type PublicCard } from '$lib/publicVehicles';
-  import { loadSelectedVehicles, rememberSelectionIdentity, retainSelectionIdentity, type SelectedVehicle, type SelectionIdentity } from '$lib/selectedVehicles';
+  import {
+    loadSelectedVehicles,
+    rememberSelectionIdentity,
+    retainSelectionIdentity,
+    type SelectedVehicle,
+    type SelectionIdentity,
+  } from '$lib/selectedVehicles';
   import UnavailableFavorite from './UnavailableFavorite.svelte';
   import PendingFavorite from './PendingFavorite.svelte';
   let { card }: { card: Snippet<[PublicCard | null, number]> } = $props();
@@ -17,53 +23,75 @@
   const memory = new Map<string, SelectionIdentity>();
   const retries = new Set<AbortController>();
   const retrying = $state<Record<string, boolean>>({});
-  onDestroy(() => retries.forEach(controller => controller.abort()));
+  onDestroy(() => retries.forEach((controller) => controller.abort()));
   let entries = $state<SelectedVehicle[]>([]);
   let loading = $state(false);
   let heading: HTMLHeadingElement;
   const pages = $derived(Math.max(1, Math.ceil($ids.length / pageSize)));
   const currentPage = $derived(Math.min(requestedPage, pages));
-  const normal = $derived($ids.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(id => entries.find(entry => entry.id === id) ?? { id, status: 0, vehicle: null }).filter(entry => entry.status !== 404));
-  const unavailable = $derived(entries.filter(entry => !entry.vehicle && entry.status === 404));
+  const normal = $derived(
+    $ids
+      .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+      .map((id) => entries.find((entry) => entry.id === id) ?? { id, status: 0, vehicle: null })
+      .filter((entry) => entry.status !== 404),
+  );
+  const unavailable = $derived(entries.filter((entry) => !entry.vehicle && entry.status === 404));
   $effect(() => {
     const selected = $ids.slice((currentPage - 1) * pageSize, currentPage * pageSize);
     for (const id of memory.keys()) if (!$ids.includes(id)) memory.delete(id);
-    if (!$ready || !selected.length) { entries = []; loading = false; return; }
+    if (!$ready || !selected.length) {
+      entries = [];
+      loading = false;
+      return;
+    }
     const controller = new AbortController();
     loading = true;
     // Keep remaining cards mounted during removal so keyboard focus can be restored.
     entries = untrack(() => {
-      rememberSelectionIdentity(entries.filter(entry => $ids.includes(entry.id)), memory, document.querySelector('.favorites-page'));
-      return entries.filter(entry => selected.includes(entry.id));
+      rememberSelectionIdentity(
+        entries.filter((entry) => $ids.includes(entry.id)),
+        memory,
+        document.querySelector('.favorites-page'),
+      );
+      return entries.filter((entry) => selected.includes(entry.id));
     });
-    void loadSelectedVehicles(selected, controller.signal).then(fresh => {
+    void loadSelectedVehicles(selected, controller.signal).then((fresh) => {
       if (!controller.signal.aborted) {
         rememberSelectionIdentity(entries, memory, document.querySelector('.favorites-page'));
-        entries = retainSelectionIdentity(fresh, memory); loading = false;
+        entries = retainSelectionIdentity(fresh, memory);
+        loading = false;
       }
     });
     return () => controller.abort();
   });
   async function retry(id: string) {
     if (retrying[id]) return;
-    const controller = new AbortController(); retries.add(controller); retrying[id] = true;
+    const controller = new AbortController();
+    retries.add(controller);
+    retrying[id] = true;
     rememberSelectionIdentity(entries, memory, document.querySelector('.favorites-page'));
     try {
       const fresh = await loadSelectedVehicles([id], controller.signal);
       if (!controller.signal.aborted && $ids.includes(id)) {
         rememberSelectionIdentity(entries, memory, document.querySelector('.favorites-page'));
         const [next] = retainSelectionIdentity(fresh, memory);
-        if (next) entries = entries.map(entry => entry.id === id ? next : entry);
+        if (next) entries = entries.map((entry) => (entry.id === id ? next : entry));
       }
-    } finally { retrying[id] = false; retries.delete(controller); }
+    } finally {
+      retrying[id] = false;
+      retries.delete(controller);
+    }
   }
   async function remove(id?: string) {
-    if (id) favorites.remove(id); else favorites.clear();
-    await tick(); heading?.focus({ preventScroll: true });
+    if (id) favorites.remove(id);
+    else favorites.clear();
+    await tick();
+    heading?.focus({ preventScroll: true });
   }
   async function changePage(value: number) {
     requestedPage = value;
-    await tick(); heading?.focus();
+    await tick();
+    heading?.focus();
   }
 </script>
 
@@ -106,41 +134,240 @@
   <p class="storage-note">As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer momento. <a href="/politica-de-privacidade#escolhas">Política de privacidade</a></p>
 </main>
 <style>
-  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-  .favorites-page { width: var(--orbit-frame); max-width: var(--orbit-frame-max); margin: auto; padding: 46px 0 104px; color: var(--text); }
-  a { color: inherit; text-decoration: none; }
-  button { font: inherit; color: inherit; cursor: pointer; }
-  a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
-  h1:focus { outline: none; }
-  .intro { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 38px 0 48px; }
-  .intro :global(.intro-heart) { color: var(--red); flex-shrink: 0; margin-right: 3%; }
-  .eyebrow { margin: 0 0 20px; font-size: 10px; color: var(--muted); letter-spacing: .12em; }
-  h1 { font-size: clamp(42px, 5.5vw, 80px); font-weight: 500; letter-spacing: -.06em; line-height: 1.04; margin: 0; }
-  h1 span { color: var(--muted); }
-  .lead { color: var(--muted); line-height: 1.8; font-size: 15px; margin: 24px 0 0; }
-  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; border-top: 1px solid var(--line); padding: 22px 0; font-size: 13px; }
-  .toolbar button { border: none; background: none; min-height: 44px; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
-  .toolbar p, .loading, .note { color: var(--muted); }
-  .favorites-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; }
-  .saved-slot { min-width: 0; }
-  .empty { border-block: 1px solid var(--line); padding: 60px 8%; background: color-mix(in srgb, var(--text) 2%, var(--bg)); }
-  .empty > :global(svg) { color: var(--red); }
-  h2 { font-size: clamp(26px, 3vw, 40px); font-weight: 500; letter-spacing: -.04em; line-height: 1.15; }
-  .empty p { max-width: 52ch; color: var(--muted); font-size: 15px; line-height: 1.8; }
-  .primary { display: inline-flex; align-items: center; gap: 24px; background: var(--text); color: var(--bg); border-radius: 30px; padding: 15px 24px; min-height: 48px; margin-top: 18px; font-size: 13px; }
-  .unavailable-group { margin-top: 32px; }
-  .unavailable-group h2 { display: flex; align-items: baseline; gap: 12px; font-size: 23px; margin: 0 0 10px; }
-  .unavailable-group h2 span { font-size: 13px; color: var(--muted); letter-spacing: 0; }
-  .unavailable-group > p { font-size: 13px; line-height: 1.7; color: var(--muted); margin: 0 0 16px; }
-  .unavailable-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; border-top: 1px solid var(--line); }
-  @media (max-width: 1000px) { .unavailable-list { grid-template-columns: minmax(0, 1fr); } }
-  .pagination { display: flex; align-items: center; justify-content: center; gap: 30px; margin-top: 36px; font-size: 13px; }
-  .pagination button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: none; background: none; }
-  .pagination button:disabled { opacity: .35; cursor: default; }
-  .note { margin: 28px 0 0; line-height: 1.8; font-size: 12px; }
-  .storage-note { margin: 28px 0 0; max-width: 90ch; font-size: 12px; line-height: 1.8; color: var(--muted); }
-  .storage-note a { text-decoration: underline; text-underline-offset: 3px; }
-  @media (hover: hover) { .primary:hover { background: var(--red); color: white; } }
-  @media (max-width: 1000px) { .favorites-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
-  @media (max-width: 700px) { .favorites-page { padding: 20px 0 72px; } .intro { padding: 26px 0 32px; gap: 12px; } h1 { font-size: clamp(34px, 8vw, 52px); } .intro :global(.intro-heart) { width: 40px; } .lead { font-size: 13px; } .favorites-grid { grid-template-columns: 1fr; gap: 24px; } .empty { padding: 36px 22px; } }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  .favorites-page {
+    width: var(--orbit-frame);
+    max-width: var(--orbit-frame-max);
+    margin: auto;
+    padding: 46px 0 104px;
+    color: var(--text);
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 4px;
+  }
+  h1:focus {
+    outline: none;
+  }
+  .intro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    padding: 38px 0 48px;
+  }
+  .intro :global(.intro-heart) {
+    color: var(--red);
+    flex-shrink: 0;
+    margin-right: 3%;
+  }
+  .eyebrow {
+    margin: 0 0 20px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+  }
+  h1 {
+    font-size: clamp(42px, 5.5vw, 80px);
+    font-weight: 500;
+    letter-spacing: -0.06em;
+    line-height: 1.04;
+    margin: 0;
+  }
+  h1 span {
+    color: var(--muted);
+  }
+  .lead {
+    color: var(--muted);
+    line-height: 1.8;
+    font-size: 15px;
+    margin: 24px 0 0;
+  }
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    border-top: 1px solid var(--line);
+    padding: 22px 0;
+    font-size: 13px;
+  }
+  .toolbar button {
+    border: none;
+    background: none;
+    min-height: 44px;
+    font-size: 12px;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .toolbar p,
+  .loading,
+  .note {
+    color: var(--muted);
+  }
+  .favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 30px;
+  }
+  .saved-slot {
+    min-width: 0;
+  }
+  .empty {
+    border-block: 1px solid var(--line);
+    padding: 60px 8%;
+    background: color-mix(in srgb, var(--text) 2%, var(--bg));
+  }
+  .empty > :global(svg) {
+    color: var(--red);
+  }
+  h2 {
+    font-size: clamp(26px, 3vw, 40px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+  }
+  .empty p {
+    max-width: 52ch;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  .primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 24px;
+    background: var(--text);
+    color: var(--bg);
+    border-radius: 30px;
+    padding: 15px 24px;
+    min-height: 48px;
+    margin-top: 18px;
+    font-size: 13px;
+  }
+  .unavailable-group {
+    margin-top: 32px;
+  }
+  .unavailable-group h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 23px;
+    margin: 0 0 10px;
+  }
+  .unavailable-group h2 span {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0;
+  }
+  .unavailable-group > p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+  .unavailable-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 32px;
+    border-top: 1px solid var(--line);
+  }
+  @media (max-width: 1000px) {
+    .unavailable-list {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 36px;
+    font-size: 13px;
+  }
+  .pagination button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    border: none;
+    background: none;
+  }
+  .pagination button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .note {
+    margin: 28px 0 0;
+    line-height: 1.8;
+    font-size: 12px;
+  }
+  .storage-note {
+    margin: 28px 0 0;
+    max-width: 90ch;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+  .storage-note a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media (hover: hover) {
+    .primary:hover {
+      background: var(--red);
+      color: white;
+    }
+  }
+  @media (max-width: 1000px) {
+    .favorites-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+  }
+  @media (max-width: 700px) {
+    .favorites-page {
+      padding: 20px 0 72px;
+    }
+    .intro {
+      padding: 26px 0 32px;
+      gap: 12px;
+    }
+    h1 {
+      font-size: clamp(34px, 8vw, 52px);
+    }
+    .intro :global(.intro-heart) {
+      width: 40px;
+    }
+    .lead {
+      font-size: 13px;
+    }
+    .favorites-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .empty {
+      padding: 36px 22px;
+    }
+  }
 </style>

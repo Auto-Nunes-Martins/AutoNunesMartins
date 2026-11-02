@@ -347,7 +347,10 @@ export function showInvalidFormFields(form: HTMLFormElement) {
   );
   if (!invalid.length) return false;
   showFormErrors(form, {
-    issues: invalid.map((field) => ({ path: [field.dataset.errorField ?? field.name], message: nativeReason(field) })),
+    issues: invalid.map((field) => ({
+      path: [field.dataset.errorField ?? field.name],
+      message: nativeReason(field),
+    })),
   });
   return true;
 }

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { legalValue } from '$lib/publicLegal';
   import { standContact } from './stand-concepts/standContact';
-  const controller=legalValue('controller');
-  const privacyContact=legalValue('privacyContact');
+  const controller = legalValue('controller');
+  const privacyContact = legalValue('privacyContact');
 </script>
 <div class="contact-privacy">
   <p>A Auto Nunes Martins usa estes dados para responder ao seu pedido. <a href="/politica-de-privacidade#direitos" target="_blank" rel="noopener noreferrer" aria-label="Privacidade e direitos (abre num novo separador)">Privacidade e direitos</a>.</p>
@@ -19,7 +19,63 @@
   <label>Website<input name="website" tabindex="-1" autocomplete="off" maxlength="200" /></label>
 </div>
 <style>
-  .contact-privacy{font-size:12px;line-height:1.65;margin:16px 0;color:inherit;}.contact-privacy p{font:inherit;margin:0;line-height:inherit;color:inherit;}.identity-pending{font-size:10px;line-height:1.6;margin-left:10px;opacity:.8;}
-  a{color:inherit;text-decoration:underline;text-underline-offset:3px;}summary{cursor:pointer;min-height:44px;display:list-item;align-content:center;width:fit-content;font-size:11px;color:inherit;}a:focus-visible,summary:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:2px;}.privacy-details{padding:4px 0 12px;border-bottom:1px solid currentColor;}.privacy-details p{margin:10px 0;}.privacy-details a{display:inline-block;min-height:30px;}strong{font-weight:600;}
-  .contact-trap{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+  .contact-privacy {
+    font-size: 12px;
+    line-height: 1.65;
+    margin: 16px 0;
+    color: inherit;
+  }
+  .contact-privacy p {
+    font: inherit;
+    margin: 0;
+    line-height: inherit;
+    color: inherit;
+  }
+  .identity-pending {
+    font-size: 10px;
+    line-height: 1.6;
+    margin-left: 10px;
+    opacity: 0.8;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  summary {
+    cursor: pointer;
+    min-height: 44px;
+    display: list-item;
+    align-content: center;
+    width: fit-content;
+    font-size: 11px;
+    color: inherit;
+  }
+  a:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  .privacy-details {
+    padding: 4px 0 12px;
+    border-bottom: 1px solid currentColor;
+  }
+  .privacy-details p {
+    margin: 10px 0;
+  }
+  .privacy-details a {
+    display: inline-block;
+    min-height: 30px;
+  }
+  strong {
+    font-weight: 600;
+  }
+  .contact-trap {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 </style>

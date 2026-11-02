@@ -6,8 +6,11 @@ export function singleFlight() {
     if (current) return current as Promise<T>;
     const work = Promise.resolve().then(load);
     pending.set(key, work);
-    try { return await work; }
-    finally { if (pending.get(key) === work) pending.delete(key); }
+    try {
+      return await work;
+    } finally {
+      if (pending.get(key) === work) pending.delete(key);
+    }
   };
 }
 

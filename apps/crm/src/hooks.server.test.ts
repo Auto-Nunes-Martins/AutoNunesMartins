@@ -38,11 +38,16 @@ describe('CRM prefix and server security', () => {
         event: {
           url: new URL('https://trial.onrender.com/crm/api/users'),
           request: new Request('https://trial.onrender.com/crm/api/users', {
-            headers: { accept: 'application/json', ...(action ? { 'x-sveltekit-action': 'true' } : {}) },
+            headers: {
+              accept: 'application/json',
+              ...(action ? { 'x-sveltekit-action': 'true' } : {}),
+            },
           }),
           locals: { auth: () => ({ userId: null }) },
         },
-        resolve: vi.fn(() => { throw new Error('must not resolve'); }),
+        resolve: vi.fn(() => {
+          throw new Error('must not resolve');
+        }),
       } as any);
       expect(result.status).toBe(401);
       expect(result.headers.has('location')).toBe(false);

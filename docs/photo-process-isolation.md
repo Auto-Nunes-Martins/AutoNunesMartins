@@ -1,6 +1,22 @@
 # Disposable photo codec process
 
+> Estado em 02/11/2026: documento histórico. A telemetria temporária detalhada, os endpoints de diagnóstico e os scripts associados foram removidos no código local; a publicação desta remoção está pendente. Em produção, os registos de diagnóstico foram apagados e o writer SQL ficou compatível mas sem persistência. Os comandos antigos de diagnóstico não se aplicam ao novo código. Mantêm-se as otimizações funcionais, os limites de segurança e uma medição leve de memória por minuto no supervisor.
+
 The 31 October production evidence showed ten completed uploads, low JavaScript heap, disabled Sharp cache, and high anonymous memory remaining in the backend. The recovered tenth-photo pair rose from 372.76 to 393.99 MB RSS, with only 0.53 MB additional heap; its first observed RSS maximum was during derivative encoding. This motivates process isolation, but does not prove allocator fragmentation or a particular native leak.
+
+## Retirement rollout — 2 November 2026
+
+The owner authorized removing temporary instrumentation and diagnostic data. Only `public.RuntimeDiagnosticEvent` and `public.append_runtime_diagnostics(jsonb)` were affected in production. On the configured project `vtnizfmiiqkmlbvbfohx`, the configuration agrees across PostgreSQL/Storage and all 21 public catalogue slugs and cover hashes matched. The supplied dashboard did not expose a project reference; it cannot independently establish identity.
+
+The live change preserved the function signature/ACL, replaced its body with `RETURN 0`, and truncated only the diagnostic table under its existing advisory lock. It removed 7,375 events; the measured database size fell from 57,644,723 to 17,249,971 bytes. No business tables, photographs or Storage objects were removed. The table and owned indexes/sequence remain temporarily so the still-running old release cannot fail on missing SQL objects. The new code has no diagnostic writers or endpoints and keeps only a minute-level console heartbeat, without database persistence.
+
+Deployment is not authorized by this work. For a future authorized release:
+
+1. Apply the normal forward migration `20261102043000_retire_runtime_diagnostics` through the existing deployment flow. It records the compatible retirement in migration history; the live operational change already has the same effect. Existing migration files remain unchanged.
+2. Roll out the telemetry-free runtime, then confirm that every old service instance, replica, background writer and manual diagnostic job has stopped. An empty table alone does not prove that callers have stopped.
+3. Only afterwards promote `backend/prisma/deferred-migrations/20261102043100_drop_runtime_diagnostics/migration.sql` into the normal migration history for a subsequent release. It drops the exact function and table with RESTRICT, including only the table's owned indexes/sequence. It is deliberately outside startup migrations because those execute before a new release starts and an older release may still be serving.
+
+The local preservation inventory and production before/after metadata are in `artifacts/telemetry-removal-2026-11-02/`. They contain source/metadata, never environment secrets or copied diagnostic payloads. Do not clean them or other local worktrees/dependencies automatically.
 
 ## Processing and lifetime
 

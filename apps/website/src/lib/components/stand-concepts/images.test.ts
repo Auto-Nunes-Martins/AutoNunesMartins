@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { photo, responsivePhoto } from './images';
+import { photo, responsivePhoto, featuredPhotoSizes, featuredPhotoSizesForRatio } from './images';
 
 describe('vehicle photo URLs', () => {
   it('expands only curated Unsplash identifiers', () => {
@@ -41,5 +41,20 @@ describe('authorized public photo variants', () => {
     expect(photo(path, 336)).toBe(path + '?w=384');
     expect(responsivePhoto(path)).toContain('2560w');
     expect(responsivePhoto('https://external.example/viaturas/car/photos/0')).toBeUndefined();
+  });
+});
+
+describe('featured photo preload and image cover demand', () => {
+  it.each([undefined, 0, NaN, Infinity, -1, 0.75, 1.5, 1.65])(
+    'preserves the existing portrait/unknown sizes for ratio %s',
+    (ratio) => expect(featuredPhotoSizesForRatio(ratio)).toBe(featuredPhotoSizes),
+  );
+  it('includes the full wide source behind the desktop and mobile cover crop', () => {
+    const sizes = featuredPhotoSizesForRatio(3);
+    expect(sizes).toContain('calc(calc(100vw - 40px) * 1.621622)');
+    expect(sizes).toContain('calc(40.022vw * 1.818182)');
+    expect(sizes).toContain('calc(min(38.337vw, 682px) * 1.818182)');
+    expect(1.621622 * 1.85).toBeGreaterThanOrEqual(3);
+    expect(1.818182 * 1.65).toBeGreaterThanOrEqual(3);
   });
 });

@@ -48,11 +48,11 @@ function toQuery(params: Record<string, unknown>): string {
 type Ev = Pick<RequestEvent, 'locals' | 'fetch'>;
 
 export const opExpensesApi = {
-  list(event: Ev, params: OperationalExpenseListParams = {}): Promise<OperationalExpenseListResponse> {
-    return apiJson(
-      event,
-      `/api/operational-expenses${toQuery(params as Record<string, unknown>)}`,
-    );
+  list(
+    event: Ev,
+    params: OperationalExpenseListParams = {},
+  ): Promise<OperationalExpenseListResponse> {
+    return apiJson(event, `/api/operational-expenses${toQuery(params as Record<string, unknown>)}`);
   },
   create(event: Ev, body: OperationalExpenseCreate): Promise<{ id: string }> {
     return apiJson(event, '/api/operational-expenses', {
@@ -60,11 +60,7 @@ export const opExpensesApi = {
       body: JSON.stringify(body),
     });
   },
-  update(
-    event: Ev,
-    id: string,
-    body: Omit<OperationalExpenseUpdate, 'id'>,
-  ): Promise<{ ok: true }> {
+  update(event: Ev, id: string, body: Omit<OperationalExpenseUpdate, 'id'>): Promise<{ ok: true }> {
     return apiJson(event, `/api/operational-expenses/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(body),

@@ -161,6 +161,7 @@ it('retains identity/history/DONE attribution while releasing only pending tasks
   cache.set('users:list', ['old'], 60000);
   cache.set('dashboard:active', {}, 60000);
   cache.set('notifications:active', {}, 60000);
+  cache.set('search:active', {}, 60000);
   expect(await deactivateLocalUser('clerk_old')).toEqual({ released: 2 });
   expect(state.users[0]).toMatchObject({ ...profile, id: 'old', deactivatedAt: expect.any(Date) });
   expect(state.tasks.map((t: any) => [t.assigneeId, t.boardVersion])).toEqual([
@@ -175,6 +176,7 @@ it('retains identity/history/DONE attribution while releasing only pending tasks
   expect(cache.get('users:list')).toBeUndefined();
   expect(cache.get('dashboard:active')).toBeUndefined();
   expect(cache.get('notifications:active')).toBeUndefined();
+  expect(cache.get('search:active')).toBeUndefined();
   expect(await getTaskByIdForActor(txClient() as any, 'task0', 'active')).toMatchObject({
     assigneeId: null,
   });

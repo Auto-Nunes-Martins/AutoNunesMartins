@@ -24,7 +24,11 @@ import { thumbnailNavigation } from './thumbnailNavigation';
 import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from './publicThumbnail';
 import { trapDialogTab } from '../../../../shared/ui/dialogFocus';
 import { fullscreenGallery as galleryBackdrop } from './fullscreenGallery';
-import { captureOpeningPhoto, animateGalleryOpening, animateGalleryClosing } from './galleryOpening';
+import {
+  captureOpeningPhoto,
+  animateGalleryOpening,
+  animateGalleryClosing,
+} from './galleryOpening';
 import './components/stand-concepts/photoViewer.css';
 import './components/stand-concepts/orbitDetail.css';
 

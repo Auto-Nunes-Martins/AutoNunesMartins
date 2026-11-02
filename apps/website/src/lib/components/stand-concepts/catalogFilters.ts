@@ -11,16 +11,24 @@ export const numericCatalogFields = [
 
 export function catalogInputErrors(params: URLSearchParams) {
   const errors: string[] = [];
-  if (params.get('modelo') && !params.get('marca')?.trim()) errors.push('Escolha primeiro uma marca para pesquisar um modelo.');
-  if ((params.get('q')?.trim().length ?? 0) > 120) errors.push('A pesquisa pode ter até 120 caracteres.');
+  if (params.get('modelo') && !params.get('marca')?.trim())
+    errors.push('Escolha primeiro uma marca para pesquisar um modelo.');
+  if ((params.get('q')?.trim().length ?? 0) > 120)
+    errors.push('A pesquisa pode ter até 120 caracteres.');
   for (const field of numericCatalogFields) {
     const value = params.get(field.key);
     if (value === null || value === '') continue;
     const pattern = field.step === '0.01' ? /^\d{1,10}(?:\.\d{1,2})?$/ : /^\d{1,10}$/;
     if (!pattern.test(value) || Number(value) < field.min || Number(value) > field.max)
-      errors.push(`${field.label}: use um valor entre ${field.min} e ${field.max}${field.step === '1' ? ', sem casas decimais' : ', com até duas casas decimais'}.`);
+      errors.push(
+        `${field.label}: use um valor entre ${field.min} e ${field.max}${field.step === '1' ? ', sem casas decimais' : ', com até duas casas decimais'}.`,
+      );
   }
-  for (const [min, max, label] of [['preco_min', 'preco_max', 'preço'], ['ano_min', 'ano_max', 'ano'], ['km_min', 'km_max', 'quilometragem']]) {
+  for (const [min, max, label] of [
+    ['preco_min', 'preco_max', 'preço'],
+    ['ano_min', 'ano_max', 'ano'],
+    ['km_min', 'km_max', 'quilometragem'],
+  ]) {
     if (params.get(min!) && params.get(max!) && Number(params.get(min!)) > Number(params.get(max!)))
       errors.push(`O mínimo de ${label} deve ser igual ou inferior ao máximo.`);
   }
@@ -29,9 +37,19 @@ export function catalogInputErrors(params: URLSearchParams) {
 
 export function catalogModelOptions(params: URLSearchParams, stock: PublicStock) {
   const requested = params.get('marca')?.trim().toLowerCase();
-  const brand = stock.status === 'ready'
-    ? stock.catalog.facets.brands.find(item => item.value.toLowerCase() === requested)?.value ?? '' : '';
-  const models = brand ? [...new Set(stock.catalog.facets.models
-    .filter(item => item.brand === brand && item.count > 0).map(item => item.value))] : [];
+  const brand =
+    stock.status === 'ready'
+      ? (stock.catalog.facets.brands.find((item) => item.value.toLowerCase() === requested)
+          ?.value ?? '')
+      : '';
+  const models = brand
+    ? [
+        ...new Set(
+          stock.catalog.facets.models
+            .filter((item) => item.brand === brand && item.count > 0)
+            .map((item) => item.value),
+        ),
+      ]
+    : [];
   return { brand, models };
 }

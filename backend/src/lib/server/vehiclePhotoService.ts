@@ -1,5 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 import { cache } from '../data/cache.js';
+import {
+  assertStagedPhotos,
+  forgetAttachedPhotos,
+  queuePhotoRemovals,
+} from './photoLifecycleStore.js';
 
 export const MAX_PHOTOS = 20;
 const MAX_ATTEMPTS = 3;
@@ -70,6 +75,7 @@ export async function mutateVehiclePhotos(
       }
     }
     const result = await db.$transaction(async (tx) => {
+      if (mutation.type === 'append') await assertStagedPhotos(tx, vehicleId, [mutation.path]);
       const updated = await tx.vehicle.updateMany({
         where: {
           id: vehicleId,
@@ -81,6 +87,10 @@ export async function mutateVehiclePhotos(
           publicPhotoPaths: { set: next },
         },
       });
+      if (updated.count === 1) {
+        if (mutation.type === 'append') await forgetAttachedPhotos(tx, [mutation.path]);
+        if (mutation.type === 'remove') await queuePhotoRemovals(tx, vehicleId, [mutation.path]);
+      }
       return updated;
     });
     if (result.count === 1) {

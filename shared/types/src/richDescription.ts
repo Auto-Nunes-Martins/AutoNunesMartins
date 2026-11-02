@@ -87,8 +87,7 @@ export function descriptionHtml(value: string | null | undefined): string {
   if (!value) return '';
   if (value.startsWith(RICH_DESCRIPTION_PREFIX))
     return sanitizeDescriptionHtml(value.slice(RICH_DESCRIPTION_PREFIX.length));
-  if (hasDescriptionMarkup(value))
-    return sanitizeDescriptionHtml(value);
+  if (hasDescriptionMarkup(value)) return sanitizeDescriptionHtml(value);
   function linkText(text: string): string {
     let result = '',
       offset = 0;
@@ -111,7 +110,8 @@ export function descriptionHtml(value: string | null | undefined): string {
 
 export function descriptionText(value: string | null | undefined): string {
   if (!value) return '';
-  if (!value.startsWith(RICH_DESCRIPTION_PREFIX) && !hasDescriptionMarkup(value)) return value.trim();
+  if (!value.startsWith(RICH_DESCRIPTION_PREFIX) && !hasDescriptionMarkup(value))
+    return value.trim();
   function text(node: Node): string {
     if (node.type === 'text') return node.data;
     if (!('children' in node)) return '';

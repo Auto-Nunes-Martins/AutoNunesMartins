@@ -325,8 +325,28 @@
   }
 }
 
-.design.orbit.orbit-detail.porsche-lab .vehicle-gallery:not(:has(.detail-thumbnails)) .vehicle-photo { padding-right: 0; }
-.design.orbit.orbit-detail.porsche-lab .vehicle-gallery:not(:has(.detail-thumbnails)) .expand { right: 20px; }
-.design.orbit.orbit-detail.porsche-lab .public-description p { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font-size: 16px; line-height: 1.8; }
-.design.orbit.orbit-detail.porsche-lab .confirmed-equipment { list-style: none; padding: 0; margin: 0; }
-.design.orbit.orbit-detail.porsche-lab .confirmed-equipment li { padding-block: 18px; border-bottom: 1px solid var(--line); font-size: 16px; }
+.design.orbit.orbit-detail.porsche-lab
+  .vehicle-gallery:not(:has(.detail-thumbnails))
+  .vehicle-photo {
+  padding-right: 0;
+}
+.design.orbit.orbit-detail.porsche-lab .vehicle-gallery:not(:has(.detail-thumbnails)) .expand {
+  right: 20px;
+}
+.design.orbit.orbit-detail.porsche-lab .public-description p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.8;
+}
+.design.orbit.orbit-detail.porsche-lab .confirmed-equipment {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.design.orbit.orbit-detail.porsche-lab .confirmed-equipment li {
+  padding-block: 18px;
+  border-bottom: 1px solid var(--line);
+  font-size: 16px;
+}

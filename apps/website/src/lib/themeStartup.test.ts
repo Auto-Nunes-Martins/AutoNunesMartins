@@ -26,18 +26,31 @@ describe('theme before the first painted frame', () => {
         querySelector: () => ({
           setAttribute: (_name: string, value: string) => (metadata = value),
         }),
-        querySelectorAll: (selector: string) => selector === '.design.orbit' ? [
-          {
-            classList: { toggle: (_name: string, value: boolean) => (darkClass = value) },
-            querySelectorAll: (selector: string) => selector === '[data-theme-logo]' ? [{
-              getAttribute: (name: string) => {
-                const tone = name.includes('dark') ? 'dark' : 'light';
-                return name.endsWith('srcset') ? `/_app/immutable/assets/${tone}.hash.webp 360w` : `/_app/immutable/assets/${tone}.hash.webp`;
-              },
-              setAttribute: (name: string, value: string) => { if (name === 'src') logoSource = value; else if (name === 'srcset') logoSet = value; },
-            }] : [],
-          },
-        ] : [],
+        querySelectorAll: (selector: string) =>
+          selector === '.design.orbit'
+            ? [
+                {
+                  classList: { toggle: (_name: string, value: boolean) => (darkClass = value) },
+                  querySelectorAll: (selector: string) =>
+                    selector === '[data-theme-logo]'
+                      ? [
+                          {
+                            getAttribute: (name: string) => {
+                              const tone = name.includes('dark') ? 'dark' : 'light';
+                              return name.endsWith('srcset')
+                                ? `/_app/immutable/assets/${tone}.hash.webp 360w`
+                                : `/_app/immutable/assets/${tone}.hash.webp`;
+                            },
+                            setAttribute: (name: string, value: string) => {
+                              if (name === 'src') logoSource = value;
+                              else if (name === 'srcset') logoSet = value;
+                            },
+                          },
+                        ]
+                      : [],
+                },
+              ]
+            : [],
       },
     };
     runInNewContext(themeBoot, context);
@@ -46,7 +59,9 @@ describe('theme before the first painted frame', () => {
     // This parser-blocking callback runs after SSR markup, before framework hydration.
     (context.window as { initializeOrbitDocument: () => void }).initializeOrbitDocument();
     expect(darkClass).toBe(theme === 'dark');
-    expect(logoSource).toBe(`/_app/immutable/assets/${theme === 'dark' ? 'dark' : 'light'}.hash.webp`);
+    expect(logoSource).toBe(
+      `/_app/immutable/assets/${theme === 'dark' ? 'dark' : 'light'}.hash.webp`,
+    );
     expect(logoSet).toBe(`${logoSource} 360w`);
     expect(metadata).toBe(theme === 'dark' ? '#0a0a0b' : '#f5f5f1');
   });

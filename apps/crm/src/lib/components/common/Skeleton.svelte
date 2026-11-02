@@ -8,9 +8,7 @@
   let { width = '100%', height = '14px', class: className = '' }: Props = $props();
 </script>
 
-<span
-  class="skel inline-block align-middle {className}"
-  style="width: {width}; height: {height};"
+<span class="skel inline-block align-middle {className}" style="width: {width}; height: {height};"
 ></span>
 
 <style>

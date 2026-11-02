@@ -2,7 +2,6 @@ import { withClerkHandler } from 'svelte-clerk/server';
 import { sequence } from '@sveltejs/kit/hooks';
 import { base } from '$app/paths';
 import type { Handle } from '@sveltejs/kit';
-import { beginNavigationTiming, finishNavigationTiming } from '$lib/server/navigationTiming';
 
 const security: Handle = async ({ event, resolve }) => {
   const route = event.url.pathname.slice(base.length) || '/';
@@ -28,15 +27,8 @@ const security: Handle = async ({ event, resolve }) => {
 };
 const clerk = sequence(withClerkHandler(), security);
 export const handle: Handle = async (input) => {
-  beginNavigationTiming(input.event.locals);
-  let resolveMs = 0;
-  const response = await clerk({ ...input, resolve: async (event, options) => {
-    const start = performance.now();
-    try { return await input.resolve(event, options); }
-    finally { resolveMs += performance.now() - start; }
-  } });
+  const response = await clerk(input);
   response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   response.headers.set('Cache-Control', 'private, no-store');
-  finishNavigationTiming(input.event.locals, response, input.event.route?.id ?? null, input.event.isDataRequest, resolveMs);
   return response;
 };

@@ -1,5 +1,4 @@
 import PreparationWorker from './photoPreparation.worker?worker';
-import { recordPreparation, getPreparationMetrics } from './photoDiagnostics';
 
 export const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
 export function validatePhoto(file: File) {
@@ -15,13 +14,11 @@ export function validatePhoto(file: File) {
 // heaps after each image, including nested HEIC workers, failures and cancellation.
 let tail: Promise<unknown> = Promise.resolve();
 export function preparePhoto(file: File, signal?: AbortSignal): Promise<File> {
-  const queuedAt = performance.now();
   const run = tail
     .catch(() => {})
     .then(
       () =>
         new Promise<File>((resolve, reject) => {
-          const startedAt = performance.now();
           if (signal?.aborted) {
             reject(new DOMException('Cancelado', 'AbortError'));
             return;
@@ -29,13 +26,12 @@ export function preparePhoto(file: File, signal?: AbortSignal): Promise<File> {
           let worker: Worker;
           let timer: ReturnType<typeof setTimeout>;
           let finished = false;
-          const finish = (error?: Error, output?: File, dimensions?: Record<string, number>) => {
+          const finish = (error?: Error, output?: File) => {
             if (finished) return;
             finished = true;
             clearTimeout(timer);
             signal?.removeEventListener('abort', cancel);
             worker?.terminate();
-            recordPreparation(file, output, queuedAt, startedAt, dimensions);
             if (error) reject(error);
             else resolve(output!);
           };
@@ -45,7 +41,9 @@ export function preparePhoto(file: File, signal?: AbortSignal): Promise<File> {
             worker = new PreparationWorker();
             signal?.addEventListener('abort', cancel, { once: true });
             worker.onmessage = ({ data }) =>
-              data.error ? finish(Error(data.error)) : finish(undefined, data.file, data.metrics);
+              data.error
+                ? finish(Error(data.error))
+                : finish(undefined, data.unchanged === true ? file : data.file);
             worker.onerror = () =>
               finish(
                 Error(
@@ -75,10 +73,8 @@ export async function readyPhoto(photo: {
   preparation?: Promise<File>;
   preparedFile?: File;
   preparationError?: string;
-  preparationMetrics?: Record<string, number>;
 }) {
   if (photo.preparedFile) {
-    photo.preparationMetrics ??= getPreparationMetrics(photo.preparedFile);
     return photo.preparedFile;
   }
   if (photo.preparationError) throw Error(photo.preparationError);
@@ -86,7 +82,6 @@ export async function readyPhoto(photo: {
   try {
     const file = await photo.preparation;
     photo.preparedFile = file;
-    photo.preparationMetrics = getPreparationMetrics(file);
     return file;
   } catch (error) {
     if (error instanceof Error && error.name !== 'AbortError')

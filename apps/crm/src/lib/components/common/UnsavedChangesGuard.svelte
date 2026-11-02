@@ -20,7 +20,9 @@
     } catch {
       automaticFailure = true;
       open = true;
-    } finally { pending = false; }
+    } finally {
+      pending = false;
+    }
   }
 
   beforeNavigate((navigation) => {
@@ -74,15 +76,24 @@
       await leave();
     } catch (error) {
       activeDraftGuard()?.resume?.();
-      toast.error(error instanceof Error ? error.message : 'Não foi possível descartar o rascunho. Continue a editar ou tente novamente.');
-    } finally { pending = false; }
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível descartar o rascunho. Continue a editar ou tente novamente.',
+      );
+    } finally {
+      pending = false;
+    }
   }
 </script>
 
 <ConfirmDialog
   bind:open
   title={automaticFailure ? 'Não foi possível guardar o rascunho' : 'Sair desta página?'}
-  message={activeDraftGuard()?.discardMessage ?? (automaticFailure ? 'As últimas alterações ainda não estão protegidas. Pode tentar novamente ou continuar a editar.' : 'Se sair agora, perde as alterações que ainda não guardou.')}
+  message={activeDraftGuard()?.discardMessage ??
+    (automaticFailure
+      ? 'As últimas alterações ainda não estão protegidas. Pode tentar novamente ou continuar a editar.'
+      : 'Se sair agora, perde as alterações que ainda não guardou.')}
   confirmLabel="Sair sem guardar"
   cancelLabel={automaticFailure ? 'Continuar a editar' : 'Ficar na página'}
   secondaryLabel={automaticFailure ? 'Tentar novamente' : undefined}

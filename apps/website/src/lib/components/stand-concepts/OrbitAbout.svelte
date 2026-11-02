@@ -10,7 +10,11 @@
   let { onContact }: { onContact: () => void } = $props();
 </script>
 
-<SocialMetadata title="Quem somos — Auto Nunes Martins" description="Conheça a Auto Nunes Martins e encontre os contactos para esclarecer dúvidas sobre a escolha do seu próximo automóvel." canonical={new URL('/quem-somos', $page.url.origin).href} />
+<SocialMetadata
+  title="Quem somos — Auto Nunes Martins"
+  description="Conheça a Auto Nunes Martins e encontre os contactos para esclarecer dúvidas sobre a escolha do seu próximo automóvel."
+  canonical={new URL('/quem-somos', $page.url.origin).href}
+/>
 
 <svelte:head>
   <link rel="canonical" href={new URL('/quem-somos', $page.url.origin).href} />
@@ -31,22 +35,28 @@
         <button class="action primary" onclick={onContact}
           >Vamos conversar <ArrowUpRight size={18} aria-hidden="true" /></button
         >
-        <a class="text-link" href="#a-nossa-historia">Conheça-nos melhor <ArrowDown size={17} aria-hidden="true" /></a>
+        <a class="text-link" href="#a-nossa-historia"
+          >Conheça-nos melhor <ArrowDown size={17} aria-hidden="true" /></a
+        >
       </div>
     </div>
     <figure class="hero-photo">
       <picture style="display: contents">
-      <source type="image/avif" srcset={content.heroImage.avifSrcset} sizes="(max-width: 760px) 90vw, 78vw" />
-      <img
-        src={photo(content.heroImage.id, 960)}
-        srcset={content.heroImage.srcset}
-        sizes="(max-width: 760px) 90vw, 78vw"
-        alt={content.heroImage.alt}
-        width="1024"
-        height="768"
-        fetchpriority="high"
-        decoding="async"
-      />
+        <source
+          type="image/avif"
+          srcset={content.heroImage.avifSrcset}
+          sizes="(max-width: 760px) 90vw, 78vw"
+        />
+        <img
+          src={photo(content.heroImage.id, 960)}
+          srcset={content.heroImage.srcset}
+          sizes="(max-width: 760px) 90vw, 78vw"
+          alt={content.heroImage.alt}
+          width="1024"
+          height="768"
+          fetchpriority="high"
+          decoding="async"
+        />
       </picture>
     </figure>
   </section>
@@ -79,17 +89,21 @@
   <section class="approach frame" data-scene data-approach aria-labelledby="approach-title">
     <figure class="detail-photo" data-approach-target>
       <picture style="display: contents">
-      <source type="image/avif" srcset={content.approach.avifSrcset} sizes="(max-width: 760px) 90vw, 46vw" />
-      <img
-        src={photo(content.approach.image, 960)}
-        srcset={content.approach.srcset}
-        sizes="(max-width: 760px) 90vw, 46vw"
-        alt={content.approach.alt}
-        width="1024"
-        height="768"
-        loading="lazy"
-        decoding="async"
-      />
+        <source
+          type="image/avif"
+          srcset={content.approach.avifSrcset}
+          sizes="(max-width: 760px) 90vw, 46vw"
+        />
+        <img
+          src={photo(content.approach.image, 960)}
+          srcset={content.approach.srcset}
+          sizes="(max-width: 760px) 90vw, 46vw"
+          alt={content.approach.alt}
+          width="1024"
+          height="768"
+          loading="lazy"
+          decoding="async"
+        />
       </picture>
       <figcaption>O nosso segundo stand</figcaption>
     </figure>
@@ -108,7 +122,6 @@
   <OrbitPerspective id="company-essence" {...content.essence} />
 
   <TeamContacts people={content.team} introduction={content.teamIntroduction} />
-
 </main>
 
 <style>
@@ -454,7 +467,9 @@
     .approach-copy .text-link {
       margin-top: 16px;
     }
-    .company { padding-bottom: 120px; }
+    .company {
+      padding-bottom: 120px;
+    }
   }
   @media (max-width: 600px) {
     .timeline ol {

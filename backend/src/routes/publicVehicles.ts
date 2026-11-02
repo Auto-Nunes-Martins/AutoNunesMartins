@@ -1,9 +1,7 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { withCoverPhotoDimensions } from '../lib/data/photoDimensions.js';
-import {
-  isPhotoWidth,
-  readPhotoBytes,
-} from '../lib/server/photoVariants.js';
+import { isPhotoWidth, readPhotoBytes } from '../lib/server/photoVariants.js';
+import type { PhotoWidth } from '../lib/server/photoVariants.js';
 import { readPublicHighlights } from '../lib/server/homepageHighlights.js';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -20,7 +18,10 @@ import {
   relatedPublicVehicles,
 } from '../lib/data/publicVehicle.js';
 import { publicSlugSchema, publicVehicleQuerySchema } from '../lib/domain/publicVehicle.js';
-import { isPublicPhotoVersion, REVALIDATE_PUBLIC_PHOTO } from '../../../shared/publicPhotoCache.mjs';
+import {
+  isPublicPhotoVersion,
+  REVALIDATE_PUBLIC_PHOTO,
+} from '../../../shared/publicPhotoCache.mjs';
 import {
   readUnavailableVehicle,
   unavailableVehiclePhotoPath,
@@ -83,9 +84,17 @@ router.get(
     }
     try {
       const items = await getPublicSelection(prisma, parsed.data);
-      const vehicles = await withCoverPhotoDimensions(prisma, items.flatMap(item => item.vehicle ? [item.vehicle] : []));
-      const bySlug = new Map(vehicles.map(vehicle => [vehicle.slug, vehicle]));
-      res.json({ items: items.map(item => ({ ...item, vehicle: item.vehicle ? bySlug.get(item.vehicle.slug) : null })) });
+      const vehicles = await withCoverPhotoDimensions(
+        prisma,
+        items.flatMap((item) => (item.vehicle ? [item.vehicle] : [])),
+      );
+      const bySlug = new Map(vehicles.map((vehicle) => [vehicle.slug, vehicle]));
+      res.json({
+        items: items.map((item) => ({
+          ...item,
+          vehicle: item.vehicle ? bySlug.get(item.vehicle.slug) : null,
+        })),
+      });
     } catch {
       logger.error('Public selection unavailable');
       res.status(503).json({ error: 'Selection unavailable' });
@@ -172,7 +181,7 @@ router.get(
         });
         return;
       }
-      res.json((await withCoverPhotoDimensions(prisma,[vehicle],true))[0]);
+      res.json((await withCoverPhotoDimensions(prisma, [vehicle], true))[0]);
     } catch {
       logger.error('Public vehicle detail unavailable');
       res.status(503).json({ error: 'Public catalogue temporarily unavailable' });
@@ -194,8 +203,15 @@ router.get(
         res.status(404).json({ error: 'Photos unavailable' });
         return;
       }
-      const metadata=(await withCoverPhotoDimensions(prisma,[{photos:versions.map(v=>'?v='+v)}],true))[0];
-      res.json({ versions,...(metadata?.photoDimensions?.some(Boolean)?{photoDimensions:metadata.photoDimensions}:{}) });
+      const metadata = (
+        await withCoverPhotoDimensions(prisma, [{ photos: versions.map((v) => '?v=' + v) }], true)
+      )[0];
+      res.json({
+        versions,
+        ...(metadata?.photoDimensions?.some(Boolean)
+          ? { photoDimensions: metadata.photoDimensions }
+          : {}),
+      });
     } catch {
       logger.error('Public photo authorization unavailable');
       res.status(503).json({ error: 'Photos temporarily unavailable' });
@@ -226,13 +242,8 @@ router.get(
         res.status(400).json({ error: 'Invalid photo size' });
         return;
       }
-      const timingStart = performance.now();
-      const timings: string[] = [];
-      const record = (stage: string, ms: number) => {
-        timings.push(`${stage};dur=${Math.max(0, ms).toFixed(1)}`);
-      };
       const path = await getPublicPhotoPath(prisma, slug.data, index.data);
-      record('photo-check', performance.now() - timingStart);
+
       if (!path) {
         res.status(404).json({ error: 'Photo not found' });
         return;
@@ -243,18 +254,13 @@ router.get(
         res.status(404).json({ error: 'Photo not found' });
         return;
       }
-      const photo = await readPhotoBytes(
-        path,
-        width as import('../lib/server/photoVariants.js').PhotoWidth | undefined,
-        record,
-      );
+      const photo = await readPhotoBytes(path, width as PhotoWidth | undefined);
       if (!photo) {
         res.status(404).json({ error: 'Photo not found' });
         return;
       }
-      record('photo-total', performance.now() - timingStart);
+
       res.set({
-        'Server-Timing': timings.join(', '),
         'Content-Type': photo.contentType,
         'X-Content-Type-Options': 'nosniff',
         'Cross-Origin-Resource-Policy': 'cross-origin',
