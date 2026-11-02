@@ -1,0 +1,5 @@
+/* Pointer arrival keeps the logical focus destination without a native section
+   halo. The controller removes this marker on blur or the next keyboard input. */
+[data-anchor-pointer-focus]:focus {
+  outline: none;
+}

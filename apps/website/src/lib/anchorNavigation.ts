@@ -4,6 +4,8 @@ import {
   internalAnchor,
 } from './components/stand-concepts/slowAnchor';
 import type { AnchorScrollProfile } from './components/stand-concepts/slowAnchor';
+import type { AnchorArrival } from './components/stand-concepts/slowAnchor';
+import './anchorNavigation.css';
 
 type Options = {
   tick: () => Promise<void>;
@@ -19,7 +21,11 @@ export function installAnchorNavigation({ tick, push, navigate }: Options) {
     cancelAnimationFrame(frame);
     scroller.stop();
   };
-  const reveal = async (hash: string, profile: AnchorScrollProfile = 'default') => {
+  const reveal = async (
+    hash: string,
+    profile: AnchorScrollProfile = 'default',
+    arrival?: AnchorArrival,
+  ) => {
     stop();
     const request = version;
     // Link handlers close mobile menus first; measure after their DOM update.
@@ -28,7 +34,7 @@ export function installAnchorNavigation({ tick, push, navigate }: Options) {
     frame = requestAnimationFrame(() => {
       if (request !== version) return;
       const target = anchorTarget(hash);
-      if (target) scroller.scroll(target, profile);
+      if (target) scroller.scroll(target, profile, arrival);
     });
   };
   const click = (event: MouseEvent) => {
@@ -53,11 +59,23 @@ export function installAnchorNavigation({ tick, push, navigate }: Options) {
     event.preventDefault();
     stop();
     if (url.hash !== current.hash) push(url);
+    const discovery = current.pathname === '/' && url.hash === '#selecao';
     const profile =
-      current.pathname === '/' && url.hash === '#selecao' && link.matches('.hd-scroll, .cabin-link')
-        ? 'discovery'
-        : 'default';
-    void reveal(url.hash, profile);
+      discovery && link.matches('.cabin-link')
+        ? 'discovery-return'
+        : discovery && link.matches('.hd-scroll')
+          ? 'discovery'
+          : 'default';
+    void reveal(
+      url.hash,
+      profile,
+      profile === 'default'
+        ? undefined
+        : {
+            keyboard: event.detail === 0,
+            offset: profile === 'discovery' && window.innerWidth <= 700 ? 5 : 0,
+          },
+    );
   };
   const events = ['wheel', 'touchstart', 'pointerdown', 'keydown', 'popstate'] as const;
   document.addEventListener('click', click, true);

@@ -14,6 +14,7 @@ function setup(reduced = false) {
   const win = Object.assign(new EventTarget(), {
     scrollY: 200,
     innerHeight: 800,
+    innerWidth: 1440,
     matchMedia: () => ({ matches: reduced }),
     scrollTo: vi.fn(),
   });
@@ -221,7 +222,7 @@ function discovery(t: ReturnType<typeof setup>, className = 'hd-scroll') {
   t.doc.getElementById.mockImplementation((id) => (id === 'selecao' ? t.target : null));
 }
 
-it.each(['hd-scroll', 'cabin-link'])(
+it.each(['hd-scroll'])(
   'moves the homepage %s link natively without per-frame scroll writes, keeping offset and focus',
   async (className) => {
     const t = setup();
@@ -247,7 +248,7 @@ it.each(['hd-scroll', 'cabin-link'])(
   },
 );
 
-it('preserves the destination and final focus on a long upward discovery return', async () => {
+it('animates a long upward discovery return progressively instead of relying on native duration', async () => {
   const t = setup();
   discovery(t, 'cabin-link');
   t.doc.documentElement.scrollHeight = 20000;
@@ -255,11 +256,30 @@ it('preserves the destination and final focus on a long upward discovery return'
   t.click();
   await Promise.resolve();
   t.advance(0);
-  expect(t.win.scrollTo).toHaveBeenCalledTimes(1);
-  expect(t.win.scrollTo).toHaveBeenCalledWith({ top: 1500, behavior: 'smooth' });
-  t.win.scrollY = 1500;
+  expect(t.win.scrollTo).not.toHaveBeenCalled();
+  t.advance(800);
+  expect(t.win.scrollY).toBeGreaterThan(1500);
+  expect(t.win.scrollY).toBeLessThan(16000);
+  expect(t.target.focus).not.toHaveBeenCalled();
+  t.advance(2400);
+  expect(t.win.scrollY).toBe(1500);
+  expect(t.target.focus).toHaveBeenCalledWith({ preventScroll: true });
+  t.controller.destroy();
+});
+
+it('adds exactly five pixels only for the mobile discovery cue and quiets pointer arrival', async () => {
+  const t = setup();
+  discovery(t);
+  t.win.innerWidth = 390;
+  t.click({ detail: 1 });
+  await Promise.resolve();
+  t.advance(0);
+  expect(t.win.scrollTo).toHaveBeenLastCalledWith({ top: 1505, behavior: 'smooth' });
+  t.win.scrollY = 1505;
   t.win.dispatchEvent(new Event('scrollend'));
-  expect(t.target.focus).toHaveBeenCalledTimes(1);
+  expect(t.target.setAttribute).toHaveBeenCalledWith('data-anchor-pointer-focus', '');
+  t.win.dispatchEvent(new Event('keydown'));
+  expect(t.target.removeAttribute).toHaveBeenCalledWith('data-anchor-pointer-focus');
   t.controller.destroy();
 });
 
@@ -299,7 +319,7 @@ it.each(['wheel', 'touchstart', 'pointerdown', 'keydown', 'popstate'])(
   'interrupts native discovery on %s without a later correction or focus',
   async (name) => {
     const t = setup();
-    discovery(t, 'cabin-link');
+    discovery(t);
     t.click();
     await Promise.resolve();
     t.advance(0);

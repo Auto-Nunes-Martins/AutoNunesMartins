@@ -2,6 +2,7 @@
   import { onMount, tick, type Snippet } from 'svelte';
   import { ArrowLeft, ArrowRight } from 'lucide-svelte';
   import { publicCard, type PublicCard, type PublicVehicle } from '$lib/publicVehicles';
+  import { carouselMotion } from './carouselMotion';
 
   let {
     vehicles,
@@ -20,7 +21,7 @@
   const ordered = $derived(items);
   let viewport: HTMLDivElement = $state(null!);
   let track: HTMLDivElement = $state(null!);
-  let animation: Animation | undefined;
+  let animation: ReturnType<typeof carouselMotion> | undefined;
   let movementDuration = $state(360);
   let movementEasing = $state('cubic-bezier(.22,.61,.36,1)');
   // Keep rapid navigation sequential, with at most three pending movements.
@@ -84,12 +85,12 @@
         ? document.activeElement
         : null;
     const duration = reduced ? 0 : direction === 0 ? 160 : movementDuration;
-    animation = track.animate(
-      [
-        { transform: `translate3d(${from}px, 0, 0)` },
-        { transform: `translate3d(${base() - direction * step}px, 0, 0)` },
-      ],
-      { duration, easing: movementEasing, fill: 'forwards' },
+    animation = carouselMotion(
+      track,
+      from,
+      base() - direction * step,
+      duration,
+      velocity && direction ? [0.22, tangent, 0.35, 1] : [0.22, 0.61, 0.36, 1],
     );
     try {
       await animation.finished;
@@ -504,7 +505,7 @@
     );
   }
   .track {
-    /* Keep the card/control paint layer across capture release and WAAPI settle. */
+    /* Keep the card/control paint layer during dragging and settling. */
     will-change: transform;
     display: flex;
     align-items: stretch;

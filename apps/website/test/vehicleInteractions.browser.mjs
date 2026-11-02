@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
+import sharp from 'sharp';
 
 const url = new URL(process.argv[2]);
 assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(url.hostname));
@@ -35,9 +36,10 @@ try {
       }
     };
     const move = async (x, y) => {
-      if (cdp)
+      if (cdp) {
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] });
-      else await page.mouse.move(x, y, { steps: 3 });
+        await page.waitForTimeout(20);
+      } else await page.mouse.move(x, y, { steps: 3 });
     };
     const end = async () => {
       if (cdp) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -224,11 +226,22 @@ try {
         const button = (await visibleCard()).locator(selector),
           before = await button.getAttribute('aria-pressed');
         await activate(button);
-        await page.waitForFunction(
-          ({ element, before }) => element.getAttribute('aria-pressed') !== before,
-          { element: await button.elementHandle(), before },
-          { timeout: 3000 },
-        );
+        await page
+          .waitForFunction(
+            ({ element, before }) => element.getAttribute('aria-pressed') !== before,
+            { element: await button.elementHandle(), before },
+            { timeout: 3000 },
+          )
+          .catch(async (error) => {
+            console.log(
+              JSON.stringify({
+                width,
+                selector,
+                moving: await carousel.getAttribute('data-moving'),
+              }),
+            );
+            throw error;
+          });
         assert.notEqual(
           await button.getAttribute('aria-pressed'),
           before,
@@ -245,6 +258,102 @@ try {
         await keyboard.evaluate((button) => getComputedStyle(button).outlineStyle),
         'solid',
       );
+      // Pause JS time, not painting, to inspect actual pixels throughout settle.
+      // This catches disappearing composited controls even when DOM/CSS stay visible.
+      await page.clock.install();
+      await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
+      const paint = cdp ?? (await context.newCDPSession(page));
+      const card = await visibleCard(),
+        image = await card.locator('.card-image').boundingBox();
+      const sx = image.x + image.width * 0.65,
+        sy = image.y + image.height / 2;
+      await begin(sx, sy);
+      await move(sx - image.width * 0.35, sy);
+      await move(sx - image.width * 0.7, sy);
+      await end();
+      const pixelSamples = [];
+      for (let phase = 0; phase < 4; phase++) {
+        if (phase) await page.clock.runFor(80);
+        assert.equal(await carousel.getAttribute('data-moving'), 'true');
+        assert.equal(
+          await carousel.locator('.track').evaluate((track) => track.getAnimations().length),
+          0,
+          'settle must not switch to parent WAAPI',
+        );
+        // Keep photo hover/other CSS transitions identical in the visible and
+        // hidden reference; only the JS-driven track advances between samples.
+        await page.evaluate(() =>
+          document.getAnimations().forEach((animation) => animation.pause()),
+        );
+        const regions = await carousel.evaluate((carousel) => {
+          const frame = carousel.querySelector('.viewport').getBoundingClientRect();
+          window.pixelControls = ['.card-arrow', '.card-compare'].map((selector) =>
+            [...carousel.querySelectorAll(selector)].find((node) => {
+              const r = node.getBoundingClientRect();
+              return (
+                r.left >= frame.left &&
+                r.right <= frame.right &&
+                r.top >= 0 &&
+                r.bottom <= innerHeight
+              );
+            }),
+          );
+          if (window.pixelControls.some((node) => !node))
+            throw new Error('No fully visible control region during settle');
+          return window.pixelControls.map((node) => {
+            const r = node.getBoundingClientRect();
+            return {
+              x: Math.ceil(r.x),
+              y: Math.ceil(r.y),
+              width: Math.floor(r.width) - 1,
+              height: Math.floor(r.height) - 1,
+            };
+          });
+        });
+        const visible = Buffer.from(
+          (await paint.send('Page.captureScreenshot', { format: 'png' })).data,
+          'base64',
+        );
+        await page.evaluate(() => {
+          for (const node of window.pixelControls)
+            node.style.setProperty('visibility', 'hidden', 'important');
+        });
+        const hidden = Buffer.from(
+          (await paint.send('Page.captureScreenshot', { format: 'png' })).data,
+          'base64',
+        );
+        await page.evaluate(() => {
+          for (const node of window.pixelControls) node.style.removeProperty('visibility');
+        });
+        const differences = [];
+        for (const region of regions) {
+          const a = await sharp(visible)
+            .extract({ left: region.x, top: region.y, width: region.width, height: region.height })
+            .removeAlpha()
+            .raw()
+            .toBuffer();
+          const b = await sharp(hidden)
+            .extract({ left: region.x, top: region.y, width: region.width, height: region.height })
+            .removeAlpha()
+            .raw()
+            .toBuffer();
+          let changed = 0;
+          for (let i = 0; i < a.length; i += 3)
+            if (
+              Math.abs(a[i] - b[i]) +
+                Math.abs(a[i + 1] - b[i + 1]) +
+                Math.abs(a[i + 2] - b[i + 2]) >
+              60
+            )
+              changed++;
+          assert.ok(changed > 40, 'control must paint distinct pixels during settle');
+          differences.push(changed);
+        }
+        await writeFile(`${output}/settle-${width}-${phase}.png`, visible);
+        pixelSamples.push({ phase, differences });
+      }
+      await page.clock.runFor(600);
+      await page.clock.resume();
       assert.deepEqual(errors, []);
       await page.screenshot({ path: `${output}/${width}.png` });
       results.push({
@@ -253,6 +362,7 @@ try {
         fade: 'floor/hold/return passed',
         cards: 'four origins, no toggle/navigation, stable control DOM/visibility',
         errors,
+        pixelSamples,
       });
       console.log(`PASS real vehicle interactions ${width}px`);
     } finally {

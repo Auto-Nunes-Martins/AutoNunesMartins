@@ -24,6 +24,7 @@
   import { scrollCue } from './scrollCue';
   import { featuredPhotoSizesForRatio } from './images';
   import { scrollFrame, setScrollStyle } from './scrollFrame';
+  import { mobileCanvasFrame } from './mobileCanvasFrame';
   import { mobileHeroImages } from '$lib/mobileHeroImages';
   import {
     narrowHeroMedia,
@@ -66,6 +67,9 @@
     const feature = node.querySelector<HTMLElement>('.hd-feature');
     if (feature) setScrollStyle(node, '--v5-feature-height', `${feature.offsetHeight}px`);
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    const mobile = matchMedia('(max-width: 700px), (pointer: coarse)');
+    const canvas = node.querySelector<HTMLElement>('.hd-landscape');
+    const frame = canvas ? mobileCanvasFrame(canvas) : undefined;
     const task = scrollFrame(() => {
       // Complete geometry reads before changing canvas styles or any label pivot.
       const bounds = node.getBoundingClientRect();
@@ -115,8 +119,17 @@
       }
       const pinned = String(!reduced.matches && CSS.supports('clip-path', 'inset(0)'));
       return () => {
+        const capture = frame?.prepare(
+          mobile.matches && pinned === 'true',
+          window.innerWidth,
+          bounds.width,
+          screen.orientation?.angle ?? 0,
+        );
         for (const [target, name, value] of writes) setScrollStyle(target, name, value);
         if (node.dataset.canvasPinned !== pinned) node.dataset.canvasPinned = pinned;
+        // Capture after the normal CSS frame is updated, only at initial mount
+        // or a real width/orientation change. The child's entry zoom is untouched.
+        if (capture) frame?.capture();
       };
     });
     const measure = () => task.schedule();
@@ -126,6 +139,8 @@
       resize.observe(plane);
     window.addEventListener('resize', measure);
     reduced.addEventListener('change', measure);
+    mobile.addEventListener('change', measure);
+    screen.orientation?.addEventListener('change', measure);
     task.runNow(performance.now());
     return {
       destroy() {
@@ -133,6 +148,9 @@
         resize.disconnect();
         window.removeEventListener('resize', measure);
         reduced.removeEventListener('change', measure);
+        mobile.removeEventListener('change', measure);
+        screen.orientation?.removeEventListener('change', measure);
+        frame?.destroy();
       },
     };
   }

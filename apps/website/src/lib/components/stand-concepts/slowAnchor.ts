@@ -1,4 +1,5 @@
-export type AnchorScrollProfile = 'default' | 'discovery';
+export type AnchorScrollProfile = 'default' | 'discovery' | 'discovery-return';
+export type AnchorArrival = { offset?: number; keyboard?: boolean };
 
 /** Shared, interruptible anchor movement; never changes global scroll behavior. */
 export function createAnchorScroller() {
@@ -14,7 +15,11 @@ export function createAnchorScroller() {
     cancelNative = undefined;
     cancel?.();
   };
-  const scroll = (target: HTMLElement, profile: AnchorScrollProfile = 'default') => {
+  const scroll = (
+    target: HTMLElement,
+    profile: AnchorScrollProfile = 'default',
+    arrival: AnchorArrival = {},
+  ) => {
     stop();
     removeFocusTarget?.();
     const start = window.scrollY;
@@ -29,23 +34,31 @@ export function createAnchorScroller() {
       return Math.max(
         0,
         Math.min(
-          window.scrollY + target.getBoundingClientRect().top - margin,
+          window.scrollY + target.getBoundingClientRect().top - margin + (arrival.offset ?? 0),
           document.documentElement.scrollHeight - window.innerHeight,
         ),
       );
     };
     const finish = () => {
       stop();
-      if (!target.hasAttribute('tabindex')) {
+      const addedTabindex = !target.hasAttribute('tabindex');
+      if (addedTabindex) {
         target.setAttribute('tabindex', '-1');
-        const cleanup = () => {
-          target.removeAttribute('tabindex');
-          target.removeEventListener('blur', cleanup);
-          removeFocusTarget = undefined;
-        };
-        removeFocusTarget = cleanup;
-        target.addEventListener('blur', cleanup);
       }
+      const keyboard = () => target.removeAttribute('data-anchor-pointer-focus');
+      const cleanup = () => {
+        if (addedTabindex) target.removeAttribute('tabindex');
+        target.removeAttribute('data-anchor-pointer-focus');
+        window.removeEventListener('keydown', keyboard, true);
+        target.removeEventListener('blur', cleanup);
+        removeFocusTarget = undefined;
+      };
+      if (arrival.keyboard === false) {
+        target.setAttribute('data-anchor-pointer-focus', '');
+        window.addEventListener('keydown', keyboard, { once: true, capture: true });
+      }
+      removeFocusTarget = cleanup;
+      target.addEventListener('blur', cleanup);
       target.focus({ preventScroll: true });
     };
     if (
@@ -100,14 +113,22 @@ export function createAnchorScroller() {
       return;
     }
     const began = performance.now();
+    const fixedEnd = profile === 'discovery-return' ? destination() : undefined;
+    const duration =
+      fixedEnd === undefined
+        ? 800
+        : Math.min(2400, Math.max(1000, 650 + Math.sqrt(Math.abs(fixedEnd - start)) * 22));
     const step = (now: number) => {
       if (!target.isConnected) {
         stop();
         return;
       }
-      const progress = Math.min(1, (now - began) / 800);
+      const progress = Math.min(1, (now - began) / duration);
       const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
-      window.scrollTo({ top: start + (destination() - start) * eased, behavior: 'instant' });
+      window.scrollTo({
+        top: start + ((fixedEnd ?? destination()) - start) * eased,
+        behavior: 'instant',
+      });
       if (progress < 1) frame = requestAnimationFrame(step);
       else finish();
     };
