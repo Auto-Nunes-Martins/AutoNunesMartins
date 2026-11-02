@@ -34,18 +34,18 @@
   "disputes": [
     {
       "id": "ralEntity",
-      "label": "Entidade RAL competente e contactos",
-      "value": null
+      "label": "Entidade RAL competente",
+      "value": "CNIACC — Centro Nacional de Informação e Arbitragem de Conflitos de Consumo"
     },
     {
       "id": "ralUrl",
       "label": "Endereço oficial da entidade RAL",
-      "value": null
+      "value": "https://www.cniacc.pt/"
     },
     {
       "id": "ralMembership",
-      "label": "Eventual adesão a entidade RAL",
-      "value": null
+      "label": "Adesão voluntária e vinculação legal",
+      "value": "A indicação do CNIACC não constitui adesão voluntária do stand. Mantêm-se os casos de arbitragem necessária previstos na lei."
     }
   ],
   "complaints": [
@@ -84,7 +84,7 @@
     {
       "id": "retention",
       "label": "Prazos ou critérios de conservação dos pedidos e registos técnicos",
-      "value": null
+      "value": "Os avisos de contacto na área de gestão são conservados por um período máximo de 90 dias após a receção. Os emails de pedidos encerrados sem venda são conservados apenas enquanto necessários ao acompanhamento, até um ano após o último contacto. Pedidos em curso, documentação de vendas, garantias, reclamações e litígios seguem as necessidades e obrigações aplicáveis. Os prazos dos restantes registos técnicos e das cópias de segurança continuam por confirmar."
     }
   ],
   "checks": [

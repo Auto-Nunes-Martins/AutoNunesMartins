@@ -73,7 +73,8 @@ export function createContactBudgetStore(
           token: number;
         }>('SELECT * FROM "ContactSendAttempt" WHERE "key"=$1', [key]);
         if (!attempt) {
-          // A retained CRM event also prevents replay after short-lived attempt metadata expires.
+          // A retained CRM event also prevents replay after attempt metadata expires.
+          // Once both the attempt and shared notice are removed, that guarantee ends.
           const [event] = await tx.query<{ metadata: { payloadHash?: string } }>(
             'SELECT "metadata" FROM "ActivityLog" WHERE "id"=$1',
             ['contact:' + key],
@@ -174,7 +175,7 @@ export function createContactBudgetStore(
         );
         if (sent && updated.length) {
           if (!preview) throw new Error('Contact notification preview missing');
-          // Acceptance and one shared CRM event commit together. Receipts are per active user.
+          // Acceptance and one shared CRM event commit together; removal is shared too.
           const name = preview.name.slice(0, 120),
             subject = preview.subject.slice(0, 120);
           await tx.query(

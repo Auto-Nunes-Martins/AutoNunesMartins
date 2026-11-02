@@ -28,7 +28,8 @@ export function config(env) {
   const base = env.CRM_BASE_PATH ?? '/crm';
   if (base !== '' && !/^\/[a-zA-Z0-9_-]+$/.test(base)) throw new Error('Invalid CRM_BASE_PATH');
   if (website.host === crm.host && !base) throw new Error('Same-host CRM requires a base path');
-  const preview = website.hostname.endsWith('.onrender.com');
+  const preview =
+    website.hostname.endsWith('.onrender.com') || website.hostname.endsWith('.fly.dev');
   if (env.SITE_NOINDEX && !['true', 'false'].includes(env.SITE_NOINDEX))
     throw new Error('Invalid SITE_NOINDEX');
   return {
@@ -41,7 +42,11 @@ export function config(env) {
         ? env.RENDER_SERVICE_TYPE === 'web'
           ? 'render'
           : 'unavailable'
-        : 'socket',
+        : env.FLY_APP_NAME || env.FLY_MACHINE_ID
+          ? env.FLY_APP_NAME && env.FLY_MACHINE_ID
+            ? 'fly'
+            : 'unavailable'
+          : 'socket',
   };
 }
 export function selectRoute(settings, host, rawUrl) {

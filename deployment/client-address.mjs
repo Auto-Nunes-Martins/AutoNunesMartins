@@ -21,6 +21,7 @@ export function clientAddress(req, source) {
   // Render documents that its public Cloudflare ingress overwrites this header.
   // Never infer trust from the hostname, XFF, CF-Ray or a caller-supplied flag.
   // Missing/malformed trusted metadata fails closed instead of using proxy IP.
+  if (source === 'fly') return normaliseAddress(req.headers['fly-client-ip']);
   if (source !== 'render' && source !== 'socket') return null;
   return normaliseAddress(
     source === 'render' ? req.headers['cf-connecting-ip'] : req.socket.remoteAddress,

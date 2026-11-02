@@ -1,0 +1,44 @@
+# Preparation only: replace the app name and both preview origins before deployment.
+app = "anm-preview-change-me"
+primary_region = "cdg"
+kill_signal = "SIGTERM"
+kill_timeout = 30
+
+[build]
+  dockerfile = "Dockerfile"
+  [build.args]
+    CRM_BASE_PATH = "/crm"
+    PUBLIC_WEBSITE_URL = "https://anm-preview-change-me.fly.dev"
+    # Supply PUBLIC_CLERK_PUBLISHABLE_KEY as a public build argument.
+
+[env]
+  NODE_ENV = "production"
+  PORT = "10000"
+  WEBSITE_ORIGIN = "https://anm-preview-change-me.fly.dev"
+  CRM_ORIGIN = "https://anm-preview-change-me.fly.dev"
+  CRM_BASE_PATH = "/crm"
+  SITE_NOINDEX = "true"
+  CONTACT_ENABLED = "false"
+
+[http_service]
+  internal_port = 10000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 20
+    hard_limit = 40
+  [[http_service.checks]]
+    grace_period = "300s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/healthz"
+    [http_service.checks.headers]
+      Host = "anm-preview-change-me.fly.dev"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "2gb"

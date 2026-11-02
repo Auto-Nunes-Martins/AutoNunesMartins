@@ -1,6 +1,6 @@
 import {
   readContactNotifications,
-  markContactNotificationRead,
+  deleteContactNotification,
 } from '../lib/server/contactNotifications.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
@@ -123,7 +123,7 @@ router.get(
       res.status(400).json({ error: 'Invalid creation context' });
       return;
     }
-    // Contact read state stays fresh across replicas; only operational aggregates use the cache.
+    // Shared contacts stay fresh across replicas; only operational aggregates use the cache.
     const [payload, contacts, draftVehicles] = await Promise.all([
       cache.wrap(`notifications:${actorId}`, NOTIFICATIONS_TTL_MS, () =>
         buildNotifications(actorId),
@@ -148,8 +148,8 @@ router.get(
   }),
 );
 
-router.post(
-  '/contacts/:id/read',
+router.delete(
+  '/contacts/:id',
   requireUser,
   asyncHandler(async (req: AuthedRequest, res: Response) => {
     if (!req.user) {
@@ -161,7 +161,7 @@ router.post(
       res.status(400).json({ error: 'Invalid notification' });
       return;
     }
-    const found = await markContactNotificationRead(
+    const found = await deleteContactNotification(
       { query: (sql, values = []) => prisma.$queryRawUnsafe(sql, ...values) },
       req.user.id,
       eventId,

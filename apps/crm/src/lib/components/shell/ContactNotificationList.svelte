@@ -1,17 +1,16 @@
 <script lang="ts">
-  import { Check, Mail } from 'lucide-svelte';
+  import { Mail } from 'lucide-svelte';
   interface Item {
     id: string;
     name: string;
     subject: string;
     createdAt: string;
-    read: boolean;
   }
   let {
     items,
-    onRead,
-    readingId = '',
-  }: { items: Item[]; onRead: (id: string) => void; readingId?: string } = $props();
+    onDelete,
+    deletingId = '',
+  }: { items: Item[]; onDelete: (id: string) => void; deletingId?: string } = $props();
   const timestamp = (value: string) =>
     new Date(value).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
 </script>
@@ -22,9 +21,12 @@
   >
     Contactos do website
   </h4>
+  <p class="px-4 pb-2 text-[10px] text-[var(--color-text-muted)]">
+    Avisos partilhados pela equipa. Eliminar um aviso mantém o email na caixa de correio.
+  </p>
   <ul class="divide-y divide-[var(--color-border)] max-h-72 overflow-y-auto">
     {#each items as item (item.id)}
-      <li class="px-4 py-3" class:opacity-70={item.read}>
+      <li class="px-4 py-3">
         <div class="flex items-start gap-2">
           <Mail class="h-4 w-4 shrink-0 mt-0.5 text-[var(--color-info)]" />
           <div class="min-w-0 flex-1">
@@ -40,22 +42,15 @@
             <p class="text-[10px] text-[var(--color-text-faint)] mt-1">
               Email aceite para envio. Consulte a caixa de correio.
             </p>
-            {#if item.read}
-              <span
-                class="inline-flex gap-1 items-center mt-2 text-[10px] text-[var(--color-text-muted)]"
-                ><Check class="h-3 w-3" />Lida por si</span
-              >
-            {:else}
-              <button
-                type="button"
-                disabled={!!readingId}
-                onclick={() => onRead(item.id)}
-                aria-label={'Marcar contacto de ' + item.name + ' como lido'}
-                class="mt-2 text-[11px] underline text-[var(--color-info)] disabled:opacity-50"
-              >
-                {readingId === item.id ? 'A guardar…' : 'Não lida · Marcar como lida'}
-              </button>
-            {/if}
+            <button
+              type="button"
+              disabled={!!deletingId}
+              onclick={() => onDelete(item.id)}
+              aria-label={'Eliminar aviso de ' + item.name + ' para toda a equipa'}
+              class="mt-2 text-[11px] underline text-[var(--color-info)] disabled:opacity-50"
+            >
+              {deletingId === item.id ? 'A eliminar…' : 'Eliminar aviso para todos'}
+            </button>
           </div>
         </div>
       </li>

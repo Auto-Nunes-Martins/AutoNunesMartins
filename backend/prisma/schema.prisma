@@ -469,6 +469,8 @@ model ContactSendAttempt {
   @@index([expiresAt])
 }
 
+// Legacy receipts: new code does not create or consult these rows.
+// Kept for rolling compatibility; deleting a notice cascades its old receipts.
 model ContactNotificationRead {
   eventId String
   userId  String

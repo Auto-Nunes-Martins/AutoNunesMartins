@@ -11,7 +11,7 @@ export interface NotificationsPayload {
   };
   contacts?: {
     unread: number;
-    items: Array<{ id: string; name: string; subject: string; createdAt: string; read: boolean }>;
+    items: Array<{ id: string; name: string; subject: string; createdAt: string }>;
   };
   total: number;
   recent: Array<{

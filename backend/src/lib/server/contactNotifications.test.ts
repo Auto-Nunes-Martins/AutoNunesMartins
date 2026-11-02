@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { contactBudgetFixture } from '../../../test/contactBudgetFixture.js';
-import { readContactNotifications, markContactNotificationRead } from './contactNotifications.js';
+import { readContactNotifications, deleteContactNotification } from './contactNotifications.js';
 
 const fixtures: Awaited<ReturnType<typeof contactBudgetFixture>>[] = [];
 async function setup() {
@@ -20,7 +20,7 @@ afterEach(async () => {
   for (const f of fixtures.splice(0)) await f.db.close();
 });
 
-it('broadcasts accepted contacts distinctly with per-user durable read receipts and no body/email', async () => {
+it('broadcasts accepted contacts and deletes them globally without retaining individual reads', async () => {
   const f = await setup();
   const store = f.store();
   const first = await store.reserve('visitor', randomUUID(), 'private@example.org private body');
@@ -44,27 +44,27 @@ it('broadcasts accepted contacts distinctly with per-user durable read receipts 
   expect(alice.items.find((n) => n.name.startsWith('Conceição'))?.subject).toBe(
     'Revisão ç & visita',
   );
-  expect(await markContactNotificationRead(f.query, 'alice', 'contact:' + first.key)).toBe(true);
+  expect(await deleteContactNotification(f.query, 'inactive', 'contact:' + first.key)).toBe(false);
+  expect((await readContactNotifications(f.query, 'bob')).unread).toBe(2);
+  expect(await deleteContactNotification(f.query, 'alice', 'contact:' + first.key)).toBe(true);
   const afterRead = await readContactNotifications(f.query, 'alice');
   expect(afterRead.unread).toBe(1);
   expect(afterRead.items.map((item) => item.id)).toEqual(['contact:' + second.key]);
   expect((await readContactNotifications(f.query, 'alice')).items).toEqual(afterRead.items);
-  expect((await readContactNotifications(f.query, 'bob')).unread).toBe(2);
-  expect((await readContactNotifications(f.query, 'bob')).items).toHaveLength(2);
+  expect((await readContactNotifications(f.query, 'bob')).unread).toBe(1);
+  expect((await readContactNotifications(f.query, 'bob')).items).toEqual(afterRead.items);
   expect((await readContactNotifications(f.query, 'inactive')).items).toEqual([]);
-  expect(await markContactNotificationRead(f.query, 'inactive', 'contact:' + first.key)).toBe(
-    false,
-  );
-  expect(await markContactNotificationRead(f.query, 'alice', 'contact:' + first.key)).toBe(true);
+  expect(await deleteContactNotification(f.query, 'inactive', 'contact:' + first.key)).toBe(false);
+  expect(await deleteContactNotification(f.query, 'alice', 'contact:' + first.key)).toBe(false);
   expect(
     (await f.db.query('SELECT count(*)::int AS n FROM "ContactNotificationRead"')).rows[0],
-  ).toEqual({ n: 1 });
+  ).toEqual({ n: 0 });
   const stored = await f.db.query('SELECT * FROM "ActivityLog"');
-  expect(stored.rows).toHaveLength(2);
+  expect(stored.rows).toHaveLength(1);
   expect(JSON.stringify(stored.rows)).not.toMatch(/private@example.org|private body|other body/);
-  expect(await markContactNotificationRead(f.query, 'alice', 'contact:' + second.key)).toBe(true);
+  expect(await deleteContactNotification(f.query, 'alice', 'contact:' + second.key)).toBe(true);
   expect(await readContactNotifications(f.query, 'alice')).toEqual({ unread: 0, items: [] });
-  expect((await f.db.query('SELECT * FROM "ActivityLog"')).rows).toHaveLength(2);
+  expect((await f.db.query('SELECT * FROM "ActivityLog"')).rows).toHaveLength(0);
 });
 it('does not create notifications for pending or failed sends and rolls acceptance back if event persistence fails', async () => {
   const f = await setup();
@@ -106,40 +106,31 @@ it('retains accepted idempotency through the CRM event after expiring attempt me
   expect((await readContactNotifications(f.query, 'alice')).unread).toBe(1);
 });
 
-it('keeps read receipts across fresh reads, concurrent repeats and new contacts for each user', async () => {
-  const f = await setup();
-  const accepted = await f.store().reserve('first', randomUUID(), 'fixture payload');
+it('concurrent global deletions remove the notice once and leave accepted-send deduplication intact', async () => {
+  const f = await setup(),
+    requestId = randomUUID();
+  const accepted = await f.store().reserve('visitor', requestId, 'payload');
   if (accepted.kind !== 'send') throw Error('missing reservation');
-  await f.store().finish(accepted.key, accepted.token, true, { name: 'Ana', subject: 'Primeiro' });
+  await f.store().finish(accepted.key, accepted.token, true, { name: 'Ana', subject: 'Visita' });
   const id = 'contact:' + accepted.key;
-  expect(
-    await Promise.all(
-      Array.from({ length: 5 }, () => markContactNotificationRead(f.query, 'alice', id)),
-    ),
-  ).toEqual(Array(5).fill(true));
-  for (let poll = 0; poll < 3; poll++) {
-    const freshQuery = {
-      query: async <T>(sql: string, values: unknown[] = []) =>
-        (await f.db.query(sql, values)).rows as T[],
-    };
-    expect(await readContactNotifications(freshQuery, 'alice')).toEqual({ unread: 0, items: [] });
-  }
-  expect(
-    (await f.db.query('SELECT count(*)::int AS n FROM "ContactNotificationRead"')).rows,
-  ).toEqual([{ n: 1 }]);
-  expect((await readContactNotifications(f.query, 'bob')).items.map((item) => item.id)).toEqual([
-    id,
-  ]);
-  const next = await f.store().reserve('next', randomUUID(), 'next fixture');
-  if (next.kind !== 'send') throw Error('missing reservation');
-  await f.store().finish(next.key, next.token, true, { name: 'João', subject: 'Novo contacto' });
-  const alice = await readContactNotifications(f.query, 'alice');
-  expect(alice.unread).toBe(1);
-  expect(alice.items.map((item) => item.id)).toEqual(['contact:' + next.key]);
-  expect((await readContactNotifications(f.query, 'bob')).unread).toBe(2);
+  await f.db.query(
+    'INSERT INTO "ContactNotificationRead" ("eventId","userId","readAt") VALUES ($1,$2,NOW())',
+    [id, 'bob'],
+  );
+  expect((await readContactNotifications(f.query, 'bob')).unread).toBe(1);
+  const results = await Promise.all(
+    Array.from({ length: 5 }, () => deleteContactNotification(f.query, 'alice', id)),
+  );
+  expect(results.filter(Boolean)).toHaveLength(1);
+  expect((await f.db.query('SELECT * FROM "ContactNotificationRead"')).rows).toHaveLength(0);
+  expect(await readContactNotifications(f.query, 'alice')).toEqual({ unread: 0, items: [] });
+  expect(await readContactNotifications(f.query, 'bob')).toEqual({ unread: 0, items: [] });
+  expect(await f.store().reserve('visitor', requestId, 'payload')).toEqual({ kind: 'sent' });
+  await f.store().finish(accepted.key, accepted.token, true, { name: 'Ana', subject: 'Visita' });
+  expect((await f.db.query('SELECT * FROM "ActivityLog"')).rows).toHaveLength(0);
 });
 
-it('keeps badge and list in one snapshot when a read commits during notification loading', async () => {
+it('keeps badge and list in one snapshot when a shared deletion commits during loading', async () => {
   const f = await setup(),
     attempt = await f.store().reserve('first', randomUUID(), 'fixture');
   if (attempt.kind !== 'send') throw Error('missing reservation');
@@ -152,7 +143,7 @@ it('keeps badge and list in one snapshot when a read commits during notification
       const rows = await f.query.query<T>(sql, values);
       if (!interleaved && sql.includes('FROM "ActivityLog"')) {
         interleaved = true;
-        await markContactNotificationRead(f.query, 'alice', 'contact:' + attempt.key);
+        await deleteContactNotification(f.query, 'alice', 'contact:' + attempt.key);
       }
       return rows;
     },
@@ -172,4 +163,26 @@ it('counts all unread contacts while limiting the displayed previews to twenty',
   const result = await readContactNotifications(f.query, 'alice');
   expect(result.unread).toBe(25);
   expect(result.items).toHaveLength(20);
+});
+
+it('keeps old shared notices visible until the team explicitly deletes them', async () => {
+  const f = await setup(),
+    requestId = randomUUID();
+  const attempt = await f.store().reserve('visitor', requestId, 'payload');
+  if (attempt.kind !== 'send') throw Error('missing reservation');
+  await f.store().finish(attempt.key, attempt.token, true, { name: 'Ana', subject: 'Visita' });
+  await f.db.query('UPDATE "ActivityLog" SET "createdAt"=$1 WHERE id=$2', [
+    '2025-01-01',
+    'contact:' + attempt.key,
+  ]);
+  expect((await readContactNotifications(f.query, 'alice')).unread).toBe(1);
+  expect((await readContactNotifications(f.query, 'bob')).unread).toBe(1);
+  expect((await f.db.query('SELECT count(*)::int AS n FROM "ActivityLog"')).rows).toEqual([
+    { n: 1 },
+  ]);
+  expect(await deleteContactNotification(f.query, 'inactive', 'contact:' + attempt.key)).toBe(
+    false,
+  );
+  expect(await deleteContactNotification(f.query, 'alice', 'contact:' + attempt.key)).toBe(true);
+  expect((await readContactNotifications(f.query, 'bob')).unread).toBe(0);
 });

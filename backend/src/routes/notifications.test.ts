@@ -19,7 +19,7 @@ vi.mock('../db.js', () => ({
 vi.mock('../lib/data/appSettings.js', () => ({ appSettings: { stockAgingDays: async () => 60 } }));
 vi.mock('../lib/server/contactNotifications.js', () => ({
   readContactNotifications: async () => ({ unread: fixtures.contacts, items: [] }),
-  markContactNotificationRead: vi.fn(),
+  deleteContactNotification: vi.fn(async () => true),
 }));
 vi.mock('../middleware/clerk.js', () => ({
   requireUser: (req: any, res: any, next: () => void) => {
@@ -32,6 +32,7 @@ vi.mock('../middleware/clerk.js', () => ({
   },
 }));
 import router from './notifications.js';
+import { deleteContactNotification } from '../lib/server/contactNotifications.js';
 let server: Server, base: string;
 beforeAll(async () => {
   const app = express();
@@ -61,4 +62,22 @@ it('scopes draft exclusion to each fresh request while retaining contacts and ot
 it('rejects malformed contexts and unauthorized requests', async () => {
   expect((await fetch(base + '?activeCreationDraftId=bad')).status).toBe(400);
   expect((await fetch(base, { headers: { 'x-denied': 'true' } })).status).toBe(403);
+});
+it('only deletes a valid contact through the explicit authenticated DELETE action', async () => {
+  const id = 'contact:' + 'a'.repeat(64);
+  expect((await fetch(base + '/contacts/' + id, { method: 'DELETE' })).status).toBe(200);
+  expect(deleteContactNotification).toHaveBeenCalledWith(expect.anything(), 'fixture', id);
+  expect((await fetch(base + '/contacts/bad', { method: 'DELETE' })).status).toBe(400);
+  expect(
+    (await fetch(base + '/contacts/' + id, { method: 'DELETE', headers: { 'x-denied': 'true' } }))
+      .status,
+  ).toBe(403);
+  expect((await fetch(base + '/contacts/' + id + '/read', { method: 'POST' })).status).toBe(404);
+});
+
+it('returns a distinct missing-notice response so another colleague can safely refresh', async () => {
+  vi.mocked(deleteContactNotification).mockResolvedValueOnce(false);
+  const response = await fetch(base + '/contacts/contact:' + 'b'.repeat(64), { method: 'DELETE' });
+  expect(response.status).toBe(404);
+  expect(await response.json()).toEqual({ error: 'Notification not found' });
 });

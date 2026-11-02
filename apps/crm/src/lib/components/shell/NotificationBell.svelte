@@ -43,7 +43,7 @@
   });
   let loadError = $state('');
   let controller: AbortController | undefined;
-  let contactReading = $state('');
+  let contactDeleting = $state('');
   let refreshTimer: ReturnType<typeof setInterval> | undefined;
   const uid = $props.id();
   const panelId = uid + '-alerts';
@@ -72,17 +72,20 @@
     }
   }
 
-  async function markContactRead(id: string) {
-    if (contactReading) return;
-    contactReading = id;
+  async function removeContact(id: string) {
+    if (contactDeleting) return;
+    contactDeleting = id;
     try {
       const res = await sessionFetch(
-        crmPath('/api/notifications/contacts/' + encodeURIComponent(id) + '/read'),
-        { method: 'POST' },
+        crmPath('/api/notifications/contacts/' + encodeURIComponent(id)),
+        { method: 'DELETE' },
       );
-      if (!res.ok) throw new Error('Notification update failed');
-      // The receipt is committed. Do not keep its old preview if revalidation fails,
-      // and do not let an earlier poll restore the pre-read snapshot.
+      // Another colleague may already have removed this shared notice.
+      const alreadyRemoved =
+        res.status === 404 &&
+        (await res.json().catch(() => ({}))).error === 'Notification not found';
+      if (!res.ok && !alreadyRemoved) throw new Error('Notification deletion failed');
+      // Do not restore a removed preview from an earlier poll or failed refresh.
       controller?.abort();
       if (data?.contacts?.items.some((item) => item.id === id)) {
         data = {
@@ -96,9 +99,9 @@
       }
       await load();
     } catch {
-      loadError = 'N\u00e3o foi poss\u00edvel marcar o contacto como lido.';
+      loadError = 'N\u00e3o foi poss\u00edvel eliminar o aviso.';
     } finally {
-      contactReading = '';
+      contactDeleting = '';
     }
   }
 
@@ -332,8 +335,8 @@
         {#if data.contacts?.items.length}
           <ContactNotificationList
             items={data.contacts.items}
-            onRead={markContactRead}
-            readingId={contactReading}
+            onDelete={removeContact}
+            deletingId={contactDeleting}
           />
         {/if}
 
