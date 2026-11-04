@@ -58,8 +58,8 @@
     <h2>Livro de Reclamações</h2>
     <p><a href={complaintsPortal}>Aceder ao Livro de Reclamações Eletrónico</a></p>
     <p>
-      O registo e a ligação do operador estão por confirmar. A ligação disponível abre o portal
-      geral oficial e não comprova o registo do stand.
+      O stand dispõe de registo no Livro de Reclamações Eletrónico. A ligação acima abre o portal
+      oficial.
     </p>
     <p>
       O <a href="/#contactos">contacto com o stand</a> não substitui o Livro de Reclamações nem impede

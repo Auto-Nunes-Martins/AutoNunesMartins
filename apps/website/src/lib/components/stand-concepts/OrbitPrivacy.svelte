@@ -72,16 +72,17 @@
     </p>
     <LegalFields fields={readiness.privacy.filter((field) => field.id === 'purposes')} />
     <p>
-      Enviar um pedido não é consentir em marketing. Não existe inscrição automática em comunicações
-      promocionais nem um consentimento genérico associado a este formulário.
+      Os dados dos pedidos não são utilizados para marketing. O envio não subscreve comunicações
+      promocionais.
     </p>
   </section>
   <section id="conservacao">
     <h2>Quem acede e durante quanto tempo</h2>
     <p>
-      O pedido é encaminhado para o stand e para o prestador de envio Resend. O alojamento, a caixa
-      de correio, as condições de acesso da equipa e eventuais transferências internacionais
-      precisam de confirmação para o serviço final.
+      Os pedidos são consultados pelos gerentes do stand para responder às perguntas recebidas e
+      acompanhar os contactos sobre viaturas, retomas e visitas. O envio é encaminhado através do
+      Resend. O alojamento, a caixa de correio e eventuais transferências internacionais precisam de
+      confirmação para o serviço final.
     </p>
     <LegalFields
       fields={readiness.privacy.filter((field) => ['providers', 'retention'].includes(field.id))}
@@ -131,8 +132,7 @@
       tratamento anterior. Estes direitos dependem das condições legais aplicáveis.
     </p>
     <p>
-      Use o contacto de privacidade indicado acima, ou o contacto comercial para encaminhamento
-      enquanto aquele estiver por confirmar. Identifique o pedido e forneça apenas a informação
+      Use o contacto de privacidade indicado acima. Identifique o pedido e forneça apenas a informação
       necessária. Em regra, a resposta é devida num mês, com as possibilidades de prorrogação
       fundamentada previstas na lei.
     </p>

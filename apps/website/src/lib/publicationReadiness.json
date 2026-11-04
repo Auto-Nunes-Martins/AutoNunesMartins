@@ -52,12 +52,12 @@
     {
       "id": "complaintsRegistration",
       "label": "Registo do operador no Livro de Reclamações Eletrónico",
-      "value": null
+      "value": "Registo no Livro de Reclamações Eletrónico confirmado pelo proprietário."
     },
     {
       "id": "complaintsUrl",
       "label": "Ligação aplicável ao operador",
-      "value": null
+      "value": "https://www.livroreclamacoes.pt/"
     }
   ],
   "privacy": [
@@ -69,7 +69,7 @@
     {
       "id": "privacyContact",
       "label": "Contacto para assuntos de privacidade",
-      "value": null
+      "value": "geral@autonunesmartins.pt"
     },
     {
       "id": "purposes",

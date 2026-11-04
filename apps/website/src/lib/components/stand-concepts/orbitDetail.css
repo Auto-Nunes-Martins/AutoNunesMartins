@@ -791,6 +791,9 @@
 }
 
 @media (min-width: 701px) {
+  .design.orbit.orbit-detail.public-detail .detail-thumbnails button {
+    aspect-ratio: 3 / 2;
+  }
   .design.orbit.orbit-detail.public-detail .detail-facts dl > div {
     padding-inline-end: 24px;
   }
