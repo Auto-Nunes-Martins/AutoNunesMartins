@@ -5,15 +5,11 @@ export type AnchorArrival = { offset?: number; keyboard?: boolean };
 export function createAnchorScroller() {
   let frame = 0;
   let removeFocusTarget: (() => void) | undefined;
-  let cancelNative: (() => void) | undefined;
   const events = ['wheel', 'touchstart', 'pointerdown', 'keydown', 'popstate'] as const;
   const stop = () => {
     cancelAnimationFrame(frame);
     frame = 0;
     events.forEach((event) => window.removeEventListener(event, stop));
-    const cancel = cancelNative;
-    cancelNative = undefined;
-    cancel?.();
   };
   const scroll = (
     target: HTMLElement,
@@ -70,61 +66,28 @@ export function createAnchorScroller() {
       return;
     }
     events.forEach((event) => window.addEventListener(event, stop, { passive: true }));
-    if (profile === 'discovery') {
-      // Let the browser move the viewport independently of the reveal callbacks.
-      // Re-reading geometry and writing scrollY each frame forces extra layouts.
-      const end = destination();
-      let settleTimer: ReturnType<typeof setTimeout>;
-      let deadline: ReturnType<typeof setTimeout>;
-      const cleanup = () => {
-        clearTimeout(settleTimer);
-        clearTimeout(deadline);
-        window.removeEventListener('scroll', settle);
-        window.removeEventListener('scrollend', complete);
-      };
-      const complete = () => {
-        if (!target.isConnected) {
-          stop();
-          return;
-        }
-        if (Math.abs(window.scrollY - end) > 1) return;
-        cancelNative = undefined;
-        cleanup();
-        finish();
-      };
-      const settle = () => {
-        clearTimeout(settleTimer);
-        settleTimer = setTimeout(complete, 160);
-      };
-      cancelNative = () => {
-        cleanup();
-        window.scrollTo({ top: window.scrollY, behavior: 'instant' });
-      };
-      window.addEventListener('scroll', settle, { passive: true });
-      window.addEventListener('scrollend', complete);
-      // The idle fallback covers browsers without scrollend; the deadline only
-      // cleans up an interrupted/blocked trip and never forces a late jump.
-      deadline = setTimeout(() => {
-        complete();
-        if (cancelNative) stop();
-      }, 3000);
-      settle();
-      window.scrollTo({ top: end, behavior: 'smooth' });
-      return;
-    }
     const began = performance.now();
-    const fixedEnd = profile === 'discovery-return' ? destination() : undefined;
+    // Discovery keeps one measured destination; reveal effects cannot pull the trip around.
+    const fixedEnd = profile === 'default' ? undefined : destination();
     const duration =
-      fixedEnd === undefined
-        ? 800
-        : Math.min(2400, Math.max(1000, 650 + Math.sqrt(Math.abs(fixedEnd - start)) * 22));
+      profile === 'discovery'
+        ? 1200
+        : fixedEnd === undefined
+          ? 800
+          : Math.min(2400, Math.max(1000, 650 + Math.sqrt(Math.abs(fixedEnd - start)) * 22));
     const step = (now: number) => {
       if (!target.isConnected) {
         stop();
         return;
       }
       const progress = Math.min(1, (now - began) / duration);
-      const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
+      const eased =
+        profile === 'discovery'
+          ? // Continuous acceleration at the middle and a quiet start/arrival.
+            progress ** 3 * (progress * (progress * 6 - 15) + 10)
+          : progress < 0.5
+            ? 4 * progress ** 3
+            : 1 - (-2 * progress + 2) ** 3 / 2;
       window.scrollTo({
         top: start + ((fixedEnd ?? destination()) - start) * eased,
         behavior: 'instant',

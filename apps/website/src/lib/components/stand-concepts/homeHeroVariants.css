@@ -75,12 +75,15 @@
   .hd-root.hd-1[data-photo-variant='5'] .hd-composition {
     padding-block: 20px 58px;
     gap: 18px;
+    container: mobile-hero-copy / inline-size;
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-copy {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: 10px 14px;
+    /* Keep the approved photo position while restoring the side-by-side copy. */
+    grid-template-rows: auto 44px;
+    align-items: center;
+    gap: 10px 18px;
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-eyebrow {
     display: none;
@@ -93,17 +96,61 @@
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-copy > p {
     margin-top: 0;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.6;
-    max-width: 230px;
+    max-width: 320px;
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore {
     margin-top: 0;
     padding-block: 10px;
     min-height: 44px;
-    gap: 10px;
-    font-size: 10px;
+    border-bottom: 0;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
     white-space: nowrap;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore::after {
+    content: none;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    /* Match the original underline at the bottom edge of the link. */
+    top: auto;
+    bottom: 0;
+    height: 0.5px;
+    background: #fff;
+    pointer-events: none;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore svg {
+    width: 15px;
+    height: 15px;
+    color: #fff;
+  }
+  @container mobile-hero-copy (max-width: 330px) {
+    .hd-root.hd-1[data-photo-variant='5'] .hd-copy {
+      grid-template-columns: minmax(0, 1fr) 66px;
+    }
+    .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore {
+      max-width: 66px;
+      padding-block: 7px;
+      gap: 5px;
+      line-height: 1.3;
+      white-space: normal;
+    }
+    .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore svg {
+      flex: 0 0 15px;
+      width: 15px;
+      height: 15px;
+    }
+  }
+  @container mobile-hero-copy (max-width: 295px) {
+    .hd-root.hd-1[data-photo-variant='5'] .hd-copy {
+      /* The previous three-line support row occupied this height on narrow phones. */
+      grid-template-rows: auto 52.78125px;
+    }
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-feature-top {
     /* Keep the original label row in flow so the photo retains its vertical position. */

@@ -241,7 +241,7 @@
     </h1>
     <p>{copy[2]}</p>
     <a class="hd-explore" href="/viaturas"
-      >Explorar viaturas <ArrowUpRight size={19} aria-hidden="true" /></a
+      ><span>Explorar viaturas</span><ArrowUpRight size={19} aria-hidden="true" /></a
     >
   </div>
 {/snippet}

@@ -222,31 +222,27 @@ function discovery(t: ReturnType<typeof setup>, className = 'hd-scroll') {
   t.doc.getElementById.mockImplementation((id) => (id === 'selecao' ? t.target : null));
 }
 
-it.each(['hd-scroll'])(
-  'moves the homepage %s link natively without per-frame scroll writes, keeping offset and focus',
-  async (className) => {
-    const t = setup();
-    discovery(t, className);
-    t.click();
-    await Promise.resolve();
-    t.advance(0);
-    expect(t.win.scrollTo).toHaveBeenCalledTimes(1);
-    expect(t.win.scrollTo).toHaveBeenCalledWith({ top: 1500, behavior: 'smooth' });
-    t.win.scrollY = 850;
-    t.win.dispatchEvent(new Event('scroll'));
-    t.advance(400);
-    expect(t.target.focus).not.toHaveBeenCalled();
-    expect(t.win.scrollTo).toHaveBeenCalledTimes(1);
-    t.win.scrollY = 1500;
-    t.win.dispatchEvent(new Event('scrollend'));
-    expect(t.target.focus).toHaveBeenCalledTimes(1);
-    expect(t.target.focus).toHaveBeenCalledWith({ preventScroll: true });
-    t.advance(2000);
-    expect(t.win.scrollTo).toHaveBeenCalledTimes(1);
-    expect(t.frames.size).toBe(0);
-    t.controller.destroy();
-  },
-);
+it('moves the discovery cue over 1200ms with a gentle start, midpoint and arrival', async () => {
+  const t = setup();
+  discovery(t);
+  t.click();
+  await Promise.resolve();
+  t.advance(0);
+  expect(t.win.scrollTo).not.toHaveBeenCalled();
+  t.advance(300);
+  expect(t.win.scrollY).toBeCloseTo(334.5703125);
+  expect(t.target.focus).not.toHaveBeenCalled();
+  t.advance(600);
+  expect(t.win.scrollY).toBe(850);
+  t.advance(900);
+  expect(t.win.scrollY).toBeCloseTo(1365.4296875);
+  t.advance(1200);
+  expect(t.win.scrollY).toBe(1500);
+  expect(t.target.focus).toHaveBeenCalledTimes(1);
+  expect(t.target.focus).toHaveBeenCalledWith({ preventScroll: true });
+  expect(t.frames.size).toBe(0);
+  t.controller.destroy();
+});
 
 it('animates a long upward discovery return progressively instead of relying on native duration', async () => {
   const t = setup();
@@ -274,62 +270,61 @@ it('adds exactly five pixels only for the mobile discovery cue and quiets pointe
   t.click({ detail: 1 });
   await Promise.resolve();
   t.advance(0);
-  expect(t.win.scrollTo).toHaveBeenLastCalledWith({ top: 1505, behavior: 'smooth' });
-  t.win.scrollY = 1505;
-  t.win.dispatchEvent(new Event('scrollend'));
+  t.advance(1200);
+  expect(t.win.scrollTo).toHaveBeenLastCalledWith({ top: 1505, behavior: 'instant' });
   expect(t.target.setAttribute).toHaveBeenCalledWith('data-anchor-pointer-focus', '');
   t.win.dispatchEvent(new Event('keydown'));
   expect(t.target.removeAttribute).toHaveBeenCalledWith('data-anchor-pointer-focus');
   t.controller.destroy();
 });
 
-it('handles browsers without scrollend after settling and clears its fallback timers', async () => {
+it('finishes discovery without scrollend events or fallback timers', async () => {
   vi.useFakeTimers();
   const t = setup();
   discovery(t);
   t.click();
   await Promise.resolve();
   t.advance(0);
-  t.win.scrollY = 1500;
-  t.win.dispatchEvent(new Event('scroll'));
-  expect(t.target.focus).not.toHaveBeenCalled();
-  vi.advanceTimersByTime(160);
+  t.advance(1200);
+  expect(t.win.scrollY).toBe(1500);
   expect(t.target.focus).toHaveBeenCalledTimes(1);
   expect(vi.getTimerCount()).toBe(0);
-  expect(t.win.scrollTo).toHaveBeenCalledTimes(1);
+  expect(t.frames.size).toBe(0);
   t.controller.destroy();
 });
 
-it('cleans up a blocked native trip without jumping to the goal or taking focus later', async () => {
-  vi.useFakeTimers();
+it('stops a discovery trip when its target detaches without a later jump or focus', async () => {
   const t = setup();
   discovery(t);
   t.click();
   await Promise.resolve();
   t.advance(0);
-  vi.advanceTimersByTime(3000);
-  expect(t.win.scrollY).toBe(200);
+  t.advance(300);
+  const stoppedAt = t.win.scrollY;
+  t.target.isConnected = false;
+  t.advance(1200);
+  expect(t.win.scrollY).toBe(stoppedAt);
   expect(t.target.focus).not.toHaveBeenCalled();
-  expect(t.win.scrollTo).toHaveBeenLastCalledWith({ top: 200, behavior: 'instant' });
-  expect(vi.getTimerCount()).toBe(0);
+  expect(t.frames.size).toBe(0);
   t.controller.destroy();
 });
 
 it.each(['wheel', 'touchstart', 'pointerdown', 'keydown', 'popstate'])(
-  'interrupts native discovery on %s without a later correction or focus',
+  'interrupts discovery on %s without a later correction or focus',
   async (name) => {
     const t = setup();
     discovery(t);
     t.click();
     await Promise.resolve();
     t.advance(0);
-    t.win.scrollY = 850;
+    t.advance(300);
+    const stoppedAt = t.win.scrollY;
+    const writes = t.win.scrollTo.mock.calls.length;
     t.win.dispatchEvent(new Event(name));
     t.advance(2000);
-    t.win.dispatchEvent(new Event('scrollend'));
-    expect(t.win.scrollY).toBe(850);
+    expect(t.win.scrollY).toBe(stoppedAt);
+    expect(t.win.scrollTo).toHaveBeenCalledTimes(writes);
     expect(t.frames.size).toBe(0);
-    expect(t.win.scrollTo).toHaveBeenLastCalledWith({ top: 850, behavior: 'instant' });
     expect(t.target.focus).not.toHaveBeenCalled();
     t.controller.destroy();
   },
@@ -341,19 +336,16 @@ it('restarts a repeated discovery click with one animation and one history entry
   t.click();
   await Promise.resolve();
   t.advance(0);
-  t.win.scrollY = 850;
+  t.advance(300);
+  const restartedAt = t.win.scrollY;
   t.click();
   await Promise.resolve();
   t.advance(400);
-  expect(t.frames.size).toBe(0);
-  expect(t.win.scrollTo.mock.calls.map(([options]) => options.behavior)).toEqual([
-    'smooth',
-    'instant',
-    'smooth',
-  ]);
-  t.win.scrollY = 1500;
-  t.win.dispatchEvent(new Event('scrollend'));
-  t.advance(2000);
+  expect(t.frames.size).toBe(1);
+  expect(t.win.scrollY).toBe(restartedAt);
+  t.advance(1000);
+  expect(t.win.scrollY).toBeCloseTo((restartedAt + 1500) / 2);
+  t.advance(1600);
   expect(t.win.scrollY).toBe(1500);
   expect(t.target.focus).toHaveBeenCalledTimes(1);
   expect(t.push).toHaveBeenCalledTimes(1);

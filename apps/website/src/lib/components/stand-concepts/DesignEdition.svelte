@@ -1273,7 +1273,7 @@
         <div class="showroom-heading" use:entrance>
           <div>
             <h2>
-              Acabados de chegar<span class="heading-period">.</span>
+              Novidades no stand<span class="heading-period">.</span>
             </h2>
           </div>
         </div>
