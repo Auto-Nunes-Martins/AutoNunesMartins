@@ -29,7 +29,7 @@
   import ExpenseTable from '$lib/components/vehicle/ExpenseTable.svelte';
   import VehicleDeletePanel from '$lib/components/vehicle/VehicleDeletePanel.svelte';
   import ProfitCard from '$lib/components/vehicle/ProfitCard.svelte';
-  import { formatDate, formatEUR, formatInt } from '$lib/utils/format';
+  import { formatDate, formatEUR, formatKm } from '$lib/utils/format';
   import type { PageData } from './$types';
   import type { HighlightStatus } from '$lib/highlightStatus';
 
@@ -282,7 +282,7 @@
         <PanelHeader icon={Car} title="Especificações" />
         <div class="p-5 grid grid-cols-2 gap-5">
           <SpecRow icon={Calendar} label="Ano" value={String(v.year)} />
-          <SpecRow icon={Gauge} label="Quilometragem" value={`${formatInt(v.mileage)} km`} />
+          <SpecRow icon={Gauge} label="Quilometragem" value={formatKm(v.mileage)} />
           <SpecRow
             icon={Tag}
             label="PVP"

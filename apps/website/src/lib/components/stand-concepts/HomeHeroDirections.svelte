@@ -5,6 +5,7 @@
   import {
     publicPhoto,
     publicHref,
+    publicMileage,
     publicPrice,
     fuelLabels,
     type PublicVehicle,
@@ -367,7 +368,7 @@
           </h2>
           <p>
             {car.year} <span>·</span>
-            {new Intl.NumberFormat('pt-PT').format(car.mileage)} km <span>·</span>
+            {publicMileage(car.mileage)} <span>·</span>
             {fuelLabels[car.fuel]}
           </p>
         </div>

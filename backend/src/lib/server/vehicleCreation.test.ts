@@ -56,3 +56,13 @@ it('saves confirmed characteristics in the initial create transaction without gr
     }),
   ).toEqual({ id: 'vehicle' });
 });
+
+it('distinguishes clearing the odometer, recording zero, and leaving it unchanged', () => {
+  const patch = vehicleUpdateSchema.omit({ id: true });
+  expect(patch.parse({ mileage: '' })).toEqual({ mileage: null });
+  expect(patch.parse({ mileage: null })).toEqual({ mileage: null });
+  expect(patch.parse({ mileage: '0' })).toEqual({ mileage: 0 });
+  expect(patch.parse({})).toEqual({});
+  for (const mileage of [false, [], -1, 1.5, 2_000_001, 'desconhecido'])
+    expect(patch.safeParse({ mileage }).success).toBe(false);
+});

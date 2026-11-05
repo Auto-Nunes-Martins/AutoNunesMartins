@@ -53,6 +53,8 @@ const listen = async (server) => {
   return server.address().port;
 };
 let relatedCount = 5;
+items[0].mileage = null;
+items[1].mileage = 0;
 items[1].model = 'Modelo com designação muito longa de edição especial';
 items[2].transmission = null;
 items[2].price = null;
@@ -128,6 +130,14 @@ try {
   for (const width of [1440, 390])
     for (const theme of ['light', 'dark']) {
       await page.setViewportSize({ width, height: 1000 });
+      await page.goto(origin + '/viaturas');
+      const mileageInCard = (vehicle) => page.locator('.vehicle-card')
+        .filter({ has: page.locator(`a[href="/viaturas/${vehicle.slug}"]`) })
+        .locator('.card-specs > span').nth(1);
+      const unknownMileage = mileageInCard(items[0]);
+      assert.equal(await unknownMileage.innerText(), 'Sob consulta');
+      assert.equal(await mileageInCard(items[1]).innerText(), '0 km');
+      assert(await unknownMileage.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), 'unknown odometer fits beside the card icon');
       await page.goto(origin + '/viaturas/' + items[0].slug);
       await page.waitForFunction(
         () =>
@@ -135,6 +145,9 @@ try {
           !document.querySelector('[data-theme-command]').disabled,
       );
       await page.evaluate((t) => (document.documentElement.dataset.theme = t), theme);
+      const odometer = page.locator('.quick-specs > span').filter({ hasText: 'Quilómetros' });
+      assert.match(await odometer.innerText(), /Sob consulta/);
+      assert(await odometer.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), 'unknown odometer fits the detail metadata');
       const carousel = page.locator('.carousel');
       await carousel.locator('.integrated-controls').waitFor();
       await carousel.scrollIntoViewIfNeeded();

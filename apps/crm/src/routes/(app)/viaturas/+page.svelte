@@ -17,7 +17,7 @@
   import VehicleTable from '$lib/components/vehicle/VehicleTable.svelte';
   import DraftDeleteButton from '$lib/components/vehicle/DraftDeleteButton.svelte';
   import VehicleTableSkeleton from '$lib/components/vehicle/VehicleTableSkeleton.svelte';
-  import { formatDate, formatDateLong, formatInt } from '$lib/utils/format';
+  import { formatDate, formatDateLong, formatKm } from '$lib/utils/format';
   import type { PageData } from './$types';
 
   interface Props {
@@ -157,7 +157,7 @@
                       </span>
                       <span>·</span>
                     {/if}
-                    <span>{formatInt(v.mileage)} km</span>
+                    <span>{formatKm(v.mileage)}</span>
                     <span>·</span>
                     <!-- Idade ganha cor laranja a partir de 5 dias como
                          sinal subtil de urgência: "isto está parado há

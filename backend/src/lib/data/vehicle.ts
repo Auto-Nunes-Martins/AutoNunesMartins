@@ -81,7 +81,10 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
   const [items, total] = await Promise.all([
     tx.vehicle.findMany({
       where,
-      orderBy: { [sortBy]: sortDir },
+      orderBy:
+        sortBy === 'mileage'
+          ? [{ mileage: { sort: sortDir, nulls: 'last' } }, { id: 'asc' }]
+          : { [sortBy]: sortDir },
       skip: (page - 1) * pageSize,
       take: pageSize,
       select: {

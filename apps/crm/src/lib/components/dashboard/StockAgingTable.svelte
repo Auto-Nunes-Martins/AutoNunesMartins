@@ -121,7 +121,7 @@
               </td>
               <td class="px-5 py-3.5 num-value text-[13px]">{v.year}</td>
               <td class="px-5 py-3.5 num-value text-[13px] text-right">
-                {formatInt(v.mileage)}
+                {v.mileage == null ? '' : formatInt(v.mileage)}
               </td>
               <td class="px-5 py-3.5 num-value text-[13px] text-right text-[var(--color-text)]">
                 {v.salePrice ? formatEUR(v.salePrice) : '—'}

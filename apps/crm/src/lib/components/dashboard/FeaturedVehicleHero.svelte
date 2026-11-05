@@ -17,7 +17,7 @@
     Tag,
   } from 'lucide-svelte';
   import type { DashboardHighlight } from '$lib/server/dashboard';
-  import { formatEUR, formatInt } from '$lib/utils/format';
+  import { formatEUR, formatInt, formatKm } from '$lib/utils/format';
   import type { Snippet } from 'svelte';
   let {
     highlights,
@@ -76,7 +76,7 @@
         </div>
         <div>
           <Gauge size={21} /><span
-            ><strong>{formatInt(vehicle.mileage)} km</strong><small>Quilometragem anunciada</small
+            ><strong>{formatKm(vehicle.mileage)}</strong><small>Quilometragem anunciada</small
             ></span
           >
         </div>

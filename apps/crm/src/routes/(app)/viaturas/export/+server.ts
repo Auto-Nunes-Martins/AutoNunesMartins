@@ -82,7 +82,7 @@ export const GET: RequestHandler = async (event) => {
     v.model,
     String(v.year),
     v.vin ?? '',
-    String(v.mileage),
+    String(v.mileage ?? ''),
     FUEL_LABELS[v.fuel],
     fmtDate(v.acquisitionDate),
     v.salePrice ? fmtEur(v.salePrice) : '',

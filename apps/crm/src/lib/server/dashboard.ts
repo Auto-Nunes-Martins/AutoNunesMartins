@@ -68,7 +68,7 @@ export interface StockAgedRow {
   year: number;
   vin: string | null;
   licensePlate: string | null;
-  mileage: number;
+  mileage: number | null;
   salePrice: string | null;
   thumbnailUrl: string | null;
   thumbnailOriginalUrl?: string | null;
@@ -120,7 +120,7 @@ export interface FeaturedVehicleDto {
   model: string;
   year: number;
   fuel: string;
-  mileage: number;
+  mileage: number | null;
   vin: string | null;
   licensePlate: string | null;
   status: string;
@@ -140,7 +140,7 @@ export interface DashboardHighlight {
     model: string;
     year: number;
     fuel: string;
-    mileage: number;
+    mileage: number | null;
     price: string | null;
     description: string | null;
     availability: string;

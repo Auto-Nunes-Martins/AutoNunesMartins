@@ -27,7 +27,7 @@
     showFormErrors,
   } from '$lib/forms/formFeedback';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
-  import { formatEUR } from '$lib/utils/format';
+  import { formatEUR, formatKm } from '$lib/utils/format';
   import { toast } from 'svelte-sonner';
   import { publicVehicleUrl, publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { vehicleSavedFeedback } from './vehicleSaveFeedback';
@@ -516,7 +516,7 @@
                   >Pré-visualização · só muda no site depois de guardar</span
                 >
                 <h3>{vehicle.brand} {vehicle.model}</h3>
-                <p>{vehicle.year} · {vehicle.mileage.toLocaleString('pt-PT')} km</p>
+                <p>{vehicle.year}{vehicle.mileage == null ? '' : ` · ${formatKm(vehicle.mileage)}`}</p>
                 <strong
                   >{price && Number(price) > 0 ? formatEUR(price) : 'Preço sob consulta'}</strong
                 >

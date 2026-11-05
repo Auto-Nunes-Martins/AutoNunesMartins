@@ -39,7 +39,7 @@ export type HeroSlide = {
   brand: string;
   model: string;
   year: number;
-  km: number;
+  km: number | null;
   image: string;
   href: string;
   illustrative: boolean;

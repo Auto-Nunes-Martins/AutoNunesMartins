@@ -7,6 +7,7 @@ import {
   publicCard,
   publicCatalogSeo,
   publicPrice,
+  publicMileage,
   publicPhoto,
 } from './publicVehicles';
 
@@ -25,6 +26,12 @@ export const vehicle = {
   photos: ['/api/public/vehicles/bmw-serie-1-2019-012345abcdef/photos/0'],
 };
 describe('Public website projection', () => {
+  it('keeps an unknown odometer distinct from a recorded zero in cards', () => {
+    const unknown = publicVehicleSchema.parse({ ...vehicle, mileage: null });
+    const zero = publicVehicleSchema.parse({ ...vehicle, mileage: 0 });
+    expect(publicMileage(publicCard(unknown).km)).toBe('Sob consulta');
+    expect(publicMileage(publicCard(zero).km)).toBe('0 km');
+  });
   it('uses fresh approved identities for the photo URL while keeping the vehicle address', () => {
     const first = publicVehicleSchema.parse({
       ...vehicle,

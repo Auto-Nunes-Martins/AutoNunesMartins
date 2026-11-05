@@ -21,7 +21,7 @@ export const publicVehicleSchema = z
     model: z.string(),
     year: z.number().int(),
     fuel: z.enum(['GASOLINE', 'DIESEL', 'HYBRID', 'PLUGIN_HYBRID', 'ELECTRIC', 'LPG']),
-    mileage: z.number().int().nonnegative(),
+    mileage: z.number().int().nonnegative().nullable(),
     price: money.refine((v) => Number(v) > 0).nullable(),
     currency: z.literal('EUR'),
     description: z.string().nullable(),
@@ -112,6 +112,10 @@ export function emptyStock(status: PublicStock['status']): PublicStock {
     },
   };
 }
+const mileageFormatter = new Intl.NumberFormat('pt-PT');
+export const publicMileage = (value: number | null, suffix = ' km') =>
+  value === null ? 'Sob consulta' : `${mileageFormatter.format(value)}${suffix}`;
+
 export const publicPrice = (value: string | number | null) =>
   value === null
     ? 'Preço sob consulta'

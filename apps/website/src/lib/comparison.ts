@@ -6,6 +6,7 @@ import {
   fuelLabels,
   transmissionLabels,
   publicPrice,
+  publicMileage,
   type PublicVehicle,
 } from './publicVehicles';
 
@@ -118,7 +119,7 @@ const text = (value?: string | null) => value?.trim() || missing;
 export const comparisonRows: { label: string; value: (v: PublicVehicle) => string }[] = [
   { label: 'Preço', value: (v) => (v.price === null ? missing : publicPrice(v.price)) },
   { label: 'Ano', value: (v) => String(v.year) },
-  { label: 'Quilometragem', value: (v) => numeric(v.mileage, ' km') },
+  { label: 'Quilometragem', value: (v) => publicMileage(v.mileage) },
   { label: 'Combustível', value: (v) => fuelLabels[v.fuel] },
   { label: 'Caixa', value: (v) => (v.transmission ? transmissionLabels[v.transmission] : missing) },
   { label: 'Potência', value: (v) => numeric(v.specifications?.powerHp, ' cv') },

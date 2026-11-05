@@ -20,7 +20,7 @@ export interface FeaturedVehiclePayload {
   model: string;
   year: number;
   fuel: string;
-  mileage: number;
+  mileage: number | null;
   vin: string | null;
   licensePlate: string | null;
   status: string;

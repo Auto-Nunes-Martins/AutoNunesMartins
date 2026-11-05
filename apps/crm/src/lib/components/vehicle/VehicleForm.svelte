@@ -317,9 +317,7 @@
             type="number"
             min="0"
             max="2000000"
-            required
             bind:value={draft.mileage}
-            placeholder="67000"
             class="{inputClass()} tabular-nums"
             style="border-radius: var(--radius-btn);"
           />

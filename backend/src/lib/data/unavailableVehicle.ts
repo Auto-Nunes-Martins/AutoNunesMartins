@@ -34,12 +34,18 @@ async function findUnavailable(db: PrismaClient, slug: string) {
 export async function readUnavailableVehicle(db: PrismaClient, slug: string) {
   const row = await findUnavailable(db, slug);
   if (!row) return null;
+  const mileage = row.mileage === null
+    ? 'quilometragem: Sob consulta'
+    : `com ${new Intl.NumberFormat('pt-PT').format(row.mileage)} km`;
+  const gearbox = row.publicTransmission
+    ? `${row.mileage === null ? ',' : ' e'} caixa ${row.publicTransmission === 'AUTOMATIC' ? 'automática' : 'manual'}`
+    : '';
   return {
     slug,
     brand: row.brand,
     model: row.model,
     year: row.year,
-    summary: `${row.brand} ${row.model} de ${row.year}, ${({ GASOLINE: 'gasolina', DIESEL: 'gasóleo', HYBRID: 'híbrido', PLUGIN_HYBRID: 'híbrido plug-in', ELECTRIC: 'elétrico', LPG: 'GPL' } as Record<string, string>)[row.fuel] ?? row.fuel}, com ${new Intl.NumberFormat('pt-PT').format(row.mileage)} km${row.publicTransmission ? ` e caixa ${row.publicTransmission === 'AUTOMATIC' ? 'automática' : 'manual'}` : ''}.`,
+    summary: `${row.brand} ${row.model} de ${row.year}, ${({ GASOLINE: 'gasolina', DIESEL: 'gasóleo', HYBRID: 'híbrido', PLUGIN_HYBRID: 'híbrido plug-in', ELECTRIC: 'elétrico', LPG: 'GPL' } as Record<string, string>)[row.fuel] ?? row.fuel}, ${mileage}${gearbox}.`,
     photo: row.photos.some((path) => isApprovedPhotoPath(row.id, path))
       ? `/viaturas/${slug}/indisponivel/foto`
       : null,

@@ -49,6 +49,10 @@ export const licensePlatePtSchema = z
   });
 export type LicensePlatePt = z.infer<typeof licensePlatePtSchema>;
 
+export const knownMileageSchema = z.union([z.string(), z.number()]).pipe(
+  z.coerce.number().int().min(0, 'Quilometragem não pode ser negativa').max(2_000_000),
+);
+
 export const vehicleCreateSchema = z.object({
   brand: registeredBrandSchema,
   model: z.string().min(1, 'Modelo obrigatório').max(80),
@@ -58,7 +62,10 @@ export const vehicleCreateSchema = z.object({
     .min(1950, 'Ano mínimo: 1950')
     .max(CURRENT_YEAR + 1, `Ano máximo: ${CURRENT_YEAR + 1}`),
   fuel: FuelEnum,
-  mileage: z.coerce.number().int().min(0, 'Quilometragem não pode ser negativa').max(2_000_000),
+  mileage: z.preprocess(
+    (value) => (typeof value === 'string' && !value.trim() ? null : value),
+    knownMileageSchema.nullable().optional(),
+  ),
   vin: z.preprocess(
     (value) => (typeof value === 'string' && !value.trim() ? null : value),
     z

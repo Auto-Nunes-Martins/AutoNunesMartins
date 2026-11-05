@@ -109,7 +109,7 @@ export interface SaleDetailResponse {
     year: number;
     vin: string | null;
     licensePlate: string | null;
-    mileage: number;
+    mileage: number | null;
     fuel: string;
     purchasePrice: string;
     photos: string[];

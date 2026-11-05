@@ -8,7 +8,7 @@ import { vehiclesApi } from '$lib/server/vehicles';
 import { actions } from './+page.server';
 describe('new vehicle draft creation', () => {
   beforeEach(() => vi.clearAllMocks());
-  it('creates a draft and retains the intended stock status in the next step', async () => {
+  it.each([['', null], ['0', 0]])('creates a draft with mileage %j and retains the intended status', async (mileage, storedMileage) => {
     vi.mocked(vehiclesApi.create).mockResolvedValue({ id: 'clabcdefghijklmnopqrstuvw' });
     const data = new FormData();
     for (const [key, value] of Object.entries({
@@ -16,7 +16,7 @@ describe('new vehicle draft creation', () => {
       model: 'Jogger',
       year: '2023',
       fuel: 'GASOLINE',
-      mileage: '10000',
+      mileage: String(mileage),
       vin: 'VF1AAAAAAAAAAAAAA',
       purchasePrice: '10000',
       salePrice: '15000',
@@ -37,7 +37,7 @@ describe('new vehicle draft creation', () => {
     });
     expect(vehiclesApi.create).toHaveBeenCalledWith(
       event,
-      expect.objectContaining({ status: 'DRAFT' }),
+      expect.objectContaining({ status: 'DRAFT', mileage: storedMileage }),
     );
   });
   it('does not create a vehicle when required identification is missing', async () => {

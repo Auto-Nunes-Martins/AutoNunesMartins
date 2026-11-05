@@ -81,7 +81,7 @@ export interface StockAgedRow {
   year: number;
   vin: string | null;
   licensePlate: string | null;
-  mileage: number;
+  mileage: number | null;
   salePrice: string | null;
   thumbnailUrl: string | null;
   thumbnailOriginalUrl?: string | null;

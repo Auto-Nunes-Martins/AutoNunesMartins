@@ -143,7 +143,7 @@
             >
               Km
             </div>
-            <div class="num-value text-[13px] mt-0.5">{formatInt(v.mileage)}</div>
+            <div class="num-value text-[13px] mt-0.5">{v.mileage == null ? '' : formatInt(v.mileage)}</div>
           </div>
           <div>
             <div
@@ -272,7 +272,7 @@
           </td>
           <td class="px-4 py-3 num-value text-[13px]">{v.year}</td>
           <td class="px-4 py-3 num-value text-[13px] text-right">
-            {formatInt(v.mileage)}
+            {v.mileage == null ? '' : formatInt(v.mileage)}
           </td>
           <td class="px-4 py-3 num-value text-[12px] text-right text-[var(--color-text-muted)]">
             {formatDate(v.acquisitionDate)}

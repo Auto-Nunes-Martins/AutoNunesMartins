@@ -28,7 +28,7 @@ export function formatInt(value: number | string | null | undefined): string {
 
 export function formatKm(value: number | string | null | undefined): string {
   const f = formatInt(value);
-  return f === '—' ? f : `${f} km`;
+  return f === '—' ? '' : `${f} km`;
 }
 
 export function formatDate(date: Date | string | null | undefined): string {

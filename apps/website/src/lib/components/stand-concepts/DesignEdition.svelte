@@ -44,6 +44,7 @@
   import { usePublicTheme } from '$lib/publicTheme';
   import {
     emptyStock,
+    publicMileage,
     publicPrice,
     type PublicStock,
     type PublicVehicle,
@@ -76,7 +77,7 @@
     Fuel,
     Maximize,
   } from 'lucide-svelte';
-  import { cars, photo, eur, number } from './data';
+  import { cars, photo, eur } from './data';
   import {
     responsivePhoto,
     cardImageSizes,
@@ -230,6 +231,7 @@
       ? createThumbnailSession(publicVehicle.slug, publicPhotoVersions(publicVehicle))
       : undefined,
   );
+  const demoCar = $derived(catalogCars.find((item) => item.id === id));
   const car = $derived(
     publicVehicle
       ? {
@@ -245,7 +247,7 @@
           price: publicVehicle.price === null ? Number.NaN : Number(publicVehicle.price),
           image: publicVehicle.photos.length ? publicPhoto(publicVehicle, 0) : catalogPlaceholder,
         }
-      : catalogCars.find((item) => item.id === id),
+      : demoCar,
   );
   const detailSpecs = $derived(
     car
@@ -253,10 +255,10 @@
           ['Marca', car.brand],
           ['Modelo', car.model],
           ['Ano', car.year],
-          ['Quilometragem', number(car.km) + ' km'],
+          ['Quilometragem', publicMileage(car.km)],
           ...(car.power ? [['Potência', car.power + ' cv']] : []),
           ...(!publicVehicle
-            ? [['Caixa', transmissionFor(car)]]
+            ? demoCar ? [['Caixa', transmissionFor(demoCar)]] : []
             : publicVehicle.transmission
               ? [['Caixa', transmissionLabels[publicVehicle.transmission]]]
               : []),
@@ -443,7 +445,7 @@
           : homeOrder === 'ano'
             ? b.year - a.year
             : homeOrder === 'km'
-              ? a.km - b.km
+              ? a.km === b.km ? 0 : a.km === null ? 1 : b.km === null ? -1 : a.km - b.km
               : 0,
     );
     return matches.slice(0, 5);
@@ -1114,7 +1116,7 @@
           </div>
           <div class="quick-specs">
             <span>{car.year}<small>Ano</small></span><span
-              >{number(car.km)}<small>Quilómetros</small></span
+              >{publicMileage(car.km, '')}<small>Quilómetros</small></span
             ><span>{car.fuel}<small>Combustível</small></span>
           </div>
           <button
@@ -1782,7 +1784,7 @@
               stroke-linecap="round"
               stroke-linejoin="round"
               aria-hidden="true"><path d="M4 19 8 5m8 0 4 14M12 6v2m0 3v2m0 3v2" /></svg
-            >{number(vehicle.km)} km</span
+            >{publicMileage(vehicle.km)}</span
           ><span><Fuel size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.fuel}</span>
         </div>
       </div>

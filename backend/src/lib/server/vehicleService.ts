@@ -69,7 +69,7 @@ export async function createVehicle(
         model: data.model,
         year: data.year,
         fuel: data.fuel,
-        mileage: data.mileage,
+        mileage: data.mileage ?? null,
         vin: data.vin ?? null,
         // The license plate has already been normalized by licensePlatePtSchema to
         // "XX-XX-XX" form; null when the user didn't enter one.

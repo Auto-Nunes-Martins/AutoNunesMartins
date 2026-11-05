@@ -71,7 +71,7 @@ export function publicVehicleOrder(
     preco_asc: { publicPrice: { sort: 'asc', nulls: 'last' } },
     preco_desc: { publicPrice: { sort: 'desc', nulls: 'last' } },
     ano: { year: 'desc' },
-    km: { mileage: 'asc' },
+    km: { mileage: { sort: 'asc', nulls: 'last' } },
   };
   return [orders[order], { id: 'asc' }];
 }

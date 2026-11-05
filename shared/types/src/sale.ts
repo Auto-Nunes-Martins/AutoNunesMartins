@@ -2,7 +2,7 @@ import { registeredBrandSchema } from './brands.js';
 import { z } from 'zod';
 import { BuyerTypeEnum, DeliveryStatusEnum, FuelEnum, TradeInDispositionEnum } from './enums.js';
 import { moneySchema } from './decimal.js';
-import { licensePlatePtSchema, pendingDocFlagsSchema, vehicleCreateSchema } from './vehicle.js';
+import { knownMileageSchema, licensePlatePtSchema, pendingDocFlagsSchema, vehicleCreateSchema } from './vehicle.js';
 
 const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
 
@@ -21,7 +21,7 @@ export const tradeInCreateSchema = z
     model: z.string().trim().min(1, 'Modelo obrigatório').max(80),
     year: vehicleCreateSchema.shape.year,
     fuel: vehicleCreateSchema.shape.fuel,
-    mileage: z.preprocess(emptyToUndefined, vehicleCreateSchema.shape.mileage),
+    mileage: z.preprocess(emptyToUndefined, knownMileageSchema),
     licensePlate: z.preprocess(emptyToUndefined, licensePlatePtSchema.optional()),
     vin: vehicleCreateSchema.shape.vin,
     allowanceValue: moneySchema.refine(

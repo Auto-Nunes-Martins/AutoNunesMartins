@@ -72,7 +72,7 @@ model Vehicle {
   model           String
   year            Int
   fuel            Fuel
-  mileage         Int
+  mileage         Int?
   vin             String?                  @unique
   /// Portuguese license plate, stored in canonical "XX-XX-XX" form.
   /// Nullable so legacy rows imported without a registered plate don't break;

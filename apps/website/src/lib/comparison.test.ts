@@ -124,6 +124,7 @@ describe('Comparison facts', () => {
   it('keeps missing facts distinct from actual zero mileage without demo fallback', () => {
     const result = facts();
     expect(result.Quilometragem).toBe('0 km');
+    expect(facts({ ...vehicle, mileage: null }).Quilometragem).toBe('Sob consulta');
     for (const key of [
       'Preço',
       'Caixa',
