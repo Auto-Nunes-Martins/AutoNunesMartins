@@ -14,6 +14,10 @@ class ImageNode extends EventTarget {
   removeAttribute(name: string) {
     this.attributes.delete(name);
   }
+  toggleAttribute(name: string, enabled: boolean) {
+    if (enabled) this.setAttribute(name, '');
+    else this.removeAttribute(name);
+  }
   asImage() {
     return this as unknown as HTMLImageElement;
   }
@@ -147,6 +151,25 @@ describe('vehicle photo fallback', () => {
     node.complete = true;
     vehiclePhoto(node.asImage(), { src: node.src });
     expect(node.src).toBe(catalogPlaceholder);
+  });
+
+  it('hides a pending or broken card photo and reveals the decoded replacement', () => {
+    const node = Object.assign(new ImageNode(), { complete: true, naturalWidth: 800 });
+    const action = vehiclePhoto(node.asImage(), { src: node.src, hideUntilLoaded: true });
+    expect(node.attributes.has('data-photo-ready')).toBe(true);
+
+    node.complete = false;
+    action.update({ src: '/next.webp', hideUntilLoaded: true });
+    expect(node.attributes.has('data-photo-ready')).toBe(false);
+    node.naturalWidth = 0;
+    node.dispatchEvent(new Event('error'));
+    expect(node.src).toBe(catalogPlaceholder);
+    expect(node.attributes.has('data-photo-ready')).toBe(false);
+
+    node.naturalWidth = 320;
+    node.dispatchEvent(new Event('load'));
+    expect(node.attributes.has('data-photo-ready')).toBe(true);
+    action.destroy();
   });
 
   it('keeps successfully loaded photos', () => {

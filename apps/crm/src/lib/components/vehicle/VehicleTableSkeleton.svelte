@@ -13,7 +13,7 @@
   {#each Array(rows) as _, i (i)}
     <div class="px-4 py-3">
       <div class="flex items-center gap-3">
-        <Skeleton width="64px" height="48px" />
+        <Skeleton width="80px" height="60px" class="shrink-0" />
         <div class="flex flex-col gap-1.5 min-w-0 flex-1">
           <Skeleton width="60%" height="14px" />
           <Skeleton width="45%" height="10px" />
@@ -74,7 +74,7 @@
         <tr class="border-b border-[var(--color-border)]">
           <td class="px-4 py-3">
             <div class="flex items-center gap-3">
-              <Skeleton width="56px" height="44px" />
+              <Skeleton width="96px" height="72px" class="shrink-0" />
               <div class="flex flex-col gap-1.5 min-w-0 flex-1">
                 <Skeleton width="60%" height="14px" />
                 <Skeleton width="45%" height="10px" />

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({ api: vi.fn() }));
 vi.mock('$lib/server/api', () => ({
   apiJson: mocks.api,
+  apiErrorMessage: (status: number) => `Erro de acesso ${status}`,
   rethrowAuthError: (err: unknown) => {
     if (
       (err as { status?: number })?.status === 401 ||
@@ -33,13 +34,35 @@ describe('CRM homepage highlight actions', () => {
   it('loads the authenticated editor rather than the public inventory projection', async () => {
     const editor = { revision: null, items: [], candidates: [] };
     mocks.api.mockResolvedValue(editor);
-    const event = { url: new URL('http://localhost/site/destaques?viatura=selected') };
-    expect(await load(event as any)).toEqual({ editor, selectedVehicleId: 'selected' });
-    expect(mocks.api).toHaveBeenCalledWith(event, '/api/homepage-highlights');
+    const event = { url: new URL('http://localhost/site/destaques?viatura=selected'), depends: vi.fn() };
+    const result = await load(event as any);
+    expect(result.selectedVehicleId).toBe('selected');
+    await expect(result.editor).resolves.toEqual({ ok: true, editor });
+    expect(mocks.api).toHaveBeenCalledWith(event, '/api/homepage-highlights', {
+      signal: expect.any(AbortSignal),
+    });
+  });
+  it('returns the section before the backend and lets a later load recover from a failure', async () => {
+    const event = { url: new URL('http://localhost/site/destaques'), depends: vi.fn() };
+    let reject!: (reason: Error) => void;
+    mocks.api.mockReturnValueOnce(new Promise((_, fail) => { reject = fail; }));
+    const first = await load(event as any);
+    reject(new Error('storage unavailable'));
+    await expect(first.editor).resolves.toMatchObject({ ok: false, status: 503 });
+    const editor = { revision: null, items: [], candidates: [] };
+    mocks.api.mockResolvedValueOnce(editor);
+    const retried = await load(event as any);
+    await expect(retried.editor).resolves.toEqual({ ok: true, editor });
+  });
+  it('keeps permission failures distinct from temporary load errors', async () => {
+    const event = { url: new URL('http://localhost/site/destaques'), depends: vi.fn() };
+    mocks.api.mockRejectedValueOnce(new ApiError(403, null));
+    const result = await load(event as any);
+    await expect(result.editor).resolves.toMatchObject({ ok: false, status: 403 });
   });
   it('sends the chosen order, photo and revision to the authenticated API', async () => {
     mocks.api.mockResolvedValue({ revision: 'new' });
-    expect(await actions.default!(event(JSON.stringify(selection)))).toEqual({ saved: true });
+    expect(await actions.default!(event(JSON.stringify(selection)))).toEqual({ saved: true, revision: 'new' });
     expect(mocks.api.mock.calls[0]![2]).toEqual({ method: 'PUT', body: JSON.stringify(selection) });
   });
   it('rejects malformed and excessively long submissions before calling the API', async () => {

@@ -10,10 +10,14 @@ beforeEach(() => mocks.api.mockReset());
 it('passes the selected vehicle from the URL without saving a highlight', async () => {
   const editor = { revision: 'v1', items: [], candidates: [] };
   mocks.api.mockResolvedValue(editor);
+  const depends = vi.fn();
   const value = await load({
     url: new URL('http://fixture/site/destaques?viatura=current'),
+    depends,
   } as never);
-  expect(value).toEqual({ editor, selectedVehicleId: 'current' });
+  expect(value.selectedVehicleId).toBe('current');
+  await expect(value.editor).resolves.toEqual({ ok: true, editor });
+  expect(depends).toHaveBeenCalledWith('crm:homepage-highlights');
   expect(mocks.api).toHaveBeenCalledTimes(1);
   expect(mocks.api.mock.calls[0]?.[1]).toBe('/api/homepage-highlights');
 });
@@ -24,8 +28,8 @@ it('persists the deliberate selection through the existing revision-checked endp
     },
     form = new FormData();
   form.set('selection', JSON.stringify(selection));
-  mocks.api.mockResolvedValue({ ok: true });
+  mocks.api.mockResolvedValue({ revision: 'new' });
   const value = await actions.default!({ request: { formData: async () => form } } as never);
-  expect(value).toEqual({ saved: true });
+  expect(value).toEqual({ saved: true, revision: 'new' });
   expect(mocks.api.mock.calls[0]?.[2]).toEqual({ method: 'PUT', body: JSON.stringify(selection) });
 });

@@ -1709,6 +1709,7 @@
                 ? { source: vehicle.image, dimensions: vehicle.photoDimensions }
                 : undefined}
               use:vehiclePhoto={{
+                hideUntilLoaded: 'approved' in vehicle,
                 src: 'approved' in vehicle ? cardPhoto(vehicle.image) : photo(vehicle.image, 1100),
                 srcset:
                   'approved' in vehicle
@@ -4607,6 +4608,12 @@
   @media (prefers-reduced-motion: reduce) {
     .contact-dialog form button[type='submit'] :global(svg) {
       transition: none;
+    }
+  }
+  /* Keep the card background visible without painting the browser's broken-image icon. */
+  @media (scripting: enabled) {
+    .public-card .card-image img:not([data-photo-ready]) {
+      opacity: 0;
     }
   }
   .public-card .card-image img {

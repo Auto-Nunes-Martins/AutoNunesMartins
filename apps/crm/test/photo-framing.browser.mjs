@@ -40,6 +40,7 @@ import Design from '@website/components/stand-concepts/DesignEdition.svelte';
 import {emptyStock,publicCard} from '@website/publicVehicles';
 import '@website/components/stand-concepts/homeHeroDirections.css';
 const src=${JSON.stringify(src)};
+const draftSrc=URL.createObjectURL(new Blob([${JSON.stringify(svg)}],{type:'image/svg+xml'}));
 import {setContext} from 'svelte';
 import {createFavorites,favoritesContext} from '@website/favorites';
 import {createComparison,comparisonContext} from '@website/comparison';
@@ -55,7 +56,7 @@ const stock=$derived({...emptyStock('ready'),catalog:{...emptyStock('ready').cat
 <main style="max-width:900px;margin:auto;padding:20px">
 <Editor {src} {value} context="gallery" onchange={next=>value=next}/>
 <output id="value">{JSON.stringify(value??null)}</output>
-<Picker bind:selected allowed={['a','b','draft:new']} persisted={['a','b']} staged photos={[{path:'a',url:src},{path:'b',url:src},{path:'draft:new',url:src}]} {framing} onframing={(path,value)=>framing={...framing,[path]:value}}/>
+<Picker bind:selected allowed={['a','b','draft:new']} persisted={['a','b']} staged photos={[{path:'a',url:src},{path:'b',url:src},{path:'draft:new',url:draftSrc}]} {framing} onframing={(path,value)=>framing={...framing,[path]:value}}/>
 <button type="button" onclick={()=>localStorage.setItem('framing-fixture',JSON.stringify(framing))}>Guardar ficha</button>
 <output id="gallery">{JSON.stringify(framing)}</output><button onclick={()=>selected=['b','a','draft:new']}>Trocar principal</button><button onclick={()=>selected=['a','b','draft:new']}>Repor principal</button>
 <div id="crm-gallery"><Gallery vehicleId="fixture" photos={[{path:'a',url:src},{path:'b',url:src}]} {framing} editable={false}/></div>
@@ -182,6 +183,12 @@ const stock=$derived({...emptyStock('ready'),catalog:{...emptyStock('ready').cat
         const gallery = page.locator('.framing-editor'),detail=gallery.getByRole('region',{name:'Enquadramento na ficha pública'}),cardFrame=gallery.getByRole('region',{name:'Enquadramento do cartão'});
         const card=page.locator('.photo-card').first().locator('.photo-media img');
         const cardPosition=()=>card.evaluate(img=>getComputedStyle(img).objectPosition);
+        const shownSource = (image) => image.evaluate(async (img) => {
+          await img.decode();
+          if (!img.naturalWidth) throw new Error('The photo is not visible');
+          return img.currentSrc;
+        });
+        const cardSource = await shownSource(card);
         assert.equal(await cardPosition(),'50% 50%');
         const ratio=await page.locator('.photo-media').first().evaluate(node=>node.clientWidth/node.clientHeight);
         assert.ok(Math.abs(ratio-(width===390?4/3:1.4))<.025);
@@ -199,6 +206,7 @@ const stock=$derived({...emptyStock('ready'),catalog:{...emptyStock('ready').cat
         assert.equal(JSON.parse(await page.locator('#gallery').textContent()).a[width===390?'mobile':'desktop'].y, 100);
         assert.equal(JSON.parse(await page.locator('#gallery').textContent()).b, undefined);
         assert.equal(await cardPosition(),'50% 100%');
+        assert.equal(await shownSource(card), cardSource, 'applying the crop keeps the decoded photo');
         await page.getByRole('button', { name: 'Enquadrar', exact: true }).first().click();
         assert.equal(await cardFrame.count(),1);
         if(width===390)await cardFrame.getByRole('button',{name:'Telemóvel',exact:true}).click();
@@ -207,6 +215,7 @@ const stock=$derived({...emptyStock('ready'),catalog:{...emptyStock('ready').cat
         await cardFrame.getByRole('slider',{name:'Posição da fotografia'}).focus();await page.keyboard.press('Home');
         await gallery.getByRole('button', {name:'Aplicar enquadramento'}).click();
         const both=JSON.parse(await page.locator('#gallery').textContent()).a;assert.equal(both.card[width===390?'mobile':'desktop'].y,0);assert.equal(both[width===390?'mobile':'desktop'].y,detailBefore[width===390?'mobile':'desktop'].y);
+        assert.equal(await shownSource(card), cardSource, 'applying another crop keeps the same photo');
         const publicCard=page.locator('#public-card .public-card .card-image').first();await publicCard.locator('img').waitFor();assert.equal(await publicCard.locator('img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 0%');
         const publicSize=await publicCard.boundingBox();assert.ok(Math.abs(publicSize.height-(publicSize.width/1.4+60))<1);
         await page.getByRole('button',{name:'Trocar principal',exact:true}).click();
@@ -215,9 +224,12 @@ const stock=$derived({...emptyStock('ready'),catalog:{...emptyStock('ready').cat
         assert.equal(await publicCard.locator('img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 50%');
         await page.getByRole('button',{name:'Repor principal',exact:true}).click();assert.equal(await publicCard.locator('img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 0%');
         await page.getByRole('button', { name: 'Enquadrar', exact: true }).nth(2).click();
+        const draftCard = page.locator('.photo-card').nth(2).locator('.photo-media img');
+        const draftSource = await shownSource(draftCard);
         if(width===390)await detail.getByRole('button',{name:'Telemóvel',exact:true}).click();
         await detail.getByRole('slider', { name: 'Posição da fotografia' }).focus();await page.keyboard.press('End');
         await gallery.getByRole('button', { name: 'Aplicar enquadramento' }).click();
+        assert.equal(await shownSource(draftCard), draftSource, 'applying a crop preserves the local blob');
         await page.getByRole('button',{name:'Guardar ficha',exact:true}).click();await page.reload();
         await page.locator('.photo-card').first().waitFor();
         assert.equal(await cardPosition(),'50% 100%','existing crop reopens from saved state');assert.equal(await publicCard.locator('img').evaluate(img=>getComputedStyle(img).objectPosition),'50% 0%','card crop reopens independently from the detail crop');

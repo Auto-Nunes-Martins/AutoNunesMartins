@@ -70,6 +70,10 @@
   }
 }
 
+.hd-root .hd-explore-content {
+  display: contents;
+}
+
 /* A compact mobile opening, with the car as the main visual anchor. */
 @media (max-width: 700px) {
   .hd-root.hd-1[data-photo-variant='5'] .hd-composition {
@@ -113,13 +117,19 @@
   .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore::after {
     content: none;
   }
-  .hd-root.hd-1[data-photo-variant='5'] .hd-copy > .hd-explore::before {
+  .hd-root.hd-1[data-photo-variant='5'] .hd-explore-content {
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    gap: inherit;
+    max-width: 100%;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-explore-content::after {
     content: '';
     position: absolute;
     inset-inline: 0;
-    /* Match the original underline at the bottom edge of the link. */
-    top: auto;
-    bottom: 0;
+    /* Follow the content rather than the 44px touch target, allowing for line leading. */
+    top: calc(100% + 7px - (1lh - 1em) / 2);
     height: 0.5px;
     background: #fff;
     pointer-events: none;

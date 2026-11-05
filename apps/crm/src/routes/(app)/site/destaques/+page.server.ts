@@ -1,19 +1,24 @@
-import { error, fail } from '@sveltejs/kit';
-import { apiJson, ApiError, rethrowAuthError } from '$lib/server/api';
+import { fail } from '@sveltejs/kit';
+import { apiErrorMessage, apiJson, ApiError } from '$lib/server/api';
 import type { HighlightsEditor } from '$lib/homepageHighlights';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async (event) => {
-  try {
-    return {
-      editor: await apiJson<HighlightsEditor>(event, '/api/homepage-highlights'),
-      selectedVehicleId: event.url.searchParams.get('viatura'),
-    };
-  } catch (err) {
-    rethrowAuthError(err);
-    error(503, 'Não foi possível carregar os destaques. Tente novamente.');
-  }
-};
+export const load = ((event) => {
+  event.depends('crm:homepage-highlights');
+  const editor = apiJson<HighlightsEditor>(event, '/api/homepage-highlights', {
+    signal: AbortSignal.timeout(10_000),
+  }).then(
+    (editor) => ({ ok: true as const, editor }),
+    (err: unknown) => {
+      const status = err instanceof ApiError ? err.status : 503;
+      const message = [401, 403].includes(status)
+        ? apiErrorMessage(status)
+        : 'Não foi possível carregar os destaques. Tente novamente.';
+      return { ok: false as const, status, message };
+    },
+  );
+  return { editor, selectedVehicleId: event.url.searchParams.get('viatura') };
+}) satisfies PageServerLoad;
 export const actions: Actions = {
   default: async (event) => {
     const data = await event.request.formData();
@@ -27,11 +32,11 @@ export const actions: Actions = {
       return fail(400, { error: 'Seleção inválida.' });
     }
     try {
-      await apiJson(event, '/api/homepage-highlights', {
+      const { revision } = await apiJson<{ revision: string }>(event, '/api/homepage-highlights', {
         method: 'PUT',
         body: JSON.stringify(input),
       });
-      return { saved: true };
+      return { saved: true, revision };
     } catch (err) {
       if (err instanceof ApiError)
         return fail(err.status, {

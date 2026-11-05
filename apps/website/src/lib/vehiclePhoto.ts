@@ -4,6 +4,7 @@ type Source = {
   src: string;
   srcset?: string;
   fade?: boolean;
+  hideUntilLoaded?: boolean;
   onLoading?: (loading: boolean) => void;
 };
 
@@ -16,6 +17,9 @@ export function vehiclePhoto(node: HTMLImageElement, initial: Source) {
   let transition: Animation | undefined;
   let displayed = node.complete && node.naturalWidth > 0 ? node.currentSrc || node.src : '';
   let restoreSnapshot: (() => void) | undefined;
+  function setPhotoReady(ready: boolean) {
+    if (source.hideUntilLoaded) node.toggleAttribute('data-photo-ready', ready);
+  }
   function clearTransition() {
     transition?.cancel();
     transition = undefined;
@@ -69,6 +73,7 @@ export function vehiclePhoto(node: HTMLImageElement, initial: Source) {
     }
     if (version !== generation || decodeVersion !== decodeGeneration) return;
     displayed = node.currentSrc || node.src;
+    setPhotoReady(node.naturalWidth > 0);
     source.onLoading?.(false);
     // Fade over the last decoded photo, never the page's light background.
     // No cloned image, source observer or pointer-driven transition is retained.
@@ -89,6 +94,7 @@ export function vehiclePhoto(node: HTMLImageElement, initial: Source) {
   function fallback() {
     decodeGeneration++;
     displayed = '';
+    setPhotoReady(false);
     clearTransition();
     source.onLoading?.(false);
     if (failed || source.src === catalogPlaceholder) return;
@@ -98,6 +104,7 @@ export function vehiclePhoto(node: HTMLImageElement, initial: Source) {
   }
   node.addEventListener('error', fallback);
   node.addEventListener('load', loaded);
+  setPhotoReady(node.complete && node.naturalWidth > 0);
   source.onLoading?.(!node.complete);
   // Loading can finish before hydration installs the error listener.
   if (node.complete && node.naturalWidth === 0) fallback();
@@ -109,6 +116,7 @@ export function vehiclePhoto(node: HTMLImageElement, initial: Source) {
       failed = false;
       clearTransition();
       retainBackground();
+      setPhotoReady(false);
       source.onLoading?.(true);
       if (next.srcset) node.setAttribute('srcset', next.srcset);
       else node.removeAttribute('srcset');

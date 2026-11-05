@@ -9,7 +9,7 @@ import {
   approvedPaths,
 } from '../data/publicVehicle.js';
 import { isApprovedPhotoPath } from '../domain/publicVehicle.js';
-import { signedPhoto } from '../data/storage.js';
+import { signedPhotos } from '../data/storage.js';
 import { emitActivity } from '../data/activity.js';
 
 export const highlightsKey = 'homepageHighlights';
@@ -63,17 +63,16 @@ export async function readHighlightsEditor(db: PrismaClient) {
       photos: approvedPaths(vehicle),
     }))
     .filter((vehicle) => vehicle.photos.length);
-  const sources = new Map<string, Awaited<ReturnType<typeof signedPhoto>>>();
-  const paths = candidates.flatMap((v) => v.photos);
-  for (let i = 0; i < paths.length; i += 4)
-    await Promise.all(
-      paths.slice(i, i + 4).map(async (path) => sources.set(path, await signedPhoto(path))),
-    );
+  const paths = [...new Set(candidates.flatMap((v) => v.photos))];
+  const sources = new Map((await signedPhotos(paths)).map((photo) => [photo.path, photo]));
   return {
     ...readSetting(setting?.value),
     candidates: candidates.map((vehicle) => ({
       ...vehicle,
-      photos: vehicle.photos.map((path) => sources.get(path) ?? { path, url: null }),
+      photos: vehicle.photos.map((path) => {
+        const source = sources.get(path);
+        return { ...source, path, url: source?.url ?? null };
+      }),
     })),
   };
 }

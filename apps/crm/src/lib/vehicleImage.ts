@@ -6,13 +6,13 @@ export type SignedVariantPhoto = {
   variants?: { width: number; height: number; url: string }[];
 };
 export function photoAttrs(
-  photo: { url: string | null; width?: number; variants?: { width: number; url: string }[] },
-  width: number,
+  _photo: { url: string | null; width?: number; variants?: { width: number; url: string }[] },
+  _width: number,
   sizes: string,
 ) {
-  // The private CRM action chooses once after layout; SSR must not start a
-  // different thumbnail candidate before the shared gallery group is measured.
-  return { src: undefined, srcset: undefined, sizes };
+  // The action owns src/srcset. A spread containing undefined keys lets Svelte
+  // remove attributes set by the action when a crop or another prop changes.
+  return { sizes };
 }
 /** Missing/expired derivative falls back once to the original, before component error UI. */
 export function photoFallback(node: HTMLImageElement, original: string | null) {

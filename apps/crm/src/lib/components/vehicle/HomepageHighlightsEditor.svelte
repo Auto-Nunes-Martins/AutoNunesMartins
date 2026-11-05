@@ -20,6 +20,8 @@
     selectedVehicleId = null,
   }: { editor: HighlightsEditor; selectedVehicleId?: string | null } = $props();
   let items = $state<HighlightItem[]>(untrack(() => editor.items.map((item) => ({ ...item }))));
+  let savedItems = $state<HighlightItem[]>(untrack(() => editor.items));
+  let revision = $state(untrack(() => editor.revision));
   let query = $state('');
   let saving = $state(false);
   let message = $state('');
@@ -33,6 +35,8 @@
   });
   $effect(() => {
     items = editor.items.map((item) => ({ ...item }));
+    savedItems = editor.items;
+    revision = editor.revision;
   });
   $effect(() => {
     const id = selectedVehicleId;
@@ -57,7 +61,7 @@
       });
     });
   });
-  const dirty = $derived(JSON.stringify(items) !== JSON.stringify(editor.items));
+  const dirty = $derived(JSON.stringify(items) !== JSON.stringify(savedItems));
   const filtered = $derived(
     editor.candidates.filter((vehicle) =>
       `${vehicle.brand} ${vehicle.model} ${vehicle.year}`
@@ -189,16 +193,26 @@
       method="POST"
       use:formFeedback
       use:enhance={({ formElement }) => {
+        const submitted = $state.snapshot(items);
         saving = true;
         message = '';
         return async ({ result, update }) => {
           try {
             if (result.type === 'success') {
-              await update({ reset: false });
+              const savedRevision = result.data?.revision;
+              if (typeof savedRevision !== 'string') {
+                message = 'Não foi possível confirmar a gravação. Recarregue antes de tentar novamente.';
+                return;
+              }
+              // The save response contains the new revision. Keep the streamed
+              // editor mounted instead of reloading its full photo catalogue.
+              await update({ reset: false, invalidateAll: false });
+              savedItems = submitted;
+              revision = savedRevision;
               await tick();
               markFormSaved(formElement);
               choosing = null;
-              if (selectedVehicleId) contextMessage = editor.items.some(item => item.vehicleId === selectedVehicleId)
+              if (selectedVehicleId) contextMessage = savedItems.some(item => item.vehicleId === selectedVehicleId)
                 ? 'Seleção de destaques guardada. A fotografia escolhida foi confirmada.'
                 : 'A viatura foi retirada da seleção guardada.';
               toast.success('Destaques da homepage guardados.');
@@ -217,7 +231,7 @@
       <input
         type="hidden"
         name="selection"
-        value={JSON.stringify({ revision: editor.revision, items })}
+        value={JSON.stringify({ revision, items })}
       />
       {#if message}<p class="save-error" role="alert">{message}</p>{/if}
       <div class="save-bar">

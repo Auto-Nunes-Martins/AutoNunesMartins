@@ -95,7 +95,7 @@
     {
       heading: 'Recursos',
       items: [
-        { href: crmPath('/site'), label: 'Site público', icon: Globe },
+        { href: crmPath('/site/destaques'), label: 'Site público', icon: Globe },
         { href: crmPath('/guia'), label: 'Guia de Fluxo', icon: BrandDoc },
       ],
     },
@@ -122,6 +122,7 @@
   const avatarUrl = $derived(ctx.user?.hasImage ? (ctx.user?.imageUrl ?? null) : null);
 
   function isActive(href: string, current: string): boolean {
+    if (href === crmPath('/site/destaques')) href = crmPath('/site');
     return current === href || current.startsWith(href + '/');
   }
 

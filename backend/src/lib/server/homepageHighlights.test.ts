@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma, type PrismaClient } from '@prisma/client';
 vi.mock('../data/storage.js', () => ({
-  signedPhoto: vi.fn(async (path: string) => ({ path, url: 'signed:' + path })),
+  signedPhotos: vi.fn(async (paths: string[]) => paths.map((path) => ({ path, url: 'signed:' + path }))),
   createSignedReadUrls: vi.fn(
     async (paths: string[]) => new Map(paths.map((path) => [path, 'signed:' + path])),
   ),
@@ -14,6 +14,7 @@ import {
   readHighlightsEditor,
   saveHighlights,
 } from './homepageHighlights.js';
+import { signedPhotos } from '../data/storage.js';
 
 const id = 'c123456789012345678901234';
 const photo = `${id}/12345678-1234-1234-1234-123456789abc.jpg`;
@@ -194,6 +195,8 @@ describe('homepage editorial selection', () => {
       { ...fixture(), publicPhotoPaths: [photo, `${id}/private.pdf`, 'other/private.jpg'] },
     ]);
     const editor = await readHighlightsEditor(db);
+    expect(signedPhotos).toHaveBeenCalledTimes(1);
+    expect(signedPhotos).toHaveBeenCalledWith([photo, otherPhoto]);
     expect(editor.candidates[0]?.photos).toEqual(
       [photo, otherPhoto].map((path) => ({ path, url: 'signed:' + path })),
     );

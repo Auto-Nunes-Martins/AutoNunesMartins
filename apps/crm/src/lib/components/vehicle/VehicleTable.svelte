@@ -83,7 +83,7 @@
       >
         <div class="flex items-center gap-3">
           <div
-            class="h-12 w-16 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0 overflow-hidden"
+            class="h-[60px] w-20 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0 overflow-hidden"
             style="border-radius: 3px;"
           >
             {#if v.thumbnailUrl}
@@ -232,7 +232,7 @@
           <td class="px-4 py-3">
             <a href={destination(v)} class="row-link flex items-center gap-3">
               <div
-                class="h-11 w-14 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0 overflow-hidden"
+                class="h-[72px] w-24 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0 overflow-hidden"
                 style="border-radius: 3px;"
               >
                 {#if v.thumbnailUrl}
