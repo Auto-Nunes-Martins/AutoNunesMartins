@@ -11,6 +11,24 @@ export function createGateway(
   buildAssets = immutableAssets(settings.base),
 ) {
   const server = http.createServer((req, res) => {
+        // Redirect apex domain to www.
+    if (
+      req.headers.host === 'autonunesmartins.pt' &&
+      ['GET', 'HEAD'].includes(req.method) &&
+      typeof req.url === 'string' &&
+      req.url.startsWith('/') &&
+      !req.url.startsWith('//') &&
+      !/[\\\x00-\x20#]/.test(req.url) &&
+      !/%(?:2f|5c|2e|00)/i.test(req.url.split('?')[0]) &&
+      !/(?:^|\/)\.{1,2}(?:\/|\?|$)/.test(req.url)
+    ) {
+      res.writeHead(301, {
+        Location: `https://www.autonunesmartins.pt${req.url}`,
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
     const route = selectRoute(settings, req.headers.host, req.url);
     if (!route) {
       res.writeHead(421, { 'cache-control': 'no-store' });
