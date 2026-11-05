@@ -36,7 +36,7 @@ kill_timeout = 30
     method = "GET"
     path = "/healthz"
     [http_service.checks.headers]
-      Host = "autonunesmartins.fly.dev"
+      Host = "www.autonunesmartins.pt"
 
 [[vm]]
   cpu_kind = "shared"
