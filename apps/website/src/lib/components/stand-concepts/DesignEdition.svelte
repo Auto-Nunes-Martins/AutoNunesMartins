@@ -1273,7 +1273,7 @@
         <div class="showroom-heading" use:entrance>
           <div>
             <h2>
-              O seu próximo carro<span class="heading-period">.</span>
+              Acabados de chegar<span class="heading-period">.</span>
             </h2>
           </div>
         </div>

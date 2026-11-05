@@ -103,7 +103,7 @@ export function relatedCardImageSizes(
 // Match the permanent hero's grid, including the tablet gap and its capped canvas.
 // sizes describes CSS pixels; the browser applies device density.
 export const featuredPhotoSizes =
-  '(max-width: 700px) calc(100vw - 40px), (max-width: 1050px) 40.022vw, min(38.337vw, 682px)';
+  '(max-width: 700px) calc(100vw - 40px), (max-width: 1050px) 43.332vw, min(43.332vw, 771px)';
 
 /** Seed the same cover demand in preload and img before the first decode.
  * Keep the existing conservative grid width for portraits and missing metadata.
@@ -117,7 +117,7 @@ export function featuredPhotoSizesForRatio(ratio = 0) {
   };
   return (
     `(max-width: 700px) ${cover('calc(100vw - 40px)', 1.85)}, ` +
-    `(max-width: 1050px) ${cover('40.022vw', 1.65)}, ` +
-    cover('min(38.337vw, 682px)', 1.65)
+    `(max-width: 1050px) ${cover('43.332vw', 1.65)}, ` +
+    cover('min(43.332vw, 771px)', 1.65)
   );
 }

@@ -293,7 +293,15 @@
         }}
       >
         <div class="hd-photo-motion"><div class="hd-idle-plane">{@render photograph()}</div></div>
-        <div class="hd-photo-ui">{@render photoDetails()}</div>
+        <div class="hd-photo-ui">
+          {@render photoDetails()}
+          <span class="hd-photo-counter" aria-hidden="true"
+            >{String(displayedIndex + 1).padStart(2, '0')} / {String(items.length).padStart(
+              2,
+              '0',
+            )}</span
+          >
+        </div>
         {#if items.length > 1}
           <button
             class="hd-photo-prev"

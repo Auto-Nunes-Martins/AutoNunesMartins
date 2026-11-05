@@ -52,8 +52,8 @@ describe('featured photo preload and image cover demand', () => {
   it('includes the full wide source behind the desktop and mobile cover crop', () => {
     const sizes = featuredPhotoSizesForRatio(3);
     expect(sizes).toContain('calc(calc(100vw - 40px) * 1.621622)');
-    expect(sizes).toContain('calc(40.022vw * 1.818182)');
-    expect(sizes).toContain('calc(min(38.337vw, 682px) * 1.818182)');
+    expect(sizes).toContain('calc(43.332vw * 1.818182)');
+    expect(sizes).toContain('calc(min(43.332vw, 771px) * 1.818182)');
     expect(1.621622 * 1.85).toBeGreaterThanOrEqual(3);
     expect(1.818182 * 1.65).toBeGreaterThanOrEqual(3);
   });
