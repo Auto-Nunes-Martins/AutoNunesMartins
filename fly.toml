@@ -8,14 +8,14 @@ kill_timeout = 30
   dockerfile = "Dockerfile"
   [build.args]
     CRM_BASE_PATH = "/crm"
-    PUBLIC_WEBSITE_URL = "https://autonunesmartins.pt"
+    PUBLIC_WEBSITE_URL = "https://www.autonunesmartins.pt"
     # Supply PUBLIC_CLERK_PUBLISHABLE_KEY as a public build argument.
 
 [env]
   NODE_ENV = "production"
   PORT = "10000"
-  WEBSITE_ORIGIN = "https://autonunesmartins.pt"
-  CRM_ORIGIN = "https://autonunesmartins.pt"
+  WEBSITE_ORIGIN = "https://www.autonunesmartins.pt"
+  CRM_ORIGIN = "https://www.autonunesmartins.pt"
   CRM_BASE_PATH = "/crm"
   SITE_NOINDEX = "true"
   CONTACT_ENABLED = "false"
