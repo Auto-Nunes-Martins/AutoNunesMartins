@@ -5,11 +5,7 @@ const candidate = {
   brand: 'BMW',
   model: 'One',
   year: 2020,
-  slug: 'slug',
-  photos: [
-    { path: 'photo-a', url: 'url' },
-    { path: 'photo-b', url: 'url' },
-  ],
+  photoPaths: ['photo-a', 'photo-b'],
 };
 it('prepares a draft with the current vehicle while preserving existing order and revision', () => {
   const editor = {

@@ -3,7 +3,7 @@ import type { HighlightsEditor } from './homepageHighlights';
 export function prepareVehicleHighlight(editor: HighlightsEditor, vehicleId: string) {
   const items = editor.items.map((item) => ({ ...item }));
   const vehicle = editor.candidates.find((candidate) => candidate.id === vehicleId);
-  if (!vehicle?.photos.length)
+  if (!vehicle?.photoPaths.length)
     return {
       items,
       choosing: null,
@@ -23,7 +23,7 @@ export function prepareVehicleHighlight(editor: HighlightsEditor, vehicleId: str
       message:
         'Esta viatura está selecionada para adicionar. O carrossel já tem cinco destaques; retire um antes de a adicionar.',
     };
-  items.push({ vehicleId, photoPath: vehicle.photos[0]!.path });
+  items.push({ vehicleId, photoPath: vehicle.photoPaths[0]! });
   return {
     items,
     choosing: vehicleId,

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { reusablePhoto } from '$lib/reusablePhoto';
+  import { featuredFramingPosition, featuredFramingRatio } from '$lib/homepageHighlights';
   import type { PhotoFraming } from '@anm/types';
   let {
     src,
@@ -22,12 +23,12 @@
     onchange: (value: PhotoFraming | undefined) => void;
   } = $props();
   let device = $state<'desktop' | 'mobile'>('desktop');
-  const position = $derived(value?.[device] ?? { x: 50, y: context === 'featured' ? 53 : 50 });
+  const position = $derived(context === 'featured'
+    ? featuredFramingPosition(value, device)
+    : value?.[device] ?? { x: 50, y: 50 });
   const ratio = $derived(
     context === 'featured'
-      ? device === 'desktop'
-        ? 1.65
-        : 1.85
+      ? featuredFramingRatio[device]
       : device === 'desktop'
         ? 1.4
         : 4 / 3,

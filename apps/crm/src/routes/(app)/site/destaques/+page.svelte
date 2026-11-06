@@ -4,6 +4,7 @@
   import Button from '$lib/components/common/Button.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import HomepageHighlightsEditor from '$lib/components/vehicle/HomepageHighlightsEditor.svelte';
+  import HomepageHighlightsSkeleton from '$lib/components/vehicle/HomepageHighlightsSkeleton.svelte';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
   let retrying = $state(false);
@@ -28,7 +29,7 @@
 
 <svelte:head><title>Destaques da homepage · Site público · Auto Nunes Martins</title></svelte:head>
 {#await data.editor}
-  <Panel><p class="p-6 text-sm text-[var(--color-text-muted)]" role="status">A carregar os destaques…</p></Panel>
+  <HomepageHighlightsSkeleton />
 {:then result}
   {#if result.ok}
     <HomepageHighlightsEditor editor={result.editor} selectedVehicleId={data.selectedVehicleId} />

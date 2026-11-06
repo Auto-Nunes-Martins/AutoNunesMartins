@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma, type PrismaClient } from '@prisma/client';
 vi.mock('../data/storage.js', () => ({
   signedPhotos: vi.fn(async (paths: string[]) => paths.map((path) => ({ path, url: 'signed:' + path }))),
+  signedThumbnails: vi.fn(async (paths: string[]) => ({
+    thumbnails: new Map(paths.map((path) => [path, 'thumbnail:' + path])),
+    originals: new Map(paths.map((path) => [path, 'signed:' + path])),
+  })),
   createSignedReadUrls: vi.fn(
     async (paths: string[]) => new Map(paths.map((path) => [path, 'signed:' + path])),
   ),
@@ -12,9 +16,11 @@ import {
   readPublicHighlights,
   readDashboardHighlights,
   readHighlightsEditor,
+  readHighlightPreviews,
+  readHighlightGallery,
   saveHighlights,
 } from './homepageHighlights.js';
-import { signedPhotos } from '../data/storage.js';
+import { signedPhotos, signedThumbnails } from '../data/storage.js';
 
 const id = 'c123456789012345678901234';
 const photo = `${id}/12345678-1234-1234-1234-123456789abc.jpg`;
@@ -42,7 +48,7 @@ const fixture = () => ({
 });
 const mock = {
   appSetting: { findUnique: vi.fn(), upsert: vi.fn() },
-  vehicle: { findMany: vi.fn() },
+  vehicle: { findMany: vi.fn(), findFirst: vi.fn() },
   $transaction: vi.fn(),
 };
 const db = mock as unknown as PrismaClient;
@@ -55,6 +61,24 @@ beforeEach(() => {
   mock.$transaction.mockImplementation((fn) => fn(mock));
 });
 describe('homepage editorial selection', () => {
+  it('returns the public gallery cover crop for the candidate thumbnail', async () => {
+    const coverFraming = { desktop: { x: 22, y: 63 }, mobile: { x: 71, y: 29 } };
+    const otherFraming = { desktop: { x: 15, y: 90 }, mobile: { x: 42, y: 70 } };
+    mock.vehicle.findMany.mockResolvedValue([
+      {
+        ...fixture(),
+        galleryFraming: {
+          [photo]: { ...coverFraming, card: otherFraming },
+          [otherPhoto]: otherFraming,
+        },
+      },
+    ]);
+    const editor = await readHighlightsEditor(db);
+    expect(editor.candidates[0]).toMatchObject({ photoPaths: [photo, otherPhoto], coverFraming });
+    expect(editor.candidates[0]?.coverFraming).toEqual(coverFraming);
+    expect(editor.items[0]?.photoPath).toBe(otherPhoto);
+  });
+
   it('validates and carries a highlight crop separately from gallery framing without private paths', async () => {
     const framing = { desktop: { x: 50, y: 80 }, mobile: { x: 50, y: 65 } };
     const selection = { revision, items: [{ vehicleId: id, photoPath: otherPhoto, framing }] };
@@ -190,15 +214,32 @@ describe('homepage editorial selection', () => {
       status: 409,
     });
   });
-  it('offers all current photos regardless of the legacy subset', async () => {
+  it('lists current photo paths without waiting for unavailable Storage', async () => {
     mock.vehicle.findMany.mockResolvedValue([
       { ...fixture(), publicPhotoPaths: [photo, `${id}/private.pdf`, 'other/private.jpg'] },
     ]);
+    vi.mocked(signedPhotos).mockRejectedValueOnce(new Error('Storage unavailable'));
     const editor = await readHighlightsEditor(db);
+    expect(editor.candidates[0]?.photoPaths).toEqual([photo, otherPhoto]);
+    expect(signedPhotos).not.toHaveBeenCalled();
+    expect(signedThumbnails).not.toHaveBeenCalled();
+    mock.vehicle.findFirst.mockResolvedValue(fixture());
+    await expect(readHighlightGallery(db, id)).rejects.toThrow('Storage unavailable');
+  });
+  it('signs only requested, still-approved previews and only the selected gallery', async () => {
+    const removed = `${id}/12345678-1234-1234-1234-123456789abe.jpg`;
+    expect(await readHighlightPreviews(db, [otherPhoto, otherPhoto, removed])).toEqual([
+      { path: otherPhoto, url: `thumbnail:${otherPhoto}`, originalUrl: `signed:${otherPhoto}` },
+    ]);
+    expect(signedThumbnails).toHaveBeenCalledTimes(1);
+    expect(signedThumbnails).toHaveBeenCalledWith([otherPhoto]);
+    expect(signedPhotos).not.toHaveBeenCalled();
+    mock.vehicle.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(fixture());
+    expect(await readHighlightGallery(db, id)).toBeNull();
+    expect(signedPhotos).not.toHaveBeenCalled();
+    expect(await readHighlightGallery(db, id)).toHaveLength(2);
     expect(signedPhotos).toHaveBeenCalledTimes(1);
     expect(signedPhotos).toHaveBeenCalledWith([photo, otherPhoto]);
-    expect(editor.candidates[0]?.photos).toEqual(
-      [photo, otherPhoto].map((path) => ({ path, url: 'signed:' + path })),
-    );
+    expect(mock.vehicle.findFirst.mock.calls[0]?.[0].where).toMatchObject({ id, webPublished: true, sale: { is: null } });
   });
 });

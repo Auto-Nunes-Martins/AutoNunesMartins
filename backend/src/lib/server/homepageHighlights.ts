@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
-import { photoFramingSchema } from '@anm/types';
+import { galleryFramingSchema, photoFramingSchema } from '@anm/types';
 import {
   publicVehicleDto,
   publicVehicleSelect,
@@ -9,7 +9,7 @@ import {
   approvedPaths,
 } from '../data/publicVehicle.js';
 import { isApprovedPhotoPath } from '../domain/publicVehicle.js';
-import { signedPhotos } from '../data/storage.js';
+import { signedPhotos, signedThumbnails } from '../data/storage.js';
 import { emitActivity } from '../data/activity.js';
 
 export const highlightsKey = 'homepageHighlights';
@@ -49,32 +49,54 @@ export async function readHighlightsEditor(db: PrismaClient) {
     db.appSetting.findUnique({ where: { key: highlightsKey } }),
     db.vehicle.findMany({
       where: publicVehicleWhere(),
-      select: publicVehicleSelect,
+      select: { id: true, brand: true, model: true, year: true, photos: true, galleryFraming: true },
       orderBy: [{ brand: 'asc' }, { model: 'asc' }, { id: 'asc' }],
     }),
   ]);
-  const candidates = vehicles
-    .map((vehicle) => ({
-      id: vehicle.id,
-      brand: vehicle.brand,
-      model: vehicle.model,
-      year: vehicle.year,
-      slug: vehicle.publicSlug!,
-      photos: approvedPaths(vehicle),
-    }))
-    .filter((vehicle) => vehicle.photos.length);
-  const paths = [...new Set(candidates.flatMap((v) => v.photos))];
-  const sources = new Map((await signedPhotos(paths)).map((photo) => [photo.path, photo]));
-  return {
-    ...readSetting(setting?.value),
-    candidates: candidates.map((vehicle) => ({
-      ...vehicle,
-      photos: vehicle.photos.map((path) => {
-        const source = sources.get(path);
-        return { ...source, path, url: source?.url ?? null };
-      }),
-    })),
-  };
+  const candidates = vehicles.flatMap((vehicle) => {
+    const photoPaths = approvedPaths(vehicle);
+    const cover = photoPaths[0];
+    if (!cover) return [];
+    const framing = galleryFramingSchema.safeParse(vehicle.galleryFraming).data?.[cover];
+    return [
+      {
+        id: vehicle.id,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year,
+        photoPaths,
+        ...(framing ? { coverFraming: { desktop: framing.desktop, mobile: framing.mobile } } : {}),
+      },
+    ];
+  });
+  return { ...readSetting(setting?.value), candidates };
+}
+
+export async function readHighlightPreviews(db: PrismaClient, requested: string[]) {
+  const ids = [...new Set(requested.map((path) => path.split('/')[0]!))];
+  const vehicles = await db.vehicle.findMany({
+    where: { ...publicVehicleWhere(), id: { in: ids } },
+    select: { id: true, photos: true },
+  });
+  const allowed = new Set(vehicles.flatMap(approvedPaths));
+  const paths = [...new Set(requested)].filter((path) => allowed.has(path));
+  if (!paths.length) return [];
+  const { thumbnails, originals } = await signedThumbnails(paths);
+  return paths.map((path) => ({
+    path,
+    url: thumbnails.get(path) ?? originals.get(path) ?? null,
+    originalUrl: originals.get(path) ?? null,
+  }));
+}
+
+export async function readHighlightGallery(db: PrismaClient, id: string) {
+  const vehicle = await db.vehicle.findFirst({
+    where: { ...publicVehicleWhere(), id },
+    select: { id: true, photos: true },
+  });
+  const paths = vehicle ? approvedPaths(vehicle) : [];
+  if (!paths.length) return null;
+  return (await signedPhotos(paths)).map((photo) => ({ ...photo, url: photo.url ?? null }));
 }
 
 export async function saveHighlights(

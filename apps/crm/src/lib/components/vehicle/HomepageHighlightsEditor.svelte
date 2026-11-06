@@ -1,19 +1,24 @@
 <script lang="ts">
-  import { reusablePhoto } from '$lib/reusablePhoto';
-  import { photoAttrs } from '$lib/vehicleImage';
+  import { reusablePhoto, selectPhoto } from '$lib/reusablePhoto';
+  import { framingStyle } from '@anm/types';
+  import { photoAttrs, photoFallback } from '$lib/vehicleImage';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
   import { crmPath } from '$lib/paths';
   import { untrack, onMount } from 'svelte';
   import { enhance } from '$lib/auth/enhance';
+  import { sessionFetch } from '$lib/auth/session';
   import { tick } from 'svelte';
   import { formFeedback, markFormSaved, refreshFormFeedback } from '$lib/forms/formFeedback';
   import { prepareVehicleHighlight } from '$lib/highlightSelection';
   import { toast } from 'svelte-sonner';
-  import { ArrowUp, ArrowDown, Check, Star, Image, Plus, Search, Trash2 } from 'lucide-svelte';
+  import { ArrowUp, ArrowDown, Check, Star, Image, Plus, RefreshCw, Search, Trash2 } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import Button from '$lib/components/common/Button.svelte';
-  import type { HighlightsEditor, HighlightItem } from '$lib/homepageHighlights';
+  import Skeleton from '$lib/components/common/Skeleton.svelte';
+  import HomepageHighlightsSkeleton from './HomepageHighlightsSkeleton.svelte';
+  import { featuredFramingPosition, featuredFramingRatio, type HighlightsEditor, type HighlightItem } from '$lib/homepageHighlights';
+  import { createHighlightPhotoRequests, decodeHighlightPreview, type HighlightGalleryPhoto, type HighlightGalleryState, type HighlightPreview } from '$lib/highlightPhotoRequests';
 
   let {
     editor,
@@ -30,8 +35,93 @@
   let appliedContext = '';
   let contextMessage = $state('');
   let selectionForm: HTMLFormElement;
+  let editorGrid: HTMLDivElement;
+  let preparing = $state(true);
+  let initialPaths = $state<string[]>([]);
+  const initialScope = new AbortController();
+  let previews = $state.raw<Partial<Record<string, HighlightPreview | null>>>({});
+  let galleries = $state.raw<Record<string, HighlightGalleryState>>({});
+  async function fetchPhotos<T>(query: URLSearchParams, signal: AbortSignal): Promise<T[]> {
+    const response = await sessionFetch(crmPath(`/site/destaques/fotografias?${query}`), { signal });
+    if (!response.ok) throw new Error('Não foi possível carregar as fotografias.');
+    const { photos } = (await response.json()) as { photos?: T[] };
+    if (!Array.isArray(photos)) throw new Error('Resposta de fotografias inválida.');
+    return photos;
+  }
+  const requests = createHighlightPhotoRequests({
+    previews: (paths, signal) => fetchPhotos<HighlightPreview>(new URLSearchParams(paths.map((path) => ['path', path])), signal),
+    gallery: (id, signal) => fetchPhotos<HighlightGalleryPhoto>(new URLSearchParams({ viatura: id }), signal),
+    onPreview: (path, photo) => {
+      if (photo || !previews[path]) previews = { ...previews, [path]: photo };
+    },
+    onGallery: (id, state) => {
+      galleries = { ...galleries, [id]: state };
+      if (state.status !== 'ready') return;
+      const available = { ...previews };
+      for (const photo of state.photos) {
+        const thumbnail = selectPhoto(photo, 320);
+        if (!available[photo.path] && thumbnail) {
+          available[photo.path] = { path: photo.path, url: thumbnail.url, originalUrl: photo.url };
+          requests.rememberPreview(photo.path);
+        }
+      }
+      previews = available;
+    },
+  });
+  function observePreview(node: HTMLElement, initial: string | undefined) {
+    let path = initial;
+    let visible = false;
+    function request() {
+      if (!preparing && visible && path && previews[path] !== null) requests.preview(path);
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry?.isIntersecting ?? false;
+      request();
+    });
+    observer.observe(node);
+    return { update(next: string | undefined) { path = next; request(); }, destroy() { observer.disconnect(); } };
+  }
+  async function prepareInitialPreviews() {
+    const paths = [...new Set([
+      ...editor.items.flatMap((item) => editor.candidates.some((vehicle) =>
+        vehicle.id === item.vehicleId && vehicle.photoPaths.includes(item.photoPath)) ? [item.photoPath] : []),
+      ...editor.candidates.flatMap((vehicle) => vehicle.photoPaths.slice(0, 1)),
+    ])];
+    initialPaths = paths;
+    const signal = AbortSignal.any([initialScope.signal, AbortSignal.timeout(12_000)]);
+    const resolved = new Map<string, string | null>();
+    try {
+      await requests.preparePreviews(paths, signal);
+      if (initialScope.signal.aborted) return;
+      await tick();
+      await Promise.all([...editorGrid.querySelectorAll<HTMLImageElement>('img[data-highlight-preview]')].map(async (image) => {
+        const path = image.dataset.highlightPreview!;
+        const source = await decodeHighlightPreview(image, previews[path]?.originalUrl ?? null, signal);
+        if (resolved.get(path) !== null) resolved.set(path, source);
+      }));
+    } catch {
+      // Any thumbnail still unresolved below gets a local retry control.
+    } finally {
+      if (!initialScope.signal.aborted) {
+        const next = { ...previews };
+        for (const path of paths) {
+          const url = resolved.get(path);
+          const preview = next[path];
+          next[path] = url && preview ? { ...preview, url } : null;
+        }
+        previews = next;
+        preparing = false;
+      }
+    }
+  }
   onMount(() => {
     mounted = true;
+    void prepareInitialPreviews();
+    return () => { initialScope.abort(); requests.destroy(); };
+  });
+  $effect(() => {
+    const id = choosing;
+    if (id) void untrack(() => requests.gallery(id));
   });
   $effect(() => {
     items = editor.items.map((item) => ({ ...item }));
@@ -40,12 +130,12 @@
   });
   $effect(() => {
     const id = selectedVehicleId;
-    if (!mounted || !id || id === appliedContext) return;
+    if (!mounted || preparing || !id || id === appliedContext) return;
     untrack(() => {
       appliedContext = id;
       const prepared = prepareVehicleHighlight(editor, id);
       items = prepared.items;
-      choosing = prepared.choosing;
+      choosing = null;
       contextMessage = prepared.message;
       const vehicle = editor.candidates.find((candidate) => candidate.id === id);
       if (!prepared.choosing && vehicle) query = `${vehicle.brand} ${vehicle.model}`;
@@ -55,9 +145,7 @@
           `[data-highlight-vehicle="${CSS.escape(id)}"]`,
         );
         row?.scrollIntoView({ block: 'center' });
-        row
-          ?.querySelector<HTMLButtonElement>('.photo-picker button[aria-pressed="true"]')
-          ?.focus({ preventScroll: true });
+        row?.querySelector<HTMLButtonElement>('button.text-action')?.focus({ preventScroll: true });
       });
     });
   });
@@ -83,7 +171,37 @@
   }
 </script>
 
-<div class="editor-grid">
+{#snippet preview(path: string | undefined, alt: string, position?: string)}
+  {@const thumbnail = path ? previews[path] : undefined}
+  {#if thumbnail?.url}
+    <img src={thumbnail.url} use:photoFallback={preparing ? null : thumbnail.originalUrl} {alt}
+      data-highlight-preview={path}
+      style:object-position={position} decoding="async"
+      onerror={() => { if (path && !preparing) previews = { ...previews, [path]: null }; }} />
+  {:else if path && thumbnail === null}
+    <button type="button" class="preview-retry" aria-label="Tentar carregar a miniatura novamente"
+      title="Tentar carregar a miniatura novamente" onclick={() => {
+        previews = { ...previews, [path]: undefined };
+        requests.preview(path, true);
+      }}><RefreshCw size={17} aria-hidden="true" /></button>
+  {:else if path}
+    <span class="preview-loading" aria-hidden="true"><Skeleton height="100%" /></span>
+  {:else}
+    <Image size={20} aria-hidden="true" />
+  {/if}
+{/snippet}
+
+{#if preparing}
+  <HomepageHighlightsSkeleton
+    label="A carregar as fotografias dos destaques…"
+    selected={editor.items.length}
+    candidates={editor.candidates.length}
+  />
+{:else if initialPaths.some((path) => previews[path] === null)}
+  <Panel><p class="initial-status" role="status">Algumas miniaturas não ficaram disponíveis. Pode voltar a tentar junto de cada fotografia.</p></Panel>
+{/if}
+
+<div class="editor-grid" class:preparing bind:this={editorGrid}>
   <Panel>
     <PanelHeader icon={Star} title="Carrossel da homepage" meta={`${items.length} / 5`} />
     <div class="intro">
@@ -100,21 +218,24 @@
     <ol class="selected-list">
       {#each items as item, index (item.vehicleId)}
         {@const vehicle = editor.candidates.find((candidate) => candidate.id === item.vehicleId)}
-        {@const selectedPhoto = vehicle?.photos.find((photo) => photo.path === item.photoPath)}
+        {@const gallery = galleries[item.vehicleId]}
+        {@const selectedPhoto = gallery?.status === 'ready' ? gallery.photos.find((photo) => photo.path === item.photoPath) : undefined}
+        {@const selectedPath = gallery?.status === 'ready'
+          ? selectedPhoto?.path
+          : vehicle?.photoPaths.includes(item.photoPath) ? item.photoPath : undefined}
+        {@const focus = featuredFramingPosition(item.framing, 'desktop')}
         <li data-highlight-vehicle={item.vehicleId}>
           <div class="selected-row">
             <span class="position">{String(index + 1).padStart(2, '0')}</span>
-            {#if selectedPhoto?.url}<img
-                class="cover"
-                {...photoAttrs(selectedPhoto,320,'128px')} use:reusablePhoto={{photo:selectedPhoto}}
-                alt={`${vehicle?.brand} ${vehicle?.model} — fotografia escolhida`}
-              />{:else}<div class="cover unavailable"><Image size={20} /></div>{/if}
+            <div class="cover unavailable" style:aspect-ratio={featuredFramingRatio.desktop} use:observePreview={selectedPath}>
+              {@render preview(selectedPath, vehicle ? `${vehicle.brand} ${vehicle.model} — fotografia escolhida` : '', `${focus.x}% ${focus.y}%`)}
+            </div>
             <div class="vehicle-info">
               <strong
                 >{vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Viatura indisponível'}</strong
               >
               <span>{vehicle?.year ?? 'Retirada do site ou vendida'}</span>
-              {#if !selectedPhoto}<span class="warning"
+              {#if !selectedPath}<span class="warning"
                   >Não aparece no site. Escolha outra fotografia ou remova este destaque.</span
                 >{/if}
               {#if vehicle}<button
@@ -153,12 +274,18 @@
             </div>
           </div>
           {#if choosing === item.vehicleId && vehicle}
+            {#if gallery?.status === 'error'}
+              <div class="gallery-status" role="status">
+                <span>Não foi possível carregar as fotografias desta viatura.</span>
+                <Button type="button" variant="outline" onclick={() => void requests.gallery(vehicle.id, true)}>Tentar novamente</Button>
+              </div>
+            {:else if gallery?.status === 'ready'}
             <div
               class="photo-picker"
               role="group"
               aria-label={`Fotografias de ${vehicle.brand} ${vehicle.model}`}
             >
-              {#each vehicle.photos as photo, photoIndex (photo.path)}
+              {#each gallery.photos as photo, photoIndex (photo.path)}
                 <button
                   type="button"
                   class:chosen={photo.path === item.photoPath}
@@ -181,8 +308,21 @@
                 </button>
               {/each}
             </div>
+            {#if gallery.photos.some((photo) => !photo.url)}
+              <div class="gallery-status" role="status"><span>Algumas fotografias não estão disponíveis.</span>
+                <Button type="button" variant="outline" onclick={() => void requests.gallery(vehicle.id, true)}>Tentar novamente</Button>
+              </div>
+            {/if}
             {#if selectedPhoto?.url}
               <PhotoFramingEditor photo={selectedPhoto} src={selectedPhoto.url} value={item.framing} context="featured" disabled={saving} onchange={framing => items = items.map(entry => entry.vehicleId === item.vehicleId ? {...entry, framing} : entry)} />
+            {/if}
+            {:else}
+              <p class="sr-only" role="status">A carregar fotografias…</p>
+              <div class="photo-picker" aria-hidden="true">
+                {#each vehicle.photoPaths as path (path)}
+                  <div class="photo-picker-placeholder"><Skeleton height="100%" /></div>
+                {/each}
+              </div>
             {/if}
           {/if}
         </li>
@@ -263,14 +403,16 @@
         {#each filtered as vehicle (vehicle.id)}
           {@const selected = items.some((item) => item.vehicleId === vehicle.id)}
           <div class="candidate">
-            {#if vehicle.photos[0]?.url}<img
-                {...photoAttrs(vehicle.photos[0],320,'64px')} use:reusablePhoto={{photo:vehicle.photos[0]}}
-                alt=""
-                loading="lazy"
-              />{:else}<div class="candidate-placeholder"><Image size={18} /></div>{/if}
+            <div
+              class="candidate-placeholder"
+              style={framingStyle(vehicle.coverFraming)}
+              use:observePreview={vehicle.photoPaths[0]}
+            >
+              {@render preview(vehicle.photoPaths[0], '')}
+            </div>
             <div>
               <strong>{vehicle.brand} {vehicle.model}</strong><span
-                >{vehicle.year} · {vehicle.photos.length} fotografias</span
+                >{vehicle.year} · {vehicle.photoPaths.length} fotografias</span
               >
             </div>
             <button
@@ -280,7 +422,7 @@
               aria-label={selected
                 ? `${vehicle.brand} ${vehicle.model} já selecionado`
                 : `Adicionar ${vehicle.brand} ${vehicle.model}`}
-              onclick={() => add(vehicle.id, vehicle.photos[0]!.path)}
+              onclick={() => add(vehicle.id, vehicle.photoPaths[0]!)}
               >{#if selected}<Check size={17} />{:else}<Plus size={17} />{/if}</button
             >
           </div>
@@ -298,6 +440,14 @@
 </div>
 
 <style>
+  .editor-grid.preparing {
+    display: none;
+  }
+  .initial-status {
+    padding: 18px 20px;
+    color: var(--color-text-muted);
+    font-size: 14px;
+  }
   .context-message {
     margin-top: 10px;
     color: var(--color-text);
@@ -356,9 +506,9 @@
     color: var(--color-red);
   }
   .cover {
+    position: relative;
     width: 128px;
-    aspect-ratio: 16/10;
-    object-fit: cover;
+    overflow: hidden;
     flex-shrink: 0;
     border-radius: var(--radius-card);
     background: var(--color-bg-2);
@@ -367,6 +517,36 @@
     display: grid;
     place-items: center;
     color: var(--color-text-faint);
+  }
+  .cover img, .candidate-placeholder img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .cover img {
+    position: absolute;
+    inset: 0;
+  }
+  .preview-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+  }
+  .preview-retry {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+  }
+  .gallery-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 20px;
+    color: var(--color-text-muted);
+    font-size: 13px;
   }
   .vehicle-info {
     display: grid;
@@ -432,6 +612,10 @@
     overflow: hidden;
     border: 2px solid transparent;
     border-radius: var(--radius-btn);
+  }
+  .photo-picker-placeholder {
+    display: flex;
+    aspect-ratio: 16 / 10;
   }
   .photo-picker .chosen {
     border-color: var(--color-red);
@@ -511,12 +695,21 @@
     padding: 12px 0;
     border-bottom: 1px solid var(--color-border);
   }
-  .candidate img,
   .candidate-placeholder {
+    position: relative;
     width: 64px;
     height: 48px;
-    object-fit: cover;
+    flex-shrink: 0;
+    overflow: hidden;
     border-radius: var(--radius-btn);
+  }
+  .candidate-placeholder img {
+    object-position: var(--photo-desktop, 50% 50%);
+  }
+  @media (max-width: 700px) {
+    .candidate-placeholder img {
+      object-position: var(--photo-mobile, 50% 50%);
+    }
   }
   .candidate-placeholder {
     display: grid;
