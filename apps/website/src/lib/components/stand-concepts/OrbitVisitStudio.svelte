@@ -5,6 +5,7 @@
   import ContactFeedback from '$lib/components/ContactFeedback.svelte';
   import ContactFormFooter from '$lib/components/ContactFormFooter.svelte';
   import { onMount } from 'svelte';
+  import { watchMapConsent } from '$lib/cookiebot';
   import { ArrowUpRight, ArrowRight, Phone, Mail, MapPin, Clock3, LoaderCircle } from 'lucide-svelte';
   import { standContact, type StandContact } from './standContact';
   import { photo } from './data';
@@ -56,7 +57,13 @@
   let section: HTMLElement;
   let useReferenceTone = $state(true);
   let selectedLocation = $state(0);
-  const embeddedMapActive = $derived(selectedLocation === 0 && !!contact.mapEmbedUrl);
+  let allowEmbeddedMap = $state(false);
+  const embeddedMapActive = $derived(selectedLocation === 0 && !!contact.mapEmbedUrl && allowEmbeddedMap);
+  onMount(() =>
+    watchMapConsent((allowed) => {
+      allowEmbeddedMap = allowed;
+    }),
+  );
   let mapCard = $state<HTMLDivElement>();
   let mapContent = $state<HTMLDivElement>();
   let mapMinimum = $state(0);

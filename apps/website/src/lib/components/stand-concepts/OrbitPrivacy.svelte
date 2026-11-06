@@ -110,11 +110,16 @@
     <p>
       Algumas imagens podem ser pedidas diretamente ao Unsplash, comunicando a esse serviço os dados
       técnicos da ligação. As fontes e a ilustração da segunda morada são locais. A primeira morada
-      apresenta um mapa incorporado do Google Maps, carregado de forma diferida pelo navegador
-      quando está selecionado e próximo da área visível; esse carregamento comunica dados técnicos
-      da ligação ao Google. A segunda morada mantém uma pré-visualização ilustrativa local. As
-      ligações para WhatsApp, mapas e redes sociais abrem os serviços externos quando as escolhe,
+      pode apresentar um mapa incorporado do Google Maps após consentimento explícito na categoria
+      Marketing, quando está selecionada e próxima da área visível. Esse carregamento comunica
+      dados técnicos da ligação à Google. Sem esse consentimento, e na segunda morada, é mostrada
+      uma pré-visualização ilustrativa local. As ligações para WhatsApp, mapas e redes sociais
+      abrem os serviços externos quando as escolhe,
       passando a aplicar-se também as condições desses serviços.
+    </p>
+    <p>
+      O Cookiebot fornece o painel, guarda a escolha de consentimento e apresenta a declaração de
+      cookies nesta política.
     </p>
     <p>
       A lista final de prestadores, logs, regiões e prazos do alojamento está por confirmar. Não

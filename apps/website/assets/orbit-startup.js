@@ -65,6 +65,12 @@
   document.addEventListener('DOMContentLoaded', finish, { once: true });
 })();
 
+function allowsOrbitScrollStorage() {
+  var cmp = window.Cookiebot;
+  return cmp?.hasResponse === true &&
+    cmp.consent?.method === 'explicit' && cmp.consent.preferences === true;
+}
+
 // Restoring a document is not a user-requested smooth scroll.
 if (
   location.pathname === '/' ||
@@ -80,6 +86,7 @@ if (
     addEventListener(event, cancelRestore, { passive: true, once: true });
   }
   addEventListener('pagehide', function () {
+    if (!allowsOrbitScrollStorage()) return;
     try {
       sessionStorage.setItem(
         'orbit-reload-position',
@@ -174,7 +181,9 @@ window.initializeOrbitDocument = function () {
   if (document.documentElement.hasAttribute('data-orbit-restoring')) {
     try {
       var navigation = performance.getEntriesByType('navigation')[0];
-      var saved = JSON.parse(sessionStorage.getItem('orbit-reload-position') || 'null');
+      var saved = allowsOrbitScrollStorage()
+        ? JSON.parse(sessionStorage.getItem('orbit-reload-position') || 'null')
+        : null;
       if (
         navigation &&
         navigation.type === 'reload' &&

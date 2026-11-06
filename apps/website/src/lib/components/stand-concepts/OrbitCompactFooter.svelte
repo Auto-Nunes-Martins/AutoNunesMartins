@@ -74,6 +74,7 @@
       </p>
       <nav class="legal-links" aria-label="Informação legal e direitos">
         {#each publicLegalLinks as item}<a href={item.href}>{item.label}</a>{/each}
+        <a href="/politica-de-privacidade#consentimento">Preferências de cookies</a>
         <a
           class="complaints-link"
           href={complaintsPortal}
@@ -408,7 +409,7 @@
     .baseline .legal-links {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: repeat(2, auto);
+      grid-template-rows: repeat(3, auto);
       grid-auto-flow: column;
       column-gap: 16px;
       row-gap: 0;
