@@ -8,6 +8,7 @@
   import SelectionPreview from './SelectionPreview.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { onMount, tick, untrack } from 'svelte';
+  import { framingStyle } from '@anm/types';
   import { ArrowUpRight, Plus, X, RotateCcw } from 'lucide-svelte';
   import { useComparison, comparisonRows } from '$lib/comparison';
   import { publicHref, publicPhoto, publicPrice } from '$lib/publicVehicles';
@@ -229,6 +230,7 @@
                       : undefined}
                     <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}
                       ><img
+                        class:gallery-photo={entry.vehicle.photos.length > 0}
                         {...thumbnailAttrs(session, src, srcset)}
                         use:publicThumbnail={{
                           session,
@@ -238,6 +240,9 @@
                           sizes: '(max-width:700px) 90vw, 560px',
                         }}
                         sizes="(max-width:700px) 90vw, 560px"
+                        style={entry.vehicle.photos.length
+                          ? framingStyle(entry.vehicle.galleryFraming?.[0] ?? undefined)
+                          : undefined}
                         alt={entry.vehicle.photos.length
                           ? name(entry)
                           : `Fotografia indisponível: ${name(entry)}`}
@@ -379,7 +384,6 @@
     color: var(--muted);
   }
   .pending-photo {
-    height: clamp(150px, 12vw, 210px);
     background: var(--surface);
   }
   .pending-line {
@@ -519,16 +523,39 @@
     overflow: hidden;
     border-radius: 5px;
     background: var(--surface);
+    aspect-ratio: var(--inline-gallery-photo-ratio);
   }
-  .vehicle-photo a {
-    display: block;
+  .vehicle-photo :is(a, .pending-photo, .missing-photo) {
+    position: absolute;
+    inset: 0;
   }
   .vehicle-photo img,
   .vehicle-photo :global(canvas) {
     display: block;
     width: 100%;
-    height: clamp(150px, 12vw, 210px);
+    height: 100%;
     object-fit: cover;
+  }
+  .vehicle-photo .gallery-photo:not([src*='catalog-placeholder']) {
+    object-position: var(--photo-desktop, 50% 50%);
+  }
+  @media (width > 1920px) {
+    /* Match the detail gallery's 988px wide frame and its 690px height cap. */
+    .vehicle-photo {
+      aspect-ratio: 988 / 690;
+    }
+  }
+  @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+    .vehicle-photo {
+      --landscape-gallery-width: min(96vw, 100vw - 48px, var(--orbit-frame-max));
+      aspect-ratio: tan(
+        atan2(var(--landscape-gallery-width), var(--inline-gallery-landscape-height))
+      );
+    }
+    .vehicle-photo .gallery-photo:not([src*='catalog-placeholder']) {
+      object-fit: contain;
+      background: #0b0c0e;
+    }
   }
   .remove {
     position: absolute;
@@ -760,6 +787,12 @@
     }
   }
   @media (max-width: 700px) {
+    .vehicle-photo {
+      --landscape-gallery-width: 90vw;
+    }
+    .vehicle-photo .gallery-photo:not([src*='catalog-placeholder']) {
+      object-position: var(--photo-mobile, 50% 50%);
+    }
     .comparison-page {
       padding: 32px 0 64px;
     }
@@ -804,11 +837,6 @@
       content: '';
       position: absolute;
       inset: -4px;
-    }
-    .vehicle-photo img,
-    .vehicle-photo :global(canvas),
-    .pending-photo {
-      height: clamp(100px, 28vw, 150px);
     }
     .summary-row th {
       padding-block: 12px 14px;
