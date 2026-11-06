@@ -175,7 +175,7 @@
     relatedVehicles?: PublicVehicle[] | Promise<PublicVehicle[]>;
     errorStatus?: number;
     unavailableVehicle?: UnavailableVehicle;
-    homeHighlights?: PublicHighlights;
+    homeHighlights?: PublicHighlights | Promise<PublicHighlights>;
     reviews?: PublicReview[];
     routeContent?: Snippet<
       [{ card: Snippet<[PublicCard | null, number]>; contact: (message?: string) => Promise<void> }]

@@ -40,9 +40,35 @@
   let {
     homeHighlights,
     stockVehicles = [],
-  }: { homeHighlights?: PublicHighlights; stockVehicles?: readonly PublicVehicle[] } = $props();
+  }: {
+    homeHighlights?: PublicHighlights | Promise<PublicHighlights>;
+    stockVehicles?: readonly PublicVehicle[];
+  } = $props();
   const { dark } = usePublicTheme();
-  const items = $derived(homeHighlights?.items ?? []);
+  let settled = $state<{ request: Promise<PublicHighlights>; result?: PublicHighlights }>();
+  const highlightsPending = $derived(
+    homeHighlights instanceof Promise && settled?.request !== homeHighlights,
+  );
+  const highlights = $derived(
+    homeHighlights instanceof Promise
+      ? settled?.request === homeHighlights
+        ? settled.result
+        : undefined
+      : homeHighlights,
+  );
+  const items = $derived(highlights?.items ?? []);
+  $effect(() => {
+    const request = homeHighlights;
+    if (!(request instanceof Promise)) return;
+    let current = true;
+    const settle = (result?: PublicHighlights) => {
+      if (current) settled = { request, result };
+    };
+    void request.then(settle, () => settle());
+    return () => {
+      current = false;
+    };
+  });
   let index = $state(0);
   let displayedIndex = $state(0);
   let selection = $state(0);
@@ -61,7 +87,7 @@
     'Encontre o carro que acompanha os seus planos. Sem pressas.',
   ];
   const background = heroBackgrounds[5];
-  function anchorStart(node: HTMLElement) {
+  function anchorStart(node: HTMLElement, _pending: boolean) {
     // Hydration replaces this element's inline style with its Svelte directives.
     // Restore the startup measurement before reading canvas geometry; otherwise
     // the background briefly keeps the uncompressed hero height for one frame.
@@ -79,6 +105,11 @@
         [node, '--v1-canvas-left', `${bounds.left}px`],
         [node, '--v1-canvas-width', `${bounds.width}px`],
         [node, '--v1-canvas-height', `${bounds.height}px`],
+        [
+          node,
+          '--v5-feature-height',
+          `${node.querySelector<HTMLElement>('.hd-feature')?.offsetHeight ?? 0}px`,
+        ],
       ];
       const offset = (plane: HTMLElement) => {
         let left = 0;
@@ -101,11 +132,6 @@
           [node, '--v5-photo-top', `${top}px`],
           [node, '--v5-photo-width', `${width}px`],
           [node, '--v5-photo-height', `${height}px`],
-          [
-            node,
-            '--v5-feature-height',
-            `${node.querySelector<HTMLElement>('.hd-feature')?.offsetHeight ?? height}px`,
-          ],
         );
         for (const plane of node.querySelectorAll<HTMLElement>(
           '.hd-price-motion, .hd-label-motion',
@@ -135,15 +161,23 @@
     });
     const measure = () => task.schedule();
     const resize = new ResizeObserver(measure);
-    resize.observe(node);
-    for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion'))
-      resize.observe(plane);
+    function observe() {
+      resize.observe(node);
+      for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion'))
+        resize.observe(plane);
+    }
+    observe();
     window.addEventListener('resize', measure);
     reduced.addEventListener('change', measure);
     mobile.addEventListener('change', measure);
     screen.orientation?.addEventListener('change', measure);
     task.runNow(performance.now());
     return {
+      update() {
+        resize.disconnect();
+        observe();
+        measure();
+      },
       destroy() {
         task.cancel();
         resize.disconnect();
@@ -181,7 +215,7 @@
 
 <svelte:head>
   <!-- Match each picture source exactly so preload discovery cannot download two variants. -->
-  {#if car}
+  {#if car || highlightsPending}
     <link
       rel="preload"
       as="image"
@@ -205,7 +239,7 @@
     rel="preload"
     as="image"
     type="image/avif"
-    media={car ? fullHeroMedia : '(max-width: 700px)'}
+    media={car || highlightsPending ? fullHeroMedia : '(max-width: 700px)'}
     imagesrcset={background.avifPortrait}
     imagesizes={portraitHeroSizes}
     fetchpriority="high"
@@ -249,8 +283,43 @@
   </div>
 {/snippet}
 
+{#snippet emptyHighlights()}
+  <div class="hd-empty">
+    <span class="hd-eyebrow">A sua próxima escolha</span>
+    <h2>Vamos descobrir?</h2>
+    <p>Consulte o catálogo para conhecer as viaturas disponíveis.</p>
+    <a class="hd-explore" href="/viaturas"
+      >Ver viaturas <ArrowUpRight size={19} aria-hidden="true" /></a
+    >
+  </div>
+{/snippet}
+
 {#snippet vehicle()}
-  {#if car}
+  {#if highlightsPending}
+    <div class="hd-feature hd-skeleton" role="status" aria-label="A carregar viaturas em destaque">
+      <div class="hd-feature-top" aria-hidden="true">
+        <div class="hd-label-motion"><span class="hd-eyebrow">Em destaque</span></div>
+      </div>
+      <div class="hd-photo-stage" aria-hidden="true">
+        <div class="hd-photo"></div>
+      </div>
+      <div class="hd-caption" aria-hidden="true">
+        <div class="hd-identity">
+          <span class="hd-skeleton-line hd-skeleton-brand"></span>
+          <span class="hd-skeleton-line hd-skeleton-model"></span>
+          <span class="hd-skeleton-line hd-skeleton-details"></span>
+        </div>
+        <div class="hd-price">
+          <span class="hd-skeleton-line hd-skeleton-model"></span>
+          <span class="hd-skeleton-line hd-skeleton-details"></span>
+        </div>
+      </div>
+      <div class="hd-controls" aria-hidden="true" data-hero-layout-ready>
+        <div class="hd-progress"><span></span><span></span></div>
+      </div>
+    </div>
+    <noscript>{@render emptyHighlights()}</noscript>
+  {:else if car}
     {#snippet featuredContent()}
       <div class="hd-feature-top">
         <div class="hd-label-motion">
@@ -435,14 +504,7 @@
       {@render featuredContent()}
     </div>
   {:else}
-    <div class="hd-empty">
-      <span class="hd-eyebrow">A sua próxima escolha</span>
-      <h2>Vamos descobrir?</h2>
-      <p>Consulte o catálogo para conhecer as viaturas disponíveis.</p>
-      <a class="hd-explore" href="/viaturas"
-        >Ver viaturas <ArrowUpRight size={19} aria-hidden="true" /></a
-      >
-    </div>
+    {@render emptyHighlights()}
   {/if}
 {/snippet}
 
@@ -454,14 +516,14 @@
   style:--road-mobile-focus={background?.mobileFocus}
   class:hd-dark={$dark}
   aria-labelledby="hd-title"
-  use:anchorStart
+  use:anchorStart={highlightsPending}
 >
   <div class="hd-landscape" aria-hidden="true">
     <!-- Resolve the responsive source in the initial HTML. Include the entry's
          maximum 1.055 scale, without measuring its changing transformed bounds.
          The portrait also covers the stacked content on short phone screens. -->
     <picture>
-      {#if car}
+      {#if car || highlightsPending}
         <source
           type="image/avif"
           media={narrowHeroMedia}
@@ -524,3 +586,50 @@
     /></a
   >
 </section>
+
+<style>
+  .hd-skeleton .hd-photo {
+    background: #313631;
+  }
+
+  .hd-skeleton-line {
+    display: block;
+    width: 100%;
+    height: 10px;
+    border-radius: 3px;
+    background: rgb(255 255 255 / 18%);
+  }
+
+  .hd-skeleton-brand {
+    width: min(60px, 100%);
+  }
+
+  .hd-skeleton-model {
+    width: min(165px, 100%);
+    height: clamp(18px, 2.2vw, 32px);
+  }
+
+  .hd-skeleton-details {
+    width: min(125px, 100%);
+  }
+
+  .hd-skeleton .hd-identity {
+    display: grid;
+    gap: 8px;
+  }
+
+  .hd-skeleton .hd-price {
+    width: clamp(70px, 16vw, 125px);
+  }
+
+  .hd-skeleton .hd-progress {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  @media (scripting: none) {
+    .hd-root .hd-skeleton {
+      display: none;
+    }
+  }
+</style>
