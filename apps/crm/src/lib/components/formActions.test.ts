@@ -28,6 +28,7 @@ function component(source: string, imports: Record<string, unknown> = {}) {
     .replace(/^import \{ ([^}]+) \} from 'lucide-svelte';/m, 'const { $1 } = imports;')
     .replace(/^import (\w+) from ['"][^'"]+['"];/gm, 'const $1 = imports.$1;')
     .replace(/^import\s+\{[^}]+\}\s+from '\$lib\/forms\/formFeedback';/m, '')
+    .replace(/^import \{ numericField \} from '\$lib\/forms\/numericField';/m, '')
     .replace(/^import \{ crmPath \} from '\$lib\/paths';/m, 'const crmPath = (path) => path;')
     .replace('export default function', 'return function');
   return new Function('imports', code)({ server, svelte, isValidNIF, ...imports });

@@ -592,7 +592,7 @@
     align-items: center;
     gap: 10px 16px;
     position: sticky;
-    top: 76px;
+    top: var(--crm-sticky-offset, 76px);
     z-index: 15;
     background: var(--color-bg-elevated);
     box-shadow: 0 6px 18px #0001;

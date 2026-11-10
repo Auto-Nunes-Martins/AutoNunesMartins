@@ -5,6 +5,7 @@ import {
   DeliveryStatusEnum,
   saleCancellationDecisionSchema,
   saleCancellationSchema,
+  saleCommissionSchema,
 } from '@anm/types';
 import { salesApi } from '$lib/server/sales';
 import { activityApi, type ActivityListResult } from '$lib/server/activity';
@@ -58,6 +59,27 @@ const deliverySchema = z.object({
 });
 
 export const actions: Actions = {
+  commission: async (event) => {
+    const fd = await event.request.formData();
+    const value = fd.get('commission');
+    const parsed = saleCommissionSchema.safeParse(value === '' ? '0' : value);
+    if (!parsed.success) {
+      return fail(400, { commissionError: 'Indique um valor de comissão válido em euros.' });
+    }
+    try {
+      await salesApi.updateCommission(event, event.params.id, parsed.data);
+      return { commissionSaved: true };
+    } catch (err) {
+      if (err instanceof ApiError) {
+        return fail(err.status, {
+          commissionError:
+            (err.body as { error?: string } | null)?.error ?? 'Falha ao guardar a comissão.',
+          commissionInput: parsed.data,
+        });
+      }
+      throw err;
+    }
+  },
   reviewCancellation: async (event) => {
     const fd = await event.request.formData();
     const parsed = saleCancellationDecisionSchema.safeParse({

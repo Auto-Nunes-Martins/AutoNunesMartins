@@ -1,3 +1,10 @@
+const vehiclePulse = [
+  { scale: 1, easing: 'ease-in-out' },
+  { scale: 1.018, offset: 0.5, easing: 'ease-in-out' },
+  { scale: 1 },
+];
+const pulseTiming = { duration: 580 };
+
 /** One pulse per displayed vehicle change; font sizing keeps glyphs crisp. */
 export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   const feature = node.closest<HTMLElement>('.hd-feature');
@@ -5,6 +12,7 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   if (!feature || !slot) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const pointer = matchMedia('(hover: hover) and (pointer: fine)');
+  const mobile = matchMedia('(max-width: 700px)');
   const hoverTargets = [...feature.querySelectorAll<HTMLElement>('.hd-photo, .hd-price-motion')];
   let pointerInside = pointer.matches && hoverTargets.some((target) => target.matches(':hover'));
   let visible = false;
@@ -14,6 +22,7 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   let base = parseFloat(getComputedStyle(slot).fontSize);
   let vehicle = initialVehicle;
   let animation: Animation | undefined;
+  let photoAnimation: Animation | undefined;
   const originalSize = node.style.fontSize;
   const canAnimate = () => {
     const bounds = feature.getBoundingClientRect();
@@ -53,26 +62,45 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   };
   const pulse = () => {
     if (!canAnimate()) return;
-    animation?.cancel();
     const resting = base * target;
+    const fromSize = animation ? getComputedStyle(node).fontSize : `${resting}px`;
+    animation?.cancel();
     const next = node.animate(
-      [
-        { fontSize: `${resting}px`, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)' },
-        {
-          fontSize: `${resting * 1.06}px`,
-          offset: 0.32,
-          easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
-        },
-        { fontSize: `${resting}px` },
-      ],
-      { duration: 650 },
+      vehiclePulse.map(({ scale, ...timing }, index) => ({
+        ...timing,
+        fontSize:
+          index === 0
+            ? fromSize
+            : `${scale === 1 ? resting : Math.min(resting * 1.045, base * 1.06)}px`,
+      })),
+      pulseTiming,
     );
     next.id = 'price-vehicle-change';
     remember(next);
+    if (mobile.matches) {
+      const photo = feature.querySelector<HTMLElement>('.hd-photo-motion');
+      const fromTransform =
+        photo && photoAnimation?.playState === 'running'
+          ? getComputedStyle(photo).transform
+          : 'scale(1)';
+      photoAnimation?.cancel();
+      photoAnimation = photo?.animate(
+        vehiclePulse.map(({ scale, ...timing }, index) => ({
+          ...timing,
+          transform: index === 0 ? fromTransform : `scale(${scale})`,
+        })),
+        pulseTiming,
+      );
+      if (photoAnimation) photoAnimation.id = 'photo-vehicle-change';
+    }
   };
   const sync = () => {
     if (destroyed) return;
     const allowed = canAnimate();
+    if (!allowed || !mobile.matches) {
+      photoAnimation?.cancel();
+      photoAnimation = undefined;
+    }
     const active = allowed && interacting();
     const next = active ? 1.045 : 1;
     if (!allowed || target !== next) setSize(next, allowed ? (active ? 220 : 260) : 0);
@@ -120,6 +148,7 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   document.addEventListener('visibilitychange', sync);
   reduced.addEventListener('change', sync);
   pointer.addEventListener('change', sync);
+  mobile.addEventListener('change', sync);
   sync();
   return {
     update(nextVehicle: string) {
@@ -131,6 +160,7 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
     destroy() {
       destroyed = true;
       animation?.cancel();
+      photoAnimation?.cancel();
       observer.disconnect();
       resize.disconnect();
       intro.disconnect();
@@ -143,6 +173,7 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
       document.removeEventListener('visibilitychange', sync);
       reduced.removeEventListener('change', sync);
       pointer.removeEventListener('change', sync);
+      mobile.removeEventListener('change', sync);
       node.style.fontSize = originalSize;
     },
   };

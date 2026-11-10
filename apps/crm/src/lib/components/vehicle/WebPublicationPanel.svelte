@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField, normalizeDecimal } from '$lib/forms/numericField';
   import { ArrowUpRight } from 'lucide-svelte';
   import { reusablePhoto } from '$lib/reusablePhoto';
   import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
@@ -154,7 +155,7 @@
       !vehicle.soldDate,
   );
   const ready = $derived(
-    eligible && (!price || Number(price) > 0) && descriptionText(description).length > 0,
+    eligible && (!price || Number(normalizeDecimal(price)) > 0) && descriptionText(description).length > 0,
   );
   function savedPublicationDraft() {
     if (creation && recoveredDraft) {
@@ -452,10 +453,9 @@
             <label class="public-price-field" style="--field-width: 170px"
               >Preço público (€)<input
                 name="publicPrice"
-                type="number"
-                min="0.01"
-                max="9999999999.99"
-                step="0.01"
+                type="text"
+                use:numericField={{ min: 0.01, max: 9999999999.99 }}
+                inputmode="decimal"
                 bind:value={price}
               /></label
             >
@@ -518,7 +518,7 @@
                 <h3>{vehicle.brand} {vehicle.model}</h3>
                 <p>{vehicle.year}{vehicle.mileage == null ? '' : ` · ${formatKm(vehicle.mileage)}`}</p>
                 <strong
-                  >{price && Number(price) > 0 ? formatEUR(price) : 'Preço sob consulta'}</strong
+                  >{price && Number(normalizeDecimal(price)) > 0 ? formatEUR(normalizeDecimal(price)) : 'Preço sob consulta'}</strong
                 >
                 <div class="preview-description"><RichDescription value={description} /></div>
               </div>
@@ -529,7 +529,7 @@
                 Requer estado Disponível ou Reservado, sem venda registada.
               </p>{/if}{#if !price}<p>
                 Sem preço indicado, o site mostrará «Preço sob consulta».
-              </p>{:else if !(Number(price) > 0)}<p>
+              </p>{:else if !(Number(normalizeDecimal(price)) > 0)}<p>
                 Indique um preço positivo ou deixe o campo vazio.
               </p>{/if}{#if !descriptionText(description)}<p>
                 Falta uma descrição pública.

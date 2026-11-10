@@ -269,20 +269,32 @@
   flex: 1;
 }
 .hd-root .hd-progress span {
+  position: relative;
   width: 100%;
   height: 2px;
   flex: 1;
-  background: currentColor;
-  opacity: 0.2;
+  background: color-mix(in srgb, currentColor 24%, transparent);
   border-radius: 2px;
-  transition:
-    opacity 250ms,
-    transform 180ms ease;
+  transition: opacity 200ms ease;
+}
+.hd-root .hd-progress button > span::after {
+  content: '';
+  position: absolute;
+  inset: -1px 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  transform: scaleY(0.45);
+  transition: opacity 380ms ease-in-out, transform 380ms ease-in-out;
+}
+.hd-root .hd-progress button[aria-pressed='true'] > span::after {
+  opacity: 1;
+  transform: scaleY(1);
 }
 .hd-root .hd-progress button {
-  flex: 1;
+  flex: 1 1 0;
   width: auto;
-  min-width: 24px;
+  min-width: 0;
   border-radius: 4px;
   padding: 0;
 }
@@ -294,13 +306,9 @@
   background: transparent;
 }
 @media (hover: hover) and (pointer: fine) {
-  .hd-root .hd-progress button:hover span {
-    transform: scaleY(2);
-    opacity: 1;
+  .hd-root .hd-progress button[aria-pressed='false']:hover span {
+    background: color-mix(in srgb, currentColor 45%, transparent);
   }
-}
-.hd-root .hd-progress .hd-current {
-  opacity: 1;
 }
 .hd-root .hd-scroll {
   position: absolute;

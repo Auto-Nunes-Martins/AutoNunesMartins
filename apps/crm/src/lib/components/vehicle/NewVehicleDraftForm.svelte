@@ -97,8 +97,8 @@
           ) as typeof specs;
           initial = {
             ...saved,
-            year: saved.year ? Number(saved.year) : null,
-            mileage: saved.mileage ? Number(saved.mileage) : null,
+            year: saved.year || null,
+            mileage: saved.mileage || null,
             fuel: saved.fuel as NonNullable<typeof initial>['fuel'],
             status: saved.status as NonNullable<typeof initial>['status'],
             pendingDocFlags: {

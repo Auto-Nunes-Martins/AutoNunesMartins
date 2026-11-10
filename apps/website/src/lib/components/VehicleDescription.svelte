@@ -7,7 +7,6 @@
   let content: HTMLDivElement;
   let toggle = $state<HTMLButtonElement>();
   let expanded = $state(false);
-  let animating = $state(false);
   let overflowing = $state(false);
   let limit = $state(405);
   let measure: (() => void) | undefined;
@@ -73,7 +72,6 @@
     change++;
     transition?.cancel();
     transition = undefined;
-    animating = false;
     expanded = false;
     void tick().then(() => measure?.());
   });
@@ -82,34 +80,39 @@
     const from = viewport.getBoundingClientRect().height;
     transition?.cancel();
     transition = undefined;
-    const collapsing = expanded;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    animating = !reduced;
+    const to = expanded ? limit : content.getBoundingClientRect().height;
     expanded = !expanded;
+    if (!reduced && Math.abs(to - from) > 1) {
+      // Start while the measured height is still rendered. Keep the animation
+      // in effect through the DOM update so neither endpoint falls back to auto.
+      transition = viewport.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+        duration: 360,
+        easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)',
+        fill: 'both',
+      });
+      transition.id = 'vehicle-description-height';
+    }
     await tick();
     if (version !== change) return;
     accessibleLinks();
-    if (!reduced) {
-      const to = expanded ? content.scrollHeight : limit;
-      const next = viewport.animate([{ height: `${from}px` }, { height: `${to}px` }], {
-        duration: 360,
-        easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)',
-      });
-      transition = next;
-      await next.finished.catch(() => {});
+    if (transition) {
+      await transition.finished.catch(() => {});
       if (version !== change) return;
+      transition.cancel();
       transition = undefined;
     }
-    animating = false;
-    if (collapsing)
-      toggle?.scrollIntoView({ block: 'nearest', behavior: reduced ? 'instant' : 'smooth' });
+    if (!expanded)
+      toggle?.scrollIntoView({
+        block: 'nearest',
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      });
   }
 </script>
 
 <div
   class="description-window"
   class:collapsed={overflowing && !expanded}
-  class:animating
   bind:this={viewport}
   style:--description-limit={`${limit}px`}
   id="vehicle-description-content"
@@ -136,14 +139,25 @@
 <style>
   .description-window {
     --description-lines: 15;
+    position: relative;
+    overflow: hidden;
   }
   .description-window.collapsed {
     height: var(--description-limit);
-    mask-image: linear-gradient(#000 calc(100% - 56px), transparent);
   }
-  .description-window.collapsed,
-  .description-window.animating {
-    overflow: hidden;
+  /* Keep the fade on a separate layer while the viewport's height animates. */
+  .description-window::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 56px;
+    pointer-events: none;
+    background: linear-gradient(transparent, var(--bg));
+    opacity: 0;
+    transition: opacity 220ms ease;
+  }
+  .description-window.collapsed::after {
+    opacity: 1;
   }
   .description-content {
     display: flow-root;
@@ -193,6 +207,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
+    .description-window::after,
     .description-toggle::after,
     .description-toggle :global(svg),
     .description-toggle:hover :global(svg),

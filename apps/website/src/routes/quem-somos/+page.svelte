@@ -5,6 +5,6 @@
 
 <DesignEdition about>
   {#snippet routeContent({ contact })}
-    <OrbitAbout onContact={() => contact()} />
+    <OrbitAbout onContact={(event) => contact(undefined, event.currentTarget)} />
   {/snippet}
 </DesignEdition>

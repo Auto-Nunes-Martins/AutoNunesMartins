@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { beforeNavigate, goto, invalidate, invalidateAll } from '$app/navigation';
+  import { afterNavigate, beforeNavigate, goto, invalidate, invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
   import { useClerkContext } from 'svelte-clerk';
   import { crmPath, crmRoute } from '$lib/paths';
@@ -84,7 +84,12 @@
   beforeNavigate((navigation) => {
     deferSessionNavigation(false);
     const attempt = ++navigationAttempt;
-    if (navigation.willUnload || !navigation.to || crmRoute(navigation.to.url.pathname) === '/')
+    if (
+      navigation.type === 'popstate' ||
+      navigation.willUnload ||
+      !navigation.to ||
+      crmRoute(navigation.to.url.pathname) === '/'
+    )
       return;
     if (Date.now() - lastCheck < 45000 && $crmSessionState === 'ready' && !identityChanged())
       return;
@@ -102,16 +107,22 @@
         const resetLayout = force || identityChanged();
         lastCheck = Date.now();
         checkedSessionId = clerk.session?.id ?? null;
-        if (navigation.type === 'popstate' && navigation.delta) history.go(navigation.delta);
-        else
-          await goto(destination, {
-            replaceState: crmRoute(navigation.from?.url.pathname ?? '') === '/a-entrar',
-            invalidateAll: resetLayout,
-          });
+        await goto(destination, {
+          replaceState: crmRoute(navigation.from?.url.pathname ?? '') === '/a-entrar',
+          invalidateAll: resetLayout,
+        });
       })
       .catch(() => {
         /* Stay on the current page; the banner offers recovery. */
       });
+  });
+
+  // Cancelling a popstate makes Kit undo the browser's history movement.
+  // Let it restore the entry and scroll first, then check the session in place.
+  afterNavigate(({ type }) => {
+    if (type !== 'popstate') return;
+    const force = $crmSessionState !== 'ready' || identityChanged();
+    if (force || Date.now() - lastCheck >= 45000) void recover(force, force);
   });
 
   onMount(() => {

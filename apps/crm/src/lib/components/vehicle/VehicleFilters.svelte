@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import FilterChoice from '$lib/components/common/FilterChoice.svelte';
   import FilterChoiceGroup from '$lib/components/common/FilterChoiceGroup.svelte';
   import { page } from '$app/stores';
@@ -45,6 +46,9 @@
 
   function setFilter(key: string, value: string | undefined) {
     navigation.set(key, value);
+  }
+  function setNumberFilter(key: string, input: HTMLInputElement) {
+    if (input.validity.valid) navigation.set(key, input.value, true);
   }
 
   function toggleChip(key: string, value: string, currentValue: string | undefined) {
@@ -142,11 +146,12 @@
         Ano · Mín.
       </span>
       <input
-        type="number"
-        min="1950"
+        type="text"
+        use:numericField={{ min: 1950 }}
+        inputmode="numeric"
         placeholder="2000"
         value={filters.yearMin ?? ''}
-        oninput={(e) => navigation.set('yearMin', e.currentTarget.value, true)}
+        oninput={(e) => setNumberFilter('yearMin', e.currentTarget)}
         class="h-10 px-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
         style="border-radius: var(--radius-btn);"
       />
@@ -158,11 +163,12 @@
         Ano · Máx.
       </span>
       <input
-        type="number"
-        min="1950"
+        type="text"
+        use:numericField={{ min: 1950 }}
+        inputmode="numeric"
         placeholder="2026"
         value={filters.yearMax ?? ''}
-        oninput={(e) => navigation.set('yearMax', e.currentTarget.value, true)}
+        oninput={(e) => setNumberFilter('yearMax', e.currentTarget)}
         class="h-10 px-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
         style="border-radius: var(--radius-btn);"
       />
@@ -174,11 +180,12 @@
         Km · Mín.
       </span>
       <input
-        type="number"
-        min="0"
+        type="text"
+        use:numericField={{ min: 0 }}
+        inputmode="numeric"
         placeholder="0"
         value={filters.mileageMin ?? ''}
-        oninput={(e) => navigation.set('mileageMin', e.currentTarget.value, true)}
+        oninput={(e) => setNumberFilter('mileageMin', e.currentTarget)}
         class="h-10 px-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
         style="border-radius: var(--radius-btn);"
       />
@@ -190,11 +197,12 @@
         Km · Máx.
       </span>
       <input
-        type="number"
-        min="0"
+        type="text"
+        use:numericField={{ min: 0 }}
+        inputmode="numeric"
         placeholder="200000"
         value={filters.mileageMax ?? ''}
-        oninput={(e) => navigation.set('mileageMax', e.currentTarget.value, true)}
+        oninput={(e) => setNumberFilter('mileageMax', e.currentTarget)}
         class="h-10 px-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
         style="border-radius: var(--radius-btn);"
       />

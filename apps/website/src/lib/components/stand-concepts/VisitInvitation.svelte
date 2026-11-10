@@ -9,7 +9,7 @@
     compactComparison = false,
     headingId = 'visit-heading',
   }: {
-    onContact: (message: string) => void;
+    onContact: (message: string, opener?: EventTarget | null) => void;
     logoSrc?: string;
     logoSrcset?: string;
     compactComparison?: boolean;
@@ -74,7 +74,7 @@
         >
       {/each}
     </div>
-    <button class="visit-cta conversation-pill" onclick={() => onContact(selected.message)}
+    <button class="visit-cta conversation-pill" onclick={(event) => onContact(selected.message, event.currentTarget)}
       >Vamos combinar <ArrowUpRight size={18} aria-hidden="true" /></button
     >
   </div>
@@ -131,7 +131,7 @@
           </div>{/key}
       </div>
       {#if compactComparison}
-        <button type="button" class="compact-cta" onclick={() => onContact(selected.message)}>
+        <button type="button" class="compact-cta" onclick={(event) => onContact(selected.message, event.currentTarget)}>
           Vamos combinar <ArrowUpRight size={19} aria-hidden="true" />
         </button>
       {/if}

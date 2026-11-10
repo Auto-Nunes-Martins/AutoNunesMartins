@@ -6,7 +6,7 @@ import { emitActivity } from '../data/activity.js';
 import { sumVehicleExpenses } from '../data/vehicle.js';
 import { computeSaleFigures } from '../domain/sale.js';
 import { SaleCancellationError } from './saleCancellationService.js';
-import { lockVehicle, saleMutation } from './saleFinancials.js';
+import { lockVehicle, recomputeSaleIfExists, saleMutation } from './saleFinancials.js';
 
 export interface ListSalesParams {
   state?: 'ACTIVE' | 'CANCELLED';
@@ -510,6 +510,36 @@ export async function createSale(
         realProfit: figures.realProfit.toString(),
       },
     };
+  });
+}
+
+export async function updateSaleCommission(
+  saleId: string,
+  commission: string,
+  actor: ActorContext,
+): Promise<void> {
+  await saleMutation(async (tx) => {
+    const target = await tx.sale.findUnique({
+      where: { id: saleId },
+      select: { vehicleId: true, originalVehicleId: true },
+    });
+    if (!target) throw new SaleNotFound(saleId);
+    await lockVehicle(tx, target.originalVehicleId ?? target.vehicleId!);
+    const sale = await tx.sale.findUnique({ where: { id: saleId } });
+    if (!sale) throw new SaleNotFound(saleId);
+    if (sale.cancelledAt)
+      throw new SaleCancellationError(409, 'A comissão de uma venda anulada não pode ser alterada.');
+    if (sale.commission.eq(commission)) return;
+
+    await recomputeSaleIfExists(tx, sale.vehicleId!, undefined, commission);
+    await emitActivity(tx, {
+      actorId: actor.actorId,
+      type: 'SALE_UPDATED',
+      entityType: 'sale',
+      entityId: saleId,
+      message: 'Comissão de financiamento actualizada',
+      metadata: { commission: { from: sale.commission.toString(), to: commission } },
+    });
   });
 }
 

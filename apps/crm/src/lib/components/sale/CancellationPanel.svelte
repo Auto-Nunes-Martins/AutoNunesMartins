@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import { tick, untrack } from 'svelte';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
   import { enhance } from '$lib/auth/enhance';
@@ -362,10 +363,9 @@
           <div class="field-pair">
             <label class="field"
               ><span>Valor de entrada (€)</span><input
-                type="number"
-                min="0"
-                max="9999999999.99"
-                step="0.01"
+                type="text"
+                use:numericField={{ min: 0, max: 9999999999.99 }}
+                inputmode="decimal"
                 required
                 bind:value={purchasePrice}
                 disabled={busy}

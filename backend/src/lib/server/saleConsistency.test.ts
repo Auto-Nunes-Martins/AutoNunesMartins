@@ -458,6 +458,32 @@ describe('post-sale editing and transaction safety', () => {
       expect(call[1]).toBe('vehicle');
     }
   });
+  it('updates and clears the net commission on an existing sale without taxing it as margin', async () => {
+    const { salePrice, vatAmount, deliveryStatus } = state.sale;
+    const patch = (commission: unknown) =>
+      fetch(`${base}/sales/sale/commission`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commission }),
+      });
+
+    state.sale.commission = new Decimal(0);
+    const saved = await patch('123.45');
+    expect(saved.status).toBe(200);
+    expect(state.sale.commission.toFixed(2)).toBe('123.45');
+    expect(state.sale.realProfit.toFixed(2)).toBe('4107.19');
+    expect(state.sale).toMatchObject({ salePrice, vatAmount, deliveryStatus });
+    expect(cache.get('dashboard:stale')).toBeUndefined();
+
+    expect((await patch('123.45')).status).toBe(200);
+    expect(state.activity).toHaveLength(1);
+    expect((await patch('-1')).status).toBe(400);
+    expect(state.sale.commission.toFixed(2)).toBe('123.45');
+    expect((await patch('0')).status).toBe(200);
+    expect(state.sale.commission.toFixed(2)).toBe('0.00');
+    expect(state.sale.realProfit.toFixed(2)).toBe('3983.74');
+  });
+
   it('uses the delivery action to keep the sale and sold/delivered status aligned', async () => {
     await updateSaleDelivery(
       'sale',

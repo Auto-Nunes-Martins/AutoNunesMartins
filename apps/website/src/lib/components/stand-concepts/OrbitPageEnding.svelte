@@ -6,7 +6,7 @@
   let {
     onContact,
     background = homeVisualFamilies[5].visit,
-  }: { onContact: () => void; background?: SceneBackground } = $props();
+  }: { onContact: (event: MouseEvent) => void; background?: SceneBackground } = $props();
 </script>
 
 <OrbitVisitStudio

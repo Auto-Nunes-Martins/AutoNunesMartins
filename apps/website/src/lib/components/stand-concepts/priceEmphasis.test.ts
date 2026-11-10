@@ -10,14 +10,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function setup(reduce = false) {
+function setup(reduce = false, isMobile = false) {
   const reduced = Object.assign(new EventTarget(), { matches: reduce });
   const pointer = Object.assign(new EventTarget(), { matches: true });
+  const mobile = Object.assign(new EventTarget(), { matches: isMobile });
+  const photoAnimate = vi.fn(() => ({ id: '', cancel: vi.fn() }));
   const hover = Object.assign(new EventTarget(), { matches: () => false });
   const feature = Object.assign(new EventTarget(), {
     dataset: { carouselEntered: 'true' },
     querySelectorAll: () => [hover],
-    querySelector: () => null,
+    querySelector: (selector: string) =>
+      selector === '.hd-photo-motion' ? { animate: photoAnimate } : null,
     getBoundingClientRect: () => ({ top: 0, bottom: 500 }),
   });
   const slot = {};
@@ -30,7 +33,7 @@ function setup(reduce = false) {
   vi.stubGlobal('document', Object.assign(new EventTarget(), { hidden: false }));
   vi.stubGlobal('innerHeight', 900);
   vi.stubGlobal('matchMedia', (query: string) =>
-    query.includes('reduced-motion') ? reduced : pointer,
+    query.includes('reduced-motion') ? reduced : query.includes('max-width') ? mobile : pointer,
   );
   vi.stubGlobal('getComputedStyle', (element: unknown) => ({
     fontSize: element === slot ? '40px' : node.style.fontSize || '40px',
@@ -60,7 +63,7 @@ function setup(reduce = false) {
     },
   );
   const action = priceEmphasis(node as unknown as HTMLElement, 'first-car')!;
-  return { action, animate, hover, node };
+  return { action, animate, hover, node, photoAnimate };
 }
 
 describe('featured price emphasis', () => {
@@ -77,7 +80,7 @@ describe('featured price emphasis', () => {
     action.update('second-car');
     expect(animate).toHaveBeenCalledTimes(1);
     expect(animate.mock.results[0]!.value.id).toBe('price-vehicle-change');
-    expect(animate.mock.calls[0]![1]).toEqual({ duration: 650 });
+    expect(animate.mock.calls[0]![1]).toEqual({ duration: 580 });
     action.update('second-car');
     vi.advanceTimersByTime(60_000);
     expect(animate).toHaveBeenCalledTimes(1);
@@ -103,11 +106,27 @@ describe('featured price emphasis', () => {
   });
 
   it('respects reduced motion for vehicle changes and hover', () => {
-    const { action, animate, hover } = setup(true);
+    const { action, animate, hover, photoAnimate } = setup(true, true);
     action.update('second-car');
     hover.dispatchEvent(Object.assign(new Event('pointerenter'), { pointerType: 'mouse' }));
     vi.advanceTimersByTime(60_000);
     expect(animate).not.toHaveBeenCalled();
+    expect(photoAnimate).not.toHaveBeenCalled();
+    action.destroy();
+  });
+
+  it('runs the same scale and timing on the mobile photo for a displayed change', () => {
+    const { action, photoAnimate } = setup(false, true);
+    action.update('second-car');
+    expect(photoAnimate).toHaveBeenCalledTimes(1);
+    expect(photoAnimate).toHaveBeenCalledWith(
+      [
+        { transform: 'scale(1)', easing: 'ease-in-out' },
+        { transform: 'scale(1.018)', offset: 0.5, easing: 'ease-in-out' },
+        { transform: 'scale(1)' },
+      ],
+      { duration: 580 },
+    );
     action.destroy();
   });
 });

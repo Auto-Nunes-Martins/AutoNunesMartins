@@ -1,7 +1,7 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { DeliveryStatusEnum, saleCreateSchema } from '@anm/types';
+import { DeliveryStatusEnum, saleCommissionSchema, saleCreateSchema } from '@anm/types';
 import {
   SaleNotFound,
   TradeInVehicleConflict,
@@ -10,6 +10,7 @@ import {
   createSale,
   getSaleById,
   listSales,
+  updateSaleCommission,
   updateSaleDelivery,
 } from '../lib/server/saleService.js';
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
@@ -138,6 +139,39 @@ router.get(
       return;
     }
     res.json(sale);
+  }),
+);
+
+router.patch(
+  '/:id/commission',
+  requireUser,
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    const parsed = saleCommissionSchema.safeParse(req.body?.commission);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Indique um valor de comissão válido em euros.' });
+      return;
+    }
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    try {
+      await updateSaleCommission(param(req, 'id'), parsed.data, {
+        actorId: req.user.id,
+        actorName: req.user.name,
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      if (err instanceof SaleCancellationError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      if (err instanceof SaleNotFound) {
+        res.status(404).json({ error: 'Sale not found' });
+        return;
+      }
+      throw err;
+    }
   }),
 );
 

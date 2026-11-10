@@ -148,6 +148,10 @@
   letter-spacing: -0.055em;
 }
 @media (max-width: 700px) {
+  .hd-root[data-featured-card] .hd-feature {
+    /* Keep the pivot near the visual centre without following the caption's height. */
+    transform-origin: center calc(25cqi + 6rem);
+  }
   .hd-root[data-featured-card] .hd-feature::before {
     top: auto;
     bottom: -20px;

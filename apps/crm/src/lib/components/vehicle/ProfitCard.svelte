@@ -100,7 +100,7 @@
         <div
           class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mb-1.5"
         >
-          Comissão extra
+          Comissão líquida
         </div>
         <div class="num-value text-[18px] md:text-[24px] text-[var(--color-success)]">
           + {formatEUR(effective.commission)}

@@ -120,19 +120,16 @@
     white-space: nowrap;
   }
   .expense-table tbody {
-    display: grid;
-    gap: 12px;
-    padding: 12px;
+    display: block;
   }
   .expense-table tbody tr {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px 12px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 2px 8px;
     min-width: 0;
-    padding: 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-card);
-    background: var(--color-bg-1);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--color-border);
   }
   .expense-table td {
     display: block;
@@ -140,37 +137,32 @@
     padding: 0;
   }
   .expense-table [data-column='category'] {
-    grid-area: 1 / 1;
-    align-self: center;
+    grid-area: 2 / 1;
+    overflow-wrap: anywhere;
   }
   .expense-table [data-column='date'] {
-    grid-area: 1 / 2;
-    align-self: center;
+    grid-area: 2 / 2;
   }
   .expense-table [data-column='description'] {
-    grid-area: 2 / 1 / auto / -1;
-    font-size: 14px;
+    grid-area: 1 / 1 / auto / 3;
+    font-size: 13px;
     font-weight: 600;
     overflow-wrap: anywhere;
   }
   .expense-table [data-column='amount'] {
-    grid-area: 3 / 1 / auto / -1;
-    text-align: left;
-    font-size: 20px;
-    overflow-wrap: anywhere;
+    grid-area: 1 / 3;
+    font-size: 13px;
   }
   .expense-table [data-column='actions'] {
-    grid-area: 4 / 1 / auto / -1;
-    padding-top: 10px;
-    border-top: 1px solid var(--color-border);
+    grid-area: 2 / 3;
   }
   .expense-table [data-column='actions'] button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
     min-height: 44px;
-    padding: 8px 12px;
+    width: 44px;
+    padding: 0;
     border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-btn);
     color: var(--color-text-muted);
@@ -180,8 +172,7 @@
     color: var(--color-text);
   }
   .expense-action-label {
-    display: inline;
-    font-size: 12px;
+    display: none;
   }
   .expense-table [data-column='edit'] {
     grid-column: 1 / -1;

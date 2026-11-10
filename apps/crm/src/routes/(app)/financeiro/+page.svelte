@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import '$lib/styles/expenseCards.css';
   import { crmPath } from '$lib/paths';
@@ -221,9 +222,9 @@
           </span>
           <input
             name="amount"
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            use:numericField={{ min: 0 }}
+            inputmode="decimal"
             required
             placeholder="650.00"
             class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)]"
@@ -376,9 +377,9 @@
                           </span>
                           <input
                             name="amount"
-                            type="number"
-                            step="0.01"
-                            min="0"
+                            type="text"
+                            use:numericField={{ min: 0 }}
+                            inputmode="decimal"
                             required
                             value={e.amount}
                             class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)]"

@@ -3,6 +3,7 @@
   import { crmPath } from '$lib/paths';
   import { activityHref as hrefFor } from '$lib/activityNavigation';
   import { onMount, onDestroy, untrack } from 'svelte';
+  import { cubicOut } from 'svelte/easing';
   import { page } from '$app/stores';
   import { activeCreationDraftId } from '$lib/activeCreationDraft';
   import { draftNotificationsRevision } from '$lib/components/vehicle/creationLifecycle';
@@ -26,7 +27,7 @@
   import { activityStyle as styleForType } from '$lib/activityPresentation';
   import type { NotificationsPayload } from '$lib/server/notifications';
 
-  let isOpen = $state(false);
+  let { isOpen = $bindable(false) }: { isOpen?: boolean } = $props();
   let data = $state<NotificationsPayload | null>(null);
   let loading = $state(false);
   let mounted = $state(false);
@@ -114,6 +115,17 @@
     isOpen = false;
   }
 
+  function panelTransition(_node: Element) {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mobile = matchMedia('(max-width: 767px)').matches;
+    return {
+      duration: reduced ? 0 : 220,
+      easing: cubicOut,
+      css: (t: number) =>
+        `opacity: ${t}; transform: translateY(${(mobile ? -10 : -6) * (1 - t)}px) scale(${1 - (mobile ? 0.012 : 0.025) * (1 - t)});`,
+    };
+  }
+
   function onDocClick(e: MouseEvent) {
     if (!isOpen) return;
     const target = e.target as Node;
@@ -125,7 +137,7 @@
     if (isOpen && e.key === 'Escape') {
       e.preventDefault();
       close();
-      buttonEl?.focus();
+      buttonEl?.focus({ preventScroll: true });
     }
   }
 
@@ -167,7 +179,7 @@
   const badge = $derived(data?.total ?? 0);
 </script>
 
-<div class="relative">
+<div class="alert-anchor relative">
   <button
     bind:this={buttonEl}
     type="button"
@@ -203,10 +215,11 @@
     <div
       bind:this={panelEl}
       id={panelId}
-      class="fixed left-2 right-2 top-[76px] w-auto max-h-[calc(100vh-88px)] overflow-y-auto md:absolute md:left-auto md:right-0 md:top-[calc(100%+8px)] md:w-[360px] md:max-h-none md:overflow-y-visible border border-[var(--color-border)] shadow-xl z-50 panel-surface"
+      class="alerts-panel fixed left-2 right-2 top-[76px] w-auto max-h-[calc(100dvh-88px)] overflow-y-auto md:absolute md:left-auto md:right-0 md:top-[calc(100%+8px)] md:w-[360px] md:max-h-none md:overflow-y-visible border border-[var(--color-border)] shadow-xl z-50 panel-surface"
       style="border-radius: var(--radius-card);"
       role="dialog"
       aria-label="Alertas"
+      transition:panelTransition
     >
       <header
         class="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--color-border)]"
@@ -233,7 +246,7 @@
           class="inline-flex min-h-11 min-w-11 items-center justify-center"
           onclick={() => {
             close();
-            buttonEl?.focus();
+            buttonEl?.focus({ preventScroll: true });
           }}>×</button
         >
       </header>
@@ -415,6 +428,19 @@
 </div>
 
 <style>
+  .alerts-panel {
+    transform-origin: top right;
+  }
+  @media (max-width: 767px) {
+    :global(.topbar) .alert-anchor {
+      position: static;
+    }
+    :global(.topbar) .alerts-panel {
+      position: absolute;
+      top: calc(100% + 7px);
+      transform-origin: top center;
+    }
+  }
   :global([data-theme='dark']) .panel-surface,
   :global(html:not([data-theme='light'])) .panel-surface {
     background: linear-gradient(180deg, #131316 0%, #101012 100%);

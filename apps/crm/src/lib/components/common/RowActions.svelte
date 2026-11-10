@@ -6,6 +6,7 @@
   interface Props {
     label: string;
     editHref?: string;
+    compact?: boolean;
     actions: {
       label: string;
       href?: string;
@@ -16,7 +17,12 @@
       title?: string;
     }[];
   }
-  let { label, editHref, actions }: Props = $props();
+  let { label, editHref, actions, compact = false }: Props = $props();
+  const menuActions = $derived<Props['actions']>(
+    compact && editHref && !actions.some((action) => action.href === editHref)
+      ? [{ label: 'Editar', href: editHref, icon: Pencil }, ...actions]
+      : actions,
+  );
   const menuId = $props.id();
   let trigger = $state<HTMLButtonElement | null>(null);
   let menu = $state<HTMLDivElement | null>(null);
@@ -74,11 +80,11 @@
   });
 </script>
 
-<div class="row-actions">
-  {#if editHref}<a href={editHref} class="edit-link" aria-label={`Editar ${label}`}
+<div class="row-actions" class:compact>
+  {#if editHref && !compact}<a href={editHref} class="edit-link" aria-label={`Editar ${label}`}
       ><Pencil class="h-3.5 w-3.5" />Editar</a
     >{/if}
-  {#if actions.length > 0}
+  {#if menuActions.length > 0}
     <button
       bind:this={trigger}
       type="button"
@@ -109,7 +115,7 @@
       ontoggle={onToggle}
       onkeydown={onMenuKey}
     >
-      {#each actions as action (action.href ?? action.label)}
+      {#each menuActions as action (action.href ?? action.label)}
         {#if action.href}<a href={action.href} role="menuitem" onclick={close}
             ><action.icon class="h-4 w-4" />{action.label}</a
           >{:else}<button
@@ -151,6 +157,10 @@
       color 0.15s,
       border-color 0.15s,
       background 0.15s;
+  }
+  .compact .more-button {
+    width: 44px;
+    height: 44px;
   }
   .edit-link {
     padding: 0 11px;

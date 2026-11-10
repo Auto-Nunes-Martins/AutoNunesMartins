@@ -8,7 +8,10 @@
   let {
     onContact,
     background,
-  }: { onContact: (message: string) => void; background?: SceneBackground } = $props();
+  }: {
+    onContact: (message: string, opener?: EventTarget | null) => void;
+    background?: SceneBackground;
+  } = $props();
 </script>
 
 <section id="proximo-passo" class="editorial-pause" aria-labelledby="editorial-pause-title">
@@ -34,7 +37,8 @@
       <a href="#contactos">Ver contactos e horário <ArrowUpRight size={18} aria-hidden="true" /></a>
       <button
         type="button"
-        onclick={() => onContact('Gostava de falar convosco sobre o próximo passo.')}
+        onclick={(event) =>
+          onContact('Gostava de falar convosco sobre o próximo passo.', event.currentTarget)}
       >
         Contacta-nos <ArrowUpRight size={18} aria-hidden="true" />
       </button>

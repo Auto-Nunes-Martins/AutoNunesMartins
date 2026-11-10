@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import { crmPath } from '$lib/paths';
   import { untrack } from 'svelte';
   import { enhance } from '$lib/auth/enhance';
@@ -132,9 +133,9 @@
             </span>
             <input
               name="salePrice"
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              use:numericField={{ min: 0 }}
+              inputmode="decimal"
               required
               bind:value={salePriceInput}
               placeholder="6500.00"

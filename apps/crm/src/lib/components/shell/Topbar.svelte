@@ -1,7 +1,8 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { page } from '$app/stores';
-  import { onMount } from 'svelte';
+  import { flushSync, onMount } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { Menu, X } from 'lucide-svelte';
   import BrandPlus from '$lib/components/brand/icons/BrandPlus.svelte';
   import BrandSearch from '$lib/components/brand/icons/BrandSearch.svelte';
@@ -10,6 +11,7 @@
   import GlobalSearch from '$lib/components/shell/GlobalSearch.svelte';
   import type { SearchHit } from './searchNavigation';
   import { mobileDrawer } from '$lib/stores/sidebar';
+  import { quickTask } from '$lib/stores/quickTask';
 
   interface Props {
     crumbs?: string[];
@@ -46,8 +48,70 @@
   // entire topbar row and the other action buttons are hidden. Tap the X
   // to collapse back to the icon.
   let mobileSearchOpen = $state(false);
+  let notificationsOpen = $state(false);
+  let scrollHidden = $state(false);
+  let searchToggle: HTMLButtonElement;
   let searchHost = $state<HTMLDivElement>();
+  let compactSearch: ReturnType<typeof GlobalSearch>;
+  let header: HTMLElement;
+  let scrollAnchor = 0;
+  let ignoreScrollUntil = 0;
+  const pinned = $derived(mobileSearchOpen || $mobileDrawer || notificationsOpen);
+
+  function openSearch() {
+    if ($mobileDrawer) return;
+    quickTask.close();
+    notificationsOpen = false;
+    scrollHidden = false;
+    // Focus within the activating click, while iOS can still open the keyboard.
+    flushSync(() => (mobileSearchOpen = true));
+    compactSearch?.focus();
+  }
+
+  function closeSearch() {
+    scrollAnchor = Math.max(0, window.scrollY);
+    ignoreScrollUntil = performance.now() + 220;
+    flushSync(() => (mobileSearchOpen = false));
+    searchToggle?.focus({ preventScroll: true });
+  }
+
+  afterNavigate(() => {
+    scrollAnchor = Math.max(0, window.scrollY);
+    scrollHidden = false;
+    mobileSearchOpen = false;
+  });
+
+  $effect(() => {
+    if ($quickTask || $mobileDrawer) mobileSearchOpen = false;
+  });
+  $effect(() => {
+    if (!mobileSearchOpen) compactSearch?.reset();
+  });
+
   onMount(() => {
+    const mobile = window.matchMedia('(max-width: 767px)');
+    function onScroll() {
+      const y = Math.max(0, window.scrollY);
+      if (!mobile.matches || pinned || y <= 0 || performance.now() < ignoreScrollUntil) {
+        scrollHidden = false;
+      } else if (Math.abs(y - scrollAnchor) < 5) {
+        return;
+      } else {
+        scrollHidden = y > scrollAnchor;
+      }
+      scrollAnchor = y;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    mobile.addEventListener('change', onScroll);
+    const viewport = window.visualViewport;
+    const syncViewport = () => {
+      if (!viewport || viewport.scale !== 1) return;
+      header.style.setProperty('--tb-visible-height', `${viewport.height}px`);
+      header.style.setProperty('--tb-visible-top', `${Math.max(0, viewport.offsetTop)}px`);
+    };
+    syncViewport();
+    viewport?.addEventListener('resize', syncViewport);
+    viewport?.addEventListener('scroll', syncViewport);
     const key = (event: KeyboardEvent) => {
       if (
         (event.metaKey || event.ctrlKey) &&
@@ -58,11 +122,17 @@
       ) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        mobileSearchOpen = true;
+        openSearch();
       }
     };
     window.addEventListener('keydown', key, true);
-    return () => window.removeEventListener('keydown', key, true);
+    return () => {
+      window.removeEventListener('keydown', key, true);
+      window.removeEventListener('scroll', onScroll);
+      mobile.removeEventListener('change', onScroll);
+      viewport?.removeEventListener('resize', syncViewport);
+      viewport?.removeEventListener('scroll', syncViewport);
+    };
   });
   let recentHits = $state<SearchHit[]>([]);
   $effect(() => {
@@ -71,142 +141,184 @@
   });
 </script>
 
-<header
-  class="topbar relative flex items-center gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-[22px] border-b border-[var(--color-border)]"
->
-  {#if !mobileSearchOpen}
-    <!-- Hamburger (mobile only) — toggles the sidebar drawer.
+<div class="topbar-slot" class:scroll-hidden={scrollHidden && !pinned}>
+  <header
+    class="topbar relative px-4 md:px-6 py-3 md:py-[22px] border-b border-[var(--color-border)]"
+    class:searching={mobileSearchOpen}
+    bind:this={header}
+  >
+    <div
+      class="tb-normal flex items-center gap-3 md:gap-4"
+      class:search-open={mobileSearchOpen}
+      inert={mobileSearchOpen}
+    >
+      <!-- Hamburger (mobile only) — toggles the sidebar drawer.
          Visibility owned by .tb-icbtn's media query, not `md:hidden`. -->
-    <button
-      type="button"
-      class="tb-icbtn"
-      onclick={() => mobileDrawer.toggle()}
-      aria-label="Abrir menu"
-    >
-      <Menu class="h-5 w-5" />
-    </button>
-
-    <!-- Breadcrumbs (desktop) -->
-    <div class="tb-breadcrumbs items-center gap-2" title={resolvedCrumbs.join(' / ')}>
-      <span class="h-1.5 w-1.5 bg-[var(--color-red)]"></span>
-      <div
-        class="crumb-trail flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em]"
-      >
-        {#each resolvedCrumbs as crumb, i (i)}
-          {#if i > 0}
-            <span class="text-[var(--color-text-faint)]">/</span>
-          {/if}
-          <span
-            class={i === resolvedCrumbs.length - 1
-              ? 'text-[var(--color-text)] font-semibold'
-              : 'text-[var(--color-text-muted)]'}
-          >
-            {crumb}
-          </span>
-        {/each}
-      </div>
-    </div>
-
-    <!-- Mobile page title (replaces breadcrumb trail). Same red-dot prefix
-         and mono treatment so it reads as part of the same family. -->
-    <div class="tb-page-title items-center gap-2 flex-1 min-w-0">
-      <span class="h-1.5 w-1.5 bg-[var(--color-red)] flex-shrink-0"></span>
-      <span
-        class="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] font-semibold truncate"
-      >
-        {pageTitle}
-      </span>
-    </div>
-  {/if}
-
-  <!-- Available header width decides whether search is inline or opened
-       by its compact trigger, including when the desktop sidebar is visible. -->
-  {#if !mobileSearchOpen}<div class="tb-search-inline flex-1 min-w-0" bind:this={searchHost}>
-      <GlobalSearch {userKey} bind:recentHits />
-    </div>{/if}
-
-  {#if mobileSearchOpen}
-    <div class="tb-search-expanded flex flex-1 min-w-0">
-      <GlobalSearch {userKey} bind:recentHits autofocus />
-    </div>
-    <button
-      type="button"
-      class="tb-icbtn tb-search-close flex-shrink-0"
-      onclick={() => (mobileSearchOpen = false)}
-      aria-label="Fechar pesquisa"
-    >
-      <X class="h-5 w-5" />
-    </button>
-  {/if}
-
-  <!-- Actions row (right). Hidden on mobile while the search overlay is
-       expanded so the search input gets the full width. -->
-  {#if !mobileSearchOpen}
-    <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
-      <!-- Mobile-only search icon button (replaces inline search field). -->
       <button
         type="button"
-        class="tb-icbtn tb-search-toggle"
-        onclick={() => (mobileSearchOpen = true)}
-        aria-label="Pesquisar"
+        class="tb-icbtn"
+        onclick={() => mobileDrawer.toggle()}
+        aria-label="Abrir menu"
+        aria-expanded={$mobileDrawer}
       >
-        <BrandSearch class="h-4 w-4" />
+        <Menu class="h-5 w-5" />
       </button>
 
-      <!-- Show the theme toggle on desktop; mobile uses the sidebar drawer. Export actions belong to each section rather than the topbar, whose former control was never connected to an endpoint. -->
-      <div class="tb-theme">
-        <ThemeToggle size={44} />
+      <!-- Breadcrumbs (desktop) -->
+      <div class="tb-breadcrumbs items-center gap-2" title={resolvedCrumbs.join(' / ')}>
+        <span class="h-1.5 w-1.5 bg-[var(--color-red)]"></span>
+        <div
+          class="crumb-trail flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em]"
+        >
+          {#each resolvedCrumbs as crumb, i (i)}
+            {#if i > 0}
+              <span class="text-[var(--color-text-faint)]">/</span>
+            {/if}
+            <span
+              class={i === resolvedCrumbs.length - 1
+                ? 'text-[var(--color-text)] font-semibold'
+                : 'text-[var(--color-text-muted)]'}
+            >
+              {crumb}
+            </span>
+          {/each}
+        </div>
       </div>
 
-      <NotificationBell />
+      <!-- Mobile page title (replaces breadcrumb trail). Same red-dot prefix
+         and mono treatment so it reads as part of the same family. -->
+      <div class="tb-page-title items-center gap-2 flex-1 min-w-0">
+        <span class="h-1.5 w-1.5 bg-[var(--color-red)] flex-shrink-0"></span>
+        <span
+          class="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] font-semibold truncate"
+        >
+          {pageTitle}
+        </span>
+      </div>
+      <!-- Available header width decides whether search is inline or opened
+       by its compact trigger, including when the desktop sidebar is visible. -->
+      <div class="tb-search-inline flex-1 min-w-0" bind:this={searchHost}>
+        <GlobalSearch {userKey} bind:recentHits />
+      </div>
 
-      {#if showAddVehicle}
-        <!-- Desktop: full red CTA with italic uppercase label. Mobile:
+      <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
+        <!-- Mobile-only search icon button (replaces inline search field). -->
+        <button
+          type="button"
+          class="tb-icbtn tb-search-toggle"
+          bind:this={searchToggle}
+          onclick={openSearch}
+          aria-label="Pesquisar"
+          aria-expanded={mobileSearchOpen}
+        >
+          <BrandSearch class="h-4 w-4" />
+        </button>
+
+        <!-- Show the theme toggle on desktop; mobile uses the sidebar drawer. Export actions belong to each section rather than the topbar, whose former control was never connected to an endpoint. -->
+        <div class="tb-theme">
+          <ThemeToggle size={44} />
+        </div>
+
+        <NotificationBell bind:isOpen={notificationsOpen} />
+
+        {#if showAddVehicle}
+          <!-- Desktop: full red CTA with italic uppercase label. Mobile:
              icon-only red square so the brand red still anchors the topbar
              without consuming a label's worth of width. -->
-        <a
-          href={crmPath('/viaturas/nova')}
-          class="tb-add-label inline-flex items-center gap-2 h-11 px-[18px] font-display font-semibold italic uppercase text-[13px] tracking-[0.01em] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
-          style="border-radius: var(--radius-btn);"
-        >
-          <BrandPlus class="h-4 w-4" />
-          Adicionar Viatura
-        </a>
-        <a
-          href={crmPath('/viaturas/nova')}
-          class="tb-add-icon items-center justify-center h-11 w-11 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
-          style="border-radius: var(--radius-btn);"
-          aria-label="Adicionar viatura"
-        >
-          <BrandPlus class="h-4 w-4" />
-        </a>
-      {/if}
+          <a
+            href={crmPath('/viaturas/nova')}
+            class="tb-add-label inline-flex items-center gap-2 h-11 px-[18px] font-display font-semibold italic uppercase text-[13px] tracking-[0.01em] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
+            style="border-radius: var(--radius-btn);"
+          >
+            <BrandPlus class="h-4 w-4" />
+            Adicionar Viatura
+          </a>
+          <a
+            href={crmPath('/viaturas/nova')}
+            class="tb-add-icon items-center justify-center h-11 w-11 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
+            style="border-radius: var(--radius-btn);"
+            aria-label="Adicionar viatura"
+          >
+            <BrandPlus class="h-4 w-4" />
+          </a>
+        {/if}
+      </div>
     </div>
-  {/if}
-</header>
+    <div class="tb-search-expanded flex items-center gap-2" inert={!mobileSearchOpen}>
+      <GlobalSearch {userKey} bind:recentHits bind:this={compactSearch} onDismiss={closeSearch} />
+      <button
+        type="button"
+        class="tb-icbtn tb-search-close"
+        onclick={closeSearch}
+        aria-label="Fechar pesquisa"
+      >
+        <X class="h-5 w-5" />
+      </button>
+    </div>
+  </header>
+</div>
 
 <style>
   .topbar {
     container-type: inline-size;
   }
+  .tb-normal {
+    transition: opacity 125ms ease 65ms;
+  }
+  .tb-normal.search-open {
+    opacity: 0;
+    transition: opacity 75ms ease;
+  }
+  .tb-search-expanded {
+    position: absolute;
+    inset: 0 16px;
+    opacity: 0;
+    transition: opacity 115ms ease;
+  }
+  .searching .tb-search-expanded {
+    opacity: 1;
+    transition: opacity 145ms ease 55ms;
+  }
   .tb-search-expanded > :global(.gs-root) {
     max-width: none;
     margin-inline: 0;
   }
-  @media (prefers-reduced-motion: no-preference) {
+  .tb-search-expanded :global(.gs-scroll) {
+    max-height: min(56dvh, max(64px, calc(var(--tb-visible-height, 100dvh) - 150px)));
+  }
+  @media (min-width: 768px) {
     .tb-search-expanded {
-      transform-origin: right center;
-      animation: search-expand 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
+      inset-inline: 24px;
     }
-    @keyframes search-expand {
-      from {
-        opacity: 0;
-        transform: translateX(8px) scaleX(0.94);
-      }
-      to {
-        opacity: 1;
-        transform: none;
-      }
+  }
+  @media (max-width: 767px) {
+    .topbar-slot {
+      height: 69px;
+    }
+    .topbar {
+      position: fixed;
+      top: 0;
+      inset-inline: 0;
+      z-index: 25;
+      background: var(--color-bg-0);
+      transition:
+        transform 200ms ease,
+        visibility 200ms;
+    }
+    .topbar.searching {
+      top: var(--tb-visible-top, 0px);
+    }
+    .scroll-hidden .topbar {
+      transform: translateY(-100%);
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .topbar,
+    .tb-normal,
+    .tb-search-expanded {
+      transition: none;
     }
   }
   /* Reserve one label column across routes; text length cannot move search. */

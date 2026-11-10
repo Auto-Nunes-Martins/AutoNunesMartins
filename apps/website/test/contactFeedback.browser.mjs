@@ -4,7 +4,7 @@ import {createServer} from 'node:http';
 import {spawn} from 'node:child_process';
 import {writeFile,mkdir,realpath,rm} from 'node:fs/promises';
 import path from 'node:path';
-import {chromium,expect} from '@playwright/test';
+import {chromium,expect,webkit} from '@playwright/test';
 import sharp from 'sharp';
 const vehicle={slug:'contact-test-aaaaaaaaaaaa',brand:'Marca',model:'Modelo',year:2023,fuel:'GASOLINE',mileage:20000,price:'20000.00',currency:'EUR',description:'Viatura fictícia.',transmission:'MANUAL',availability:'AVAILABLE',photos:[]};
 let backendPosts=0;
@@ -17,9 +17,9 @@ await writeFile(configPath,`import base from ${JSON.stringify(path.resolve('vite
 const vite=spawn(process.execPath,['../../node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(port),'--strictPort','--config',configPath],{env:{...process.env,PUBLIC_BACKEND_URL:api},stdio:'pipe'});let logs='';vite.stdout.on('data',d=>logs+=d);vite.stderr.on('data',d=>logs+=d);let browser;
 try{
   for(let n=0;;n++){try{if((await fetch(origin)).ok)break;}catch{}if(n>150||vite.exitCode!==null)throw Error(logs);await new Promise(r=>setTimeout(r,200));}
-  browser=await chromium.launch({headless:true,channel:'chrome'});
+  browser=process.argv.includes('--webkit') ? await webkit.launch() : await chromium.launch({headless:true,channel:'chrome'});
 
-  if(!process.env.CONTACT_FORMS_ONLY){
+  if(!process.env.CONTACT_FORMS_ONLY && !process.env.CONTACT_FOCUS_ONLY){
   const legalRoutes=['/informacao-legal','/termos-de-utilizacao','/politica-de-privacidade'];
   for(const [old,target]of [['/cookies-e-preferencias','/politica-de-privacidade#preferencias'],['/resolucao-de-litigios','/informacao-legal#litigios']]){const response=await fetch(origin+old,{redirect:'manual'});assert.equal(response.status,308);assert.equal(response.headers.get('location'),target);assert.ok(!(await response.text()).includes('<title>'));}
   for(const width of [1366,390])for(const theme of ['light','dark']){
@@ -42,7 +42,10 @@ try{
   }
   }
   for(const width of [1366,390])for(const mode of ['inline','dialog','vehicle','studio']){
-    const context=await browser.newContext({viewport:{width,height:950},serviceWorkers:'block',reducedMotion:width===390?'reduce':'no-preference'}),page=await context.newPage(),posts=[],errors=[];let reply='success',release;
+    if (process.env.CONTACT_FOCUS_ONLY && !['dialog', 'vehicle'].includes(mode)) continue;
+    const mobile = width === 390;
+    const touch = mobile && ['dialog', 'vehicle'].includes(mode);
+    const context=await browser.newContext({viewport:{width,height:950},isMobile:touch,hasTouch:touch,serviceWorkers:'block',reducedMotion:mobile?'reduce':'no-preference'}),page=await context.newPage(),posts=[],errors=[];let reply='success',release;
     page.setDefaultTimeout(20000);page.setDefaultNavigationTimeout(60000);page.on('pageerror',e=>errors.push(e.message));
     await page.route('**/*',route=>route.request().method()==='GET'?route.continue():route.abort());
     await page.route('**/api/contact',async route=>{posts.push(route.request().postDataJSON());if(reply==='delay')await new Promise(r=>release=r);if(reply==='offline')return route.abort();if(reply==='limited')return route.fulfill({status:429,json:{error:'private provider data'}});if(reply==='unavailable')return route.fulfill({status:503,json:{error:'technical'}});if(reply==='conflict')return route.fulfill({status:409,json:{error:'technical'}});return route.fulfill({status:202,json:{ok:true}});});
@@ -53,7 +56,45 @@ try{
       let form;
       if(mode==='dialog'||mode==='vehicle'){
         // Invoke the actual public contact trigger, keeping its vehicle context.
-        const trigger=mode==='vehicle'?page.getByRole('button',{name:'Quero conhecer',exact:true}).first():page.getByRole('button',{name:/Vamos conversar/}).first();await trigger.click();form=page.locator('.contact-dialog form');
+        const trigger=mode==='vehicle'?page.getByRole('button',{name:'Quero conhecer',exact:true}).first():page.getByRole('button',{name:/Vamos conversar/}).first();
+        const dialog = page.locator('.contact-dialog');
+        const close = dialog.getByRole('button', { name: 'Fechar', exact: true });
+        const name = dialog.locator('[name="name"]');
+        const email = dialog.locator('[name="email"]');
+        const submit = dialog.locator('[type="submit"]');
+        const open = () => mobile ? trigger.tap() : trigger.click();
+        await open();
+        await expect(mobile ? close : name).toBeFocused();
+        if (mobile) {
+          await expect(name).toHaveClass(/contact-first-field/);
+          await expect(dialog.locator('input:focus, select:focus, textarea:focus')).toHaveCount(0);
+          await email.tap();
+          await expect(email).toBeFocused();
+          await expect(name).not.toHaveClass(/contact-first-field/);
+          await close.tap();
+          await expect(trigger).toBeFocused();
+          await open();
+          await expect(close).toBeFocused();
+          await expect(name).toHaveClass(/contact-first-field/);
+          await name.tap();
+          await expect(name).toBeFocused();
+          await expect(name).not.toHaveClass(/contact-first-field/);
+        }
+        await submit.focus();
+        await page.keyboard.press('Tab');
+        await expect(close).toBeFocused();
+        await page.keyboard.press('Shift+Tab');
+        await expect(submit).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+        await expect(trigger).toBeFocused();
+        if (process.env.CONTACT_FOCUS_ONLY) {
+          assert.deepEqual(errors, []);
+          console.log(`PASS ${browser.browserType().name()} contact dialog focus ${mode} ${width}px`);
+          continue;
+        }
+        await open();
+        form=dialog.locator('form');
       }else form=page.locator(mode==='studio'?'form.message-card':'form.inline-contact').first();
       await form.waitFor();await page.waitForFunction(()=>document.querySelector('form.public-contact-form'));
       const notice=form.locator('.contact-privacy'),details=notice.locator('details'),summary=notice.locator('summary');assert.equal(await details.getAttribute('open'),null);assert.equal(await notice.locator('input[type=checkbox]').count(),0);assert.equal(await notice.getByRole('link',{name:'Privacidade e direitos (abre num novo separador)',exact:true}).getAttribute('target'),'_blank');await summary.focus();await page.keyboard.press('Enter');assert.notEqual(await details.getAttribute('open'),null);assert.equal(posts.length,0);assert.equal(await notice.locator('a[href="/politica-de-privacidade#pedidos"]').isVisible(),true);await page.keyboard.press('Enter');assert.equal(await details.getAttribute('open'),null);await notice.screenshot({path:'.svelte-kit/contact-layered-'+mode+'-'+width+'.png'});

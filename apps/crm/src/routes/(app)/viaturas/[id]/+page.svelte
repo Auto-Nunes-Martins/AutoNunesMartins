@@ -74,14 +74,13 @@
   <title>{v.brand} {v.model} · Auto Nunes Martins</title>
 </svelte:head>
 
-<section class="pt-8 pb-12 space-y-6">
+<section class="vehicle-detail pt-8 pb-12 space-y-6">
   <!-- Header -->
-  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 lg:gap-6">
+  <div class="vehicle-heading flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 lg:gap-6">
     <div class="min-w-0">
-      <div class="mb-2 flex flex-wrap items-center gap-2">
+      <div class="vehicle-tags mb-2 flex flex-wrap items-center gap-2">
         <StatusBadge status={v.status} />
         <WebsiteStatus vehicle={v} compact />
-        {#if websiteVisibility(v).state === 'blocked'}<span class="text-[13px] text-[var(--color-text-muted)]">{websiteVisibility(v).detail}</span>{/if}
         {#if v.licensePlate}
           <!-- Stylized Portuguese license plate with the authentic blue prefix. -->
           <span
@@ -97,11 +96,11 @@
             </span>
           </span>
         {/if}
-        <span
-          class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] truncate"
+        {#if v.vin}<span
+          class="vehicle-vin font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
         >
           VIN {v.vin}
-        </span>
+        </span>{/if}
         <span class="featured-slot">
           {#await highlightStatus}
             <span class="highlight-loading">A verificar destaque…</span>
@@ -115,9 +114,9 @@
           {/await}
         </span>
       </div>
-      <div class="flex items-center gap-3"><BrandLogo name={v.brand} size={40} /><ItalicHero text={`${v.brand} `} accent={v.model} size="lg" /></div>
+      <div class="vehicle-title flex items-center gap-3"><BrandLogo name={v.brand} size={40} /><ItalicHero text={`${v.brand} `} accent={v.model} size="lg" /></div>
       <p
-        class="mt-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[var(--color-text-muted)]"
+        class="vehicle-dates mt-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[var(--color-text-muted)]"
       >
         <span class="text-[var(--color-red)]">●</span>
         Adquirida em {formatDate(v.acquisitionDate)}
@@ -126,6 +125,11 @@
           Vendida em {formatDate(v.soldDate)}
         {/if}
       </p>
+      {#if websiteVisibility(v).state === 'blocked'}
+        <p class="vehicle-public-status mt-2 text-[13px] text-[var(--color-text-muted)]">
+          {websiteVisibility(v).detail}
+        </p>
+      {/if}
     </div>
     <div class="vehicle-actions flex flex-wrap items-center gap-2">
       {#if websiteVisibility(v).visible && v.publicSlug}
@@ -162,7 +166,7 @@
   {#if v.status === 'DRAFT'}
     <a
       href={crmPath(`/viaturas/nova?viatura=${v.id}`)}
-      class="flex items-center gap-3 p-4 pl-5 border bg-[color-mix(in_oklab,var(--color-warning)_8%,transparent)] hover:bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] transition-colors group"
+      class="vehicle-context-link flex items-center gap-3 p-4 pl-5 border bg-[color-mix(in_oklab,var(--color-warning)_8%,transparent)] hover:bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] transition-colors group"
       style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, var(--color-warning) 45%, transparent);"
     >
       <span
@@ -201,7 +205,7 @@
     {@const origin = v.sourceTradeIn}
     <a
       href={crmPath(`/vendas/${origin.sale.id}`)}
-      class="flex items-center gap-3 p-3 pl-4 border border-[color-mix(in_oklab,var(--color-warning)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-warning)_6%,transparent)] hover:bg-[color-mix(in_oklab,var(--color-warning)_10%,transparent)] transition-colors group"
+      class="vehicle-context-link flex items-center gap-3 p-3 pl-4 border border-[color-mix(in_oklab,var(--color-warning)_30%,transparent)] bg-[color-mix(in_oklab,var(--color-warning)_6%,transparent)] hover:bg-[color-mix(in_oklab,var(--color-warning)_10%,transparent)] transition-colors group"
       style="border-radius: var(--radius-btn);"
     >
       <span
@@ -375,6 +379,74 @@
 </section>
 
 <style>
+  @media (max-width: 767px) {
+    .vehicle-detail {
+      padding-top: 16px;
+    }
+    .vehicle-heading {
+      gap: 12px;
+    }
+    .vehicle-title {
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .vehicle-title :global(h1) {
+      min-width: 0;
+      font-size: clamp(22px, 6.5vw, 28px);
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+    .vehicle-tags {
+      gap: 4px 6px;
+    }
+    .vehicle-vin {
+      overflow-wrap: anywhere;
+      letter-spacing: 0.07em;
+    }
+    .vehicle-dates {
+      letter-spacing: 0.09em;
+    }
+    .vehicle-public-status {
+      overflow-wrap: anywhere;
+    }
+    .vehicle-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+      gap: 6px;
+    }
+    .vehicle-actions :global(a) {
+      min-width: 0;
+      min-height: 44px;
+      margin: 0;
+      padding: 6px 8px;
+      gap: 5px;
+      justify-content: center;
+      text-align: center;
+      white-space: normal;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    .vehicle-actions :global(a svg) {
+      flex: none;
+    }
+    .vehicle-actions :global(a.sell-vehicle-action) {
+      margin-inline: 0;
+    }
+    .vehicle-actions :global(a:last-child:nth-child(odd)) {
+      grid-column: 1 / -1;
+    }
+    .vehicle-context-link {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 5px 8px;
+      padding: 10px;
+      overflow-wrap: anywhere;
+    }
+    .vehicle-context-link > :last-child {
+      grid-column: 2;
+    }
+  }
   .public-view-link {
     display: inline-flex;
     align-items: center;

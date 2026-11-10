@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import BrandCombobox from './BrandCombobox.svelte';
   import VehicleSpecGlyph from '../../../../../../shared/ui/VehicleSpecGlyph.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
@@ -19,9 +20,9 @@
   type Initial = {
     brand?: string;
     model?: string;
-    year?: number | null;
+    year?: number | string | null;
     fuel?: Fuel | '';
-    mileage?: number | null;
+    mileage?: number | string | null;
     vin?: string | null;
     licensePlate?: string | null;
     purchasePrice?: string;
@@ -81,6 +82,11 @@
 
   let dirty = $state(false);
   const formId = $props.id();
+  function submitNumberOnEnter(event: KeyboardEvent & { currentTarget: HTMLInputElement }) {
+    if (!unified || event.key !== 'Enter' || event.isComposing || event.defaultPrevented) return;
+    event.preventDefault();
+    if (!submitting && !disabled) event.currentTarget.form?.requestSubmit();
+  }
 
   const FUELS: { value: Fuel; label: string }[] = [
     { value: 'GASOLINE', label: 'Gasolina' },
@@ -281,9 +287,10 @@
           >
           <input
             name="year"
-            type="number"
-            min="1950"
-            max={new Date().getFullYear() + 1}
+            type="text"
+            use:numericField={{ min: 1950, max: new Date().getFullYear() + 1 }}
+            onkeydown={submitNumberOnEnter}
+            inputmode="numeric"
             required
             bind:value={draft.year}
             placeholder={String(new Date().getFullYear())}
@@ -314,9 +321,10 @@
           >
           <input
             name="mileage"
-            type="number"
-            min="0"
-            max="2000000"
+            type="text"
+            use:numericField={{ min: 0, max: 2000000 }}
+            onkeydown={submitNumberOnEnter}
+            inputmode="numeric"
             bind:value={draft.mileage}
             class="{inputClass()} tabular-nums"
             style="border-radius: var(--radius-btn);"
@@ -358,9 +366,10 @@
           <span class={fieldLabelClass()}>Preço de compra (€)</span>
           <input
             name="purchasePrice"
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            use:numericField={{ min: 0 }}
+            onkeydown={submitNumberOnEnter}
+            inputmode="decimal"
             required
             bind:value={draft.purchasePrice}
             placeholder="14000.00"
@@ -375,9 +384,10 @@
           <input
             name="salePrice"
             required
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            use:numericField={{ min: 0 }}
+            onkeydown={submitNumberOnEnter}
+            inputmode="decimal"
             bind:value={draft.salePrice}
             placeholder="17950.00"
             class="{inputClass()} tabular-nums"

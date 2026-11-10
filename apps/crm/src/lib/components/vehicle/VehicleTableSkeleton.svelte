@@ -8,26 +8,16 @@
   let { rows = 6 }: Props = $props();
 </script>
 
-<!-- Mobile card skeletons — mirrors the card layout in VehicleTable. -->
 <div class="md:hidden divide-y divide-[var(--color-border)]">
   {#each Array(rows) as _, i (i)}
-    <div class="px-4 py-3">
-      <div class="flex items-center gap-3">
-        <Skeleton width="80px" height="60px" class="shrink-0" />
-        <div class="flex flex-col gap-1.5 min-w-0 flex-1">
-          <Skeleton width="60%" height="14px" />
-          <Skeleton width="45%" height="10px" />
-        </div>
-        <Skeleton width="70px" height="20px" />
+    <div class="flex items-center gap-2 px-2 py-2.5">
+      <Skeleton width="56px" height="44px" class="shrink-0" />
+      <div class="min-w-0 flex-1 space-y-1">
+        <Skeleton width="75%" height="14px" />
+        <Skeleton width="60%" height="11px" />
+        <Skeleton width="50%" height="11px" />
       </div>
-      <div class="mt-3 grid grid-cols-4 gap-2">
-        {#each Array(4) as __, j (j)}
-          <div class="flex flex-col gap-1">
-            <Skeleton width="50%" height="9px" />
-            <Skeleton width="80%" height="13px" />
-          </div>
-        {/each}
-      </div>
+      <Skeleton width="44px" height="44px" class="shrink-0" />
     </div>
   {/each}
 </div>

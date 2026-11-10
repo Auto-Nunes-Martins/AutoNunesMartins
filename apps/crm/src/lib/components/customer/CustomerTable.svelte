@@ -25,75 +25,50 @@
   }
 </script>
 
-{#snippet rowActions(c: CustomerListItem)}
+{#snippet rowActions(c: CustomerListItem, compact = false)}
   <RowActions
     label={c.name}
     editHref={crmPath(`/clientes/${c.id}/editar`)}
     actions={actionsFor(c)}
+    {compact}
   />
 {/snippet}
 
-<!--
-  Mobile (< md): stacked card list. Each card shows avatar, name+address,
-  contact info, NIF, purchase count, last contact — formatted to fit a
-  360px viewport without horizontal scroll.
--->
 <div class="md:hidden divide-y divide-[var(--color-border)]">
   {#each items as c (c.id)}
-    <article>
+    <article class="flex items-center gap-1 px-2">
       <a
-        href={crmPath(`/clientes/${c.id}`)}
-        class="block px-4 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
+        href={crmPath('/clientes/' + c.id)}
+        class="flex flex-1 min-w-0 items-center gap-2 py-2.5 group"
       >
-        <div class="flex items-center gap-3">
-          <div
-            class="h-11 w-11 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0"
-            style="border-radius: var(--radius-btn);"
-          >
-            <UserIcon class="h-5 w-5 text-[var(--color-red)]" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-2">
-              <div
-                class="font-display font-bold italic text-[15px] line-clamp-2 break-words group-hover:text-[var(--color-red)] transition-colors"
-              >
-                {c.name}
-              </div>
-              <span class="text-[11px] text-[var(--color-text-muted)] flex-shrink-0">
-                <strong class="num-value text-[14px] text-[var(--color-text)]"
-                  >{c._count.sales}</strong
-                >
-                {c._count.sales === 1 ? 'compra' : 'compras'}
-              </span>
-            </div>
-            <div
-              class="font-mono text-[10.5px] text-[var(--color-text-faint)] truncate mt-0.5 tabular-nums"
+        <div
+          class="h-9 w-9 flex items-center justify-center shrink-0 rounded-xs bg-[var(--color-bg-2)]"
+        >
+          <UserIcon class="h-4 w-4 text-[var(--color-red)]" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-baseline justify-between gap-2">
+            <span
+              class="min-w-0 truncate font-semibold text-[14px] group-hover:text-[var(--color-red)]"
+              title={c.name}>{c.name}</span
             >
-              NIF {c.nif}
-            </div>
+            <span class="shrink-0 text-[11px] text-[var(--color-text-muted)]"
+              >{c._count.sales} {c._count.sales === 1 ? 'compra' : 'compras'}</span
+            >
           </div>
+          <p class="truncate text-[11px] text-[var(--color-text-muted)]">
+            {#if c.phone}{c.phone} ·
+            {/if}NIF {c.nif}
+          </p>
+          {#if c.email}<p
+              class="truncate text-[11px] text-[var(--color-text-muted)]"
+              title={c.email}
+            >
+              {c.email}
+            </p>{/if}
         </div>
-        <div class="mt-2.5 flex flex-col gap-1 text-[12px]">
-          <span class="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-            <Phone class="h-3 w-3 text-[var(--color-text-faint)] flex-shrink-0" />
-            <span class="font-mono truncate">{c.phone}</span>
-          </span>
-          {#if c.email}
-            <span class="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-              <Mail class="h-3 w-3 text-[var(--color-text-faint)] flex-shrink-0" />
-              <span class="truncate">{c.email}</span>
-            </span>
-          {/if}
-        </div>
-        {#if c.lastContactDate}
-          <div
-            class="mt-2 font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--color-text-faint)]"
-          >
-            Último contacto · {formatDate(c.lastContactDate)}
-          </div>
-        {/if}
       </a>
-      <div class="px-4 pb-3">{@render rowActions(c)}</div>
+      {@render rowActions(c, true)}
     </article>
   {/each}
 </div>

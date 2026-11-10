@@ -215,84 +215,30 @@
             : 'Ainda não foram registadas vendas. Cria a primeira a partir de uma viatura disponível.'}
         />
       {:else}
-        <!-- Mobile: stacked card list. Each card carries the same info as a
-             desktop row but vertically so it stays legible on a phone. -->
         <div class="md:hidden divide-y divide-[var(--color-border)]">
           {#each list.items as s (s.id)}
-            {@const isLoss = Number(s.realProfit) < 0}
-            <a
-              href={crmPath(`/vendas/${s.id}`)}
-              class="block px-4 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
+            <a href={crmPath('/vendas/' + s.id)}
+              class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 hover:bg-[var(--color-bg-2)] group"
             >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0 flex-1">
-                  <div
-                    class="font-display font-semibold text-[14px] line-clamp-2 break-words group-hover:text-[var(--color-red)] transition-colors"
-                  >
-                    {s.vehicle.brand}
-                    {s.vehicle.model}
-                  </div>
-                  <div
-                    class="font-mono text-[10px] tracking-[0.04em] text-[var(--color-text-faint)] truncate mt-0.5 flex items-center gap-2 flex-wrap"
-                  >
-                    {#if s.vehicle.licensePlate}
-                      <span class="tracking-[0.18em] text-[var(--color-text-muted)]"
-                        >{s.vehicle.licensePlate}</span
-                      >
-                      <span>·</span><span>{s.vehicle.year}</span>
-                    {:else}
-                      <span>VIN {s.vehicle.vin}</span><span>·</span><span>{s.vehicle.year}</span>
-                    {/if}
-                    {#if s.hasTradeIn}
-                      <!-- Same pill pattern as "Em destaque" on /viaturas/[id]:
-                           border + tinted bg + uppercase mono text. Stands out
-                           when scanning the list without screaming. -->
-                      <span
-                        title="Esta venda envolveu uma retoma"
-                        class="inline-flex items-center gap-1 px-1.5 py-0.5 border text-[var(--color-warning)] font-mono text-[9px] uppercase tracking-[0.18em]"
-                        style="border-radius: var(--radius-btn); border-color: color-mix(in oklab, var(--color-warning) 45%, transparent); background: color-mix(in oklab, var(--color-warning) 12%, transparent);"
-                      >
-                        <ArrowRightLeft class="h-2.5 w-2.5" />
-                        Retoma
-                      </span>
-                    {/if}
-                  </div>
+              <div class="min-w-0 space-y-0.5">
+                <div class="truncate text-[14px] font-semibold group-hover:text-[var(--color-red)]" title={s.vehicle.brand + ' ' + s.vehicle.model}>
+                  {s.vehicle.brand} {s.vehicle.model}
                 </div>
-                <StatusBadge status={s.deliveryStatus} />
+                <div class="truncate text-[11px] text-[var(--color-text-muted)]" title={s.customer.name}>
+                  {s.vehicle.licensePlate ?? s.vehicle.year} · {s.customer.name}
+                </div>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusBadge status={s.deliveryStatus} />
+                  {#if s.hasTradeIn}<span class="inline-flex items-center gap-1 text-[10px] text-[var(--color-warning)]">
+                      <ArrowRightLeft class="h-3 w-3" /> Retoma
+                    </span>{/if}
+                </div>
               </div>
-              <div class="mt-3 grid grid-cols-3 gap-2 text-[12px]">
-                <div>
-                  <div
-                    class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
-                  >
-                    Cliente
-                  </div>
-                  <div class="text-[12px] truncate mt-0.5">{s.customer.name}</div>
+              <div class="text-right">
+                <div class="num-value text-[13px] {Number(s.realProfit) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}" title="Lucro real">
+                  {formatEUR(s.realProfit)}
                 </div>
-                <div>
-                  <div
-                    class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
-                  >
-                    Data
-                  </div>
-                  <div class="num-value text-[12px] text-[var(--color-text-muted)] mt-0.5">
-                    {formatDate(s.saleDate)}
-                  </div>
-                </div>
-                <div class="text-right">
-                  <div
-                    class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
-                  >
-                    Lucro
-                  </div>
-                  <div
-                    class="num-value text-[13px] mt-0.5 {isLoss
-                      ? 'text-[var(--color-danger)]'
-                      : 'text-[var(--color-success)]'}"
-                  >
-                    {formatEUR(s.realProfit)}
-                  </div>
-                </div>
+                <div class="text-[11px] text-[var(--color-text-muted)]">{formatDate(s.saleDate)}</div>
               </div>
             </a>
           {/each}
@@ -367,7 +313,7 @@
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
-                  title="Comissão de financiamento (banco) somada ao Lucro Real"
+                  title="Comissão líquida de financiamento somada ao lucro real"
                 >
                   Comissão
                 </th>
@@ -540,7 +486,7 @@
                   ) > 0
                     ? 'text-[var(--color-success)]'
                     : 'text-[var(--color-text-faint)]'}"
-                  title="Total de comissões de financiamento (isentas de IVA — art. 9.º, 27.º, a) CIVA)"
+                  title="Total de comissões líquidas de financiamento"
                 >
                   {Number(list.totals.commission) > 0 ? formatEUR(list.totals.commission) : '—'}
                 </td>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
   import { page } from '$app/stores';
+  import { get } from 'svelte/store';
   import { Activity, ChevronLeft, Globe } from 'lucide-svelte';
   import type { IconComponent } from '$lib/types/ui';
   // Hand-drawn icons from the index.html prototype's `I.*` library
@@ -16,6 +17,107 @@
   import { SignOutButton, useClerkContext } from 'svelte-clerk';
   import Wordmark from '$lib/components/brand/Wordmark.svelte';
   import { sidebar, mobileDrawer } from '$lib/stores/sidebar';
+
+  // The browser owns edge navigation. A leftward drag inside the open drawer
+  // can still close it, starting clear of the system gesture area.
+  function swipeToClose(drawer: HTMLElement) {
+    let drag:
+      | {
+          x: number;
+          y: number;
+          lastX: number;
+          lastTime: number;
+          velocity: number;
+          width: number;
+          closing: boolean;
+        }
+      | undefined;
+    const root = document.documentElement;
+
+    function reset() {
+      if (drag?.closing) {
+        root.classList.remove('drawer-dragging');
+        root.style.removeProperty('--drawer-drag-x');
+        root.style.removeProperty('--drawer-drag-progress');
+      }
+      drag = undefined;
+    }
+
+    function onTouchStart(event: TouchEvent) {
+      reset();
+      const touch = event.touches[0];
+      if (
+        window.innerWidth >= 768 ||
+        !get(mobileDrawer) ||
+        event.touches.length !== 1 ||
+        !touch ||
+        touch.clientX < 24
+      )
+        return;
+      drag = {
+        x: touch.clientX,
+        y: touch.clientY,
+        lastX: touch.clientX,
+        lastTime: performance.now(),
+        velocity: 0,
+        width: drawer.offsetWidth,
+        closing: false,
+      };
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      const touch = event.touches[0];
+      if (!drag) return;
+      if (!touch || event.touches.length !== 1 || !event.cancelable || !get(mobileDrawer)) {
+        reset();
+        return;
+      }
+      const dx = touch.clientX - drag.x;
+      const dy = touch.clientY - drag.y;
+      if (!drag.closing) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
+        if (dx >= 0 || Math.abs(dy) >= Math.abs(dx)) {
+          reset();
+          return;
+        }
+        drag.closing = true;
+        root.classList.add('drawer-dragging');
+      }
+      event.preventDefault();
+      const now = performance.now();
+      drag.velocity = (touch.clientX - drag.lastX) / Math.max(1, now - drag.lastTime);
+      drag.lastX = touch.clientX;
+      drag.lastTime = now;
+      const offset = Math.min(0, Math.max(-drag.width, dx));
+      root.style.setProperty('--drawer-drag-x', `${offset}px`);
+      root.style.setProperty('--drawer-drag-progress', String(1 + offset / drag.width));
+    }
+
+    function onTouchEnd() {
+      if (
+        drag?.closing &&
+        (drag.x - drag.lastX > drag.width * 0.4 ||
+          (performance.now() - drag.lastTime < 100 && drag.velocity < -0.3))
+      ) {
+        mobileDrawer.close();
+      }
+      reset();
+    }
+
+    drawer.addEventListener('touchstart', onTouchStart, { passive: true });
+    drawer.addEventListener('touchmove', onTouchMove, { passive: false });
+    drawer.addEventListener('touchend', onTouchEnd, { passive: true });
+    drawer.addEventListener('touchcancel', reset, { passive: true });
+    return {
+      destroy() {
+        drawer.removeEventListener('touchstart', onTouchStart);
+        drawer.removeEventListener('touchmove', onTouchMove);
+        drawer.removeEventListener('touchend', onTouchEnd);
+        drawer.removeEventListener('touchcancel', reset);
+        reset();
+      },
+    };
+  }
 
   const ctx = useClerkContext();
 
@@ -145,6 +247,7 @@
 -->
 
 <aside
+  use:swipeToClose
   class="sidebar"
   class:collapsed
   class:mobile-open={mobileOpen}
@@ -293,7 +396,7 @@
       transform: translateX(0);
     }
     /* While a swipe gesture is in progress, drop the transition and drive
-       position from --drawer-drag-x (set on <html> by the layout). The var
+       position from --drawer-drag-x (set on <html> during the drag). The var
        is a negative px value: 0 = fully open, -<drawer-width>px = closed. */
     :global(html.drawer-dragging) .sidebar,
     :global(html.drawer-dragging) .sidebar.mobile-open,

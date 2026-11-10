@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField, normalizeDecimal } from '$lib/forms/numericField';
   import BrandCombobox from '$lib/components/vehicle/BrandCombobox.svelte';
   import { tradeInCreateSchema, licensePlatePtSchema } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
@@ -178,12 +179,12 @@
   // the manual commission fold-in so the previewed "Lucro Real" matches the
   // value that will be persisted on submit).
   const figures = $derived.by(() => {
-    const price = Number(salePriceInput);
+    const price = Number(normalizeDecimal(salePriceInput));
     const purchase = Number(v.purchasePrice);
     const expensesTotal = Number(v.expensesTotal);
     // Commission may be blank, "0", or a positive number. Treat anything
     // not parseable as 0 so the preview never reads NaN.
-    const commissionNum = Number(commissionInput);
+    const commissionNum = Number(normalizeDecimal(commissionInput));
     const commission = Number.isFinite(commissionNum) && commissionNum > 0 ? commissionNum : 0;
 
     if (!Number.isFinite(price) || price <= 0) {
@@ -570,9 +571,9 @@
             </span>
             <input
               name="salePrice"
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              use:numericField={{ min: 0 }}
+              inputmode="decimal"
               required
               bind:value={salePriceInput}
               placeholder="17950.00"
@@ -628,7 +629,7 @@
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"
             >
-              Comissão extra (€)
+              Comissão de financiamento líquida (€)
               <span
                 class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px]"
               >
@@ -638,22 +639,18 @@
             <input
               name="commission"
               data-compact-amount
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              use:numericField={{ min: 0, max: 9999999999.99 }}
+              inputmode="decimal"
               bind:value={commissionInput}
               placeholder="0.00"
-              title="Valor que a financeira te paga pela intermediação. Isento de IVA ao abrigo do art. 9.º, 27.º, a) do CIVA — introduz o valor líquido tal como o recebes."
               class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] tabular-nums outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
               style="border-radius: var(--radius-btn);"
             />
             <span
               class="mt-1.5 font-mono text-[10px] text-[var(--color-text-faint)] uppercase tracking-[0.12em] leading-relaxed"
             >
-              Valor líquido, somado ao Lucro Real.<br />
-              <span class="normal-case tracking-normal text-[10.5px]">
-                Isento de IVA (art. 9.º, 27.º, a) CIVA) — entra como rendimento para efeitos de IRC.
-              </span>
+              Introduza o valor após deduzir o IVA aplicável. É este valor que entra no lucro real.
             </span>
           </label>
         </div>
@@ -787,9 +784,9 @@
                 <input
                   name="tradeIn.year"
                   required
-                  type="number"
-                  min="1950"
-                  max={new Date().getFullYear() + 1}
+                  type="text"
+                  use:numericField={{ min: 1950, max: new Date().getFullYear() + 1 }}
+                  inputmode="numeric"
                   bind:value={tradeInYear}
                   placeholder="2015"
                   class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
@@ -826,11 +823,10 @@
                 </span>
                 <input
                   name="tradeIn.mileage"
-                  max="2000000"
-                  step="1"
                   required
-                  type="number"
-                  min="0"
+                  type="text"
+                  use:numericField={{ max: 2000000, min: 0 }}
+                  inputmode="numeric"
                   bind:value={tradeInMileage}
                   placeholder="120000"
                   class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] tabular-nums outline-none focus:border-[var(--color-red)] transition-colors"
@@ -905,9 +901,9 @@
                 <input
                   name="tradeIn.allowanceValue"
                   required
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  use:numericField={{ min: 0 }}
+                  inputmode="decimal"
                   bind:value={tradeInAllowance}
                   placeholder="4000.00"
                   class="h-11 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] tabular-nums outline-none focus:border-[var(--color-red)] focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-red)_12%,transparent)] transition-colors"
@@ -1048,7 +1044,7 @@
               <div
                 class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
               >
-                + Comissão extra
+                + Comissão líquida
               </div>
               <div
                 class="font-display text-[18px] font-bold italic tabular-nums text-[var(--color-success)]"

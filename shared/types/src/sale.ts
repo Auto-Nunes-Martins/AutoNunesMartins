@@ -43,6 +43,11 @@ export const tradeInCreateSchema = z
   });
 export type TradeInCreate = z.infer<typeof tradeInCreateSchema>;
 
+export const saleCommissionSchema = moneySchema.refine(
+  (value) => Number(value) >= 0 && Number(value) <= 9999999999.99,
+  'A comissão deve ser entre 0 e 9 999 999 999,99 €.',
+);
+
 export const saleCreateSchema = z.object({
   vehicleId: z.string().min(1),
   customerId: z.string().min(1),
@@ -56,7 +61,7 @@ export const saleCreateSchema = z.object({
    * through them. Optional; defaults to "0" so existing callers keep
    * working without change.
    */
-  commission: moneySchema.optional().default('0'),
+  commission: saleCommissionSchema.optional().default('0'),
   /**
    * Tax regime selector. PARTICULAR (default) applies the 23/123 margin
    * scheme; COMERCIANTE marks a B2B sale with no VAT discriminated by

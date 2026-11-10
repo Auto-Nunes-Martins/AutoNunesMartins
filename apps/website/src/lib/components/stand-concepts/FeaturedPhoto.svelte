@@ -75,8 +75,8 @@
     );
     if (!previous) return;
     const fade = previous.animate([{ opacity: 1 }, { opacity: 0 }], {
-      duration: 160,
-      easing: 'ease-out',
+      duration: 320,
+      easing: 'ease-in-out',
       fill: 'forwards',
     });
     crossfade = fade;

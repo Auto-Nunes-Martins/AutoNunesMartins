@@ -26,6 +26,7 @@ export async function recomputeSaleIfExists(
   tx: Prisma.TransactionClient,
   vehicleId: string,
   correctedSalePrice?: string,
+  correctedCommission?: string,
 ): Promise<boolean> {
   const sale = await tx.sale.findUnique({ where: { vehicleId } });
   if (!sale) return false;
@@ -38,13 +39,14 @@ export async function recomputeSaleIfExists(
     salePrice: correctedSalePrice ?? sale.salePrice.toString(),
     purchasePrice: vehicle.purchasePrice.toString(),
     expensesTotal: await sumVehicleExpenses(tx, vehicleId),
-    commission: sale.commission.toString(),
+    commission: correctedCommission ?? sale.commission.toString(),
     buyerType: sale.buyerType,
   });
   await tx.sale.update({
     where: { id: sale.id },
     data: {
       ...(correctedSalePrice !== undefined ? { salePrice: new Decimal(correctedSalePrice) } : {}),
+      ...(correctedCommission !== undefined ? { commission: figures.commission } : {}),
       vatAmount: figures.vatAmount,
       realProfit: figures.realProfit,
     },

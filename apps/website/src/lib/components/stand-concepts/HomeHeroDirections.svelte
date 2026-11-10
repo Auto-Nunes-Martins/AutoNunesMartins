@@ -57,6 +57,9 @@
       : homeHighlights,
   );
   const items = $derived(highlights?.items ?? []);
+  const prices = $derived(
+    items.filter((item) => item.vehicle.price !== null).map((item) => publicPrice(item.vehicle.price)),
+  );
   $effect(() => {
     const request = homeHighlights;
     if (!(request instanceof Promise)) return;
@@ -447,7 +450,11 @@
           <div class="hd-price-motion">
             <div class="hd-idle-plane">
               <strong
-                ><FeaturedPriceWave value={publicPrice(car.price)} vehicle={car.slug} /></strong
+                ><FeaturedPriceWave
+                  value={publicPrice(car.price)}
+                  {prices}
+                  vehicle={car.slug}
+                /></strong
               >
             </div>
           </div>
@@ -470,7 +477,7 @@
                 onclick={() => select(position)}
                 onkeydown={keyboard}
               >
-                <span class:hd-current={position === displayedIndex} aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
               </button>
             {/each}
           </div>

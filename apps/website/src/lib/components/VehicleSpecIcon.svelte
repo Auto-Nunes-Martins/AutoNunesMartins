@@ -7,29 +7,30 @@
 </script>
 
 {#if logo && failedLogo !== logo}
-  <img
-    class="spec-brand-logo"
-    src={logo}
-    alt=""
-    aria-hidden="true"
-    width="20"
-    height="20"
-    onerror={() => (failedLogo = logo)}
-  />
+  <span class="spec-brand-tint" style:--spec-brand-mask={`url("${logo}")`} aria-hidden="true">
+    <img
+      class="spec-brand-logo"
+      src={logo}
+      alt=""
+      width="20"
+      height="20"
+      onerror={() => (failedLogo = logo)}
+    />
+  </span>
 {:else}
   <VehicleSpecGlyph {label} />
 {/if}
 
 <style>
-  .spec-brand-logo {
-    display: inline-block;
+  .spec-brand-tint {
+    display: inline-flex;
     width: 20px;
     height: 20px;
-    object-fit: contain;
-    filter: grayscale(1);
     flex-shrink: 0;
+    background-color: currentColor;
+    mask: var(--spec-brand-mask) center / contain no-repeat;
   }
-  :global(:where(html)[data-theme='dark']) .spec-brand-logo {
-    filter: grayscale(1) invert(1);
+  .spec-brand-logo {
+    opacity: 0;
   }
 </style>

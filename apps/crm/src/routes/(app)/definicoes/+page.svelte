@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import { enhance } from '$lib/auth/enhance';
   import { toast } from 'svelte-sonner';
   import { Moon, Palette, Settings as SettingsIcon, Sun } from 'lucide-svelte';
@@ -128,10 +129,9 @@
                 <input
                   id={`set-${setting.key}`}
                   name="value"
-                  type="number"
-                  min="1"
-                  max="365"
-                  step="1"
+                  type="text"
+                  use:numericField={{ min: 1, max: 365 }}
+                  inputmode="numeric"
                   required
                   value={setting.value}
                   class="h-10 w-28 px-3 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] tabular-nums outline-none focus:border-[var(--color-red)]"

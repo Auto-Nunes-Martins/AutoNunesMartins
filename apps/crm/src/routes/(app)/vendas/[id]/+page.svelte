@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
@@ -46,7 +47,7 @@
   const t = $derived(s.tradeIn);
   // True when this sale captured a manual extra commission (e.g. financing
   // referral). Drives the optional commission column in the profit summary.
-  const hasCommission = $derived(Number(s.commission ?? '0') > 0);
+  const hasCommission = $derived(Number(s.commission ?? '0') !== 0);
   // Localized labels for the trade-in fuel chip — mirrors the vehicle
   // detail page's mapping so the wording stays consistent.
   const FUEL_LABELS: Record<string, string> = {
@@ -63,6 +64,7 @@
   const isComerciante = $derived(s.buyerType === 'COMERCIANTE');
 
   let updatingDelivery = $state(false);
+  let updatingCommission = $state(false);
   let resolutionOpen = $state(false);
 
   function relativeTime(iso: string): string {
@@ -198,7 +200,7 @@
           <div
             class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
           >
-            Comissão
+            Comissão líquida
           </div>
           <div class="num-value text-[20px] text-[var(--color-success)]">
             + {formatEUR(s.commission)}
@@ -432,6 +434,61 @@
   <!-- Delivery management -->
 
   {#if !s.cancelledAt}
+    <Panel>
+      <PanelHeader icon={CircleDollarSign} title="Comissão de financiamento" />
+      <form
+        method="POST"
+        action="?/commission"
+        use:enhance={() => {
+          updatingCommission = true;
+          return async ({ update }) => {
+            try {
+              await update({ reset: false });
+            } finally {
+              updatingCommission = false;
+            }
+          };
+        }}
+        class="p-5 space-y-3"
+      >
+        <div class="flex flex-wrap items-end gap-3">
+          <label class="flex flex-1 min-w-0 flex-col gap-1.5">
+            <span class="text-[13px] text-[var(--color-text-muted)]"
+              >Valor líquido (€) · opcional</span
+            >
+            <input
+              name="commission"
+              type="text"
+              use:numericField={{ min: 0, max: 9999999999.99 }}
+              inputmode="decimal"
+              value={form && 'commissionInput' in form
+                ? form.commissionInput
+                : Number(s.commission)
+                  ? s.commission
+                  : ''}
+              aria-describedby="commission-help"
+              aria-invalid={form?.commissionError ? 'true' : undefined}
+              class="h-11 w-full min-w-0 px-3 rounded-xs bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] tabular-nums"
+            />
+          </label>
+          <Button type="submit" variant="primary" loading={updatingCommission}>
+            Guardar comissão
+          </Button>
+        </div>
+        <p id="commission-help" class="text-[12px] text-[var(--color-text-muted)]">
+          Introduza o valor após deduzir o IVA aplicável. É este valor que entra no lucro real.
+          Deixe em branco para retirar a comissão.
+        </p>
+        {#if form?.commissionError}<p role="alert" class="text-[13px] text-[var(--color-danger)]">
+            {form.commissionError}
+          </p>{:else if form?.commissionSaved}<p
+            role="status"
+            class="text-[13px] text-[var(--color-success)]"
+          >
+            Comissão guardada.
+          </p>{/if}
+      </form>
+    </Panel>
     <Panel>
       <PanelHeader icon={Calendar} title="Entrega" />
       <form

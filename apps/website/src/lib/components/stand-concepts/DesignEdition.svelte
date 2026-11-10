@@ -178,7 +178,10 @@
     homeHighlights?: PublicHighlights | Promise<PublicHighlights>;
     reviews?: PublicReview[];
     routeContent?: Snippet<
-      [{ card: Snippet<[PublicCard | null, number]>; contact: (message?: string) => Promise<void> }]
+      [{
+        card: Snippet<[PublicCard | null, number]>;
+        contact: (message?: string, opener?: EventTarget | null) => Promise<void>;
+      }]
     >;
     galleryRuntime?: VehicleDetailRuntime;
   } = $props();
@@ -324,7 +327,10 @@
   let saved = $state<string[]>([]);
   let navOpen = $state(false);
   let contactDialog: HTMLDialogElement;
-  let contactName = $state<HTMLInputElement>();
+  let contactName: HTMLInputElement;
+  let contactClose: HTMLButtonElement;
+  let contactOpener: HTMLElement | undefined;
+  let highlightContactName = $state(false);
   let galleryDialog: HTMLDialogElement;
   let galleryOpener: HTMLElement | undefined;
   let preparingViewer = false;
@@ -471,15 +477,39 @@
       localStorage.setItem('anm-design-saved', JSON.stringify(saved));
     } catch {}
   }
-  async function contact(message?: string) {
+  async function contact(message?: string, opener?: EventTarget | null) {
+    if (contactDialog.open) return;
+    contactOpener = opener instanceof HTMLElement ? opener : undefined;
     if (submission.state.phase === 'success') submission.reset();
     if (submission.state.phase === 'idle')
       reason =
         message ||
         (car ? `Gostava de conhecer o ${car.brand} ${car.model}.` : 'Gostava de saber mais.');
+    const touchLayout = window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
+    highlightContactName = touchLayout;
     await tick();
+    // Native showModal focuses an autofocus target before returning.
+    contactClose.autofocus = touchLayout;
+    contactName.autofocus = !touchLayout;
     contactDialog.showModal();
-    contactName?.focus({ preventScroll: true });
+    (touchLayout ? contactClose : contactName).focus({ preventScroll: true });
+  }
+  function restoreContactFocus() {
+    if (contactDialog.open) return;
+    highlightContactName = false;
+    const opener = contactOpener;
+    contactOpener = undefined;
+    if (opener?.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true });
+  }
+  function galleryReturnTarget() {
+    if (
+      galleryOpener?.isConnected &&
+      galleryOpener !== document.body &&
+      !galleryOpener.closest('[inert]')
+    ) return galleryOpener;
+    const root = galleryDialog.closest('.design');
+    return root?.querySelector<HTMLElement>('.photo-expand') ??
+      root?.querySelector<HTMLElement>('.vehicle-photo .photo-rail-slide:not([inert]) button');
   }
   let contactPointerStartedOutside = false;
   function outsideContact(event: MouseEvent | PointerEvent) {
@@ -897,8 +927,11 @@
                     drag={mainPhotoDrag}
                     instant={galleryOpen}
                     onOpen={openGallery}
-                    onContact={() =>
-                      contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`)}
+                    onContact={(event) =>
+                      contact(
+                        `Gostava de saber mais sobre o ${car.brand} ${car.model}.`,
+                        event.currentTarget,
+                      )}
                     onLoading={(loading) => (mainPhotoLoading = loading)}
                   />
                   <span class="photo-counter" aria-hidden={isContactSlide}
@@ -1121,7 +1154,8 @@
           </div>
           <button
             class="trade-in-contact"
-            onclick={() => contact('Gostava de apresentar a minha viatura para retoma.')}
+            onclick={(event) =>
+              contact('Gostava de apresentar a minha viatura para retoma.', event.currentTarget)}
           >
             <span
               ><strong>Tem uma viatura para retoma?</strong><small
@@ -1129,7 +1163,7 @@
               ></span
             ><ArrowUpRight size={18} aria-hidden="true" />
           </button>
-          <button class="pill primary" onclick={() => contact()}
+          <button class="pill primary" onclick={(event) => contact(undefined, event.currentTarget)}
             >Quero conhecer <ArrowUpRight size={18} aria-hidden="true" /></button
           >
           {#if standContact.phone}<div class="purchase-phone-alternative">
@@ -1206,7 +1240,7 @@
             <div>
               <p class="kicker">A ESCOLHA É SUA.</p>
               <h2>O caminho<br />também.</h2>
-              <button class="pill" onclick={() => contact()}
+              <button class="pill" onclick={(event) => contact(undefined, event.currentTarget)}
                 >Vamos falar <ArrowUpRight size={18} aria-hidden="true" /></button
               >
             </div>
@@ -1356,7 +1390,7 @@
             Acreditamos em informação clara e no tempo certo para decidir. Descubra a seleção,
             conheça os detalhes e fale connosco sobre aquilo que procura.
           </p>
-          <button class="conversation-pill" onclick={() => contact()}
+          <button class="conversation-pill" onclick={(event) => contact(undefined, event.currentTarget)}
             >Vamos conhecer-nos <ArrowUpRight size={18} aria-hidden="true" /></button
           >
           <div class="about-signature">
@@ -1392,7 +1426,7 @@
             <span>{service[0]}<ArrowUpRight size={22} aria-hidden="true" /></span>
             <h3>{service[1]}</h3>
             <p>{service[2]}</p>
-            <button onclick={() => contact(service[3])}
+            <button onclick={(event) => contact(service[3], event.currentTarget)}
               ><span class="service-cta-label">Vamos conversar</span><ArrowUpRight
                 size={15}
                 aria-hidden="true"
@@ -1435,13 +1469,14 @@
     />
   {/if}
 
-  <OrbitPageEnding onContact={() => contact()} />
+  <OrbitPageEnding onContact={(event) => contact(undefined, event.currentTarget)} />
 
   <dialog
     bind:this={contactDialog}
     class="contact-dialog"
     aria-labelledby="contact-heading"
     onkeydown={contactKeydown}
+    onclose={restoreContactFocus}
     onpointerdown={(event) => {
       contactPointerStartedOutside = outsideContact(event);
     }}
@@ -1451,17 +1486,27 @@
     onclick={contactBackdropClick}
   >
     <button
+      bind:this={contactClose}
       class="dialog-close icon-button"
       onclick={() => contactDialog.close()}
       aria-label="Fechar"><X size={22} aria-hidden="true" /></button
     >
     <p class="kicker">VAMOS CONVERSAR</p>
     <h2 id="contact-heading">O que tem<br />em mente?</h2>
-    <form use:submission.enhance aria-busy={sending}>
+    <form
+      use:submission.enhance
+      aria-busy={sending}
+      onfocusin={(event) => {
+        if (event.target instanceof Element && event.target.matches('input, select, textarea')) {
+          highlightContactName = false;
+        }
+      }}
+    >
       <ContactFeedback {submission} />
       <label
         >Nome<input
           bind:this={contactName}
+          class:contact-first-field={highlightContactName}
           required
           name="name"
           maxlength="120"
@@ -1520,15 +1565,7 @@
       window.scrollTo({ left: galleryScroll.x, top: galleryScroll.y, behavior: 'instant' });
       // Visiting the contact slide can replace the original inline opener.
       if (!document.querySelector('dialog[open]')) {
-        const root = galleryDialog.closest('.design');
-        const opener =
-          galleryOpener?.isConnected && !galleryOpener.closest('[inert]')
-            ? galleryOpener
-            : (root?.querySelector<HTMLElement>('.photo-expand') ??
-              root?.querySelector<HTMLElement>(
-                '.vehicle-photo .photo-rail-slide:not([inert]) button',
-              ));
-        opener?.focus({ preventScroll: true });
+        galleryReturnTarget()?.focus({ preventScroll: true });
       }
     }}
     class="gallery-dialog"
@@ -1578,8 +1615,9 @@
             drag={viewerPhotoDrag}
             fullscreen
             onContact={() => {
+              const opener = galleryReturnTarget();
               galleryDialog.close();
-              contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`);
+              contact(`Gostava de saber mais sobre o ${car.brand} ${car.model}.`, opener);
             }}
           />
         {:else}<img
@@ -3142,6 +3180,9 @@
   }
   .contact-dialog textarea {
     resize: vertical;
+  }
+  .contact-dialog input.contact-first-field:not(:focus) {
+    border-color: color-mix(in srgb, var(--line) 65%, var(--text));
   }
   .contact-dialog input:focus-visible,
   .contact-dialog select:focus-visible,

@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ preview: vi.fn(), cancel: vi.fn() }));
+const mocks = vi.hoisted(() => ({ preview: vi.fn(), cancel: vi.fn(), commission: vi.fn() }));
 vi.mock('$lib/server/sales', () => ({
-  salesApi: { previewCancellation: mocks.preview, cancel: mocks.cancel },
+  salesApi: {
+    previewCancellation: mocks.preview,
+    cancel: mocks.cancel,
+    updateCommission: mocks.commission,
+  },
 }));
 vi.mock('$lib/server/activity', () => ({ activityApi: {} }));
 vi.mock('$lib/server/api', () => ({
@@ -26,6 +30,26 @@ const event = (fields: Record<string, string | undefined>) => {
 const reason = 'Cliente desistiu';
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+describe('CRM commission form action', () => {
+  it.each([
+    ['123.45', '123.45'],
+    ['', '0'],
+  ])('submits %j as %j', async (input, expected) => {
+    mocks.commission.mockResolvedValue({ ok: true });
+    expect(await actions.commission!(event({ commission: input }))).toEqual({
+      commissionSaved: true,
+    });
+    expect(mocks.commission).toHaveBeenCalledWith(expect.anything(), 'sale', expected);
+  });
+
+  it('rejects missing or invalid values instead of clearing the existing amount', async () => {
+    for (const commission of [undefined, '-1', '1.234', '10000000000']) {
+      expect(await actions.commission!(event({ commission }))).toMatchObject({ status: 400 });
+    }
+    expect(mocks.commission).not.toHaveBeenCalled();
+  });
 });
 
 describe('CRM cancellation form actions', () => {

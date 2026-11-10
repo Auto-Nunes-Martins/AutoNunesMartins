@@ -20,18 +20,25 @@
   <Panel>
     {#each data.list.items as sale (sale.id)}
       <a
-        class="block p-5 border-b border-[var(--color-border)] hover:bg-[var(--color-bg-2)]"
+        class="flex items-center justify-between gap-2 px-3 py-2.5 md:p-5 border-b border-[var(--color-border)] hover:bg-[var(--color-bg-2)]"
         href={crmPath(`/vendas/${sale.id}`)}
       >
-        <span class="font-semibold"
-          >{sale.vehicle.brand}
-          {sale.vehicle.model} · {sale.vehicle.licensePlate ?? sale.vehicle.vin}</span
-        >
-        <p class="mt-2 text-[12px] leading-relaxed text-[var(--color-text-muted)]">
-          {sale.customer.name} · Venda registada em {formatDate(sale.saleDate)} · Valor histórico: {formatEUR(
-            sale.salePrice,
-          )} · Anulada
-        </p>
+        <div class="min-w-0">
+          <div class="truncate text-[14px] font-semibold">
+            {sale.vehicle.brand}
+            {sale.vehicle.model}
+          </div>
+          <div class="truncate text-[11px] text-[var(--color-text-muted)]">
+            {sale.vehicle.licensePlate ?? sale.vehicle.vin ?? sale.vehicle.year} · {sale.customer
+              .name}
+          </div>
+        </div>
+        <div class="shrink-0 text-right">
+          <div class="num-value text-[13px]" title="Valor histórico">
+            {formatEUR(sale.salePrice)}
+          </div>
+          <div class="text-[11px] text-[var(--color-text-muted)]">{formatDate(sale.saleDate)}</div>
+        </div>
       </a>
     {:else}<EmptyState
         icon={Receipt}

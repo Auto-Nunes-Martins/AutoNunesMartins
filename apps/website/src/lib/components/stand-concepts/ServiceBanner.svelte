@@ -17,7 +17,7 @@
     id = 'propostas-servicos',
     titleId = 'home-services-title',
   }: {
-    onContact: (message?: string) => void;
+    onContact: (message: string, opener?: EventTarget | null) => void;
     id?: string;
     titleId?: string;
   } = $props();
@@ -98,7 +98,8 @@
         <p class="brand-note">Conte com a nossa equipa antes e depois da compra.</p>
         <button
           class="brand-contact"
-          onclick={() => onContact('Gostava de saber mais sobre os vossos serviços.')}
+          onclick={(event) =>
+            onContact('Gostava de saber mais sobre os vossos serviços.', event.currentTarget)}
         >
           Vamos conversar <ArrowUpRight size={18} aria-hidden="true" />
         </button>
@@ -112,9 +113,10 @@
           {#each services as service}
             <button
               class="service-row"
-              onclick={() =>
+              onclick={(event) =>
                 onContact(
                   `Gostava de saber mais sobre ${service.title.toLocaleLowerCase('pt-PT')}.`,
+                  event.currentTarget,
                 )}
             >
               <span class="service-icon"

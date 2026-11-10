@@ -841,6 +841,11 @@
       box-shadow 0.28s var(--ease-brand);
     cursor: pointer;
   }
+  @media (max-width: 767px) {
+    .qt-bubble {
+      display: none;
+    }
+  }
   /*
     Restrict hover/focus styles to devices that can actually hover (desktop
     mice & trackpads). Without this guard, iOS Safari and some Android

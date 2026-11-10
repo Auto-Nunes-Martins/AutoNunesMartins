@@ -7,7 +7,7 @@
   import TeamContacts from './TeamContacts.svelte';
   import { entrance } from './designMotion';
   import OrbitPerspective from './OrbitPerspective.svelte';
-  let { onContact }: { onContact: () => void } = $props();
+  let { onContact }: { onContact: (event: MouseEvent) => void } = $props();
 </script>
 
 <SocialMetadata

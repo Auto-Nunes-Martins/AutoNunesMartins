@@ -14,7 +14,7 @@
     showContacts?: boolean;
     compact?: boolean;
     contactHref?: string;
-    onContact?: () => void;
+    onContact?: (event: MouseEvent) => void;
   } = $props();
 </script>
 

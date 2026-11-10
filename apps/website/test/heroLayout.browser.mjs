@@ -7,12 +7,14 @@ import { spawn } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
 import sharp from 'sharp';
 import { progressiveHero } from './progressiveHero.mjs';
+import { publicMotionCheck } from './publicMotionCheck.mjs';
 
 const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
+const interactions = process.argv.includes('--interactions');
 const output = path.join(
   site,
   '.svelte-kit',
@@ -24,18 +26,27 @@ const photo = await sharp({
 })
   .png()
   .toBuffer();
+const nextPhoto = interactions
+  ? await sharp({ create: { width: 1600, height: 1067, channels: 3, background: '#846052' } })
+      .png()
+      .toBuffer()
+  : photo;
 const vehicles = ['One', 'Countryman Cooper D ALL4 Automatic'].map((model, n) => ({
   slug: `hero-check-${String(n).padStart(12, 'a')}`,
   brand: n ? 'MINI' : 'BMW',
   model,
-  year: 2021,
-  fuel: 'DIESEL',
-  mileage: 40000,
-  price: '23500.00',
+  year: interactions && n ? 2017 : 2021,
+  fuel: interactions && n ? 'PLUGIN_HYBRID' : 'DIESEL',
+  mileage: interactions && n ? 187250 : 40000,
+  price: interactions && n ? '24900.00' : interactions ? '9500.00' : '23500.00',
   currency: 'EUR',
-  description: 'Local layout regression fixture.',
+  description: interactions
+    ? '<!--anm:rich-description:v1-->' +
+      '<p>Histórico, manutenção e equipamento da viatura em exposição.</p>'.repeat(24) +
+      '<p><a href="https://example.test/vehicle">Ver ficha técnica</a></p>'
+    : 'Local layout regression fixture.',
   transmission: 'AUTOMATIC',
-  availability: 'AVAILABLE',
+  availability: interactions && n ? 'RESERVED' : 'AVAILABLE',
   photos: [
     `/api/public/vehicles/hero-check-${String(n).padStart(12, 'a')}/photos/0?v=${String(n + 1).repeat(64)}`,
   ],
@@ -44,7 +55,7 @@ const backend = createServer((request, response) => {
   const url = new URL(request.url, 'http://fixture');
   if (url.pathname.includes('/photos/')) {
     response.setHeader('content-type', 'image/png');
-    response.end(photo);
+    response.end(url.pathname.includes('hero-check-aaaaaaaaaaa1') ? nextPhoto : photo);
     return;
   }
   let data;
@@ -52,6 +63,9 @@ const backend = createServer((request, response) => {
     data = { configured: true, items: vehicles.map((vehicle) => ({ vehicle, photoIndex: 0 })) };
   else if (url.pathname.endsWith('/brands')) data = [];
   else if (url.pathname.endsWith('/reviews')) data = { items: [] };
+  else if (url.pathname.endsWith('/related')) data = [];
+  else if (vehicles.some((vehicle) => url.pathname.endsWith('/' + vehicle.slug)))
+    data = vehicles.find((vehicle) => url.pathname.endsWith('/' + vehicle.slug));
   else
     data = {
       items: vehicles,
@@ -108,23 +122,29 @@ try {
     if (attempt > 80 || server.exitCode !== null) throw new Error(logs);
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  browser = await chromium.launch({
-    channel: process.env.BROWSER_CHANNEL || 'chrome',
-    headless: true,
-  });
+  browser = process.argv.includes('--webkit')
+    ? await webkit.launch()
+    : await chromium.launch({ channel: process.env.BROWSER_CHANNEL || 'chrome', headless: true });
+  if (interactions) await publicMotionCheck(browser, origin, vehicles[0].slug);
   if (streaming) progressive = await progressiveHero(origin);
-  const profiles = streaming
-    ? [
-        ...[1440, 390].flatMap((width) =>
-          [0, 650].map((cssDelay) => ({ width, cssDelay, split: 'hero' })),
-        ),
-        { width: 390, cssDelay: 0, split: 'stats' },
-      ]
-    : [1440, 390].flatMap((width) =>
-        [0, 650].flatMap((fontDelay) =>
-          ['no-preference', 'reduce'].map((reducedMotion) => ({ width, fontDelay, reducedMotion })),
-        ),
-      );
+  const profiles = interactions
+    ? []
+    : streaming
+      ? [
+          ...[1440, 390].flatMap((width) =>
+            [0, 650].map((cssDelay) => ({ width, cssDelay, split: 'hero' })),
+          ),
+          { width: 390, cssDelay: 0, split: 'stats' },
+        ]
+      : [1440, 390].flatMap((width) =>
+          [0, 650].flatMap((fontDelay) =>
+            ['no-preference', 'reduce'].map((reducedMotion) => ({
+              width,
+              fontDelay,
+              reducedMotion,
+            })),
+          ),
+        );
   for (const profile of profiles) {
     const { width, fontDelay = 0, reducedMotion = 'no-preference' } = profile;
     progressive?.configure({ ...profile, tailDelay: 1200 });
@@ -347,7 +367,7 @@ try {
       await context.close();
     }
   }
-  console.log(`${results.length} profiles passed; evidence: ${output}`);
+  if (!interactions) console.log(`${results.length} profiles passed; evidence: ${output}`);
 } finally {
   await browser?.close();
   await progressive?.close();

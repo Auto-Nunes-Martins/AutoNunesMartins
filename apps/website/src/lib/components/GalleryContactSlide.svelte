@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowUpRight, Phone } from 'lucide-svelte';
   import { standContact } from './stand-concepts/standContact';
-  let { onContact }: { onContact: () => void } = $props();
+  let { onContact }: { onContact: (event: MouseEvent) => void } = $props();
 </script>
 
 <div class="gallery-contact-slide">

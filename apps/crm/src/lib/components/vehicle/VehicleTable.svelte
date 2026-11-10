@@ -61,113 +61,59 @@
   }
 </script>
 
-{#snippet rowActions(v: VehicleListItem)}
+{#snippet rowActions(v: VehicleListItem, compact = false)}
   <RowActions
     label={`${v.brand} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`}
     editHref={v.status === 'DRAFT' ? destination(v) : crmPath(`/viaturas/${v.id}/editar`)}
     actions={actionsFor(v)}
+    {compact}
   />
 {/snippet}
 
-<!--
-  Mobile (< md): stacked card list. Each card carries the same info as a
-  table row but laid out vertically so it stays readable on a phone without
-  horizontal scrolling.
--->
 <div class="md:hidden divide-y divide-[var(--color-border)]">
   {#each items as v (v.id)}
-    <article use:linkedRow class="linked-row">
-      <a
-        href={destination(v)}
-        class="row-link block px-4 py-3 hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="h-[60px] w-20 flex items-center justify-center bg-[var(--color-bg-2)] border border-[var(--color-border)] flex-shrink-0 overflow-hidden"
-            style="border-radius: 3px;"
-          >
-            {#if v.thumbnailUrl}
-              <img
-                src={v.thumbnailUrl}
-                use:photoFallback={v.thumbnailOriginalUrl ?? v.thumbnailUrl}
-                alt={`${v.brand} ${v.model}`}
-                class="h-full w-full object-cover"
-                loading="lazy"
-              />
-            {:else}
-              <Car class="h-5 w-5 text-[var(--color-red)]" />
-            {/if}
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-2">
-              <div
-                class="vehicle-name font-display font-semibold text-[14px] group-hover:text-[var(--color-red)] transition-colors"
-              >
-                <BrandLogo name={v.brand} size={16} /><span class="min-w-0 line-clamp-2 break-words"
-                  >{v.brand} {v.model}</span
-                >
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
-              </div>
-            </div>
-            <!-- Prefer the user-facing license plate on mobile cards; fall back to VIN if it has not been registered. -->
-            <div
-              class="font-mono text-[10px] tracking-[0.04em] text-[var(--color-text-faint)] truncate mt-0.5"
-            >
-              {#if v.licensePlate}
-                <span class="tracking-[0.18em] text-[var(--color-text-muted)]"
-                  >{v.licensePlate}</span
-                >
-                <span class="mx-1">·</span>VIN {v.vin}
-              {:else}
-                VIN {v.vin}
-              {/if}
-            </div>
-          </div>
+    <article use:linkedRow class="linked-row flex items-center gap-1 px-2">
+      <a href={destination(v)} class="row-link flex min-w-0 flex-1 items-center gap-2 py-2.5 group">
+        <div
+          class="h-11 w-14 shrink-0 flex items-center justify-center overflow-hidden rounded-xs bg-[var(--color-bg-2)]"
+        >
+          {#if v.thumbnailUrl}
+            <img
+              src={v.thumbnailUrl}
+              use:photoFallback={v.thumbnailOriginalUrl ?? v.thumbnailUrl}
+              alt=""
+              class="h-full w-full object-cover"
+              loading="lazy"
+            />
+          {:else}
+            <Car class="h-5 w-5 text-[var(--color-red)]" />
+          {/if}
         </div>
-        <!-- Compact 2×2 specs grid below the row. Mono labels + tabular
-           values keep the brand DNA on the mobile card form. -->
-        <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px]">
-          <div>
-            <div
-              class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
-            >
-              Ano
-            </div>
-            <div class="num-value text-[13px] mt-0.5">{v.year}</div>
-          </div>
-          <div>
-            <div
-              class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
-            >
-              Km
-            </div>
-            <div class="num-value text-[13px] mt-0.5">{v.mileage == null ? '' : formatInt(v.mileage)}</div>
-          </div>
-          <div>
-            <div
-              class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
-            >
-              Aquisição
-            </div>
-            <div class="num-value text-[12px] text-[var(--color-text-muted)] mt-0.5">
-              {formatDate(v.acquisitionDate)}
-            </div>
-          </div>
-          <div>
-            <div
-              class="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]"
-            >
-              PVP
-            </div>
-            <div class="num-value text-[13px] text-[var(--color-text)] mt-0.5">
-              {v.salePrice ? formatEUR(v.salePrice) : '—'}
-            </div>
+        <div class="min-w-0 flex-1 space-y-0.5">
+          <span
+            class="block truncate text-[14px] font-semibold group-hover:text-[var(--color-red)]"
+            title={v.brand + ' ' + v.model}
+          >
+            {v.brand}
+            {v.model}
+          </span>
+          <span
+            class="block truncate text-[11px] text-[var(--color-text-muted)]"
+            title={v.licensePlate ?? v.vin ?? undefined}
+          >
+            {#if v.licensePlate || v.vin}{v.licensePlate ?? v.vin} ·
+            {/if}{v.year}{#if v.mileage != null}
+              · {formatInt(v.mileage)} km{/if}
+          </span>
+          <div class="mobile-vehicle-tags flex flex-wrap items-center gap-x-2 gap-y-1">
+            {#if v.salePrice}<span class="num-value text-[12px]" title="PVP"
+                >{formatEUR(v.salePrice)}</span
+              >{/if}
+            <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
           </div>
         </div>
       </a>
-      <div class="px-4 pb-3">{@render rowActions(v)}</div>
+      {@render rowActions(v, true)}
     </article>
   {/each}
 </div>
@@ -307,6 +253,11 @@
   />{/if}
 
 <style>
+  .mobile-vehicle-tags :global(.vehicle-state-chip) {
+    --state-tag-height: 22px;
+    --state-tag-padding: 2px 5px;
+    --state-tag-size: 10px;
+  }
   .vehicle-name {
     display: flex;
     align-items: center;

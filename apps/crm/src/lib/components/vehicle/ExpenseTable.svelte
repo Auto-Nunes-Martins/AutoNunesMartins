@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import '$lib/styles/expenseCards.css';
   import { enhance } from '$lib/auth/enhance';
@@ -147,9 +148,9 @@
         <input
           name="amount"
           required
-          type="number"
-          step="0.01"
-          min="0"
+          type="text"
+          use:numericField={{ min: 0 }}
+          inputmode="decimal"
           placeholder="120.00"
           class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)]"
           style="border-radius: var(--radius-btn);"
@@ -312,9 +313,9 @@
                       <input
                         name="amount"
                         required
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        use:numericField={{ min: 0 }}
+                        inputmode="decimal"
                         value={e.amount}
                         class="h-10 px-2 bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[13px] tabular-nums outline-none focus:border-[var(--color-red)]"
                         style="border-radius: var(--radius-btn);"

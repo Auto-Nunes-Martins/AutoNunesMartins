@@ -13,9 +13,13 @@
   } from './searchNavigation';
   let {
     userKey = '',
-    autofocus = false,
+    onDismiss,
     recentHits = $bindable<SearchHit[]>([]),
-  }: { userKey?: string; autofocus?: boolean; recentHits?: SearchHit[] } = $props();
+  }: {
+    userKey?: string;
+    onDismiss?: () => void;
+    recentHits?: SearchHit[];
+  } = $props();
   type Payload = {
     vehicles: SearchHit[];
     customers: SearchHit[];
@@ -72,6 +76,16 @@
     activeIndex = -1;
     open = true;
     inputEl?.focus();
+  }
+  export function focus() {
+    inputEl?.focus({ preventScroll: true });
+    open = true;
+  }
+  export function reset() {
+    close();
+    query = '';
+    results = null;
+    error = '';
   }
   async function search(value: string) {
     const current = ++generation;
@@ -144,7 +158,8 @@
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
-      close();
+      if (onDismiss) onDismiss();
+      else close();
       return;
     }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -186,12 +201,11 @@
         ?.scrollIntoView({ block: 'nearest' });
   });
   onMount(() => {
-    if (autofocus) inputEl?.focus();
     const outside = (event: PointerEvent) => {
       if (!containerEl.contains(event.target as Node)) close();
     };
     const shortcut = (event: KeyboardEvent) => {
-      if (!inputEl?.getClientRects().length) return;
+      if (!inputEl?.getClientRects().length || inputEl.closest('[inert]')) return;
       const target = document.activeElement;
       if (
         ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') ||

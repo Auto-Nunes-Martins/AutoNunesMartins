@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { numericField } from '$lib/forms/numericField';
   import VehicleSpecGlyph from '../../../../../../shared/ui/VehicleSpecGlyph.svelte';
   let {
     form,
@@ -77,26 +78,30 @@
   </div>
   <div class="number-fields">
     <label
-      ><span class="spec-field-label"><VehicleSpecGlyph label="Potência" />Potência (cv)</span
+      ><span class="spec-field-label"
+        ><VehicleSpecGlyph label="Potência" /><span
+          >Potência <span class="spec-unit">(cv)</span></span
+        ></span
       ><input
         name="powerHp"
         {form}
-        type="number"
-        min="1"
-        max="3000"
-        step="1"
+        type="text"
+        use:numericField={{ min: 1, max: 3000 }}
+        inputmode="numeric"
         bind:value={specs.powerHp}
       /></label
     >
     <label
-      ><span class="spec-field-label"><VehicleSpecGlyph label="Cilindrada" />Cilindrada (cm³)</span
+      ><span class="spec-field-label"
+        ><VehicleSpecGlyph label="Cilindrada" /><span
+          >Cilindrada <span class="spec-unit">(cm³)</span></span
+        ></span
       ><input
         name="engineCc"
         {form}
-        type="number"
-        min="1"
-        max="20000"
-        step="1"
+        type="text"
+        use:numericField={{ min: 1, max: 20000 }}
+        inputmode="numeric"
         bind:value={specs.engineCc}
       /></label
     >
@@ -104,10 +109,9 @@
       ><span class="spec-field-label"><VehicleSpecGlyph label="Portas" />Portas</span><input
         name="doors"
         {form}
-        type="number"
-        min="1"
-        max="8"
-        step="1"
+        type="text"
+        use:numericField={{ min: 1, max: 8 }}
+        inputmode="numeric"
         bind:value={specs.doors}
       /></label
     >
@@ -115,10 +119,9 @@
       ><span class="spec-field-label"><VehicleSpecGlyph label="Lugares" />Lugares</span><input
         name="seats"
         {form}
-        type="number"
-        min="1"
-        max="20"
-        step="1"
+        type="text"
+        use:numericField={{ min: 1, max: 20 }}
+        inputmode="numeric"
         bind:value={specs.seats}
       /></label
     >
@@ -144,6 +147,10 @@
     gap: 8px;
     min-height: 20px;
   }
+  .spec-unit {
+    text-transform: none;
+    white-space: nowrap;
+  }
   .vehicle-characteristics {
     width: 100%;
     min-width: 0;
@@ -161,9 +168,12 @@
     margin-block: 16px;
   }
   .number-fields > label {
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    row-gap: 6px;
     min-width: 0;
     margin-bottom: 0;
-    align-content: start;
+    align-content: normal;
   }
   .number-fields input {
     min-width: 0;

@@ -21,6 +21,7 @@ afterEach(() => vi.unstubAllGlobals());
 function setup(state = 'ready') {
   vi.stubGlobal('window', undefined);
   let guard!: (navigation: any) => void;
+  let after!: (navigation: any) => void;
   const client = { session: { id: 'session-a' } };
   const refresh = vi.fn(async (_force: boolean) => 'valid-token'),
     go = vi.fn(async (_url: string, _options: unknown) => {}),
@@ -30,6 +31,7 @@ function setup(state = 'ready') {
     ...svelte,
     page: writable({ url: new URL('https://crm.test/dashboard') }),
     beforeNavigate: (callback: any) => (guard = callback),
+    afterNavigate: (callback: any) => (after = callback),
     goto: go,
     invalidate: vi.fn(),
     invalidateAll: vi.fn(),
@@ -42,7 +44,7 @@ function setup(state = 'ready') {
     refreshCrmSession: refresh,
   });
   render(component).body;
-  return { guard, refresh, go, defer, client };
+  return { guard, after, refresh, go, defer, client };
 }
 const navigation = (path = '/viaturas') => ({
   willUnload: false,
@@ -53,6 +55,22 @@ const navigation = (path = '/viaturas') => ({
 });
 const flush = () => new Promise<void>((done) => setImmediate(done));
 describe('CRM navigation session checks', () => {
+  it.each([
+    ['ready', false],
+    ['expired', true],
+  ])('checks the session (%s) after history navigation settles', async (state, force) => {
+    const test = setup(state);
+    const nav = { ...navigation(), type: 'popstate', delta: -1 };
+    test.guard(nav);
+    expect(nav.cancel).not.toHaveBeenCalled();
+    expect(test.defer).toHaveBeenLastCalledWith(false);
+    expect(test.refresh).not.toHaveBeenCalled();
+    test.after(nav);
+    await flush();
+    expect(test.refresh.mock.calls).toEqual([[force]]);
+    expect(test.go).not.toHaveBeenCalled();
+  });
+
   it('reuses a valid SDK token after idle and does not invalidate the entire shell', async () => {
     const test = setup();
     const nav = navigation();

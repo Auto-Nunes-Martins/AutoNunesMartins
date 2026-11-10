@@ -74,4 +74,17 @@ describe('trade-in sale form submission', () => {
     expect(mocks.create).toHaveBeenCalledOnce();
     expect(mocks.create.mock.calls[0]?.[1]?.tradeIn).toBeUndefined();
   });
+
+  it('sends the manually entered net commission and defaults an empty amount to zero', async () => {
+    await actions.submit!(event({ hasTradeIn: 'false', commission: '123.45' }));
+    expect(mocks.create).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ salePrice: '15000', commission: '123.45' }),
+    );
+    await actions.submit!(event({ hasTradeIn: 'false', commission: '' }));
+    expect(mocks.create).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ commission: '0' }),
+    );
+  });
 });

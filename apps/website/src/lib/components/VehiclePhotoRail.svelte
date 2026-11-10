@@ -27,7 +27,7 @@
     fullscreen?: boolean;
     instant?: boolean;
     onOpen?: () => void;
-    onContact: () => void;
+    onContact: (event: MouseEvent) => void;
     onLoading?: (loading: boolean) => void;
   } = $props();
   const sources = $derived(vehicle.photos.map((_, i) => sizedPhoto(publicPhoto(vehicle, i), 1600)));

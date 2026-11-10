@@ -293,6 +293,12 @@ export const salesApi = {
   get(event: Ev, id: string): Promise<SaleDetailResponse> {
     return apiJson(event, `/api/sales/${id}`);
   },
+  updateCommission(event: Ev, id: string, commission: string): Promise<{ ok: true }> {
+    return apiJson(event, `/api/sales/${id}/commission`, {
+      method: 'PATCH',
+      body: JSON.stringify({ commission }),
+    });
+  },
   updateDelivery(
     event: Ev,
     id: string,
