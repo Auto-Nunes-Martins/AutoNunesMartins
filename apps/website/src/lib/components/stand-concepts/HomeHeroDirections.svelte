@@ -58,7 +58,9 @@
   );
   const items = $derived(highlights?.items ?? []);
   const prices = $derived(
-    items.filter((item) => item.vehicle.price !== null).map((item) => publicPrice(item.vehicle.price)),
+    items
+      .filter((item) => item.vehicle.price !== null)
+      .map((item) => publicPrice(item.vehicle.price)),
   );
   $effect(() => {
     const request = homeHighlights;
@@ -74,6 +76,7 @@
   });
   let index = $state(0);
   let displayedIndex = $state(0);
+  let hasChangedVehicle = $state(false);
   let selection = $state(0);
   let automaticChange = $state(false);
   let failed = $state(false);
@@ -297,11 +300,60 @@
   </div>
 {/snippet}
 
+{#snippet featureLabel()}
+  <div class="hd-label-motion">
+    <div class="hd-idle-plane">
+      <span class="hd-eyebrow">
+        <svg class="hd-label-star" viewBox="0 0 14 14" aria-hidden="true" fill="currentColor">
+          <path d="m7 1 1.8 3.9 4.3.5L10 8.5l.8 4.5L7 10.8 3.2 13 4 8.5.9 5.4l4.3-.5Z" />
+        </svg>
+        <span class="hd-label-text">Em destaque</span>
+      </span>
+    </div>
+  </div>
+{/snippet}
+
+{#snippet caption(vehicle: PublicVehicle, sizing = false)}
+  <div class="hd-caption" class:hd-caption-sizing={sizing} inert={sizing}>
+    <div class="hd-identity">
+      <span class="hd-brand">{vehicle.brand}</span>
+      <h2>
+        <a href={publicHref(vehicle.slug)} data-photo-count={vehicle.photos.length}
+          >{vehicle.model}</a
+        >
+      </h2>
+      <p>
+        {vehicle.year} <span>·</span>
+        {publicMileage(vehicle.mileage)} <span>·</span>
+        {fuelLabels[vehicle.fuel]}
+      </p>
+    </div>
+    <div class="hd-price">
+      <div class:hd-price-motion={!sizing}>
+        <div class="hd-idle-plane">
+          <strong
+            ><FeaturedPriceWave
+              value={publicPrice(vehicle.price)}
+              {prices}
+              vehicle={sizing ? undefined : vehicle.slug}
+            /></strong
+          >
+        </div>
+      </div>
+      {#if vehicle.availability === 'RESERVED'}<span>Reservada</span>{/if}<a
+        href={publicHref(vehicle.slug)}
+        data-photo-count={vehicle.photos.length}
+        >Conhecer viatura <ArrowUpRight size={15} aria-hidden="true" /></a
+      >
+    </div>
+  </div>
+{/snippet}
+
 {#snippet vehicle()}
   {#if highlightsPending}
     <div class="hd-feature hd-skeleton" role="status" aria-label="A carregar viaturas em destaque">
       <div class="hd-feature-top" aria-hidden="true">
-        <div class="hd-label-motion"><span class="hd-eyebrow">Em destaque</span></div>
+        {@render featureLabel()}
       </div>
       <div class="hd-photo-stage" aria-hidden="true">
         <div class="hd-photo"></div>
@@ -325,9 +377,7 @@
   {:else if car}
     {#snippet featuredContent()}
       <div class="hd-feature-top">
-        <div class="hd-label-motion">
-          <div class="hd-idle-plane"><span class="hd-eyebrow">Em destaque</span></div>
-        </div>
+        {@render featureLabel()}
         <span class="hd-edition" aria-hidden="true"
           >{String(displayedIndex + 1).padStart(2, '0')} / {String(items.length).padStart(
             2,
@@ -354,7 +404,10 @@
             alt={requested ? `${requested.vehicle.brand} ${requested.vehicle.model}` : ''}
             onfailure={(value) => (failed = value)}
             ondisplay={(source) => {
-              if (source === image) displayedIndex = index;
+              if (source === image && displayedIndex !== index) {
+                displayedIndex = index;
+                hasChangedVehicle = true;
+              }
             }}
           />
         </a>
@@ -434,40 +487,18 @@
           </button>
         {/if}
       </div>
-      <div class="hd-caption" id="hd-vehicle-caption">
-        <div class="hd-identity">
-          <span class="hd-brand">{car.brand}</span>
-          <h2>
-            <a href={publicHref(car.slug)} data-photo-count={car.photos.length}>{car.model}</a>
-          </h2>
-          <p>
-            {car.year} <span>·</span>
-            {publicMileage(car.mileage)} <span>·</span>
-            {fuelLabels[car.fuel]}
-          </p>
-        </div>
-        <div class="hd-price">
-          <div class="hd-price-motion">
-            <div class="hd-idle-plane">
-              <strong
-                ><FeaturedPriceWave
-                  value={publicPrice(car.price)}
-                  {prices}
-                  vehicle={car.slug}
-                /></strong
-              >
-            </div>
-          </div>
-          {#if car.availability === 'RESERVED'}<span>Reservada</span>{/if}<a
-            href={publicHref(car.slug)}
-            data-photo-count={car.photos.length}
-            >Conhecer viatura <ArrowUpRight size={15} aria-hidden="true" /></a
-          >
-        </div>
+      <!-- Let the tallest caption reserve the space above the progress controls. -->
+      <div class="hd-caption-stack" id="hd-vehicle-caption">
+        {@render caption(car)}
+        {#each items as item, position (item.vehicle.slug)}
+          {#if position !== displayedIndex}
+            {@render caption(item.vehicle, true)}
+          {/if}
+        {/each}
       </div>
       {#if items.length > 1}
         <div class="hd-controls" role="group" aria-label="Navegar pelos destaques">
-          <div class="hd-progress">
+          <div class="hd-progress" data-changed={hasChangedVehicle}>
             {#each items as item, position}
               <button
                 type="button"

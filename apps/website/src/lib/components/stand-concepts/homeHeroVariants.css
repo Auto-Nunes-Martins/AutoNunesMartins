@@ -163,19 +163,20 @@
     }
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-feature-top {
-    /* Keep the original label row in flow so the photo retains its vertical position. */
-    position: relative;
+    /* Reserve the photo's header row independently of the overlay. */
     z-index: 3;
-    padding: 0 12px 10px;
-    transform: translateY(calc(100% + 10px));
+    min-block-size: 26px;
+    padding: 0;
     pointer-events: none;
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-feature-top .hd-edition {
     visibility: hidden;
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-feature-top .hd-label-motion {
-    position: relative;
-    padding: 0 6px 0 22px;
+    position: absolute;
+    inset-block-start: calc(100% + 10px);
+    inset-inline-start: 12px;
+    padding: 0 6px 0 4px;
     border-radius: 2px;
     background: rgb(10 12 14 / 58%);
     color: #fff;
@@ -183,15 +184,20 @@
       0 1px 2px #000e,
       0 0 5px #000c;
   }
-  .hd-root.hd-1[data-photo-variant='5'] .hd-label-motion::before {
-    content: '★';
-    position: absolute;
-    left: 3px;
-    top: 50%;
-    translate: 0 -50%;
-    color: #f3ca68;
-    font-size: 15px;
+  .hd-root.hd-1[data-photo-variant='5'] .hd-label-motion .hd-eyebrow {
+    display: flex;
+    min-block-size: 17px;
+    gap: 4px;
     line-height: 1;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-label-star {
+    display: block;
+    width: 14px;
+    height: 14px;
+    color: #f3ca68;
+  }
+  .hd-root.hd-1[data-photo-variant='5'] .hd-label-text {
+    text-box: trim-both cap alphabetic;
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-photo {
     aspect-ratio: 1.85;

@@ -21,6 +21,7 @@
   import VehicleDeletePanel from '$lib/components/vehicle/VehicleDeletePanel.svelte';
   import WebPublicationPanel from '$lib/components/vehicle/WebPublicationPanel.svelte';
   import { markFormSaved } from '$lib/forms/formFeedback';
+  import { mobileEditStatus } from '$lib/stores/mobileEditStatus';
   import {
     validateVehicleEdit,
     serverEditIssues,
@@ -57,6 +58,8 @@
   }
   onDestroy(() => answerConfirmation(false));
   let root: HTMLElement;
+  let saveActions: HTMLElement;
+  let actionsAbove = $state(false);
   const publicationEditorId = $props.id();
   let savePhase = $state(0),
     preparedPhotos = $state(0),
@@ -82,6 +85,7 @@
     publicValid = $state(false);
   let message = $state(''),
     progress = $state('');
+  let saveFailed = $state(false);
   let initialPublicKey = '';
   let editIssues = $state<EditIssue[]>([]);
   function editChanged(event: Event) {
@@ -91,13 +95,44 @@
       const hadErrors = editIssues.length > 0;
       clearEditIssueMarks(root, [name]);
       editIssues = editIssues.filter((issue) => issue.key !== name);
-      if (hadErrors && !editIssues.length) message = '';
+      if (hadErrors && !editIssues.length) {
+        message = '';
+        saveFailed = false;
+      }
     }
   }
   const photoDirty = $derived(
     JSON.stringify(photoDraft.map((photo) => photo.path)) !== JSON.stringify(baseline.photos),
   );
   const dirty = $derived(internalDirty || publicDirty || photoDirty);
+  $effect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      actionsAbove = !!entry && !entry.isIntersecting && entry.boundingClientRect.bottom <= 0;
+    });
+    observer.observe(saveActions);
+    return () => {
+      observer.disconnect();
+      mobileEditStatus.set(null);
+    };
+  });
+  $effect(() => {
+    mobileEditStatus.set(
+      !actionsAbove
+        ? null
+        : saving
+          ? { text: 'A guardar…', tone: 'saving' }
+          : needsReload
+            ? { text: 'Confirme a gravação', tone: 'error' }
+            : saveFailed
+              ? { text: 'Rever alterações', tone: 'error' }
+              : dirty
+                ? { text: 'Alterações por guardar', tone: 'dirty' }
+                : {
+                    text: baseline.status === 'DRAFT' ? 'Rascunho guardado' : 'Tudo guardado',
+                    tone: 'saved',
+                  },
+    );
+  });
   const removedCount = $derived(
     baseline.photos.filter((path) => !photoDraft.some((photo) => photo.path === path)).length,
   );
@@ -206,6 +241,7 @@
     );
     markEditIssues(root, editIssues);
     if (editIssues.length) {
+      saveFailed = true;
       message = 'Corrija os pontos indicados. O rascunho foi mantido.';
       return;
     }
@@ -222,6 +258,7 @@
     )
       return;
     saving = true;
+    saveFailed = false;
     publicationIntent = published;
     savePhase = 0;
     preparedPhotos = 0;
@@ -229,9 +266,8 @@
     await tick();
     const progressPanel = root.querySelector<HTMLElement>('[data-save-progress]');
     if (progressPanel) {
-      const toolbarHeight =
-        root.querySelector('#vehicle-edit-actions')?.getBoundingClientRect().height ?? 0;
-      progressPanel.style.scrollMarginTop = `${96 + toolbarHeight}px`;
+      const sticky = getComputedStyle(saveActions).position === 'sticky';
+      progressPanel.style.scrollMarginTop = `${96 + (sticky ? saveActions.offsetHeight : 0)}px`;
       progressPanel.scrollIntoView({ block: 'start', behavior: 'instant' });
     }
     const publishing = (publicDirty || changingPublication) && publication.published;
@@ -356,6 +392,7 @@
       };
       confirmed = true;
     } catch (error) {
+      saveFailed = !committed;
       message =
         error instanceof Error
           ? error.message
@@ -425,7 +462,7 @@
       guardar.
     </p>
   </div>
-  <div id="vehicle-edit-actions" class="edit-save edit-save-top">
+  <div id="vehicle-edit-actions" class="edit-save edit-save-top" bind:this={saveActions}>
     <div class="edit-state">
       <p role="status">
         {saving
@@ -534,7 +571,7 @@
   {#if message}<p class="edit-message" role={needsReload || dirty ? 'alert' : 'status'}>
       {message}
     </p>{/if}
-  <div class="edit-save">
+  <div class="edit-save edit-save-bottom">
     <p role="status">
       {saving
         ? progress || 'A guardar…'
@@ -626,6 +663,21 @@
     grid-column: 2;
     grid-row: 2;
     align-items: stretch;
+  }
+  @media (max-width: 767px) {
+    .vehicle-edit-page {
+      padding-bottom: calc(3rem + 28px);
+    }
+    .edit-save.edit-save-top {
+      position: static;
+    }
+    .edit-save-bottom > p,
+    .edit-save-bottom button {
+      display: none;
+    }
+    :global(html:has(.vehicle-edit-page)) {
+      scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    }
   }
   @media (max-width: 900px) {
     .edit-save.edit-save-top {

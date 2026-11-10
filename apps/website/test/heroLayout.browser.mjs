@@ -10,7 +10,7 @@ import path from 'node:path';
 import { chromium, webkit } from 'playwright';
 import sharp from 'sharp';
 import { progressiveHero } from './progressiveHero.mjs';
-import { publicMotionCheck } from './publicMotionCheck.mjs';
+import { captureCarouselFrames, publicMotionCheck } from './publicMotionCheck.mjs';
 
 const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
@@ -55,7 +55,9 @@ const backend = createServer((request, response) => {
   const url = new URL(request.url, 'http://fixture');
   if (url.pathname.includes('/photos/')) {
     response.setHeader('content-type', 'image/png');
-    response.end(url.pathname.includes('hero-check-aaaaaaaaaaa1') ? nextPhoto : photo);
+    const second = url.pathname.includes('hero-check-aaaaaaaaaaa1');
+    response.setHeader('x-photo-version', (second ? '2' : '1').repeat(64));
+    response.end(second ? nextPhoto : photo);
     return;
   }
   let data;
@@ -68,8 +70,10 @@ const backend = createServer((request, response) => {
     data = vehicles.find((vehicle) => url.pathname.endsWith('/' + vehicle.slug));
   else
     data = {
-      items: vehicles,
-      total: 2,
+      // Leave the second highlight out of stock previews so its first request
+      // comes from the carousel, where the browser test can delay it.
+      items: interactions ? vehicles.slice(0, 1) : vehicles,
+      total: interactions ? 1 : vehicles.length,
       page: 1,
       pageSize: 30,
       totalPages: 1,
@@ -125,7 +129,10 @@ try {
   browser = process.argv.includes('--webkit')
     ? await webkit.launch()
     : await chromium.launch({ channel: process.env.BROWSER_CHANNEL || 'chrome', headless: true });
-  if (interactions) await publicMotionCheck(browser, origin, vehicles[0].slug);
+  if (interactions) {
+    if (process.argv.includes('--frames')) await captureCarouselFrames(browser, origin, output);
+    else await publicMotionCheck(browser, origin, vehicles[0].slug);
+  }
   if (streaming) progressive = await progressiveHero(origin);
   const profiles = interactions
     ? []

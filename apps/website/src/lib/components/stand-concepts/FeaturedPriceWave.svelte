@@ -1,6 +1,6 @@
 <script lang="ts">
   import { priceEmphasis } from './priceEmphasis';
-  let { value, prices, vehicle }: { value: string; prices: string[]; vehicle: string } = $props();
+  let { value, prices, vehicle }: { value: string; prices: string[]; vehicle?: string } = $props();
 </script>
 
 <span class="featured-price">
@@ -37,6 +37,7 @@
     filter: none;
     background: none;
     transform: none;
+    transform-origin: right bottom;
   }
   .readable-price {
     position: absolute;

@@ -138,6 +138,9 @@
   align-items: center;
   padding-bottom: 14px;
 }
+.hd-root .hd-label-star {
+  display: none;
+}
 .hd-root .hd-edition {
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -269,27 +272,30 @@
   flex: 1;
 }
 .hd-root .hd-progress span {
-  position: relative;
+  display: block;
   width: 100%;
   height: 2px;
   flex: 1;
   background: color-mix(in srgb, currentColor 24%, transparent);
-  border-radius: 2px;
-  transition: opacity 200ms ease;
 }
-.hd-root .hd-progress button > span::after {
-  content: '';
-  position: absolute;
-  inset: -1px 0;
-  border-radius: inherit;
-  background: currentColor;
-  opacity: 0;
-  transform: scaleY(0.45);
-  transition: opacity 380ms ease-in-out, transform 380ms ease-in-out;
+.hd-root .hd-progress button[aria-pressed='true'] > span {
+  background: #fff;
 }
-.hd-root .hd-progress button[aria-pressed='true'] > span::after {
-  opacity: 1;
-  transform: scaleY(1);
+@media (prefers-reduced-motion: no-preference) {
+  .hd-root .hd-progress[data-changed='true'] button[aria-pressed='true'] > span {
+    animation: hd-progress-pulse 480ms cubic-bezier(0.28, 0, 0.72, 1);
+  }
+}
+@keyframes hd-progress-pulse {
+  0%,
+  100% {
+    transform: scaleY(1);
+    border-radius: 0;
+  }
+  45% {
+    transform: scaleY(1.9);
+    border-radius: 0.55px;
+  }
 }
 .hd-root .hd-progress button {
   flex: 1 1 0;

@@ -8,6 +8,7 @@
   import BrandDeal from '$lib/components/brand/icons/BrandDeal.svelte';
   import BrandChart from '$lib/components/brand/icons/BrandChart.svelte';
   import { quickTask } from '$lib/stores/quickTask';
+  import { mobileEditStatus } from '$lib/stores/mobileEditStatus';
   import type { IconComponent } from '$lib/types/ui';
 
   interface Props {
@@ -55,6 +56,11 @@
   the two navigation surfaces.
 -->
 <nav class="bottom-nav" aria-label="Navegação principal">
+  {#if $mobileEditStatus}
+    <div class="bn-edit-status" role="status">
+      <span data-tone={$mobileEditStatus.tone}>{$mobileEditStatus.text}</span>
+    </div>
+  {/if}
   {#each items as item (item.href)}
     {@const active = isActive(item.href, $page.url.pathname)}
     {@const badge = item.badge?.() ?? null}
@@ -137,6 +143,31 @@
   :global([data-theme='light']) .bottom-nav {
     background: var(--color-shell);
     box-shadow: 0 -8px 24px -16px rgba(0, 0, 0, 0.15);
+  }
+  .bn-edit-status {
+    grid-column: 1 / -1;
+    display: grid;
+    place-items: center;
+    height: 28px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .bn-edit-status span {
+    --status-color: var(--color-success);
+    padding: 2px 9px;
+    border-radius: 999px;
+    color: var(--status-color);
+    background: color-mix(in srgb, var(--status-color) 12%, transparent);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .bn-edit-status [data-tone='dirty'] {
+    --status-color: var(--color-warning);
+  }
+  .bn-edit-status [data-tone='saving'] {
+    --status-color: var(--color-info);
+  }
+  .bn-edit-status [data-tone='error'] {
+    --status-color: var(--color-danger);
   }
 
   /*

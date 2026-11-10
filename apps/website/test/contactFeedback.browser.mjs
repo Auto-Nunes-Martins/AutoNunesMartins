@@ -11,10 +11,52 @@ let backendPosts=0;
 const backend=createServer((req,res)=>{if(req.method!=='GET'){backendPosts++;res.writeHead(500);res.end();return;}const url=new URL(req.url,'http://fixture');res.setHeader('content-type','application/json');const range={min:null,max:null};res.end(JSON.stringify(url.pathname.endsWith('/homepage-highlights')?{configured:true,items:[]}:url.pathname.endsWith('/brands')?[]:url.pathname.endsWith('/related')?[]:url.pathname.endsWith('/vehicles')?{items:[vehicle],total:1,page:1,pageSize:30,totalPages:1,facets:{brands:[],models:[],fuels:[],transmissions:[],year:range,mileage:range,price:range}}:vehicle));});
 await new Promise(r=>backend.listen(0,'127.0.0.1',r));const api=`http://127.0.0.1:${backend.address().port}`;
 const reserve=createServer();await new Promise(r=>reserve.listen(0,'127.0.0.1',r));const port=reserve.address().port;await new Promise(r=>reserve.close(r));const origin=`http://127.0.0.1:${port}`;
+const focusOnly = !!process.env.CONTACT_FOCUS_ONLY;
 await mkdir('.svelte-kit',{recursive:true});const configPath=path.resolve('.svelte-kit/contact-feedback-vite.config.mjs'),clientPath=path.resolve('.svelte-kit/contact-review.client.js');
+if (!focusOnly) {
 await writeFile(clientPath,"import {mount} from 'svelte';import Studio from '../src/lib/components/stand-concepts/OrbitVisitStudio.svelte';import '../src/app.css';mount(Studio,{target:document.querySelector('#app'),props:{id:'studio-test',formTreatment:'minimal'}});");
 await writeFile(configPath,`import base from ${JSON.stringify(path.resolve('vite.config.ts'))};export default {...base,optimizeDeps:{include:['htmlparser2','zod','lucide-svelte']},plugins:[...base.plugins,{name:'contact-review-only',configureServer(server){server.middlewares.use('/contact-review',async(req,res)=>{res.setHeader('content-type','text/html; charset=utf-8');res.end(await server.transformIndexHtml('/contact-review','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div><script type="module" src="/.svelte-kit/contact-review.client.js"></script></body></html>'));});}}],server:{...base.server,fs:{allow:${JSON.stringify([path.resolve('../..'),await realpath('../../node_modules')])}}}};`);
-const vite=spawn(process.execPath,['../../node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(port),'--strictPort','--config',configPath],{env:{...process.env,PUBLIC_BACKEND_URL:api},stdio:'pipe'});let logs='';vite.stdout.on('data',d=>logs+=d);vite.stderr.on('data',d=>logs+=d);let browser;
+}
+const serverArgs = focusOnly
+  ? ['build/index.js']
+  : ['../../node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(port),'--strictPort','--config',configPath];
+const vite=spawn(process.execPath,serverArgs,{env:{...process.env,HOST:'127.0.0.1',PORT:String(port),ORIGIN:origin,PUBLIC_BACKEND_URL:api,INTERNAL_BACKEND_URL:api},stdio:'pipe'});let logs='';vite.stdout.on('data',d=>logs+=d);vite.stderr.on('data',d=>logs+=d);let browser;
+
+async function simulateKeyboard(page, field, offsetTop) {
+  await field.tap();
+  await expect(field).toBeFocused();
+  await page.evaluate((top) => {
+    const viewport = window.visualViewport;
+    Object.defineProperties(viewport, {
+      height: { configurable: true, value: 332 },
+      offsetTop: { configurable: true, value: top },
+    });
+    viewport.dispatchEvent(new Event('resize'));
+    viewport.dispatchEvent(new Event('scroll'));
+  }, offsetTop);
+  await expect.poll(() => field.evaluate((input) => {
+    const box = input.getBoundingClientRect();
+    const panel = input.closest('.contact-panel').getBoundingClientRect();
+    const shade = input.closest('dialog').querySelector('.contact-scrim');
+    const cover = shade.getBoundingClientRect();
+    const top = visualViewport.offsetTop;
+    const bottom = top + visualViewport.height;
+    return panel.top >= top + 15 && panel.bottom <= bottom - 15 &&
+      box.top >= panel.top && box.bottom <= panel.bottom &&
+      cover.top <= top && cover.bottom >= bottom && cover.left <= 0 &&
+      cover.right >= visualViewport.width &&
+      document.elementFromPoint(1, top + 1) === shade &&
+      getComputedStyle(shade).backdropFilter.includes('blur');
+  })).toBe(true);
+}
+async function resetViewport(page) {
+  await page.evaluate(() => {
+    delete visualViewport.height;
+    delete visualViewport.offsetTop;
+    visualViewport.dispatchEvent(new Event('resize'));
+  });
+}
+
 try{
   for(let n=0;;n++){try{if((await fetch(origin)).ok)break;}catch{}if(n>150||vite.exitCode!==null)throw Error(logs);await new Promise(r=>setTimeout(r,200));}
   browser=process.argv.includes('--webkit') ? await webkit.launch() : await chromium.launch({headless:true,channel:'chrome'});
@@ -59,26 +101,52 @@ try{
         const trigger=mode==='vehicle'?page.getByRole('button',{name:'Quero conhecer',exact:true}).first():page.getByRole('button',{name:/Vamos conversar/}).first();
         const dialog = page.locator('.contact-dialog');
         const close = dialog.getByRole('button', { name: 'Fechar', exact: true });
+        const heading = dialog.getByRole('heading', { level: 2 });
         const name = dialog.locator('[name="name"]');
-        const email = dialog.locator('[name="email"]');
+        const message = dialog.locator('[name="message"]');
         const submit = dialog.locator('[type="submit"]');
         const open = () => mobile ? trigger.tap() : trigger.click();
+        await trigger.scrollIntoViewIfNeeded();
+        const backgroundScroll = await page.evaluate(() => scrollY);
         await open();
-        await expect(mobile ? close : name).toBeFocused();
+        await expect(mobile ? heading : name).toBeFocused();
         if (mobile) {
-          await expect(name).toHaveClass(/contact-first-field/);
-          await expect(dialog.locator('input:focus, select:focus, textarea:focus')).toHaveCount(0);
-          await email.tap();
-          await expect(email).toBeFocused();
-          await expect(name).not.toHaveClass(/contact-first-field/);
+          await expect(dialog.locator('button:focus, input:focus, select:focus, textarea:focus')).toHaveCount(0);
+          await expect(close).toHaveCSS('outline-style', 'none');
+          await expect(dialog.locator('.contact-scrim')).toHaveCSS('touch-action', 'none');
+          await expect(page.locator('html')).toHaveClass(/contact-scroll-locked/);
+          const bodyTop = await page.locator('body').evaluate((body) => body.getBoundingClientRect().top);
+          if (browser.browserType().name() === 'chromium') {
+            await page.mouse.move(3, 120);
+            await page.mouse.wheel(0, 500);
+            const touch = await page.context().newCDPSession(page);
+            await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 4, y: 400 }] });
+            for (const y of [365, 330, 290, 245]) {
+              await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 4, y }] });
+            }
+            await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            await touch.detach();
+            await expect(dialog).toBeVisible();
+          }
+          await page.evaluate(() => window.scrollTo(0, 1000));
+          await expect.poll(() => page.locator('body').evaluate((body) => body.getBoundingClientRect().top)).toBe(bodyTop);
+          await page.keyboard.press('Tab');
+          await expect(close).toBeFocused();
+          await expect(close).toHaveCSS('outline-style', 'solid');
+          await simulateKeyboard(page, name, 54);
+          await resetViewport(page);
+          await simulateKeyboard(page, message, 138);
+          await expect.poll(() => dialog.locator('.contact-panel').evaluate((panel) => panel.scrollTop)).toBeGreaterThan(0);
           await close.tap();
+          await resetViewport(page);
+          await expect(trigger).toBeFocused();
+          await expect.poll(() => page.evaluate(() => scrollY)).toBe(backgroundScroll);
+          await open();
+          await expect(heading).toBeFocused();
+          await page.touchscreen.tap(4, 75);
+          await expect(dialog).toBeHidden();
           await expect(trigger).toBeFocused();
           await open();
-          await expect(close).toBeFocused();
-          await expect(name).toHaveClass(/contact-first-field/);
-          await name.tap();
-          await expect(name).toBeFocused();
-          await expect(name).not.toHaveClass(/contact-first-field/);
         }
         await submit.focus();
         await page.keyboard.press('Tab');
@@ -89,8 +157,17 @@ try{
         await expect(dialog).toBeHidden();
         await expect(trigger).toBeFocused();
         if (process.env.CONTACT_FOCUS_ONLY) {
+          await open();
+          await name.fill('Nome de teste');
+          await dialog.locator('[name="email"]').fill('teste@example.test');
+          await message.fill('Mensagem de teste.');
+          await submit.click();
+          await expect(dialog.getByText('Pedido enviado.', { exact: true })).toBeVisible();
+          assert.equal(posts.length, 1);
+          await close.click();
+          await expect(trigger).toBeFocused();
           assert.deepEqual(errors, []);
-          console.log(`PASS ${browser.browserType().name()} contact dialog focus ${mode} ${width}px`);
+          console.log(`PASS ${browser.browserType().name()} contact dialog focus, scroll and viewport ${mode} ${width}px`);
           continue;
         }
         await open();
@@ -151,7 +228,7 @@ try{
       await toast.getByText('Pedido enviado.',{exact:true}).waitFor();assert.equal(posts.at(-1).requestId,key);assert.equal(await toast.getAttribute('role'),'status');assert.equal(await submit.count(),1);assert.equal(await submit.isDisabled(),false);assert.equal(await form.locator('[name=name]').inputValue(),'');assert.equal(await form.locator('[name=email]').inputValue(),'');await stable();await checkCentered('success');assert.equal(await toast.count(),1,'one result notification');
       await toast.evaluate(async n=>{await Promise.all(n.getAnimations().map(animation=>animation.finished.catch(()=>{})));});await page.screenshot({path:`.svelte-kit/contact-${mode}-${width}-success.png`});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
       const toastBox=await toast.boundingBox(),submitBox=await submit.boundingBox();assert.ok(toastBox.y+toastBox.height<=submitBox.y||toastBox.x+toastBox.width<=submitBox.x||toastBox.x>=submitBox.x+submitBox.width,'toast does not cover the submit action');
-      if(mode==='dialog'||mode==='vehicle'){const closeBox=await page.locator('.contact-dialog > .dialog-close').boundingBox();assert.ok(toastBox.x+toastBox.width<=closeBox.x||toastBox.y+toastBox.height<=closeBox.y||toastBox.y>=closeBox.y+closeBox.height,'dialog close remains accessible');}
+      if(mode==='dialog'||mode==='vehicle'){const closeBox=await page.locator('.contact-dialog .dialog-close').boundingBox();assert.ok(toastBox.x+toastBox.width<=closeBox.x||toastBox.y+toastBox.height<=closeBox.y||toastBox.y>=closeBox.y+closeBox.height,'dialog close remains accessible');}
       await toast.getByRole('button',{name:'Fechar aviso de envio'}).click();assert.equal(await toast.count(),0);
       await form.locator('[name=name]').fill('Outro teste');await form.locator('[name=email]').fill('outro@example.test');await form.locator('[name=message]').fill('Outro pedido fictício.');reply='conflict';await submit.click();await toast.getByText('Não repita o pedido. Contacte-nos por telefone.',{exact:true}).waitFor();assert.equal(await submit.isDisabled(),true);assert.equal(await form.locator('[name=message]').inputValue(),'Outro pedido fictício.');assert.notEqual(posts.at(-1).requestId,key);
       if(mode==='inline'||mode==='studio'){
@@ -216,4 +293,4 @@ try{
     }catch(error){console.error(logs.slice(-1600));await page.screenshot({path:'.svelte-kit/contact-feedback-failure.png'});throw error;}finally{await context.close();}
   }
   assert.equal(backendPosts,0,'no contact reached even the mock backend');
-}finally{await browser?.close();vite.kill();await new Promise(r=>backend.close(r));await rm(configPath,{force:true});await rm(clientPath,{force:true});}
+}finally{await browser?.close();vite.kill();await new Promise(r=>backend.close(r));if(!focusOnly){await rm(configPath,{force:true});await rm(clientPath,{force:true});}}

@@ -35,6 +35,7 @@
   import ContactFeedback from '$lib/components/ContactFeedback.svelte';
   import { LoaderCircle } from 'lucide-svelte';
   import ContactFormFooter from '$lib/components/ContactFormFooter.svelte';
+  import { lockContactViewport } from './contactViewport';
   import orbitFont400 from '@fontsource/inter/files/inter-latin-400-normal.woff2?url';
   import orbitFont500 from '@fontsource/inter/files/inter-latin-500-normal.woff2?url';
   import orbitFont600 from '@fontsource/inter/files/inter-latin-600-normal.woff2?url';
@@ -327,10 +328,12 @@
   let saved = $state<string[]>([]);
   let navOpen = $state(false);
   let contactDialog: HTMLDialogElement;
+  let contactPanel: HTMLElement;
   let contactName: HTMLInputElement;
-  let contactClose: HTMLButtonElement;
+  let contactHeading: HTMLHeadingElement;
   let contactOpener: HTMLElement | undefined;
-  let highlightContactName = $state(false);
+  let unlockContact: (() => void) | undefined;
+  onDestroy(() => unlockContact?.());
   let galleryDialog: HTMLDialogElement;
   let galleryOpener: HTMLElement | undefined;
   let preparingViewer = false;
@@ -486,17 +489,22 @@
         message ||
         (car ? `Gostava de conhecer o ${car.brand} ${car.model}.` : 'Gostava de saber mais.');
     const touchLayout = window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
-    highlightContactName = touchLayout;
     await tick();
+    if (contactDialog.open) return;
     // Native showModal focuses an autofocus target before returning.
-    contactClose.autofocus = touchLayout;
+    contactHeading.autofocus = touchLayout;
     contactName.autofocus = !touchLayout;
+    unlockContact?.();
+    unlockContact = lockContactViewport(contactDialog, contactPanel);
     contactDialog.showModal();
-    (touchLayout ? contactClose : contactName).focus({ preventScroll: true });
+    if (touchLayout) contactPanel.scrollTop = 0;
+    const initialFocus = touchLayout ? contactHeading : contactName;
+    if (document.activeElement !== initialFocus) initialFocus.focus({ preventScroll: true });
   }
   function restoreContactFocus() {
     if (contactDialog.open) return;
-    highlightContactName = false;
+    unlockContact?.();
+    unlockContact = undefined;
     const opener = contactOpener;
     contactOpener = undefined;
     if (opener?.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true });
@@ -513,13 +521,9 @@
   }
   let contactPointerStartedOutside = false;
   function outsideContact(event: MouseEvent | PointerEvent) {
-    const bounds = contactDialog.getBoundingClientRect();
     return (
-      event.target === contactDialog &&
-      (event.clientX < bounds.left ||
-        event.clientX > bounds.right ||
-        event.clientY < bounds.top ||
-        event.clientY > bounds.bottom)
+      event.target === contactDialog ||
+      (event.target instanceof Element && event.target.classList.contains('contact-scrim'))
     );
   }
   function contactBackdropClick(event: MouseEvent) {
@@ -533,7 +537,10 @@
     );
     const first = controls[0];
     const last = controls[controls.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
+    if (document.activeElement === contactHeading) {
+      event.preventDefault();
+      (event.shiftKey ? last : first)?.focus();
+    } else if (event.shiftKey && document.activeElement === first) {
       event.preventDefault();
       last?.focus();
     } else if (!event.shiftKey && document.activeElement === last) {
@@ -1485,70 +1492,74 @@
     }}
     onclick={contactBackdropClick}
   >
-    <button
-      bind:this={contactClose}
-      class="dialog-close icon-button"
-      onclick={() => contactDialog.close()}
-      aria-label="Fechar"><X size={22} aria-hidden="true" /></button
-    >
-    <p class="kicker">VAMOS CONVERSAR</p>
-    <h2 id="contact-heading">O que tem<br />em mente?</h2>
-    <form
-      use:submission.enhance
-      aria-busy={sending}
-      onfocusin={(event) => {
-        if (event.target instanceof Element && event.target.matches('input, select, textarea')) {
-          highlightContactName = false;
-        }
-      }}
-    >
-      <ContactFeedback {submission} />
-      <label
-        >Nome<input
-          bind:this={contactName}
-          class:contact-first-field={highlightContactName}
-          required
-          name="name"
-          maxlength="120"
-          autocomplete="name"
-          placeholder="O seu nome"
-        /></label
-      ><label
-        >Email<input
-          required
-          type="email"
-          name="email"
-          maxlength="254"
-          autocomplete="email"
-          placeholder="nome@exemplo.pt"
-        /></label
-      ><label
-        >Assunto<FormSelectField
-          ><select name="subject">
-            <option>Informações gerais</option>
-            <option>Conhecer uma viatura</option>
-            <option>Marcar uma visita</option>
-            <option>Falar sobre uma retoma</option>
-          </select></FormSelectField
-        ></label
-      ><label
-        >Mensagem<textarea name="message" required maxlength="5000" rows="3" bind:value={reason}
-        ></textarea></label
-      ><ContactFormFooter>
+    <div class="contact-scrim" aria-hidden="true"></div>
+    <div class="contact-viewport">
+      <div class="contact-panel-shell">
         <button
-          class="pill primary"
-          type="submit"
-          aria-busy={sending}
-          disabled={sending || submission.state.kind === 'conflict'}
-          >{sending ? 'A enviar…' : 'Enviar pedido'}
-          {#if sending}<LoaderCircle
-              class="contact-submit-spinner"
-              size={18}
-              aria-hidden="true"
-            />{:else}<ArrowUpRight size={18} aria-hidden="true" />{/if}</button
+          class="dialog-close icon-button"
+          onclick={() => contactDialog.close()}
+          aria-label="Fechar"><X size={22} aria-hidden="true" /></button
         >
-      </ContactFormFooter>
-    </form>
+        <div class="contact-panel" bind:this={contactPanel}>
+          <p class="kicker">VAMOS CONVERSAR</p>
+          <h2 id="contact-heading" bind:this={contactHeading} tabindex="-1">
+            O que tem<br />em mente?
+          </h2>
+          <form use:submission.enhance aria-busy={sending}>
+            <ContactFeedback {submission} />
+            <label
+              >Nome<input
+                bind:this={contactName}
+                required
+                name="name"
+                maxlength="120"
+                autocomplete="name"
+                placeholder="O seu nome"
+              /></label
+            ><label
+              >Email<input
+                required
+                type="email"
+                name="email"
+                maxlength="254"
+                autocomplete="email"
+                placeholder="nome@exemplo.pt"
+              /></label
+            ><label
+              >Assunto<FormSelectField
+                ><select name="subject">
+                  <option>Informações gerais</option>
+                  <option>Conhecer uma viatura</option>
+                  <option>Marcar uma visita</option>
+                  <option>Falar sobre uma retoma</option>
+                </select></FormSelectField
+              ></label
+            ><label
+              >Mensagem<textarea
+                name="message"
+                required
+                maxlength="5000"
+                rows="3"
+                bind:value={reason}
+              ></textarea></label
+            ><ContactFormFooter>
+              <button
+                class="pill primary"
+                type="submit"
+                aria-busy={sending}
+                disabled={sending || submission.state.kind === 'conflict'}
+                >{sending ? 'A enviar…' : 'Enviar pedido'}
+                {#if sending}<LoaderCircle
+                    class="contact-submit-spinner"
+                    size={18}
+                    aria-hidden="true"
+                  />{:else}<ArrowUpRight size={18} aria-hidden="true" />{/if}</button
+              >
+            </ContactFormFooter>
+          </form>
+        </div>
+      </div>
+    </div>
   </dialog>
   <dialog
     bind:this={galleryDialog}
@@ -3133,19 +3144,77 @@
   .contact-dialog {
     position: fixed;
     inset: 0;
-    margin: auto;
-    width: min(520px, calc(100vw - 32px));
-    max-width: calc(100vw - 32px);
-    max-height: calc(100dvh - 32px);
+    margin: 0;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    overflow: clip;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+  }
+  .contact-dialog::backdrop {
+    background: transparent;
+    backdrop-filter: none;
+  }
+  .contact-scrim {
+    position: absolute;
+    inset: 0;
+    background: #000b;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    touch-action: none;
+  }
+  .contact-viewport {
+    position: absolute;
+    top: var(--contact-top, 0px);
+    left: var(--contact-left, 0px);
+    width: var(--contact-width, 100%);
+    height: var(--contact-height, 100%);
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    place-items: center;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    pointer-events: none;
+  }
+  .contact-panel-shell {
+    position: relative;
+    width: min(520px, 100%);
+    max-height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    pointer-events: auto;
+  }
+  .contact-panel {
+    min-height: 0;
+    overflow: auto;
     overscroll-behavior: contain;
     padding: 36px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+  }
+  :global(html.contact-scroll-locked) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  :global(html.contact-scroll-locked body) {
+    position: fixed;
+    top: var(--contact-scroll-top);
+    left: var(--contact-scroll-left);
+    width: 100%;
+    overflow: hidden;
   }
   .dialog-close {
     position: absolute;
     top: 15px;
     right: 15px;
   }
-  .contact-dialog > .kicker {
+  .contact-panel > .kicker {
     margin-bottom: 22px;
     padding-right: 36px;
   }
@@ -3153,7 +3222,7 @@
     font-size: 48px;
     margin-bottom: 22px;
   }
-  .contact-dialog > p:not(.kicker) {
+  .contact-panel > p:not(.kicker) {
     font-size: 11px;
     color: var(--muted);
     margin-bottom: 22px;
@@ -3181,8 +3250,8 @@
   .contact-dialog textarea {
     resize: vertical;
   }
-  .contact-dialog input.contact-first-field:not(:focus) {
-    border-color: color-mix(in srgb, var(--line) 65%, var(--text));
+  .contact-panel h2:focus {
+    outline: none;
   }
   .contact-dialog input:focus-visible,
   .contact-dialog select:focus-visible,
@@ -3193,6 +3262,7 @@
     border-width: 1px;
   }
   .contact-dialog .dialog-close {
+    z-index: 1;
     width: 44px;
     height: 44px;
     border-radius: 4px;
@@ -3235,7 +3305,7 @@
         border-color 180ms ease,
         box-shadow 180ms ease;
     }
-    .contact-dialog[open] {
+    .contact-dialog[open] .contact-panel-shell {
       animation: contact-arrive 220ms ease-out;
     }
     @keyframes contact-arrive {
@@ -3567,7 +3637,7 @@
       margin-top: 30px;
     }
 
-    .contact-dialog {
+    .contact-panel {
       padding: 40px 25px 25px;
     }
     .contact-dialog h2 {
@@ -4103,7 +4173,7 @@
   .contact-dialog h2 {
     font-size: clamp(35px, 4vw, 44px);
   }
-  .contact-dialog > p:not(.kicker) {
+  .contact-panel > p:not(.kicker) {
     font-size: 13px;
   }
   .contact-dialog label {

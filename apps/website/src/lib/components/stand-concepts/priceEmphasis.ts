@@ -1,12 +1,14 @@
-const vehiclePulse = [
+const photoPulse = [
   { scale: 1, easing: 'ease-in-out' },
   { scale: 1.018, offset: 0.5, easing: 'ease-in-out' },
   { scale: 1 },
 ];
-const pulseTiming = { duration: 580 };
+const photoPulseTiming = { duration: 580 };
+const priceEasing = 'cubic-bezier(0.28, 0, 0.72, 1)';
 
-/** One pulse per displayed vehicle change; font sizing keeps glyphs crisp. */
-export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
+/** The price pulse runs independently of the resting font size and the photo. */
+export function priceEmphasis(node: HTMLElement, initialVehicle?: string) {
+  if (initialVehicle === undefined) return;
   const feature = node.closest<HTMLElement>('.hd-feature');
   const slot = node.parentElement;
   if (!feature || !slot) return;
@@ -22,6 +24,7 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   let base = parseFloat(getComputedStyle(slot).fontSize);
   let vehicle = initialVehicle;
   let animation: Animation | undefined;
+  let pricePulse: Animation | undefined;
   let photoAnimation: Animation | undefined;
   const originalSize = node.style.fontSize;
   const canAnimate = () => {
@@ -62,21 +65,25 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   };
   const pulse = () => {
     if (!canAnimate()) return;
-    const resting = base * target;
-    const fromSize = animation ? getComputedStyle(node).fontSize : `${resting}px`;
-    animation?.cancel();
-    const next = node.animate(
-      vehiclePulse.map(({ scale, ...timing }, index) => ({
-        ...timing,
-        fontSize:
-          index === 0
-            ? fromSize
-            : `${scale === 1 ? resting : Math.min(resting * 1.045, base * 1.06)}px`,
-      })),
-      pulseTiming,
+    const resting = { transform: 'scale(1)', color: '#fafafa', textShadow: 'none' };
+    const current = pricePulse?.playState === 'running' ? getComputedStyle(node) : resting;
+    const { transform, color, textShadow } = current;
+    pricePulse?.cancel();
+    pricePulse = node.animate(
+      [
+        { transform, color, textShadow, easing: priceEasing },
+        {
+          transform: 'scale(1.12)',
+          color: '#ffe1a0',
+          textShadow: '0 0 10px #ffc35d80',
+          offset: 0.46,
+          easing: priceEasing,
+        },
+        resting,
+      ],
+      { duration: 780 },
     );
-    next.id = 'price-vehicle-change';
-    remember(next);
+    pricePulse.id = 'price-vehicle-change';
     if (mobile.matches) {
       const photo = feature.querySelector<HTMLElement>('.hd-photo-motion');
       const fromTransform =
@@ -85,11 +92,11 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
           : 'scale(1)';
       photoAnimation?.cancel();
       photoAnimation = photo?.animate(
-        vehiclePulse.map(({ scale, ...timing }, index) => ({
+        photoPulse.map(({ scale, ...timing }, index) => ({
           ...timing,
           transform: index === 0 ? fromTransform : `scale(${scale})`,
         })),
-        pulseTiming,
+        photoPulseTiming,
       );
       if (photoAnimation) photoAnimation.id = 'photo-vehicle-change';
     }
@@ -97,6 +104,10 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   const sync = () => {
     if (destroyed) return;
     const allowed = canAnimate();
+    if (!allowed) {
+      pricePulse?.cancel();
+      pricePulse = undefined;
+    }
     if (!allowed || !mobile.matches) {
       photoAnimation?.cancel();
       photoAnimation = undefined;
@@ -151,8 +162,8 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
   mobile.addEventListener('change', sync);
   sync();
   return {
-    update(nextVehicle: string) {
-      if (destroyed || nextVehicle === vehicle) return;
+    update(nextVehicle?: string) {
+      if (destroyed || nextVehicle === undefined || nextVehicle === vehicle) return;
       vehicle = nextVehicle;
       sync();
       pulse();
@@ -160,6 +171,7 @@ export function priceEmphasis(node: HTMLElement, initialVehicle: string) {
     destroy() {
       destroyed = true;
       animation?.cancel();
+      pricePulse?.cancel();
       photoAnimation?.cancel();
       observer.disconnect();
       resize.disconnect();

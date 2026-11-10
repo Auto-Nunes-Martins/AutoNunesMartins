@@ -132,6 +132,19 @@
   column-gap: 28px;
   min-height: 110px;
 }
+.hd-root[data-featured-card] .hd-caption-stack {
+  display: grid;
+  min-width: 0;
+}
+.hd-root[data-featured-card] .hd-caption-stack > .hd-caption {
+  grid-area: 1 / 1;
+  align-self: start;
+  min-width: 0;
+}
+.hd-root[data-featured-card] .hd-caption-sizing {
+  visibility: hidden;
+  pointer-events: none;
+}
 .hd-root[data-featured-card] .hd-caption::before {
   content: '';
   position: absolute;

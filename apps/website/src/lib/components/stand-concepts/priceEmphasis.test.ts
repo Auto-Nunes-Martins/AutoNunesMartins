@@ -80,7 +80,12 @@ describe('featured price emphasis', () => {
     action.update('second-car');
     expect(animate).toHaveBeenCalledTimes(1);
     expect(animate.mock.results[0]!.value.id).toBe('price-vehicle-change');
-    expect(animate.mock.calls[0]![1]).toEqual({ duration: 580 });
+    expect(animate.mock.calls[0]![1]).toEqual({ duration: 780 });
+    expect(animate.mock.calls[0]![0][1]).toMatchObject({
+      transform: 'scale(1.12)',
+      color: '#ffe1a0',
+      offset: 0.46,
+    });
     action.update('second-car');
     vi.advanceTimersByTime(60_000);
     expect(animate).toHaveBeenCalledTimes(1);

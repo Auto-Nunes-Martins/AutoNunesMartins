@@ -8,7 +8,7 @@ import { chromium, expect, webkit } from '@playwright/test';
 import { createServer as createVite } from 'vite';
 
 const crm = fileURLToPath(new URL('../', import.meta.url));
-const useWebKit = process.argv.includes('--webkit');
+const useWebKit = process.argv.includes('--webkit') || process.env.CRM_TEST_BROWSER === 'webkit';
 const vehicleId = 'c000000000000000000000001';
 const draftId = 'c000000000000000000000002';
 const fixtureToken = 'local-crm-fixture-token';
@@ -118,6 +118,7 @@ before(async () => {
           : Array.from({ length: 25 }, (_, i) => ({
               ...vehicle,
               id: 'c' + String(i + 1).padStart(24, '0'),
+              thumbnailUrl: i % 2 ? null : '/fixture-vehicle.svg',
             }));
       return reply({ items, page: 1, total: items.length, pageSize: 25, totalPages: 1 });
     }
@@ -195,6 +196,7 @@ before(async () => {
   });
   await vite.listen();
   browser = useWebKit ? await webkit.launch() : await chromium.launch({ channel: 'chrome' });
+  console.log(`CRM browser fixture: ${browser.browserType().name()}`);
 });
 
 after(async () => {
@@ -213,6 +215,12 @@ async function openSession(width, reducedMotion = 'no-preference') {
   await context.addCookies([{ name: 'crm-fixture', value: 'signed-in', url: origin }]);
   await context.route('**/*', (route) =>
     new URL(route.request().url()).origin === origin ? route.continue() : route.abort(),
+  );
+  await context.route('**/fixture-vehicle.svg', (route) =>
+    route.fulfill({
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="72"><rect width="96" height="72" fill="#486c7b"/></svg>',
+    }),
   );
   context.on('page', (page) => {
     page.on('pageerror', (error) => console.error(error));
@@ -373,6 +381,108 @@ async function checkHistoryReturn(page, previousScroll) {
   assert.ok(frames.every(({ content, drawer }) => content && !drawer));
 }
 
+async function checkVehicleRows(page, width) {
+  const rows = page.locator('article.linked-row');
+  const photo = rows.first().locator('.mobile-vehicle-photo');
+  const placeholder = rows.nth(1).locator('.mobile-vehicle-photo');
+  await rows.first().scrollIntoViewIfNeeded();
+  await expect
+    .poll(() => photo.locator('img').evaluate((image) => image.naturalWidth))
+    .toBeGreaterThan(0);
+  await expect(placeholder.locator('svg')).toBeVisible();
+  const boxes = await Promise.all([photo.boundingBox(), placeholder.boundingBox()]);
+  assert.ok(boxes.every((box) => box.width >= 68 && box.height >= 51));
+  assert.equal(boxes[0].width, boxes[1].width);
+  await expect(
+    rows.first().locator('[title="' + vehicle.brand + ' ' + vehicle.model + '"]'),
+  ).toHaveCSS('-webkit-line-clamp', '2');
+  const menuButton = rows.first().getByRole('button', { name: /Mais opções/ });
+  await expect(menuButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(menuButton).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+  const buttonBox = await menuButton.boundingBox();
+  assert.ok(
+    buttonBox.width >= 44 && buttonBox.height >= 44 && buttonBox.x + buttonBox.width <= width,
+  );
+  await menuButton.tap();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+  await expect(rows.first().getByRole('menuitem', { name: 'Editar', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  await menuButton.focus();
+  await menuButton.press('Enter');
+  const firstAction = rows.first().getByRole('menuitem').first();
+  await expect(firstAction).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(menuButton).toBeFocused();
+}
+
+async function checkMobileEditStatus(page) {
+  let finishSave;
+  let shouldFail = true;
+  await page.route('**/editar/save', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    if (!shouldFail) return route.fulfill({ json: { ok: true } });
+    await new Promise((resolve) => (finishSave = resolve));
+    return route.fulfill({ status: 400, json: { error: 'Erro de gravação simulado.' } });
+  });
+  await page.goto(origin + '/viaturas/' + vehicleId + '/editar');
+  const toolbar = page.locator('#vehicle-edit-actions');
+  const status = page.locator('.bn-edit-status');
+  const mileage = page.locator('input[name="mileage"]');
+  const save = toolbar.getByRole('button', { name: 'Guardar alterações', exact: true });
+  const scrollDown = () => page.evaluate(() => scrollTo(0, 1100));
+  await expect(toolbar).toHaveCSS('position', 'static');
+  await expect(save).toBeDisabled();
+  await scrollDown();
+  await expect(toolbar).not.toBeInViewport();
+  await expect(status).toHaveText('Tudo guardado');
+  await expect(status.locator('[data-tone]')).toHaveAttribute('data-tone', 'saved');
+  const deleteButton = page.getByRole('button', { name: 'Eliminar viatura', exact: true });
+  await expect
+    .poll(async () => {
+      await page.evaluate(() =>
+        scrollTo({ top: document.scrollingElement.scrollHeight, behavior: 'instant' }),
+      );
+      return deleteButton.evaluate((button) => {
+        const bottomNav = document.querySelector('.bottom-nav').getBoundingClientRect();
+        const box = button.getBoundingClientRect();
+        return {
+          fits: box.top >= 0 && box.bottom < bottomNav.top,
+          reachable: button.contains(
+            document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2),
+          ),
+        };
+      });
+    })
+    .toEqual({ fits: true, reachable: true });
+  await mileage.fill('91000');
+  await scrollDown();
+  await expect(status).toHaveText('Alterações por guardar');
+  await expect(status.locator('[data-tone]')).toHaveAttribute('data-tone', 'dirty');
+  await expect(page.getByRole('button', { name: 'Guardar alterações', exact: true })).toHaveCount(
+    1,
+  );
+  assert.ok(await status.evaluate((node) => node.parentElement.matches('.bottom-nav')));
+  await save.tap();
+  const warning = page.getByRole('button', { name: 'Confirmar e guardar alterações' });
+  await warning.tap();
+  await expect.poll(() => Boolean(finishSave)).toBe(true);
+  try {
+    await scrollDown();
+    await expect(status).toHaveText('A guardar…');
+  } finally {
+    finishSave();
+  }
+  await expect(status).toHaveText('Rever alterações');
+  await expect(status.locator('[data-tone]')).toHaveAttribute('data-tone', 'error');
+  await expect(mileage).toHaveValue('91000');
+  shouldFail = false;
+  await save.tap();
+  await warning.tap();
+  await expect(page).toHaveURL(new RegExp('/viaturas/' + vehicleId + '$'));
+  await expect(status).toHaveCount(0);
+}
+
 for (const [width, reduced] of [
   [390, false],
   [320, true],
@@ -473,6 +583,28 @@ for (const [width, reduced] of [
   });
 }
 
+for (const width of [320, 390]) {
+  test(
+    `real CRM mobile vehicle rows and edit status at ${width}px`,
+    { timeout: 150000 },
+    async () => {
+      const context = await openSession(width);
+      try {
+        const page = await context.newPage();
+        await page.goto(origin + '/viaturas', { waitUntil: 'commit', timeout: 60000 });
+        await expect(page.getByText('25 no inventário')).toBeVisible({ timeout: 60000 });
+        await expect(
+          page.locator('.topbar').getByRole('button', { name: 'Alertas', exact: true }),
+        ).toContainText('1', { timeout: 30000 });
+        await checkVehicleRows(page, width);
+        await checkMobileEditStatus(page);
+      } finally {
+        await context.close();
+      }
+    },
+  );
+}
+
 test('real CRM create, draft and edit numeric forms', { timeout: 120000 }, async () => {
   const context = await openSession(1366);
   try {
@@ -532,6 +664,7 @@ test('real CRM create, draft and edit numeric forms', { timeout: 120000 }, async
     if (useWebKit) await page.goto(await editLink.evaluate((anchor) => anchor.href));
     else await editLink.click();
     await expect(page).toHaveURL(/\/editar$/);
+    await expect(page.locator('#vehicle-edit-actions')).toHaveCSS('position', 'sticky');
     await expect(
       page.locator('.topbar').getByRole('button', { name: 'Alertas', exact: true }),
     ).toContainText('1', { timeout: 30000 });

@@ -7,6 +7,7 @@
     label: string;
     editHref?: string;
     compact?: boolean;
+    borderless?: boolean;
     actions: {
       label: string;
       href?: string;
@@ -17,7 +18,7 @@
       title?: string;
     }[];
   }
-  let { label, editHref, actions, compact = false }: Props = $props();
+  let { label, editHref, actions, compact = false, borderless = false }: Props = $props();
   const menuActions = $derived<Props['actions']>(
     compact && editHref && !actions.some((action) => action.href === editHref)
       ? [{ label: 'Editar', href: editHref, icon: Pencil }, ...actions]
@@ -80,7 +81,7 @@
   });
 </script>
 
-<div class="row-actions" class:compact>
+<div class="row-actions" class:compact class:borderless>
   {#if editHref && !compact}<a href={editHref} class="edit-link" aria-label={`Editar ${label}`}
       ><Pencil class="h-3.5 w-3.5" />Editar</a
     >{/if}
@@ -179,6 +180,10 @@
     color: var(--color-red);
     border-color: color-mix(in oklab, var(--color-red) 45%, var(--color-border));
     background: color-mix(in oklab, var(--color-red) 5%, var(--color-bg-1));
+  }
+  .borderless .more-button {
+    border-color: transparent;
+    background: transparent;
   }
   .edit-link:focus-visible,
   .more-button:focus-visible,

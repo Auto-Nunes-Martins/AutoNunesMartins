@@ -67,15 +67,16 @@
     editHref={v.status === 'DRAFT' ? destination(v) : crmPath(`/viaturas/${v.id}/editar`)}
     actions={actionsFor(v)}
     {compact}
+    borderless={compact}
   />
 {/snippet}
 
 <div class="md:hidden divide-y divide-[var(--color-border)]">
   {#each items as v (v.id)}
-    <article use:linkedRow class="linked-row flex items-center gap-1 px-2">
-      <a href={destination(v)} class="row-link flex min-w-0 flex-1 items-center gap-2 py-2.5 group">
+    <article use:linkedRow class="linked-row flex items-center gap-1 px-3">
+      <a href={destination(v)} class="row-link flex min-w-0 flex-1 items-center gap-3 py-3 group">
         <div
-          class="h-11 w-14 shrink-0 flex items-center justify-center overflow-hidden rounded-xs bg-[var(--color-bg-2)]"
+          class="mobile-vehicle-photo shrink-0 flex items-center justify-center overflow-hidden rounded-xs bg-[var(--color-bg-2)]"
         >
           {#if v.thumbnailUrl}
             <img
@@ -86,19 +87,19 @@
               loading="lazy"
             />
           {:else}
-            <Car class="h-5 w-5 text-[var(--color-red)]" />
+            <Car class="h-6 w-6 text-[var(--color-red)]" />
           {/if}
         </div>
-        <div class="min-w-0 flex-1 space-y-0.5">
+        <div class="min-w-0 flex-1 space-y-1">
           <span
-            class="block truncate text-[14px] font-semibold group-hover:text-[var(--color-red)]"
+            class="line-clamp-2 wrap-break-word text-[14px] leading-snug font-semibold group-hover:text-[var(--color-red)]"
             title={v.brand + ' ' + v.model}
           >
             {v.brand}
             {v.model}
           </span>
           <span
-            class="block truncate text-[11px] text-[var(--color-text-muted)]"
+            class="block wrap-break-word text-[11px] leading-snug text-[var(--color-text-muted)]"
             title={v.licensePlate ?? v.vin ?? undefined}
           >
             {#if v.licensePlate || v.vin}{v.licensePlate ?? v.vin} ·
@@ -253,6 +254,10 @@
   />{/if}
 
 <style>
+  .mobile-vehicle-photo {
+    width: clamp(68px, 20vw, 84px);
+    aspect-ratio: 4 / 3;
+  }
   .mobile-vehicle-tags :global(.vehicle-state-chip) {
     --state-tag-height: 22px;
     --state-tag-padding: 2px 5px;
