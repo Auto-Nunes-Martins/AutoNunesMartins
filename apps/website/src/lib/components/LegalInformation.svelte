@@ -10,7 +10,7 @@
     { id: 'livro-de-reclamacoes', label: 'Livro de Reclamações' },
   ];
   const corporate = readiness.operator.filter((field) =>
-    ['legalForm', 'registration', 'capital'].includes(field.id),
+    ['legalForm', 'registration'].includes(field.id),
   );
   const corporateKnown = corporate.some((field) => Boolean(field.value));
   const ralUrl = officialLegalUrl(legalValue('ralUrl'));
@@ -25,16 +25,15 @@
   <section id="operador">
     <h2>Identificação do operador</h2>
     <p>
-      Auto Nunes Martins é o nome comercial do site. A identificação jurídica está por confirmar; as
-      moradas de visita não substituem a sede legal.
+      Auto Nunes Martins é o nome comercial do site.
     </p>
     <LegalFields
       fields={readiness.operator.filter((field) =>
-        ['legalName', 'taxId', 'registeredAddress'].includes(field.id),
+        ['legalName', 'taxId', 'registeredAddress', 'registeredPostalCode'].includes(field.id),
       )}
     />
     <details open={corporateKnown}>
-      <summary>Menções societárias, se aplicáveis</summary><LegalFields fields={corporate} />
+      <summary>Menções societárias</summary><LegalFields fields={corporate} />
     </details>
     {#if standContact.email}<p>
         Contacto: <a href={`mailto:${standContact.email}`}>{standContact.email}</a>.

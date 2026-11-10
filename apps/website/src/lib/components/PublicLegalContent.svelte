@@ -1,5 +1,9 @@
 <script lang="ts">
   import PublicLegalPage from './PublicLegalPage.svelte';
+  import { legalValue } from '$lib/publicLegal';
+  const legalName = legalValue('legalName');
+  const taxId = legalValue('taxId');
+  const registeredAddress = legalValue('registeredAddress');
   const sections = [
     { id: 'ambito', label: 'Âmbito do site' },
     { id: 'viaturas', label: 'Informação das viaturas' },
@@ -7,8 +11,15 @@
     { id: 'utilizacao', label: 'Utilização e direitos' },
   ];
 </script>
-<PublicLegalPage title="Termos de utilização" description="Como funciona esta montra de viaturas e o que significa enviar um pedido ao stand." path="/termos-de-utilizacao" {sections} note="A identificação jurídica do operador está por confirmar na página Informação legal.">
-    <section id="ambito"><h2>Uma montra, sem compra online</h2><p>O website Auto Nunes Martins permite consultar viaturas usadas, pesquisar o stock publicado, guardar favoritos, comparar viaturas e contactar o stand. Não existe checkout, pagamento, contratação de compra ou pedido de crédito através do site.</p><p>A <a href="/informacao-legal">identificação jurídica do operador</a> contém os dados que ainda precisam de confirmação. Os contactos comerciais apresentados são os fornecidos pelo stand.</p></section>
+<PublicLegalPage title="Termos de utilização" description="Como funciona esta montra de viaturas e o que significa enviar um pedido ao stand." path="/termos-de-utilizacao" {sections}>
+    <section id="ambito">
+      <h2>Uma montra, sem compra online</h2>
+      <p>O website Auto Nunes Martins permite consultar viaturas usadas, pesquisar o stock publicado, guardar favoritos, comparar viaturas e contactar o stand. Não existe checkout, pagamento, contratação de compra ou pedido de crédito através do site.</p>
+      <p>
+        O site é operado por {legalName}, com o NIPC {taxId} e sede na {registeredAddress}.
+        Consulte as restantes menções na <a href="/informacao-legal#operador">Informação legal</a>.
+      </p>
+    </section>
     <section id="viaturas"><h2>Informação das viaturas</h2><p>As fichas apresentam os dados e fotografias publicados pelo stand. Uma viatura pode ser reservada, vendida ou retirada entretanto. Confirme com a equipa a disponibilidade e as características relevantes antes de se deslocar ou tomar uma decisão.</p><p>O preço anunciado deve ser lido com a informação da respetiva ficha. A informação final sobre o negócio, equipamento, estado da viatura, documentação, garantias e condições de venda será esclarecida pelo stand antes de qualquer contrato. Estes termos não reduzem os direitos legais do consumidor nem substituem essa informação.</p><p>Os cenários decorativos não identificam uma viatura concreta. A primeira morada apresenta um mapa do Google Maps; a pré-visualização da segunda morada é ilustrativa e não constitui um mapa geográfico. As ligações de cada morada permitem consultar o serviço externo de mapas.</p></section>
     <section id="contactos"><h2>Um pedido inicia uma conversa</h2><p>O envio de um formulário serve para pedir informação, falar sobre uma retoma ou propor uma visita. Não reserva uma viatura, não celebra uma compra e não confirma um horário. A equipa precisa de combinar esses detalhes consigo.</p><p>A confirmação de envio indica aceite pelo serviço de email; não garante entrega final. Se aparecer um erro ou um envio por confirmar, siga a indicação do formulário. Evite repetir o mesmo pedido em vários formulários.</p><p>Os dados são tratados nos termos da <a href="/politica-de-privacidade">política de privacidade</a>. O envio não subscreve marketing.</p></section>
     <section id="utilizacao"><h2>Utilização e direitos</h2><p>Não utilize o site para enviar conteúdo ilícito, dados de terceiros sem fundamento ou pedidos automatizados abusivos. Os conteúdos, marcas e imagens pertencem aos respetivos titulares ou são utilizados sob as condições aplicáveis; a sua presença no site não concede uma licença de reutilização.</p><p>As ligações externas abrem serviços com condições próprias. As preferências guardadas no navegador são explicadas em <a href="/politica-de-privacidade#preferencias">Cookies e preferências</a>.</p><p>Para esclarecer uma questão, consulte os <a href="/#contactos">contactos do stand</a>. A informação sobre <a href="/informacao-legal#litigios">litígios e reclamações</a> está disponível na Informação legal. Nenhuma destas disposições afasta direitos imperativos do consumidor.</p></section>

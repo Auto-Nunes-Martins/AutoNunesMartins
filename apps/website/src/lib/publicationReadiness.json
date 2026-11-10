@@ -3,31 +3,36 @@
     {
       "id": "legalName",
       "label": "Nome legal / firma",
-      "value": null
+      "value": "J.M Nunes & Martins, Lda."
     },
     {
       "id": "legalForm",
       "label": "Forma jurídica",
-      "value": null
+      "value": "Sociedade por quotas (Lda.)"
     },
     {
       "id": "taxId",
       "label": "NIF / NIPC",
-      "value": null
+      "value": "517 804 441"
     },
     {
       "id": "registeredAddress",
       "label": "Sede / morada do operador",
+      "value": "Rua Dr. Jorge Costa, n.º 1, R/C, Castelo Branco"
+    },
+    {
+      "id": "registeredPostalCode",
+      "label": "Código postal da sede",
       "value": null
     },
     {
       "id": "registration",
-      "label": "Registo comercial e conservatória — confirmar aplicabilidade",
+      "label": "Registo comercial e conservatória",
       "value": null
     },
     {
       "id": "capital",
-      "label": "Capital social — confirmar aplicabilidade",
+      "label": "Capital social",
       "value": null
     }
   ],
