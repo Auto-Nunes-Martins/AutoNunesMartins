@@ -1,6 +1,11 @@
 interface Cookiebot {
   hasResponse: boolean;
-  consent: { method: 'explicit' | 'implied' | null; marketing: boolean };
+  consent: {
+    method: 'explicit' | 'implied' | null;
+    preferences: boolean;
+    statistics: boolean;
+    marketing: boolean;
+  };
   renew: () => void;
   withdraw: () => void;
 }

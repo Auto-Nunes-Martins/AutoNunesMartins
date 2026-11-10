@@ -4,7 +4,7 @@
   let declaration: HTMLDivElement;
   let declarationReady = $state(false);
   let declarationFailed = $state(false);
-  let actionError = $state('');
+  let actionStatus = $state('');
   let dialogTimeout: number | undefined;
 
   function clearDialogTimeout() {
@@ -13,7 +13,7 @@
 
   function dialogDisplayed() {
     clearDialogTimeout();
-    actionError = '';
+    actionStatus = '';
   }
 
   onMount(() => {
@@ -52,22 +52,35 @@
   });
 
   function manage(action: 'renew' | 'withdraw') {
-    actionError = '';
+    actionStatus = '';
     clearDialogTimeout();
     try {
       const cmp = window.Cookiebot;
       if (typeof cmp?.[action] === 'function') {
+        if (action === 'withdraw') {
+          cmp.withdraw();
+          if (
+            cmp.consent?.preferences === false &&
+            cmp.consent.statistics === false &&
+            cmp.consent.marketing === false
+          ) {
+            actionStatus = 'Consentimento retirado.';
+            return;
+          }
+          actionStatus = 'Não foi possível confirmar a retirada. Atualize a página para voltar a tentar.';
+          return;
+        }
         dialogTimeout = window.setTimeout(() => {
-          actionError = 'O painel de cookies não abriu. Atualize a página para voltar a tentar.';
+          actionStatus = 'O painel de cookies não abriu. Atualize a página para voltar a tentar.';
         }, 5000);
-        cmp[action]();
+        cmp.renew();
         return;
       }
     } catch {
       // The site remains usable if the CMP is unavailable.
     }
     clearDialogTimeout();
-    actionError = 'O painel de cookies está indisponível. Atualize a página para voltar a tentar.';
+    actionStatus = 'O painel de cookies está indisponível. Atualize a página para voltar a tentar.';
   }
 </script>
 
@@ -77,7 +90,7 @@
   <button type="button" onclick={() => manage('renew')}>Alterar consentimento</button>
   <button type="button" onclick={() => manage('withdraw')}>Retirar consentimento</button>
 </div>
-<p role="status">{actionError}</p>
+<p role="status">{actionStatus}</p>
 <noscript><p>Ative o JavaScript para consultar o painel e a declaração de cookies.</p></noscript>
 <div bind:this={declaration} hidden={!declarationReady}></div>
 {#if declarationFailed}<p role="status">A declaração de cookies está indisponível.</p>{/if}
