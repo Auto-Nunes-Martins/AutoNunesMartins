@@ -41,4 +41,7 @@ kill_timeout = 30
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory = "2gb"
+  memory = "1gb"
+  
+# Alternative: reduce RAM to 768 MiB if memory usage remains stable.
+# memory_mb = 768
