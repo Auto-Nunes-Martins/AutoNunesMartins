@@ -10,6 +10,13 @@ import { createServer as createVite } from 'vite';
 const crm = fileURLToPath(new URL('../', import.meta.url));
 const useWebKit = process.argv.includes('--webkit') || process.env.CRM_TEST_BROWSER === 'webkit';
 const vehicleId = 'c000000000000000000000001';
+const campaignCars = [
+  [vehicleId, 'BMW', 'Série 3 Touring', '23900.00'],
+  ['c000000000000000000000011', 'MINI', 'Countryman Cooper D', '21400.00'],
+  ['c000000000000000000000012', 'Audi', 'A3 Sportback', '22900.00'],
+  ['c000000000000000000000013', 'Peugeot', '308 SW', '19500.00'],
+  ['c000000000000000000000014', 'Volvo', 'XC40', '29500.00'],
+];
 const draftId = 'c000000000000000000000002';
 const galleryId = 'c000000000000000000000097';
 const singlePhotoId = 'c000000000000000000000098';
@@ -90,9 +97,14 @@ before(async () => {
       });
     if (url.pathname === '/api/vehicles/stats') return reply({ total: 25, active: 25 });
     if (url.pathname === '/api/tasks/stats') return reply({ mineActive: 0 });
-    if (url.pathname === `/api/homepage-highlights/photos/${vehicleId}`)
+    const photoIndex = campaignCars.findIndex(
+      ([id]) => url.pathname === '/api/homepage-highlights/photos/' + id,
+    );
+    if (photoIndex >= 0)
       return reply({
-        photos: [{ url: '/fixture-campaign.webp', width: 960, height: 540 }],
+        photos: [
+          { url: '/fixture-campaign.webp?photo=' + (photoIndex % 2), width: 960, height: 540 },
+        ],
       });
     if (url.pathname === '/api/vehicle-campaigns') {
       if (req.method === 'PUT') {
@@ -113,17 +125,15 @@ before(async () => {
       }
       return reply({
         ...campaignFixture,
-        candidates: [
-          {
-            id: vehicleId,
-            brand: 'BMW',
-            model: 'Série 3 Touring',
-            year: 2021,
-            licensePlate: 'AA-00-AA',
-            price: '23900.00',
-            referencePrice: '23500.00',
-          },
-        ],
+        candidates: campaignCars.map(([id, brand, model, price], index) => ({
+          id,
+          brand,
+          model,
+          price,
+          year: 2021,
+          licensePlate: 'AA-0' + index + '-AA',
+          referencePrice: index === 0 ? '23500.00' : null,
+        })),
       });
     }
     if (url.pathname === '/api/notifications')
@@ -336,14 +346,17 @@ for (const width of [1366, 390]) {
     `real CRM campaign editor saves and ends a promotion at ${width}px`,
     { timeout: 90000 },
     async () => {
-      const context = await openSession(width);
+      const context = await openSession(width, width < 860 ? 'reduce' : 'no-preference');
       try {
         const page = await context.newPage();
-        await page.route('**/fixture-campaign.webp', (route) =>
-          route.fulfill({
-            path: path.resolve(crm, '../website/static/images/about/showroom-demo-v1-960.webp'),
-          }),
-        );
+        await page.route('**/fixture-campaign.webp*', (route) => {
+          const index = new URL(route.request().url()).searchParams.get('photo');
+          const photo =
+            index === '1' ? 'preparation-demo-v1-960.webp' : 'showroom-demo-v1-960.webp';
+          return route.fulfill({
+            path: path.resolve(crm, '../website/static/images/about', photo),
+          });
+        });
         await page.goto(origin + '/site/campanhas', {
           waitUntil: 'domcontentloaded',
           timeout: 60000,
@@ -352,62 +365,113 @@ for (const width of [1366, 390]) {
           'aria-current',
           'page',
         );
-        await expect(page.getByText('Nenhuma campanha selecionada.')).toBeVisible();
+        const tabs = page.getByRole('navigation', { name: 'Secções do site público' });
+        await expect(tabs.getByRole('link')).toHaveText([
+          'Destaques da homepage',
+          'Campanhas',
+          'Reviews',
+        ]);
         await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText(
           '1',
           { timeout: 30000 },
         );
-        await page.getByRole('button', { name: 'Adicionar viatura' }).click();
-        await page.getByLabel('Viatura', { exact: true }).selectOption(vehicleId);
-        await expect(page.getByRole('heading', { name: 'BMW Série 3 Touring' })).toBeVisible();
-        const dialog = page.getByRole('dialog');
-        await expect(dialog.locator('img')).toBeVisible();
-        const price = dialog.getByLabel('Preço promocional (€)', { exact: true });
-        const discount = dialog.getByLabel('Desconto (%)', { exact: true });
+        const catalog = page.getByRole('region', { name: 'Catálogo de viaturas' });
+        const campaigns = page.getByRole('region', { name: 'Viaturas em campanha' });
+        const search = catalog.getByRole('searchbox');
+        const add = catalog.getByRole('button', { name: 'Adicionar BMW Série 3 Touring' });
+        const save = campaigns.getByRole('button', { name: 'Guardar campanhas' });
+        await expect(campaigns.getByText('Nenhuma campanha selecionada.')).toBeVisible();
+        await expect(catalog.getByRole('listitem')).toHaveCount(5);
+        const panels = await Promise.all([campaigns.boundingBox(), catalog.boundingBox()]);
+        assert.ok(panels.every(Boolean));
+        assert.ok(width > 860 ? panels[0].x < panels[1].x : panels[0].y < panels[1].y);
+        if (width < 860) {
+          await page.getByRole('link', { name: 'Ver catálogo' }).click();
+          await expect(catalog.getByRole('heading')).toBeFocused();
+        }
+        await search.fill('serie');
+        await expect(catalog.getByRole('listitem')).toHaveCount(1);
+        await expect
+          .poll(async () =>
+            catalog
+              .locator('img')
+              .evaluateAll((images) =>
+                images.some((image) => image.complete && image.naturalWidth > 0),
+              ),
+          )
+          .toBe(true);
+        await add.click();
+        const card = campaigns.getByRole('article');
+        const cardTitle = card.getByRole('heading', { name: 'BMW Série 3 Touring' });
+        await expect(cardTitle).toBeFocused();
+        await expect(cardTitle).toBeInViewport();
+        await expect(page.getByRole('dialog')).toHaveCount(0);
+        await expect(
+          catalog.getByRole('button', { name: 'BMW Série 3 Touring adicionada' }),
+        ).toBeDisabled();
+        await expect(card.locator('img')).toBeVisible();
+        const price = card.getByLabel('Preço promocional (€)', { exact: true });
+        const discount = card.getByLabel('Desconto (%)', { exact: true });
         await price.fill('24000,00');
-        await dialog.getByRole('button', { name: 'Guardar campanha' }).click();
-        await expect(dialog.getByRole('alert')).toContainText('inferior');
+        await save.click();
+        await expect(card.getByRole('alert')).toContainText('inferior');
         await price.fill('21900,00');
         await expect(discount).toHaveValue('7');
         await discount.fill('10');
         await expect(price).toHaveValue('21150.00');
-        await dialog.getByLabel('Duração (dias)').fill('9');
+        await card.getByLabel('Duração (dias)').fill('9');
         const submission = page.waitForResponse(
           (response) =>
             response.request().method() === 'POST' && response.url().endsWith('/site/campanhas'),
         );
-        await dialog.getByRole('button', { name: 'Guardar campanha' }).click();
+        await save.click();
         const result = await (await submission).json();
         assert.equal(result.type, 'success', JSON.stringify(result));
-        await expect(page.getByText('Campanhas guardadas.', { exact: true })).toBeVisible({
+        await expect(campaigns.getByText('Campanhas guardadas.', { exact: true })).toBeVisible({
           timeout: 15000,
         });
         assert.equal(campaignFixture.items[0].price, '21150.00');
         assert.equal(campaignFixture.items[0].durationDays, 9);
-        const card = page.getByRole('button', { name: /BMW Série 3 Touring/ });
-        await expect(card.locator('img')).toBeVisible();
+        await expect(card.getByText('Em campanha')).toBeVisible();
+        await search.clear();
+        await expect(catalog.getByRole('listitem')).toHaveCount(5);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
         if (process.env.CAMPAIGN_PREVIEW === '1') {
-          const screenshot = path.join(crm, '.svelte-kit', 'campanhas-crm-lista-' + width + '.png');
-          await page.getByRole('region', { name: 'Campanhas' }).screenshot({
-            path: screenshot,
-            animations: 'disabled',
-            style: '.topbar, nav { visibility: hidden !important; }',
-          });
-          console.log(screenshot);
-        }
-        await card.click();
-        await expect(dialog.getByText(/Guardada de .*Lisboa/)).toBeVisible();
-        if (process.env.CAMPAIGN_PREVIEW === '1') {
+          await catalog.evaluate((node) => node.scrollIntoView({ block: 'center' }));
+          await expect
+            .poll(() =>
+              catalog
+                .locator('img')
+                .evaluateAll(
+                  (images) =>
+                    images.filter((image) => image.complete && image.naturalWidth > 0).length,
+                ),
+            )
+            .toBe(campaignCars.length);
           const screenshot = path.join(
             crm,
             '.svelte-kit',
-            'campanhas-crm-editor-' + width + '.png',
+            'campanhas-crm-inline-' + width + '.png',
           );
-          await dialog.screenshot({ path: screenshot, animations: 'disabled' });
+          await page.locator('.site-workspace').screenshot({
+            path: screenshot,
+            animations: 'disabled',
+            style: '.topbar, .bottom-nav, .qt-bubble { visibility: hidden !important; }',
+          });
           console.log(screenshot);
         }
-        await dialog.getByRole('button', { name: 'Remover campanha' }).click();
+        for (const [, brand, model] of campaignCars.slice(1, 4)) {
+          await catalog.getByRole('button', { name: 'Adicionar ' + brand + ' ' + model }).click();
+        }
+        await expect(catalog.getByText('Limite de quatro viaturas atingido.')).toBeVisible();
+        await expect(catalog.getByRole('button', { name: 'Adicionar Volvo XC40' })).toBeDisabled();
+        for (const [, brand, model] of campaignCars.slice(0, 4)) {
+          await campaigns.getByRole('button', { name: 'Remover ' + brand + ' ' + model }).click();
+        }
+        await expect(campaigns.getByText('Nenhuma campanha selecionada.')).toBeVisible();
+        await expect(add).toBeEnabled();
+        assert.equal(campaignFixture.items.length, 1);
+        await save.click();
         await expect.poll(() => campaignFixture.items.length).toBe(0);
         await page.reload();
         await expect(page.getByText('Nenhuma campanha selecionada.')).toBeVisible();

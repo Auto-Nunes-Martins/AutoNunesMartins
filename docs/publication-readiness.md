@@ -1,6 +1,6 @@
 # Preparação para publicação — PENDENTE
 
-Atualizado em 10 de novembro de 2026. Os contactos comerciais e parte da identificação oficial do operador estão confirmados. O site **não está pronto para publicação enquanto persistirem as pendências abaixo**.
+Atualizado em 11 de novembro de 2026. Os contactos comerciais e parte da identificação oficial do operador estão confirmados. O site **não está pronto para publicação enquanto persistirem as pendências abaixo**.
 
 Antes de responder a «está pronto para publicar?», consultar este documento, a configuração e a implementação corrente. Não assumir que uma revisão anterior concluiu a prontidão. Registar aqui evidência e data de cada confirmação; não inferir dados de concorrentes.
 
@@ -15,7 +15,7 @@ Antes de responder a «está pronto para publicar?», consultar este documento, 
 
 | Estado                   | Necessário                                                                        | Responsável / evidência esperada                                                                                                                                                             |
 | ------------------------ | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Parcial em 10/11/2026 | Nome legal, forma jurídica, NIPC e sede | Firma, forma jurídica, NIPC e morada da sede confirmados pelo proprietário via utilizador. Código postal por fornecer. |
+| Confirmado em 11/11/2026 | Nome legal, forma jurídica, NIPC e sede | Firma, forma jurídica, NIPC e morada da sede confirmados pelo proprietário via utilizador em 10/11/2026. O titular confirmou diretamente o código postal 6000-215 em 11/11/2026. |
 | Pendente | Registo comercial/conservatória e capital social | Conservatória por confirmar. Capital social aplicável à Lda., omitido da apresentação pública nesta atualização a pedido do utilizador e ainda pendente para publicação. |
 | Confirmado em 25/10/2026 | Telefones, email comercial, duas moradas, horários, equipa e redes sociais        | Dados fornecidos pelo proprietário e autorização direta neste chat: «Sim, são oficiais e autorizo aplicar». Mapas usam pesquisa das moradas, sem coordenadas ou números de porta inventados. |
 | Confirmado em 25/10/2026 | Número oficial de WhatsApp                                                        | Proprietário confirmou que é o mesmo número principal: +351 964 243 323. Evidência: mensagem de voz 01a174c2-7b46-7642-9271-461d7eb22a54 do chat 01a17464-70e7-7a03-9873-a14f9d3c255a.       |
@@ -233,3 +233,7 @@ Os prazos previamente acordados mantêm-se: avisos até 90 dias após a receçã
 ### Identificação do operador — 10 de novembro de 2026
 
 O utilizador transmitiu os dados recebidos do proprietário e autorizou a sua inclusão nos Termos e na Informação legal: J.M Nunes & Martins, Lda., NIPC 517 804 441, sede na Rua Dr. Jorge Costa, n.º 1, R/C, Castelo Branco. O código postal e a conservatória aguardam confirmação. A identidade do responsável pelo tratamento continua a aguardar confirmação explícita. A sede fornecida identifica o operador e as moradas comerciais mantêm a sua própria fonte. O capital social fica pendente no controlo interno de prontidão, com omissão da apresentação pública nesta atualização por instrução do utilizador.
+
+### Código postal da sede — 11 de novembro de 2026
+
+O titular confirmou diretamente, no chat `01a1cb10-2a57-7a61-82cd-b9ff57821537`, o código postal 6000-215 da Rua Dr. Jorge Costa, n.º 1, R/C. A Informação legal e os Termos de utilização apresentam a morada completa. A confirmação resolve apenas o código postal da sede.

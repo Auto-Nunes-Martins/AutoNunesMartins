@@ -1,9 +1,8 @@
 <script lang="ts">
   import PublicLegalPage from './PublicLegalPage.svelte';
-  import { legalValue } from '$lib/publicLegal';
+  import { legalValue, registeredOfficeAddress } from '$lib/publicLegal';
   const legalName = legalValue('legalName');
   const taxId = legalValue('taxId');
-  const registeredAddress = legalValue('registeredAddress');
   const sections = [
     { id: 'ambito', label: 'Âmbito do site' },
     { id: 'viaturas', label: 'Informação das viaturas' },
@@ -16,7 +15,7 @@
       <h2>Uma montra, sem compra online</h2>
       <p>O website Auto Nunes Martins permite consultar viaturas usadas, pesquisar o stock publicado, guardar favoritos, comparar viaturas e contactar o stand. Não existe checkout, pagamento, contratação de compra ou pedido de crédito através do site.</p>
       <p>
-        O site é operado por {legalName}, com o NIPC {taxId} e sede na {registeredAddress}.
+        O site é operado por {legalName}, com o NIPC {taxId} e sede na {registeredOfficeAddress}.
         Consulte as restantes menções na <a href="/informacao-legal#operador">Informação legal</a>.
       </p>
     </section>

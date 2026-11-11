@@ -18,11 +18,11 @@
     <a href={crmPath('/site/destaques')} aria-current={!reviews && !campaigns ? 'page' : undefined}
       ><Star size={17} aria-hidden="true" />Destaques da homepage</a
     >
-    <a href={crmPath('/site/reviews')} aria-current={reviews ? 'page' : undefined}
-      ><MessageSquare size={17} aria-hidden="true" />Reviews</a
-    >
     <a href={crmPath('/site/campanhas')} aria-current={campaigns ? 'page' : undefined}
       ><Tag size={17} aria-hidden="true" />Campanhas</a
+    >
+    <a href={crmPath('/site/reviews')} aria-current={reviews ? 'page' : undefined}
+      ><MessageSquare size={17} aria-hidden="true" />Reviews</a
     >
   </nav>
   {@render children()}

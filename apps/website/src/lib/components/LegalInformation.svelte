@@ -2,7 +2,12 @@
   import PublicLegalPage from './PublicLegalPage.svelte';
   import LegalFields from './LegalFields.svelte';
   import readiness from '$lib/publicationReadiness.json';
-  import { complaintsPortal, legalValue, officialLegalUrl } from '$lib/publicLegal';
+  import {
+    complaintsPortal,
+    legalValue,
+    officialLegalUrl,
+    registeredOfficeAddress,
+  } from '$lib/publicLegal';
   import { standContact } from './stand-concepts/standContact';
   const sections = [
     { id: 'operador', label: 'Identificação do operador' },
@@ -13,6 +18,15 @@
     ['legalForm', 'registration'].includes(field.id),
   );
   const corporateKnown = corporate.some((field) => Boolean(field.value));
+  const operatorFields = readiness.operator
+    .filter(
+      ({ id, value }) =>
+        ['legalName', 'taxId', 'registeredAddress'].includes(id) ||
+        (id === 'registeredPostalCode' && (!value || !registeredOfficeAddress)),
+    )
+    .map((field) =>
+      field.id === 'registeredAddress' ? { ...field, value: registeredOfficeAddress } : field,
+    );
   const ralUrl = officialLegalUrl(legalValue('ralUrl'));
 </script>
 
@@ -24,14 +38,8 @@
 >
   <section id="operador">
     <h2>Identificação do operador</h2>
-    <p>
-      Auto Nunes Martins é o nome comercial do site.
-    </p>
-    <LegalFields
-      fields={readiness.operator.filter((field) =>
-        ['legalName', 'taxId', 'registeredAddress', 'registeredPostalCode'].includes(field.id),
-      )}
-    />
+    <p>Auto Nunes Martins é o nome comercial do site.</p>
+    <LegalFields fields={operatorFields} />
     <details open={corporateKnown}>
       <summary>Menções societárias</summary><LegalFields fields={corporate} />
     </details>

@@ -1,10 +1,21 @@
 import { expect, it } from 'vitest';
-import { complaintsPortal, legalValue, officialLegalUrl, publicLegalLinks } from './publicLegal';
+import {
+  complaintsPortal,
+  legalValue,
+  officialLegalUrl,
+  publicLegalLinks,
+  registeredOfficeAddress,
+} from './publicLegal';
 import readiness from './publicationReadiness.json';
 import { readFileSync } from 'node:fs';
 import { FAVORITES_KEY } from './favorites';
 import { COMPARISON_KEY } from './comparison';
 import { THEME_KEY } from './publicTheme';
+
+it('includes the confirmed postal code in the registered office address', () => {
+  expect(registeredOfficeAddress).toBe('Rua Dr. Jorge Costa, n.º 1, R/C, 6000-215 Castelo Branco');
+  expect(legalValue('controller')).toBeNull();
+});
 
 it('never turns pending official data into an invented entity, membership or URL', () => {
   for (const group of [

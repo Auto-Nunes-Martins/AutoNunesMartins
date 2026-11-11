@@ -23,7 +23,7 @@
     {
       "id": "registeredPostalCode",
       "label": "Código postal da sede",
-      "value": null
+      "value": "6000-215"
     },
     {
       "id": "registration",

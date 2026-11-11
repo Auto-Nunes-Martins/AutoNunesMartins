@@ -14,6 +14,16 @@ const fields: { id: string; label: string; value: string | null }[] = [
 export const legalValue = (id: string) =>
   fields.find((field) => field.id === id)?.value?.trim() || null;
 
+const registeredAddress = legalValue('registeredAddress');
+const registeredPostalCode = legalValue('registeredPostalCode');
+const localitySeparator = registeredAddress?.lastIndexOf(',') ?? -1;
+export const registeredOfficeAddress =
+  registeredAddress && registeredPostalCode
+    ? localitySeparator < 0
+      ? `${registeredAddress}, ${registeredPostalCode}`
+      : `${registeredAddress.slice(0, localitySeparator)}, ${registeredPostalCode} ${registeredAddress.slice(localitySeparator + 1).trim()}`
+    : registeredAddress;
+
 /** Public destinations must remain HTTPS links; pending/invalid official fields are never links. */
 export function officialLegalUrl(value: string | null): string | null {
   if (!value) return null;
