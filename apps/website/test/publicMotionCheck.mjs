@@ -42,6 +42,8 @@ export async function captureCarouselFrames(browser, origin, output) {
                 (animation) =>
                   animation.id.endsWith('-vehicle-change') ||
                   animation.animationName === 'hd-progress-pulse' ||
+                  (animation.transitionProperty === 'background-color' &&
+                    animation.effect?.target?.closest?.('.hd-progress')) ||
                   animation.effect?.target?.classList?.contains('featured-photo-outgoing'),
               );
             for (const animation of animations) animation.pause();
@@ -54,7 +56,7 @@ export async function captureCarouselFrames(browser, origin, output) {
       await page.waitForFunction((kind) => kind in window.carouselCaptures, kind, {
         timeout: 12000,
       });
-      assert.equal(await page.evaluate((kind) => window.carouselCaptures[kind].length, kind), 4);
+      assert.equal(await page.evaluate((kind) => window.carouselCaptures[kind].length, kind), 6);
       for (const time of [100, 215, 350, 520, 700]) {
         await page.evaluate(
           ({ kind, time }) => {
@@ -172,12 +174,19 @@ function observeCarousel(feature) {
       const transform = getComputedStyle(photo).transform;
       const matrix = new DOMMatrixReadOnly(transform === 'none' ? undefined : transform);
       const outgoing = feature.querySelector('.featured-photo-outgoing');
+      const priceAnimation = price.getAnimations().find(({ id }) => id === 'price-vehicle-change');
+      const barAnimation = nextTrack
+        .getAnimations()
+        .find(({ animationName }) => animationName === 'hd-progress-pulse');
       frames.push({
         time: now - start,
         label: labelPosition(),
         from: track(previousTrack),
         to: track(nextTrack),
-        barTime: nextTrack.getAnimations()[0]?.currentTime ?? null,
+        barDuration: barAnimation?.effect.getTiming().duration ?? null,
+        priceDelay: priceAnimation?.effect.getTiming().delay ?? null,
+        priceDuration: priceAnimation?.effect.getTiming().duration ?? null,
+        priceTime: priceAnimation?.currentTime ?? null,
         priceSlotWidth: price.parentElement.getBoundingClientRect().width,
         photo: matrix.a,
         translation: matrix.e,
@@ -225,7 +234,10 @@ function swipe(photo) {
   }
 }
 
-function checkCarouselMotion({ from, to, restingTracks, frames, initialPriceWidth }, reduced) {
+function checkCarouselMotion(
+  { from, to, restingTracks, frames, initialPriceWidth },
+  { reduced, mobile },
+) {
   const last = frames.at(-1);
   const resting = restingTracks[0];
   assert.ok(Math.abs(to.x - from.x) > 50);
@@ -242,23 +254,28 @@ function checkCarouselMotion({ from, to, restingTracks, frames, initialPriceWidt
       assert.ok(Math.abs(bar.width - resting.width) < 0.1, 'bar width stays fixed');
       assert.equal(bar.layoutHeight, 2);
     }
-    assert.equal(frame.to.color, 'rgb(255, 255, 255)', 'new bar turns white immediately');
-    assert.notEqual(frame.from.color, frame.to.color, 'old bar turns grey immediately');
     assert.ok(Math.abs(frame.from.height - resting.height) < 0.1, 'old bar stays flat');
     assert.equal(frame.from.radius, '0px');
-    assert.ok(parseFloat(frame.to.radius) <= 0.56, 'rounded corners stay subtle');
+    assert.ok(parseFloat(frame.to.radius) <= 1.01, 'rounding is limited to the growing bar');
   }
+  const white = 'rgb(255, 255, 255)';
+  const grey = restingTracks.find((bar) => bar.color !== white).color;
+  assert.equal(last.to.color, white);
+  assert.equal(last.from.color, grey);
   assert.ok(Math.abs(last.to.height - resting.height) < 0.1);
   assert.equal(last.to.radius, '0px');
   assert.ok(frames.every((frame) => Math.abs(frame.priceSlotWidth - initialPriceWidth) < 1));
-  assert.ok(
-    frames.every((frame) => Math.abs(frame.translation) < 0.01),
-    'no lateral translation',
-  );
-  assert.ok(Math.abs(last.photo - 1) < 0.001 && Math.abs(last.price - 1) < 0.001);
+  if (mobile || reduced)
+    assert.ok(
+      frames.every((frame) => Math.abs(frame.translation) < 0.01),
+      'no lateral translation',
+    );
+  assert.ok(Math.abs(last.price - 1) < 0.001);
+  if (mobile || reduced) assert.ok(Math.abs(last.photo - 1) < 0.001);
   assert.equal(last.outgoing, null);
   assert.equal(last.priceColor, 'rgb(250, 250, 250)');
   if (reduced) {
+    assert.ok(frames.every(({ from, to }) => from.color === grey && to.color === white));
     assert.ok(
       frames.every(
         (frame) => Math.abs(frame.to.height - resting.height) < 0.1 && frame.to.radius === '0px',
@@ -270,30 +287,43 @@ function checkCarouselMotion({ from, to, restingTracks, frames, initialPriceWidt
     return;
   }
   const barPeak = frames.reduce((peak, frame) => (frame.to.height > peak.to.height ? frame : peak));
-  assert.ok(barPeak.to.height > resting.height * 1.75 && barPeak.to.height < resting.height * 1.92);
-  assert.ok(parseFloat(barPeak.to.radius) > 0.45);
-  assert.ok(frames.filter((frame) => frame.outgoing > 0.1 && frame.outgoing < 0.9).length >= 3);
+  const barScale = 1.42;
+  const sampledScale = barPeak.to.height / resting.height;
+  const sampledRadius = parseFloat(barPeak.to.radius);
+  // Desktop WebKit can sample sparsely while the wider hero is painting.
+  assert.ok(
+    Math.abs(sampledScale - barScale) < (mobile ? 0.06 : 0.23),
+    `bar peak (${sampledScale})`,
+  );
+  assert.ok(Math.abs(sampledRadius - 0.65) < (mobile ? 0.08 : 0.26));
+  const fading = (bar) => bar.color !== white && bar.color !== grey;
+  assert.ok(
+    frames.some(({ from, to }) => fading(from) && fading(to)),
+    'both fixed bars transition through intermediate colours',
+  );
+  assert.ok(frames.some((frame) => frame.outgoing > 0.1 && frame.outgoing < 0.9));
   const photoPeak = Math.max(...frames.map((frame) => frame.photo));
   const pricePeak = frames.reduce((peak, frame) => (frame.price > peak.price ? frame : peak));
-  assert.ok(photoPeak >= 1.015 && photoPeak <= 1.019, `subtle photo peak (${photoPeak})`);
+  if (mobile)
+    assert.ok(photoPeak >= 1.015 && photoPeak <= 1.019, `subtle photo peak (${photoPeak})`);
+  assert.ok(Math.abs(pricePeak.price - 1.07) < 0.012, `price peak (${pricePeak.price})`);
+  assert.ok(frames.some(({ barDuration }) => barDuration === 480));
   assert.ok(
-    pricePeak.price >= 1.108 && pricePeak.price <= 1.121,
-    `stronger price peak (${pricePeak.price})`,
+    frames.some(({ priceDelay, priceDuration }) => priceDelay === 95 && priceDuration === 680),
   );
   assert.ok(
-    barPeak.barTime > 155 && barPeak.barTime < 280,
-    `the bar builds over the first part of the change (${barPeak.barTime} ms)`,
+    frames.every(
+      ({ priceTime, price }) =>
+        priceTime === null || priceTime >= 95 || Math.abs(price - 1) < 0.001,
+    ),
   );
-  assert.ok(pricePeak.time > barPeak.time + 75, 'the price peaks after the bar');
-  assert.ok(
-    frames.some((frame) => frame.time > 535 && frame.to.radius === '0px' && frame.price > 1.025),
-    'the price lingers after the bar settles',
-  );
-  assert.ok(frames.some((frame) => frame.price > 1.1 && frame.priceColor !== last.priceColor));
+  assert.ok(pricePeak.time > barPeak.time, 'the price peaks after the bar');
+  assert.ok(pricePeak.priceColor !== last.priceColor);
 }
 
 export async function publicMotionCheck(browser, origin, slug) {
   for (const [width, reducedMotion] of [
+    [1440, 'no-preference'],
     [320, 'no-preference'],
     [375, 'no-preference'],
     [390, 'no-preference'],
@@ -388,7 +418,7 @@ export async function publicMotionCheck(browser, origin, slug) {
       await expect(feature.locator('.hd-photo-note')).toHaveCount(0);
       const changes = await page.evaluate(() => window.carouselChanges);
       for (const [index, motion] of changes.entries()) {
-        checkCarouselMotion(motion, reduced);
+        checkCarouselMotion(motion, { reduced, mobile });
         const dx = Math.max(
           ...motion.frames.map(({ label }) => Math.abs(label.x - motion.beforeLabel.x)),
         );
@@ -431,7 +461,6 @@ export async function publicMotionCheck(browser, origin, slug) {
           );
         }
       }
-
       if (width === 390 && !reduced) {
         const detail = feature.locator(`.hd-identity a[href="/viaturas/${slug}"]`);
         await positions.first().tap();

@@ -73,15 +73,15 @@ export function priceEmphasis(node: HTMLElement, initialVehicle?: string) {
       [
         { transform, color, textShadow, easing: priceEasing },
         {
-          transform: 'scale(1.12)',
-          color: '#ffe1a0',
-          textShadow: '0 0 10px #ffc35d80',
-          offset: 0.46,
+          transform: 'scale(1.07)',
+          color: '#ffeac0',
+          textShadow: '0 0 6px #ffc35d52',
+          offset: 0.43,
           easing: priceEasing,
         },
         resting,
       ],
-      { duration: 780 },
+      { delay: 95, duration: 680, fill: 'backwards' },
     );
     pricePulse.id = 'price-vehicle-change';
     if (mobile.matches) {

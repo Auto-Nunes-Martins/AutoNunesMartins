@@ -80,11 +80,11 @@ describe('featured price emphasis', () => {
     action.update('second-car');
     expect(animate).toHaveBeenCalledTimes(1);
     expect(animate.mock.results[0]!.value.id).toBe('price-vehicle-change');
-    expect(animate.mock.calls[0]![1]).toEqual({ duration: 780 });
+    expect(animate.mock.calls[0]![1]).toEqual({ delay: 95, duration: 680, fill: 'backwards' });
     expect(animate.mock.calls[0]![0][1]).toMatchObject({
-      transform: 'scale(1.12)',
-      color: '#ffe1a0',
-      offset: 0.46,
+      transform: 'scale(1.07)',
+      color: '#ffeac0',
+      offset: 0.43,
     });
     action.update('second-car');
     vi.advanceTimersByTime(60_000);
@@ -120,9 +120,15 @@ describe('featured price emphasis', () => {
     action.destroy();
   });
 
-  it('runs the same scale and timing on the mobile photo for a displayed change', () => {
-    const { action, photoAnimate } = setup(false, true);
+  it('delays the price pulse and starts the existing photo pulse immediately', () => {
+    const { action, animate, photoAnimate } = setup(false, true);
     action.update('second-car');
+    expect(animate.mock.calls[0]![1]).toEqual({ delay: 95, duration: 680, fill: 'backwards' });
+    expect(animate.mock.calls[0]![0][1]).toMatchObject({
+      transform: 'scale(1.07)',
+      color: '#ffeac0',
+      textShadow: '0 0 6px #ffc35d52',
+    });
     expect(photoAnimate).toHaveBeenCalledTimes(1);
     expect(photoAnimate).toHaveBeenCalledWith(
       [
