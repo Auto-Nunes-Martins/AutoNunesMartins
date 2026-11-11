@@ -5,6 +5,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { X } from 'lucide-svelte';
   import BrandSearch from '$lib/components/brand/icons/BrandSearch.svelte';
+  import { panelTransition } from './panelTransition';
   import {
     searchShortcuts,
     safeSearchHit,
@@ -273,7 +274,7 @@
       >{:else}<kbd class="gs-kbd-hint">⌘K</kbd>{/if}
   </div>
   {#if open}
-    <div class="gs-dropdown" style="border-radius:var(--radius-card)">
+    <div class="gs-dropdown" style="border-radius:var(--radius-card)" transition:panelTransition>
       {#if !needle && recentHits.length}<div class="gs-recent-tools">
           <span>Histórico apenas desta sessão</span><button
             type="button"
@@ -442,6 +443,7 @@
      over the page bg, same border, same radius — so the dropdown reads
      as a continuation of the search field. */
   .gs-dropdown {
+    transform-origin: top right;
     position: absolute;
     left: 0;
     right: 0;

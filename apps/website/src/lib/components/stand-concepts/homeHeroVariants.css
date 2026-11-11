@@ -201,8 +201,6 @@
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-photo {
     aspect-ratio: 1.85;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
   }
   .hd-root.hd-1[data-photo-variant='5'] .hd-landscape::after {
     background:

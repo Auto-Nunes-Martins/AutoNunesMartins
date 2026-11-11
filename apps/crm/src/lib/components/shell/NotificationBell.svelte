@@ -3,7 +3,7 @@
   import { crmPath } from '$lib/paths';
   import { activityHref as hrefFor } from '$lib/activityNavigation';
   import { onMount, onDestroy, untrack } from 'svelte';
-  import { cubicOut } from 'svelte/easing';
+  import { panelTransition } from './panelTransition';
   import { page } from '$app/stores';
   import { activeCreationDraftId } from '$lib/activeCreationDraft';
   import { draftNotificationsRevision } from '$lib/components/vehicle/creationLifecycle';
@@ -113,17 +113,6 @@
 
   function close() {
     isOpen = false;
-  }
-
-  function panelTransition(_node: Element) {
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const mobile = matchMedia('(max-width: 767px)').matches;
-    return {
-      duration: reduced ? 0 : 220,
-      easing: cubicOut,
-      css: (t: number) =>
-        `opacity: ${t}; transform: translateY(${(mobile ? -10 : -6) * (1 - t)}px) scale(${1 - (mobile ? 0.012 : 0.025) * (1 - t)});`,
-    };
   }
 
   function onDocClick(e: MouseEvent) {

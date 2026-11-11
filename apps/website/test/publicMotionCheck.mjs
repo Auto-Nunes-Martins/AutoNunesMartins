@@ -360,6 +360,11 @@ export async function publicMotionCheck(browser, origin, slug) {
       );
       await expect(feature).toHaveAttribute('data-carousel-paused', 'false', { timeout: 12000 });
       await expect(feature.locator('.hd-photo-note')).toHaveCount(0);
+      const photo = feature.locator('.hd-photo');
+      for (const corner of ['top-left', 'top-right', 'bottom-right', 'bottom-left']) {
+        await expect(photo).toHaveCSS(`border-${corner}-radius`, '2px');
+      }
+      await expect(photo).toHaveCSS('overflow', 'hidden');
       const positions = feature.locator('.hd-progress button');
       const initiallyActive =
         (await positions.first().getAttribute('aria-pressed')) === 'true' ? 0 : 1;

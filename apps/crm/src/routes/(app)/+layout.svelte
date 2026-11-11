@@ -71,14 +71,14 @@
   open. Tap to dismiss. Sits between the main content (z-10) and the
   sidebar (z-5 desktop, z-40 mobile) so the sidebar floats above it.
 -->
-{#if $mobileDrawer}
-  <button
-    type="button"
-    class="drawer-backdrop"
-    aria-label="Fechar menu"
-    onclick={() => mobileDrawer.close()}
-  ></button>
-{/if}
+<button
+  type="button"
+  class="drawer-backdrop"
+  class:drawer-visible={$mobileDrawer}
+  inert={!$mobileDrawer}
+  aria-label="Fechar menu"
+  onclick={() => mobileDrawer.close()}
+></button>
 
 <div class="main-area relative">
   <div class="header-ambient absolute inset-0 pointer-events-none"></div>
@@ -106,6 +106,7 @@
     --sidebar-w: 240px;
     --sidebar-w-collapsed: 68px;
     --sidebar-w-mobile: 280px;
+    --drawer-duration: 260ms;
   }
   .main-area {
     background: var(--color-bg-0);
@@ -144,7 +145,8 @@
   }
 
   /* Backdrop sits above main content but below the drawer itself. */
-  :global(.drawer-backdrop) {
+  .drawer-backdrop {
+    display: none;
     position: fixed;
     inset: 0;
     z-index: 30;
@@ -154,36 +156,45 @@
     border: 0;
     padding: 0;
     cursor: pointer;
-    animation: drawer-fade-in 0.18s var(--ease-brand);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      opacity var(--drawer-duration) var(--ease-brand),
+      visibility var(--drawer-duration);
   }
-  :global([data-theme='light']) :global(.drawer-backdrop) {
+  @media (max-width: 767px) {
+    .drawer-backdrop {
+      display: block;
+    }
+  }
+  .drawer-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  :global([data-theme='light']) .drawer-backdrop {
     background: rgba(20, 20, 24, 0.45);
   }
   @media (prefers-reduced-motion: reduce) {
-    :global(.drawer-backdrop) {
-      animation: none;
-    }
-  }
-  @keyframes drawer-fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
+    .drawer-backdrop {
+      transition: none;
     }
   }
 
   /* Body scroll lock while the drawer is open. */
-  :global(html.drawer-open),
-  :global(html.drawer-open body) {
-    overflow: hidden;
+  @media (max-width: 767px) {
+    :global(html.drawer-open),
+    :global(html.drawer-open body) {
+      overflow: hidden;
+    }
   }
 
   /* While a swipe gesture is in progress, fade the backdrop in lockstep
      with the drawer's drag progress (0 = closed, 1 = fully open). */
-  :global(html.drawer-dragging) :global(.drawer-backdrop) {
+  :global(html.drawer-dragging) .drawer-visible {
     opacity: var(--drawer-drag-progress, 1);
-    animation: none;
     transition: none;
   }
 </style>

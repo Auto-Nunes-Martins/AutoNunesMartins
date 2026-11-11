@@ -110,6 +110,8 @@
   animation: none;
 }
 .hd-root[data-featured-card] .hd-photo {
+  border-radius: 2px;
+  isolation: isolate;
   background: transparent;
 }
 .hd-root[data-featured-card] .hd-photo::after {

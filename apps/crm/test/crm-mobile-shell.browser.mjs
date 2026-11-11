@@ -295,6 +295,7 @@ async function searchFlow(page) {
         const box = close.getBoundingClientRect();
         window.searchFrames.push({
           opacity: Number(getComputedStyle(layer).opacity),
+          width: layer.querySelector('.gs-input-shell').getBoundingClientRect().width,
           x: box.x,
           y: box.y,
         });
@@ -318,6 +319,11 @@ async function searchFlow(page) {
     searchMotion.frames.some((frame) => frame.opacity > 0.05 && frame.opacity < 0.95),
     !searchMotion.reduced,
   );
+  const fullWidth = await layer.locator('.gs-input-shell').evaluate((shell) => shell.offsetWidth);
+  assert.equal(
+    searchMotion.frames.some(({ width }) => width > 44 && width < fullWidth - 4),
+    !searchMotion.reduced,
+  );
   assert.ok(
     searchMotion.frames.every(
       ({ x, y }) =>
@@ -337,6 +343,12 @@ async function searchFlow(page) {
   await expect(input).toHaveValue('');
   await page.keyboard.press('Escape');
   await expect(toggle).toBeFocused();
+  await toggle.tap();
+  await expect(input).toBeFocused();
+  await page.touchscreen.tap(5, 160);
+  await expect(layer).toHaveAttribute('inert', '');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(input).not.toBeFocused();
 }
 
 async function drawerSwipe(locator, fromX, toX) {
@@ -417,8 +429,12 @@ async function checkVehicleRows(page, width) {
     rows.first().locator('[title="' + vehicle.brand + ' ' + vehicle.model + '"]'),
   ).toHaveCSS('-webkit-line-clamp', '2');
   const menuButton = rows.first().getByRole('button', { name: /Mais opções/ });
-  await expect(menuButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(menuButton).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+  const price = rows.first().locator('[title="PVP"]');
+  const [priceBox, rowLinkBox] = await Promise.all([
+    price.boundingBox(),
+    rows.first().locator('.mobile-vehicle-link').boundingBox(),
+  ]);
+  assert.ok(Math.abs(priceBox.x + priceBox.width - (rowLinkBox.x + rowLinkBox.width)) < 2);
   const buttonBox = await menuButton.boundingBox();
   assert.ok(
     buttonBox.width >= 44 && buttonBox.height >= 44 && buttonBox.x + buttonBox.width <= width,
@@ -547,6 +563,28 @@ test(
   },
 );
 
+test('real CRM desktop search opens and dismisses the animated dropdown', { timeout: 90000 }, async () => {
+  const context = await openSession(1366);
+  try {
+    const page = await context.newPage();
+    await page.goto(origin + '/viaturas');
+    await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
+      timeout: 30000,
+    });
+    const search = page.locator('.tb-search-inline .gs-root');
+    const field = search.getByRole('combobox', { name: 'Pesquisar' });
+    const dropdown = search.locator('.gs-dropdown');
+    await field.focus();
+    await expect(dropdown).toHaveCSS('opacity', '1');
+    await field.press('Escape');
+    await expect(field).toHaveAttribute('aria-expanded', 'false');
+    await expect(field).toBeFocused();
+    await expect(dropdown).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
 async function checkMobileEditStatus(page) {
   let finishSave;
   let shouldFail = true;
@@ -644,7 +682,16 @@ for (const [width, reduced] of [
       const sidebar = page.locator('.sidebar');
       const backdrop = page.getByRole('button', { name: 'Fechar menu', exact: true });
       await expect(backdrop).toBeVisible();
-      if (reduced) await expect(backdrop).toHaveCSS('animation-name', 'none');
+      if (await page.evaluate(() => CSS.supports('-webkit-tap-highlight-color', 'transparent'))) {
+        await expect(backdrop).toHaveCSS('-webkit-tap-highlight-color', 'rgba(0, 0, 0, 0)');
+      }
+      await expect(backdrop).toHaveCSS('opacity', '1');
+      if (reduced) await expect(backdrop).toHaveCSS('transition-property', 'none');
+      await backdrop.tap({ position: { x: width - 12, y: 120 } });
+      await expect(backdrop).toHaveCount(0);
+      await expect(page.locator('.drawer-backdrop')).toHaveCSS('opacity', '0');
+      await hamburger.tap();
+      await expect(backdrop).toBeVisible();
       assert.deepEqual(await drawerSwipe(sidebar, 5, 145), { prevented: false, dragging: false });
       await expect(backdrop).toBeVisible();
       assert.deepEqual(await drawerSwipe(sidebar, 182, 55), { prevented: true, dragging: true });

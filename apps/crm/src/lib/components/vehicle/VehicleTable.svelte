@@ -67,13 +67,12 @@
     editHref={v.status === 'DRAFT' ? destination(v) : crmPath(`/viaturas/${v.id}/editar`)}
     actions={actionsFor(v)}
     {compact}
-    borderless={compact}
   />
 {/snippet}
 
 <div class="md:hidden divide-y divide-[var(--color-border)]">
   {#each items as v (v.id)}
-    <article use:linkedRow class="linked-row flex items-center gap-1 px-3">
+    <article use:linkedRow class="linked-row flex items-center gap-2 px-3">
       <a
         href={destination(v)}
         class="row-link mobile-vehicle-link grid min-w-0 flex-1 items-center gap-x-3 gap-y-2 py-3 group"
@@ -109,12 +108,16 @@
             {/if}{v.year}{#if v.mileage != null}
               · {formatInt(v.mileage)} km{/if}
           </span>
-          {#if v.salePrice}<span class="num-value block text-[12px]" title="PVP"
-              >{formatEUR(v.salePrice)}</span
-            >{/if}
         </div>
-        <div class="mobile-vehicle-tags col-span-2 flex items-center gap-1.5">
-          <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
+        <div class="col-span-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div class="mobile-vehicle-tags flex items-center gap-1.5">
+            <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
+          </div>
+          {#if v.salePrice}
+            <span class="num-value ml-auto whitespace-nowrap text-[12px]" title="PVP">
+              {formatEUR(v.salePrice)}
+            </span>
+          {/if}
         </div>
       </a>
       {@render rowActions(v, true)}

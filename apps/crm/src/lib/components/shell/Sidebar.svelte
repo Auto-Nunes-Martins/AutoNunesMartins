@@ -387,13 +387,17 @@
     .sidebar.collapsed {
       width: var(--sidebar-w-mobile, 280px);
       transform: translateX(-100%);
-      transition: transform 0.22s var(--ease-brand);
+      visibility: hidden;
+      transition:
+        transform var(--drawer-duration) var(--ease-brand),
+        visibility var(--drawer-duration);
       z-index: 40;
       box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
     }
     .sidebar.mobile-open,
     .sidebar.collapsed.mobile-open {
       transform: translateX(0);
+      visibility: visible;
     }
     /* While a swipe gesture is in progress, drop the transition and drive
        position from --drawer-drag-x (set on <html> during the drag). The var
@@ -535,6 +539,8 @@
     transform: rotate(180deg);
   }
   @media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .sidebar.collapsed,
     .sidebar-toggle :global(.toggle-icon) {
       transition: none;
     }

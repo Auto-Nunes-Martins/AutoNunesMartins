@@ -45,34 +45,43 @@
   const pageTitle = $derived(resolvedCrumbs[resolvedCrumbs.length - 1] ?? 'Painel');
 
   // Mobile search-expansion state. When true, the search takes over the
-  // entire topbar row and the other action buttons are hidden. Tap the X
-  // to collapse back to the icon.
+  // entire topbar row and the other action buttons are hidden.
   let mobileSearchOpen = $state(false);
   let notificationsOpen = $state(false);
   let scrollHidden = $state(false);
   let searchToggle: HTMLButtonElement;
   let searchHost = $state<HTMLDivElement>();
+  let searchLayer: HTMLDivElement;
   let compactSearch: ReturnType<typeof GlobalSearch>;
   let header: HTMLElement;
   let scrollAnchor = 0;
   let ignoreScrollUntil = 0;
   const pinned = $derived(mobileSearchOpen || $mobileDrawer || notificationsOpen);
 
+  function syncSearchTrigger() {
+    const trigger = searchToggle.getBoundingClientRect();
+    if (!trigger.width) return;
+    const layer = searchLayer.getBoundingClientRect();
+    searchLayer.style.setProperty('--search-trigger-left', `${trigger.left - layer.left}px`);
+    searchLayer.style.setProperty('--search-trigger-width', `${trigger.width}px`);
+  }
+
   function openSearch() {
     if ($mobileDrawer) return;
     quickTask.close();
     notificationsOpen = false;
     scrollHidden = false;
+    syncSearchTrigger();
     // Focus within the activating click, while iOS can still open the keyboard.
     flushSync(() => (mobileSearchOpen = true));
     compactSearch?.focus();
   }
 
-  function closeSearch() {
+  function closeSearch(restoreFocus = true) {
     scrollAnchor = Math.max(0, window.scrollY);
     ignoreScrollUntil = performance.now() + 220;
     flushSync(() => (mobileSearchOpen = false));
-    searchToggle?.focus({ preventScroll: true });
+    if (restoreFocus) searchToggle?.focus({ preventScroll: true });
   }
 
   afterNavigate(() => {
@@ -90,6 +99,10 @@
 
   onMount(() => {
     const mobile = window.matchMedia('(max-width: 767px)');
+    const searchResize = new ResizeObserver(syncSearchTrigger);
+    searchResize.observe(header);
+    searchResize.observe(searchToggle);
+    syncSearchTrigger();
     function onScroll() {
       const y = Math.max(0, window.scrollY);
       if (!mobile.matches || pinned || y <= 0 || performance.now() < ignoreScrollUntil) {
@@ -125,9 +138,23 @@
         openSearch();
       }
     };
+    const dismissOutside = (event: PointerEvent) => {
+      if (mobileSearchOpen && !searchLayer.contains(event.target as Node)) closeSearch(false);
+    };
+    const dismissEscape = (event: KeyboardEvent) => {
+      if (mobileSearchOpen && event.key === 'Escape' && !event.defaultPrevented) {
+        event.preventDefault();
+        closeSearch();
+      }
+    };
+    document.addEventListener('pointerdown', dismissOutside, true);
     window.addEventListener('keydown', key, true);
+    window.addEventListener('keydown', dismissEscape);
     return () => {
+      searchResize.disconnect();
+      document.removeEventListener('pointerdown', dismissOutside, true);
       window.removeEventListener('keydown', key, true);
+      window.removeEventListener('keydown', dismissEscape);
       window.removeEventListener('scroll', onScroll);
       mobile.removeEventListener('change', onScroll);
       viewport?.removeEventListener('resize', syncViewport);
@@ -244,12 +271,16 @@
         {/if}
       </div>
     </div>
-    <div class="tb-search-expanded flex items-center gap-2" inert={!mobileSearchOpen}>
+    <div
+      class="tb-search-expanded flex items-center gap-2"
+      bind:this={searchLayer}
+      inert={!mobileSearchOpen}
+    >
       <GlobalSearch {userKey} bind:recentHits bind:this={compactSearch} onDismiss={closeSearch} />
       <button
         type="button"
         class="tb-icbtn tb-search-close"
-        onclick={closeSearch}
+        onclick={() => closeSearch()}
         aria-label="Fechar pesquisa"
       >
         <X class="h-5 w-5" />
@@ -263,7 +294,7 @@
     container-type: inline-size;
   }
   .tb-normal {
-    transition: opacity 125ms ease 65ms;
+    transition: opacity 115ms ease 130ms;
   }
   .tb-normal.search-open {
     opacity: 0;
@@ -273,15 +304,39 @@
     position: absolute;
     inset: 0 16px;
     opacity: 0;
-    transition: opacity 115ms ease;
+    transition: opacity 130ms ease 100ms;
   }
   .searching .tb-search-expanded {
     opacity: 1;
-    transition: opacity 145ms ease 55ms;
+    transition: opacity 120ms ease;
   }
   .tb-search-expanded > :global(.gs-root) {
     max-width: none;
     margin-inline: 0;
+  }
+  .tb-search-expanded :global(.gs-input-shell) {
+    --search-start: var(--search-trigger-left, 0px);
+    --search-width: var(--search-trigger-width, 44px);
+    margin-left: var(--search-start);
+    margin-right: calc(100% - var(--search-start) - var(--search-width));
+    border-radius: 22px;
+    overflow: hidden;
+    transition:
+      margin 240ms var(--ease-brand),
+      border-radius 240ms var(--ease-brand),
+      border-color 120ms ease;
+  }
+  .searching .tb-search-expanded :global(.gs-input-shell) {
+    margin-inline: 0;
+    border-radius: 10px;
+  }
+  .tb-icbtn.tb-search-close {
+    opacity: 0;
+    transition: opacity 90ms ease;
+  }
+  .searching .tb-icbtn.tb-search-close {
+    opacity: 1;
+    transition: opacity 130ms ease 95ms;
   }
   .tb-search-expanded :global(.gs-scroll) {
     max-height: min(56dvh, max(64px, calc(var(--tb-visible-height, 100dvh) - 150px)));
@@ -316,8 +371,11 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .topbar,
+    .tb-normal.search-open,
     .tb-normal,
-    .tb-search-expanded {
+    .topbar .tb-search-expanded,
+    .topbar .tb-search-expanded :global(.gs-input-shell),
+    .topbar .tb-icbtn.tb-search-close {
       transition: none;
     }
   }
