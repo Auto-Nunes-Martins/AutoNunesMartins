@@ -90,6 +90,10 @@ before(async () => {
       });
     if (url.pathname === '/api/vehicles/stats') return reply({ total: 25, active: 25 });
     if (url.pathname === '/api/tasks/stats') return reply({ mineActive: 0 });
+    if (url.pathname === `/api/homepage-highlights/photos/${vehicleId}`)
+      return reply({
+        photos: [{ url: '/fixture-campaign.webp', width: 960, height: 540 }],
+      });
     if (url.pathname === '/api/vehicle-campaigns') {
       if (req.method === 'PUT') {
         const input = await readBody(req);
@@ -100,6 +104,7 @@ before(async () => {
           revision: String(now),
           items: input.items.map((item) => ({
             ...item,
+            referencePrice: '23500.00',
             startsAt: new Date(now).toISOString(),
             endsAt: new Date(now + item.durationDays * 86_400_000).toISOString(),
           })),
@@ -116,6 +121,7 @@ before(async () => {
             year: 2021,
             licensePlate: 'AA-00-AA',
             price: '23900.00',
+            referencePrice: '23500.00',
           },
         ],
       });
@@ -333,7 +339,15 @@ for (const width of [1366, 390]) {
       const context = await openSession(width);
       try {
         const page = await context.newPage();
-        await page.goto(origin + '/site/campanhas');
+        await page.route('**/fixture-campaign.webp', (route) =>
+          route.fulfill({
+            path: path.resolve(crm, '../website/static/images/about/showroom-demo-v1-960.webp'),
+          }),
+        );
+        await page.goto(origin + '/site/campanhas', {
+          waitUntil: 'domcontentloaded',
+          timeout: 60000,
+        });
         await expect(page.getByRole('link', { name: 'Campanhas' })).toHaveAttribute(
           'aria-current',
           'page',
@@ -345,22 +359,55 @@ for (const width of [1366, 390]) {
         );
         await page.getByRole('button', { name: 'Adicionar viatura' }).click();
         await page.getByLabel('Viatura', { exact: true }).selectOption(vehicleId);
-        await page.getByLabel('Preço promocional (€)', { exact: true }).fill('21900,00');
-        await page.getByLabel('Preço mais baixo dos 30 dias anteriores (€)').fill('23500,00');
-        await page.getByLabel('Referência documental').fill('Registo de preços fictício · n.º 42');
-        await page.getByRole('button', { name: 'Guardar campanhas' }).click();
-        await expect(page.getByText('Campanhas guardadas.', { exact: true })).toBeVisible();
-        await expect(page.getByText(/Guardada de .*Lisboa/)).toBeVisible();
-        assert.equal(campaignFixture.items[0].price, '21900.00');
-        assert.equal(campaignFixture.items[0].referencePrice, '23500.00');
+        await expect(page.getByRole('heading', { name: 'BMW Série 3 Touring' })).toBeVisible();
+        const dialog = page.getByRole('dialog');
+        await expect(dialog.locator('img')).toBeVisible();
+        const price = dialog.getByLabel('Preço promocional (€)', { exact: true });
+        const discount = dialog.getByLabel('Desconto (%)', { exact: true });
+        await price.fill('24000,00');
+        await dialog.getByRole('button', { name: 'Guardar campanha' }).click();
+        await expect(dialog.getByRole('alert')).toContainText('inferior');
+        await price.fill('21900,00');
+        await expect(discount).toHaveValue('7');
+        await discount.fill('10');
+        await expect(price).toHaveValue('21150.00');
+        await dialog.getByLabel('Duração (dias)').fill('9');
+        const submission = page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' && response.url().endsWith('/site/campanhas'),
+        );
+        await dialog.getByRole('button', { name: 'Guardar campanha' }).click();
+        const result = await (await submission).json();
+        assert.equal(result.type, 'success', JSON.stringify(result));
+        await expect(page.getByText('Campanhas guardadas.', { exact: true })).toBeVisible({
+          timeout: 15000,
+        });
+        assert.equal(campaignFixture.items[0].price, '21150.00');
+        assert.equal(campaignFixture.items[0].durationDays, 9);
+        const card = page.getByRole('button', { name: /BMW Série 3 Touring/ });
+        await expect(card.locator('img')).toBeVisible();
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
         if (process.env.CAMPAIGN_PREVIEW === '1') {
-          const screenshot = path.join(crm, '.svelte-kit', `campanhas-crm-${width}.png`);
-          await page.screenshot({ path: screenshot, fullPage: true, animations: 'disabled' });
+          const screenshot = path.join(crm, '.svelte-kit', 'campanhas-crm-lista-' + width + '.png');
+          await page.getByRole('region', { name: 'Campanhas' }).screenshot({
+            path: screenshot,
+            animations: 'disabled',
+            style: '.topbar, nav { visibility: hidden !important; }',
+          });
           console.log(screenshot);
         }
-        await page.getByRole('button', { name: 'Remover viatura 1' }).click();
-        await page.getByRole('button', { name: 'Guardar campanhas' }).click();
+        await card.click();
+        await expect(dialog.getByText(/Guardada de .*Lisboa/)).toBeVisible();
+        if (process.env.CAMPAIGN_PREVIEW === '1') {
+          const screenshot = path.join(
+            crm,
+            '.svelte-kit',
+            'campanhas-crm-editor-' + width + '.png',
+          );
+          await dialog.screenshot({ path: screenshot, animations: 'disabled' });
+          console.log(screenshot);
+        }
+        await dialog.getByRole('button', { name: 'Remover campanha' }).click();
         await expect.poll(() => campaignFixture.items.length).toBe(0);
         await page.reload();
         await expect(page.getByText('Nenhuma campanha selecionada.')).toBeVisible();
@@ -486,39 +533,8 @@ async function drawerSwipe(locator, fromX, toX) {
   );
 }
 
-async function tryDrawerOpening(locator, points, interrupt) {
-  return locator.evaluate(
-    (target, { points, interrupt }) => {
-      const touch = ([clientX, clientY], identifier = 1) => ({ clientX, clientY, identifier });
-      const send = (type, touches, changedTouches = touches) => {
-        const event = new Event(type, { bubbles: true, cancelable: true });
-        Object.defineProperties(event, {
-          touches: { value: touches },
-          changedTouches: { value: changedTouches },
-        });
-        target.dispatchEvent(event);
-        return event.defaultPrevented;
-      };
-      const first = touch(points[0]);
-      const last = touch(points.at(-1));
-      const events = [send('touchstart', [first])];
-      for (const point of points.slice(1)) events.push(send('touchmove', [touch(point)]));
-      if (interrupt === 'cancel') events.push(send('touchcancel', [], [last]));
-      if (interrupt === 'pinch') events.push(send('touchstart', [last, touch([200, 210], 2)]));
-      if (interrupt === 'zoom') {
-        Object.defineProperty(visualViewport, 'scale', { configurable: true, value: 2 });
-        visualViewport.dispatchEvent(new Event('resize'));
-        delete visualViewport.scale;
-      }
-      events.push(send('touchend', [], [last]));
-      return events.some(Boolean);
-    },
-    { points, interrupt },
-  );
-}
-
 test(
-  'real CRM opens the mobile drawer only for a clear swipe outside the native edge',
+  'only the hamburger opens the drawer; leftward swipes close it from either zone',
   { timeout: 90000 },
   async () => {
     const context = await openSession(390);
@@ -528,89 +544,27 @@ test(
       await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
         timeout: 30000,
       });
-      const heading = page.getByRole('heading', { name: 'Viaturas', exact: true });
       const menu = page.getByRole('button', { name: 'Abrir menu' });
-      const swipe = [
-        [60, 150],
-        [100, 153],
-        [165, 155],
-      ];
-      for (const [points, interrupt] of [
-        [
-          [
-            [5, 150],
-            [145, 150],
-          ],
-        ],
-        [
-          [
-            [39, 150],
-            [175, 150],
-          ],
-        ],
-        [
-          [
-            [200, 150],
-            [350, 150],
-          ],
-        ],
-        [
-          [
-            [135, 150],
-            [48, 150],
-          ],
-        ],
-        [
-          [
-            [60, 150],
-            [86, 155],
-          ],
-        ],
-        [
-          [
-            [60, 150],
-            [65, 240],
-            [170, 242],
-          ],
-        ],
-        [swipe, 'cancel'],
-        [swipe, 'pinch'],
-        [swipe, 'zoom'],
-      ]) {
-        assert.equal(await tryDrawerOpening(heading, points, interrupt), false);
+      for (const from of [5, 60, 210]) {
+        assert.deepEqual(await drawerSwipe(page.locator('main'), from, from + 130), {
+          prevented: false,
+          dragging: false,
+        });
         await expect(menu).toHaveAttribute('aria-expanded', 'false');
       }
-      const filter = page.getByRole('searchbox').first();
-      assert.equal(await tryDrawerOpening(filter, swipe), false);
-      await expect(menu).toHaveAttribute('aria-expanded', 'false');
-      const before = await page.evaluate(() => scrollY);
-      if (useWebKit) {
-        assert.equal(await tryDrawerOpening(heading, swipe), false);
-      } else {
-        const box = await heading.boundingBox();
-        assert.ok(box);
-        const y = Math.round(box.y + box.height / 2);
-        const cdp = await context.newCDPSession(page);
-        try {
-          await cdp.send('Input.dispatchTouchEvent', {
-            type: 'touchStart',
-            touchPoints: [{ x: 60, y }],
-          });
-          for (const x of [85, 110, 135, 165]) {
-            await cdp.send('Input.dispatchTouchEvent', {
-              type: 'touchMove',
-              touchPoints: [{ x, y }],
-            });
-          }
-          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-        } finally {
-          await cdp.detach();
-        }
+      for (const [selector, start, end] of [
+        ['.sidebar', 185, 55],
+        ['.drawer-backdrop', 345, 140],
+      ]) {
+        await menu.tap();
+        await expect(menu).toHaveAttribute('aria-expanded', 'true');
+        assert.deepEqual(await drawerSwipe(page.locator(selector), start, end), {
+          prevented: true,
+          dragging: true,
+        });
+        await expect(menu).toHaveAttribute('aria-expanded', 'false');
+        await expect(page).toHaveURL(origin + '/viaturas');
       }
-      await expect(menu).toHaveAttribute('aria-expanded', 'true');
-      assert.equal(await page.evaluate(() => scrollY), before);
-      await page.keyboard.press('Escape');
-      await expect(menu).toHaveAttribute('aria-expanded', 'false');
     } finally {
       await context.close();
     }

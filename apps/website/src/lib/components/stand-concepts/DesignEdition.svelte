@@ -1318,10 +1318,26 @@
 
       {#if campaigns.length}
         <section class="showroom campaign-stock" aria-labelledby="campaign-stock-heading">
-          <div class="showroom-heading"><div><h2 id="campaign-stock-heading">Campanhas<span class="heading-period">.</span></h2></div></div>
-          <div class="car-grid campaign-grid">
-            {#each campaigns as vehicle, index (vehicle.slug)}
-              {@render vehicleCard(publicCard(vehicle), index, false)}
+          <div class="campaign-heading">
+            <h2 id="campaign-stock-heading">Campanhas<span class="heading-period">.</span></h2>
+            <p>Uma seleção de viaturas com preço promocional.</p>
+          </div>
+          <div class="campaign-grid">
+            {#each campaigns as vehicle (vehicle.slug)}
+              {@const image = vehicle.photos.length ? publicPhoto(vehicle, 0) : catalogPlaceholder}
+              <article class="campaign-offer">
+                <a class="campaign-link" href={publicHref(vehicle.slug)}>
+                  <div class="campaign-photo">
+                    <img src={sizedPhoto(image, 640)} srcset={vehiclePhotoSet(image)} sizes="(max-width: 640px) 42vw, 240px" alt="" loading="lazy" />
+                  </div>
+                  <div class="campaign-copy">
+                    <h3>{vehicle.brand} {vehicle.model}</h3>
+                    <strong>{publicPrice(vehicle.price)}</strong>
+                    {#if vehicle.promotion}<PromotionTerms promotion={vehicle.promotion} />{/if}
+                    <span class="campaign-details">Ver viatura <ArrowUpRight size={15} aria-hidden="true" /></span>
+                  </div>
+                </a>
+              </article>
             {/each}
           </div>
         </section>
@@ -1876,19 +1892,71 @@
 {/snippet}
 
 <style>
-  .campaign-stock .campaign-grid {
+  .campaign-stock {
+    border-top: 2px solid var(--red);
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--red) 6%, transparent);
+    padding-block: clamp(24px, 4vw, 56px);
+  }
+  .campaign-heading {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 24px;
+    margin-bottom: 20px;
+  }
+  .campaign-heading h2 {
+    margin: 0;
+    font-size: clamp(32px, 5vw, 64px);
+    letter-spacing: -0.055em;
+    line-height: 1;
+  }
+  .campaign-heading p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .campaign-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: clamp(14px, 2vw, 32px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .campaign-offer {
+    display: grid;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .campaign-link {
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    color: inherit;
+    text-decoration: none;
+  }
+  .campaign-link:focus-visible { outline-offset: -4px; }
+  .campaign-photo { position: relative; min-height: 145px; }
+  .campaign-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .campaign-copy { display: grid; align-content: center; gap: 8px; padding: clamp(12px, 2vw, 28px); }
+  .campaign-copy h3 { margin: 0; font-size: clamp(15px, 1.75vw, 24px); line-height: 1.15; }
+  .campaign-copy strong { font-size: clamp(21px, 2.5vw, 36px); line-height: 1; letter-spacing: -0.04em; }
+  .campaign-details {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .campaign-link:hover .campaign-details { text-decoration: underline; }
+  @media (max-width: 870px) {
+    .campaign-grid { grid-template-columns: 1fr; }
   }
   .card-promotion { display: grid; gap: 5px; margin-block: 0 12px; }
   .card-promotion-label { color: var(--red); font-size: 11px; font-weight: 650; }
-  @media (max-width: 1050px) {
-    .campaign-stock .campaign-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (max-width: 550px) {
-    .campaign-stock .campaign-grid { grid-template-columns: 1fr; }
-  }
   .design.orbit-home main :global(.home-services-comparison + .orbit-perspective) {
     margin-top: 0;
   }

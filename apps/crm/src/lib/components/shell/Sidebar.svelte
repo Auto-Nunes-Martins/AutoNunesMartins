@@ -19,8 +19,7 @@
   import Wordmark from '$lib/components/brand/Wordmark.svelte';
   import { sidebar, mobileDrawer } from '$lib/stores/sidebar';
 
-  // The browser owns edge navigation. A leftward drag inside the open drawer
-  // can still close it, starting clear of the system gesture area.
+  // Leave the system gesture areas free on both screen edges.
   function swipeToClose(drawer: HTMLElement) {
     let drag:
       | {
@@ -52,7 +51,11 @@
         !get(mobileDrawer) ||
         event.touches.length !== 1 ||
         !touch ||
-        touch.clientX < 24
+        touch.clientX < 24 ||
+        touch.clientX > window.innerWidth - 24 ||
+        (window.visualViewport?.scale ?? 1) > 1 ||
+        !(event.target instanceof Element) ||
+        !(drawer.contains(event.target) || event.target.closest('.drawer-overlay'))
       )
         return;
       drag = {
@@ -77,7 +80,7 @@
       const dy = touch.clientY - drag.y;
       if (!drag.closing) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
-        if (dx >= 0 || Math.abs(dy) >= Math.abs(dx)) {
+        if (dx >= 0 || Math.abs(dx) < 1.35 * Math.abs(dy)) {
           reset();
           return;
         }
@@ -94,28 +97,39 @@
       root.style.setProperty('--drawer-drag-progress', String(1 + offset / drag.width));
     }
 
-    function onTouchEnd() {
+    function onTouchEnd(event: TouchEvent) {
+      if (drag?.closing && event.cancelable) event.preventDefault();
       if (
         drag?.closing &&
         (drag.x - drag.lastX > drag.width * 0.4 ||
           (performance.now() - drag.lastTime < 100 && drag.velocity < -0.3))
       ) {
-        mobileDrawer.close();
+        mobileDrawer.dismiss();
       }
       reset();
     }
 
-    drawer.addEventListener('touchstart', onTouchStart, { passive: true });
-    drawer.addEventListener('touchmove', onTouchMove, { passive: false });
-    drawer.addEventListener('touchend', onTouchEnd, { passive: true });
-    drawer.addEventListener('touchcancel', reset, { passive: true });
+    function detach() {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', reset);
+      reset();
+    }
+    const unsubscribe = mobileDrawer.subscribe((open) => {
+      if (open) {
+        window.addEventListener('touchstart', onTouchStart, { passive: true });
+        window.addEventListener('touchmove', onTouchMove, { passive: false });
+        window.addEventListener('touchend', onTouchEnd, { passive: false });
+        window.addEventListener('touchcancel', reset, { passive: true });
+      } else {
+        detach();
+      }
+    });
     return {
       destroy() {
-        drawer.removeEventListener('touchstart', onTouchStart);
-        drawer.removeEventListener('touchmove', onTouchMove);
-        drawer.removeEventListener('touchend', onTouchEnd);
-        drawer.removeEventListener('touchcancel', reset);
-        reset();
+        unsubscribe();
+        detach();
       },
     };
   }

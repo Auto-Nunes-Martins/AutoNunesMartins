@@ -123,6 +123,7 @@ export async function applyWebPublication(
     message: `${input.published ? 'Publicação web aprovada' : 'Publicação web desativada'}: ${activityVehicleLabel(vehicle)}`,
     metadata: {
       webPublished: input.published,
+      publicPriceHistory: input.published && input.price ? input.price : 'unpriced',
       vehicle: {
         brand: vehicle.brand,
         model: vehicle.model,

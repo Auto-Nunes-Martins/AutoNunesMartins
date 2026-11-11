@@ -1,7 +1,6 @@
 <script lang="ts">
   import { crmRoute } from '$lib/paths';
   import { onMount } from 'svelte';
-  import { beforeNavigate } from '$app/navigation';
   import UnsavedChangesGuard from '$lib/components/common/UnsavedChangesGuard.svelte';
   import { usesFullCrmWidth } from '$lib/layoutWidth';
   import { page } from '$app/stores';
@@ -12,7 +11,6 @@
   import ContextBack from '$lib/components/shell/ContextBack.svelte';
   import MobileBottomNav from '$lib/components/shell/MobileBottomNav.svelte';
   import QuickTaskBubble from '$lib/components/shell/QuickTaskBubble.svelte';
-  import { watchDrawerSwipe } from '$lib/components/shell/drawerSwipe';
   import { sidebar, mobileDrawer } from '$lib/stores/sidebar';
   import type { LayoutData } from './$types';
 
@@ -23,16 +21,7 @@
 
   let { children, data }: Props = $props();
   const comfortableWidth = $derived(!usesFullCrmWidth(crmRoute($page.url.pathname)));
-  let main: HTMLElement;
-  let cancelDrawerSwipe: (() => void) | undefined;
-
-  beforeNavigate(() => cancelDrawerSwipe?.());
-  onMount(() => {
-    sidebar.hydrate();
-    const swipe = watchDrawerSwipe(main);
-    cancelDrawerSwipe = swipe.cancel;
-    return swipe.destroy;
-  });
+  onMount(() => sidebar.hydrate());
 
   // Lock the body scroll while the mobile drawer is open. Adds a class on
   // <html> rather than mutating inline styles so the lock survives HMR and
@@ -94,7 +83,6 @@
   <div class="relative z-10">
     <Topbar userKey={data.currentUser?.id ?? data.clerkUserId} />
     <main
-      bind:this={main}
       class:comfortable-width={comfortableWidth}
       class="main-content px-6 pb-12 pr-[24px]"
     >

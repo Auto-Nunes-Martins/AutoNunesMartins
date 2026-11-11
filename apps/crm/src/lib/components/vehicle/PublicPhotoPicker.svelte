@@ -126,7 +126,7 @@
 {#if onreorder}<p id={scrollId + '-instructions'} class="sr-only">Arraste o cartão para ordenar, ou use Espaço e as setas. No telemóvel, mantenha premido antes de arrastar.</p>{/if}
 {#each selected as path}<input type="hidden" name="vehiclePhotoPaths" value={path} {form} />{/each}
 {#if onframing}<p class="crop-hint">As miniaturas mostram o recorte da ficha pública neste ecrã. Use «Enquadrar» para deslocar a fotografia.</p>{/if}
-<div class="photo-grid-shell" class:dense data-drawer-swipe-ignore>
+<div class="photo-grid-shell" class:dense>
 <!-- The gallery region supports keyboard access. -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div id={scrollId} class="photo-grid-scroll" bind:this={scrollPort} tabindex={dense ? 0 : undefined} role="region" aria-label="Fotografias da viatura">

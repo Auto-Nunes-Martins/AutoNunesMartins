@@ -11,12 +11,13 @@ const inputItem = z
   .object({
     vehicleId: z.string().min(1).max(100),
     price: money,
-    referencePrice: money,
-    evidence: z.string().trim().min(3).max(400),
     durationDays: z.number().int().min(1).max(365),
+    recheck: z.boolean().optional(),
   })
   .strict();
-const savedItem = inputItem.extend({
+const savedItem = inputItem.omit({ recheck: true }).extend({
+  referencePrice: money.nullable(),
+  evidence: z.string().optional(),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
 });
@@ -62,11 +63,12 @@ export function eligibleCampaign(
   row: { id: string; status: string; publicPrice: Prisma.Decimal | null },
   items: SavedCampaign[],
   now: number,
-) {
+): (SavedCampaign & { referencePrice: string }) | undefined {
   if (row.status !== 'AVAILABLE' || !row.publicPrice?.gt(0)) return undefined;
   return items.find(
-    (item) =>
+    (item): item is SavedCampaign & { referencePrice: string } =>
       item.vehicleId === row.id &&
+      item.referencePrice !== null &&
       currentCampaign(item, now) &&
       row.publicPrice!.gte(item.referencePrice) &&
       Number(item.price) < Number(item.referencePrice),

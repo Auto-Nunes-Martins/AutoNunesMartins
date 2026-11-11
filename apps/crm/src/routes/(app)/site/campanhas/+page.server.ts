@@ -7,8 +7,7 @@ interface CampaignEditor {
   items: {
     vehicleId: string;
     price: string;
-    referencePrice: string;
-    evidence: string;
+    referencePrice: string | null;
     durationDays: number;
     startsAt: string;
     endsAt: string;
@@ -20,6 +19,7 @@ interface CampaignEditor {
     year: number;
     licensePlate: string | null;
     price: string;
+    referencePrice: string | null;
   }[];
 }
 

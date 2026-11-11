@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import {
   campaignDayMs,
   campaignKey,
@@ -12,6 +12,55 @@ import { publicVehicleWhere } from '../data/publicVehicle.js';
 import { emitActivity } from '../data/activity.js';
 
 export class CampaignConflict extends Error {}
+
+async function readPriceHistory(db: Pick<Prisma.TransactionClient, 'activityLog'>, ids: string[]) {
+  if (!ids.length) return [];
+  return db.activityLog.findMany({
+    where: {
+      entityType: 'vehicle',
+      entityId: { in: ids },
+      metadata: { path: ['publicPriceHistory'], not: Prisma.AnyNull },
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    select: { entityId: true, createdAt: true, metadata: true },
+  });
+}
+
+function lowestReference(
+  id: string,
+  base: Prisma.Decimal,
+  history: Awaited<ReturnType<typeof readPriceHistory>>,
+  campaigns: Awaited<ReturnType<typeof readCampaigns>>,
+  now: number,
+) {
+  const cutoff = now - 30 * campaignDayMs;
+  let lowest = base;
+  for (const record of history) {
+    if (record.entityId !== id) continue;
+    const metadata = record.metadata as { publicPriceHistory?: string | number } | null;
+    const value = metadata?.publicPriceHistory;
+    if (value !== 'unpriced') {
+      if (!value || !Number.isFinite(Number(value)) || Number(value) <= 0) return null;
+      const price = new Prisma.Decimal(value);
+      if (price.lt(lowest)) lowest = price;
+    }
+    if (record.createdAt.getTime() <= cutoff) {
+      for (const offer of [...campaigns.items, ...campaigns.recent]) {
+        const endsAt = 'endsAt' in offer ? offer.endsAt : offer.endedAt;
+        if (
+          offer.vehicleId === id &&
+          Date.parse(endsAt) > cutoff &&
+          (!('referencePrice' in offer) || offer.referencePrice !== null) &&
+          lowest.gt(offer.price)
+        ) {
+          lowest = new Prisma.Decimal(offer.price);
+        }
+      }
+      return lowest.toFixed(2);
+    }
+  }
+  return null;
+}
 
 export async function readCampaignEditor(db: PrismaClient) {
   const [campaigns, vehicles] = await Promise.all([
@@ -29,12 +78,20 @@ export async function readCampaignEditor(db: PrismaClient) {
       orderBy: [{ brand: 'asc' }, { model: 'asc' }, { id: 'asc' }],
     }),
   ]);
+  const now = Date.now();
+  const history = await readPriceHistory(
+    db,
+    vehicles.map(({ id }) => id),
+  );
   return {
     revision: campaigns.revision,
-    items: campaigns.items.filter((item) => currentCampaign(item, Date.now())),
+    items: campaigns.items.filter(
+      (item) => item.referencePrice === null || currentCampaign(item, now),
+    ),
     candidates: vehicles.map(({ publicPrice, ...vehicle }) => ({
       ...vehicle,
       price: publicPrice!.toFixed(2),
+      referencePrice: lowestReference(vehicle.id, publicPrice!, history, campaigns, now),
     })),
   };
 }
@@ -63,6 +120,10 @@ export async function saveCampaigns(db: PrismaClient, input: CampaignInput, acto
             })
           : [];
         const recent = existing.recent.filter(({ endedAt }) => Date.parse(endedAt) > cutoff);
+        const history = await readPriceHistory(
+          tx,
+          vehicles.map(({ id }) => id),
+        );
         const items: SavedCampaign[] = [];
         for (const item of input.items) {
           const vehicle = vehicles.find(({ id }) => id === item.vehicleId);
@@ -72,42 +133,64 @@ export async function saveCampaigns(db: PrismaClient, input: CampaignInput, acto
             );
           }
           const name = `${vehicle.brand} ${vehicle.model}`;
-          if (
-            Number(item.price) >= Number(item.referencePrice) ||
-            vehicle.publicPrice.lt(item.referencePrice)
-          ) {
+          if (vehicle.publicPrice.lte(item.price)) {
             throw new CampaignConflict(
-              `${name}: o preço promocional tem de ser inferior à referência, e a referência não pode superar o preço público normal.`,
+              `${name}: o preço promocional tem de ser inferior ao preço público normal.`,
             );
           }
           const previous = existing.items.find(({ vehicleId }) => vehicleId === item.vehicleId);
           if (
-            previous &&
-            currentCampaign(previous, now) &&
+            previous?.referencePrice === null &&
+            !item.recheck &&
             previous.price === item.price &&
-            previous.referencePrice === item.referencePrice &&
             previous.durationDays === item.durationDays
           ) {
-            items.push({ ...previous, evidence: item.evidence });
+            items.push(previous);
             continue;
           }
-          const knownPrices = recent
-            .filter(({ vehicleId }) => vehicleId === item.vehicleId)
-            .map(({ price }) => Number(price));
-          if (previous && Date.parse(previous.endsAt) > cutoff)
-            knownPrices.push(Number(previous.price));
-          if (knownPrices.some((price) => price < Number(item.referencePrice))) {
+          if (
+            previous &&
+            previous.referencePrice !== null &&
+            currentCampaign(previous, now) &&
+            previous.price === item.price &&
+            vehicle.publicPrice.gte(previous.referencePrice)
+          ) {
+            const endsAt = Date.parse(previous.startsAt) + item.durationDays * campaignDayMs;
+            if (endsAt <= now) {
+              throw new CampaignConflict(
+                `${name}: a duração indicada já terminou. Use Remover para terminar a campanha.`,
+              );
+            }
+            items.push({
+              ...previous,
+              durationDays: item.durationDays,
+              endsAt: new Date(endsAt).toISOString(),
+            });
+            continue;
+          }
+          const referencePrice = lowestReference(
+            item.vehicleId,
+            vehicle.publicPrice,
+            history,
+            existing,
+            now,
+          );
+          if (referencePrice !== null && Number(item.price) >= Number(referencePrice)) {
             throw new CampaignConflict(
-              `${name}: já existe um preço promocional inferior à referência nos últimos 30 dias.`,
+              `${name}: o preço promocional tem de ser inferior ao preço mais baixo dos últimos 30 dias.`,
             );
           }
           items.push({
-            ...item,
+            vehicleId: item.vehicleId,
+            price: item.price,
+            durationDays: item.durationDays,
+            referencePrice,
             startsAt,
             endsAt: new Date(now + item.durationDays * campaignDayMs).toISOString(),
           });
         }
         for (const previous of existing.items) {
+          if (previous.referencePrice === null) continue;
           if (
             items.some(
               (item) =>

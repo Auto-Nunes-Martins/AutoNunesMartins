@@ -109,7 +109,7 @@ export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
     fuel: row.fuel,
     mileage: row.mileage,
     price: promotion?.price ?? row.publicPrice?.toFixed(2) ?? null,
-    ...(promotion
+    ...(promotion?.referencePrice
       ? {
           promotion: {
             referencePrice: promotion.referencePrice,
