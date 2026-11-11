@@ -4620,7 +4620,7 @@
     letter-spacing: -0.035em;
   }
   @media (min-width: 701px) {
-    /* Different title lengths keep prices and actions aligned across a row. */
+    /* Let the title area absorb extra space so the price and specs align across a row. */
     .vehicle-card {
       display: flex;
       flex-direction: column;
@@ -4633,6 +4633,9 @@
       display: flex;
       flex: 1;
       flex-direction: column;
+    }
+    .vehicle-card .card-info {
+      flex-grow: 1;
     }
     .vehicle-card .card-specs {
       margin-bottom: 0;
