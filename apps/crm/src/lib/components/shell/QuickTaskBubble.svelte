@@ -260,11 +260,11 @@
       if (!panelEl?.contains(document.activeElement))
         opener = document.activeElement as HTMLElement;
       void loadUsers();
-      if (!isMobile) {
-        void tick().then(() => titleInput?.focus());
-      } else {
-        void tick().then(() => panelEl?.focus({ preventScroll: true }));
-      }
+      void tick().then(() => {
+        if (!isOpen || !shouldRender) return;
+        if (isMobile) panelEl?.focus({ preventScroll: true });
+        else titleInput?.focus();
+      });
     }
   });
   $effect(() => {
@@ -777,23 +777,20 @@
 
   {#if isMobile}
     <!--
-      Mobile: panel is always in the DOM so the drag gesture can manipulate
-      its clip-path in real time. When isOpen is false and the user isn't
-      dragging, mobileClipPct sits at 100 (fully hidden) and pointer-events
-      are off so the panel doesn't intercept taps on the page behind.
+      Keep the mobile sheet mounted for its slide and drag. A closed sheet
+      stays hidden even when the search keyboard changes the visual viewport.
     -->
     <div
       bind:this={panelEl}
-      class="qt-panel panel-surface is-mobile {mobileClipPct >= 99 && !isDragging
-        ? 'is-fully-closed'
-        : ''}"
+      class="qt-panel panel-surface is-mobile"
+      class:is-fully-closed={!isOpen && !isDragging}
       role="dialog"
       aria-label="Tarefas rápidas"
       aria-modal="true"
       tabindex="-1"
       aria-hidden={!isOpen && !isDragging}
       inert={!isOpen}
-      style:--qt-keyboard-inset={`${keyboardInset}px`}
+      style:--qt-keyboard-inset={`${isOpen ? keyboardInset : 0}px`}
       style="transform: translate3d(0, {mobileClipPct}%, 0); transition: {isDragging
         ? 'none'
         : 'transform 360ms cubic-bezier(0.32, 0.72, 0, 1)'};"
@@ -1001,9 +998,8 @@
     background: var(--color-border-strong);
     opacity: 0.85;
   }
-  /* When the mobile panel is fully hidden (clip 100% and not being
-     dragged), drop pointer-events so the page beneath stays interactive. */
   .qt-panel.is-mobile.is-fully-closed {
+    visibility: hidden;
     pointer-events: none;
   }
   /* On mobile, the bubble should also indicate vertical pan-claim so the

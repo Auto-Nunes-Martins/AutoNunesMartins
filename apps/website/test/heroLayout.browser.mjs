@@ -15,6 +15,7 @@ import { captureCarouselFrames, publicMotionCheck } from './publicMotionCheck.mj
 const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
 const interactions = process.argv.includes('--interactions');
+const readingProfile = process.argv.includes('--reading-profile');
 const output = path.join(
   site,
   '.svelte-kit',
@@ -129,29 +130,110 @@ try {
   browser = process.argv.includes('--webkit')
     ? await webkit.launch()
     : await chromium.launch({ channel: process.env.BROWSER_CHANNEL || 'chrome', headless: true });
+  if (readingProfile) {
+    const page = await browser.newPage({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    await page.route('**/*', (route) =>
+      new URL(route.request().url()).origin === origin ? route.continue() : route.abort(),
+    );
+    await page.goto(origin);
+    await page.locator('.design.motion-on').waitFor();
+    const stats = await page.locator('.read-line').evaluate(async (bar) => {
+      await document.fonts.ready;
+      const original = Element.prototype.getBoundingClientRect;
+      let reads = 0,
+        readTime = 0,
+        writes = 0,
+        events = 0;
+      Element.prototype.getBoundingClientRect = function () {
+        if (!this.matches('[data-scene]')) return original.call(this);
+        const start = performance.now();
+        const bounds = original.call(this);
+        readTime += performance.now() - start;
+        reads++;
+        return bounds;
+      };
+      const onScroll = () => events++;
+      window.addEventListener('scroll', onScroll);
+      const observer = new MutationObserver((records) => (writes += records.length));
+      observer.observe(bar, { attributes: true, attributeFilter: ['style'] });
+      const nextFrame = () => new Promise(requestAnimationFrame);
+      const expected = () =>
+        scrollY /
+        Math.max(
+          1,
+          document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight,
+        );
+      const actual = () => new DOMMatrixReadOnly(getComputedStyle(bar).transform).a;
+      try {
+        const errors = [];
+        for (let frame = 0; frame < 32; frame++) {
+          scrollTo({ top: frame * 46, behavior: 'instant' });
+          await nextFrame();
+          errors.push(Math.abs(expected() - actual()));
+        }
+        await nextFrame();
+        const endError = Math.abs(expected() - actual());
+        const spacer = document.createElement('div');
+        spacer.style.height = '1300px';
+        bar.parentElement.append(spacer);
+        await nextFrame();
+        await nextFrame();
+        return {
+          native: CSS.supports('animation-timeline: scroll(root block)'),
+          reads,
+          readTime,
+          writes,
+          events,
+          peakError: Math.max(...errors),
+          endError,
+          grownError: Math.abs(expected() - actual()),
+        };
+      } finally {
+        Element.prototype.getBoundingClientRect = original;
+        window.removeEventListener('scroll', onScroll);
+        observer.disconnect();
+      }
+    });
+    console.log(browser.browserType().name(), stats);
+    assert.ok(stats.events > 20 && stats.endError < 0.001 && stats.grownError < 0.001);
+    if (!process.argv.includes('--baseline') && stats.native) assert.equal(stats.writes, 0);
+    await page.setViewportSize({ width: 430, height: 790 });
+    await page.waitForFunction(() => {
+      const bar = document.querySelector('.read-line');
+      const scroller = document.scrollingElement;
+      const expected = scrollY / Math.max(1, scroller.scrollHeight - scroller.clientHeight);
+      return Math.abs(new DOMMatrixReadOnly(getComputedStyle(bar).transform).a - expected) < 0.001;
+    });
+    await page.close();
+  }
   if (interactions) {
     if (process.argv.includes('--frames')) await captureCarouselFrames(browser, origin, output);
     else await publicMotionCheck(browser, origin, vehicles[0].slug);
   }
   if (streaming) progressive = await progressiveHero(origin);
-  const profiles = interactions
-    ? []
-    : streaming
-      ? [
-          ...[1440, 390].flatMap((width) =>
-            [0, 650].map((cssDelay) => ({ width, cssDelay, split: 'hero' })),
-          ),
-          { width: 390, cssDelay: 0, split: 'stats' },
-        ]
-      : [1440, 390].flatMap((width) =>
-          [0, 650].flatMap((fontDelay) =>
-            ['no-preference', 'reduce'].map((reducedMotion) => ({
-              width,
-              fontDelay,
-              reducedMotion,
-            })),
-          ),
-        );
+  const profiles =
+    interactions || readingProfile
+      ? []
+      : streaming
+        ? [
+            ...[1440, 390].flatMap((width) =>
+              [0, 650].map((cssDelay) => ({ width, cssDelay, split: 'hero' })),
+            ),
+            { width: 390, cssDelay: 0, split: 'stats' },
+          ]
+        : [1440, 390].flatMap((width) =>
+            [0, 650].flatMap((fontDelay) =>
+              ['no-preference', 'reduce'].map((reducedMotion) => ({
+                width,
+                fontDelay,
+                reducedMotion,
+              })),
+            ),
+          );
   for (const profile of profiles) {
     const { width, fontDelay = 0, reducedMotion = 'no-preference' } = profile;
     progressive?.configure({ ...profile, tailDelay: 1200 });

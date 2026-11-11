@@ -11,6 +11,15 @@ const crm = fileURLToPath(new URL('../', import.meta.url));
 const useWebKit = process.argv.includes('--webkit') || process.env.CRM_TEST_BROWSER === 'webkit';
 const vehicleId = 'c000000000000000000000001';
 const draftId = 'c000000000000000000000002';
+const galleryId = 'c000000000000000000000097';
+const singlePhotoId = 'c000000000000000000000098';
+const photosFor = (id) =>
+  Array.from({ length: id === galleryId ? 3 : id === singlePhotoId ? 1 : 0 }, (_, index) => ({
+    path: `${id}/00000000-0000-4000-8000-00000000000${index}.webp`,
+    url: '/fixture-vehicle.svg?photo=' + index,
+    width: 96,
+    height: 72,
+  }));
 const fixtureToken = 'local-crm-fixture-token';
 const vehicle = {
   id: vehicleId,
@@ -97,8 +106,18 @@ before(async () => {
       });
     if (url.pathname === '/api/homepage-highlights/showcase')
       return reply({ items: [{ id: vehicleId }] });
-    if (url.pathname.endsWith('/photos/signed')) return reply({ photos: [] });
+    if (url.pathname.endsWith('/photos/signed')) {
+      return reply({ photos: photosFor(url.pathname.split('/')[3]) });
+    }
     if (url.pathname === '/api/vehicles/' + vehicleId) return reply(vehicle);
+    if (
+      url.pathname === '/api/vehicles/' + galleryId ||
+      url.pathname === '/api/vehicles/' + singlePhotoId
+    ) {
+      const id = url.pathname.split('/').at(-1);
+      const photos = photosFor(id).map(({ path }) => path);
+      return reply({ ...vehicle, id, photos });
+    }
     if (url.pathname === '/api/vehicles/' + draftId)
       return reply(created ?? { ...vehicle, id: draftId, status: 'DRAFT' });
     if (url.pathname === '/api/vehicles/' + vehicleId + '/edit' && req.method === 'PUT') {
@@ -119,6 +138,7 @@ before(async () => {
               ...vehicle,
               id: 'c' + String(i + 1).padStart(24, '0'),
               thumbnailUrl: i % 2 ? null : '/fixture-vehicle.svg',
+              status: i === 2 ? 'RESERVED' : i === 3 ? 'DOCS_PENDING' : 'AVAILABLE',
             }));
       return reply({ items, page: 1, total: items.length, pageSize: 25, totalPages: 1 });
     }
@@ -216,7 +236,7 @@ async function openSession(width, reducedMotion = 'no-preference') {
   await context.route('**/*', (route) =>
     new URL(route.request().url()).origin === origin ? route.continue() : route.abort(),
   );
-  await context.route('**/fixture-vehicle.svg', (route) =>
+  await context.route('**/fixture-vehicle.svg*', (route) =>
     route.fulfill({
       contentType: 'image/svg+xml',
       body: '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="72"><rect width="96" height="72" fill="#486c7b"/></svg>',
@@ -414,7 +434,118 @@ async function checkVehicleRows(page, width) {
   await expect(firstAction).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(menuButton).toBeFocused();
+  for (const index of [0, 2, 3]) {
+    const tags = rows.nth(index).locator('.mobile-vehicle-tags .vehicle-state-chip');
+    const boxes = await tags.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const { top, left, right, height } = node.getBoundingClientRect();
+        return {
+          center: top + height / 2,
+          left,
+          right,
+          overflows: node.scrollWidth > node.clientWidth + 1,
+        };
+      }),
+    );
+    assert.ok(
+      boxes.length >= 1 &&
+        boxes.every(
+          (box) =>
+            Math.abs(box.center - boxes[0].center) < 1 &&
+            box.left >= 0 &&
+            box.right <= width &&
+            !box.overflows,
+        ),
+    );
+    if (index === 0) assert.equal(boxes.length, 2);
+  }
 }
+
+async function photoGesture(surface, dx, dy, x = 155) {
+  return surface.evaluate(
+    (node, { dx, dy, x }) => {
+      const y = node.getBoundingClientRect().top + 60;
+      function dispatch(type, offsetX, offsetY) {
+        const point = { clientX: x + offsetX, clientY: y + offsetY, identifier: 1 };
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperties(event, {
+          touches: { value: type === 'touchend' ? [] : [point] },
+          changedTouches: { value: [point] },
+        });
+        node.dispatchEvent(event);
+        return event.defaultPrevented;
+      }
+      dispatch('touchstart', 0, 0);
+      const claimed = dispatch('touchmove', dx / 2, dy / 2);
+      dispatch('touchend', dx, dy);
+      return claimed;
+    },
+    { dx, dy, x },
+  );
+}
+
+test(
+  'real CRM photo detail mobile gestures, controls and viewer',
+  { timeout: 120000 },
+  async () => {
+    const context = await openSession(390);
+    try {
+      const page = await context.newPage();
+      await page.goto(origin + '/viaturas/' + galleryId, { waitUntil: 'commit', timeout: 60000 });
+      const surface = page.locator('.photo-preview .photo-open');
+      await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 3', { timeout: 30000 });
+      await expect(page.locator('.photo-preview .photo-step').first()).toBeHidden();
+      await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
+        timeout: 30000,
+      });
+      assert.equal(await photoGesture(surface, 86, 0), true);
+      await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 3');
+      assert.equal(await photoGesture(surface, 15, 95), false);
+      assert.equal(await photoGesture(surface, 86, 0, 10), false);
+      assert.equal(await photoGesture(surface, -88, 3), true);
+      await expect(surface).toHaveAccessibleName('Ampliar fotografia 2 de 3');
+      await page.getByRole('button', { name: 'Selecionar fotografia 3', exact: true }).tap();
+      await expect(surface).toHaveAccessibleName('Ampliar fotografia 3 de 3');
+      assert.equal(await photoGesture(surface, -88, 0), true);
+      await expect(surface).toHaveAccessibleName('Ampliar fotografia 3 de 3');
+      await surface.press('Enter');
+      const viewer = page.locator('.crm-photo-viewer');
+      await expect(viewer).toBeVisible();
+      await expect(viewer.locator('.viewer-step').first()).toBeHidden();
+      assert.equal(await photoGesture(viewer.locator('img'), 90, 0), true);
+      await expect(viewer.locator('p')).toHaveText('Fotografia 2 de 3');
+      await page.evaluate(() => {
+        Object.defineProperty(visualViewport, 'scale', { configurable: true, value: 2 });
+        visualViewport.dispatchEvent(new Event('resize'));
+      });
+      assert.equal(await photoGesture(viewer.locator('img'), 90, 0), false);
+      await expect(viewer.locator('p')).toHaveText('Fotografia 2 de 3');
+      await page.evaluate(() => {
+        delete visualViewport.scale;
+        visualViewport.dispatchEvent(new Event('resize'));
+      });
+      await viewer.getByRole('button', { name: 'Selecionar fotografia 1', exact: true }).tap();
+      await expect(viewer.locator('p')).toHaveText('Fotografia 1 de 3');
+      await viewer.getByRole('button', { name: 'Fechar fotografia' }).tap();
+      await expect(surface).toBeFocused();
+      await page.goto(origin + '/viaturas/' + singlePhotoId);
+      await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 1');
+      await expect(page.locator('.photo-preview .photo-step')).toHaveCount(0);
+      assert.equal(await photoGesture(surface, -90, 0), false);
+      await surface.press('Enter');
+      await expect(viewer.locator('p')).toHaveText('Fotografia 1 de 1');
+      await expect(viewer.locator('.viewer-index')).toHaveCount(0);
+      await viewer.getByRole('button', { name: 'Fechar fotografia' }).tap();
+      await page.setViewportSize({ width: 1366, height: 900 });
+      await page.goto(origin + '/viaturas/' + galleryId);
+      await expect(
+        page.getByRole('button', { name: 'Fotografia seguinte', exact: true }),
+      ).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  },
+);
 
 async function checkMobileEditStatus(page) {
   let finishSave;
@@ -605,12 +736,176 @@ for (const width of [320, 390]) {
   );
 }
 
+test(
+  'real CRM detail and edit keep separate history positions and search stays isolated',
+  { timeout: 150000 },
+  async () => {
+    const context = await openSession(390);
+    try {
+      const page = await context.newPage();
+      const detail = '/viaturas/' + vehicleId;
+      const edit = detail + '/editar';
+      const heading = page.getByRole('heading', {
+        name: vehicle.brand + ' ' + vehicle.model,
+        exact: true,
+      });
+      const scroll = (top) => page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), top);
+      const position = () => page.evaluate(() => scrollY);
+      const results = [];
+      for (const y of [0, 430]) {
+        await page.goto(origin + detail);
+        await expect(heading).toBeVisible();
+        const editLink = page
+          .locator('.vehicle-actions')
+          .getByRole('link', { name: 'Editar', exact: true });
+        await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText(
+          '1',
+          { timeout: 30000 },
+        );
+        await scroll(y);
+        const savedDetailY = await position();
+        await editLink.evaluate((link) => link.click());
+        await expect(page).toHaveURL(origin + edit);
+        const mileage = page.locator('input[name="mileage"]');
+        await expect(mileage).toHaveValue('84250');
+        await scroll(1050);
+        const savedEditY = await position();
+        await page.evaluate(() => {
+          window.detailReturnY = [];
+          const observe = () => {
+            if (document.querySelector('.vehicle-actions')) window.detailReturnY.push(scrollY);
+            if (window.detailReturnY.length < 18) requestAnimationFrame(observe);
+          };
+          requestAnimationFrame(observe);
+          history.back();
+        });
+        await expect(page).toHaveURL(origin + detail);
+        await expect(heading).toBeVisible();
+        await page.waitForFunction(() => window.detailReturnY.length === 18);
+        const samples = await page.evaluate(() => window.detailReturnY);
+        results.push({ savedDetailY, savedEditY, first: samples[0], last: samples.at(-1) });
+        await page.evaluate(() => history.forward());
+        await expect(page).toHaveURL(origin + edit);
+        await expect(mileage).toHaveValue('84250');
+        await expect
+          .poll(async () => Math.abs((await position()) - savedEditY))
+          .toBeLessThanOrEqual(2);
+        if (y) {
+          await mileage.fill('91234');
+          await page.evaluate(() => history.back());
+          await expect(page.getByRole('heading', { name: 'Sair desta página?' })).toBeVisible();
+          await page.getByRole('button', { name: 'Ficar na página' }).click();
+          await expect(page).toHaveURL(origin + edit);
+          await expect(mileage).toHaveValue('91234');
+        }
+      }
+      console.log('Edit history samples', JSON.stringify(results));
+
+      await page.goto(origin + '/viaturas');
+      await expect(page.getByText('25 no inventário')).toBeVisible();
+      const task = page.locator('.qt-panel.is-mobile');
+      const addTask = page.getByRole('button', { name: 'Nova tarefa rápida' });
+      const search = page.getByRole('button', { name: 'Pesquisar', exact: true });
+      await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1');
+      await expect(search).toHaveCSS('border-radius', '50%');
+      await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toHaveCSS(
+        'border-radius',
+        '50%',
+      );
+      const addVehicle = page.locator('.tb-add-icon');
+      await expect(addVehicle).toHaveCSS('height', '44px');
+      await expect(search).toHaveCSS('height', '44px');
+      await addTask.tap();
+      await expect(task).toBeInViewport();
+      await task.getByRole('button', { name: 'Fechar', exact: true }).tap();
+      await scroll(650);
+      await expect(page.locator('.topbar')).toBeHidden();
+      await scroll(380);
+      await expect(search).toBeInViewport();
+      await page.evaluate(() => {
+        window.searchTargets = [];
+        for (const eventType of ['pointerdown', 'touchstart', 'click']) {
+          document.addEventListener(
+            eventType,
+            (event) => {
+              const target = event.target.closest('button');
+              if (target) window.searchTargets.push([eventType, target.getAttribute('aria-label')]);
+            },
+            { capture: true, passive: true },
+          );
+        }
+      });
+      await search.tap();
+      const input = page.getByRole('combobox', { name: 'Pesquisar' });
+      await expect(input).toBeFocused();
+      await expect(page.locator('.tb-search-expanded .gs-input-shell')).toHaveCSS(
+        'border-radius',
+        '10px',
+      );
+      await input.fill('BMW');
+      await expect(page.getByRole('option', { name: /BMW Série 3/ })).toBeVisible();
+      await page.evaluate(() => {
+        Object.defineProperty(visualViewport, 'height', {
+          configurable: true,
+          value: innerHeight - 290,
+        });
+        visualViewport.dispatchEvent(new Event('resize'));
+      });
+      await page.waitForTimeout(400);
+      const panel = await task.evaluate((node) => {
+        const bounds = node.getBoundingClientRect();
+        const y = Math.max(0, bounds.top + 20);
+        return {
+          top: bounds.top,
+          viewport: innerHeight,
+          visibility: getComputedStyle(node).visibility,
+          hidden: node.inert,
+          hit: node.contains(document.elementFromPoint(innerWidth / 2, y)),
+        };
+      });
+      console.log('Closed task panel with search viewport', JSON.stringify(panel));
+      assert.ok(
+        results.every(
+          ({ savedDetailY, first, last }) =>
+            Math.abs(first - savedDetailY) <= 2 && Math.abs(last - savedDetailY) <= 2,
+        ),
+      );
+      assert.equal(panel.visibility, 'hidden');
+      assert.ok(panel.hidden && !panel.hit && panel.top >= panel.viewport - 1);
+      const targets = await page.evaluate(() => window.searchTargets);
+      assert.ok(targets.some(([type, target]) => type === 'click' && target === 'Pesquisar'));
+      assert.ok(targets.every(([, target]) => target !== 'Nova tarefa rápida'));
+      await page.evaluate(() => {
+        delete visualViewport.height;
+        visualViewport.dispatchEvent(new Event('resize'));
+      });
+      await page.keyboard.press('Escape');
+      await addTask.tap();
+      await expect(task).toBeInViewport();
+      await page.keyboard.press('Control+k');
+      await expect(input).toBeFocused();
+      await expect(task).toBeHidden();
+      await page.goto(origin + detail);
+      await expect(heading).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1');
+      await search.tap();
+      await expect(input).toBeFocused();
+      await expect(task).toBeHidden();
+    } finally {
+      await context.close();
+    }
+  },
+);
+
 test('real CRM create, draft and edit numeric forms', { timeout: 120000 }, async () => {
   const context = await openSession(1366);
   try {
     const page = await context.newPage();
     await page.goto(origin + '/viaturas', { waitUntil: 'commit', timeout: 60000 });
     await expect(page.getByText('25 no inventário')).toBeVisible({ timeout: 60000 });
+    await expect(page.locator('.tb-theme button')).toHaveCSS('border-radius', '50%');
+    await expect(page.locator('.tb-theme button')).toHaveCSS('height', '44px');
+    await expect(page.locator('.tb-add-label')).toHaveCSS('height', '44px');
     await page.getByRole('link', { name: 'Adicionar Viatura', exact: true }).last().click();
     await expect(page).toHaveURL(/\/viaturas\/nova$/);
     const mileage = page.locator('input[name="mileage"]');

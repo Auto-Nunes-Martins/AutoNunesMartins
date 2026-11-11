@@ -185,7 +185,7 @@
     type="button"
     onclick={toggle}
     class="relative inline-flex items-center justify-center border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)] transition-colors"
-    style="box-sizing: border-box; flex-shrink: 0; padding: 0; width: 44px; height: 44px; border-radius: var(--radius-btn);"
+    style="box-sizing: border-box; flex-shrink: 0; padding: 0; width: 44px; height: 44px; border-radius: 50%;"
     aria-label="Alertas"
     aria-expanded={isOpen}
     aria-haspopup="dialog"

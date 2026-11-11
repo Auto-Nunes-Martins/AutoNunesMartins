@@ -216,7 +216,7 @@
 
         <!-- Show the theme toggle on desktop; mobile uses the sidebar drawer. Export actions belong to each section rather than the topbar, whose former control was never connected to an endpoint. -->
         <div class="tb-theme">
-          <ThemeToggle size={44} />
+          <ThemeToggle size={44} round />
         </div>
 
         <NotificationBell bind:isOpen={notificationsOpen} />
@@ -227,7 +227,7 @@
              without consuming a label's worth of width. -->
           <a
             href={crmPath('/viaturas/nova')}
-            class="tb-add-label inline-flex items-center gap-2 h-11 px-[18px] font-display font-semibold italic uppercase text-[13px] tracking-[0.01em] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
+            class="tb-add-label inline-flex items-center gap-2 h-[44px] px-[18px] font-display font-semibold italic uppercase text-[13px] tracking-[0.01em] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
             style="border-radius: var(--radius-btn);"
           >
             <BrandPlus class="h-4 w-4" />
@@ -235,7 +235,7 @@
           </a>
           <a
             href={crmPath('/viaturas/nova')}
-            class="tb-add-icon items-center justify-center h-11 w-11 text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
+            class="tb-add-icon items-center justify-center h-[44px] w-[44px] text-white bg-[var(--color-red)] hover:bg-[var(--color-red-soft)] transition-colors"
             style="border-radius: var(--radius-btn);"
             aria-label="Adicionar viatura"
           >
@@ -353,6 +353,9 @@
   }
   .tb-icbtn.tb-search-close {
     display: inline-flex;
+  }
+  .tb-icbtn:is(.tb-search-toggle, .tb-search-close) {
+    border-radius: 50%;
   }
   @container (max-width: 900px) {
     .tb-breadcrumbs,

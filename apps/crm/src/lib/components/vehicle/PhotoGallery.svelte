@@ -7,6 +7,7 @@
   import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
+  import { photoSwipe } from '../../../../../../shared/ui/photoSwipe';
   import { untrack, type Snippet } from 'svelte';
   import { Camera, Plus, Star, Trash2, Upload, ArrowLeft, ArrowRight, X } from 'lucide-svelte';
   import { invalidateAll } from '$app/navigation';
@@ -109,11 +110,17 @@
     if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault();
     event.stopPropagation();
-    activeIndex = Math.max(
-      0,
-      Math.min(photos.length - 1, activeIndex + (event.key === 'ArrowRight' ? 1 : -1)),
-    );
+    step(event.key === 'ArrowRight' ? 1 : -1);
   }
+  function step(direction: number) {
+    activeIndex = Math.max(0, Math.min(photos.length - 1, activeIndex + direction));
+  }
+  const swipeOptions = $derived({
+    enabled: !editable && photos.length > 1,
+    previous: () => step(-1),
+    next: () => step(1),
+    edgeInset: 24,
+  });
 
   async function uploadFiles(files: FileList) {
     if (disabled || dragging || busy || files.length === 0) return;
@@ -288,6 +295,7 @@
       {#if loading || loadError}
         <div
           class="photo-empty aspect-[16/10] grid place-items-center bg-[var(--color-bg-2)]"
+          class:public-crop={!editable && photoCount > 0}
           role={loadError ? 'alert' : 'status'}
           aria-busy={loading}
         >
@@ -325,12 +333,14 @@
         <div
           class="photo-preview aspect-[16/10] bg-[var(--color-bg-2)] overflow-hidden"
           class:public-crop={!editable}
+          use:photoSwipe={swipeOptions}
         >
           {#if primary}
             <button
               bind:this={opener}
               type="button"
               class="photo-open"
+              data-swipe-surface
               aria-label={`Ampliar fotografia ${activeIndex + 1} de ${photos.length}`}
               onclick={() => {
                 viewerOpen = true;
@@ -339,15 +349,16 @@
               onkeydown={photoKey}
             >
               {#if imageFailed}<span class="photo-unavailable">Fotografia indisponível</span>{:else}
-                <img
-                  {...photoAttrs(primary, 1600, '(max-width:700px) 100vw, 1100px')}
-                  use:reusablePhoto={{ photo: primary }}
-                  style={editable ? undefined : framingStyle(framing[primary.path])}
-                  alt={`Fotografia ${activeIndex + 1} da viatura`}
-                  class="h-full w-full object-cover"
-                  loading="eager"
-                  onerror={() => (imageFailed = true)}
-                />
+                {#key primary.path}<img
+                    {...photoAttrs(primary, 1600, '(max-width:700px) 100vw, 1100px')}
+                    use:reusablePhoto={{ photo: primary }}
+                    style={editable ? undefined : framingStyle(framing[primary.path])}
+                    alt={`Fotografia ${activeIndex + 1} da viatura`}
+                    class="h-full w-full object-cover"
+                    loading="eager"
+                    draggable={false}
+                    onerror={() => (imageFailed = true)}
+                  />{/key}
               {/if}
             </button>
             {#if photos.length > 1}
@@ -386,6 +397,8 @@
                 <button
                   type="button"
                   onclick={() => (activeIndex = i)}
+                  aria-label={`Selecionar fotografia ${i + 1}`}
+                  aria-pressed={isActive}
                   class="block h-16 w-24 overflow-hidden border-2 transition-colors {isActive
                     ? 'border-[var(--color-red)]'
                     : 'border-transparent hover:border-[var(--color-border-strong)]'}"
@@ -479,7 +492,9 @@
 
 <dialog
   class="crm-photo-viewer"
+  class:swipe-viewer={!editable}
   bind:this={viewer}
+  use:photoSwipe={swipeOptions}
   aria-labelledby={captionId}
   onkeydown={photoKey}
   onclose={() => {
@@ -505,7 +520,21 @@
         onerror={() => (imageFailed = true)}
       />{/if}
   {/if}
-  <p id={captionId}>Fotografia {activeIndex + 1} de {photos.length}</p>
+  <footer class="viewer-footer">
+    <p id={captionId} aria-live="polite">Fotografia {activeIndex + 1} de {photos.length}</p>
+    {#if !editable && photos.length > 1}
+      <div class="viewer-index" role="group" aria-label="Selecionar fotografia">
+        {#each photos as photo, i (photo.path)}
+          <button
+            type="button"
+            aria-label={`Selecionar fotografia ${i + 1}`}
+            aria-pressed={i === activeIndex}
+            onclick={() => (activeIndex = i)}
+          ></button>
+        {/each}
+      </div>
+    {/if}
+  </footer>
   {#if photos.length > 1}
     <button
       type="button"
@@ -532,7 +561,7 @@
   .photo-preview {
     position: relative;
   }
-  .photo-preview.public-crop {
+  .public-crop {
     aspect-ratio: 1.4;
     max-height: 690px;
   }
@@ -541,7 +570,7 @@
     object-position: var(--photo-desktop, 50% 50%);
   }
   @media (max-width: 700px) {
-    .photo-preview.public-crop {
+    .public-crop {
       aspect-ratio: 4/3;
       max-height: none;
     }
@@ -663,11 +692,54 @@
     min-height: 0;
     object-fit: contain;
   }
-  .crm-photo-viewer > p {
+  .viewer-footer > p {
     text-align: center;
     font-size: 13px;
     margin: 0;
     padding: 6px;
+  }
+  .viewer-index {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    .public-crop .photo-step,
+    .swipe-viewer .viewer-step {
+      display: none;
+    }
+    .crm-photo-viewer.swipe-viewer {
+      padding-inline: 8px;
+    }
+    .viewer-index {
+      display: flex;
+      justify-content: safe center;
+      overflow-x: auto;
+    }
+    .viewer-index button {
+      flex: 0 0 32px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+    }
+    .viewer-index button::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border: 1px solid #fff;
+      border-radius: 50%;
+    }
+    .viewer-index button[aria-pressed='true']::before {
+      background: #fff;
+    }
+  }
+  @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+    .public-crop .photo-open img {
+      animation: preview-photo-in 220ms ease-out;
+    }
+    @keyframes preview-photo-in {
+      from {
+        opacity: 0.55;
+      }
+    }
   }
   .crm-photo-viewer .photo-unavailable {
     min-height: 0;

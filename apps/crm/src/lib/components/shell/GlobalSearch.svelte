@@ -238,7 +238,7 @@
     if (event.relatedTarget instanceof Node && !containerEl.contains(event.relatedTarget)) close();
   }}
 >
-  <div class="gs-input-shell border rounded-xs" class:is-open={open}>
+  <div class="gs-input-shell border rounded-[10px]" class:is-open={open}>
     <BrandSearch class="h-4 w-4 text-[var(--color-text-faint)] flex-shrink-0" />
     <input
       bind:this={inputEl}

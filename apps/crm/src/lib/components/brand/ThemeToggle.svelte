@@ -5,16 +5,17 @@
 
   interface Props {
     size?: number;
+    round?: boolean;
   }
 
-  let { size = 38 }: Props = $props();
+  let { size = 38, round = false }: Props = $props();
 </script>
 
 <button
   type="button"
   onclick={() => theme.toggle()}
   class="inline-flex items-center justify-center border border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)] transition-colors"
-  style="box-sizing: border-box; flex-shrink: 0; padding: 0; width: {size}px; height: {size}px; border-radius: var(--radius-btn);"
+  style="box-sizing: border-box; flex-shrink: 0; padding: 0; width: {size}px; height: {size}px; border-radius: {round ? '50%' : 'var(--radius-btn)'};"
   aria-label="Alternar tema"
 >
   {#if $theme === 'dark'}

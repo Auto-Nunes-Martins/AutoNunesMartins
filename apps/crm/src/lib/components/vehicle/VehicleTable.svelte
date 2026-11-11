@@ -74,7 +74,10 @@
 <div class="md:hidden divide-y divide-[var(--color-border)]">
   {#each items as v (v.id)}
     <article use:linkedRow class="linked-row flex items-center gap-1 px-3">
-      <a href={destination(v)} class="row-link flex min-w-0 flex-1 items-center gap-3 py-3 group">
+      <a
+        href={destination(v)}
+        class="row-link mobile-vehicle-link grid min-w-0 flex-1 items-center gap-x-3 gap-y-2 py-3 group"
+      >
         <div
           class="mobile-vehicle-photo shrink-0 flex items-center justify-center overflow-hidden rounded-xs bg-[var(--color-bg-2)]"
         >
@@ -106,12 +109,12 @@
             {/if}{v.year}{#if v.mileage != null}
               · {formatInt(v.mileage)} km{/if}
           </span>
-          <div class="mobile-vehicle-tags flex flex-wrap items-center gap-x-2 gap-y-1">
-            {#if v.salePrice}<span class="num-value text-[12px]" title="PVP"
-                >{formatEUR(v.salePrice)}</span
-              >{/if}
-            <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
-          </div>
+          {#if v.salePrice}<span class="num-value block text-[12px]" title="PVP"
+              >{formatEUR(v.salePrice)}</span
+            >{/if}
+        </div>
+        <div class="mobile-vehicle-tags col-span-2 flex items-center gap-1.5">
+          <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
         </div>
       </a>
       {@render rowActions(v, true)}
@@ -254,6 +257,9 @@
   />{/if}
 
 <style>
+  .mobile-vehicle-link {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
   .mobile-vehicle-photo {
     width: clamp(68px, 20vw, 84px);
     aspect-ratio: 4 / 3;
@@ -262,6 +268,7 @@
     --state-tag-height: 22px;
     --state-tag-padding: 2px 5px;
     --state-tag-size: 10px;
+    white-space: nowrap;
   }
   .vehicle-name {
     display: flex;

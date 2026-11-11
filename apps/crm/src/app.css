@@ -155,7 +155,8 @@ html {
     of snapping. User-respect: clients with prefers-reduced-motion get the
     instant default via the media query at the bottom of this file.
   */
-  scroll-behavior: smooth;
+  /* SvelteKit restores the saved position with an unqualified scrollTo. */
+  scroll-behavior: auto;
   /*
     Reserve the scrollbar gutter so toggling overflow doesn't cause a
     horizontal layout shift when the scrollbar appears/disappears.
@@ -225,12 +226,7 @@ body {
   background-clip: content-box;
 }
 
-/* Honour reduced-motion: instantly snap programmatic scrolls instead of
-   sliding when the user prefers it. */
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
   *,
   *::before,
   *::after {

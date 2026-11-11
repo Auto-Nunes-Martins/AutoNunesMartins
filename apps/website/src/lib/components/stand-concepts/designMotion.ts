@@ -14,7 +14,9 @@ export function designMotion(
 ) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const pointer = matchMedia('(hover: hover) and (pointer: fine)');
-  const readingIndicator = root.querySelector<HTMLElement>(':scope > .read-line');
+  const readingIndicator = globalThis.CSS?.supports('animation-timeline: scroll(root block)')
+    ? null
+    : root.querySelector<HTMLElement>(':scope > .read-line');
   let lastTime = 0;
   const progress = new Map<HTMLElement, number>();
   const approach = new Map<HTMLElement, number>();
@@ -33,7 +35,12 @@ export function designMotion(
     const height = window.innerHeight;
     const width = window.innerWidth;
     const scrollY = window.scrollY;
-    const reading = clamp(scrollY / Math.max(1, document.documentElement.scrollHeight - height));
+    const scroller = readingIndicator && document.scrollingElement;
+    const reading = scroller
+      ? clamp(scrollY / Math.max(1, scroller.scrollHeight - scroller.clientHeight))
+      : readingIndicator
+        ? clamp(scrollY / Math.max(1, document.documentElement.scrollHeight - height))
+        : 0;
     const rows = sections
       .map((node) => ({ node, bounds: node.getBoundingClientRect() }))
       .filter(({ bounds }) => bounds.bottom >= -50 && bounds.top <= height + 50)

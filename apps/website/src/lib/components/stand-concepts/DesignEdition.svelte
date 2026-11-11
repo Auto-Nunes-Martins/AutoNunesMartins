@@ -2388,6 +2388,16 @@
     z-index: 100;
     pointer-events: none;
   }
+  @supports (animation-timeline: scroll(root block)) {
+    .read-line {
+      animation: read-line-progress auto linear both;
+      animation-timeline: scroll(root block);
+    }
+    @keyframes read-line-progress {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+  }
   .kicker {
     display: flex;
     align-items: center;
