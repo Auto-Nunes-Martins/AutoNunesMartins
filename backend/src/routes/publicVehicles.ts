@@ -16,6 +16,7 @@ import {
   listPublicVehicles,
   listAvailablePublicBrands,
   relatedPublicVehicles,
+  listPublicCampaigns,
 } from '../lib/data/publicVehicle.js';
 import { publicSlugSchema, publicVehicleQuerySchema } from '../lib/domain/publicVehicle.js';
 import {
@@ -110,6 +111,18 @@ router.get(
     } catch {
       logger.error('Public homepage highlights unavailable');
       res.status(503).json({ error: 'Destaques temporariamente indisponíveis' });
+    }
+  }),
+);
+
+router.get(
+  '/campaigns',
+  asyncHandler(async (_req, res) => {
+    try {
+      res.json({ items: await withCoverPhotoDimensions(prisma, await listPublicCampaigns(prisma)) });
+    } catch {
+      logger.error('Public campaigns unavailable');
+      res.status(503).json({ error: 'Campanhas temporariamente indisponíveis' });
     }
   }),
 );

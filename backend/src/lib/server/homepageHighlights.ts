@@ -11,6 +11,7 @@ import {
 import { isApprovedPhotoPath } from '../domain/publicVehicle.js';
 import { signedPhotos, signedThumbnails } from '../data/storage.js';
 import { emitActivity } from '../data/activity.js';
+import { eligibleCampaign, readCampaigns } from '../data/campaignPricing.js';
 
 export const highlightsKey = 'homepageHighlights';
 export const highlightItemsSchema = z
@@ -157,7 +158,7 @@ export async function saveHighlights(
   }
 }
 
-async function readHighlightSelection(db: PrismaClient) {
+async function readHighlightSelection(db: PrismaClient, publicPrices = false) {
   const setting = await db.appSetting.findUnique({ where: { key: highlightsKey } });
   const { items } = readSetting(setting?.value);
   const vehicles = items.length
@@ -166,6 +167,8 @@ async function readHighlightSelection(db: PrismaClient) {
         select: publicVehicleSelect,
       })
     : [];
+  const campaigns = publicPrices && vehicles.length ? (await readCampaigns(db)).items : [];
+  const now = Date.now();
   return {
     configured: !!setting,
     configuredVehicleIds: items.map((item) => item.vehicleId),
@@ -178,7 +181,7 @@ async function readHighlightSelection(db: PrismaClient) {
       return [
         {
           id: row.id,
-          vehicle: publicVehicleDto(row),
+          vehicle: publicVehicleDto(row, eligibleCampaign(row, campaigns, now)),
           photoIndex: index,
           ...(item.framing ? { framing: item.framing } : {}),
         },
@@ -188,7 +191,7 @@ async function readHighlightSelection(db: PrismaClient) {
 }
 
 export async function readPublicHighlights(db: PrismaClient) {
-  const selection = await readHighlightSelection(db);
+  const selection = await readHighlightSelection(db, true);
   return {
     configured: selection.configured,
     items: selection.items.map(({ vehicle, photoIndex, framing }) => ({

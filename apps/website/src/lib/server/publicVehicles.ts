@@ -71,3 +71,15 @@ export async function loadRelatedVehicles(slug: string) {
     return [];
   }
 }
+
+export async function loadPublicCampaigns() {
+  try {
+    const response = await publicRequest('/campaigns');
+    if (!response.ok) return [];
+    const body = await response.json();
+    return publicVehicleSchema.array().max(4).parse(body.items)
+      .filter((vehicle) => vehicle.availability === 'AVAILABLE' && vehicle.promotion);
+  } catch {
+    return [];
+  }
+}

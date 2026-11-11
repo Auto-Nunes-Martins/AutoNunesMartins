@@ -34,6 +34,7 @@
     if (path.startsWith(crmPath('/atividade'))) return ['Painel', 'Atividade'];
     if (path.startsWith(crmPath('/guia'))) return ['Painel', 'Guia de Fluxo'];
     if (path.startsWith(crmPath('/site/reviews'))) return ['Painel', 'Site público', 'Reviews'];
+    if ($page.route.id === '/(app)/site/campanhas') return ['Painel', 'Site público', 'Campanhas'];
     if (path.startsWith(crmPath('/site')))
       return ['Painel', 'Site público', 'Destaques da homepage'];
     if (path.startsWith(crmPath('/definicoes'))) return ['Painel', 'Definições'];

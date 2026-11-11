@@ -2,7 +2,7 @@
   import { PHOTO_ACCEPT, preparePhoto } from '$lib/photoPreparation';
   import { reusablePhoto } from '$lib/reusablePhoto';
   import { framingStyle, type GalleryPhotoFraming } from '@anm/types';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount, tick, untrack, type Snippet } from 'svelte';
   import { sessionFetch } from '$lib/auth/session';
   import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
   import { crmPath } from '$lib/paths';
@@ -12,7 +12,12 @@
   import { followThumbnail } from '../../../../../../shared/ui/thumbnailFollow';
   import { dragThumbnailStrip } from '../../../../../../shared/ui/dragThumbnailStrip';
   import { thumbnailNavigation } from '../../../../../../shared/ui/thumbnailNavigation';
-  import { untrack, type Snippet } from 'svelte';
+  import { fullscreenGallery } from '../../../../../../shared/ui/fullscreenGallery';
+  import {
+    animateGalleryClosing,
+    animateGalleryOpening,
+    captureOpeningPhoto,
+  } from '../../../../../../shared/ui/galleryOpening';
   import {
     Camera,
     Plus,
@@ -37,6 +42,7 @@
   interface Props {
     framing?: Record<string, GalleryPhotoFraming>;
     vehicleId: string;
+    vehicleName?: string;
     photos: SignedPhoto[];
     busy?: boolean;
     disabled?: boolean;
@@ -59,6 +65,7 @@
 
   let {
     vehicleId,
+    vehicleName,
     photos,
     editor,
     framing = {},
@@ -107,12 +114,30 @@
   let viewer = $state<HTMLDialogElement>(undefined!),
     opener = $state<HTMLButtonElement>(undefined!);
   let viewerOpen = $state(false);
+  let closingViewer = $state(false);
+  let narrowViewport = $state(false);
+  const mobileViewer = $derived(!editable && narrowViewport);
+  let viewerPhotoDrag = $state<number>();
+  let stopViewerAnimation: (() => void) | undefined;
+  let returnScroll: { left: number; top: number } | undefined;
   let imageFailed = $state(false);
   let failedRailUrls = $state<string[]>([]);
   let failedThumbnailUrls = $state<string[]>([]);
   let mainPhotoDrag = $state<number>();
   const uid = $props.id();
   const captionId = uid + '-photo-caption';
+  onMount(() => {
+    const mobile = matchMedia('(max-width: 767px)');
+    const sync = () => (narrowViewport = mobile.matches);
+    sync();
+    mobile.addEventListener('change', sync);
+    return () => mobile.removeEventListener('change', sync);
+  });
+  onDestroy(() => stopViewerAnimation?.());
+  $effect(() => {
+    if (mobileViewer && viewer)
+      return fullscreenGallery(viewer, { close: closeMobileViewer }).destroy;
+  });
   $effect(() => {
     if (activeIndex >= photos.length) activeIndex = Math.max(0, photos.length - 1);
     if (!photos.length) viewer?.close();
@@ -123,6 +148,10 @@
     imageFailed = false;
   });
   function photoKey(event: KeyboardEvent) {
+    if (closingViewer) {
+      event.preventDefault();
+      return;
+    }
     if (viewerOpen) trapDialogTab(event, viewer);
     if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault();
@@ -144,6 +173,52 @@
     commitDistance: 24,
     drag: (offset: number | undefined) => (mainPhotoDrag = offset),
   });
+  const viewerSwipeOptions = $derived({
+    ...swipeOptions,
+    mouse: true,
+    commitDistance: 24,
+    edgeInset: 0,
+    drag: (offset: number | undefined) => (viewerPhotoDrag = offset),
+  });
+  function inlinePhoto() {
+    return opener?.querySelector<HTMLImageElement>('.photo-slide[aria-hidden="false"] img') ?? null;
+  }
+  async function openViewer(event: MouseEvent) {
+    if (viewerOpen || (event.detail && opener.querySelector('.photo-track[data-moving="true"]')))
+      return;
+    if (!mobileViewer) {
+      viewerOpen = true;
+      viewer.showModal();
+      return;
+    }
+    const opening = captureOpeningPhoto(inlinePhoto());
+    returnScroll = { left: window.scrollX, top: window.scrollY };
+    viewerOpen = true;
+    await tick();
+    if (!viewerOpen || !viewer?.isConnected || !photos.length) {
+      viewerOpen = false;
+      returnScroll = undefined;
+      return;
+    }
+    viewer.showModal();
+    window.scrollTo({ ...returnScroll, behavior: 'instant' });
+    stopViewerAnimation = animateGalleryOpening(viewer, opening);
+  }
+  function closeMobileViewer() {
+    if (!viewer.open || closingViewer) return;
+    stopViewerAnimation?.();
+    closingViewer = true;
+    stopViewerAnimation = animateGalleryClosing(viewer, inlinePhoto(), () => viewer.close());
+  }
+  function viewerClosed() {
+    stopViewerAnimation?.();
+    stopViewerAnimation = undefined;
+    viewerOpen = false;
+    closingViewer = false;
+    if (returnScroll) window.scrollTo({ ...returnScroll, behavior: 'instant' });
+    returnScroll = undefined;
+    opener?.focus({ preventScroll: true });
+  }
 
   async function uploadFiles(files: FileList) {
     if (disabled || dragging || busy || files.length === 0) return;
@@ -344,9 +419,7 @@
           <span
             class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
           >
-            {editable
-              ? 'Sem fotografias · carregar acima'
-              : 'Sem fotografias'}
+            {editable ? 'Sem fotografias · carregar acima' : 'Sem fotografias'}
           </span>
         </div>
       {:else}
@@ -363,15 +436,7 @@
               class="photo-open"
               data-swipe-surface
               aria-label={`Ampliar fotografia ${activeIndex + 1} de ${photos.length}`}
-              onclick={(event) => {
-                if (
-                  event.detail &&
-                  event.currentTarget.querySelector('.photo-track[data-moving="true"]')
-                )
-                  return;
-                viewerOpen = true;
-                viewer.showModal();
-              }}
+              onclick={openViewer}
               onkeydown={photoKey}
             >
               {#if !editable}
@@ -578,68 +643,141 @@
 
 <dialog
   class="crm-photo-viewer"
-  class:swipe-viewer={!editable}
+  class:mobile-viewer={mobileViewer}
+  data-closing={closingViewer || undefined}
   bind:this={viewer}
-  use:photoSwipe={swipeOptions}
+  use:photoSwipe={{ ...swipeOptions, enabled: swipeOptions.enabled && !mobileViewer }}
   aria-labelledby={captionId}
   onkeydown={photoKey}
-  onclose={() => {
-    viewerOpen = false;
-    opener?.focus({ preventScroll: true });
+  onclose={viewerClosed}
+  oncancel={(event) => {
+    if (!mobileViewer) return;
+    event.preventDefault();
+    closeMobileViewer();
   }}
   onclick={(event) => {
-    if (event.target === viewer) viewer.close();
+    if (!mobileViewer && event.target === viewer) viewer.close();
   }}
 >
-  <button
-    type="button"
-    class="viewer-close"
-    aria-label="Fechar fotografia"
-    onclick={() => viewer.close()}><X size={22} aria-hidden="true" /></button
-  >
-  {#if viewerOpen && primary}
-    {#if imageFailed}<p class="photo-unavailable" role="status">
-        Fotografia indisponível. Pode navegar para outra fotografia.
-      </p>{:else}<img
-        use:reusablePhoto={{ photo: primary, fullscreen: true }}
-        alt={`Fotografia ${activeIndex + 1} da viatura`}
-        onerror={() => (imageFailed = true)}
-      />{/if}
-  {/if}
-  <footer class="viewer-footer">
-    <p id={captionId} aria-live="polite">Fotografia {activeIndex + 1} de {photos.length}</p>
-    {#if !editable && photos.length > 1}
-      <div class="viewer-index" role="group" aria-label="Selecionar fotografia">
-        {#each photos as photo, i (photo.path)}
+  {#if mobileViewer}
+    {#if viewerOpen && primary}
+      <div class="viewer-heading">
+        <p id={captionId} data-viewer-caption>
+          <span class="viewer-vehicle-name">{vehicleName || 'Fotografias da viatura'}</span>
+          <span class="viewer-photo-position" aria-live="polite"
+            >{activeIndex + 1} / {photos.length}</span
+          >
+        </p>
+        <div class="viewer-controls">
           <button
             type="button"
-            aria-label={`Selecionar fotografia ${i + 1}`}
-            aria-pressed={i === activeIndex}
-            onclick={() => (activeIndex = i)}
-          ></button>
+            class="viewer-close"
+            aria-label="Fechar fotografia"
+            onclick={closeMobileViewer}
+          >
+            <X size={25} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      <div
+        class="viewer-stage"
+        role="group"
+        aria-label="Fotografias em ecrã inteiro"
+        use:photoSwipe={viewerSwipeOptions}
+      >
+        <div class="viewer-mobile-rail">
+          <div
+            class="photo-track photo-rail-track"
+            style:--photo-start={activeIndex}
+            use:photoRail={{
+              index: activeIndex,
+              count: photos.length,
+              drag: viewerPhotoDrag,
+              fullscreen: true,
+            }}
+          >
+            {#each photos as photo, index (photo.path)}
+              <div
+                class="photo-slide photo-rail-slide"
+                inert={index !== activeIndex}
+                aria-hidden={index !== activeIndex}
+              >
+                {#if index === activeIndex && imageFailed}
+                  <p class="photo-unavailable" role="status">
+                    Fotografia indisponível. Pode navegar para outra fotografia.
+                  </p>
+                {:else}
+                  <img
+                    use:reusablePhoto={{ photo, fullscreen: index === activeIndex }}
+                    alt={`Fotografia ${index + 1} da viatura`}
+                    draggable={false}
+                    onerror={() => {
+                      if (index === activeIndex) imageFailed = true;
+                    }}
+                  />
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
+      </div>
+      <div
+        class="viewer-thumbnails"
+        use:followThumbnail={activeIndex}
+        role="group"
+        aria-label="Fotografias da viatura"
+      >
+        {#each photos as photo, index (photo.path)}
+          <button
+            type="button"
+            aria-label={`Ver fotografia ${index + 1}`}
+            aria-pressed={index === activeIndex}
+            onclick={() => (activeIndex = index)}
+          >
+            <img use:reusablePhoto={{ photo }} alt="" draggable={false} />
+          </button>
         {/each}
       </div>
     {/if}
-  </footer>
-  {#if photos.length > 1}
+  {:else}
     <button
       type="button"
-      class="viewer-step previous"
-      aria-label="Fotografia anterior"
-      aria-disabled={activeIndex === 0}
-      onclick={() => {
-        if (activeIndex > 0) activeIndex -= 1;
-      }}><ArrowLeft size={22} aria-hidden="true" /></button
+      class="viewer-close"
+      aria-label="Fechar fotografia"
+      onclick={() => viewer.close()}><X size={22} aria-hidden="true" /></button
     >
-    <button
-      type="button"
-      class="viewer-step next"
-      aria-label="Fotografia seguinte"
-      aria-disabled={activeIndex === photos.length - 1}
-      onclick={() => {
-        if (activeIndex < photos.length - 1) activeIndex += 1;
-      }}><ArrowRight size={22} aria-hidden="true" /></button
-    >
+    {#if viewerOpen && primary}
+      {#if imageFailed}<p class="photo-unavailable" role="status">
+          Fotografia indisponível. Pode navegar para outra fotografia.
+        </p>{:else}<img
+          use:reusablePhoto={{ photo: primary, fullscreen: true }}
+          alt={`Fotografia ${activeIndex + 1} da viatura`}
+          onerror={() => (imageFailed = true)}
+        />{/if}
+    {/if}
+    <footer class="viewer-footer">
+      <p id={captionId} aria-live="polite">Fotografia {activeIndex + 1} de {photos.length}</p>
+    </footer>
+    {#if photos.length > 1}
+      <button
+        type="button"
+        class="viewer-step previous"
+        aria-label="Fotografia anterior"
+        aria-disabled={activeIndex === 0}
+        onclick={() => {
+          if (activeIndex > 0) activeIndex -= 1;
+        }}><ArrowLeft size={22} aria-hidden="true" /></button
+      >
+      <button
+        type="button"
+        class="viewer-step next"
+        aria-label="Fotografia seguinte"
+        aria-disabled={activeIndex === photos.length - 1}
+        onclick={() => {
+          if (activeIndex < photos.length - 1) activeIndex += 1;
+        }}><ArrowRight size={22} aria-hidden="true" /></button
+      >
+    {/if}
   {/if}
 </dialog>
 
@@ -843,36 +981,9 @@
     margin: 0;
     padding: 6px;
   }
-  .viewer-index {
-    display: none;
-  }
   @media (max-width: 767px) {
-    .swipe-viewer .viewer-step {
+    .public-crop .photo-step {
       display: none;
-    }
-    .crm-photo-viewer.swipe-viewer {
-      padding-inline: 8px;
-    }
-    .viewer-index {
-      display: flex;
-      justify-content: safe center;
-      overflow-x: auto;
-    }
-    .viewer-index button {
-      flex: 0 0 32px;
-      height: 36px;
-      display: grid;
-      place-items: center;
-    }
-    .viewer-index button::before {
-      content: '';
-      width: 8px;
-      height: 8px;
-      border: 1px solid #fff;
-      border-radius: 50%;
-    }
-    .viewer-index button[aria-pressed='true']::before {
-      background: #fff;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -898,6 +1009,183 @@
       max-height: calc(100dvh - 8px);
       padding: 54px 48px 10px;
     }
+  }
+  .crm-photo-viewer.mobile-viewer {
+    inset: 0;
+    transform: none;
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: rgb(18 18 20 / calc(0.32 * var(--viewer-dismiss-opacity, 1)));
+    transition: background-color 180ms ease-out;
+  }
+  .mobile-viewer[open] {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+  .mobile-viewer::backdrop {
+    background: rgb(8 8 10 / calc(0.76 * var(--viewer-dismiss-opacity, 1)));
+    backdrop-filter: blur(calc(4px * var(--viewer-dismiss-opacity, 1)));
+    transition:
+      background-color 180ms ease-out,
+      backdrop-filter 180ms ease-out;
+  }
+  .mobile-viewer[data-closing] {
+    pointer-events: none;
+  }
+  .viewer-heading {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .viewer-heading > p {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 0;
+    margin: 0;
+    padding: 2px 4px;
+    font-size: 12px;
+    line-height: 1.35;
+    opacity: var(--viewer-dismiss-opacity, 1);
+    transition: opacity 180ms ease-out;
+  }
+  .viewer-vehicle-name {
+    min-width: 0;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .viewer-photo-position {
+    flex: none;
+    min-width: 6.5ch;
+    text-align: right;
+    white-space: nowrap;
+    color: #ffffffb3;
+    font-variant-numeric: tabular-nums;
+  }
+  .viewer-controls {
+    display: contents;
+  }
+  .mobile-viewer .viewer-close {
+    position: static;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    background: #111d;
+    box-shadow: 0 2px 10px #0007;
+    opacity: var(--viewer-dismiss-opacity, 1);
+    transition:
+      opacity 180ms ease-out,
+      background-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  @media (hover: hover) {
+    .mobile-viewer .viewer-close:hover {
+      background: #42464c;
+      box-shadow: 0 3px 14px #0009;
+    }
+  }
+  .mobile-viewer .viewer-close:active {
+    background: #60656b;
+    box-shadow: 0 1px 6px #0008;
+  }
+  .crm-photo-viewer.mobile-viewer button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+  }
+  .mobile-viewer button {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .viewer-stage {
+    position: relative;
+    min-height: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .viewer-mobile-rail {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    contain: layout paint;
+    transform: translate3d(0, var(--viewer-dismiss-y, 0px), 0);
+    opacity: var(--viewer-photo-opacity, 1);
+    transition:
+      transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      opacity 180ms ease-out;
+  }
+  .viewer-stage img,
+  .viewer-thumbnails img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    -webkit-user-drag: none;
+  }
+  .viewer-thumbnails {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    min-width: 0;
+    max-width: 100%;
+    padding: 2px;
+    scrollbar-width: none;
+    justify-self: center;
+    align-self: start;
+    overscroll-behavior: contain;
+    opacity: var(--viewer-dismiss-opacity, 1);
+    transition: opacity 180ms ease-out;
+  }
+  .viewer-thumbnails button {
+    position: relative;
+    flex: 0 0 76px;
+    height: 56px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #111;
+    opacity: 0.5;
+    box-shadow: none;
+    transition:
+      opacity 150ms ease,
+      filter 150ms ease;
+  }
+  .viewer-thumbnails button[aria-pressed='true'],
+  .viewer-thumbnails button:is(:active, :focus-visible) {
+    opacity: 1;
+  }
+  .viewer-thumbnails button:active {
+    filter: brightness(1.15);
+  }
+  .viewer-thumbnails button[aria-pressed='true']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid white;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .viewer-thumbnails img {
+    object-fit: cover;
+  }
+  .mobile-viewer[data-dismiss-dragging],
+  .mobile-viewer[data-dismiss-dragging]::backdrop,
+  .mobile-viewer[data-dismiss-dragging]
+    :is(.viewer-mobile-rail, .viewer-close, .viewer-thumbnails, .viewer-heading > p) {
+    transition: none;
   }
   .photo-workspace {
     display: grid;

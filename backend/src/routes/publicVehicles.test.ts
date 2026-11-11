@@ -8,6 +8,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 const mocks = vi.hoisted(() => ({
   db: {
+    appSetting: { findUnique: vi.fn() },
     vehicle: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -125,6 +126,7 @@ afterAll(async () => {
 });
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.db.appSetting.findUnique.mockResolvedValue(null);
   mocks.db.vehiclePhotoDimensions.findMany.mockResolvedValue([]);
   mocks.db.$transaction.mockImplementation(async (fn) => fn(mocks.db));
   mocks.db.vehicle.findMany.mockResolvedValue([fixture()]);
@@ -274,6 +276,40 @@ describe('public query validation and search boundary', () => {
 });
 
 describe('public HTTP responses never disclose private inventory', () => {
+  it('uses the same promotion in campaigns, detail, selection, price filters and sorting', async () => {
+    const campaign = {
+      vehicleId: id, price: '17900.00', referencePrice: '20900.00', evidence: 'PRIVATE-REFERENCE',
+      durationDays: 7, startsAt: new Date(Date.now() - 60_000).toISOString(),
+      endsAt: new Date(Date.now() + 86_400_000).toISOString(),
+    };
+    mocks.db.appSetting.findUnique.mockResolvedValue({ value: {
+      revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225', items: [campaign],
+    } });
+    const other = { ...fixture(), id: 'clabcdefghijklmnopqrstuvx', publicSlug: slug + 'a', publicPrice: new Prisma.Decimal('18900.00') };
+    mocks.db.vehicle.findMany.mockImplementation(async ({ where }) => where.id?.notIn ? [other] : [fixture()]);
+    const read = async (suffix: string) => {
+      const response = await fetch(`${base}/api/public/vehicles${suffix}`);
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(JSON.stringify(result)).not.toContain(campaign.evidence);
+      return result;
+    };
+    const promotion = { referencePrice: campaign.referencePrice, startsAt: campaign.startsAt, endsAt: campaign.endsAt };
+    const discounted = { price: campaign.price, promotion };
+    expect(await read('/' + slug)).toMatchObject(discounted);
+    expect((await read('/campaigns')).items).toMatchObject([discounted]);
+    expect((await read('/selection?id=' + slug)).items[0].vehicle).toMatchObject(discounted);
+    const catalog = await read('?ordem=preco_asc&preco_max=19000');
+    expect(catalog.items.map((item: { price: string }) => item.price)).toEqual(['17900.00', '18900.00']);
+    expect(catalog.facets.price.min).toBe('17900.00');
+    expect(mocks.db.vehicle.count).toHaveBeenLastCalledWith({
+      where: expect.objectContaining({ AND: [{ OR: [
+        { id: { notIn: [id] }, publicPrice: { gt: 0, gte: undefined, lte: 19000 } },
+        { id: { in: [id] } },
+      ] }] }),
+    });
+  });
+
   it('returns all available public brands without pagination or reserved/sold/private stock', async () => {
     mocks.db.vehicle.groupBy.mockResolvedValue([
       { brand: 'Audi', _count: { _all: 4 }, privateField: 'SECRET' },

@@ -51,7 +51,14 @@ const mock = {
   vehicle: { findMany: vi.fn(), findFirst: vi.fn() },
   $transaction: vi.fn(),
 };
-const db = mock as unknown as PrismaClient;
+const db = {
+  ...mock,
+  appSetting: {
+    ...mock.appSetting,
+    findUnique: (args: { where: { key: string } }) =>
+      args.where.key === 'publicVehicleCampaigns' ? Promise.resolve(null) : mock.appSetting.findUnique(args),
+  },
+} as unknown as PrismaClient;
 beforeEach(() => {
   vi.clearAllMocks();
   mock.appSetting.findUnique.mockResolvedValue({

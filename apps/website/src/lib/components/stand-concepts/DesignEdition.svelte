@@ -54,6 +54,7 @@
   import { page } from '$app/stores';
   import { publicPhoto, publicHref, fuelLabels, transmissionLabels } from '$lib/publicVehicles';
   import DiscoverVehicles from './DiscoverVehicles.svelte';
+  import PromotionTerms from './PromotionTerms.svelte';
   import { hybridNav } from './hybridNav';
   import { catalogNavigation } from './catalogNavigation';
   import './catalogNavigation.css';
@@ -159,6 +160,7 @@
     errorStatus,
     unavailableVehicle,
     homeHighlights,
+    campaigns = [],
     reviews = [],
     routeContent,
     galleryRuntime,
@@ -177,6 +179,7 @@
     errorStatus?: number;
     unavailableVehicle?: UnavailableVehicle;
     homeHighlights?: PublicHighlights | Promise<PublicHighlights>;
+    campaigns?: PublicVehicle[];
     reviews?: PublicReview[];
     routeContent?: Snippet<
       [{
@@ -1150,10 +1153,11 @@
           <h1 id="vehicle-title">{car.brand}<br /><span>{car.model}</span></h1>
           {#if car.line}<p class="model-line">{car.line.split(' · ')[0]}</p>{/if}
           <div class="purchase-price">
-            <span>{publicVehicle ? 'Preço da viatura' : 'Preço de demonstração'}</span><strong
+            <span>{publicVehicle?.promotion ? 'Preço promocional' : publicVehicle ? 'Preço da viatura' : 'Preço de demonstração'}</span><strong
               >{publicVehicle ? publicPrice(publicVehicle.price) : eur(car.price)}</strong
             >
           </div>
+          {#if publicVehicle?.promotion}<PromotionTerms promotion={publicVehicle.promotion} />{/if}
           <div class="quick-specs">
             <span>{car.year}<small>Ano</small></span><span
               >{publicMileage(car.km, '')}<small>Quilómetros</small></span
@@ -1311,6 +1315,17 @@
     <main>
       <HomeHeroDirections {homeHighlights} stockVehicles={stock?.catalog.items ?? []} />
       <OrbitStats />
+
+      {#if campaigns.length}
+        <section class="showroom campaign-stock" aria-labelledby="campaign-stock-heading">
+          <div class="showroom-heading"><div><h2 id="campaign-stock-heading">Campanhas<span class="heading-period">.</span></h2></div></div>
+          <div class="car-grid campaign-grid">
+            {#each campaigns as vehicle, index (vehicle.slug)}
+              {@render vehicleCard(publicCard(vehicle), index, false)}
+            {/each}
+          </div>
+        </section>
+      {/if}
 
       <section class="showroom" id="selecao">
         <div class="showroom-heading" use:entrance>
@@ -1821,6 +1836,12 @@
         <div class="card-price">
           <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong>
         </div>
+        {#if 'approved' in vehicle && vehicle.promotion}
+          <div class="card-promotion">
+            <span class="card-promotion-label">Promoção</span>
+            <PromotionTerms promotion={vehicle.promotion} />
+          </div>
+        {/if}
         <div class="card-specs">
           <span><CalendarDays size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.year}</span
           ><span
@@ -1855,6 +1876,19 @@
 {/snippet}
 
 <style>
+  .campaign-stock .campaign-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(14px, 2vw, 32px);
+  }
+  .card-promotion { display: grid; gap: 5px; margin-block: 0 12px; }
+  .card-promotion-label { color: var(--red); font-size: 11px; font-weight: 650; }
+  @media (max-width: 1050px) {
+    .campaign-stock .campaign-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 550px) {
+    .campaign-stock .campaign-grid { grid-template-columns: 1fr; }
+  }
   .design.orbit-home main :global(.home-services-comparison + .orbit-perspective) {
     margin-top: 0;
   }

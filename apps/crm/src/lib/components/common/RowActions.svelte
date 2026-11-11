@@ -238,6 +238,10 @@
     max-width: none;
     max-height: none;
   }
+  .action-popover::backdrop {
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
   .compact > .action-menu {
     position: absolute;
   }
@@ -250,6 +254,9 @@
     background: transparent;
     border: 0;
     padding: 0;
+    /* Shared button feedback would otherwise paint the entire viewport. */
+    box-shadow: none;
+    outline: none;
     -webkit-tap-highlight-color: transparent;
   }
   .action-menu {

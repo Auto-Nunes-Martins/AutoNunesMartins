@@ -1,8 +1,14 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { publicSpecificationsSchema, galleryFramingSchema } from '@anm/types';
 import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { isApprovedPhotoPath, type PublicVehicleQuery } from '../domain/publicVehicle.js';
+import {
+  currentCampaign,
+  eligibleCampaign,
+  readCampaigns,
+  type SavedCampaign,
+} from './campaignPricing.js';
 
 // Never reuse the CRM's Vehicle select, filter builder, or serializer here.
 export const publicVehicleSelect = {
@@ -83,7 +89,7 @@ export function approvedPaths(row: Pick<PublicRow, 'id' | 'photos'>): string[] {
 }
 
 /** Explicit JSON allowlist, even if a future query accidentally over-selects. */
-export function publicVehicleDto(row: PublicRow) {
+export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
   const framing = galleryFramingSchema.safeParse(row.galleryFraming).data ?? {};
   const positions = approvedPaths(row).map((path) => framing[path] ?? null);
   if (
@@ -102,7 +108,16 @@ export function publicVehicleDto(row: PublicRow) {
     year: row.year,
     fuel: row.fuel,
     mileage: row.mileage,
-    price: row.publicPrice?.toFixed(2) ?? null,
+    price: promotion?.price ?? row.publicPrice?.toFixed(2) ?? null,
+    ...(promotion
+      ? {
+          promotion: {
+            referencePrice: promotion.referencePrice,
+            startsAt: promotion.startsAt,
+            endsAt: promotion.endsAt,
+          },
+        }
+      : {}),
     currency: 'EUR' as const,
     description: row.publicDescription,
     transmission: row.publicTransmission,
@@ -114,6 +129,122 @@ export function publicVehicleDto(row: PublicRow) {
       (path, index) =>
         `/api/public/vehicles/${row.publicSlug}/photos/${index}?v=${publicPhotoVersion(path)}`,
     ),
+  };
+}
+
+async function activePrices(tx: Prisma.TransactionClient, now: number) {
+  const { items } = await readCampaigns(tx);
+  const live = items.filter((item) => currentCampaign(item, now));
+  if (!live.length) return new Map<string, SavedCampaign>();
+  const rows = await tx.vehicle.findMany({
+    where: {
+      ...publicVehicleWhere(),
+      status: 'AVAILABLE',
+      id: { in: live.map(({ vehicleId }) => vehicleId) },
+    },
+    select: { id: true, status: true, publicPrice: true },
+  });
+  const prices = new Map<string, SavedCampaign>();
+  for (const item of live) {
+    const row = rows.find(({ id }) => id === item.vehicleId);
+    const promotion = row && eligibleCampaign(row, live, now);
+    if (promotion) prices.set(item.vehicleId, promotion);
+  }
+  return prices;
+}
+
+type CampaignPrices = Awaited<ReturnType<typeof activePrices>>;
+
+function pricedWhere(query: PublicVehicleQuery, prices: CampaignPrices): Prisma.VehicleWhereInput {
+  const where = publicVehicleWhere(query);
+  if (!prices.size || !where.publicPrice) return where;
+  const base = where.publicPrice;
+  delete where.publicPrice;
+  const ids = [...prices]
+    .filter(
+      ([, { price }]) =>
+        Number(price) >= (query.preco_min ?? 0) && Number(price) <= (query.preco_max ?? Infinity),
+    )
+    .map(([id]) => id);
+  where.AND = [
+    { OR: [{ id: { notIn: [...prices.keys()] }, publicPrice: base }, { id: { in: ids } }] },
+  ];
+  return where;
+}
+
+function priceFor(row: PublicRow, prices: CampaignPrices) {
+  const campaign = prices.get(row.id);
+  return campaign ? new Prisma.Decimal(campaign.price) : row.publicPrice;
+}
+
+async function pricedPage(
+  tx: Prisma.TransactionClient,
+  query: PublicVehicleQuery,
+  prices: CampaignPrices,
+) {
+  const where = pricedWhere(query, prices);
+  const skip = (query.pagina - 1) * query.pageSize;
+  const orderBy = publicVehicleOrder(query.ordem);
+  if (!prices.size || (query.ordem !== 'preco_asc' && query.ordem !== 'preco_desc')) {
+    return tx.vehicle.findMany({
+      where,
+      select: publicVehicleSelect,
+      orderBy,
+      skip,
+      take: query.pageSize,
+    });
+  }
+  // At most four insertions can move the boundary of the regular price page.
+  const baseSkip = Math.max(0, skip - prices.size);
+  const [base, promoted] = await Promise.all([
+    tx.vehicle.findMany({
+      where: { ...where, id: { notIn: [...prices.keys()] } },
+      select: publicVehicleSelect,
+      orderBy,
+      skip: baseSkip,
+      take: query.pageSize + prices.size,
+    }),
+    tx.vehicle.findMany({
+      where: { ...where, id: { in: [...prices.keys()] } },
+      select: publicVehicleSelect,
+    }),
+  ]);
+  const direction = query.ordem === 'preco_asc' ? 1 : -1;
+  return [...base, ...promoted]
+    .sort((a, b) => {
+      const left = priceFor(a, prices),
+        right = priceFor(b, prices);
+      const byPrice =
+        left && right ? direction * left.comparedTo(right) : left ? -1 : right ? 1 : 0;
+      return byPrice || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    })
+    .slice(skip - baseSkip, skip - baseSkip + query.pageSize);
+}
+
+async function effectivePriceRange(
+  tx: Prisma.TransactionClient,
+  where: Prisma.VehicleWhereInput,
+  prices: CampaignPrices,
+) {
+  const [base, matching] = await Promise.all([
+    tx.vehicle.aggregate({
+      where: { ...where, id: { notIn: [...prices.keys()] } },
+      _min: { publicPrice: true },
+      _max: { publicPrice: true },
+    }),
+    tx.vehicle.findMany({
+      where: { ...where, id: { in: [...prices.keys()] } },
+      select: { id: true },
+    }),
+  ]);
+  const values = matching.map(({ id }) => Number(prices.get(id)!.price));
+  return {
+    min: values.length
+      ? Math.min(...values, base._min.publicPrice?.toNumber() ?? Infinity).toFixed(2)
+      : (base._min.publicPrice?.toFixed(2) ?? null),
+    max: values.length
+      ? Math.max(...values, base._max.publicPrice?.toNumber() ?? -Infinity).toFixed(2)
+      : (base._max.publicPrice?.toFixed(2) ?? null),
   };
 }
 
@@ -129,52 +260,49 @@ export async function listAvailablePublicBrands(db: PrismaClient) {
 }
 
 export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQuery) {
-  const where = publicVehicleWhere(query);
   return db.$transaction(
     async (tx) => {
-      const [rows, total, brands, models, fuels, transmissions, ranges] = await Promise.all([
-        tx.vehicle.findMany({
-          where,
-          select: publicVehicleSelect,
-          orderBy: publicVehicleOrder(query.ordem),
-          skip: (query.pagina - 1) * query.pageSize,
-          take: query.pageSize,
-        }),
-        tx.vehicle.count({ where }),
-        tx.vehicle.groupBy({
-          by: ['brand'],
-          where: publicVehicleWhere({ ...query, marca: undefined, modelo: undefined }),
-          _count: { _all: true },
-          orderBy: { brand: 'asc' },
-          take: 100,
-        }),
-        tx.vehicle.groupBy({
-          by: ['brand', 'model'],
-          where: publicVehicleWhere({ ...query, modelo: undefined }),
-          _count: { _all: true },
-          orderBy: [{ brand: 'asc' }, { model: 'asc' }],
-          take: 100,
-        }),
-        tx.vehicle.groupBy({
-          by: ['fuel'],
-          where: publicVehicleWhere({ ...query, combustivel: undefined }),
-          _count: { _all: true },
-          orderBy: { fuel: 'asc' },
-        }),
-        tx.vehicle.groupBy({
-          by: ['publicTransmission'],
-          where: publicVehicleWhere({ ...query, transmissao: undefined }),
-          _count: { _all: true },
-          orderBy: { publicTransmission: 'asc' },
-        }),
-        tx.vehicle.aggregate({
-          where,
-          _min: { year: true, mileage: true, publicPrice: true },
-          _max: { year: true, mileage: true, publicPrice: true },
-        }),
-      ]);
+      const prices = await activePrices(tx, Date.now());
+      const where = pricedWhere(query, prices);
+      const [rows, total, brands, models, fuels, transmissions, ranges, priceRange] =
+        await Promise.all([
+          pricedPage(tx, query, prices),
+          tx.vehicle.count({ where }),
+          tx.vehicle.groupBy({
+            by: ['brand'],
+            where: pricedWhere({ ...query, marca: undefined, modelo: undefined }, prices),
+            _count: { _all: true },
+            orderBy: { brand: 'asc' },
+            take: 100,
+          }),
+          tx.vehicle.groupBy({
+            by: ['brand', 'model'],
+            where: pricedWhere({ ...query, modelo: undefined }, prices),
+            _count: { _all: true },
+            orderBy: [{ brand: 'asc' }, { model: 'asc' }],
+            take: 100,
+          }),
+          tx.vehicle.groupBy({
+            by: ['fuel'],
+            where: pricedWhere({ ...query, combustivel: undefined }, prices),
+            _count: { _all: true },
+            orderBy: { fuel: 'asc' },
+          }),
+          tx.vehicle.groupBy({
+            by: ['publicTransmission'],
+            where: pricedWhere({ ...query, transmissao: undefined }, prices),
+            _count: { _all: true },
+            orderBy: { publicTransmission: 'asc' },
+          }),
+          tx.vehicle.aggregate({
+            where,
+            _min: { year: true, mileage: true, publicPrice: true },
+            _max: { year: true, mileage: true, publicPrice: true },
+          }),
+          prices.size ? effectivePriceRange(tx, where, prices) : undefined,
+        ]);
       return {
-        items: rows.map(publicVehicleDto),
+        items: rows.map((row) => publicVehicleDto(row, prices.get(row.id))),
         total,
         page: query.pagina,
         pageSize: query.pageSize,
@@ -188,7 +316,7 @@ export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQ
             .map((v) => ({ value: v.publicTransmission, count: v._count._all })),
           year: { min: ranges._min.year, max: ranges._max.year },
           mileage: { min: ranges._min.mileage, max: ranges._max.mileage },
-          price: {
+          price: priceRange ?? {
             min: ranges._min.publicPrice?.toFixed(2) ?? null,
             max: ranges._max.publicPrice?.toFixed(2) ?? null,
           },
@@ -209,7 +337,8 @@ export async function getPublicVehicle(
     select: publicVehicleSelect,
   });
   if (!row) return null;
-  const vehicle = publicVehicleDto(row);
+  const { items } = await readCampaigns(db);
+  const vehicle = publicVehicleDto(row, eligibleCampaign(row, items, Date.now()));
   // Reuse this live public query; never expose private paths in the DTO and
   // never cache its authorization. Warming is optional and cannot fail the page.
   try {
@@ -229,10 +358,14 @@ export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
         select: publicVehicleSelect,
       });
       if (!current) return null;
-      const price = current.publicPrice;
+      const prices = await activePrices(tx, Date.now());
+      const price = priceFor(current, prices);
       if (!price || !price.isFinite() || !price.gt(0)) return [];
-      const where = { ...publicVehicleWhere(), id: { not: current.id } };
-      const [below, above] = await Promise.all([
+      const where = {
+        ...publicVehicleWhere(),
+        id: { not: current.id, ...(prices.size ? { notIn: [...prices.keys()] } : {}) },
+      };
+      const [below, above, promoted] = await Promise.all([
         tx.vehicle.findMany({
           where: { ...where, publicPrice: { gt: 0, lte: price } },
           select: publicVehicleSelect,
@@ -245,10 +378,16 @@ export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
           orderBy: [{ publicPrice: 'asc' }, { publicSlug: 'asc' }],
           take: 5,
         }),
+        prices.size
+          ? tx.vehicle.findMany({
+              where: { ...publicVehicleWhere(), id: { not: current.id, in: [...prices.keys()] } },
+              select: publicVehicleSelect,
+            })
+          : [],
       ]);
       return [
         ...new Map(
-          [...below, ...above]
+          [...below, ...above, ...promoted]
             .filter(
               (row) =>
                 row.id !== current.id && row.publicPrice?.isFinite() && row.publicPrice.gt(0),
@@ -258,11 +397,14 @@ export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
       ]
         .sort(
           (a, b) =>
-            a.publicPrice!.minus(price).abs().comparedTo(b.publicPrice!.minus(price).abs()) ||
+            priceFor(a, prices)!
+              .minus(price)
+              .abs()
+              .comparedTo(priceFor(b, prices)!.minus(price).abs()) ||
             a.publicSlug!.localeCompare(b.publicSlug!),
         )
         .slice(0, 5)
-        .map(publicVehicleDto);
+        .map((row) => publicVehicleDto(row, prices.get(row.id)));
     },
     { isolationLevel: 'RepeatableRead' },
   );
@@ -312,17 +454,37 @@ export async function getPublicSelection(db: PrismaClient, ids: string[]) {
     where: { ...publicVehicleWhere(), publicSlug: { in: ids } },
     select: publicVehicleSelect,
   });
+  const { items } = await readCampaigns(db);
+  const now = Date.now();
   return ids.map((id) => {
     const row = rows.find((row) => row.publicSlug === id);
     return row
       ? {
           id,
           status: 200,
-          vehicle: publicVehicleDto(row),
+          vehicle: publicVehicleDto(row, eligibleCampaign(row, items, now)),
           photoVersions: approvedPaths(row).map(publicPhotoVersion),
         }
       : { id, status: 404, vehicle: null };
   });
+}
+
+export async function listPublicCampaigns(db: PrismaClient) {
+  return db.$transaction(
+    async (tx) => {
+      const prices = await activePrices(tx, Date.now());
+      if (!prices.size) return [];
+      const rows = await tx.vehicle.findMany({
+        where: { ...publicVehicleWhere(), id: { in: [...prices.keys()] } },
+        select: publicVehicleSelect,
+      });
+      return [...prices].flatMap(([id, promotion]) => {
+        const row = rows.find((row) => row.id === id);
+        return row ? [publicVehicleDto(row, promotion)] : [];
+      });
+    },
+    { isolationLevel: 'RepeatableRead' },
+  );
 }
 /** Fresh permission snapshot for reusing already-downloaded public thumbnails, never Storage URLs. */
 export async function getPublicPhotoVersions(db: PrismaClient, slug: string) {

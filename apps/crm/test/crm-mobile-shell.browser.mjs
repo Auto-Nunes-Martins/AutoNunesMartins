@@ -57,6 +57,7 @@ const vehicle = {
   figures: { margin: '5500', vatAmount: '1028.46', realProfit: '4471.54', commission: '0' },
 };
 let vite, backend, browser, origin, created;
+let campaignFixture = { revision: null, items: [] };
 const writes = [];
 const listen = (server) => new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const close = async (server) => {
@@ -89,6 +90,36 @@ before(async () => {
       });
     if (url.pathname === '/api/vehicles/stats') return reply({ total: 25, active: 25 });
     if (url.pathname === '/api/tasks/stats') return reply({ mineActive: 0 });
+    if (url.pathname === '/api/vehicle-campaigns') {
+      if (req.method === 'PUT') {
+        const input = await readBody(req);
+        if (input.revision !== campaignFixture.revision)
+          return reply({ error: 'Revisão desatualizada' }, 409);
+        const now = Date.now();
+        campaignFixture = {
+          revision: String(now),
+          items: input.items.map((item) => ({
+            ...item,
+            startsAt: new Date(now).toISOString(),
+            endsAt: new Date(now + item.durationDays * 86_400_000).toISOString(),
+          })),
+        };
+        return reply({ revision: campaignFixture.revision });
+      }
+      return reply({
+        ...campaignFixture,
+        candidates: [
+          {
+            id: vehicleId,
+            brand: 'BMW',
+            model: 'Série 3 Touring',
+            year: 2021,
+            licensePlate: 'AA-00-AA',
+            price: '23900.00',
+          },
+        ],
+      });
+    }
     if (url.pathname === '/api/notifications')
       return reply({
         total: 1,
@@ -294,6 +325,52 @@ async function scrollGesture(page, direction) {
   await cdp.detach();
 }
 
+for (const width of [1366, 390]) {
+  test(
+    `real CRM campaign editor saves and ends a promotion at ${width}px`,
+    { timeout: 90000 },
+    async () => {
+      const context = await openSession(width);
+      try {
+        const page = await context.newPage();
+        await page.goto(origin + '/site/campanhas');
+        await expect(page.getByRole('link', { name: 'Campanhas' })).toHaveAttribute(
+          'aria-current',
+          'page',
+        );
+        await expect(page.getByText('Nenhuma campanha selecionada.')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText(
+          '1',
+          { timeout: 30000 },
+        );
+        await page.getByRole('button', { name: 'Adicionar viatura' }).click();
+        await page.getByLabel('Viatura', { exact: true }).selectOption(vehicleId);
+        await page.getByLabel('Preço promocional (€)', { exact: true }).fill('21900,00');
+        await page.getByLabel('Preço mais baixo dos 30 dias anteriores (€)').fill('23500,00');
+        await page.getByLabel('Referência documental').fill('Registo de preços fictício · n.º 42');
+        await page.getByRole('button', { name: 'Guardar campanhas' }).click();
+        await expect(page.getByText('Campanhas guardadas.', { exact: true })).toBeVisible();
+        await expect(page.getByText(/Guardada de .*Lisboa/)).toBeVisible();
+        assert.equal(campaignFixture.items[0].price, '21900.00');
+        assert.equal(campaignFixture.items[0].referencePrice, '23500.00');
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+        if (process.env.CAMPAIGN_PREVIEW === '1') {
+          const screenshot = path.join(crm, '.svelte-kit', `campanhas-crm-${width}.png`);
+          await page.screenshot({ path: screenshot, fullPage: true, animations: 'disabled' });
+          console.log(screenshot);
+        }
+        await page.getByRole('button', { name: 'Remover viatura 1' }).click();
+        await page.getByRole('button', { name: 'Guardar campanhas' }).click();
+        await expect.poll(() => campaignFixture.items.length).toBe(0);
+        await page.reload();
+        await expect(page.getByText('Nenhuma campanha selecionada.')).toBeVisible();
+      } finally {
+        await context.close();
+      }
+    },
+  );
+}
+
 async function searchFlow(page) {
   const topbar = page.locator('.topbar');
   await expect(topbar.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
@@ -409,6 +486,137 @@ async function drawerSwipe(locator, fromX, toX) {
   );
 }
 
+async function tryDrawerOpening(locator, points, interrupt) {
+  return locator.evaluate(
+    (target, { points, interrupt }) => {
+      const touch = ([clientX, clientY], identifier = 1) => ({ clientX, clientY, identifier });
+      const send = (type, touches, changedTouches = touches) => {
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperties(event, {
+          touches: { value: touches },
+          changedTouches: { value: changedTouches },
+        });
+        target.dispatchEvent(event);
+        return event.defaultPrevented;
+      };
+      const first = touch(points[0]);
+      const last = touch(points.at(-1));
+      const events = [send('touchstart', [first])];
+      for (const point of points.slice(1)) events.push(send('touchmove', [touch(point)]));
+      if (interrupt === 'cancel') events.push(send('touchcancel', [], [last]));
+      if (interrupt === 'pinch') events.push(send('touchstart', [last, touch([200, 210], 2)]));
+      if (interrupt === 'zoom') {
+        Object.defineProperty(visualViewport, 'scale', { configurable: true, value: 2 });
+        visualViewport.dispatchEvent(new Event('resize'));
+        delete visualViewport.scale;
+      }
+      events.push(send('touchend', [], [last]));
+      return events.some(Boolean);
+    },
+    { points, interrupt },
+  );
+}
+
+test(
+  'real CRM opens the mobile drawer only for a clear swipe outside the native edge',
+  { timeout: 90000 },
+  async () => {
+    const context = await openSession(390);
+    try {
+      const page = await context.newPage();
+      await page.goto(origin + '/viaturas');
+      await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
+        timeout: 30000,
+      });
+      const heading = page.getByRole('heading', { name: 'Viaturas', exact: true });
+      const menu = page.getByRole('button', { name: 'Abrir menu' });
+      const swipe = [
+        [60, 150],
+        [100, 153],
+        [165, 155],
+      ];
+      for (const [points, interrupt] of [
+        [
+          [
+            [5, 150],
+            [145, 150],
+          ],
+        ],
+        [
+          [
+            [39, 150],
+            [175, 150],
+          ],
+        ],
+        [
+          [
+            [200, 150],
+            [350, 150],
+          ],
+        ],
+        [
+          [
+            [135, 150],
+            [48, 150],
+          ],
+        ],
+        [
+          [
+            [60, 150],
+            [86, 155],
+          ],
+        ],
+        [
+          [
+            [60, 150],
+            [65, 240],
+            [170, 242],
+          ],
+        ],
+        [swipe, 'cancel'],
+        [swipe, 'pinch'],
+        [swipe, 'zoom'],
+      ]) {
+        assert.equal(await tryDrawerOpening(heading, points, interrupt), false);
+        await expect(menu).toHaveAttribute('aria-expanded', 'false');
+      }
+      const filter = page.getByRole('searchbox').first();
+      assert.equal(await tryDrawerOpening(filter, swipe), false);
+      await expect(menu).toHaveAttribute('aria-expanded', 'false');
+      const before = await page.evaluate(() => scrollY);
+      if (useWebKit) {
+        assert.equal(await tryDrawerOpening(heading, swipe), false);
+      } else {
+        const box = await heading.boundingBox();
+        assert.ok(box);
+        const y = Math.round(box.y + box.height / 2);
+        const cdp = await context.newCDPSession(page);
+        try {
+          await cdp.send('Input.dispatchTouchEvent', {
+            type: 'touchStart',
+            touchPoints: [{ x: 60, y }],
+          });
+          for (const x of [85, 110, 135, 165]) {
+            await cdp.send('Input.dispatchTouchEvent', {
+              type: 'touchMove',
+              touchPoints: [{ x, y }],
+            });
+          }
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        } finally {
+          await cdp.detach();
+        }
+      }
+      await expect(menu).toHaveAttribute('aria-expanded', 'true');
+      assert.equal(await page.evaluate(() => scrollY), before);
+      await page.keyboard.press('Escape');
+      await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    } finally {
+      await context.close();
+    }
+  },
+);
+
 async function checkHistoryReturn(page, previousScroll) {
   await page.evaluate(() => {
     const realNow = Date.now;
@@ -481,22 +689,37 @@ async function checkVehicleRows(page, width) {
   const listUrl = page.url();
   const openRowBox = await rows.first().locator('.mobile-vehicle-link').boundingBox();
   assert.ok(openRowBox);
-  await page.touchscreen.tap(openRowBox.x + 5, openRowBox.y + openRowBox.height / 2);
+  const outside = { x: openRowBox.x + 5, y: openRowBox.y + openRowBox.height / 2 };
+  const dismiss = page.locator('.action-popover:popover-open .action-dismiss');
+  await page.mouse.move(outside.x, outside.y);
+  await page.mouse.down();
+  try {
+    await expect(dismiss).toHaveCSS('box-shadow', 'none', { timeout: 1500 });
+    await expect(dismiss).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(dismiss).not.toBeFocused();
+  } finally {
+    await page.mouse.up();
+  }
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  await expect(page).toHaveURL(listUrl);
+  await menuButton.tap();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+  await page.touchscreen.tap(outside.x, outside.y);
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
   await expect(page).toHaveURL(listUrl);
   await menuButton.tap();
   await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
   const otherTrigger = await page.evaluate(() => {
-    const bounds = document
-      .querySelector('.action-popover:popover-open .action-menu')
-      .getBoundingClientRect();
+    const dismiss = document.querySelector('.action-popover:popover-open .action-dismiss');
     return [...document.querySelectorAll('article .more-button')]
       .slice(1)
       .map((button) => {
         const box = button.getBoundingClientRect();
-        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        return { x: Math.round(box.x + box.width / 2), y: Math.round(box.y + box.height / 2) };
       })
-      .find(({ y }) => y > bounds.bottom && y < innerHeight - 75);
+      .find(
+        ({ x, y }) => y > 75 && y < innerHeight - 75 && document.elementFromPoint(x, y) === dismiss,
+      );
   });
   assert.ok(otherTrigger);
   await page.touchscreen.tap(otherTrigger.x, otherTrigger.y);
@@ -587,11 +810,15 @@ test(
       const recordTimes = page.locator('.vehicle-record-times');
       await expect(recordTimes).toBeHidden();
       await expect(page.getByText('Editar fotografias', { exact: true })).toHaveCount(0);
-      await expect(page.locator('.photo-preview .photo-step').first()).toBeVisible();
+      await expect(page.locator('.photo-preview .photo-step').first()).toBeHidden();
       await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
         timeout: 30000,
       });
       assert.equal(await photoGesture(surface, 86, 0), true);
+      await expect(page.getByRole('button', { name: 'Abrir menu' })).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
       await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 3');
       assert.equal(await photoGesture(surface, 15, 95), false);
       assert.equal(await photoGesture(surface, 86, 0, 10), false);
@@ -606,31 +833,71 @@ test(
       await expect(surface).toHaveAccessibleName('Ampliar fotografia 3 de 3');
       await surface.press('Enter');
       const viewer = page.locator('.crm-photo-viewer');
+      const viewerPhoto = viewer.locator('.photo-rail-slide:not([inert]) img');
+      const position = viewer.locator('.viewer-photo-position');
+      const closeViewer = viewer.getByRole('button', { name: 'Fechar fotografia' });
+      const viewerThumbnail = (index) =>
+        viewer.getByRole('button', { name: `Ver fotografia ${index}`, exact: true });
       await expect(viewer).toBeVisible();
-      await expect(viewer.locator('.viewer-step').first()).toBeHidden();
-      assert.equal(await photoGesture(viewer.locator('img'), 90, 0), true);
-      await expect(viewer.locator('p')).toHaveText('Fotografia 2 de 3');
+      await expect(viewer.locator('.viewer-step')).toHaveCount(0);
+      await expect(position).toHaveText('3 / 3');
+      await expect(viewerThumbnail(3)).toHaveAttribute('aria-pressed', 'true');
+      await expect(viewerThumbnail(3).locator('img')).toBeVisible();
+      const strip = await viewer.locator('.viewer-thumbnails').boundingBox();
+      const stage = await viewer.locator('.viewer-stage').boundingBox();
+      assert.ok(strip.y >= stage.y + stage.height && strip.height >= 56);
+      assert.equal(await photoGesture(viewerPhoto, 90, 0), true);
+      await expect(position).toHaveText('2 / 3');
+      await expect(viewerThumbnail(2)).toHaveAttribute('aria-pressed', 'true');
       await page.evaluate(() => {
         Object.defineProperty(visualViewport, 'scale', { configurable: true, value: 2 });
         visualViewport.dispatchEvent(new Event('resize'));
       });
-      assert.equal(await photoGesture(viewer.locator('img'), 90, 0), false);
-      await expect(viewer.locator('p')).toHaveText('Fotografia 2 de 3');
+      assert.equal(await photoGesture(viewerPhoto, 90, 0), false);
+      await expect(position).toHaveText('2 / 3');
       await page.evaluate(() => {
         delete visualViewport.scale;
         visualViewport.dispatchEvent(new Event('resize'));
       });
-      await viewer.getByRole('button', { name: 'Selecionar fotografia 1', exact: true }).tap();
-      await expect(viewer.locator('p')).toHaveText('Fotografia 1 de 3');
-      await viewer.getByRole('button', { name: 'Fechar fotografia' }).tap();
+      await viewerThumbnail(1).tap();
+      await expect(position).toHaveText('1 / 3');
+      await expect(viewerThumbnail(1)).toHaveAttribute('aria-pressed', 'true');
+      const closeBox = await closeViewer.boundingBox();
+      assert.equal(closeBox.width, 48);
+      await page.mouse.move(closeBox.x + closeBox.width / 2, closeBox.y + closeBox.height / 2);
+      await page.mouse.down();
+      try {
+        await expect(closeViewer).toHaveCSS('background-color', 'rgb(96, 101, 107)');
+      } finally {
+        await page.mouse.up();
+      }
+      await expect(viewer).toBeHidden();
+      await expect(surface).toBeFocused();
+      await expect(
+        page.getByRole('button', { name: 'Selecionar fotografia 1', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      await surface.press('Enter');
+      await expect(viewerPhoto).toBeVisible();
+      await expect
+        .poll(() => viewerPhoto.evaluate((image) => image.naturalWidth))
+        .toBeGreaterThan(0);
+      const frame = await viewerPhoto.boundingBox();
+      await page.touchscreen.tap(frame.x + frame.width / 2, frame.y + frame.height / 2);
+      await expect(viewer).toBeVisible();
+      await page.touchscreen.tap(3, frame.y + frame.height / 2);
+      await expect(viewer).toBeHidden();
+      await surface.press('Enter');
+      await expect(viewerPhoto).toBeVisible();
+      assert.equal(await photoGesture(viewerPhoto, 0, 220), true);
+      await expect(viewer).toBeHidden();
       await expect(surface).toBeFocused();
       await page.goto(origin + '/viaturas/' + singlePhotoId);
       await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 1', { timeout: 30000 });
       await expect(page.locator('.photo-preview .photo-step')).toHaveCount(0);
       assert.equal(await photoGesture(surface, -90, 0), false);
       await surface.press('Enter');
-      await expect(viewer.locator('p')).toHaveText('Fotografia 1 de 1');
-      await expect(viewer.locator('.viewer-index')).toHaveCount(0);
+      await expect(position).toHaveText('1 / 1');
+      await expect(viewerThumbnail(1)).toHaveAttribute('aria-pressed', 'true');
       await viewer.getByRole('button', { name: 'Fechar fotografia' }).tap();
       await page.setViewportSize({ width: 1366, height: 900 });
       await page.goto(origin + '/viaturas/' + galleryId);
@@ -732,6 +999,18 @@ test(
         };
       });
       assert.ok(alignment.difference < 1 && alignment.logoSeparate);
+      const rowMenu = rows.first().getByRole('button', { name: /Mais opções/ });
+      await rowMenu.evaluate((button) => button.focus({ preventScroll: true }));
+      await page.keyboard.press('ArrowDown');
+      await expect(rowMenu).toHaveAttribute('aria-expanded', 'true');
+      const rowPopover = page.locator('.action-popover:popover-open');
+      await expect(rowPopover.getByRole('menuitem').first()).toBeFocused();
+      assert.equal(
+        await rowPopover.evaluate((node) => getComputedStyle(node, '::backdrop').backgroundColor),
+        'rgba(0, 0, 0, 0)',
+      );
+      await page.mouse.click(8, 8);
+      await expect(rowMenu).toHaveAttribute('aria-expanded', 'false');
       const search = page.locator('.tb-search-inline .gs-root');
       const field = search.getByRole('combobox', { name: 'Pesquisar' });
       const dropdown = search.locator('.gs-dropdown');
@@ -817,7 +1096,14 @@ test('real CRM desktop photo rail and thumbnails stay in sync', { timeout: 90000
     await page.mouse.move(center.x - 85, center.y, { steps: 4 });
     await page.mouse.up();
     await expect(thumbnail(6)).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.crm-photo-viewer')).toBeHidden();
+    const viewer = page.locator('.crm-photo-viewer');
+    await expect(viewer).toBeHidden();
+    await surface.press('Enter');
+    await expect(viewer.locator('.viewer-footer p')).toHaveText('Fotografia 6 de 16');
+    await expect(viewer.locator('.viewer-step')).toHaveCount(2);
+    await expect(viewer.locator('.viewer-thumbnails')).toHaveCount(0);
+    await viewer.getByRole('button', { name: 'Fechar fotografia' }).click();
+    await expect(viewer).toBeHidden();
   } finally {
     await context.close();
   }

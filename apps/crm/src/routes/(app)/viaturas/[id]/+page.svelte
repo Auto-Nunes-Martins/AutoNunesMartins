@@ -267,6 +267,7 @@
       {#await data.signedPhotos}
         <PhotoGallery
           vehicleId={v.id}
+          vehicleName={`${v.brand} ${v.model}`}
           photos={[]}
           loading
           photoCount={v.photos.length}
@@ -277,6 +278,7 @@
       {:then signedPhotos}
         <PhotoGallery
           vehicleId={v.id}
+          vehicleName={`${v.brand} ${v.model}`}
           photos={signedPhotos}
           principalPath={vehiclePrincipalPath(v) ?? null}
             framing={v.galleryFraming??{}}
@@ -285,6 +287,7 @@
       {:catch}
         <PhotoGallery
           vehicleId={v.id}
+          vehicleName={`${v.brand} ${v.model}`}
           photos={[]}
           loadError
           photoCount={v.photos.length}

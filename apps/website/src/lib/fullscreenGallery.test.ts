@@ -172,6 +172,28 @@ it('suppresses the synthetic click after a cancelled drag', () => {
   expect(dialog.close).not.toHaveBeenCalled();
 });
 
+it('accepts a backdrop tap immediately after closing and reopening the viewer', () => {
+  const { dialog, send } = setup();
+  send('pointerdown', 200, 50);
+  send('pointermove', 200, 100);
+  send('pointercancel');
+  dialog.open = false;
+  send('close');
+  dialog.open = true;
+  send('pointerdown', 200, 50);
+  send('pointerup', 200, 50);
+  send('click', 200, 50);
+  expect(dialog.close).toHaveBeenCalledOnce();
+});
+
+it('uses the physical touch position when the browser adjusts the matching click', () => {
+  const { dialog, send, touch, point } = setup(true);
+  touch('touchstart', [point(200, 197)]);
+  touch('touchend', [], [point(200, 197)]);
+  send('click', 200, 204);
+  expect(dialog.close).toHaveBeenCalledOnce();
+});
+
 it('fades the photo continuously to a visible floor and restores it as the finger returns', () => {
   const { dialog, send, values } = setup();
   send('pointerdown');

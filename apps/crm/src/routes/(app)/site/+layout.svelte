@@ -2,10 +2,11 @@
   import { page } from '$app/stores';
   import { crmPath } from '$lib/paths';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
-  import { Star, MessageSquare } from 'lucide-svelte';
+  import { Star, MessageSquare, Tag } from 'lucide-svelte';
   import type { Snippet } from 'svelte';
   let { children }: { children: Snippet } = $props();
-  const reviews = $derived($page.url.pathname.startsWith(crmPath('/site/reviews')));
+  const reviews = $derived($page.route.id?.startsWith('/(app)/site/reviews'));
+  const campaigns = $derived($page.route.id === '/(app)/site/campanhas');
 </script>
 
 <section class="site-workspace">
@@ -14,11 +15,14 @@
     <ItalicHero text="Site público" size="lg" />
   </header>
   <nav aria-label="Secções do site público">
-    <a href={crmPath('/site/destaques')} aria-current={!reviews ? 'page' : undefined}
+    <a href={crmPath('/site/destaques')} aria-current={!reviews && !campaigns ? 'page' : undefined}
       ><Star size={17} aria-hidden="true" />Destaques da homepage</a
     >
     <a href={crmPath('/site/reviews')} aria-current={reviews ? 'page' : undefined}
       ><MessageSquare size={17} aria-hidden="true" />Reviews</a
+    >
+    <a href={crmPath('/site/campanhas')} aria-current={campaigns ? 'page' : undefined}
+      ><Tag size={17} aria-hidden="true" />Campanhas</a
     >
   </nav>
   {@render children()}
@@ -40,6 +44,7 @@
   }
   nav {
     display: flex;
+    flex-wrap: wrap;
     gap: 24px;
     border-bottom: 1px solid var(--color-border-strong);
     margin-bottom: 28px;

@@ -23,6 +23,13 @@ export const publicVehicleSchema = z
     fuel: z.enum(['GASOLINE', 'DIESEL', 'HYBRID', 'PLUGIN_HYBRID', 'ELECTRIC', 'LPG']),
     mileage: z.number().int().nonnegative().nullable(),
     price: money.refine((v) => Number(v) > 0).nullable(),
+    promotion: z
+      .object({
+        referencePrice: money,
+        startsAt: z.string().datetime(),
+        endsAt: z.string().datetime(),
+      })
+      .optional(),
     currency: z.literal('EUR'),
     description: z.string().nullable(),
     transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
@@ -57,6 +64,15 @@ export const publicVehicleSchema = z
       .catch(undefined),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.promotion &&
+      (v.availability !== 'AVAILABLE' ||
+        !v.price ||
+        Number(v.promotion.referencePrice) <= Number(v.price) ||
+        Date.parse(v.promotion.endsAt) <= Date.parse(v.promotion.startsAt))
+    ) {
+      ctx.addIssue({ code: 'custom', path: ['promotion'], message: 'Invalid public promotion' });
+    }
     if (
       v.photos.some((path, i) => {
         const base = `/api/public/vehicles/${v.slug}/photos/${i}`;
@@ -151,6 +167,7 @@ export function publicCard(vehicle: PublicVehicle) {
     km: vehicle.mileage,
     fuel: fuelLabels[vehicle.fuel],
     price: vehicle.price === null ? null : Number(vehicle.price),
+    ...(vehicle.promotion ? { promotion: vehicle.promotion } : {}),
     image: vehicle.photos.length ? publicPhoto(vehicle, 0) : catalogPlaceholder,
     category: vehicle.availability === 'RESERVED' ? 'Reservada' : '',
     href: publicHref(vehicle.slug),

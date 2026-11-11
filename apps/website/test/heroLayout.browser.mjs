@@ -8,6 +8,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { chromium, webkit } from 'playwright';
+import { expect } from '@playwright/test';
 import sharp from 'sharp';
 import { progressiveHero } from './progressiveHero.mjs';
 import { captureCarouselFrames, publicMotionCheck } from './publicMotionCheck.mjs';
@@ -16,23 +17,36 @@ const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
 const interactions = process.argv.includes('--interactions');
 const readingProfile = process.argv.includes('--reading-profile');
+const campaignPreview = process.argv.includes('--campaign-preview');
 const output = path.join(
   site,
   '.svelte-kit',
   `${streaming ? 'hero-stream' : 'hero-layout'}-${Date.now()}`,
 );
 await mkdir(output, { recursive: true });
-const photo = await sharp({
-  create: { width: 1600, height: 1067, channels: 3, background: '#63756b' },
-})
+const photo = await (
+  campaignPreview
+    ? sharp(path.join(site, 'static/images/about/showroom-demo-v1-960.webp'))
+    : sharp({
+        create: { width: 1600, height: 1067, channels: 3, background: '#63756b' },
+      })
+)
   .png()
   .toBuffer();
-const nextPhoto = interactions
-  ? await sharp({ create: { width: 1600, height: 1067, channels: 3, background: '#846052' } })
+const nextPhoto = campaignPreview
+  ? await sharp(path.join(site, 'static/images/about/preparation-demo-v1-960.webp'))
       .png()
       .toBuffer()
-  : photo;
-const vehicles = ['One', 'Countryman Cooper D ALL4 Automatic'].map((model, n) => ({
+  : interactions
+    ? await sharp({ create: { width: 1600, height: 1067, channels: 3, background: '#846052' } })
+        .png()
+        .toBuffer()
+    : photo;
+const vehicles = (
+  campaignPreview
+    ? ['Série 3 Touring', 'Countryman Cooper D']
+    : ['One', 'Countryman Cooper D ALL4 Automatic']
+).map((model, n) => ({
   slug: `hero-check-${String(n).padStart(12, 'a')}`,
   brand: n ? 'MINI' : 'BMW',
   model,
@@ -52,6 +66,16 @@ const vehicles = ['One', 'Countryman Cooper D ALL4 Automatic'].map((model, n) =>
     `/api/public/vehicles/hero-check-${String(n).padStart(12, 'a')}/photos/0?v=${String(n + 1).repeat(64)}`,
   ],
 }));
+let showCampaigns = campaignPreview;
+const promoted = vehicles.map((vehicle, index) => ({
+  ...vehicle,
+  price: index ? '19900.00' : '21900.00',
+  promotion: {
+    referencePrice: index ? '21500.00' : '23500.00',
+    startsAt: '2026-11-11T09:00:00.000Z',
+    endsAt: '2026-11-18T09:00:00.000Z',
+  },
+}));
 const backend = createServer((request, response) => {
   const url = new URL(request.url, 'http://fixture');
   if (url.pathname.includes('/photos/')) {
@@ -62,18 +86,20 @@ const backend = createServer((request, response) => {
     return;
   }
   let data;
+  const inventory = showCampaigns ? promoted : vehicles;
   if (url.pathname.endsWith('/homepage-highlights'))
-    data = { configured: true, items: vehicles.map((vehicle) => ({ vehicle, photoIndex: 0 })) };
+    data = { configured: true, items: inventory.map((vehicle) => ({ vehicle, photoIndex: 0 })) };
+  else if (url.pathname.endsWith('/campaigns')) data = { items: showCampaigns ? promoted : [] };
   else if (url.pathname.endsWith('/brands')) data = [];
   else if (url.pathname.endsWith('/reviews')) data = { items: [] };
   else if (url.pathname.endsWith('/related')) data = [];
-  else if (vehicles.some((vehicle) => url.pathname.endsWith('/' + vehicle.slug)))
-    data = vehicles.find((vehicle) => url.pathname.endsWith('/' + vehicle.slug));
+  else if (inventory.some((vehicle) => url.pathname.endsWith('/' + vehicle.slug)))
+    data = inventory.find((vehicle) => url.pathname.endsWith('/' + vehicle.slug));
   else
     data = {
       // Leave the second highlight out of stock previews so its first request
       // comes from the carousel, where the browser test can delay it.
-      items: interactions ? vehicles.slice(0, 1) : vehicles,
+      items: interactions ? inventory.slice(0, 1) : inventory,
       total: interactions ? 1 : vehicles.length,
       page: 1,
       pageSize: 30,
@@ -214,9 +240,56 @@ try {
     if (process.argv.includes('--frames')) await captureCarouselFrames(browser, origin, output);
     else await publicMotionCheck(browser, origin, vehicles[0].slug);
   }
+  if (campaignPreview) {
+    for (const width of [1440, 390]) {
+      const page = await browser.newPage({
+        viewport: { width, height: 950 },
+        isMobile: width < 700,
+        hasTouch: width < 700,
+        reducedMotion: 'reduce',
+      });
+      await page.route('**/*', (route) =>
+        new URL(route.request().url()).origin === origin ? route.continue() : route.abort(),
+      );
+      await page.goto(origin);
+      const section = page.getByRole('region', { name: /Campanhas/ });
+      await expect(section.locator('article')).toHaveCount(2);
+      await expect(section.locator('article').first()).toContainText(/21\s*900/);
+      await expect(section.locator('article').first()).toContainText(/23\s*500/);
+      await expect(section.locator('time')).toHaveCount(4);
+      assert.ok(
+        await section.evaluate(
+          (node) =>
+            !!(
+              node.compareDocumentPosition(document.querySelector('#selecao')) &
+              Node.DOCUMENT_POSITION_FOLLOWING
+            ),
+        ),
+      );
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      await section.scrollIntoViewIfNeeded();
+      await page.evaluate(() => document.fonts.ready);
+      const screenshot = path.join(output, `campanhas-site-${width}.png`);
+      await section.screenshot({ path: screenshot, animations: 'disabled' });
+      console.log(screenshot);
+      await page.goto(origin + '/viaturas/' + promoted[0].slug);
+      await expect(page.locator('.purchase-price')).toContainText(/21\s*900/);
+      await expect(page.locator('.purchase .promotion-terms')).toContainText(/23\s*500/);
+      await page.close();
+    }
+    showCampaigns = false;
+    const page = await browser.newPage();
+    await page.route('**/*', (route) =>
+      new URL(route.request().url()).origin === origin ? route.continue() : route.abort(),
+    );
+    await page.goto(origin);
+    await expect(page.getByRole('region', { name: /Campanhas/ })).toHaveCount(0);
+    await page.close();
+    console.log('Campaign section passed at 1440px and 390px, including the empty state.');
+  }
   if (streaming) progressive = await progressiveHero(origin);
   const profiles =
-    interactions || readingProfile
+    interactions || readingProfile || campaignPreview
       ? []
       : streaming
         ? [
@@ -456,7 +529,9 @@ try {
       await context.close();
     }
   }
-  if (!interactions) console.log(`${results.length} profiles passed; evidence: ${output}`);
+  if (!interactions && !campaignPreview) {
+    console.log(`${results.length} profiles passed; evidence: ${output}`);
+  }
 } finally {
   await browser?.close();
   await progressive?.close();
