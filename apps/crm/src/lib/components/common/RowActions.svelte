@@ -25,13 +25,14 @@
   );
   const menuId = $props.id();
   let trigger = $state<HTMLButtonElement | null>(null);
+  let popover = $state<HTMLDivElement | null>(null);
   let menu = $state<HTMLDivElement | null>(null);
   let open = $state(false);
   let left = $state(0);
   let top = $state(0);
 
   function close() {
-    if (open && menu?.matches(':popover-open')) menu.hidePopover();
+    if (popover?.matches(':popover-open')) popover.hidePopover();
   }
   async function onToggle(event: ToggleEvent) {
     open = event.newState === 'open';
@@ -44,13 +45,20 @@
         ? anchor.bottom + 6
         : Math.max(12, anchor.top - bounds.height - 6);
     await tick();
-    if (menu.matches(':popover-open'))
+    if (popover?.matches(':popover-open'))
       menu
         .querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')
         ?.focus({ preventScroll: true });
   }
   function onMenuKey(event: KeyboardEvent) {
     if (!menu) return;
+    if (compact && event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+      trigger?.focus({ preventScroll: true });
+      return;
+    }
     if (event.key === 'Tab') {
       close();
       return;
@@ -66,6 +74,13 @@
     else return;
     event.preventDefault();
     links[next]?.focus();
+  }
+  function dismissFromBackdrop(event: MouseEvent) {
+    // The real top-layer hit target receives the entire tap before dismissal.
+    event.preventDefault();
+    event.stopPropagation();
+    close();
+    trigger?.focus({ preventScroll: true });
   }
   onMount(() => {
     const onScroll = (event: Event) => {
@@ -93,43 +108,64 @@
       aria-label={`Mais opções de ${label}`}
       aria-haspopup="menu"
       aria-expanded={open}
-      aria-controls={menuId}
+      aria-controls={menuId + '-items'}
       onkeydown={(event) => {
         if (event.key === 'ArrowDown') {
           event.preventDefault();
-          menu?.showPopover();
+          popover?.showPopover();
         }
       }}
     >
       <MoreHorizontal class="h-4 w-4" />
     </button>
     <div
-      bind:this={menu}
+      bind:this={popover}
       id={menuId}
-      popover="auto"
-      role="menu"
-      tabindex="-1"
-      aria-label={`Ações de ${label}`}
-      class="action-menu"
-      style={`left: ${left}px; top: ${top}px; visibility: ${open ? 'visible' : 'hidden'};`}
+      popover={compact ? 'manual' : 'auto'}
+      data-row-action
+      class="action-popover"
+      class:compact
+      style={compact ? undefined : `left: ${left}px; top: ${top}px;`}
       ontoggle={onToggle}
-      onkeydown={onMenuKey}
     >
-      {#each menuActions as action (action.href ?? action.label)}
-        {#if action.href}<a href={action.href} role="menuitem" onclick={close}
-            ><action.icon class="h-4 w-4" />{action.label}</a
-          >{:else}<button
-            type="button"
-            role="menuitem"
-            class:danger={action.danger}
-            disabled={action.disabled}
-            title={action.title}
-            onclick={() => {
-              close();
-              action.onselect?.(trigger);
-            }}><action.icon class="h-4 w-4" />{action.label}</button
-          >{/if}
-      {/each}
+      {#if compact}
+        <button
+          type="button"
+          class="action-dismiss"
+          tabindex="-1"
+          aria-hidden="true"
+          onmousedown={(event) => event.preventDefault()}
+          onclick={dismissFromBackdrop}
+        ></button>
+      {/if}
+      <div
+        bind:this={menu}
+        id={menuId + '-items'}
+        role="menu"
+        tabindex="-1"
+        aria-label={`Ações de ${label}`}
+        class="action-menu"
+        style:left={compact ? `${left}px` : undefined}
+        style:top={compact ? `${top}px` : undefined}
+        style:visibility={open ? 'visible' : 'hidden'}
+        onkeydown={onMenuKey}
+      >
+        {#each menuActions as action (action.href ?? action.label)}
+          {#if action.href}<a href={action.href} role="menuitem" onclick={close}
+              ><action.icon class="h-4 w-4" />{action.label}</a
+            >{:else}<button
+              type="button"
+              role="menuitem"
+              class:danger={action.danger}
+              disabled={action.disabled}
+              title={action.title}
+              onclick={() => {
+                close();
+                action.onselect?.(trigger);
+              }}><action.icon class="h-4 w-4" />{action.label}</button
+            >{/if}
+        {/each}
+      </div>
     </div>
   {/if}
 </div>
@@ -186,10 +222,37 @@
     outline: 2px solid var(--color-red);
     outline-offset: 2px;
   }
-  .action-menu {
+  .action-popover {
     position: fixed;
     inset: auto;
     margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .action-popover.compact {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+  }
+  .compact > .action-menu {
+    position: absolute;
+  }
+  .action-dismiss {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .action-menu {
     padding: 5px;
     width: 210px;
     max-width: calc(100vw - 24px);

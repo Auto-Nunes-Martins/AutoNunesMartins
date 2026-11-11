@@ -33,40 +33,12 @@
     { value: 'general', label: 'Gerais' },
   ];
 
-  /**
-   * Panel transition. Mobile reveals via a clip-path inset that shrinks from
-   * the top — the panel is anchored against the top of the bottom-nav and
-   * the visible region grows steadily upward, so it reads as the bottom-nav
-   * being dragged up. We use a near-linear ease (with a tiny soft-finish at
-   * the end) and keep opacity at 1 from the first frame: that prevents the
-   * "appears already half-way" jump caused by aggressive ease-outs and
-   * opacity ramps. Desktop keeps the slight slide-up + fade.
-   */
-  function panelTransition(_node: Element, { mobile = false }: { mobile?: boolean } = {}) {
-    if ($reducedMotion) return { duration: 0 };
-    if (mobile) {
-      return {
-        duration: 380,
-        css: (t: number) => {
-          // 90% linear + 10% ease-out so it doesn't feel mechanical at the
-          // very end but still moves at a perceivable constant rate from t=0.
-          const eased = 0.9 * t + 0.1 * (1 - Math.pow(1 - t, 2));
-          return `
-            clip-path: inset(${(1 - eased) * 100}% 0 0 0);
-            opacity: 1;
-          `;
-        },
-      };
-    }
+  function desktopPanelTransition() {
     return {
-      duration: 220,
-      css: (t: number) => {
-        const eased = cubicOut(t);
-        return `
-          transform: translateY(${(1 - eased) * 8}px) scale(${0.985 + eased * 0.015});
-          opacity: ${eased};
-        `;
-      },
+      duration: $reducedMotion ? 0 : 280,
+      easing: cubicOut,
+      css: (t: number, u: number) =>
+        `transform: translateY(${12 * u}px) scale(${1 - 0.04 * u}); opacity: ${t};`,
     };
   }
 
@@ -803,7 +775,7 @@
       class="qt-panel panel-surface"
       role="dialog"
       aria-label="Tarefas rápidas"
-      transition:panelTransition={{ mobile: false }}
+      transition:desktopPanelTransition
     >
       {@render panelBody()}
     </div>
@@ -875,6 +847,11 @@
       0 14px 36px rgba(0, 0, 0, 0.5),
       0 0 0 4px color-mix(in oklab, var(--color-red) 16%, transparent);
   }
+  @media (hover: hover) and (pointer: fine) {
+    .qt-bubble:hover {
+      border-color: var(--color-border-strong);
+    }
+  }
   :global([data-theme='light']) .qt-bubble {
     background: var(--color-bg-1);
     box-shadow:
@@ -925,6 +902,9 @@
       0 4px 12px rgba(0, 0, 0, 0.25);
     overflow: hidden;
     will-change: transform, opacity;
+  }
+  .qt-panel:not(.is-mobile) {
+    transform-origin: calc(100% - 28px) bottom;
   }
   :global([data-theme='dark']) .qt-panel,
   :global(html:not([data-theme='light'])) .qt-panel {

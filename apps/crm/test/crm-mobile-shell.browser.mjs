@@ -13,8 +13,14 @@ const vehicleId = 'c000000000000000000000001';
 const draftId = 'c000000000000000000000002';
 const galleryId = 'c000000000000000000000097';
 const singlePhotoId = 'c000000000000000000000098';
+const fullStripId = 'c000000000000000000000099';
+const photoCounts = new Map([
+  [galleryId, 3],
+  [singlePhotoId, 1],
+  [fullStripId, 16],
+]);
 const photosFor = (id) =>
-  Array.from({ length: id === galleryId ? 3 : id === singlePhotoId ? 1 : 0 }, (_, index) => ({
+  Array.from({ length: photoCounts.get(id) ?? 0 }, (_, index) => ({
     path: `${id}/00000000-0000-4000-8000-00000000000${index}.webp`,
     url: '/fixture-vehicle.svg?photo=' + index,
     width: 96,
@@ -112,11 +118,25 @@ before(async () => {
     if (url.pathname === '/api/vehicles/' + vehicleId) return reply(vehicle);
     if (
       url.pathname === '/api/vehicles/' + galleryId ||
-      url.pathname === '/api/vehicles/' + singlePhotoId
+      url.pathname === '/api/vehicles/' + singlePhotoId ||
+      url.pathname === '/api/vehicles/' + fullStripId
     ) {
       const id = url.pathname.split('/').at(-1);
       const photos = photosFor(id).map(({ path }) => path);
-      return reply({ ...vehicle, id, photos });
+      if (id === galleryId) {
+        return reply({
+          ...vehicle,
+          id,
+          photos,
+          createdAt: '2026-07-05T23:15:00.000Z',
+          updatedAt: '2026-07-06T08:45:00.000Z',
+        });
+      }
+      const times =
+        id === fullStripId
+          ? { updatedAt: vehicle.createdAt }
+          : { createdAt: null, updatedAt: '2026-07-05' };
+      return reply({ ...vehicle, id, photos, ...times });
     }
     if (url.pathname === '/api/vehicles/' + draftId)
       return reply(created ?? { ...vehicle, id: draftId, status: 'DRAFT' });
@@ -137,6 +157,8 @@ before(async () => {
           : Array.from({ length: 25 }, (_, i) => ({
               ...vehicle,
               id: 'c' + String(i + 1).padStart(24, '0'),
+              licensePlate: i === 2 || i === 3 ? null : vehicle.licensePlate,
+              vin: i === 1 || i === 3 ? null : vehicle.vin,
               thumbnailUrl: i % 2 ? null : '/fixture-vehicle.svg',
               status: i === 2 ? 'RESERVED' : i === 3 ? 'DOCS_PENDING' : 'AVAILABLE',
             }));
@@ -292,10 +314,13 @@ async function searchFlow(page) {
       const start = performance.now();
       const record = (now) => {
         const close = layer.querySelector('button[aria-label="Fechar pesquisa"]');
+        const title = node.querySelector('.tb-page-title');
         const box = close.getBoundingClientRect();
         window.searchFrames.push({
           opacity: Number(getComputedStyle(layer).opacity),
           width: layer.querySelector('.gs-input-shell').getBoundingClientRect().width,
+          titleOpacity: Number(getComputedStyle(title).opacity),
+          closeOpacity: Number(getComputedStyle(close).opacity),
           x: box.x,
           y: box.y,
         });
@@ -324,6 +349,13 @@ async function searchFlow(page) {
     searchMotion.frames.some(({ width }) => width > 44 && width < fullWidth - 4),
     !searchMotion.reduced,
   );
+  assert.equal(
+    searchMotion.frames.some(
+      ({ titleOpacity, closeOpacity, width }) =>
+        titleOpacity > 0.05 && titleOpacity < 0.95 && width > 44 && closeOpacity < 0.05,
+    ),
+    !searchMotion.reduced,
+  );
   assert.ok(
     searchMotion.frames.every(
       ({ x, y }) =>
@@ -345,10 +377,14 @@ async function searchFlow(page) {
   await expect(toggle).toBeFocused();
   await toggle.tap();
   await expect(input).toBeFocused();
+  const beforeOutside = await page.evaluate(() => scrollY);
   await page.touchscreen.tap(5, 160);
   await expect(layer).toHaveAttribute('inert', '');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(input).not.toBeFocused();
+  await expect
+    .poll(() => page.evaluate((previous) => Math.abs(scrollY - previous), beforeOutside))
+    .toBeLessThan(1);
 }
 
 async function drawerSwipe(locator, fromX, toX) {
@@ -442,7 +478,45 @@ async function checkVehicleRows(page, width) {
   await menuButton.tap();
   await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
   await expect(rows.first().getByRole('menuitem', { name: 'Editar', exact: true })).toBeVisible();
+  const listUrl = page.url();
+  const openRowBox = await rows.first().locator('.mobile-vehicle-link').boundingBox();
+  assert.ok(openRowBox);
+  await page.touchscreen.tap(openRowBox.x + 5, openRowBox.y + openRowBox.height / 2);
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  await expect(page).toHaveURL(listUrl);
+  await menuButton.tap();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+  const otherTrigger = await page.evaluate(() => {
+    const bounds = document
+      .querySelector('.action-popover:popover-open .action-menu')
+      .getBoundingClientRect();
+    return [...document.querySelectorAll('article .more-button')]
+      .slice(1)
+      .map((button) => {
+        const box = button.getBoundingClientRect();
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      })
+      .find(({ y }) => y > bounds.bottom && y < innerHeight - 75);
+  });
+  assert.ok(otherTrigger);
+  await page.touchscreen.tap(otherTrigger.x, otherTrigger.y);
+  await expect(page.locator('.action-popover:popover-open')).toHaveCount(0);
+  await expect(page).toHaveURL(listUrl);
+  await page.touchscreen.tap(otherTrigger.x, otherTrigger.y);
+  await expect(page.locator('.action-popover:popover-open')).toHaveCount(1);
   await page.keyboard.press('Escape');
+  await menuButton.tap();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+  const quickTask = page.getByRole('button', { name: 'Nova tarefa rápida' });
+  const taskBox = await quickTask.boundingBox();
+  assert.ok(taskBox);
+  await page.touchscreen.tap(taskBox.x + taskBox.width / 2, taskBox.y + taskBox.height / 2);
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('dialog', { name: 'Tarefas rápidas' })).toHaveCount(0);
+  await quickTask.tap();
+  const quickPanel = page.getByRole('dialog', { name: 'Tarefas rápidas' });
+  await expect(quickPanel).toBeVisible();
+  await quickPanel.getByRole('button', { name: 'Fechar', exact: true }).tap();
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
   await menuButton.focus();
   await menuButton.press('Enter');
@@ -510,7 +584,10 @@ test(
       await page.goto(origin + '/viaturas/' + galleryId, { waitUntil: 'commit', timeout: 60000 });
       const surface = page.locator('.photo-preview .photo-open');
       await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 3', { timeout: 30000 });
-      await expect(page.locator('.photo-preview .photo-step').first()).toBeHidden();
+      const recordTimes = page.locator('.vehicle-record-times');
+      await expect(recordTimes).toBeHidden();
+      await expect(page.getByText('Editar fotografias', { exact: true })).toHaveCount(0);
+      await expect(page.locator('.photo-preview .photo-step').first()).toBeVisible();
       await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
         timeout: 30000,
       });
@@ -520,6 +597,9 @@ test(
       assert.equal(await photoGesture(surface, 86, 0, 10), false);
       assert.equal(await photoGesture(surface, -88, 3), true);
       await expect(surface).toHaveAccessibleName('Ampliar fotografia 2 de 3');
+      await expect(
+        page.getByRole('button', { name: 'Selecionar fotografia 2', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true');
       await page.getByRole('button', { name: 'Selecionar fotografia 3', exact: true }).tap();
       await expect(surface).toHaveAccessibleName('Ampliar fotografia 3 de 3');
       assert.equal(await photoGesture(surface, -88, 0), true);
@@ -545,7 +625,7 @@ test(
       await viewer.getByRole('button', { name: 'Fechar fotografia' }).tap();
       await expect(surface).toBeFocused();
       await page.goto(origin + '/viaturas/' + singlePhotoId);
-      await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 1');
+      await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 1', { timeout: 30000 });
       await expect(page.locator('.photo-preview .photo-step')).toHaveCount(0);
       assert.equal(await photoGesture(surface, -90, 0), false);
       await surface.press('Enter');
@@ -554,36 +634,239 @@ test(
       await viewer.getByRole('button', { name: 'Fechar fotografia' }).tap();
       await page.setViewportSize({ width: 1366, height: 900 });
       await page.goto(origin + '/viaturas/' + galleryId);
+      await expect(recordTimes).toBeVisible();
+      await expect(recordTimes.locator('time').first()).toHaveText(/06\/07\/2026.*00:15/);
+      await expect(recordTimes.locator('time').last()).toHaveText(/06\/07\/2026.*09:45/);
+      await expect(page.getByText('Editar fotografias', { exact: true })).toHaveCount(0);
       await expect(
         page.getByRole('button', { name: 'Fotografia seguinte', exact: true }),
       ).toBeVisible();
+      await page.goto(origin + '/viaturas/' + singlePhotoId);
+      await expect(recordTimes).toHaveCount(0);
     } finally {
       await context.close();
     }
   },
 );
 
-test('real CRM desktop search opens and dismisses the animated dropdown', { timeout: 90000 }, async () => {
+async function captureOpening(page, selector, open, sampleTimes = []) {
+  await page.evaluate(
+    ({ selector, sampleTimes }) => {
+      window.openingAnimations = new Promise((resolve) => {
+        const observer = new MutationObserver(() => {
+          const panel = document.querySelector(selector);
+          if (!panel) return;
+          observer.disconnect();
+          requestAnimationFrame(() => {
+            const animations = panel.getAnimations();
+            const durations = animations.map((animation) => animation.effect.getTiming().duration);
+            if (!sampleTimes.length) return resolve(durations);
+            const [animation] = animations;
+            if (!animation) return resolve({ durations, frames: [] });
+            const elapsed = animation.currentTime;
+            animation.pause();
+            const frames = sampleTimes.map((time) => {
+              animation.currentTime = time;
+              const style = getComputedStyle(panel);
+              return {
+                opacity: Number(style.opacity),
+                y: new DOMMatrixReadOnly(style.transform).m42,
+                height: panel.offsetHeight,
+                gap:
+                  panel.getBoundingClientRect().top -
+                  panel.parentElement.querySelector('.gs-input-shell').getBoundingClientRect()
+                    .bottom,
+              };
+            });
+            animation.currentTime = elapsed;
+            animation.play();
+            resolve({ durations, frames });
+          });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      });
+    },
+    { selector, sampleTimes },
+  );
+  await open();
+  return page.evaluate(() => window.openingAnimations);
+}
+
+function desktopHoverBorder(page) {
+  return page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--color-border-strong)';
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+}
+
+test(
+  'real CRM desktop list alignment and distinct panel animations',
+  { timeout: 90000 },
+  async () => {
+    const context = await openSession(1366);
+    try {
+      const page = await context.newPage();
+      await page.goto(origin + '/viaturas');
+      await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
+        timeout: 30000,
+      });
+      const rows = page.locator('table tbody tr');
+      const identifiers = (row) => rows.nth(row).locator('.vehicle-identifiers');
+      await expect(identifiers(0)).toHaveText(
+        new RegExp(`${vehicle.licensePlate}\\s*·\\s*${vehicle.vin}`),
+      );
+      await expect(identifiers(1)).toHaveText(vehicle.licensePlate);
+      await expect(identifiers(2)).toHaveText(vehicle.vin);
+      await expect(identifiers(3)).toHaveCount(0);
+      const alignment = await rows.first().evaluate((row) => {
+        const name = row.querySelector('.vehicle-name-text').getBoundingClientRect();
+        const plate = row.querySelector('.vehicle-plate').getBoundingClientRect();
+        const logo = row.querySelector('.vehicle-name img').getBoundingClientRect();
+        return {
+          difference: Math.abs(name.left - plate.left),
+          logoSeparate: logo.right < name.left,
+        };
+      });
+      assert.ok(alignment.difference < 1 && alignment.logoSeparate);
+      const search = page.locator('.tb-search-inline .gs-root');
+      const field = search.getByRole('combobox', { name: 'Pesquisar' });
+      const dropdown = search.locator('.gs-dropdown');
+      const opening = await captureOpening(
+        page,
+        '.tb-search-inline .gs-dropdown',
+        () => field.focus(),
+        [0, 30, 90, 180, 240],
+      );
+      assert.deepEqual(opening.durations, [240]);
+      assert.ok(opening.frames[0].y < -5.8 && opening.frames[0].opacity < 0.02);
+      assert.ok(Math.abs(opening.frames[0].gap) < 0.1);
+      assert.ok(opening.frames[1].y > -5.3 && opening.frames[1].opacity > 0.25);
+      assert.ok(opening.frames[2].y > -3.5 && opening.frames[2].opacity > 0.7);
+      assert.ok(Math.abs(opening.frames[4].y) < 0.01 && opening.frames[4].opacity === 1);
+      assert.ok(Math.abs(opening.frames[4].gap - 6) < 0.1);
+      assert.ok(opening.frames.every((frame) => frame.height === opening.frames[0].height));
+      await expect(dropdown).toHaveCSS('opacity', '1');
+      await field.press('Escape');
+      await expect(field).toHaveAttribute('aria-expanded', 'false');
+      await expect(field).toBeFocused();
+      await expect(dropdown).toHaveCount(0);
+      const bell = page.getByRole('button', { name: 'Alertas', exact: true });
+      await bell.hover();
+      const hoverBorder = await desktopHoverBorder(page);
+      await expect(bell).toHaveCSS('border-top-color', hoverBorder);
+      assert.deepEqual(await captureOpening(page, '.alerts-panel', () => bell.click()), [220]);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('.alerts-panel')).toHaveCount(0);
+      const quickTask = page.getByRole('button', { name: 'Tarefas rápidas', exact: true });
+      await quickTask.hover();
+      await expect(quickTask).toHaveCSS('border-top-color', hoverBorder);
+      const quickPanel = page.getByRole('dialog', { name: 'Tarefas rápidas' });
+      assert.deepEqual(
+        await captureOpening(page, '.qt-panel:not(.is-mobile)', () => quickTask.click()),
+        [280],
+      );
+      await expect(quickPanel).toHaveCSS('opacity', '1');
+      await quickPanel.getByRole('button', { name: 'Fechar', exact: true }).click();
+      await expect(quickPanel).toHaveCount(0);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      assert.deepEqual(
+        await captureOpening(page, '.qt-panel:not(.is-mobile)', () => quickTask.click()),
+        [],
+      );
+      await expect(quickPanel).toHaveCSS('opacity', '1');
+    } finally {
+      await context.close();
+    }
+  },
+);
+
+test('real CRM desktop photo rail and thumbnails stay in sync', { timeout: 90000 }, async () => {
   const context = await openSession(1366);
   try {
     const page = await context.newPage();
-    await page.goto(origin + '/viaturas');
+    await page.goto(origin + '/viaturas/' + fullStripId);
     await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
       timeout: 30000,
     });
-    const search = page.locator('.tb-search-inline .gs-root');
-    const field = search.getByRole('combobox', { name: 'Pesquisar' });
-    const dropdown = search.locator('.gs-dropdown');
-    await field.focus();
-    await expect(dropdown).toHaveCSS('opacity', '1');
-    await field.press('Escape');
-    await expect(field).toHaveAttribute('aria-expanded', 'false');
-    await expect(field).toBeFocused();
-    await expect(dropdown).toHaveCount(0);
+    const surface = page.locator('.photo-preview .photo-open');
+    const strip = page.locator('.thumbnail-frame .detail-thumbnails');
+    const gallery = page.locator('.photo-preview');
+    const thumbnail = (index) =>
+      strip.getByRole('button', { name: `Selecionar fotografia ${index}`, exact: true });
+    await expect(surface).toHaveAccessibleName('Ampliar fotografia 1 de 16');
+    await expect(page.locator('.vehicle-record-times time')).toHaveCount(1);
+    const next = page.getByRole('button', { name: 'Avançar duas miniaturas' });
+    await next.click();
+    await expect.poll(() => strip.evaluate((node) => node.scrollLeft)).toBeGreaterThan(0);
+    await expect(thumbnail(1)).toHaveAttribute('aria-pressed', 'true');
+    await thumbnail(4).click();
+    await expect(surface).toHaveAccessibleName('Ampliar fotografia 4 de 16');
+    await gallery.hover();
+    await gallery.getByRole('button', { name: 'Fotografia seguinte' }).click();
+    await expect(thumbnail(5)).toHaveAttribute('aria-pressed', 'true');
+    await expect(surface.locator('.photo-track')).toHaveAttribute('data-moving', 'false');
+    const box = await surface.boundingBox();
+    assert.ok(box);
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.mouse.move(center.x, center.y);
+    await page.mouse.down();
+    await page.mouse.move(center.x - 85, center.y, { steps: 4 });
+    await page.mouse.up();
+    await expect(thumbnail(6)).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.crm-photo-viewer')).toBeHidden();
   } finally {
     await context.close();
   }
 });
+
+test(
+  'real CRM drawer closes on mobile and preserves the desktop collapse preference',
+  { timeout: 90000 },
+  async () => {
+    const context = await openSession(1366);
+    try {
+      const page = await context.newPage();
+      await page.goto(origin + '/viaturas');
+      await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText('1', {
+        timeout: 30000,
+      });
+      const sidebar = page.locator('.sidebar');
+      const minimize = sidebar.getByRole('button', { name: 'Colapsar menu' });
+      await minimize.hover();
+      const strongBorder = await desktopHoverBorder(page);
+      await expect(minimize).toHaveCSS('border-top-color', strongBorder);
+      await minimize.click();
+      await expect(sidebar).toHaveClass(/collapsed/);
+      await page.setViewportSize({ width: 390, height: 740 });
+      const menu = page.getByRole('button', { name: 'Abrir menu' });
+      await menu.click();
+      await expect(sidebar).not.toHaveClass(/collapsed/);
+      await sidebar.getByRole('button', { name: 'Fechar navegação' }).click();
+      await expect(sidebar).toBeHidden();
+      await expect(menu).toBeFocused();
+      await page.setViewportSize({ width: 1366, height: 740 });
+      const expand = sidebar.getByRole('button', { name: 'Expandir menu' });
+      await expect(expand).toHaveAttribute('aria-expanded', 'false');
+      await expect
+        .poll(() =>
+          sidebar.evaluate((node) => {
+            const rail = node.getBoundingClientRect();
+            const button = node.querySelector('.sidebar-toggle').getBoundingClientRect();
+            return Math.abs(button.left + button.width / 2 - (rail.left + rail.width / 2));
+          }),
+        )
+        .toBeLessThan(1);
+      await expand.click();
+      await expect(minimize).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      await context.close();
+    }
+  },
+);
 
 async function checkMobileEditStatus(page) {
   let finishSave;
@@ -680,16 +963,24 @@ for (const [width, reduced] of [
       await expect(hamburger).toBeInViewport();
       await hamburger.tap();
       const sidebar = page.locator('.sidebar');
+      const overlay = page.locator('.drawer-overlay');
       const backdrop = page.getByRole('button', { name: 'Fechar menu', exact: true });
       await expect(backdrop).toBeVisible();
       if (await page.evaluate(() => CSS.supports('-webkit-tap-highlight-color', 'transparent'))) {
         await expect(backdrop).toHaveCSS('-webkit-tap-highlight-color', 'rgba(0, 0, 0, 0)');
       }
-      await expect(backdrop).toHaveCSS('opacity', '1');
-      if (reduced) await expect(backdrop).toHaveCSS('transition-property', 'none');
+      await expect(overlay).toHaveCSS('opacity', '1');
+      await expect(backdrop).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await expect(backdrop).toHaveCSS('box-shadow', 'none');
+      if (reduced) await expect(overlay).toHaveCSS('transition-property', 'none');
       await backdrop.tap({ position: { x: width - 12, y: 120 } });
       await expect(backdrop).toHaveCount(0);
-      await expect(page.locator('.drawer-backdrop')).toHaveCSS('opacity', '0');
+      await expect(overlay).toHaveCSS('opacity', '0');
+      await expect(hamburger).toBeFocused();
+      await hamburger.tap();
+      await sidebar.getByRole('button', { name: 'Fechar navegação' }).tap();
+      await expect(hamburger).toHaveAttribute('aria-expanded', 'false');
+      await expect(sidebar).toBeHidden();
       await hamburger.tap();
       await expect(backdrop).toBeVisible();
       assert.deepEqual(await drawerSwipe(sidebar, 5, 145), { prevented: false, dragging: false });

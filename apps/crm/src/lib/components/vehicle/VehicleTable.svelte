@@ -178,6 +178,8 @@
     </thead>
     <tbody>
       {#each items as v (v.id)}
+        {@const plate = v.licensePlate?.trim()}
+        {@const vin = v.vin?.trim()}
         <tr
           use:linkedRow
           class="linked-row border-b border-[var(--color-border)] hover:bg-[color-mix(in_oklab,var(--color-red)_5%,transparent)] transition-colors group"
@@ -200,26 +202,25 @@
                   <Car class="h-5 w-5 text-[var(--color-red)]" />
                 {/if}
               </div>
-              <div class="min-w-0">
-                <div
-                  class="vehicle-name font-display font-semibold text-[14px] group-hover:text-[var(--color-red)] transition-colors"
+              <div class="vehicle-name">
+                <BrandLogo name={v.brand} size={16} />
+                <span
+                  class="vehicle-name-text min-w-0 truncate font-display font-semibold text-[14px] group-hover:text-[var(--color-red)] transition-colors"
+                  >{v.brand} {v.model}</span
                 >
-                  <BrandLogo name={v.brand} size={16} /><span class="min-w-0 truncate"
-                    >{v.brand} {v.model}</span
+                {#if plate || vin}
+                  <div
+                    class="vehicle-identifiers font-mono text-[10.5px] tracking-[0.04em] text-[var(--color-text-faint)]"
                   >
-                </div>
-                <div
-                  class="font-mono text-[10.5px] tracking-[0.04em] text-[var(--color-text-faint)] truncate"
-                >
-                  {#if v.licensePlate}
-                    <span class="tracking-[0.18em] text-[var(--color-text-muted)]"
-                      >{v.licensePlate}</span
-                    >
-                    <span class="mx-1">·</span>{v.vin}
-                  {:else}
-                    {v.vin}
-                  {/if}
-                </div>
+                    {#if plate}<span
+                        class="vehicle-plate tracking-[0.18em] text-[var(--color-text-muted)]"
+                        >{plate}</span
+                      >{/if}
+                    {#if vin}<span class="vehicle-vin"
+                        >{#if plate}<span aria-hidden="true">·&nbsp;</span>{/if}{vin}</span
+                      >{/if}
+                  </div>
+                {/if}
               </div>
             </a>
           </td>
@@ -274,9 +275,23 @@
     white-space: nowrap;
   }
   .vehicle-name {
-    display: flex;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
     align-items: center;
-    gap: 9px;
+    column-gap: 9px;
+    min-width: 0;
+  }
+  .vehicle-name-text {
+    grid-area: 1 / 2;
+  }
+  .vehicle-identifiers {
+    grid-area: 2 / 2;
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 4px;
+    overflow-wrap: anywhere;
+  }
+  .vehicle-vin {
     min-width: 0;
   }
 </style>

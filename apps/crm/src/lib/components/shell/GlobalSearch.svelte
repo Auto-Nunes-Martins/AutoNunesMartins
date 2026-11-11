@@ -3,6 +3,7 @@
   import { crmPath } from '$lib/paths';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
+  import { sineOut } from 'svelte/easing';
   import { X } from 'lucide-svelte';
   import BrandSearch from '$lib/components/brand/icons/BrandSearch.svelte';
   import { panelTransition } from './panelTransition';
@@ -68,6 +69,14 @@
     open = false;
     cancelRequest();
     activeIndex = -1;
+  }
+  function searchDropdownTransition(node: Element) {
+    if (matchMedia('(max-width: 767px)').matches) return panelTransition(node);
+    return {
+      duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240,
+      easing: sineOut,
+      css: (_t: number, u: number) => `opacity: ${1 - u * u}; transform: translateY(${-6 * u}px);`,
+    };
   }
   function clear() {
     cancelRequest();
@@ -274,7 +283,11 @@
       >{:else}<kbd class="gs-kbd-hint">⌘K</kbd>{/if}
   </div>
   {#if open}
-    <div class="gs-dropdown" style="border-radius:var(--radius-card)" transition:panelTransition>
+    <div
+      class="gs-dropdown"
+      style="border-radius:var(--radius-card)"
+      transition:searchDropdownTransition
+    >
       {#if !needle && recentHits.length}<div class="gs-recent-tools">
           <span>Histórico apenas desta sessão</span><button
             type="button"

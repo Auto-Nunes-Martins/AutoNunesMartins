@@ -49,7 +49,7 @@
   $effect(() => {
     if (!$mobileDrawer) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') mobileDrawer.close();
+      if (e.key === 'Escape') mobileDrawer.dismiss();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -71,14 +71,15 @@
   open. Tap to dismiss. Sits between the main content (z-10) and the
   sidebar (z-5 desktop, z-40 mobile) so the sidebar floats above it.
 -->
-<button
-  type="button"
-  class="drawer-backdrop"
-  class:drawer-visible={$mobileDrawer}
-  inert={!$mobileDrawer}
-  aria-label="Fechar menu"
-  onclick={() => mobileDrawer.close()}
-></button>
+<div class="drawer-overlay" class:drawer-visible={$mobileDrawer} inert={!$mobileDrawer}>
+  <button
+    type="button"
+    class="drawer-backdrop"
+    aria-label="Fechar menu"
+    onmousedown={(event) => event.preventDefault()}
+    onclick={() => mobileDrawer.dismiss()}
+  ></button>
+</div>
 
 <div class="main-area relative">
   <div class="header-ambient absolute inset-0 pointer-events-none"></div>
@@ -145,27 +146,40 @@
   }
 
   /* Backdrop sits above main content but below the drawer itself. */
-  .drawer-backdrop {
+  .drawer-overlay {
     display: none;
     position: fixed;
     inset: 0;
     z-index: 30;
     background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    border: 0;
-    padding: 0;
-    cursor: pointer;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    -webkit-tap-highlight-color: transparent;
     transition:
       opacity var(--drawer-duration) var(--ease-brand),
       visibility var(--drawer-duration);
   }
+  .drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    outline: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .drawer-backdrop:focus-visible {
+    outline: 2px solid var(--color-red);
+    outline-offset: -2px;
+  }
   @media (max-width: 767px) {
-    .drawer-backdrop {
+    .drawer-overlay {
       display: block;
     }
   }
@@ -174,11 +188,11 @@
     visibility: visible;
     pointer-events: auto;
   }
-  :global([data-theme='light']) .drawer-backdrop {
+  :global([data-theme='light']) .drawer-overlay {
     background: rgba(20, 20, 24, 0.45);
   }
   @media (prefers-reduced-motion: reduce) {
-    .drawer-backdrop {
+    .drawer-overlay {
       transition: none;
     }
   }

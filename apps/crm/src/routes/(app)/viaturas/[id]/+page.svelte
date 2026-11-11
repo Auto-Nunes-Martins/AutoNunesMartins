@@ -29,7 +29,7 @@
   import ExpenseTable from '$lib/components/vehicle/ExpenseTable.svelte';
   import VehicleDeletePanel from '$lib/components/vehicle/VehicleDeletePanel.svelte';
   import ProfitCard from '$lib/components/vehicle/ProfitCard.svelte';
-  import { formatDate, formatEUR, formatKm } from '$lib/utils/format';
+  import { formatDate, formatEUR, formatKm, formatLisbonDateTime } from '$lib/utils/format';
   import type { PageData } from './$types';
   import type { HighlightStatus } from '$lib/highlightStatus';
 
@@ -41,6 +41,12 @@
   // Reactive: when SvelteKit re-runs the load function after a form action,
   // `data` is reassigned and these derived values pick up the new vehicle.
   const v = $derived(data.vehicle);
+  const created = $derived(formatLisbonDateTime(v.createdAt));
+  const edited = $derived(
+    !created || Date.parse(v.updatedAt) > Date.parse(v.createdAt)
+      ? formatLisbonDateTime(v.updatedAt)
+      : null,
+  );
   const highlightStatus = $derived(
     data.homepageHighlight ??
       Promise.resolve(data.isFeatured).then<HighlightStatus>((featured) =>
@@ -125,6 +131,22 @@
           Vendida em {formatDate(v.soldDate)}
         {/if}
       </p>
+      {#if created || edited}
+        <dl class="vehicle-record-times mt-2 hidden flex-wrap gap-x-5 gap-y-1 text-xs text-[var(--color-text-muted)] md:flex">
+          {#if created}
+            <div class="flex items-baseline gap-1.5">
+              <dt>Adicionada ao CRM</dt>
+              <dd><time datetime={v.createdAt}>{created}</time></dd>
+            </div>
+          {/if}
+          {#if edited}
+            <div class="flex items-baseline gap-1.5" title="Última alteração guardada na ficha, incluindo fotografias, estado e publicação">
+              <dt>Última edição</dt>
+              <dd><time datetime={v.updatedAt}>{edited}</time></dd>
+            </div>
+          {/if}
+        </dl>
+      {/if}
       {#if websiteVisibility(v).state === 'blocked'}
         <p class="vehicle-public-status mt-2 text-[13px] text-[var(--color-text-muted)]">
           {websiteVisibility(v).detail}

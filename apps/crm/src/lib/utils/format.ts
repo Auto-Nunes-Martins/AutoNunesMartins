@@ -12,6 +12,22 @@ const numberFormatter = new Intl.NumberFormat('pt-PT', {
   maximumFractionDigits: 0,
 });
 
+const lisbonDateTimeFormatter = new Intl.DateTimeFormat('pt-PT', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Europe/Lisbon',
+  hourCycle: 'h23',
+});
+
+export function formatLisbonDateTime(value: string | null | undefined): string | null {
+  if (!value || !/T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return null;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? lisbonDateTimeFormatter.format(timestamp) : null;
+}
+
 export function formatEUR(value: number | string | null | undefined): string {
   if (value === null || value === undefined || value === '') return '—';
   const n = typeof value === 'string' ? Number(value) : value;

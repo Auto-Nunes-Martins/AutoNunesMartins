@@ -56,6 +56,7 @@
   let header: HTMLElement;
   let scrollAnchor = 0;
   let ignoreScrollUntil = 0;
+  let searchScroll: { x: number; y: number; until: number } | undefined;
   const pinned = $derived(mobileSearchOpen || $mobileDrawer || notificationsOpen);
 
   function syncSearchTrigger() {
@@ -68,6 +69,7 @@
 
   function openSearch() {
     if ($mobileDrawer) return;
+    searchScroll = undefined;
     quickTask.close();
     notificationsOpen = false;
     scrollHidden = false;
@@ -78,13 +80,32 @@
   }
 
   function closeSearch(restoreFocus = true) {
-    scrollAnchor = Math.max(0, window.scrollY);
-    ignoreScrollUntil = performance.now() + 220;
+    const { scrollX: x, scrollY: y } = window;
+    scrollAnchor = Math.max(0, y);
+    ignoreScrollUntil = performance.now() + 260;
+    searchScroll = { x, y, until: performance.now() + 550 };
+    if (
+      document.activeElement instanceof HTMLElement &&
+      searchLayer.contains(document.activeElement)
+    ) {
+      document.activeElement.blur();
+    }
     flushSync(() => (mobileSearchOpen = false));
     if (restoreFocus) searchToggle?.focus({ preventScroll: true });
+    restoreSearchScroll();
+    requestAnimationFrame(restoreSearchScroll);
+  }
+
+  function restoreSearchScroll() {
+    if (!searchScroll || performance.now() > searchScroll.until) return;
+    const { x, y } = searchScroll;
+    if (window.scrollX !== x || window.scrollY !== y) {
+      window.scrollTo({ left: x, top: y, behavior: 'instant' });
+    }
   }
 
   afterNavigate(() => {
+    searchScroll = undefined;
     scrollAnchor = Math.max(0, window.scrollY);
     scrollHidden = false;
     mobileSearchOpen = false;
@@ -123,7 +144,11 @@
       header.style.setProperty('--tb-visible-top', `${Math.max(0, viewport.offsetTop)}px`);
     };
     syncViewport();
-    viewport?.addEventListener('resize', syncViewport);
+    const resizeViewport = () => {
+      syncViewport();
+      restoreSearchScroll();
+    };
+    viewport?.addEventListener('resize', resizeViewport);
     viewport?.addEventListener('scroll', syncViewport);
     const key = (event: KeyboardEvent) => {
       if (
@@ -139,8 +164,10 @@
       }
     };
     const dismissOutside = (event: PointerEvent) => {
+      searchScroll = undefined;
       if (mobileSearchOpen && !searchLayer.contains(event.target as Node)) closeSearch(false);
     };
+    const cancelScrollRestore = () => (searchScroll = undefined);
     const dismissEscape = (event: KeyboardEvent) => {
       if (mobileSearchOpen && event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
@@ -148,16 +175,18 @@
       }
     };
     document.addEventListener('pointerdown', dismissOutside, true);
+    window.addEventListener('wheel', cancelScrollRestore, { passive: true });
     window.addEventListener('keydown', key, true);
     window.addEventListener('keydown', dismissEscape);
     return () => {
       searchResize.disconnect();
       document.removeEventListener('pointerdown', dismissOutside, true);
+      window.removeEventListener('wheel', cancelScrollRestore);
       window.removeEventListener('keydown', key, true);
       window.removeEventListener('keydown', dismissEscape);
       window.removeEventListener('scroll', onScroll);
       mobile.removeEventListener('change', onScroll);
-      viewport?.removeEventListener('resize', syncViewport);
+      viewport?.removeEventListener('resize', resizeViewport);
       viewport?.removeEventListener('scroll', syncViewport);
     };
   });
@@ -182,11 +211,13 @@
       <!-- Hamburger (mobile only) — toggles the sidebar drawer.
          Visibility owned by .tb-icbtn's media query, not `md:hidden`. -->
       <button
+        id="crm-drawer-trigger"
         type="button"
         class="tb-icbtn"
         onclick={() => mobileDrawer.toggle()}
         aria-label="Abrir menu"
         aria-expanded={$mobileDrawer}
+        aria-controls="crm-sidebar"
       >
         <Menu class="h-5 w-5" />
       </button>
@@ -228,7 +259,7 @@
         <GlobalSearch {userKey} bind:recentHits />
       </div>
 
-      <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
+      <div class="tb-actions flex items-center gap-2 flex-shrink-0 ml-auto">
         <!-- Mobile-only search icon button (replaces inline search field). -->
         <button
           type="button"
@@ -293,12 +324,27 @@
   .topbar {
     container-type: inline-size;
   }
-  .tb-normal {
-    transition: opacity 115ms ease 130ms;
+  .tb-normal > :not(.tb-actions),
+  .tb-actions > :global(*) {
+    transition:
+      opacity 125ms ease 90ms,
+      translate 240ms var(--ease-brand);
   }
-  .tb-normal.search-open {
+  .search-open > :not(.tb-actions),
+  .search-open .tb-actions > :global(*) {
     opacity: 0;
-    transition: opacity 75ms ease;
+    transition:
+      opacity 135ms ease,
+      translate 240ms var(--ease-brand);
+  }
+  .search-open > :not(.tb-actions) {
+    translate: -8px 0;
+  }
+  .search-open .tb-actions > :global(:not(.tb-search-toggle)) {
+    translate: 8px 0;
+  }
+  .search-open .tb-actions > .tb-search-toggle {
+    transition: opacity 65ms ease;
   }
   .tb-search-expanded {
     position: absolute;
@@ -308,7 +354,7 @@
   }
   .searching .tb-search-expanded {
     opacity: 1;
-    transition: opacity 120ms ease;
+    transition: opacity 65ms ease;
   }
   .tb-search-expanded > :global(.gs-root) {
     max-width: none;
@@ -329,6 +375,16 @@
   .searching .tb-search-expanded :global(.gs-input-shell) {
     margin-inline: 0;
     border-radius: 10px;
+  }
+  .tb-search-expanded :global(.gs-input-shell input),
+  .tb-search-expanded :global(.gs-input-shell kbd) {
+    opacity: 0;
+    transition: opacity 85ms ease;
+  }
+  .searching .tb-search-expanded :global(.gs-input-shell input),
+  .searching .tb-search-expanded :global(.gs-input-shell kbd) {
+    opacity: 1;
+    transition: opacity 130ms ease 60ms;
   }
   .tb-icbtn.tb-search-close {
     opacity: 0;
@@ -371,10 +427,13 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .topbar,
-    .tb-normal.search-open,
-    .tb-normal,
+    .topbar .tb-normal > :not(.tb-actions),
+    .topbar .tb-actions > :global(*),
+    .topbar .search-open .tb-actions > .tb-search-toggle,
     .topbar .tb-search-expanded,
     .topbar .tb-search-expanded :global(.gs-input-shell),
+    .topbar .tb-search-expanded :global(.gs-input-shell input),
+    .topbar .tb-search-expanded :global(.gs-input-shell kbd),
     .topbar .tb-icbtn.tb-search-close {
       transition: none;
     }

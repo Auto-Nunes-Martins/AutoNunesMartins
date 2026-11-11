@@ -64,6 +64,10 @@ function createMobileDrawer() {
     subscribe,
     open: () => set(true),
     close: () => set(false),
+    dismiss: () => {
+      set(false);
+      if (browser) document.getElementById('crm-drawer-trigger')?.focus({ preventScroll: true });
+    },
     toggle: () => update((v) => !v),
   };
 }

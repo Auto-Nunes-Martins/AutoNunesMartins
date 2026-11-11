@@ -2,7 +2,8 @@
   import { crmPath } from '$lib/paths';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
-  import { Activity, ChevronLeft, Globe } from 'lucide-svelte';
+  import { onMount } from 'svelte';
+  import { Activity, ChevronLeft, Globe, X } from 'lucide-svelte';
   import type { IconComponent } from '$lib/types/ui';
   // Hand-drawn icons from the index.html prototype's `I.*` library
   // (same look/feel as the dashboard KPI icons).
@@ -228,7 +229,15 @@
     return current === href || current.startsWith(href + '/');
   }
 
-  const collapsed = $derived($sidebar === 'collapsed');
+  let desktop = $state(true);
+  onMount(() => {
+    const breakpoint = matchMedia('(min-width: 768px)');
+    const sync = () => (desktop = breakpoint.matches);
+    sync();
+    breakpoint.addEventListener('change', sync);
+    return () => breakpoint.removeEventListener('change', sync);
+  });
+  const collapsed = $derived(desktop && $sidebar === 'collapsed');
   const mobileOpen = $derived($mobileDrawer);
 </script>
 
@@ -247,6 +256,7 @@
 -->
 
 <aside
+  id="crm-sidebar"
   use:swipeToClose
   class="sidebar"
   class:collapsed
@@ -283,6 +293,14 @@
         aria-expanded={!collapsed}
       >
         <ChevronLeft class="h-4 w-4 toggle-icon" />
+      </button>
+      <button
+        type="button"
+        class="drawer-close"
+        onclick={() => mobileDrawer.dismiss()}
+        aria-label="Fechar navegação"
+      >
+        <X class="h-5 w-5" aria-hidden="true" />
       </button>
     </div>
 
@@ -415,28 +433,6 @@
     .sidebar.collapsed .sidebar-inner {
       width: var(--sidebar-w-mobile, 280px);
     }
-    /* Hide the desktop collapse chevron — drawer toggle lives in topbar. */
-    .sidebar-toggle {
-      display: none;
-    }
-    /* Brand block reclaims the right padding since toggle is gone. */
-    .brand-block {
-      padding: 18px 22px;
-    }
-    /* Force expanded-state visibility on inner items regardless of the
-       `.collapsed` class (which is desktop-only state). */
-    .sidebar.collapsed .brand-content,
-    .sidebar.collapsed .nav-heading,
-    .sidebar.collapsed .nav-label,
-    .sidebar.collapsed .nav-badge,
-    .sidebar.collapsed .user-meta {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .sidebar.collapsed :global(.sign-out) {
-      opacity: 1;
-      pointer-events: auto;
-    }
   }
 
   /* Inner box keeps the EXPANDED width even when the sidebar is collapsed —
@@ -492,21 +488,19 @@
     This way the button slides smoothly between positions instead of
     snapping when the class changes.
   */
-  .sidebar-toggle {
+  .sidebar-toggle,
+  .drawer-close {
     position: absolute;
     top: 50%;
-    /* 16px = half the button's height (32 / 2) */
     transform: translateY(-50%);
-    /* Expanded: 240 inner width − 22 right-padding − 32 button = ~186px,
-       rounded to 188 for a tiny visual breathing margin. */
-    left: calc(var(--sidebar-w, 240px) - 52px);
-    height: 32px;
-    width: 32px;
+    left: calc(var(--sidebar-w, 240px) - 58px);
+    height: 36px;
+    width: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: var(--color-text-muted);
-    background: transparent;
+    background: var(--color-bg-1);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-btn);
     cursor: pointer;
@@ -517,15 +511,41 @@
       background 0.12s;
   }
   .sidebar.collapsed .sidebar-toggle {
-    /* Centered in the 68px collapsed column. (68/2 − 32/2 = 18) */
-    left: calc(var(--sidebar-w-collapsed, 68px) / 2 - 16px);
+    left: calc((var(--sidebar-w-collapsed, 68px) - 36px) / 2);
+  }
+  .drawer-close {
+    display: none;
+    left: auto;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (max-width: 767px) {
+    .sidebar-toggle {
+      display: none;
+    }
+    .drawer-close {
+      display: inline-flex;
+    }
+    .brand-block {
+      padding-right: 68px;
+    }
+  }
+  .sidebar-toggle {
+    background: transparent;
   }
   .sidebar-toggle:hover {
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+    background: var(--color-bg-2);
+  }
+  .drawer-close:hover {
     color: var(--color-red);
     border-color: var(--color-red);
     background: color-mix(in oklab, var(--color-red) 6%, transparent);
   }
-  .sidebar-toggle:focus-visible {
+  :is(.sidebar-toggle, .drawer-close):focus-visible {
     outline: 2px solid var(--color-red);
     outline-offset: 2px;
   }
@@ -541,6 +561,8 @@
   @media (prefers-reduced-motion: reduce) {
     .sidebar,
     .sidebar.collapsed,
+    .sidebar-toggle,
+    .drawer-close,
     .sidebar-toggle :global(.toggle-icon) {
       transition: none;
     }

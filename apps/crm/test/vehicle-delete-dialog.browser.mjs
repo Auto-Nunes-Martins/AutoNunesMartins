@@ -120,9 +120,11 @@ for (const width of [390, 1366])
           name: 'Mais opções de BMW Série 3 · AA-00-AA',
           exact: true,
         });
-        const logo = page.locator('.vehicle-name:visible img').first();
-        assert.equal(await logo.getAttribute('width'), '16');
-        assert.equal(await logo.evaluate((n) => getComputedStyle(n.parentElement).gap), '9px');
+        if (width >= 768) {
+          const logo = page.locator('.vehicle-name:visible img').first();
+          assert.equal(await logo.getAttribute('width'), '16');
+          assert.equal(await logo.evaluate((n) => getComputedStyle(n.parentElement).gap), '9px');
+        }
         await opener.click();
         const menu = page.getByRole('menu', {
           name: 'Ações de BMW Série 3 · AA-00-AA',
@@ -138,7 +140,7 @@ for (const width of [390, 1366])
         await opener.click();
         await page.waitForFunction(
           () =>
-            document.querySelector('[role="menu"]:popover-open [role="menuitem"]') ===
+            document.querySelector('[popover]:popover-open [role="menuitem"]') ===
             document.activeElement,
         );
         await page.keyboard.press('End');

@@ -8,8 +8,23 @@
   import { crmPath } from '$lib/paths';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
   import { photoSwipe } from '../../../../../../shared/ui/photoSwipe';
+  import { photoRail } from '../../../../../../shared/ui/photoRail';
+  import { followThumbnail } from '../../../../../../shared/ui/thumbnailFollow';
+  import { dragThumbnailStrip } from '../../../../../../shared/ui/dragThumbnailStrip';
+  import { thumbnailNavigation } from '../../../../../../shared/ui/thumbnailNavigation';
   import { untrack, type Snippet } from 'svelte';
-  import { Camera, Plus, Star, Trash2, Upload, ArrowLeft, ArrowRight, X } from 'lucide-svelte';
+  import {
+    Camera,
+    Plus,
+    Star,
+    Trash2,
+    Upload,
+    ArrowLeft,
+    ArrowRight,
+    ChevronLeft,
+    ChevronRight,
+    X,
+  } from 'lucide-svelte';
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
@@ -93,7 +108,9 @@
     opener = $state<HTMLButtonElement>(undefined!);
   let viewerOpen = $state(false);
   let imageFailed = $state(false);
+  let failedRailUrls = $state<string[]>([]);
   let failedThumbnailUrls = $state<string[]>([]);
+  let mainPhotoDrag = $state<number>();
   const uid = $props.id();
   const captionId = uid + '-photo-caption';
   $effect(() => {
@@ -106,7 +123,7 @@
     imageFailed = false;
   });
   function photoKey(event: KeyboardEvent) {
-    trapDialogTab(event, viewer);
+    if (viewerOpen) trapDialogTab(event, viewer);
     if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault();
     event.stopPropagation();
@@ -120,6 +137,12 @@
     previous: () => step(-1),
     next: () => step(1),
     edgeInset: 24,
+  });
+  const inlineSwipeOptions = $derived({
+    ...swipeOptions,
+    mouse: true,
+    commitDistance: 24,
+    drag: (offset: number | undefined) => (mainPhotoDrag = offset),
   });
 
   async function uploadFiles(files: FileList) {
@@ -279,9 +302,7 @@
             class="hidden"
           />
         </label>
-      {:else}<a class="edit-photos" href={crmPath(`/viaturas/${vehicleId}/editar`)}
-          >Editar fotografias</a
-        >{/if}
+      {/if}
     {/snippet}
   </PanelHeader>
   {#if editable}<p class="px-4 py-3 text-xs text-[var(--color-text-muted)]">
@@ -325,7 +346,7 @@
           >
             {editable
               ? 'Sem fotografias · carregar acima'
-              : 'Sem fotografias · use «Editar fotografias» para adicionar'}
+              : 'Sem fotografias'}
           </span>
         </div>
       {:else}
@@ -333,7 +354,7 @@
         <div
           class="photo-preview aspect-[16/10] bg-[var(--color-bg-2)] overflow-hidden"
           class:public-crop={!editable}
-          use:photoSwipe={swipeOptions}
+          use:photoSwipe={inlineSwipeOptions}
         >
           {#if primary}
             <button
@@ -342,17 +363,55 @@
               class="photo-open"
               data-swipe-surface
               aria-label={`Ampliar fotografia ${activeIndex + 1} de ${photos.length}`}
-              onclick={() => {
+              onclick={(event) => {
+                if (
+                  event.detail &&
+                  event.currentTarget.querySelector('.photo-track[data-moving="true"]')
+                )
+                  return;
                 viewerOpen = true;
                 viewer.showModal();
               }}
               onkeydown={photoKey}
             >
-              {#if imageFailed}<span class="photo-unavailable">Fotografia indisponível</span>{:else}
+              {#if !editable}
+                <span
+                  class="photo-track"
+                  style:--photo-start={activeIndex}
+                  use:photoRail={{
+                    index: activeIndex,
+                    count: photos.length,
+                    drag: mainPhotoDrag,
+                    instant: viewerOpen,
+                  }}
+                >
+                  {#each photos as photo, index (photo.path)}
+                    <span class="photo-slide" aria-hidden={index !== activeIndex}>
+                      {#if failedRailUrls.includes(photo.url)}
+                        <span class="photo-unavailable">Fotografia indisponível</span>
+                      {:else}
+                        <img
+                          {...photoAttrs(photo, 1600, '(max-width:700px) 100vw, 1100px')}
+                          use:reusablePhoto={{ photo }}
+                          style={framingStyle(framing[photo.path])}
+                          alt=""
+                          class="h-full w-full object-cover"
+                          loading={index === activeIndex ? 'eager' : 'lazy'}
+                          draggable={false}
+                          onerror={() => {
+                            if (!failedRailUrls.includes(photo.url))
+                              failedRailUrls = [...failedRailUrls, photo.url];
+                          }}
+                        />
+                      {/if}
+                    </span>
+                  {/each}
+                </span>
+              {:else if imageFailed}<span class="photo-unavailable">Fotografia indisponível</span
+                >{:else}
                 {#key primary.path}<img
                     {...photoAttrs(primary, 1600, '(max-width:700px) 100vw, 1100px')}
                     use:reusablePhoto={{ photo: primary }}
-                    style={editable ? undefined : framingStyle(framing[primary.path])}
                     alt={`Fotografia ${activeIndex + 1} da viatura`}
                     class="h-full w-full object-cover"
                     loading="eager"
@@ -367,9 +426,7 @@
                 class="photo-step previous"
                 aria-label="Fotografia anterior"
                 aria-disabled={activeIndex === 0}
-                onclick={() => {
-                  if (activeIndex > 0) activeIndex -= 1;
-                }}
+                onclick={() => step(-1)}
                 onkeydown={photoKey}><ArrowLeft size={20} aria-hidden="true" /></button
               >
               <button
@@ -377,9 +434,7 @@
                 class="photo-step next"
                 aria-label="Fotografia seguinte"
                 aria-disabled={activeIndex === photos.length - 1}
-                onclick={() => {
-                  if (activeIndex < photos.length - 1) activeIndex += 1;
-                }}
+                onclick={() => step(1)}
                 onkeydown={photoKey}><ArrowRight size={20} aria-hidden="true" /></button
               >
             {/if}
@@ -388,8 +443,7 @@
         </div>
 
         {#if !editor}
-          <!-- Thumbnail strip -->
-          <div class="flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border)]">
+          {#snippet thumbnailItems()}
             {#each photos as p, i (p.path)}
               {@const isActive = i === activeIndex}
               {@const isPrimary = principalPath === undefined ? i === 0 : p.path === principalPath}
@@ -397,6 +451,7 @@
                 <button
                   type="button"
                   onclick={() => (activeIndex = i)}
+                  onkeydown={editable ? undefined : photoKey}
                   aria-label={`Selecionar fotografia ${i + 1}`}
                   aria-pressed={isActive}
                   class="block h-16 w-24 overflow-hidden border-2 transition-colors {isActive
@@ -410,7 +465,7 @@
                     >{:else}<img
                       {...photoAttrs(p, 320, '96px')}
                       use:reusablePhoto={{ photo: p }}
-                      alt="Miniatura"
+                      alt=""
                       class="h-full w-full object-cover"
                       loading="eager"
                       onerror={() => {
@@ -469,7 +524,38 @@
                   class="hidden"
                 />
               </label>{/if}
-          </div>
+          {/snippet}
+          {#if editable}
+            <div class="flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border)]">
+              {@render thumbnailItems()}
+            </div>
+          {:else}
+            <div class="thumbnail-frame" use:thumbnailNavigation>
+              <div
+                class="detail-thumbnails flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border)]"
+                use:followThumbnail={activeIndex}
+                use:dragThumbnailStrip
+                role="group"
+                aria-label="Fotografias da viatura"
+              >
+                {@render thumbnailItems()}
+              </div>
+              <button
+                type="button"
+                class="thumbnail-step thumbnail-previous"
+                aria-label="Recuar duas miniaturas"
+              >
+                <ChevronLeft size={22} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                class="thumbnail-step thumbnail-next"
+                aria-label="Avançar duas miniaturas"
+              >
+                <ChevronRight size={22} aria-hidden="true" />
+              </button>
+            </div>
+          {/if}
         {/if}
       {/if}
     </div>
@@ -578,15 +664,6 @@
       object-position: var(--photo-mobile, 50% 50%);
     }
   }
-  .edit-photos {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 8px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-btn);
-    font-size: 12px;
-  }
   /* Intrinsic image sizes must never grow the aspect-ratio frame after decoding. */
   .photo-open {
     position: absolute;
@@ -598,6 +675,19 @@
     padding: 0;
     background: transparent;
     cursor: zoom-in;
+  }
+  .photo-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transform: translate3d(calc(-100% * var(--photo-start)), 0, 0);
+  }
+  .photo-slide {
+    display: block;
+    flex: 0 0 100%;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
   }
   .photo-step,
   .viewer-step,
@@ -624,6 +714,61 @@
   }
   .next {
     right: 8px;
+  }
+  .public-crop .photo-step {
+    background: #111d;
+    box-shadow: 0 2px 10px #0007;
+    width: 48px;
+    height: 48px;
+  }
+  .public-crop .previous {
+    left: 16px;
+  }
+  .public-crop .next {
+    right: 16px;
+  }
+  .thumbnail-frame {
+    position: relative;
+  }
+  .detail-thumbnails:global(.is-dragging) {
+    cursor: grabbing;
+    user-select: none;
+  }
+  .thumbnail-step {
+    display: none;
+    position: absolute;
+    inset-block: 0;
+    margin-block: auto;
+    place-items: center;
+    width: 36px;
+    height: 44px;
+    color: white;
+    background: #111d;
+    border: 1px solid #ffffff70;
+    border-radius: var(--radius-btn);
+  }
+  .thumbnail-previous {
+    left: 4px;
+  }
+  .thumbnail-next {
+    right: 4px;
+  }
+  .thumbnail-step:disabled {
+    visibility: hidden;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .thumbnail-step {
+      display: grid;
+    }
+    .public-crop .photo-step {
+      width: 56px;
+      height: 56px;
+      transition: opacity 220ms ease;
+    }
+    .public-crop:not(:hover):not(:focus-within) .photo-step {
+      opacity: 0;
+      pointer-events: none;
+    }
   }
   .viewer-close {
     top: 4px;
@@ -702,7 +847,6 @@
     display: none;
   }
   @media (max-width: 767px) {
-    .public-crop .photo-step,
     .swipe-viewer .viewer-step {
       display: none;
     }
@@ -731,14 +875,9 @@
       background: #fff;
     }
   }
-  @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
-    .public-crop .photo-open img {
-      animation: preview-photo-in 220ms ease-out;
-    }
-    @keyframes preview-photo-in {
-      from {
-        opacity: 0.55;
-      }
+  @media (prefers-reduced-motion: reduce) {
+    .public-crop .photo-step {
+      transition: none;
     }
   }
   .crm-photo-viewer .photo-unavailable {
@@ -746,6 +885,7 @@
   }
   .photo-open:focus-visible,
   .photo-step:focus-visible,
+  .thumbnail-step:focus-visible,
   .crm-photo-viewer button:focus-visible {
     outline: 2px solid var(--color-red);
     outline-offset: 3px;
