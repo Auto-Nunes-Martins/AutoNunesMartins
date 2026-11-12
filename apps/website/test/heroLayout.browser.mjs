@@ -202,16 +202,24 @@ try {
     assert.equal(response.status, 200);
     assert.ok(!html.includes('id="campanhas"'));
     assert.ok(!html.includes('id="selecao-do-stand"'));
+    assert.ok(!/<div[^>]*class="card-promotion(?:\s|")/.test(html));
     for (const width of [1440, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 950 } });
       await page.goto(origin);
       await expect(page.locator('#selecao')).toBeVisible();
       await expect(page.locator('#campanhas')).toHaveCount(0);
       await expect(page.locator('#selecao-do-stand')).toHaveCount(0);
+      await expect(page.locator('.card-promotion')).toHaveCount(0);
+      await expect(page.locator('.card-price').first()).toContainText(/21\s*900/);
+      await page.goto(origin + '/viaturas');
+      await expect(page.locator('.card-promotion')).toHaveCount(0);
+      await expect(page.locator('.card-price').first()).toContainText(/21\s*900/);
       await page.close();
     }
     assert.equal(campaignRequests, 0, 'Production must not load the optional campaign section');
-    console.log('Production campaign section disabled in SSR and hydrated desktop/mobile pages.');
+    console.log(
+      'Production campaign section and card promotion details hidden; selling prices preserved.',
+    );
   }
   if (readingProfile) {
     const page = await browser.newPage({
@@ -312,6 +320,7 @@ try {
       );
       await page.goto(origin);
       const section = page.getByRole('region', { name: /Campanhas/ });
+      await expect(page.locator('.card-promotion').first()).toContainText('Promoção');
       await expect(section.locator('article')).toHaveCount(1);
       await expect(section.locator('article').first()).toContainText(/21\s*900/);
       await expect(section.locator('article').first()).toContainText(/23\s*500/);

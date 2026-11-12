@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dev } from '$app/environment';
   import {
     sizedPhoto,
     vehiclePhotoSet,
@@ -1832,7 +1833,7 @@
         <div class="card-price">
           <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong>
         </div>
-        {#if 'approved' in vehicle && vehicle.promotion}
+        {#if dev && 'approved' in vehicle && vehicle.promotion}
           <div class="card-promotion">
             <span class="card-promotion-label">Promoção</span>
             <PromotionTerms promotion={vehicle.promotion} />
