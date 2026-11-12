@@ -6,6 +6,7 @@ import { isApprovedPhotoPath, type PublicVehicleQuery } from '../domain/publicVe
 import {
   currentCampaign,
   eligibleCampaign,
+  campaignComparisonPrice,
   readCampaigns,
   type SavedCampaign,
 } from './campaignPricing.js';
@@ -90,6 +91,7 @@ export function approvedPaths(row: Pick<PublicRow, 'id' | 'photos'>): string[] {
 
 /** Explicit JSON allowlist, even if a future query accidentally over-selects. */
 export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
+  const referencePrice = campaignComparisonPrice(row.publicPrice, promotion);
   const framing = galleryFramingSchema.safeParse(row.galleryFraming).data ?? {};
   const positions = approvedPaths(row).map((path) => framing[path] ?? null);
   if (
@@ -109,10 +111,11 @@ export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
     fuel: row.fuel,
     mileage: row.mileage,
     price: promotion?.price ?? row.publicPrice?.toFixed(2) ?? null,
-    ...(promotion?.referencePrice
+    ...(promotion?.applied && !referencePrice ? { priceValidUntil: promotion.endsAt } : {}),
+    ...(promotion && referencePrice
       ? {
           promotion: {
-            referencePrice: promotion.referencePrice,
+            referencePrice,
             startsAt: promotion.startsAt,
             endsAt: promotion.endsAt,
           },
@@ -469,7 +472,7 @@ export async function getPublicSelection(db: PrismaClient, ids: string[]) {
   });
 }
 
-export async function listPublicCampaigns(db: PrismaClient) {
+export async function listPublicCampaignVehicles(db: PrismaClient) {
   return db.$transaction(
     async (tx) => {
       const prices = await activePrices(tx, Date.now());

@@ -7,6 +7,7 @@ const mocked = vi.hoisted(() => ({
   download: vi.fn(),
   dimensions: vi.fn(),
   queuePhotos: vi.fn(),
+  campaignBase: vi.fn(),
 }));
 vi.mock('./photoLifecycleStore.js', () => ({
   retainStagedPhotos: vi.fn(async () => ({ adopted: [] })),
@@ -26,6 +27,7 @@ vi.mock('./vehicleService.js', () => ({
 }));
 vi.mock('./webPublicationService.js', () => ({
   applyWebPublication: mocked.publication,
+  assertCampaignBasePrice: mocked.campaignBase,
   WebPublicationError: class extends Error {
     constructor(
       public status: number,
@@ -143,6 +145,20 @@ beforeEach(() => {
   });
 });
 describe('single vehicle edit transaction', () => {
+  it('validates the base even when saving an unpublished draft and rolls back a conflict', async () => {
+    const value = input();
+    value.publication!.published = false;
+    mocked.campaignBase.mockRejectedValueOnce(new Error('O preço base tem de ser superior'));
+    await expect(saveVehicleEdit(id, value, actor)).rejects.toThrow('preço base');
+    expect(mocked.campaignBase).toHaveBeenCalledWith(tx, id, value.publication!.price);
+    expect(row.brand).toBe('Original');
+    expect(mocked.work.mock.calls[0]?.[1]).toEqual({ isolationLevel: 'Serializable' });
+  });
+
+  it('returns a recoverable conflict when concurrent pricing changes abort the transaction', async () => {
+    mocked.work.mockRejectedValueOnce({ code: 'P2034' });
+    await expect(saveVehicleEdit(id, input(), actor)).rejects.toThrow('simultâneo');
+  });
   it('ignores a legacy subset and publishes the complete current list atomically', async () => {
     await saveVehicleEdit(id, input(), actor);
     expect(row.photos).toEqual([a, b]);

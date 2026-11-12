@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma, type PrismaClient } from '@prisma/client';
 vi.mock('../data/storage.js', () => ({
-  signedPhotos: vi.fn(async (paths: string[]) => paths.map((path) => ({ path, url: 'signed:' + path }))),
+  signedPhotos: vi.fn(async (paths: string[]) =>
+    paths.map((path) => ({ path, url: 'signed:' + path })),
+  ),
   signedThumbnails: vi.fn(async (paths: string[]) => ({
     thumbnails: new Map(paths.map((path) => [path, 'thumbnail:' + path])),
     originals: new Map(paths.map((path) => [path, 'signed:' + path])),
@@ -56,7 +58,9 @@ const db = {
   appSetting: {
     ...mock.appSetting,
     findUnique: (args: { where: { key: string } }) =>
-      args.where.key === 'publicVehicleCampaigns' ? Promise.resolve(null) : mock.appSetting.findUnique(args),
+      args.where.key === 'publicVehicleCampaigns'
+        ? Promise.resolve(null)
+        : mock.appSetting.findUnique(args),
   },
 } as unknown as PrismaClient;
 beforeEach(() => {
@@ -68,23 +72,28 @@ beforeEach(() => {
   mock.$transaction.mockImplementation((fn) => fn(mock));
 });
 describe('homepage editorial selection', () => {
-  it('returns the public gallery cover crop for the candidate thumbnail', async () => {
-    const coverFraming = { desktop: { x: 22, y: 63 }, mobile: { x: 71, y: 29 } };
-    const otherFraming = { desktop: { x: 15, y: 90 }, mobile: { x: 42, y: 70 } };
-    mock.vehicle.findMany.mockResolvedValue([
-      {
-        ...fixture(),
-        galleryFraming: {
-          [photo]: { ...coverFraming, card: otherFraming },
-          [otherPhoto]: otherFraming,
-        },
-      },
-    ]);
-    const editor = await readHighlightsEditor(db);
-    expect(editor.candidates[0]).toMatchObject({ photoPaths: [photo, otherPhoto], coverFraming });
-    expect(editor.candidates[0]?.coverFraming).toEqual(coverFraming);
-    expect(editor.items[0]?.photoPath).toBe(otherPhoto);
-  });
+  const legacy = { desktop: { x: 22, y: 63 }, mobile: { x: 71, y: 29 } };
+  const card = { desktop: { x: 15, y: 90 }, mobile: { x: 42, y: 70 } };
+  it.each([
+    ['configured', { ...legacy, card }, card],
+    ['legacy', legacy, legacy],
+    ['reset', { ...legacy, card: null }, undefined],
+  ])(
+    'returns the %s card crop for the same principal photo in both catalogues',
+    async (_kind, saved, expected) => {
+      const vehicle = { ...fixture(), galleryFraming: { [photo]: saved, [otherPhoto]: card } };
+      mock.vehicle.findMany.mockResolvedValue([vehicle]);
+      mock.vehicle.findFirst.mockResolvedValue(vehicle);
+      const editor = await readHighlightsEditor(db);
+      expect(editor.candidates[0]?.photoPaths).toEqual([photo, otherPhoto]);
+      expect(editor.candidates[0]?.coverFraming).toEqual(expected);
+      expect(editor.items[0]?.photoPath).toBe(otherPhoto);
+      const gallery = await readHighlightGallery(db, id);
+      expect(gallery?.map(({ path }) => path)).toEqual([photo, otherPhoto]);
+      expect(gallery?.[0]?.coverFraming).toEqual(expected);
+      expect(gallery?.[1]?.coverFraming).toBeUndefined();
+    },
+  );
 
   it('validates and carries a highlight crop separately from gallery framing without private paths', async () => {
     const framing = { desktop: { x: 50, y: 80 }, mobile: { x: 50, y: 65 } };
@@ -247,6 +256,10 @@ describe('homepage editorial selection', () => {
     expect(await readHighlightGallery(db, id)).toHaveLength(2);
     expect(signedPhotos).toHaveBeenCalledTimes(1);
     expect(signedPhotos).toHaveBeenCalledWith([photo, otherPhoto]);
-    expect(mock.vehicle.findFirst.mock.calls[0]?.[0].where).toMatchObject({ id, webPublished: true, sale: { is: null } });
+    expect(mock.vehicle.findFirst.mock.calls[0]?.[0].where).toMatchObject({
+      id,
+      webPublished: true,
+      sale: { is: null },
+    });
   });
 });

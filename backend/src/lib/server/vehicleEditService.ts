@@ -14,7 +14,7 @@ import {
   VehicleStateConflict,
   type ActorContext,
 } from './vehicleService.js';
-import { applyWebPublication } from './webPublicationService.js';
+import { applyWebPublication, assertCampaignBasePrice } from './webPublicationService.js';
 import { isApprovedPhotoPath, SLUG_SUFFIX_LENGTHS } from '../domain/publicVehicle.js';
 import { getBucketName, getSupabase } from '../data/storage.js';
 import sharp from 'sharp';
@@ -110,96 +110,105 @@ export async function saveVehicleEdit(
   await preparePhotoDimensions(prisma, id, input.photos);
   for (const suffixLength of SLUG_SUFFIX_LENGTHS) {
     try {
-      return await saleMutation(async (tx) => {
-        await lockVehicle(tx, id);
-        const current = await tx.vehicle.findUnique({
-          where: { id },
-          select: { updatedAt: true, photos: true, webPublished: true, galleryFraming: true },
-        });
-        if (!current) throw new VehicleNotFound(id);
-        if (current.updatedAt.toISOString() !== input.expectedUpdatedAt)
-          throw new VehicleStateConflict(
-            'A viatura foi alterada entretanto. O rascunho foi mantido; atualize a ficha e reveja as alterações antes de guardar.',
-          );
-        if (
-          input.photos.some(
-            (path) => !current.photos.includes(path) && !input.uploadedPhotos.includes(path),
+      return await saleMutation(
+        async (tx) => {
+          await lockVehicle(tx, id);
+          const current = await tx.vehicle.findUnique({
+            where: { id },
+            select: { updatedAt: true, photos: true, webPublished: true, galleryFraming: true },
+          });
+          if (!current) throw new VehicleNotFound(id);
+          if (current.updatedAt.toISOString() !== input.expectedUpdatedAt)
+            throw new VehicleStateConflict(
+              'A viatura foi alterada entretanto. O rascunho foi mantido; atualize a ficha e reveja as alterações antes de guardar.',
+            );
+          if (
+            input.photos.some(
+              (path) => !current.photos.includes(path) && !input.uploadedPhotos.includes(path),
+            )
           )
-        )
-          throw new VehicleStateConflict(
-            'Uma fotografia já não pertence a esta viatura. Reveja as fotografias.',
-            409,
-            'photos',
-          );
-        await assertStagedPhotos(tx, id, input.uploadedPhotos);
-        await updateVehicleInTransaction(tx, id, input.data, actor);
-        if (
-          input.galleryFraming &&
-          Object.keys(input.galleryFraming).some((path) => !input.photos.includes(path))
-        )
-          throw new VehicleStateConflict(
-            'Enquadramento de uma fotografia inválida.',
-            409,
-            'photos',
-          );
-        await tx.vehicle.update({
-          where: { id },
-          data: {
-            ...(input.galleryFraming
-              ? {
-                  galleryFraming: Object.fromEntries(
-                    input.photos.flatMap((path) => {
-                      const existing = galleryFramingSchema.safeParse(current.galleryFraming)
-                        .data?.[path];
-                      const value = mergeGalleryPhotoFraming(
-                        existing,
-                        input.galleryFraming?.[path],
-                      );
-                      return value ? [[path, value]] : [];
-                    }),
-                  ),
-                }
-              : {}),
-            photos: { set: input.photos },
-            publicPhotoPaths: {
-              set: input.photos,
-            },
-          },
-        });
-        if (input.publication) {
-          const publication = input.publication;
-          await applyWebPublication(
-            tx,
-            id,
-            publication.published
-              ? { ...publication, photoPaths: input.photos, published: true }
-              : { published: false },
-            actor.actorId,
-            suffixLength,
-          );
-          if (!publication.published)
-            await tx.vehicle.update({
-              where: { id },
-              data: {
-                publicPrice: publication.price,
-                publicDescription: publication.description,
-                publicPhotoPaths: input.photos,
-                publicTransmission: publication.transmission,
-                publicSpecifications: publication.specifications,
+            throw new VehicleStateConflict(
+              'Uma fotografia já não pertence a esta viatura. Reveja as fotografias.',
+              409,
+              'photos',
+            );
+          await assertStagedPhotos(tx, id, input.uploadedPhotos);
+          await updateVehicleInTransaction(tx, id, input.data, actor);
+          if (
+            input.galleryFraming &&
+            Object.keys(input.galleryFraming).some((path) => !input.photos.includes(path))
+          )
+            throw new VehicleStateConflict(
+              'Enquadramento de uma fotografia inválida.',
+              409,
+              'photos',
+            );
+          await tx.vehicle.update({
+            where: { id },
+            data: {
+              ...(input.galleryFraming
+                ? {
+                    galleryFraming: Object.fromEntries(
+                      input.photos.flatMap((path) => {
+                        const existing = galleryFramingSchema.safeParse(current.galleryFraming)
+                          .data?.[path];
+                        const value = mergeGalleryPhotoFraming(
+                          existing,
+                          input.galleryFraming?.[path],
+                        );
+                        return value ? [[path, value]] : [];
+                      }),
+                    ),
+                  }
+                : {}),
+              photos: { set: input.photos },
+              publicPhotoPaths: {
+                set: input.photos,
               },
-            });
-        }
-        await tx.vehicle.update({
-          where: { id },
-          data: { updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)) },
-        });
-        const removedPhotos = current.photos.filter((path) => !input.photos.includes(path));
-        await forgetAttachedPhotos(tx, input.uploadedPhotos);
-        await queuePhotoRemovals(tx, id, removedPhotos);
-        return { removedPhotos };
-      });
+            },
+          });
+          if (input.publication) {
+            const publication = input.publication;
+            await applyWebPublication(
+              tx,
+              id,
+              publication.published
+                ? { ...publication, photoPaths: input.photos, published: true }
+                : { published: false },
+              actor.actorId,
+              suffixLength,
+            );
+            if (!publication.published) {
+              await assertCampaignBasePrice(tx, id, publication.price);
+              await tx.vehicle.update({
+                where: { id },
+                data: {
+                  publicPrice: publication.price,
+                  publicDescription: publication.description,
+                  publicPhotoPaths: input.photos,
+                  publicTransmission: publication.transmission,
+                  publicSpecifications: publication.specifications,
+                },
+              });
+            }
+          }
+          await tx.vehicle.update({
+            where: { id },
+            data: { updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)) },
+          });
+          const removedPhotos = current.photos.filter((path) => !input.photos.includes(path));
+          await forgetAttachedPhotos(tx, input.uploadedPhotos);
+          await queuePhotoRemovals(tx, id, removedPhotos);
+          return { removedPhotos };
+        },
+        { isolationLevel: 'Serializable' },
+      );
     } catch (error) {
       const conflict = error as { code?: string; meta?: { target?: unknown } };
+      if (conflict.code === 'P2034')
+        throw new VehicleStateConflict(
+          'A viatura ou a campanha foi alterada em simultâneo. Reveja os valores e volte a guardar.',
+        );
       if (conflict.code === 'P2002' && JSON.stringify(conflict.meta?.target).includes('publicSlug'))
         continue;
       throw error;

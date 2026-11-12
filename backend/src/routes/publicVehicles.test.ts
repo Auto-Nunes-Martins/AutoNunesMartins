@@ -276,39 +276,90 @@ describe('public query validation and search boundary', () => {
 });
 
 describe('public HTTP responses never disclose private inventory', () => {
-  it('uses the same promotion in campaigns, detail, selection, price filters and sorting', async () => {
-    const campaign = {
-      vehicleId: id, price: '17900.00', referencePrice: '20900.00', evidence: 'PRIVATE-REFERENCE',
-      durationDays: 7, startsAt: new Date(Date.now() - 60_000).toISOString(),
-      endsAt: new Date(Date.now() + 86_400_000).toISOString(),
-    };
-    mocks.db.appSetting.findUnique.mockResolvedValue({ value: {
-      revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225', items: [campaign],
-    } });
-    const other = { ...fixture(), id: 'clabcdefghijklmnopqrstuvx', publicSlug: slug + 'a', publicPrice: new Prisma.Decimal('18900.00') };
-    mocks.db.vehicle.findMany.mockImplementation(async ({ where }) => where.id?.notIn ? [other] : [fixture()]);
-    const read = async (suffix: string) => {
-      const response = await fetch(`${base}/api/public/vehicles${suffix}`);
-      expect(response.status).toBe(200);
-      const result = await response.json();
-      expect(JSON.stringify(result)).not.toContain(campaign.evidence);
-      return result;
-    };
-    const promotion = { referencePrice: campaign.referencePrice, startsAt: campaign.startsAt, endsAt: campaign.endsAt };
-    const discounted = { price: campaign.price, promotion };
-    expect(await read('/' + slug)).toMatchObject(discounted);
-    expect((await read('/campaigns')).items).toMatchObject([discounted]);
-    expect((await read('/selection?id=' + slug)).items[0].vehicle).toMatchObject(discounted);
-    const catalog = await read('?ordem=preco_asc&preco_max=19000');
-    expect(catalog.items.map((item: { price: string }) => item.price)).toEqual(['17900.00', '18900.00']);
-    expect(catalog.facets.price.min).toBe('17900.00');
-    expect(mocks.db.vehicle.count).toHaveBeenLastCalledWith({
-      where: expect.objectContaining({ AND: [{ OR: [
-        { id: { notIn: [id] }, publicPrice: { gt: 0, gte: undefined, lte: 19000 } },
-        { id: { in: [id] } },
-      ] }] }),
-    });
-  });
+  it.each([false, true])(
+    'uses the effective price everywhere (ordinary price: %s)',
+    async (ordinary) => {
+      const campaign = {
+        vehicleId: id,
+        price: '17900.00',
+        referencePrice: ordinary ? null : '20900.00',
+        evidence: 'PRIVATE-REFERENCE',
+        ...(ordinary ? { applied: true } : {}),
+        durationDays: 7,
+        startsAt: new Date(Date.now() - 60_000).toISOString(),
+        endsAt: new Date(Date.now() + 86_400_000).toISOString(),
+      };
+      mocks.db.appSetting.findUnique.mockResolvedValue({
+        value: {
+          revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225',
+          items: [campaign],
+        },
+      });
+      const other = {
+        ...fixture(),
+        id: 'clabcdefghijklmnopqrstuvx',
+        publicSlug: slug + 'a',
+        publicPrice: new Prisma.Decimal('18900.00'),
+      };
+      mocks.db.vehicle.findMany.mockImplementation(async ({ where }) =>
+        where.id?.notIn ? [other] : [fixture()],
+      );
+      const read = async (suffix: string) => {
+        const response = await fetch(`${base}/api/public/vehicles${suffix}`);
+        expect(response.status).toBe(200);
+        const result = await response.json();
+        expect(JSON.stringify(result)).not.toContain(campaign.evidence);
+        return result;
+      };
+      const promotion = {
+        referencePrice: fixture().publicPrice.toFixed(2),
+        startsAt: campaign.startsAt,
+        endsAt: campaign.endsAt,
+      };
+      const effective = { price: campaign.price, promotion };
+      const detail = await read('/' + slug);
+      expect(detail).toMatchObject(effective);
+      const { items: advertised, selection } = await read('/campaigns');
+      const selected = (await read('/selection?id=' + slug)).items[0].vehicle;
+      expect(selected).toMatchObject(effective);
+      const catalog = await read('?ordem=preco_asc&preco_max=19000');
+      expect(catalog.items.map((item: { price: string }) => item.price)).toEqual([
+        '17900.00',
+        '18900.00',
+      ]);
+      expect(catalog.facets.price.min).toBe('17900.00');
+      expect(advertised).toMatchObject([effective]);
+      expect(selection).toEqual([]);
+      for (const vehicle of [detail, selected, catalog.items[0], advertised[0]]) {
+        expect(vehicle.promotion.referencePrice).toBe(fixture().publicPrice.toFixed(2));
+        expect(vehicle).not.toHaveProperty('priceValidUntil');
+      }
+      expect(mocks.db.vehicle.count).toHaveBeenLastCalledWith({
+        where: expect.objectContaining({
+          AND: [
+            {
+              OR: [
+                { id: { notIn: [id] }, publicPrice: { gt: 0, gte: undefined, lte: 19000 } },
+                { id: { in: [id] } },
+              ],
+            },
+          ],
+        }),
+      });
+      if (ordinary) {
+        mocks.db.appSetting.findUnique.mockResolvedValue({
+          value: {
+            revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225',
+            items: [{ ...campaign, endsAt: new Date(Date.now() - 1).toISOString() }],
+          },
+        });
+        expect((await read('/' + slug)).price).toBe(fixture().publicPrice.toFixed(2));
+        expect((await read('/campaigns')).selection).toEqual([]);
+        mocks.db.appSetting.findUnique.mockResolvedValue(null);
+        expect((await read('/' + slug)).price).toBe(fixture().publicPrice.toFixed(2));
+      }
+    },
+  );
 
   it('returns all available public brands without pagination or reserved/sold/private stock', async () => {
     mocks.db.vehicle.groupBy.mockResolvedValue([

@@ -9,5 +9,6 @@
   homeHighlights={data.highlights}
   stock={data.stock}
   reviews={data.reviews}
-  campaigns={data.campaigns}
+  campaigns={data.campaigns.items}
+  standSelection={data.campaigns.selection}
 />

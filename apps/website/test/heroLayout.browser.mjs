@@ -18,6 +18,7 @@ const streaming = process.argv.includes('--stream');
 const interactions = process.argv.includes('--interactions');
 const readingProfile = process.argv.includes('--reading-profile');
 const campaignPreview = process.argv.includes('--campaign-preview');
+const productionCampaignCheck = process.argv.includes('--production-campaigns');
 const output = path.join(
   site,
   '.svelte-kit',
@@ -66,18 +67,25 @@ const vehicles = (
     `/api/public/vehicles/hero-check-${String(n).padStart(12, 'a')}/photos/0?v=${String(n + 1).repeat(64)}`,
   ],
 }));
-let showCampaigns = campaignPreview;
-const promoted = vehicles.map((vehicle, index) => ({
-  ...vehicle,
-  price: index ? '19900.00' : '21900.00',
-  promotion: {
-    referencePrice: index ? '21500.00' : '23500.00',
-    startsAt: '2026-11-11T09:00:00.000Z',
-    endsAt: '2026-11-18T09:00:00.000Z',
+let showCampaigns = campaignPreview || productionCampaignCheck;
+let campaignRequests = 0;
+const promoted = [
+  {
+    ...vehicles[0],
+    price: '21900.00',
+    promotion: {
+      referencePrice: '23500.00',
+      startsAt: '2026-11-11T09:00:00.000Z',
+      endsAt: '2026-11-18T09:00:00.000Z',
+    },
   },
-}));
+];
+const selected = { ...vehicles[1], price: '19900.00', priceValidUntil: '2026-11-18T23:59:00.000Z' };
+let selectionCount = 1;
+let campaignCount = 1;
 const backend = createServer((request, response) => {
   const url = new URL(request.url, 'http://fixture');
+  if (url.pathname.endsWith('/campaigns')) campaignRequests++;
   if (url.pathname.includes('/photos/')) {
     response.setHeader('content-type', 'image/png');
     const second = url.pathname.includes('hero-check-aaaaaaaaaaa1');
@@ -86,10 +94,36 @@ const backend = createServer((request, response) => {
     return;
   }
   let data;
-  const inventory = showCampaigns ? promoted : vehicles;
+  const inventory = showCampaigns ? [...promoted, selected] : vehicles;
   if (url.pathname.endsWith('/homepage-highlights'))
     data = { configured: true, items: inventory.map((vehicle) => ({ vehicle, photoIndex: 0 })) };
-  else if (url.pathname.endsWith('/campaigns')) data = { items: showCampaigns ? promoted : [] };
+  else if (url.pathname.endsWith('/campaigns'))
+    data = showCampaigns
+      ? {
+          items: Array.from({ length: campaignCount }, (_, index) => {
+            const slug = 'hero-check-' + String(index + 8).padStart(12, 'a');
+            if (!index) return promoted[0];
+            return {
+              ...promoted[0],
+              slug,
+              brand: ['BMW', 'MINI', 'Volkswagen', 'Audi'][index],
+              model: ['Série 3 Touring', 'Countryman Cooper D', 'Golf 1.6 TDI', 'A3 Sportback'][
+                index
+              ],
+              photos: promoted[0].photos.map((photo) => photo.replace(promoted[0].slug, slug)),
+            };
+          }),
+          selection: Array.from({ length: selectionCount }, (_, index) => {
+            if (!index) return selected;
+            const slug = 'hero-check-' + String(index + 2).padStart(12, 'a');
+            return {
+              ...selected,
+              slug,
+              photos: selected.photos.map((photo) => photo.replace(selected.slug, slug)),
+            };
+          }),
+        }
+      : { items: [], selection: [] };
   else if (url.pathname.endsWith('/brands')) data = [];
   else if (url.pathname.endsWith('/reviews')) data = { items: [] };
   else if (url.pathname.endsWith('/related')) data = [];
@@ -124,19 +158,25 @@ await new Promise((resolve) => reserve.listen(0, '127.0.0.1', resolve));
 const port = reserve.address().port;
 await new Promise((resolve) => reserve.close(resolve));
 const origin = `http://127.0.0.1:${port}`;
-const server = spawn(process.execPath, ['build/index.js'], {
-  cwd: site,
-  env: {
-    ...process.env,
-    HOST: '127.0.0.1',
-    PORT: String(port),
-    ORIGIN: origin,
-    PUBLIC_BACKEND_URL: api,
-    INTERNAL_BACKEND_URL: api,
+const server = spawn(
+  process.execPath,
+  campaignPreview
+    ? ['../../node_modules/vite/bin/vite.js', 'dev', '--host', '127.0.0.1', '--port', String(port)]
+    : ['build/index.js'],
+  {
+    cwd: site,
+    env: {
+      ...process.env,
+      HOST: '127.0.0.1',
+      PORT: String(port),
+      ORIGIN: origin,
+      PUBLIC_BACKEND_URL: api,
+      INTERNAL_BACKEND_URL: api,
+    },
+    stdio: 'pipe',
+    windowsHide: true,
   },
-  stdio: 'pipe',
-  windowsHide: true,
-});
+);
 let logs = '';
 server.stdout.on('data', (data) => (logs += data));
 server.stderr.on('data', (data) => (logs += data));
@@ -156,6 +196,23 @@ try {
   browser = process.argv.includes('--webkit')
     ? await webkit.launch()
     : await chromium.launch({ channel: process.env.BROWSER_CHANNEL || 'chrome', headless: true });
+  if (productionCampaignCheck) {
+    const response = await fetch(origin);
+    const html = await response.text();
+    assert.equal(response.status, 200);
+    assert.ok(!html.includes('id="campanhas"'));
+    assert.ok(!html.includes('id="selecao-do-stand"'));
+    for (const width of [1440, 390]) {
+      const page = await browser.newPage({ viewport: { width, height: 950 } });
+      await page.goto(origin);
+      await expect(page.locator('#selecao')).toBeVisible();
+      await expect(page.locator('#campanhas')).toHaveCount(0);
+      await expect(page.locator('#selecao-do-stand')).toHaveCount(0);
+      await page.close();
+    }
+    assert.equal(campaignRequests, 0, 'Production must not load the optional campaign section');
+    console.log('Production campaign section disabled in SSR and hydrated desktop/mobile pages.');
+  }
   if (readingProfile) {
     const page = await browser.newPage({
       viewport: { width: 390, height: 844 },
@@ -241,7 +298,9 @@ try {
     else await publicMotionCheck(browser, origin, vehicles[0].slug);
   }
   if (campaignPreview) {
-    for (const width of [1440, 390]) {
+    for (const width of [1440, 1024, 768, 390, 320]) {
+      selectionCount = 1;
+      campaignCount = 1;
       const page = await browser.newPage({
         viewport: { width, height: 950 },
         isMobile: width < 700,
@@ -253,12 +312,24 @@ try {
       );
       await page.goto(origin);
       const section = page.getByRole('region', { name: /Campanhas/ });
-      await expect(section.locator('article')).toHaveCount(2);
+      await expect(section.locator('article')).toHaveCount(1);
       await expect(section.locator('article').first()).toContainText(/21\s*900/);
       await expect(section.locator('article').first()).toContainText(/23\s*500/);
-      await expect(section.locator('time')).toHaveCount(4);
+      await expect(section.locator('time')).toHaveCount(1);
+      await expect(section.getByText(selected.model)).toHaveCount(0);
+      const selection = page.getByRole('region', { name: 'Seleção do stand' });
+      await expect(selection.locator('article')).toHaveCount(1);
+      await expect(selection.locator('article a')).toHaveAttribute(
+        'href',
+        '/viaturas/' + selected.slug,
+      );
+      await expect(selection.locator('article a')).toContainText(/19\s*900/);
+      await expect(selection.locator('time')).toHaveAttribute('datetime', selected.priceValidUntil);
+      await expect(section.locator('.reduction')).toContainText('6,8%');
+      await expect(selection.locator('.promotion-terms')).toHaveCount(0);
+      await expect(selection).not.toContainText(/promoção|desconto|sale/i);
       assert.ok(
-        await section.evaluate(
+        await selection.evaluate(
           (node) =>
             !!(
               node.compareDocumentPosition(document.querySelector('#selecao')) &
@@ -272,9 +343,34 @@ try {
       const screenshot = path.join(output, `campanhas-site-${width}.png`);
       await section.screenshot({ path: screenshot, animations: 'disabled' });
       console.log(screenshot);
+      await selection.screenshot({
+        path: path.join(output, `selecao-site-${width}.png`),
+        animations: 'disabled',
+      });
       await page.goto(origin + '/viaturas/' + promoted[0].slug);
       await expect(page.locator('.purchase-price')).toContainText(/21\s*900/);
       await expect(page.locator('.purchase .promotion-terms')).toContainText(/23\s*500/);
+      await page.goto(origin + '/viaturas/' + selected.slug);
+      await expect(page.locator('.purchase-price')).toContainText(/19\s*900/);
+      await expect(page.locator('.purchase .promotion-terms')).toHaveCount(0);
+      for (const count of [2, 3, 4]) {
+        selectionCount = count;
+        campaignCount = count;
+        await page.goto(origin);
+        await expect(selection.locator('article')).toHaveCount(count);
+        await expect(section.locator('article')).toHaveCount(count);
+        await expect(section.locator('s').first()).toContainText(/23\s*500/);
+        await section.scrollIntoViewIfNeeded();
+        await section.screenshot({
+          path: path.join(output, 'campanhas-' + count + '-' + width + '.png'),
+          animations: 'disabled',
+        });
+        if (width < 700) {
+          await section.locator('article').last().scrollIntoViewIfNeeded();
+          await expect(section.locator('article').last()).toBeInViewport();
+        }
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      }
       await page.close();
     }
     showCampaigns = false;
@@ -284,12 +380,13 @@ try {
     );
     await page.goto(origin);
     await expect(page.getByRole('region', { name: /Campanhas/ })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Seleção do stand' })).toHaveCount(0);
     await page.close();
     console.log('Campaign section passed at 1440px and 390px, including the empty state.');
   }
   if (streaming) progressive = await progressiveHero(origin);
   const profiles =
-    interactions || readingProfile || campaignPreview
+    interactions || readingProfile || campaignPreview || productionCampaignCheck
       ? []
       : streaming
         ? [

@@ -155,7 +155,9 @@
       !vehicle.soldDate,
   );
   const ready = $derived(
-    eligible && (!price || Number(normalizeDecimal(price)) > 0) && descriptionText(description).length > 0,
+    eligible &&
+      (!price || Number(normalizeDecimal(price)) > 0) &&
+      descriptionText(description).length > 0,
   );
   function savedPublicationDraft() {
     if (creation && recoveredDraft) {
@@ -473,7 +475,8 @@
             </p>{/if}
           <p class="note">
             Visível no website. Não inclua notas internas, matrícula, VIN ou dados pessoais. O preço
-            público é independente do interno.
+            público é o preço base das campanhas e é independente do interno. Durante uma campanha,
+            tem de ser superior ao preço de desconto.
           </p>
           {#if !managePhotos}<fieldset>
               <legend>Fotografias da viatura</legend>
@@ -516,9 +519,13 @@
                   >Pré-visualização · só muda no site depois de guardar</span
                 >
                 <h3>{vehicle.brand} {vehicle.model}</h3>
-                <p>{vehicle.year}{vehicle.mileage == null ? '' : ` · ${formatKm(vehicle.mileage)}`}</p>
+                <p>
+                  {vehicle.year}{vehicle.mileage == null ? '' : ` · ${formatKm(vehicle.mileage)}`}
+                </p>
                 <strong
-                  >{price && Number(normalizeDecimal(price)) > 0 ? formatEUR(normalizeDecimal(price)) : 'Preço sob consulta'}</strong
+                  >{price && Number(normalizeDecimal(price)) > 0
+                    ? formatEUR(normalizeDecimal(price))
+                    : 'Preço sob consulta'}</strong
                 >
                 <div class="preview-description"><RichDescription value={description} /></div>
               </div>

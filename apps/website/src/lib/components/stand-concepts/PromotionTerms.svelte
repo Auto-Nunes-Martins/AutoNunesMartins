@@ -13,7 +13,7 @@
 </script>
 
 <div class="promotion-terms">
-  <span>Preço mais baixo anterior <s>{publicPrice(promotion.referencePrice)}</s></span>
+  <span>Preço base <s>{publicPrice(promotion.referencePrice)}</s></span>
   <span
     >De <time datetime={promotion.startsAt}>{dateTime.format(new Date(promotion.startsAt))}</time>
     a <time datetime={promotion.endsAt}>{dateTime.format(new Date(promotion.endsAt))}</time></span

@@ -15,7 +15,9 @@ const inputItem = z
     recheck: z.boolean().optional(),
   })
   .strict();
-const savedItem = inputItem.omit({ recheck: true }).extend({
+const newItem = inputItem.omit({ recheck: true });
+const savedItem = newItem.extend({
+  applied: z.literal(true).optional(),
   referencePrice: money.nullable(),
   evidence: z.string().optional(),
   startsAt: z.string().datetime(),
@@ -30,14 +32,20 @@ export const campaignInput = z
       .refine((items) => new Set(items.map((item) => item.vehicleId)).size === items.length),
   })
   .strict();
+export const campaignAddition = z
+  .object({
+    revision: z.string().uuid().nullable(),
+    item: newItem,
+  })
+  .strict();
 const storedCampaigns = z.object({
   revision: z.string().uuid(),
   items: z.array(savedItem).max(4),
-  recent: z
-    .array(z.object({ vehicleId: z.string(), price: money, endedAt: z.string().datetime() }))
-    .default([]),
+  // Old history is opaque compatibility data; it cannot affect current campaigns.
+  recent: z.unknown().default([]),
 });
 export type CampaignInput = z.infer<typeof campaignInput>;
+export type CampaignAddition = z.infer<typeof campaignAddition>;
 export type SavedCampaign = z.infer<typeof savedItem>;
 
 export function parseCampaigns(value: unknown) {
@@ -59,18 +67,27 @@ export function currentCampaign(item: SavedCampaign, now: number) {
   return Date.parse(item.startsAt) <= now && now < Date.parse(item.endsAt);
 }
 
+export function appliedCampaign(item: SavedCampaign) {
+  return item.applied === true || item.referencePrice !== null;
+}
+
 export function eligibleCampaign(
   row: { id: string; status: string; publicPrice: Prisma.Decimal | null },
   items: SavedCampaign[],
   now: number,
-): (SavedCampaign & { referencePrice: string }) | undefined {
+): SavedCampaign | undefined {
   if (row.status !== 'AVAILABLE' || !row.publicPrice?.gt(0)) return undefined;
   return items.find(
-    (item): item is SavedCampaign & { referencePrice: string } =>
+    (item) =>
       item.vehicleId === row.id &&
-      item.referencePrice !== null &&
+      appliedCampaign(item) &&
       currentCampaign(item, now) &&
-      row.publicPrice!.gte(item.referencePrice) &&
-      Number(item.price) < Number(item.referencePrice),
+      row.publicPrice!.gt(item.price),
   );
+}
+
+export function campaignComparisonPrice(base: Prisma.Decimal | null, item?: SavedCampaign) {
+  // The API keeps its existing field name, but always compares with today's base price.
+  // Legacy reference prices and campaign history never participate in pricing.
+  return item && base?.gt(item.price) ? base.toFixed(2) : null;
 }

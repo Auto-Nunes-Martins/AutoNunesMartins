@@ -13,8 +13,9 @@ export async function lockVehicle(tx: Prisma.TransactionClient, vehicleId: strin
 /** Clear dependent views after commit, so an in-flight read cannot refill stale caches. */
 export async function saleMutation<T>(
   work: (tx: Prisma.TransactionClient) => Promise<T>,
+  options?: { isolationLevel: Prisma.TransactionIsolationLevel },
 ): Promise<T> {
-  const result = await prisma.$transaction(work);
+  const result = await prisma.$transaction(work, options);
   cache.clearPrefix('dashboard:');
   cache.clearPrefix('notifications:');
   cache.clearPrefix('search:');

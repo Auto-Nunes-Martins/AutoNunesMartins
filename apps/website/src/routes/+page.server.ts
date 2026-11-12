@@ -1,4 +1,5 @@
 import type { PageServerLoad } from './$types';
+import { dev } from '$app/environment';
 import { loadPublicBrands } from '$lib/server/publicBrands';
 import { loadHomepageHighlights } from '$lib/server/homepageHighlights';
 import type { PublicHighlights } from '$lib/homepageHighlights';
@@ -13,7 +14,8 @@ export const load: PageServerLoad = async ({ setHeaders }) => {
     loadPublicBrands(),
     loadPublicStock(new URLSearchParams({ pageSize: '30' })),
     loadReviews(),
-    loadPublicCampaigns(),
+    // Keep the campaign section local until its public release is approved.
+    dev ? loadPublicCampaigns() : { items: [], selection: [] },
   ]);
   // Keep the server-rendered card and photo preload when the data is already available.
   return { brandDirectory, highlights: readyHighlights ?? highlights, stock, reviews, campaigns };

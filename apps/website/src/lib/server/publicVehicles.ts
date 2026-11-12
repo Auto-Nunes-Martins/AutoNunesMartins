@@ -75,11 +75,18 @@ export async function loadRelatedVehicles(slug: string) {
 export async function loadPublicCampaigns() {
   try {
     const response = await publicRequest('/campaigns');
-    if (!response.ok) return [];
-    const body = await response.json();
-    return publicVehicleSchema.array().max(4).parse(body.items)
-      .filter((vehicle) => vehicle.availability === 'AVAILABLE' && vehicle.promotion);
+    if (response.ok) {
+      const body = await response.json();
+      const vehicles = publicVehicleSchema.array().max(4);
+      return {
+        items: vehicles.parse(body.items)
+          .filter((vehicle) => vehicle.availability === 'AVAILABLE' && vehicle.promotion),
+        selection: vehicles.parse(body.selection ?? [])
+          .filter((vehicle) => vehicle.availability === 'AVAILABLE' && !vehicle.promotion),
+      };
+    }
   } catch {
-    return [];
+    // Campaigns are optional on the homepage.
   }
+  return { items: [], selection: [] };
 }

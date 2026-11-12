@@ -23,6 +23,7 @@ export const publicVehicleSchema = z
     fuel: z.enum(['GASOLINE', 'DIESEL', 'HYBRID', 'PLUGIN_HYBRID', 'ELECTRIC', 'LPG']),
     mileage: z.number().int().nonnegative().nullable(),
     price: money.refine((v) => Number(v) > 0).nullable(),
+    priceValidUntil: z.string().datetime().optional(),
     promotion: z
       .object({
         referencePrice: money,

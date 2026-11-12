@@ -5,6 +5,7 @@
   interface Props {
     icon: IconComponent;
     title: string;
+    focusTarget?: string;
     meta?: string;
     actions?: Snippet;
     /** Override the icon color (e.g. "text-[#e6b800]" for the trophy). Defaults to text. */
@@ -15,6 +16,7 @@
   let {
     icon: Icon,
     title,
+    focusTarget,
     meta,
     actions,
     iconClass = 'text-[var(--color-text)]',
@@ -30,6 +32,8 @@
     <Icon class="h-[18px] w-[18px] {iconClass} flex-shrink-0" />
     <div class="h-[18px] w-[1.5px] bg-[var(--color-red)] flex-shrink-0"></div>
     <h3
+      id={focusTarget}
+      tabindex={focusTarget ? -1 : undefined}
       class="font-display text-[18px] font-bold italic uppercase tracking-[-0.01em] leading-none text-[var(--color-text)] truncate"
     >
       {title}
@@ -48,6 +52,12 @@
 </div>
 
 <style>
+  h3[tabindex] {
+    scroll-margin-block: 82px;
+  }
+  h3[tabindex]:focus-visible {
+    outline-offset: 3px;
+  }
   .dashboard-header {
     padding: 18px 20px;
     align-items: center;

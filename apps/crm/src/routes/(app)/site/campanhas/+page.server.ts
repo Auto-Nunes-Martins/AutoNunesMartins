@@ -8,6 +8,7 @@ interface CampaignEditor {
     vehicleId: string;
     price: string;
     referencePrice: string | null;
+    applied?: true;
     durationDays: number;
     startsAt: string;
     endsAt: string;
@@ -19,7 +20,6 @@ interface CampaignEditor {
     year: number;
     licensePlate: string | null;
     price: string;
-    referencePrice: string | null;
   }[];
 }
 
@@ -36,8 +36,12 @@ export const load: PageServerLoad = async (event) => {
 export const actions: Actions = {
   default: async (event) => {
     let input: unknown;
+    let adding: boolean;
     try {
-      const raw = (await event.request.formData()).get('campaigns');
+      const fields = await event.request.formData();
+      adding = fields.has('addition');
+      if (adding && fields.has('campaigns')) return fail(400, { error: 'Campanhas inválidas.' });
+      const raw = fields.get(adding ? 'addition' : 'campaigns');
       if (typeof raw !== 'string' || raw.length > 5000)
         return fail(400, { error: 'Campanhas inválidas.' });
       input = JSON.parse(raw);
@@ -45,8 +49,8 @@ export const actions: Actions = {
       return fail(400, { error: 'Campanhas inválidas.' });
     }
     try {
-      await apiJson(event, '/api/vehicle-campaigns', {
-        method: 'PUT',
+      await apiJson(event, adding ? '/api/vehicle-campaigns/add' : '/api/vehicle-campaigns', {
+        method: adding ? 'POST' : 'PUT',
         body: JSON.stringify(input),
       });
       return { saved: true };

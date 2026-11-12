@@ -16,6 +16,10 @@ const campaignCars = [
   ['c000000000000000000000012', 'Audi', 'A3 Sportback', '22900.00'],
   ['c000000000000000000000013', 'Peugeot', '308 SW', '19500.00'],
   ['c000000000000000000000014', 'Volvo', 'XC40', '29500.00'],
+  ['c000000000000000000000015', 'Renault', 'Clio', '12500.00'],
+  ['c000000000000000000000016', 'SEAT', 'Ibiza', '13400.00'],
+  ['c000000000000000000000017', 'Toyota', 'Yaris', '18900.00'],
+  ['c000000000000000000000018', 'Volkswagen', 'Golf', '21900.00'],
 ];
 const draftId = 'c000000000000000000000002';
 const galleryId = 'c000000000000000000000097';
@@ -65,6 +69,8 @@ const vehicle = {
 };
 let vite, backend, browser, origin, created;
 let campaignFixture = { revision: null, items: [] };
+let campaignReplaceBlocked = false;
+const campaignAdditions = [];
 const writes = [];
 const listen = (server) => new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const close = async (server) => {
@@ -103,11 +109,46 @@ before(async () => {
     if (photoIndex >= 0)
       return reply({
         photos: [
-          { url: '/fixture-campaign.webp?photo=' + (photoIndex % 2), width: 960, height: 540 },
+          {
+            url: '/fixture-campaign.webp?photo=' + (photoIndex % 2),
+            width: 960,
+            height: 540,
+            ...(photoIndex === 0
+              ? {
+                  coverFraming: { desktop: { x: 22, y: 75 }, mobile: { x: 64, y: 16 } },
+                }
+              : {}),
+          },
         ],
       });
+    if (url.pathname === '/api/vehicle-campaigns/add' && req.method === 'POST') {
+      const input = await readBody(req);
+      campaignAdditions.push(input);
+      if (input.revision !== campaignFixture.revision || !input.item || input.items) {
+        return reply({ error: 'Adição inválida' }, 400);
+      }
+      const now = Date.now();
+      campaignFixture = {
+        revision: String(now),
+        items: [
+          ...campaignFixture.items,
+          {
+            ...input.item,
+            referencePrice: null,
+            applied: true,
+            startsAt: new Date(now).toISOString(),
+            endsAt: new Date(now + input.item.durationDays * 86_400_000).toISOString(),
+          },
+        ],
+      };
+      return reply({ revision: campaignFixture.revision }, 201);
+    }
     if (url.pathname === '/api/vehicle-campaigns') {
       if (req.method === 'PUT') {
+        if (campaignReplaceBlocked) {
+          await readBody(req);
+          return reply({ error: 'Pré-visualização só de leitura.' }, 405);
+        }
         const input = await readBody(req);
         if (input.revision !== campaignFixture.revision)
           return reply({ error: 'Revisão desatualizada' }, 409);
@@ -116,7 +157,8 @@ before(async () => {
           revision: String(now),
           items: input.items.map((item) => ({
             ...item,
-            referencePrice: '23500.00',
+            referencePrice: null,
+            applied: true,
             startsAt: new Date(now).toISOString(),
             endsAt: new Date(now + item.durationDays * 86_400_000).toISOString(),
           })),
@@ -132,7 +174,6 @@ before(async () => {
           price,
           year: 2021,
           licensePlate: 'AA-0' + index + '-AA',
-          referencePrice: index === 0 ? '23500.00' : null,
         })),
       });
     }
@@ -346,6 +387,7 @@ for (const width of [1366, 390]) {
     `real CRM campaign editor saves and ends a promotion at ${width}px`,
     { timeout: 90000 },
     async () => {
+      campaignFixture = { revision: null, items: [] };
       const context = await openSession(width, width < 860 ? 'reduce' : 'no-preference');
       try {
         const page = await context.newPage();
@@ -381,14 +423,54 @@ for (const width of [1366, 390]) {
         const add = catalog.getByRole('button', { name: 'Adicionar BMW Série 3 Touring' });
         const save = campaigns.getByRole('button', { name: 'Guardar campanhas' });
         await expect(campaigns.getByText('Nenhuma campanha selecionada.')).toBeVisible();
-        await expect(catalog.getByRole('listitem')).toHaveCount(5);
+        await expect(catalog.getByRole('listitem')).toHaveCount(campaignCars.length);
         const panels = await Promise.all([campaigns.boundingBox(), catalog.boundingBox()]);
         assert.ok(panels.every(Boolean));
         assert.ok(width > 860 ? panels[0].x < panels[1].x : panels[0].y < panels[1].y);
+        const fixedHeight = await page.evaluate(
+          () => 40 * parseFloat(getComputedStyle(document.documentElement).fontSize),
+        );
+        const listHeight = await catalog.getByRole('list').evaluate((list) => list.clientHeight);
+        async function assertFixedCatalogue(count) {
+          await expect(campaigns.getByRole('article')).toHaveCount(count);
+          if (width < 860) return;
+          const [left, right] = await Promise.all([campaigns.boundingBox(), catalog.boundingBox()]);
+          assert.ok(
+            Math.abs(left.y - right.y) < 1 && Math.abs(fixedHeight - right.height) < 1,
+            count + ' cards: ' + JSON.stringify({ left, right }),
+          );
+          assert.equal(
+            await catalog.getByRole('list').evaluate((list) => list.clientHeight),
+            listHeight,
+          );
+        }
+        await assertFixedCatalogue(0);
+        await expect(catalog.getByRole('heading', { name: 'Adicionar viaturas' })).toBeVisible();
         if (width < 860) {
+          await page.setViewportSize({ width: 320, height: 740 });
+          const navLayout = await tabs.evaluate((nav) => ({
+            sameRow:
+              new Set([...nav.children].map((link) => link.getBoundingClientRect().top)).size === 1,
+            scrollable: nav.scrollWidth > nav.clientWidth,
+            noPageOverflow: document.documentElement.scrollWidth <= innerWidth,
+          }));
+          assert.deepEqual(navLayout, { sameRow: true, scrollable: true, noPageOverflow: true });
+          const reviews = tabs.getByRole('link', { name: 'Reviews' });
+          await reviews.focus();
+          await expect(reviews).toBeFocused();
+          assert.ok(await tabs.evaluate((nav) => nav.scrollLeft > 0));
+          await page.setViewportSize({ width, height: 740 });
           await page.getByRole('link', { name: 'Ver catálogo' }).click();
           await expect(catalog.getByRole('heading')).toBeFocused();
         }
+        const catalogueList = catalog.getByRole('list');
+        await catalogueList.focus();
+        await page.keyboard.press('End');
+        await expect
+          .poll(() => catalogueList.evaluate((list) => list.scrollTop))
+          .toBeGreaterThan(0);
+        await search.fill('AA-00-AA');
+        await expect(catalog.getByRole('listitem')).toHaveCount(1);
         await search.fill('serie');
         await expect(catalog.getByRole('listitem')).toHaveCount(1);
         await expect
@@ -400,8 +482,11 @@ for (const width of [1366, 390]) {
               ),
           )
           .toBe(true);
+        const position = width < 860 ? '64% 16%' : '22% 75%';
+        await expect(catalog.locator('img')).toHaveCSS('object-position', position);
         await add.click();
         const card = campaigns.getByRole('article');
+        await assertFixedCatalogue(1);
         const cardTitle = card.getByRole('heading', { name: 'BMW Série 3 Touring' });
         await expect(cardTitle).toBeFocused();
         await expect(cardTitle).toBeInViewport();
@@ -410,15 +495,19 @@ for (const width of [1366, 390]) {
           catalog.getByRole('button', { name: 'BMW Série 3 Touring adicionada' }),
         ).toBeDisabled();
         await expect(card.locator('img')).toBeVisible();
-        const price = card.getByLabel('Preço promocional (€)', { exact: true });
-        const discount = card.getByLabel('Desconto (%)', { exact: true });
+        await expect(card.locator('img')).toHaveCSS('object-position', position);
+        const price = card.getByLabel('Preço de desconto (€)', { exact: true });
+        const ribbon = card.getByText('SALE', { exact: true });
+        await expect(ribbon).toHaveCount(0);
+        const discount = card.getByLabel('Diferença (%)', { exact: true });
+        await expect(price).toHaveCSS('border-top-width', '0px');
         await price.fill('24000,00');
         await save.click();
         await expect(card.getByRole('alert')).toContainText('inferior');
         await price.fill('21900,00');
-        await expect(discount).toHaveValue('7');
+        await expect(discount).toHaveValue('8');
         await discount.fill('10');
-        await expect(price).toHaveValue('21150.00');
+        await expect(price).toHaveValue('21510,00');
         await card.getByLabel('Duração (dias)').fill('9');
         const submission = page.waitForResponse(
           (response) =>
@@ -427,14 +516,30 @@ for (const width of [1366, 390]) {
         await save.click();
         const result = await (await submission).json();
         assert.equal(result.type, 'success', JSON.stringify(result));
+        assert.deepEqual(campaignAdditions.at(-1)?.item, {
+          vehicleId,
+          price: '21510.00',
+          durationDays: 9,
+        });
         await expect(campaigns.getByText('Campanhas guardadas.', { exact: true })).toBeVisible({
           timeout: 15000,
         });
-        assert.equal(campaignFixture.items[0].price, '21150.00');
+        assert.equal(campaignFixture.items[0].price, '21510.00');
         assert.equal(campaignFixture.items[0].durationDays, 9);
-        await expect(card.getByText('Em campanha')).toBeVisible();
+        await expect(ribbon).toBeVisible();
+        await expect(card.getByText(/\(Lisboa\)|sem comparação/)).toHaveCount(0);
+        await expect(card.getByLabel('Duração (dias)')).toHaveValue('9');
+        const removeButton = card.getByRole('button', { name: 'Remover BMW Série 3 Touring' });
+        const corner = await card.locator('.sale-ribbon').boundingBox();
+        assert.ok(corner);
+        for (const control of [cardTitle, card.locator('img'), removeButton]) {
+          const box = await control.boundingBox();
+          assert.ok(box && box.x + box.width + 4 <= corner.x);
+        }
+        await removeButton.focus();
+        await expect(removeButton).toBeFocused();
         await search.clear();
-        await expect(catalog.getByRole('listitem')).toHaveCount(5);
+        await expect(catalog.getByRole('listitem')).toHaveCount(campaignCars.length);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
         if (process.env.CAMPAIGN_PREVIEW === '1') {
           await catalog.evaluate((node) => node.scrollIntoView({ block: 'center' }));
@@ -447,7 +552,7 @@ for (const width of [1366, 390]) {
                     images.filter((image) => image.complete && image.naturalWidth > 0).length,
                 ),
             )
-            .toBe(campaignCars.length);
+            .toBeGreaterThan(2);
           const screenshot = path.join(
             crm,
             '.svelte-kit',
@@ -460,22 +565,122 @@ for (const width of [1366, 390]) {
           });
           console.log(screenshot);
         }
+        campaignReplaceBlocked = true;
+        await price.fill('20000,00');
+        await save.click();
+        await expect(campaigns.getByRole('alert')).toContainText(
+          'pode adicionar uma viatura de cada vez',
+        );
+        assert.equal(campaignFixture.items[0].price, '21510.00');
+        await page.reload();
+        await expect(price).toHaveValue('21510,00');
+        await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText(
+          '1',
+          { timeout: 30000 },
+        );
         for (const [, brand, model] of campaignCars.slice(1, 4)) {
           await catalog.getByRole('button', { name: 'Adicionar ' + brand + ' ' + model }).click();
+          await expect(
+            catalog.getByRole('button', { name: brand + ' ' + model + ' adicionada' }),
+          ).toBeDisabled();
+          if (brand === 'MINI') {
+            await assertFixedCatalogue(2);
+            await campaigns
+              .getByRole('article')
+              .last()
+              .getByLabel('Preço de desconto (€)')
+              .fill('19900,00');
+            if (width > 860 && process.env.CAMPAIGN_PREVIEW === '1') {
+              const screenshot = path.join(
+                crm,
+                '.svelte-kit',
+                'campanhas-crm-dois-cartoes-1366.png',
+              );
+              await page.locator('.site-workspace').screenshot({
+                path: screenshot,
+                animations: 'disabled',
+                style: '.topbar, .bottom-nav, .qt-bubble { visibility: hidden !important; }',
+              });
+              console.log(screenshot);
+            }
+          }
+          if (brand === 'Audi') await assertFixedCatalogue(3);
         }
-        await expect(catalog.getByText('Limite de quatro viaturas atingido.')).toBeVisible();
+        await assertFixedCatalogue(4);
+        await expect(campaigns.getByTitle('Limite de quatro viaturas atingido.')).toBeVisible();
         await expect(catalog.getByRole('button', { name: 'Adicionar Volvo XC40' })).toBeDisabled();
-        for (const [, brand, model] of campaignCars.slice(0, 4)) {
+        for (const [index, [, brand, model]] of campaignCars.slice(0, 4).entries()) {
           await campaigns.getByRole('button', { name: 'Remover ' + brand + ' ' + model }).click();
+          await assertFixedCatalogue(3 - index);
         }
         await expect(campaigns.getByText('Nenhuma campanha selecionada.')).toBeVisible();
         await expect(add).toBeEnabled();
         assert.equal(campaignFixture.items.length, 1);
         await save.click();
+        await expect(campaigns.getByRole('alert')).toContainText(
+          'pode adicionar uma viatura de cada vez',
+        );
+        assert.equal(campaignFixture.items.length, 1);
+        campaignReplaceBlocked = false;
+        await save.click();
         await expect.poll(() => campaignFixture.items.length).toBe(0);
         await page.reload();
         await expect(page.getByText('Nenhuma campanha selecionada.')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText(
+          '1',
+          { timeout: 30000 },
+        );
+        campaignReplaceBlocked = true;
+        await catalog.getByRole('button', { name: 'Adicionar MINI Countryman Cooper D' }).click();
+        await price.fill('20000,00');
+        await card.getByLabel('Duração (dias)').fill('12');
+        await save.click();
+        await expect(campaigns.getByRole('status')).toContainText('Campanhas guardadas.');
+        await expect(price).toHaveValue('20000,00');
+        await expect(card.getByLabel('Duração (dias)')).toHaveValue('12');
+        assert.equal(campaignFixture.items.length, 1);
+        assert.equal(campaignFixture.items[0].applied, true);
+        assert.equal(campaignFixture.items[0].referencePrice, null);
+        campaignFixture = {
+          revision: 'legacy',
+          items: [
+            {
+              vehicleId: campaignCars[1][0],
+              price: '20000.00',
+              referencePrice: null,
+              durationDays: 12,
+              startsAt: '2025-10-01T00:00:00.000Z',
+              endsAt: '2025-10-13T00:00:00.000Z',
+            },
+          ],
+        };
+        await page.reload();
+        await expect(card.getByText('Não publicada', { exact: true })).toBeVisible();
+        await expect(card.getByText('Este preço ainda não está aplicado no site.')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Alertas', exact: true })).toContainText(
+          '1',
+          { timeout: 30000 },
+        );
+        const existing = structuredClone(campaignFixture.items[0]);
+        const additionsBefore = campaignAdditions.length;
+        await catalog.getByRole('button', { name: 'Adicionar Audi A3 Sportback' }).click();
+        await campaigns
+          .getByRole('article')
+          .last()
+          .getByLabel('Preço de desconto (€)')
+          .fill('20000,00');
+        await save.click();
+        await expect(campaigns.getByRole('status')).toContainText('Campanhas guardadas.');
+        assert.equal(campaignAdditions.length, additionsBefore + 1);
+        assert.deepEqual(campaignFixture.items[0], existing);
+        assert.equal(campaignFixture.items.length, 2);
+        campaignReplaceBlocked = false;
+        await campaigns.getByRole('button', { name: 'Aplicar este preço' }).click();
+        await save.click();
+        await expect(campaigns.getByRole('status')).toContainText('Campanhas guardadas.');
+        assert.equal(campaignFixture.items[0].applied, true);
       } finally {
+        campaignReplaceBlocked = false;
         await context.close();
       }
     },

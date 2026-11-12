@@ -45,12 +45,28 @@ export class HighlightsError extends Error {
   readonly status = 409;
 }
 
+function coverFraming(value: unknown, path: string) {
+  const framing = galleryFramingSchema.safeParse(value).data?.[path];
+  if (!framing) return undefined;
+  // Legacy photos used their detail crop in CRM thumbnails. A reset card crop centres the image.
+  return framing.card === undefined
+    ? { desktop: framing.desktop, mobile: framing.mobile }
+    : (framing.card ?? undefined);
+}
+
 export async function readHighlightsEditor(db: PrismaClient) {
   const [setting, vehicles] = await Promise.all([
     db.appSetting.findUnique({ where: { key: highlightsKey } }),
     db.vehicle.findMany({
       where: publicVehicleWhere(),
-      select: { id: true, brand: true, model: true, year: true, photos: true, galleryFraming: true },
+      select: {
+        id: true,
+        brand: true,
+        model: true,
+        year: true,
+        photos: true,
+        galleryFraming: true,
+      },
       orderBy: [{ brand: 'asc' }, { model: 'asc' }, { id: 'asc' }],
     }),
   ]);
@@ -58,7 +74,7 @@ export async function readHighlightsEditor(db: PrismaClient) {
     const photoPaths = approvedPaths(vehicle);
     const cover = photoPaths[0];
     if (!cover) return [];
-    const framing = galleryFramingSchema.safeParse(vehicle.galleryFraming).data?.[cover];
+    const framing = coverFraming(vehicle.galleryFraming, cover);
     return [
       {
         id: vehicle.id,
@@ -66,7 +82,7 @@ export async function readHighlightsEditor(db: PrismaClient) {
         model: vehicle.model,
         year: vehicle.year,
         photoPaths,
-        ...(framing ? { coverFraming: { desktop: framing.desktop, mobile: framing.mobile } } : {}),
+        ...(framing ? { coverFraming: framing } : {}),
       },
     ];
   });
@@ -93,11 +109,17 @@ export async function readHighlightPreviews(db: PrismaClient, requested: string[
 export async function readHighlightGallery(db: PrismaClient, id: string) {
   const vehicle = await db.vehicle.findFirst({
     where: { ...publicVehicleWhere(), id },
-    select: { id: true, photos: true },
+    select: { id: true, photos: true, galleryFraming: true },
   });
   const paths = vehicle ? approvedPaths(vehicle) : [];
   if (!paths.length) return null;
-  return (await signedPhotos(paths)).map((photo) => ({ ...photo, url: photo.url ?? null }));
+  const cover = paths[0]!;
+  const framing = coverFraming(vehicle?.galleryFraming, cover);
+  return (await signedPhotos(paths)).map((photo) => ({
+    ...photo,
+    url: photo.url ?? null,
+    ...(photo.path === cover && framing ? { coverFraming: framing } : {}),
+  }));
 }
 
 export async function saveHighlights(

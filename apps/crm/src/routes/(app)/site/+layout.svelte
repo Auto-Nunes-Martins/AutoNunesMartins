@@ -7,6 +7,17 @@
   let { children }: { children: Snippet } = $props();
   const reviews = $derived($page.route.id?.startsWith('/(app)/site/reviews'));
   const campaigns = $derived($page.route.id === '/(app)/site/campanhas');
+  let tabs: HTMLElement;
+
+  $effect(() => {
+    const index = reviews ? 2 : campaigns ? 1 : 0;
+    const tab = tabs?.children[index];
+    if (!tab || tabs.scrollWidth <= tabs.clientWidth) return;
+    const container = tabs.getBoundingClientRect();
+    const item = tab.getBoundingClientRect();
+    if (item.left < container.left) tabs.scrollLeft += item.left - container.left;
+    else if (item.right > container.right) tabs.scrollLeft += item.right - container.right;
+  });
 </script>
 
 <section class="site-workspace">
@@ -14,7 +25,7 @@
     <p>MONTRA ONLINE · GESTÃO DE CONTEÚDO</p>
     <ItalicHero text="Site público" size="lg" />
   </header>
-  <nav aria-label="Secções do site público">
+  <nav bind:this={tabs} aria-label="Secções do site público">
     <a href={crmPath('/site/destaques')} aria-current={!reviews && !campaigns ? 'page' : undefined}
       ><Star size={17} aria-hidden="true" />Destaques da homepage</a
     >
@@ -76,10 +87,20 @@
   @media (max-width: 600px) {
     nav {
       gap: 18px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
     }
     nav a {
       font-size: 12px;
       gap: 7px;
+      flex: 0 0 auto;
+      white-space: nowrap;
+      margin-bottom: 0;
+    }
+    nav a:focus-visible {
+      outline-offset: -2px;
     }
     header p {
       font-size: 9px;

@@ -2,8 +2,39 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const emit = vi.hoisted(() => vi.fn());
 vi.mock('../data/activity.js', () => ({ emitActivity: emit }));
 vi.mock('./preparePhotoDimensions.js', () => ({ preparePhotoDimensions: vi.fn() }));
-import { applyWebPublication } from './webPublicationService';
+import { applyWebPublication, assertCampaignBasePrice } from './webPublicationService';
 beforeEach(() => vi.clearAllMocks());
+it.each([null, '4000', '4999.99', '5000'])(
+  'rejects base %s while a 5000 campaign is active',
+  async (price) => {
+    const tx = {
+      appSetting: {
+        findUnique: vi.fn().mockResolvedValue({
+          value: {
+            revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225',
+            items: [
+              {
+                vehicleId: 'car',
+                price: '5000.00',
+                referencePrice: null,
+                applied: true,
+                durationDays: 7,
+                startsAt: new Date(Date.now() - 1000).toISOString(),
+                endsAt: new Date(Date.now() + 86400000).toISOString(),
+              },
+            ],
+          },
+        }),
+      },
+    };
+    await expect(assertCampaignBasePrice(tx as never, 'car', price)).rejects.toMatchObject({
+      status: 409,
+      field: 'price',
+    });
+    await expect(assertCampaignBasePrice(tx as never, 'car', '5000.01')).resolves.toBeUndefined();
+    await expect(assertCampaignBasePrice(tx as never, 'car', '8450')).resolves.toBeUndefined();
+  },
+);
 it.each([true, false])(
   'persists a durable vehicle identity for publication=%s',
   async (published) => {
@@ -20,6 +51,7 @@ it.each([true, false])(
       publicSlug: 'slug',
     };
     const tx = {
+      appSetting: { findUnique: vi.fn().mockResolvedValue(null) },
       vehicle: {
         findUnique: vi.fn().mockResolvedValue(vehicle),
         update: vi.fn().mockResolvedValue({ webPublished: published, publicSlug: 'slug' }),

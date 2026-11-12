@@ -2,9 +2,10 @@
   import { enhance } from '$app/forms';
   import { tick, untrack } from 'svelte';
   import { fly } from 'svelte/transition';
-  import { Check, Plus, Search, Tag, Trash2 } from 'lucide-svelte';
+  import { Tag, Trash2 } from 'lucide-svelte';
   import CampaignVehiclePhoto from '$lib/components/vehicle/CampaignVehiclePhoto.svelte';
-  import { formatEUR, formatLisbonDateTime } from '$lib/utils/format';
+  import VehicleCatalogue from '$lib/components/vehicle/VehicleCatalogue.svelte';
+  import { formatEUR } from '$lib/utils/format';
   import type { ActionData, PageData } from './$types';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -32,19 +33,14 @@
   const selected = $derived(new Set(drafts.map((draft) => draft.id)));
   const available = $derived(
     vehicles.filter((vehicle) =>
-      searchText(`${vehicle.brand} ${vehicle.model} ${vehicle.licensePlate ?? ''}`).includes(
-        searchText(query),
-      ),
+      searchText(
+        `${vehicle.brand} ${vehicle.model} ${vehicle.year} ${vehicle.licensePlate ?? ''}`,
+      ).includes(searchText(query)),
     ),
   );
   const changed = $derived(
     drafts.length !== data.editor?.items.length ||
-      drafts.some(
-        (draft) =>
-          draft.edited ||
-          !draft.saved ||
-          (draft.saved.referencePrice === null && !!vehicleById.get(draft.id)?.referencePrice),
-      ),
+      drafts.some((draft) => draft.edited || !draft.saved),
   );
 
   $effect(() => {
@@ -64,12 +60,11 @@
 
   function initialDrafts(editor: PageData['editor']): Draft[] {
     return (editor?.items ?? []).map((item) => {
-      const vehicle = editor?.candidates.find(({ id }) => id === item.vehicleId);
-      const reference = Number(item.referencePrice ?? vehicle?.referencePrice ?? vehicle?.price);
+      const base = Number(editor?.candidates.find(({ id }) => id === item.vehicleId)?.price);
       return {
         id: item.vehicleId,
-        price: item.price,
-        discount: roundedDiscount(Number(item.price), reference),
+        price: item.price.replace('.', ','),
+        discount: discountFromBase(Number(item.price), base),
         days: item.durationDays,
         saved: item,
         edited: false,
@@ -82,18 +77,6 @@
     return /^\d{1,10}(\.\d{1,2})?$/.test(cleaned) ? Math.round(Number(cleaned) * 100) : NaN;
   }
 
-  function roundedDiscount(amount: number, reference: number) {
-    return amount > 0 && amount <= reference
-      ? String(Math.round((1 - amount / reference) * 100))
-      : '';
-  }
-
-  function referenceFor(draft: Draft, vehicle: Vehicle | undefined, amount: number) {
-    const saved = draft.saved;
-    if (saved?.referencePrice && amount === cents(saved.price)) return Number(saved.referencePrice);
-    return Number(vehicle?.referencePrice ?? vehicle?.price);
-  }
-
   function edit(draft: Draft) {
     draft.edited = true;
     draft.error = '';
@@ -103,21 +86,22 @@
 
   function updatePrice(draft: Draft, value: string) {
     draft.price = value;
-    const amount = cents(value);
-    draft.discount = roundedDiscount(
-      amount / 100,
-      referenceFor(draft, vehicleById.get(draft.id), amount),
-    );
+    draft.discount = discountFromBase(cents(value) / 100, Number(vehicleById.get(draft.id)?.price));
     edit(draft);
+  }
+
+  function discountFromBase(price: number, base: number) {
+    return price > 0 && price < base ? String(Math.round((1 - price / base) * 100)) : '';
   }
 
   function updateDiscount(draft: Draft, vehicle: Vehicle, value: string) {
     draft.discount = value;
-    const reference = Number(vehicle.referencePrice ?? vehicle.price);
     const percentage = Number(value);
     draft.price =
-      /^\d{1,2}$/.test(value) && percentage >= 1 && reference > 0
-        ? (Math.round(reference * (100 - percentage)) / 100).toFixed(2)
+      /^\d{1,2}$/.test(value) && percentage >= 1
+        ? (Math.round(Number(vehicle.price) * (100 - percentage)) / 100)
+            .toFixed(2)
+            .replace('.', ',')
         : '';
     edit(draft);
   }
@@ -153,20 +137,17 @@
     void focusAt(nearby ? `campaign-${nearby.id}` : 'campaign-selected-title');
   }
 
-  function prepareItems() {
+  function prepareItems(selection = drafts) {
     const items = [];
     let firstInvalid: string | undefined;
-    for (const draft of drafts) {
+    for (const draft of selection) {
       const vehicle = vehicleById.get(draft.id);
       const amount = cents(draft.price);
-      const limit = Math.min(
-        cents(vehicle?.price ?? ''),
-        Math.round(referenceFor(draft, vehicle, amount) * 100),
-      );
+      const limit = cents(vehicle?.price ?? '');
       if (!vehicle) {
         draft.error = 'Retire esta viatura para guardar as campanhas.';
       } else if (!(amount > 0 && amount < limit)) {
-        draft.error = 'Indique um preço positivo inferior ao preço de referência.';
+        draft.error = 'Indique um preço positivo inferior ao preço base.';
       } else if (
         !draft.days ||
         !Number.isInteger(draft.days) ||
@@ -180,8 +161,7 @@
           vehicleId: draft.id,
           price: (amount / 100).toFixed(2),
           durationDays: draft.days,
-          recheck:
-            draft.edited || (draft.saved?.referencePrice === null && !!vehicle.referencePrice),
+          recheck: draft.edited,
         });
       }
       if (draft.error) firstInvalid ??= `campaign-${draft.id}`;
@@ -200,7 +180,7 @@
   <div class="heading">
     <div>
       <h2 id="campaign-heading">Campanhas</h2>
-      <p>Escolha até quatro viaturas e edite as ofertas diretamente nos cartões.</p>
+      <p>Até quatro viaturas. O desconto compara sempre com o preço base.</p>
     </div>
     {#if data.editor}
       <a
@@ -223,23 +203,48 @@
       <section class="campaigns" aria-labelledby="campaign-selected-title">
         <div class="panel-heading">
           <h3 id="campaign-selected-title" tabindex="-1">Viaturas em campanha</h3>
-          <span class="count">{drafts.length} / 4</span>
+          <span
+            class="count"
+            title={drafts.length === 4 ? 'Limite de quatro viaturas atingido.' : undefined}
+          >
+            {drafts.length} / 4
+          </span>
         </div>
         <form
           method="POST"
           novalidate
           use:enhance={({ formData, cancel }) => {
-            const items = prepareItems();
-            if (busy || !items) return cancel();
-            formData.set('campaigns', JSON.stringify({ revision: data.editor?.revision, items }));
+            if (busy) return cancel();
+            const newDrafts = drafts.filter((draft) => !draft.saved);
+            const adding =
+              newDrafts.length === 1 &&
+              drafts.length === (data.editor?.items.length ?? 0) + 1 &&
+              !drafts.some((draft) => draft.saved && draft.edited);
+            const items = prepareItems(adding ? newDrafts : drafts);
+            if (!items) return cancel();
+            const revision = data.editor?.revision;
+            if (adding) {
+              if (!items[0]) return cancel();
+              const { vehicleId, price, durationDays } = items[0];
+              formData.set(
+                'addition',
+                JSON.stringify({ revision, item: { vehicleId, price, durationDays } }),
+              );
+            } else {
+              formData.set('campaigns', JSON.stringify({ revision, items }));
+            }
             busy = true;
             validation = '';
             return async ({ result, update }) => {
               try {
                 await update({ reset: false });
                 if (result.type === 'success') feedback = 'Campanhas guardadas.';
-                if (result.type === 'failure')
-                  validation = String(result.data?.error ?? 'Não foi possível guardar.');
+                if (result.type === 'failure') {
+                  validation =
+                    result.status === 405 && !adding
+                      ? 'Nesta pré-visualização, pode adicionar uma viatura de cada vez. Recarregue a página para descartar alterações por guardar e tente só a adição.'
+                      : String(result.data?.error ?? 'Não foi possível guardar.');
+                }
               } finally {
                 busy = false;
               }
@@ -249,24 +254,25 @@
           <div class="cards">
             {#each drafts as draft (draft.id)}
               {@const vehicle = vehicleById.get(draft.id)}
-              {@const price = cents(draft.price)}
-              <article class="campaign-card" transition:fly={transitionOptions()}>
-                {#if vehicle}
-                  <div class="card-photo"><CampaignVehiclePhoto vehicleId={vehicle.id} /></div>
+              {@const applied =
+                !!draft.saved && (draft.saved.applied || draft.saved.referencePrice !== null)}
+              <article class="campaign-card" class:applied transition:fly={transitionOptions()}>
+                {#if applied}
+                  <div class="sale-ribbon" aria-hidden="true"><span>SALE</span></div>
                 {/if}
                 <div class="card-content">
                   <div class="card-heading">
+                    {#if vehicle}
+                      <div class="card-photo">
+                        <CampaignVehiclePhoto vehicleId={vehicle.id} compact />
+                      </div>
+                    {/if}
                     <div>
-                      <span
-                        class="state"
-                        class:active={!!draft.saved?.referencePrice && !draft.edited}
-                      >
-                        {draft.edited
-                          ? 'Por guardar'
-                          : draft.saved?.referencePrice
-                            ? 'Em campanha'
-                            : 'Em preparação'}
-                      </span>
+                      {#if applied}
+                        <span class="sr-only">Preço aplicado</span>
+                      {:else}
+                        <span class="state">{draft.saved ? 'Não publicada' : 'Por guardar'}</span>
+                      {/if}
                       <h4
                         id={`campaign-${draft.id}`}
                         tabindex="-1"
@@ -288,61 +294,69 @@
                     </button>
                   </div>
                   {#if vehicle}
-                    <div class="price-preview">
-                      <strong>{price > 0 ? formatEUR(price / 100) : 'Definir preço'}</strong>
-                      {#if draft.saved?.referencePrice && price === cents(draft.saved.price)}
-                        <s aria-label={`Preço anterior ${formatEUR(draft.saved.referencePrice)}`}
-                          >{formatEUR(draft.saved.referencePrice)}</s
-                        >
-                      {/if}
+                    <div class="price-context">
+                      <span>Preço base <strong>{formatEUR(vehicle.price)}</strong></span>
                     </div>
-                    <p class="context">Preço público normal · {formatEUR(vehicle.price)}</p>
                     <fieldset disabled={busy} class="fields">
                       <legend class="sr-only"
                         >Editar campanha de {vehicle.brand} {vehicle.model}</legend
                       >
-                      <label
-                        >Preço promocional (€)
-                        <input
-                          value={draft.price}
-                          oninput={(event) => updatePrice(draft, event.currentTarget.value)}
-                          inputmode="decimal"
-                          required
-                        />
+                      <label class="promotion-field">
+                        <span>Preço de desconto</span>
+                        <span class="input-control">
+                          <input
+                            value={draft.price}
+                            data-inline-edit
+                            aria-label="Preço de desconto (€)"
+                            oninput={(event) => updatePrice(draft, event.currentTarget.value)}
+                            inputmode="decimal"
+                            placeholder="0,00"
+                            required
+                          />
+                          <span aria-hidden="true">€</span>
+                        </span>
                       </label>
-                      <label
-                        >Desconto (%)
-                        <input
-                          value={draft.discount}
-                          oninput={(event) =>
-                            updateDiscount(draft, vehicle, event.currentTarget.value)}
-                          inputmode="numeric"
-                          maxlength="2"
-                        />
+                      <label>
+                        <span>Diferença</span>
+                        <span class="input-control">
+                          <input
+                            value={draft.discount}
+                            data-inline-edit
+                            aria-label="Diferença (%)"
+                            oninput={(event) =>
+                              updateDiscount(draft, vehicle, event.currentTarget.value)}
+                            inputmode="numeric"
+                            placeholder="0"
+                            maxlength="2"
+                          />
+                          <span aria-hidden="true">%</span>
+                        </span>
                       </label>
-                      <label
-                        >Duração (dias)
-                        <input
-                          type="number"
-                          min="1"
-                          max="365"
-                          bind:value={draft.days}
-                          oninput={() => edit(draft)}
-                          required
-                        />
+                      <label>
+                        <span>Duração</span>
+                        <span class="input-control">
+                          <input
+                            type="number"
+                            data-inline-edit
+                            aria-label="Duração (dias)"
+                            min="1"
+                            max="365"
+                            bind:value={draft.days}
+                            oninput={() => edit(draft)}
+                            required
+                          />
+                          <span aria-hidden="true">dias</span>
+                        </span>
                       </label>
                     </fieldset>
-                    {#if draft.saved?.referencePrice && !draft.edited}
-                      <p class="context">
-                        De {formatLisbonDateTime(draft.saved.startsAt)} a {formatLisbonDateTime(
-                          draft.saved.endsAt,
-                        )} (Lisboa).
-                      </p>
-                    {:else if !vehicle.referencePrice && !draft.saved?.referencePrice}
-                      <p class="context">
-                        Fica em preparação até haver 30 dias de histórico de preços e voltar a
-                        guardar.
-                      </p>
+                    {#if draft.saved && !applied && !draft.edited}
+                      <p class="context">Este preço ainda não está aplicado no site.</p>
+                      <button
+                        class="apply-price"
+                        type="button"
+                        disabled={busy}
+                        onclick={() => edit(draft)}>Aplicar este preço</button
+                      >
                     {/if}
                   {/if}
                   {#if draft.error}<p class="error" role="alert" id={`error-${draft.id}`}>
@@ -369,52 +383,24 @@
         </form>
       </section>
 
-      <section class="catalog" aria-labelledby="campaign-catalog-title">
-        <div class="panel-heading">
-          <h3 id="campaign-catalog-title" tabindex="-1">Catálogo de viaturas</h3>
-        </div>
-        <label class="search">
-          <Search size={16} aria-hidden="true" />
-          <span class="sr-only">Pesquisar no catálogo</span>
-          <input
-            type="search"
-            placeholder="Pesquisar por viatura ou matrícula"
-            bind:value={query}
-          />
-        </label>
-        {#if drafts.length >= 4}<p class="context limit">
-            Limite de quatro viaturas atingido.
-          </p>{/if}
-        <ul class="catalog-list" aria-label="Viaturas elegíveis">
-          {#each available as vehicle (vehicle.id)}
-            <li class:chosen={selected.has(vehicle.id)}>
-              <div class="thumb"><CampaignVehiclePhoto vehicleId={vehicle.id} compact /></div>
-              <div class="catalog-identity">
-                <strong>{vehicle.brand} {vehicle.model}</strong>
-                <span>{formatEUR(vehicle.price)}</span>
-              </div>
-              <button
-                type="button"
-                class="add"
-                aria-label={selected.has(vehicle.id)
-                  ? `${vehicle.brand} ${vehicle.model} adicionada`
-                  : `Adicionar ${vehicle.brand} ${vehicle.model}`}
-                disabled={selected.has(vehicle.id) || drafts.length >= 4 || busy}
-                onclick={() => add(vehicle)}
-              >
-                {#if selected.has(vehicle.id)}<Check size={15} aria-hidden="true" /><span
-                    >Adicionada</span
-                  >
-                {:else}<Plus size={15} aria-hidden="true" /><span>Adicionar</span>{/if}
-              </button>
-            </li>
-          {:else}
-            <li class="catalog-empty">
-              {query ? 'Nenhuma viatura corresponde à pesquisa.' : 'Nenhuma viatura elegível.'}
-            </li>
-          {/each}
-        </ul>
-      </section>
+      <VehicleCatalogue
+        vehicles={available}
+        {selected}
+        canAdd={!busy && drafts.length < 4}
+        onAdd={add}
+        bind:query
+        searchLabel="Pesquisar no catálogo"
+        placeholder="Marca, modelo, ano ou matrícula"
+        empty={query ? 'Nenhuma viatura corresponde à pesquisa.' : 'Nenhuma viatura elegível.'}
+        focusTarget="campaign-catalog-title"
+        fixedHeight
+      >
+        {#snippet thumbnail(vehicle)}<CampaignVehiclePhoto
+            vehicleId={vehicle.id}
+            compact
+          />{/snippet}
+        {#snippet detail(vehicle)}{formatEUR(vehicle.price)}{/snippet}
+      </VehicleCatalogue>
     </div>
   {/if}
 </section>
@@ -466,10 +452,13 @@
   }
   .campaigns {
     min-width: 0;
+    padding: clamp(10px, 1.5vw, 16px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-bg-1);
   }
   .panel-heading,
   .card-heading,
-  .price-preview,
   .actions {
     display: flex;
     align-items: center;
@@ -489,38 +478,68 @@
     gap: 12px;
   }
   .campaign-card,
-  .catalog,
   .empty {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     background: var(--color-bg-1);
   }
   .campaign-card {
+    position: relative;
     overflow: hidden;
+    background: var(--color-bg-0);
+  }
+  .sale-ribbon {
+    position: absolute;
+    inset: 0 0 auto auto;
+    width: 62px;
+    height: 62px;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .sale-ribbon span {
+    position: absolute;
+    top: 14px;
+    right: -23px;
+    width: 90px;
+    background: #ba2532;
+    color: white;
+    font-size: 10px;
+    font-weight: 750;
+    line-height: 18px;
+    letter-spacing: 0.08em;
+    text-align: center;
+    transform: rotate(45deg);
   }
   .card-photo {
+    flex: 0 0 clamp(64px, 8vw, 96px);
+    min-width: 0;
     overflow: hidden;
   }
   .card-photo :global(.cover) {
-    aspect-ratio: 2.2;
-    border-radius: 0;
+    aspect-ratio: 4 / 3;
   }
   .card-content {
     display: grid;
-    gap: 9px;
-    padding: clamp(12px, 2vw, 20px);
+    gap: 8px;
+    padding: clamp(10px, 1.4vw, 16px);
   }
   .card-heading {
     align-items: start;
   }
+  .applied .card-heading {
+    margin-right: 58px;
+  }
+  .card-heading > div:not(.card-photo) {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
   h4,
-  #campaign-selected-title,
-  #campaign-catalog-title {
+  #campaign-selected-title {
     scroll-margin-block: 82px;
   }
   h4:focus-visible,
-  #campaign-selected-title:focus-visible,
-  #campaign-catalog-title:focus-visible {
+  #campaign-selected-title:focus-visible {
     outline-offset: 4px;
   }
   .state {
@@ -530,20 +549,19 @@
     font-weight: 650;
     color: var(--color-text-muted);
   }
-  .state.active {
-    color: var(--color-red);
-  }
-  .price-preview {
-    justify-content: flex-start;
+  .price-context {
+    display: flex;
     flex-wrap: wrap;
-    gap: 6px 12px;
+    gap: 4px 18px;
+    padding-block: 3px;
+    color: var(--color-text-muted);
+    font-size: 12px;
   }
-  .price-preview strong {
-    font-size: clamp(21px, 3vw, 29px);
-    font-variant-numeric: tabular-nums;
-    line-height: 1.15;
+  .price-context strong {
+    margin-inline-start: 3px;
+    color: var(--color-text);
+    font-weight: 650;
   }
-  .price-preview s,
   .context {
     font-size: 12px;
     color: var(--color-text-muted);
@@ -551,7 +569,7 @@
   .fields {
     display: grid;
     align-items: end;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.8fr) minmax(0, 1fr);
     gap: 9px;
     min-width: 0;
     margin: 3px 0 0;
@@ -562,15 +580,67 @@
     display: grid;
     align-content: end;
     min-width: 0;
-    gap: 4px;
+    gap: 6px;
     font-size: 12px;
   }
-  .fields input {
-    width: 100%;
+  .input-control {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    gap: 3px;
+    padding-inline: 8px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-btn);
+    background: var(--color-bg-1);
+  }
+  .input-control > span {
+    color: var(--color-text-muted);
+    font: inherit;
+    white-space: nowrap;
+  }
+  .input-control:focus-within {
+    outline: 2px solid var(--color-red);
+    outline-offset: 1px;
+  }
+  .input-control > input {
+    flex: 1;
+    width: 0;
+    min-width: 0;
+    min-height: 42px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  .promotion-field .input-control {
+    background: color-mix(in srgb, var(--color-red) 6%, var(--color-bg-1));
+  }
+  .promotion-field input {
+    font-size: 19px;
+    font-weight: 650;
+  }
+  .input-control > input[type='number'] {
+    appearance: textfield;
+  }
+  .input-control > input[type='number']::-webkit-inner-spin-button {
+    appearance: none;
+  }
+  .apply-price {
+    justify-self: start;
+    min-height: 44px;
+    color: var(--color-text);
+    text-decoration: underline;
   }
   .empty {
     display: grid;
     justify-items: center;
+    align-content: center;
+    min-height: 164px;
     gap: 10px;
     padding: 35px 12px;
     text-align: center;
@@ -587,72 +657,8 @@
   .error {
     color: var(--color-danger);
   }
-  .catalog {
-    padding: clamp(12px, 2vw, 18px);
-  }
-  .catalog-list {
-    display: grid;
-    gap: 6px;
-    max-height: min(65dvh, 560px);
-    overflow: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
-    padding: 2px;
-    margin: 12px -2px -2px;
-    list-style: none;
-  }
-  .catalog-list li {
-    display: grid;
-    grid-template-columns: 72px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 9px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-btn);
-    padding: 6px;
-    transition:
-      border-color 160ms ease,
-      background-color 160ms ease;
-  }
-  .catalog-list .catalog-empty {
-    display: block;
-    padding: 14px;
-    color: var(--color-text-muted);
-    font-size: 13px;
-  }
-  .catalog-list li.chosen {
-    border-color: color-mix(in srgb, var(--color-red) 65%, var(--color-border));
-    background: color-mix(in srgb, var(--color-red) 5%, transparent);
-  }
-  .catalog-identity {
-    display: grid;
-    gap: 4px;
-    font-size: 13px;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
-  .catalog-identity span {
-    color: var(--color-text-muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .search :global(svg) {
-    flex: none;
-    color: var(--color-text-muted);
-  }
-  .search input {
-    width: 100%;
-    min-width: 0;
-  }
-  .limit {
-    margin-top: 8px;
-  }
   .primary,
-  .remove,
-  .add {
+  .remove {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -668,8 +674,7 @@
     color: white;
     padding-inline: 14px;
   }
-  .primary:disabled,
-  .add:disabled:not(.chosen .add) {
+  .primary:disabled {
     opacity: 0.55;
   }
   .remove {
@@ -681,35 +686,12 @@
   .remove:hover {
     color: var(--color-danger);
   }
-  .add {
-    border: 1px solid var(--color-border-strong);
-  }
-  .add:not(:disabled):hover {
-    border-color: var(--color-red);
-  }
-  .chosen .add {
-    border-color: transparent;
-  }
   .mobile-link {
     display: none;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .catalog-list li {
-      transition: none;
-    }
-  }
-  @media (max-width: 1000px) {
-    .catalog-list li {
-      grid-template-columns: 55px minmax(0, 1fr) auto;
-    }
   }
   @container (max-width: 670px) {
     .layout {
       grid-template-columns: 1fr;
-    }
-    .catalog-list {
-      max-height: none;
-      scrollbar-gutter: auto;
     }
     .mobile-link {
       display: inline-flex;
@@ -718,17 +700,13 @@
       font-size: 13px;
       text-decoration: underline;
     }
-    .card-photo :global(.cover) {
-      aspect-ratio: 1.95;
-    }
   }
   @media (max-width: 370px) {
     .fields {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .catalog-list li {
-      grid-template-columns: 48px minmax(0, 1fr) auto;
-      gap: 5px;
+    .promotion-field {
+      grid-column: 1 / -1;
     }
   }
 </style>

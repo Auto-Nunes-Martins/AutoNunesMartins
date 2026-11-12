@@ -3,6 +3,7 @@
   import { framingStyle } from '@anm/types';
   import { photoAttrs, photoFallback } from '$lib/vehicleImage';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
+  import VehicleCatalogue from './VehicleCatalogue.svelte';
   import { crmPath } from '$lib/paths';
   import { untrack, onMount } from 'svelte';
   import { enhance } from '$lib/auth/enhance';
@@ -11,7 +12,7 @@
   import { formFeedback, markFormSaved, refreshFormFeedback } from '$lib/forms/formFeedback';
   import { prepareVehicleHighlight } from '$lib/highlightSelection';
   import { toast } from 'svelte-sonner';
-  import { ArrowUp, ArrowDown, Check, Star, Image, Plus, RefreshCw, Search, Trash2 } from 'lucide-svelte';
+  import { ArrowUp, ArrowDown, Check, Star, Image, RefreshCw, Trash2 } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import Button from '$lib/components/common/Button.svelte';
@@ -240,7 +241,7 @@
                 >{/if}
               {#if vehicle}<button
                   type="button"
-                  class="text-action"
+                  class="text-action photo-action"
                   disabled={saving}
                   onclick={() => (choosing = choosing === item.vehicleId ? null : item.vehicleId)}
                   >{choosing === item.vehicleId
@@ -383,60 +384,30 @@
     </form>
   </Panel>
 
-  <Panel>
-    <PanelHeader icon={Plus} title="Adicionar viaturas" />
-    <div class="catalogue">
-      <label class="search"
-        ><Search size={16} /><input
-          type="search"
-          aria-label="Pesquisar viaturas publicadas"
-          placeholder="Marca, modelo ou ano"
-          bind:value={query}
-        /></label
-      >
-      <p class="hint">
-        Apenas viaturas publicadas com fotografias. Ao serem vendidas ou retiradas do
-        site, deixam de aparecer no carrossel.
+  <VehicleCatalogue
+    vehicles={filtered}
+    selected={new Set(items.map(({ vehicleId }) => vehicleId))}
+    canAdd={!saving && items.length < 5}
+    onAdd={(vehicle) => add(vehicle.id, vehicle.photoPaths[0]!)}
+    bind:query
+    searchLabel="Pesquisar viaturas publicadas"
+    placeholder="Marca, modelo ou ano"
+    empty={query ? 'Nenhuma viatura encontrada.' : 'Ainda não há viaturas publicadas com fotografias. Publique uma viatura para a adicionar aqui.'}
+  >
+    {#snippet intro()}
+      <p class="hint catalogue-hint">
+        Apenas viaturas publicadas com fotografias. Ao serem vendidas ou retiradas do site,
+        deixam de aparecer no carrossel.
       </p>
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus enables native scrolling of this overflow region.) -->
-      <div class="candidates" role="region" aria-label="Viaturas publicadas disponíveis para destaque" tabindex="0">
-        {#each filtered as vehicle (vehicle.id)}
-          {@const selected = items.some((item) => item.vehicleId === vehicle.id)}
-          <div class="candidate">
-            <div
-              class="candidate-placeholder"
-              style={framingStyle(vehicle.coverFraming)}
-              use:observePreview={vehicle.photoPaths[0]}
-            >
-              {@render preview(vehicle.photoPaths[0], '')}
-            </div>
-            <div>
-              <strong>{vehicle.brand} {vehicle.model}</strong><span
-                >{vehicle.year} · {vehicle.photoPaths.length} fotografias</span
-              >
-            </div>
-            <button
-              type="button"
-              class="add-button"
-              disabled={saving || selected || items.length >= 5}
-              aria-label={selected
-                ? `${vehicle.brand} ${vehicle.model} já selecionado`
-                : `Adicionar ${vehicle.brand} ${vehicle.model}`}
-              onclick={() => add(vehicle.id, vehicle.photoPaths[0]!)}
-              >{#if selected}<Check size={17} />{:else}<Plus size={17} />{/if}</button
-            >
-          </div>
-        {:else}
-          <p class="hint">
-            {query
-              ? 'Nenhuma viatura encontrada.'
-              : 'Ainda não há viaturas publicadas com fotografias. Publique uma viatura para a adicionar aqui.'}
-          </p>
-        {/each}
+    {/snippet}
+    {#snippet thumbnail(vehicle)}
+      <div class="candidate-placeholder" style={framingStyle(vehicle.coverFraming)} use:observePreview={vehicle.photoPaths[0]}>
+        {@render preview(vehicle.photoPaths[0], '')}
       </div>
-      <a class="text-action" href={crmPath("/viaturas")}>Consultar viaturas →</a>
-    </div>
-  </Panel>
+    {/snippet}
+    {#snippet detail(vehicle)}{vehicle.year} · {vehicle.photoPaths.length} fotografias{/snippet}
+    {#snippet footer()}<a class="text-action" href={crmPath("/viaturas")}>Consultar viaturas →</a>{/snippet}
+  </VehicleCatalogue>
 </div>
 
 <style>
@@ -559,8 +530,7 @@
     font-weight: 600;
     color: var(--color-text);
   }
-  .vehicle-info > span,
-  .candidate span {
+  .vehicle-info > span {
     font-size: 11px;
     color: var(--color-text-muted);
   }
@@ -578,12 +548,22 @@
   .text-action:hover {
     color: var(--color-text);
   }
+  @media (hover: hover) {
+    .photo-action:not(:disabled):hover {
+      color: white;
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+    :global([data-theme='light']) .photo-action:not(:disabled):hover {
+      color: var(--color-text);
+    }
+  }
   .row-actions {
     display: flex;
     gap: 2px;
   }
-  .row-actions button,
-  .add-button {
+  .row-actions button {
     display: grid;
     place-items: center;
     width: 32px;
@@ -652,77 +632,20 @@
     font-size: 12px;
     padding: 16px 20px 0;
   }
-  .catalogue {
-    padding: 20px;
-  }
-  .search {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-btn);
-    padding: 10px 12px;
-    color: var(--color-text-faint);
-  }
-  .search input {
-    width: 100%;
-    background: transparent;
-    outline: none;
-    font-size: 12px;
-    color: var(--color-text);
-  }
-  .hint {
-    margin: 14px 0;
-  }
-  .candidates {
-    display: grid;
-    gap: 2px;
-    margin-bottom: 18px;
-    max-height: min(50svh, 420px);
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
-    scrollbar-gutter: stable;
-    padding-inline: 4px;
-  }
-  .candidates:focus-visible {
-    outline: 2px solid var(--color-red);
-    outline-offset: 3px;
-  }
-  .candidate {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--color-border);
-  }
+  .catalogue-hint { margin: 0; }
   .candidate-placeholder {
     position: relative;
-    width: 64px;
-    height: 48px;
-    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
     border-radius: var(--radius-btn);
-  }
-  .candidate-placeholder img {
-    object-position: var(--photo-desktop, 50% 50%);
-  }
-  @media (max-width: 700px) {
-    .candidate-placeholder img {
-      object-position: var(--photo-mobile, 50% 50%);
-    }
-  }
-  .candidate-placeholder {
     display: grid;
     place-items: center;
     color: var(--color-text-faint);
   }
-  .candidate > div:not(.candidate-placeholder) {
-    display: grid;
-    gap: 5px;
-    flex: 1;
-  }
-  .add-button {
-    flex-shrink: 0;
+  .candidate-placeholder img { object-position: var(--photo-desktop, 50% 50%); }
+  @media (max-width: 700px) {
+    .candidate-placeholder img { object-position: var(--photo-mobile, 50% 50%); }
   }
   @media (max-width: 1100px) {
     .editor-grid {
@@ -730,9 +653,6 @@
     }
   }
   @media (max-width: 600px) {
-    .candidates {
-      max-height: min(45svh, 320px);
-    }
     .selected-row {
       flex-wrap: wrap;
       gap: 10px;

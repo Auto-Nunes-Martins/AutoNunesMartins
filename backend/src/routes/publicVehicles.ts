@@ -16,7 +16,7 @@ import {
   listPublicVehicles,
   listAvailablePublicBrands,
   relatedPublicVehicles,
-  listPublicCampaigns,
+  listPublicCampaignVehicles,
 } from '../lib/data/publicVehicle.js';
 import { publicSlugSchema, publicVehicleQuerySchema } from '../lib/domain/publicVehicle.js';
 import {
@@ -119,7 +119,11 @@ router.get(
   '/campaigns',
   asyncHandler(async (_req, res) => {
     try {
-      res.json({ items: await withCoverPhotoDimensions(prisma, await listPublicCampaigns(prisma)) });
+      const vehicles = await withCoverPhotoDimensions(prisma, await listPublicCampaignVehicles(prisma));
+      res.json({
+        items: vehicles.filter((vehicle) => vehicle.promotion),
+        selection: vehicles.filter((vehicle) => !vehicle.promotion),
+      });
     } catch {
       logger.error('Public campaigns unavailable');
       res.status(503).json({ error: 'Campanhas temporariamente indisponíveis' });

@@ -1,12 +1,14 @@
 <script lang="ts">
   import { CarFront } from 'lucide-svelte';
+  import { framingStyle, type PhotoFraming } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import type { HighlightGalleryPhoto } from '$lib/highlightPhotoRequests';
   import { selectPhoto } from '$lib/reusablePhoto';
+  import { photoFallback } from '$lib/vehicleImage';
 
   let { vehicleId, compact = false }: { vehicleId: string; compact?: boolean } = $props();
-  let url = $state<string>();
+  let cover = $state<{ url: string; original: string | null; framing?: PhotoFraming }>();
   let inView = $state(false);
 
   function watchVisibility(node: HTMLElement) {
@@ -26,7 +28,7 @@
   $effect(() => {
     const id = vehicleId;
     const controller = new AbortController();
-    url = undefined;
+    cover = undefined;
     if (!id || (compact && !inView)) return;
     const targetWidth = compact ? 240 : 900;
     const query = new URLSearchParams({ viatura: id });
@@ -35,15 +37,14 @@
     })
       .then(async (response) => {
         if (!response.ok) return;
-        const { photos } = (await response.json()) as { photos?: HighlightGalleryPhoto[] };
-        if (!controller.signal.aborted && Array.isArray(photos)) {
-          for (const photo of photos) {
-            const thumbnail = selectPhoto(photo, targetWidth);
-            if (thumbnail) {
-              url = thumbnail.url;
-              break;
-            }
-          }
+        const { photos } = (await response.json()) as {
+          photos?: (HighlightGalleryPhoto & { coverFraming?: PhotoFraming })[];
+        };
+        const photo = Array.isArray(photos) ? photos[0] : undefined;
+        if (!controller.signal.aborted && photo) {
+          const thumbnail = selectPhoto(photo, targetWidth);
+          if (thumbnail)
+            cover = { url: thumbnail.url, original: photo.url, framing: photo.coverFraming };
         }
       })
       .catch(() => {
@@ -54,8 +55,15 @@
 </script>
 
 <span class="cover" class:compact use:watchVisibility>
-  {#if url}
-    <img src={url} alt="" decoding="async" onerror={() => (url = undefined)} />
+  {#if cover}
+    <img
+      src={cover.url}
+      use:photoFallback={cover.original}
+      style={framingStyle(cover.framing)}
+      alt=""
+      decoding="async"
+      onerror={() => (cover = undefined)}
+    />
   {:else}
     <span class="placeholder" aria-hidden="true">
       <CarFront size={compact ? 18 : 34} strokeWidth={1.3} />
@@ -72,10 +80,19 @@
     border-radius: calc(var(--radius-card) - 4px);
     background: var(--color-bg-0);
   }
+  .cover.compact {
+    aspect-ratio: 4 / 3;
+  }
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: var(--photo-desktop, 50% 50%);
+  }
+  @media (max-width: 700px) {
+    img {
+      object-position: var(--photo-mobile, 50% 50%);
+    }
   }
   .placeholder {
     display: grid;

@@ -4,6 +4,8 @@ import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mj
 import { emitActivity } from '../data/activity.js';
 import { preparePhotoDimensions } from './preparePhotoDimensions.js';
 import { activityVehicleLabel } from './activityContext.js';
+import { appliedCampaign, currentCampaign, readCampaigns } from '../data/campaignPricing.js';
+import { Prisma as PrismaValue } from '@prisma/client';
 import {
   isApprovedPhotoPath,
   makePublicSlug,
@@ -18,6 +20,25 @@ export class WebPublicationError extends Error {
     public readonly field?: string,
   ) {
     super(message);
+  }
+}
+
+/** Called inside the same serializable transaction that writes the base price. */
+export async function assertCampaignBasePrice(
+  tx: Pick<Prisma.TransactionClient, 'appSetting'>,
+  id: string,
+  price: string | null,
+) {
+  const { items } = await readCampaigns(tx);
+  const campaign = items.find(
+    (item) => item.vehicleId === id && appliedCampaign(item) && currentCampaign(item, Date.now()),
+  );
+  if (campaign && (price === null || new PrismaValue.Decimal(price).lte(campaign.price))) {
+    throw new WebPublicationError(
+      409,
+      'O preço base tem de ser superior ao preço de campanha. Altere ou remova primeiro a campanha.',
+      'price',
+    );
   }
 }
 
@@ -83,6 +104,7 @@ export async function applyWebPublication(
   });
   if (!vehicle) throw new WebPublicationError(404, 'Vehicle not found');
   if (input.published) {
+    await assertCampaignBasePrice(tx, id, input.price);
     if (!descriptionText(input.description ?? '').trim()) {
       throw new WebPublicationError(409, 'Uma descrição pública é obrigatória.');
     }
@@ -123,7 +145,6 @@ export async function applyWebPublication(
     message: `${input.published ? 'Publicação web aprovada' : 'Publicação web desativada'}: ${activityVehicleLabel(vehicle)}`,
     metadata: {
       webPublished: input.published,
-      publicPriceHistory: input.published && input.price ? input.price : 'unpriced',
       vehicle: {
         brand: vehicle.brand,
         model: vehicle.model,
