@@ -3826,6 +3826,20 @@
   .campaign-inner.three-offers {
     padding-bottom: 72px;
   }
+  .campaign-rail.pair .now > strong {
+    font-size: calc(clamp(32px, 2.8vw, 42px) - 3px);
+  }
+  .campaign-rail:is(.three, .four) .now > strong {
+    font-size: calc(clamp(30px, 15cqw, 48px) - 3px);
+  }
+  @media (max-width: 1199px) {
+    .campaign-rail.pair .now > strong { font-size: 29px; }
+  }
+  @media (max-width: 700px) {
+    .campaign-rail:is(.three, .four) .now > strong {
+      font-size: calc(clamp(30px, 15cqw, 40px) - 3px);
+    }
+  }
   .campaign-rail.three .campaign-copy {
     padding-block: 5px;
     gap: 3px;
