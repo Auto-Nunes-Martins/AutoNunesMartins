@@ -1,6 +1,5 @@
 <script lang="ts">
   import PromotionRibbonFabric from './PromotionRibbonFabric.svelte';
-  import { dev } from '$app/environment';
   import { onMount } from 'svelte';
   import {
     ArrowLeft,
@@ -48,7 +47,6 @@
     minute: '2-digit',
   });
   onMount(() => {
-    if (!dev) return;
     now = Date.now();
   });
   function remaining(endsAt: string) {
@@ -106,7 +104,7 @@
   });
 </script>
 
-{#if dev && offers.length}
+{#if offers.length}
   <section
     bind:this={campaignElement}
     class="campaign-strip spacious-heading"

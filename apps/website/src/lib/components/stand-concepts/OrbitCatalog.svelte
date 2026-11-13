@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { dev } from '$app/environment';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import type { Snippet } from 'svelte';
   import { tick, onDestroy } from 'svelte';
@@ -371,7 +370,7 @@
             name="ordem"
             value={formParams.get('ordem') ?? 'relevancia'}
             disabled={busy}
-            options={Object.entries(sortOptions).filter(([value]) => dev || value !== 'desconto_desc').map(([value, label]) => ({ value, label }))}
+            options={Object.entries(sortOptions).map(([value, label]) => ({ value, label }))}
             onChange={(value) => update('ordem', value)}
             subtle
           />

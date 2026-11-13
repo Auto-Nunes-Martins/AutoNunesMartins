@@ -76,8 +76,8 @@ const promoted = [
     price: '21900.00',
     promotion: {
       referencePrice: '23500.00',
-      startsAt: '2026-11-11T09:00:00.000Z',
-      endsAt: '2026-11-18T09:00:00.000Z',
+      startsAt: new Date(Date.now() - 86400000).toISOString(),
+      endsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
     },
   },
 ];
@@ -201,28 +201,40 @@ try {
     const response = await fetch(origin);
     const html = await response.text();
     assert.equal(response.status, 200);
-    assert.ok(!html.includes('id="campanhas"'));
-    assert.ok(!html.includes('id="selecao-do-stand"'));
-    assert.ok(!/<div[^>]*class="card-promotion(?:\s|")/.test(html));
-    assert.ok(!html.includes('class="card-promotion-overlay'));
+    assert.ok(html.includes('id="campanhas"'));
+    assert.ok(html.includes('id="selecao-do-stand"'));
+    assert.ok(/<div[^>]*class="card-promotion(?:\s|")/.test(html));
+    assert.ok(html.includes('class="card-promotion-overlay'));
     for (const width of [1440, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 950 } });
       await page.goto(origin);
       await expect(page.locator('#selecao')).toBeVisible();
-      await expect(page.locator('#campanhas')).toHaveCount(0);
-      await expect(page.locator('#selecao-do-stand')).toHaveCount(0);
-      await expect(page.locator('.card-promotion')).toHaveCount(0);
-      await expect(page.locator('.card-promotion-overlay')).toHaveCount(0);
+      await expect(page.locator('#campanhas')).toBeVisible();
+      await expect(page.locator('#selecao-do-stand')).toBeVisible();
+      await expect(page.locator('.card-promotion').first()).toBeVisible();
+      await expect(page.locator('.card-promotion-overlay').first()).toBeVisible();
+      await expect(page.locator('#campanhas .now strong')).toContainText(/21\s*900/);
+      await expect(page.locator('#campanhas time')).toHaveAttribute('aria-label', /seg/);
+      const countdown = await page.locator('#campanhas time').textContent();
+      await expect(page.locator('#campanhas time')).not.toHaveText(countdown);
+      await page.locator('#campanhas').screenshot({ path: path.join(output, `production-campaigns-${width}.png`) });
       await expect(page.locator('.card-price').first()).toContainText(/21\s*900/);
       await page.goto(origin + '/viaturas');
-      await expect(page.locator('.card-promotion')).toHaveCount(0);
-      await expect(page.locator('.card-promotion-overlay')).toHaveCount(0);
+      await expect(page.locator('.card-promotion').first()).toBeVisible();
+      await expect(page.locator('.card-promotion-overlay').first()).toBeVisible();
       await expect(page.locator('.card-price').first()).toContainText(/21\s*900/);
       await page.close();
     }
-    assert.equal(campaignRequests, 0, 'Production must not load the optional campaign section');
+    assert.ok(campaignRequests > 0, 'Production must load the campaign section');
+    showCampaigns = false;
+    const emptyPage = await browser.newPage();
+    await emptyPage.goto(origin);
+    await expect(emptyPage.locator('#campanhas')).toHaveCount(0);
+    await expect(emptyPage.locator('#selecao-do-stand')).toHaveCount(0);
+    await expect(emptyPage.locator('.card-promotion')).toHaveCount(0);
+    await emptyPage.close();
     console.log(
-      'Production campaign section and card promotion details hidden; selling prices preserved.',
+      'Production campaigns, countdowns and card discounts visible on desktop and mobile; empty sections hidden.',
     );
   }
   if (readingProfile) {

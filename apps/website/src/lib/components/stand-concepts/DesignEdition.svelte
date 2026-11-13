@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { dev } from '$app/environment';
   import {
     sizedPhoto,
     vehiclePhotoSet,
@@ -1385,7 +1384,7 @@
                 id="home-sort"
                 label="Ordenar por"
                 value={homeOrder}
-                options={Object.entries(sortOptions).filter(([value]) => dev || value !== 'desconto_desc').map(([value, label]) => ({ value, label }))}
+                options={Object.entries(sortOptions).map(([value, label]) => ({ value, label }))}
                 onChange={(value) => (homeOrder = value)}
                 subtle
               />
@@ -1827,7 +1826,7 @@
               class:reserved-status={'approved' in vehicle && vehicle.category === 'Reservada'}
               >{vehicle.category}</span
             >{/if}
-          {#if dev && 'approved' in vehicle && vehicle.promotion}
+          {#if 'approved' in vehicle && vehicle.promotion}
             <CardPromotionOverlay
               price={vehicle.price}
               promotion={vehicle.promotion}
@@ -1871,9 +1870,9 @@
         </div>
         <div
           class="card-price"
-          class:has-promotion={dev && 'approved' in vehicle && !!vehicle.promotion}
+          class:has-promotion={'approved' in vehicle && !!vehicle.promotion}
         >
-          {#if dev && 'approved' in vehicle && vehicle.promotion}
+          {#if 'approved' in vehicle && vehicle.promotion}
             <CardPromotionPrice price={vehicle.price} promotion={vehicle.promotion} />
           {:else}
             <strong
