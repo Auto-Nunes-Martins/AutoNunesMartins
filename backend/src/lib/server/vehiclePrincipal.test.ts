@@ -19,7 +19,7 @@ const row = () => ({
   status: 'AVAILABLE' as const,
   webPublished: true,
   publicSlug: 'teste-abcdef123456',
-  publicPrice: new Prisma.Decimal(20000),
+  salePrice: new Prisma.Decimal(20000),
   publicDescription: 'Anúncio',
   publicTransmission: null,
   publicSpecifications: {},

@@ -4,7 +4,7 @@ export type WebsiteVehicle = {
   id: string;
   webPublished?: boolean;
   publicSlug?: string | null;
-  publicPrice?: string | null;
+  salePrice?: string | null;
   status: string;
   soldDate?: unknown;
   sale?: unknown;
@@ -35,7 +35,7 @@ export function websiteVisibility(vehicle: WebsiteVehicle) {
       label: 'Publicação oculta',
       detail: 'A viatura está vendida ou num estado que impede a apresentação no website.',
     };
-  if (!vehicle.publicSlug || (vehicle.publicPrice != null && !(Number(vehicle.publicPrice) > 0)))
+  if (!vehicle.publicSlug || (vehicle.salePrice != null && !(Number(vehicle.salePrice) > 0)))
     return {
       visible: false,
       state: 'blocked',

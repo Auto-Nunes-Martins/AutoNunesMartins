@@ -63,7 +63,6 @@ const input = () =>
     photos: [a, b],
     publication: {
       published: true,
-      price: '20000',
       description: 'Público',
       photoPaths: [b],
       transmission: null,
@@ -76,6 +75,11 @@ it('rejects a formatted description with no visible text when publishing, but pe
   expect(vehicleEditSchema.safeParse(value).success).toBe(false);
   value.publication!.published = false;
   expect(vehicleEditSchema.safeParse(value).success).toBe(true);
+});
+it('rejects a separate publication price; only the vehicle sale price can be edited', () => {
+  const value = input();
+  expect(vehicleEditSchema.safeParse({ ...value, publication: { ...value.publication, price: '20000' } }).success).toBe(false);
+  expect(vehicleEditSchema.safeParse({ ...value, data: { ...value.data, salePrice: '20000' } }).success).toBe(true);
 });
 it('saves gallery positions with the same edit transaction and validates ownership', async () => {
   const value = input();
@@ -148,9 +152,9 @@ describe('single vehicle edit transaction', () => {
   it('validates the base even when saving an unpublished draft and rolls back a conflict', async () => {
     const value = input();
     value.publication!.published = false;
-    mocked.campaignBase.mockRejectedValueOnce(new Error('O preço base tem de ser superior'));
+    mocked.update.mockRejectedValueOnce(new Error('O preço base tem de ser superior'));
     await expect(saveVehicleEdit(id, value, actor)).rejects.toThrow('preço base');
-    expect(mocked.campaignBase).toHaveBeenCalledWith(tx, id, value.publication!.price);
+    expect(mocked.update).toHaveBeenCalledWith(tx, id, value.data, actor);
     expect(row.brand).toBe('Original');
     expect(mocked.work.mock.calls[0]?.[1]).toEqual({ isolationLevel: 'Serializable' });
   });

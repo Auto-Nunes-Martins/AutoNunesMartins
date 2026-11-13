@@ -10,18 +10,16 @@ export function reconcilePhotoSelection(
 
 type Draft = {
   galleryFraming?: Record<string, import('@anm/types').GalleryPhotoFraming>;
-  price: string | number | null | undefined;
   description: string;
   transmission: string;
   selected: string[];
   specs: Record<string, string>;
 };
 
-/** Prices such as 25000 and 25000.00 describe the same saved value. */
+/** Normalize equivalent numeric specifications when detecting unsaved changes. */
 export function publicationDraftKey(draft: Draft) {
   return JSON.stringify({
     ...draft,
-    price: draft.price === '' || draft.price == null ? '' : String(Number(draft.price)),
     specs: Object.fromEntries(
       Object.entries(draft.specs).map(([key, value]) => [
         key,

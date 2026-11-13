@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { numericField, normalizeDecimal } from '$lib/forms/numericField';
+  import { normalizeDecimal } from '$lib/forms/numericField';
   import { ArrowUpRight } from 'lucide-svelte';
   import { reusablePhoto } from '$lib/reusablePhoto';
   import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
@@ -35,6 +35,7 @@
   import type { VehicleDetailResponse } from '$lib/server/vehicles';
   let {
     vehicle,
+    salePrice = vehicle.salePrice ?? '',
     photos = [],
     managePhotos = false,
     vehicleDetails,
@@ -50,6 +51,7 @@
     editorId,
   }: {
     vehicle: VehicleDetailResponse;
+    salePrice?: string;
     photos?: SignedVariantPhoto[];
     managePhotos?: boolean;
     vehicleDetails?: Snippet<[Snippet]>;
@@ -64,7 +66,7 @@
     recoveredDraft?: ReturnType<typeof publicDraftFromForm>;
     editorId?: string;
   } = $props();
-  let price = $state('');
+  const price = $derived(salePrice);
   let description = $state('');
   let transmission = $state('');
   let selected = $state<string[]>([]);
@@ -156,7 +158,7 @@
   );
   const ready = $derived(
     eligible &&
-      (!price || Number(normalizeDecimal(price)) > 0) &&
+      Number(normalizeDecimal(price)) > 0 &&
       descriptionText(description).length > 0,
   );
   function savedPublicationDraft() {
@@ -164,7 +166,6 @@
       const details = recoveredDraft.specifications as typeof recoveredDraft.specifications &
         Record<string, unknown>;
       return {
-        price: recoveredDraft.price ?? '',
         description: recoveredDraft.description,
         transmission: recoveredDraft.transmission ?? '',
         selected: allowedPhotos,
@@ -183,11 +184,6 @@
     }
     const details = vehicle.publicSpecifications;
     return {
-      price: vehicle.publicSlug
-        ? (vehicle.publicPrice ?? '')
-        : Number(vehicle.salePrice) > 0
-          ? vehicle.salePrice!
-          : '',
       description:
         vehicle.publicDescription ?? `${vehicle.brand} ${vehicle.model}, de ${vehicle.year}.`,
       transmission: vehicle.publicTransmission ?? '',
@@ -211,7 +207,6 @@
         ? (recoveredDraft.galleryFraming ?? {})
         : (vehicle.galleryFraming ?? {});
     const saved = savedPublicationDraft();
-    price = saved.price;
     description = saved.description;
     transmission = saved.transmission;
     specs = saved.specs;
@@ -220,7 +215,6 @@
   }
   const draftKey = $derived(
     publicationDraftKey({
-      price,
       description,
       transmission,
       selected,
@@ -451,17 +445,6 @@
             <input type="hidden" name="published" value={String(draftPublished)} />
           {/if}
           <h3 class="publication-group-title">Dados do anúncio</h3>
-          <div class="fields crm-compact-fields">
-            <label class="public-price-field" style="--field-width: 170px"
-              >Preço público (€)<input
-                name="publicPrice"
-                type="text"
-                use:numericField={{ min: 0.01, max: 9999999999.99 }}
-                inputmode="decimal"
-                bind:value={price}
-              /></label
-            >
-          </div>
           <DescriptionEditor
             bind:value={description}
             disabled={disabled || pending}
@@ -535,9 +518,9 @@
             {#if !eligible}<p>
                 Requer estado Disponível ou Reservado, sem venda registada.
               </p>{/if}{#if !price}<p>
-                Sem preço indicado, o site mostrará «Preço sob consulta».
+                Preencha o preço de venda na ficha da viatura para publicar.
               </p>{:else if !(Number(normalizeDecimal(price)) > 0)}<p>
-                Indique um preço positivo ou deixe o campo vazio.
+                O preço de venda deve ser superior a zero.
               </p>{/if}{#if !descriptionText(description)}<p>
                 Falta uma descrição pública.
               </p>{/if}{#if !selected.length}<p>
@@ -624,9 +607,6 @@
   }
   .editing-panels > :global(*) {
     min-width: 0;
-  }
-  .public-price-field input {
-    max-width: 240px;
   }
   .public-view-link {
     margin-left: auto;
@@ -752,15 +732,6 @@
   }
   .fields {
     margin-bottom: 18px;
-  }
-  .fields > label {
-    margin-bottom: 0;
-  }
-  label {
-    display: grid;
-    gap: 7px;
-    font-size: 13px;
-    margin-bottom: 16px;
   }
   input:not([type='checkbox']) {
     width: 100%;

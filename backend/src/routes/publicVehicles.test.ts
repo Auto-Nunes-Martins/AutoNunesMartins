@@ -73,7 +73,7 @@ const fixture = () => ({
   sale: null,
   webPublished: true,
   publicSlug: slug,
-  publicPrice: new Prisma.Decimal('21900.25'),
+  salePrice: new Prisma.Decimal('21900.25'),
   publicDescription: 'Approved public description',
   publicPhotoPaths: [photo],
   publicTransmission: 'MANUAL' as const,
@@ -82,7 +82,6 @@ const fixture = () => ({
   vin: 'SECRET-VIN',
   licensePlate: 'SECRET-PLATE',
   purchasePrice: 'SECRET-COST',
-  salePrice: 'SECRET-NEGOTIATED-PRICE',
   description: 'SECRET-INTERNAL-NOTES',
   pendingDocFlags: { docs: true },
   expenses: [{ amount: 'SECRET-EXPENSE' }],
@@ -91,7 +90,6 @@ const fixture = () => ({
 });
 const publication = {
   published: true as const,
-  price: '21900.25',
   description: 'Approved',
   photoPaths: [photo],
   transmission: 'MANUAL' as const,
@@ -147,8 +145,8 @@ beforeEach(() => {
     ];
   });
   mocks.db.vehicle.aggregate.mockResolvedValue({
-    _min: { year: 2019, mileage: 75000, publicPrice: new Prisma.Decimal('21900.25') },
-    _max: { year: 2019, mileage: 75000, publicPrice: new Prisma.Decimal('21900.25') },
+    _min: { year: 2019, mileage: 75000, salePrice: new Prisma.Decimal('21900.25') },
+    _max: { year: 2019, mileage: 75000, salePrice: new Prisma.Decimal('21900.25') },
   });
   mocks.download.mockResolvedValue({
     data: new Blob([new Uint8Array(photoBytes)], { type: 'image/jpeg' }),
@@ -158,6 +156,10 @@ beforeEach(() => {
 });
 
 describe('public query validation and search boundary', () => {
+  it('accepts discount ordering and rejects the discarded checkbox filter', () => {
+    expect(publicVehicleQuerySchema.parse({ ordem: 'desconto_desc' }).ordem).toBe('desconto_desc');
+    expect(publicVehicleQuerySchema.safeParse({ promocao: '1' }).success).toBe(false);
+  });
   it('adds dimensions only for an approved current cover, without reading storage or leaking private metadata', async () => {
     mocks.db.vehiclePhotoDimensions.findMany.mockResolvedValue([
       {
@@ -210,7 +212,7 @@ describe('public query validation and search boundary', () => {
       model: { equals: 'Série 1' },
       year: { gte: 2018, lte: 2022 },
       mileage: { gte: 1000, lte: 100000 },
-      publicPrice: { gt: 0, gte: 20000.01, lte: 25000 },
+      salePrice: { gt: 0, gte: 20000.01, lte: 25000 },
     });
   });
   it.each([
@@ -270,12 +272,31 @@ describe('public query validation and search boundary', () => {
     (order) => {
       const sort = publicVehicleOrder(order);
       expect(sort.at(-1)).toEqual({ id: 'asc' });
-      expect(JSON.stringify(sort)).not.toMatch(/purchasePrice|salePrice/);
+      expect(JSON.stringify(sort)).not.toMatch(/purchasePrice/);
     },
   );
 });
 
 describe('public HTTP responses never disclose private inventory', () => {
+  it.each([1, 2, 3])('orders discounts in euros before ordinary stock across pages: %s', async (page) => {
+    const rows = [fixture(), { ...fixture(), id: 'clabcdefghijklmnopqrstuvx', publicSlug: slug + 'a', salePrice: new Prisma.Decimal('30000.00') }];
+    const ordinary = { ...fixture(), id: 'clabcdefghijklmnopqrstuvy', publicSlug: slug + 'b' };
+    mocks.db.appSetting.findUnique.mockResolvedValue({ value: {
+      revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225',
+      items: rows.map((row, index) => ({ vehicleId: row.id, price: index ? '24999.74' : '16900.00', referencePrice: row.salePrice.toFixed(2), durationDays: 7,
+        startsAt: new Date(Date.now() - 60000).toISOString(), endsAt: new Date(Date.now() + 86400000).toISOString() })),
+    } });
+    mocks.db.vehicle.findMany.mockImplementation(async ({ where }) => where.id?.notIn ? [ordinary] : rows);
+    mocks.db.vehicle.count.mockResolvedValue(3);
+    const response = await fetch(base + '/api/public/vehicles?ordem=desconto_desc&pageSize=1&pagina=' + page);
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.total).toBe(3);
+    expect(body.items.map((item: { slug: string }) => item.slug)).toEqual([[rows[1].publicSlug], [rows[0].publicSlug], [ordinary.publicSlug]][page - 1]);
+    const ordinaryCalls = mocks.db.vehicle.findMany.mock.calls.filter(([args]) => args.where.id?.notIn && args.take);
+    if (page < 3) expect(ordinaryCalls).toHaveLength(0);
+    else expect(ordinaryCalls[0][0]).toMatchObject({ skip: 0, take: 1 });
+  });
   it.each([false, true])(
     'uses the effective price everywhere (ordinary price: %s)',
     async (ordinary) => {
@@ -299,7 +320,7 @@ describe('public HTTP responses never disclose private inventory', () => {
         ...fixture(),
         id: 'clabcdefghijklmnopqrstuvx',
         publicSlug: slug + 'a',
-        publicPrice: new Prisma.Decimal('18900.00'),
+        salePrice: new Prisma.Decimal('18900.00'),
       };
       mocks.db.vehicle.findMany.mockImplementation(async ({ where }) =>
         where.id?.notIn ? [other] : [fixture()],
@@ -312,7 +333,7 @@ describe('public HTTP responses never disclose private inventory', () => {
         return result;
       };
       const promotion = {
-        referencePrice: fixture().publicPrice.toFixed(2),
+        referencePrice: fixture().salePrice.toFixed(2),
         startsAt: campaign.startsAt,
         endsAt: campaign.endsAt,
       };
@@ -331,7 +352,7 @@ describe('public HTTP responses never disclose private inventory', () => {
       expect(advertised).toMatchObject([effective]);
       expect(selection).toEqual([]);
       for (const vehicle of [detail, selected, catalog.items[0], advertised[0]]) {
-        expect(vehicle.promotion.referencePrice).toBe(fixture().publicPrice.toFixed(2));
+        expect(vehicle.promotion.referencePrice).toBe(fixture().salePrice.toFixed(2));
         expect(vehicle).not.toHaveProperty('priceValidUntil');
       }
       expect(mocks.db.vehicle.count).toHaveBeenLastCalledWith({
@@ -339,7 +360,7 @@ describe('public HTTP responses never disclose private inventory', () => {
           AND: [
             {
               OR: [
-                { id: { notIn: [id] }, publicPrice: { gt: 0, gte: undefined, lte: 19000 } },
+                { id: { notIn: [id] }, salePrice: { gt: 0, gte: undefined, lte: 19000 } },
                 { id: { in: [id] } },
               ],
             },
@@ -353,10 +374,10 @@ describe('public HTTP responses never disclose private inventory', () => {
             items: [{ ...campaign, endsAt: new Date(Date.now() - 1).toISOString() }],
           },
         });
-        expect((await read('/' + slug)).price).toBe(fixture().publicPrice.toFixed(2));
+        expect((await read('/' + slug)).price).toBe(fixture().salePrice.toFixed(2));
         expect((await read('/campaigns')).selection).toEqual([]);
         mocks.db.appSetting.findUnique.mockResolvedValue(null);
-        expect((await read('/' + slug)).price).toBe(fixture().publicPrice.toFixed(2));
+        expect((await read('/' + slug)).price).toBe(fixture().salePrice.toFixed(2));
       }
     },
   );
@@ -401,15 +422,15 @@ describe('public HTTP responses never disclose private inventory', () => {
     expect(
       publicVehicleDto({
         ...fixture(),
-        publicPrice: null,
+        salePrice: null,
         photos: [],
         publicPhotoPaths: [],
         status: 'RESERVED',
       }),
     ).toMatchObject({ price: null, photos: [], availability: 'RESERVED' });
-    expect(publicVehicleWhere()).not.toHaveProperty('publicPrice');
+    expect(publicVehicleWhere()).not.toHaveProperty('salePrice');
     expect(publicVehicleOrder('preco_desc')[0]).toEqual({
-      publicPrice: { sort: 'desc', nulls: 'last' },
+      salePrice: { sort: 'desc', nulls: 'last' },
     });
   });
   it('returns only the public allowlist with protected facets and counts', async () => {
@@ -456,8 +477,8 @@ describe('public HTTP responses never disclose private inventory', () => {
     mocks.db.vehicle.count.mockResolvedValue(0);
     mocks.db.vehicle.groupBy.mockResolvedValue([]);
     mocks.db.vehicle.aggregate.mockResolvedValue({
-      _min: { year: null, mileage: null, publicPrice: null },
-      _max: { year: null, mileage: null, publicPrice: null },
+      _min: { year: null, mileage: null, salePrice: null },
+      _max: { year: null, mileage: null, salePrice: null },
     });
     const body = await (await fetch(`${base}/api/public/vehicles`)).json();
     expect(body).toMatchObject({
@@ -573,7 +594,7 @@ describe('private photo storage boundary', () => {
         ...fixture(),
         photos: [other, photo],
         publicPhotoPaths: [photo, other],
-        publicPrice: new Prisma.Decimal('20000.00'),
+        salePrice: new Prisma.Decimal('20000.00'),
         status: 'RESERVED',
       },
     ]);
@@ -909,7 +930,7 @@ describe('explicit publication and stable unique slugs', () => {
       false,
     );
     expect(
-      webPublicationSchema.safeParse({ ...publication, photoPaths: [], price: null }).success,
+      webPublicationSchema.safeParse({ ...publication, photoPaths: [] }).success,
     ).toBe(true);
     expect(webPublicationSchema.safeParse({ published: true }).success).toBe(false);
     expect(webPublicationSchema.safeParse({ ...publication, price: '0' }).success).toBe(false);
@@ -921,7 +942,7 @@ describe('explicit publication and stable unique slugs', () => {
       webPublicationSchema.safeParse({ ...publication, photoPaths: [photo, photo] }).success,
     ).toBe(true);
   });
-  it('generates on first opt-in and never copies CRM description/price/photos automatically', async () => {
+  it('generates on first opt-in and uses the existing sale price and only publishes approved description/photos', async () => {
     mocks.db.vehicle.findUnique.mockResolvedValue({ ...fixture(), publicSlug: null });
     expect(await setWebPublication(db, id, publication, 'admin-id')).toEqual({
       published: true,
@@ -930,7 +951,6 @@ describe('explicit publication and stable unique slugs', () => {
     expect(mocks.db.vehicle.update.mock.calls[0]?.[0].data).toEqual({
       webPublished: true,
       publicSlug: slug,
-      publicPrice: '21900.25',
       publicDescription: 'Approved',
       publicPhotoPaths: [photo],
       publicTransmission: 'MANUAL',
@@ -1069,7 +1089,7 @@ describe('nearest-price recommendations', () => {
     ...fixture(),
     id: 'candidate-' + suffix,
     publicSlug: 'car-' + suffix.padStart(12, 'a'),
-    publicPrice: price === null ? null : new Prisma.Decimal(price),
+    salePrice: price === null ? null : new Prisma.Decimal(price),
     publicPhotoPaths: [],
   });
   it('ranks both sides of the price, excludes current and duplicates, and enforces eligibility', async () => {

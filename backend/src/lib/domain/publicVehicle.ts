@@ -46,7 +46,7 @@ export const publicVehicleQuerySchema = z
       .transform((v) => transmissionLabels[v] ?? v)
       .pipe(z.enum(['MANUAL', 'AUTOMATIC']))
       .optional(),
-    ordem: z.enum(['relevancia', 'preco_asc', 'preco_desc', 'ano', 'km']).default('relevancia'),
+    ordem: z.enum(['relevancia', 'preco_asc', 'preco_desc', 'desconto_desc', 'ano', 'km']).default('relevancia'),
     pagina: numberFilter(1, 1000).default('1'),
     pageSize: numberFilter(1, 30).default('9'),
   })
@@ -87,16 +87,11 @@ export function isApprovedPhotoPath(id: string, path: string): boolean {
   return isVehiclePhotoPath(id, path);
 }
 
-const publicPrice = z
-  .string()
-  .regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/)
-  .refine((v) => Number(v) > 0 && Number(v) <= 9_999_999_999.99, 'Price must be positive');
 export const webPublicationSchema = z.discriminatedUnion('published', [
   z.object({ published: z.literal(false) }).strict(),
   z
     .object({
       published: z.literal(true),
-      price: publicPrice.nullable(),
       description: z.string().trim().min(1).max(6000),
       photoPaths: z.array(z.string().max(160)).max(20).optional().default([]), // Deprecated compatibility input; never filters Vehicle.photos.
       transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),

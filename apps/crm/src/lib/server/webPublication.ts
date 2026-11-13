@@ -5,11 +5,6 @@ import { publicSpecificationsSchema } from '@anm/types';
 import { vehiclesApi } from './vehicles';
 import { ApiError } from './api';
 const schema = z.object({
-  price: z
-    .string()
-    .regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/)
-    .refine((v) => Number(v) > 0, 'Indique um preço positivo ou deixe o campo vazio.')
-    .nullable(),
   description: z
     .string()
     .trim()
@@ -30,7 +25,6 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
     });
   const remove = form.get('operation') === 'remove';
   const parsed = schema.safeParse({
-    price: form.get('publicPrice') || null,
     description: form.get('publicDescription'),
     transmission: form.get('publicTransmission') || null,
     ...(form.has('specificationsPresent')
@@ -64,7 +58,7 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
             : [
                 (
                   {
-                    price: 'publicPrice',
+                    price: 'salePrice',
                     description: 'publicDescription',
                     transmission: 'publicTransmission',
                   } as Record<string, string>
@@ -103,7 +97,7 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
                     ? issue.path.slice(1)
                     : [
                         {
-                          price: 'publicPrice',
+                          price: 'salePrice',
                           description: 'publicDescription',
                           transmission: 'publicTransmission',
                           photoPaths: 'publicPhotoPaths',

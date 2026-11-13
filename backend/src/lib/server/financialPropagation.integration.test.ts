@@ -19,7 +19,8 @@ import {
 import { cancelSale, previewSaleCancellation } from './saleCancellationService.js';
 import { loadDashboard } from './dashboardService.js';
 import { cache } from '../data/cache.js';
-import { publicVehicleWhere } from '../data/publicVehicle.js';
+import { publicVehicleWhere, publicVehicleDto } from '../data/publicVehicle.js';
+import { readCampaignEditor } from './vehicleCampaigns.js';
 import {
   createOperationalExpense,
   updateOperationalExpense,
@@ -51,9 +52,9 @@ beforeEach(async () => {
   Object.assign(mocks.db, prismaForPglite(db));
   await db.exec(`INSERT INTO "User" ("id","clerkId","email","name") VALUES ('admin','test-admin','local@example.test','Admin');
     INSERT INTO "Customer" ("id","name","phone","nif","updatedAt") VALUES ('customerA','Cliente A','900000000','123456789',NOW()),('customerB','Cliente B','900000001','123456788',NOW());
-    INSERT INTO "Vehicle" ("id","brand","model","year","fuel","mileage","purchasePrice","salePrice","status","acquisitionDate","updatedAt","webPublished","publicSlug","publicPrice") VALUES
-    ('A','BMW','A',2020,'DIESEL',10000,10000,16000,'AVAILABLE','2025-10-01',NOW(),true,'bmw-a',16000),
-    ('X','Ford','X',2019,'GASOLINE',20000,2000,5000,'AVAILABLE','2025-09-01',NOW(),false,NULL,NULL);
+    INSERT INTO "Vehicle" ("id","brand","model","year","fuel","mileage","purchasePrice","salePrice","status","acquisitionDate","updatedAt","webPublished","publicSlug") VALUES
+    ('A','BMW','A',2020,'DIESEL',10000,10000,16000,'AVAILABLE','2025-10-01',NOW(),true,'bmw-a'),
+    ('X','Ford','X',2019,'GASOLINE',20000,2000,5000,'AVAILABLE','2025-09-01',NOW(),false,NULL);
     INSERT INTO "OperationalExpense" ("id","category","description","amount","date") VALUES ('overhead','OTHER','Renda',200,'2026-01-05');`);
 }, 30000);
 afterEach(async () => {
@@ -85,6 +86,17 @@ const saleA = async () =>
   );
 
 describe('real financial services → isolated PostgreSQL → dashboard, lists, customers and public stock', () => {
+  it('uses the sale price for the website and campaign catalogue and protects an active discount', async () => {
+    await updateVehicle('A', { salePrice: '18000' }, actor);
+    expect((await readCampaignEditor(mocks.db)).candidates.find(v => v.id === 'A')?.price).toBe('18000.00');
+    const row = await mocks.db.vehicle.findUnique({ where: { id: 'A' } });
+    expect(publicVehicleDto(row).price).toBe('18000.00');
+    const setting = { revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225', items: [{ vehicleId: 'A', price: '17000.00', durationDays: 7, applied: true, referencePrice: null, startsAt: new Date(Date.now() - 1000).toISOString(), endsAt: new Date(Date.now() + 86400000).toISOString() }] };
+    await db.query('INSERT INTO "AppSetting" (key,value,"updatedAt") VALUES ($1,$2,NOW())', ['publicVehicleCampaigns', JSON.stringify(setting)]);
+    await expect(updateVehicle('A', { salePrice: '16000' }, actor)).rejects.toMatchObject({ status: 409, field: 'salePrice' });
+    expect((await mocks.db.vehicle.findUnique({ where: { id: 'A' } })).salePrice.toFixed(2)).toBe('18000.00');
+    await expect(updateVehicle('A', { salePrice: '0' }, actor)).rejects.toMatchObject({ field: 'salePrice' });
+  });
   it('restores the recorded older customer contact after deleting an erroneous sale', async () => {
     const previous = new Date('2025-11-01');
     await mocks.db.customer.update({

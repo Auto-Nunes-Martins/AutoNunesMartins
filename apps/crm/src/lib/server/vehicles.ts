@@ -7,7 +7,6 @@ import { apiJson } from './api.js';
 export interface VehicleListItem {
   webPublished?: boolean;
   publicSlug?: string | null;
-  publicPrice?: string | null;
   sale?: { id: string } | null;
   id: string;
   brand: string;
@@ -53,7 +52,6 @@ export interface VehicleDetailResponse {
   galleryFraming?: Record<string, import('@anm/types').GalleryPhotoFraming>;
   webPublished: boolean;
   publicSlug: string | null;
-  publicPrice: string | null;
   publicDescription: string | null;
   /** @deprecated Compatibility mirror of photos, never a public subset. */
   publicPhotoPaths: string[];
@@ -149,7 +147,6 @@ export const vehiclesApi = {
       | { published: false }
       | {
           published: true;
-          price: string | null;
           description: string;
           /** @deprecated Ignored by the backend; all vehicle photos follow publication. */
           photoPaths?: string[];

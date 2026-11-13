@@ -90,6 +90,7 @@
   let editIssues = $state<EditIssue[]>([]);
   function editChanged(event: Event) {
     const field = event.target as HTMLInputElement;
+    if (field.name === 'salePrice') draftSalePrice = field.value;
     const name = field?.name || field?.dataset?.errorField;
     if (name) {
       const hadErrors = editIssues.length > 0;
@@ -142,6 +143,7 @@
       url: data.signedPhotos.find((photo) => photo.path === path)?.url ?? '',
     }));
   }
+  let draftSalePrice = $state<string | undefined>();
   function forms() {
     return {
       internal: root?.querySelector<HTMLFormElement>('form[data-edit-vehicle]'),
@@ -167,6 +169,7 @@
     await tick();
     await tick();
     const current = forms();
+    draftSalePrice = baseline.salePrice ?? '';
     if (current.publication) {
       initialPublicKey = publicEditKey(publicDraftFromForm(new FormData(current.publication)));
       markFormSaved(current.publication);
@@ -530,7 +533,8 @@
   {#key revision}
     {@const values = initial(data.vehicle)}
     <WebPublicationPanel
-      editorId={publicationEditorId}
+      salePrice={draftSalePrice ?? baseline.salePrice ?? ''}
+editorId={publicationEditorId}
       unified
       managePhotos
       vehicle={data.vehicle}

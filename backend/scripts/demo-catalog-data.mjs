@@ -30,12 +30,12 @@ const definitions = [
   ['Krara', '7g', 'Toyota', 'Yaris', '1.0 Sol', 'GASOLINE', 'MANUAL', 68, 998, 5, 5, 'Utilitário', 4900],
 ];
 export const demoMarker = '[DADOS FICTÍCIOS DE TESTE]';
-export const mutableFields = ['brand', 'model', 'publicPrice', 'publicDescription', 'publicTransmission', 'publicSpecifications'];
+export const mutableFields = ['brand', 'model', 'salePrice', 'publicDescription', 'publicTransmission', 'publicSpecifications'];
 const key = value => String(value).trim().toLocaleLowerCase('pt-PT');
 const colors = ['Cinza', 'Branco', 'Preto', 'Azul'];
 export function catalogState(row) {
   return Object.fromEntries(mutableFields.map(field => [field,
-    field === 'publicPrice' && row[field] != null ? Number(row[field]).toFixed(2) : row[field] ?? null,
+    field === 'salePrice' && row[field] != null ? Number(row[field]).toFixed(2) : row[field] ?? null,
   ]));
 }
 export const stable = value => JSON.stringify(value, (_, entry) => entry && typeof entry === 'object' && !Array.isArray(entry)
@@ -57,9 +57,9 @@ export function planDemoVehicle(row) {
       ? ['Vidros elétricos dianteiros', 'Fecho centralizado']
       : ['Ar condicionado', 'Bluetooth', 'Sensores de estacionamento'],
   };
-  const price = row.publicPrice != null && Number(row.publicPrice) > 0 ? Number(row.publicPrice) : fallbackPrice;
+  const price = row.salePrice != null && Number(row.salePrice) > 0 ? Number(row.salePrice) : fallbackPrice;
   return {
-    brand, model, publicPrice: price.toFixed(2), publicTransmission: transmission,
+    brand, model, salePrice: price.toFixed(2), publicTransmission: transmission,
     publicSpecifications: specifications,
     publicDescription: `${demoMarker} ${brand} ${model} ${version}, de ${row.year}, com ${new Intl.NumberFormat('pt-PT').format(row.mileage)} km e caixa ${transmission === 'AUTOMATIC' ? 'automática' : 'manual'}. Exemplo fictício para testar o website e o CRM; características, equipamento e preço não representam uma oferta comercial.`,
   };

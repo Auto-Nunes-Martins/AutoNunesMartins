@@ -24,16 +24,16 @@ function checkRevision(expected: string | null, current: string | null) {
   }
 }
 
-function checkPublicPrice(
-  vehicle: { brand: string; model: string; publicPrice: Prisma.Decimal | null } | undefined,
+function checkSalePrice(
+  vehicle: { brand: string; model: string; salePrice: Prisma.Decimal | null } | undefined,
   price: string,
 ) {
-  if (!vehicle?.publicPrice?.gt(0)) {
+  if (!vehicle?.salePrice?.gt(0)) {
     throw new CampaignConflict(
       'Uma das viaturas deixou de estar disponível no site. Reveja a seleção.',
     );
   }
-  if (!(Number(price) > 0) || vehicle.publicPrice.lte(price)) {
+  if (!(Number(price) > 0) || vehicle.salePrice.lte(price)) {
     throw new CampaignConflict(
       `${vehicle.brand} ${vehicle.model}: o preço promocional tem de ser positivo e inferior ao preço base.`,
     );
@@ -84,14 +84,14 @@ export async function readCampaignEditor(db: PrismaClient) {
   const [campaigns, vehicles] = await Promise.all([
     readCampaigns(db),
     db.vehicle.findMany({
-      where: { ...publicVehicleWhere(), status: 'AVAILABLE', publicPrice: { gt: 0 } },
+      where: { ...publicVehicleWhere(), status: 'AVAILABLE', salePrice: { gt: 0 } },
       select: {
         id: true,
         brand: true,
         model: true,
         year: true,
         licensePlate: true,
-        publicPrice: true,
+        salePrice: true,
       },
       orderBy: [{ brand: 'asc' }, { model: 'asc' }, { id: 'asc' }],
     }),
@@ -100,9 +100,9 @@ export async function readCampaignEditor(db: PrismaClient) {
   return {
     revision: campaigns.revision,
     items: campaigns.items.filter((item) => !appliedCampaign(item) || currentCampaign(item, now)),
-    candidates: vehicles.map(({ publicPrice, ...vehicle }) => ({
+    candidates: vehicles.map(({ salePrice, ...vehicle }) => ({
       ...vehicle,
-      price: publicPrice!.toFixed(2),
+      price: salePrice!.toFixed(2),
     })),
   };
 }
@@ -120,10 +120,10 @@ export async function addCampaign(db: PrismaClient, input: CampaignAddition, act
     }
     const [candidate] = await tx.vehicle.findMany({
       where: { ...publicVehicleWhere(), status: 'AVAILABLE', id: input.item.vehicleId },
-      select: { brand: true, model: true, publicPrice: true },
+      select: { brand: true, model: true, salePrice: true },
       take: 1,
     });
-    const name = checkPublicPrice(candidate, input.item.price);
+    const name = checkSalePrice(candidate, input.item.price);
     const now = Date.now();
     const campaign = newCampaign(input.item, name, now);
     const revision = randomUUID();
@@ -163,7 +163,7 @@ export async function saveCampaigns(db: PrismaClient, input: CampaignInput, acto
             status: 'AVAILABLE',
             id: { in: input.items.map((item) => item.vehicleId) },
           },
-          select: { id: true, brand: true, model: true, publicPrice: true },
+          select: { id: true, brand: true, model: true, salePrice: true },
         })
       : [];
     const items: SavedCampaign[] = [];
@@ -179,7 +179,7 @@ export async function saveCampaigns(db: PrismaClient, input: CampaignInput, acto
         items.push(previous);
         continue;
       }
-      const name = checkPublicPrice(
+      const name = checkSalePrice(
         vehicles.find(({ id }) => id === item.vehicleId),
         item.price,
       );

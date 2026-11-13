@@ -4,7 +4,7 @@ const vehicle = {
   id: 'c000000000000000000000001',
   webPublished: true,
   publicSlug: 'vehicle-aaaaaaaaaaaa',
-  publicPrice: null,
+  salePrice: null,
   status: 'AVAILABLE',
   soldDate: null,
   sale: null,
@@ -22,8 +22,8 @@ describe('public visibility follows the public endpoint contract', () => {
     { status: 'SOLD' },
     { soldDate: '2026-10-28' },
     { sale: { id: 'sale' } },
-    { publicPrice: '0' },
-    { publicPrice: '-1' },
+    { salePrice: '0' },
+    { salePrice: '-1' },
   ])('does not claim live for %j', (change) =>
     expect(websiteVisibility({ ...vehicle, ...change }).visible).toBe(false),
   );

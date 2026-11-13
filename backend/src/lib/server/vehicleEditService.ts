@@ -14,7 +14,7 @@ import {
   VehicleStateConflict,
   type ActorContext,
 } from './vehicleService.js';
-import { applyWebPublication, assertCampaignBasePrice } from './webPublicationService.js';
+import { applyWebPublication } from './webPublicationService.js';
 import { isApprovedPhotoPath, SLUG_SUFFIX_LENGTHS } from '../domain/publicVehicle.js';
 import { getBucketName, getSupabase } from '../data/storage.js';
 import sharp from 'sharp';
@@ -53,11 +53,6 @@ export const vehicleEditSchema = z
     publication: z
       .object({
         published: z.boolean(),
-        price: z
-          .string()
-          .regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/)
-          .refine((value) => Number(value) > 0)
-          .nullable(),
         description: z.string().trim().max(6000),
         photoPaths: z.array(z.string().max(160)).max(20).optional().default([]), // Legacy input ignored; photos is the source of truth.
         transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
@@ -179,11 +174,9 @@ export async function saveVehicleEdit(
               suffixLength,
             );
             if (!publication.published) {
-              await assertCampaignBasePrice(tx, id, publication.price);
               await tx.vehicle.update({
                 where: { id },
                 data: {
-                  publicPrice: publication.price,
                   publicDescription: publication.description,
                   publicPhotoPaths: input.photos,
                   publicTransmission: publication.transmission,

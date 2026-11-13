@@ -3,7 +3,7 @@
 import Decimal from 'decimal.js';
 export function prismaForPglite(db: any, ids = { next: 0 }): any {
   const decimalFields: Record<string, string[]> = {
-    Vehicle: ['purchasePrice', 'salePrice', 'publicPrice'],
+    Vehicle: ['purchasePrice', 'salePrice'],
     Sale: ['salePrice', 'vatAmount', 'commission', 'realProfit'],
     TradeIn: ['allowanceValue'],
     VehicleExpense: ['amount'],

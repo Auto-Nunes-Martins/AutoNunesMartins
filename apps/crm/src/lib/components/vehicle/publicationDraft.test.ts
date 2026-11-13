@@ -30,14 +30,13 @@ describe('publication draft after independently saved photos', () => {
   });
   it('treats equivalent number input formats as saved values', () => {
     const draft = {
-      price: '25000.00',
       description: 'Descrição',
       transmission: '',
       selected: ['a'],
       specs: { powerHp: '110.0', color: 'Azul' },
     };
     expect(publicationDraftKey(draft)).toBe(
-      publicationDraftKey({ ...draft, price: 25000, specs: { powerHp: '110', color: 'Azul' } }),
+      publicationDraftKey({ ...draft, specs: { powerHp: '110', color: 'Azul' } }),
     );
     expect(publicationDraftKey({ ...draft, selected: ['b'] })).not.toBe(publicationDraftKey(draft));
   });

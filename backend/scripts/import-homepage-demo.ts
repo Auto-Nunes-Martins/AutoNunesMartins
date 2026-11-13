@@ -73,7 +73,6 @@ if (!process.argv.includes('--apply')) {
             photos: [path],
             webPublished: true,
             publicSlug: makePublicSlug({ id, brand: car.brand, model: car.model, year: car.year }),
-            publicPrice: String(car.price),
             publicDescription: `Viatura de demonstração — dados e fotografia ilustrativos. ${car.line} Informação usada para testar o carrossel e o CRM; não representa stock real confirmado.`,
             publicPhotoPaths: [path],
             publicTransmission: 'AUTOMATIC',

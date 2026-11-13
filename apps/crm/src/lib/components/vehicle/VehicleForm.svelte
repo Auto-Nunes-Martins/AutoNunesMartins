@@ -409,7 +409,7 @@
       {#if saleRecorded}
         <p class="text-[13px] text-[var(--color-text-muted)]">
           Correções dos preços de compra ou venda recalculam a venda, mantendo o tipo de comprador e
-          a comissão. O preço público do website é independente.
+          a comissão. A viatura vendida não é apresentada no website.
         </p>
       {/if}
 

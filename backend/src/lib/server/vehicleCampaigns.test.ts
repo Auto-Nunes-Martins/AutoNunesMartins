@@ -22,7 +22,7 @@ const car = {
   year: 2021,
   licensePlate: 'AA-01-AA',
   status: 'AVAILABLE',
-  publicPrice: new Prisma.Decimal(25000),
+  salePrice: new Prisma.Decimal(25000),
 };
 const offer = {
   vehicleId: car.id,
@@ -73,23 +73,33 @@ function fixture(hasHistory = true, initialValue?: unknown) {
 }
 
 describe('public campaigns', () => {
+  it('persists reordered campaigns without restarting their timers or changing their prices', async () => {
+    const { db, tx, setting } = fixture(false);
+    tx.vehicle.findMany.mockResolvedValue([car, { ...car, id: 'second' }]);
+    const second = { ...offer, vehicleId: 'second', price: '20000.00' };
+    const { revision } = await saveCampaigns(db, { revision: null, items: [offer, second] }, 'admin');
+    const original = setting().items;
+    await saveCampaigns(db, { revision, items: [second, offer] }, 'admin');
+    expect(setting().items).toEqual([original[1], original[0]]);
+  });
+
   it('always compares 5000 then 4000 with the current base of 8450, never with a previous campaign', async () => {
     const { db, tx, setting } = fixture(false);
-    const vehicle = { ...car, publicPrice: new Prisma.Decimal('8450') };
+    const vehicle = { ...car, salePrice: new Prisma.Decimal('8450') };
     tx.vehicle.findMany.mockResolvedValue([vehicle]);
     const { revision } = await saveCampaigns(
       db,
       { revision: null, items: [{ ...offer, price: '5000.00' }] },
       'admin',
     );
-    expect(campaignComparisonPrice(vehicle.publicPrice, setting().items[0])).toBe('8450.00');
+    expect(campaignComparisonPrice(vehicle.salePrice, setting().items[0])).toBe('8450.00');
     await saveCampaigns(db, { revision, items: [{ ...offer, price: '4000.00' }] }, 'admin');
     const campaign = setting().items[0]!;
-    expect(campaignComparisonPrice(vehicle.publicPrice, campaign)).toBe('8450.00');
+    expect(campaignComparisonPrice(vehicle.salePrice, campaign)).toBe('8450.00');
     expect(campaignComparisonPrice(new Prisma.Decimal('9000'), campaign)).toBe('9000.00');
     expect(campaignComparisonPrice(new Prisma.Decimal('4000'), campaign)).toBeNull();
     expect(
-      campaignComparisonPrice(vehicle.publicPrice, {
+      campaignComparisonPrice(vehicle.salePrice, {
         ...campaign,
         applied: undefined,
         referencePrice: '5000.00',

@@ -7,7 +7,7 @@ it('offers the online action only for a confirmed live publication and uses its 
     status: 'AVAILABLE',
     webPublished: true,
     publicSlug: 'published-car-123456abcdef',
-    publicPrice: null,
+    salePrice: null,
   };
   expect(publishedVehicleUrl('https://public.test', vehicle)).toBe(
     'https://public.test/viaturas/published-car-123456abcdef',
@@ -19,7 +19,7 @@ it('offers the online action only for a confirmed live publication and uses its 
     { status: 'SOLD' },
     { soldDate: '2026-10-30' },
     { sale: { id: 'sale' } },
-    { publicPrice: '0' },
+    { salePrice: '0' },
   ])
     expect(publishedVehicleUrl('https://public.test', { ...vehicle, ...change })).toBeUndefined();
 });

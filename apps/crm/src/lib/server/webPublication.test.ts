@@ -71,7 +71,7 @@ describe('Shared create/edit publication action', () => {
     expect(result).toHaveProperty('status', 400);
     expect(vehiclesApi.webPublication).not.toHaveBeenCalled();
   });
-  it('allows confirmed publication with no photo and unknown price', async () => {
+  it('delegates sale-price validation to the API without submitting a second price', async () => {
     await webPublicationAction(
       event({
         operation: 'publish',
@@ -83,7 +83,6 @@ describe('Shared create/edit publication action', () => {
     );
     expect(vehiclesApi.webPublication).toHaveBeenCalledWith(expect.anything(), id, {
       published: true,
-      price: null,
       description: 'Factual',
       transmission: null,
     });
@@ -102,7 +101,6 @@ describe('Shared create/edit publication action', () => {
     );
     expect(vehiclesApi.webPublication).toHaveBeenCalledWith(expect.anything(), id, {
       published: true,
-      price: '10000.25',
       description: 'Factual',
       transmission: null,
     });

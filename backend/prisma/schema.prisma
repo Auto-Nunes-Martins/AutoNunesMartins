@@ -95,7 +95,6 @@ model Vehicle {
   webPublished         Boolean             @default(false)
   /// Assigned once at first web publication; retained on unpublish/edit.
   publicSlug           String?             @unique
-  publicPrice          Decimal?            @db.Decimal(12, 2)
   publicDescription    String?             @db.Text
   /// Deprecated compatibility mirror. Vehicle.photos follows global web publication; never filter by this field.
   publicPhotoPaths     String[]            @default([])

@@ -23,7 +23,7 @@ const vehicle = () => ({
   sale: null,
   vin: 'PRIVATE_VIN',
   purchasePrice: 'PRIVATE_PURCHASE',
-  publicPrice: 'OLD_PRICE',
+  salePrice: 'OLD_PRICE',
 });
 beforeEach(() => {
   findUnique.mockReset();

@@ -136,6 +136,7 @@
     progress = $state(''),
     confirmNoPhoto = $state(false);
   const endpoint = crmPath(`/viaturas/${baseline.id}/editar/save`);
+  let draftSalePrice = $state<string | undefined>();
   function forms() {
     return {
       internal: root?.querySelector<HTMLFormElement>('form[data-edit-vehicle]'),
@@ -146,6 +147,7 @@
     const current = forms();
     if (!current.internal || !current.publication) return;
     const details = vehicleDetailsFromForm(new FormData(current.internal));
+    draftSalePrice = details.salePrice;
     const publication = publicDraftFromForm(new FormData(current.publication));
     publication.published = action === 'publish';
     const principal = root.querySelector<HTMLElement>('.photo-card.is-cover')?.dataset.photoPath;
@@ -184,6 +186,7 @@
   }
   function changed(event: Event) {
     const field = event.target as HTMLInputElement;
+    if (field.name === 'salePrice') draftSalePrice = field.value;
     const key = field.name || field.dataset?.errorField;
     if (key) {
       clearEditIssueMarks(root, [key]);
@@ -586,6 +589,7 @@
     <!-- Keep both panels mounted: File/blob references, selection and editor history survive back/next. -->
     <div class:step-one={step === 1} class:step-two={step === 2}>
       <WebPublicationPanel
+        salePrice={draftSalePrice ?? baseline.salePrice ?? ''}
         creation
         recoveredDraft={recoveredPublication}
         unified

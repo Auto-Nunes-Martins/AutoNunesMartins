@@ -10,7 +10,7 @@ it('selects the publication address, price and minimal sale identity required by
       select: expect.objectContaining({
         webPublished: true,
         publicSlug: true,
-        publicPrice: true,
+        salePrice: true,
         soldDate: true,
         sale: { select: { id: true } },
       }),

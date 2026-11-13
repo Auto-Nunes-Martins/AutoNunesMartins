@@ -30,7 +30,7 @@ const dto = (photos = [path, privatePath], approved = [path]) =>
     publicPhotoPaths: approved,
     webPublished: true,
     status: 'AVAILABLE',
-    publicPrice: new Prisma.Decimal(100),
+    salePrice: new Prisma.Decimal(100),
     brand: 'Test',
     model: 'Car',
     year: 2020,

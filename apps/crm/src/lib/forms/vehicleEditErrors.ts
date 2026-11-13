@@ -16,7 +16,6 @@ const labels: Record<string, string> = {
   status: 'Estado',
   acquisitionDate: 'Data de aquisição',
   description: 'Notas internas',
-  publicPrice: 'Preço público',
   publicDescription: 'Descrição pública',
   publicTransmission: 'Transmissão',
   version: 'Versão / motorização',
@@ -39,11 +38,6 @@ const fields = vehicleUpdateSchema
   .omit({ id: true })
   .extend({ licensePlate: licensePlatePtSchema.optional() });
 const publication = z.object({
-  price: z
-    .string()
-    .regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/)
-    .refine((v) => Number(v) > 0, 'Indique um preço público superior a zero.')
-    .nullable(),
   description: z.string().max(6000),
   transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
   specifications: publicSpecificationsSchema,
@@ -55,7 +49,7 @@ export function issueKey(path: unknown): string {
     const publicPath = p.slice(1);
     const field: string = publicPath[0] ?? '';
     if (field === 'photoPaths') return 'photos';
-    if (field === 'price') return 'publicPrice';
+    if (field === 'price') return 'salePrice';
     if (field === 'description') return 'publicDescription';
     if (field === 'transmission') return 'publicTransmission';
     if (field === 'specifications') return publicPath[1] ?? 'publication';
@@ -156,6 +150,8 @@ export function validateVehicleEdit(
       }),
     );
   const publicResult = publication.safeParse(pub);
+  if (pub.published && !(Number((data as { salePrice?: unknown }).salePrice) > 0))
+    issues.push({ key: 'salePrice', message: 'Preço de venda: indique um valor superior a zero para publicar.' });
   if (!publicResult.success)
     issues.push(
       ...serverEditIssues({

@@ -21,7 +21,7 @@ function fixture(query = '') {
     status:blocked?'DOCS_PENDING':'AVAILABLE', acquisitionDate:'2026-01-01', description:'Notas internas',
     pendingDocFlags:{financing:false,imt:false,registration:false,docs:false}, sale:null, soldDate:null,
     updatedAt:'2026-10-28T00:00:00.000Z', photos:empty?[]:[photo], webPublished:query.includes('detail'),
-    publicSlug:query.includes('detail')?'vehicle-aaaaaaaaaaaa':null, publicPrice:null, publicDescription:'Descrição pública confirmada.', publicTransmission:null,
+    publicSlug:query.includes('detail')?'vehicle-aaaaaaaaaaaa':null,  publicDescription:'Descrição pública confirmada.', publicTransmission:null,
     publicSpecifications:null,expenses:[{id:'expense-1',category:'REPAIR',description:'Reparação confirmada',amount:'120.00',date:'2026-10-20'}],expensesTotal:'120.00',figures:{margin:'9000.00',vatAmount:'1682.93',commission:'0.00',realProfit:'7197.07'} }, isFeatured:false,signedPhotos:empty?[]:[{path:photo,url:image}] };
 }
 const fixtureStates=new Map();
@@ -162,9 +162,9 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
     if(url.pathname.endsWith('/editar/save')){
       if(request.method()==='POST'){
         const value=request.postDataJSON();posts.push(value);
-        if(failOnce){failOnce=false;return route.fulfill({status:422,json:{issues:[{path:['publication','price'],message:'Preço de teste inválido.'}]}});}
+        if(failOnce){failOnce=false;return route.fulfill({status:422,json:{issues:[{path:['data','salePrice'],message:'Preço de teste inválido.'}]}});}
         saved.vehicle={...saved.vehicle,...value.data,year:Number(value.data.year),mileage:Number(value.data.mileage),photos:value.photos,updatedAt:new Date(Date.parse(saved.vehicle.updatedAt)+1000).toISOString()};
-        if(value.publication)Object.assign(saved.vehicle,{webPublished:value.publication.published,publicSlug:'vehicle-aaaaaaaaaaaa',publicPrice:value.publication.price,publicDescription:value.publication.description,publicTransmission:value.publication.transmission,publicSpecifications:value.publication.specifications});
+        if(value.publication)Object.assign(saved.vehicle,{webPublished:value.publication.published,publicSlug:'vehicle-aaaaaaaaaaaa',publicDescription:value.publication.description,publicTransmission:value.publication.transmission,publicSpecifications:value.publication.specifications});
         fixtureStates.set(key,structuredClone(saved));return route.fulfill({json:{ok:true}});
       }
       return route.fulfill({json:saved});
@@ -176,9 +176,9 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
   try{
     await load();assert.equal(await page.locator('.publication-editor').isVisible(),true);assert.equal(await page.locator('.publish-toggle,input[type=checkbox][data-error-field=published],.publication-trigger').count(),0);assert.ok(!(await page.locator('.vehicle-edit-page').innerText()).includes('Todas as fotografias acompanham'));
     const status=page.locator('.edit-save-top .website-status');assert.match(await status.innerText(),/Não publicado/);assert.ok((await status.boundingBox()).y<950,'publication status is visible without scrolling');
-    assert.equal(await save().isDisabled(),true);assert.equal(await action().isDisabled(),false);await action().click();await page.waitForFunction(()=>!!document.querySelector('[name="publicPrice"][aria-invalid=true]'));assert.equal(posts.length,1);assert.match(await status.innerText(),/Não publicado/);
-    await page.locator('[name="model"]').fill('Rascunho mantido');await page.locator('[name="publicPrice"]').fill('18000');assert.match(await action().innerText(),/Guardar e publicar/);await action().click();await page.waitForFunction(()=>document.querySelector('.edit-save-top .website-status')?.textContent.includes('Publicado'));
-    assert.equal(posts.length,2);assert.equal(posts.at(-1).publication.published,true);assert.equal(posts.at(-1).data.model,'Rascunho mantido');assert.deepEqual(posts.at(-1).photos,[photo]);await page.waitForFunction(()=>!document.querySelector('.publication-action')?.disabled&&document.querySelector('.edit-save-top button.primary')?.disabled);
+    assert.equal(await save().isDisabled(),true);assert.equal(await action().isDisabled(),false);await action().click();await page.waitForFunction(()=>!!document.querySelector('[name="salePrice"][aria-invalid=true]'));assert.equal(posts.length,1);assert.match(await status.innerText(),/Não publicado/);
+    await page.locator('[name="model"]').fill('Rascunho mantido');await page.locator('[name="salePrice"]').fill('18000');assert.match(await action().innerText(),/Guardar e publicar/);await action().click();await page.waitForFunction(()=>document.querySelector('.edit-save-top .website-status')?.textContent.includes('Publicado'));
+    assert.equal(posts.length,2);assert.equal(posts.at(-1).publication.published,true);assert.equal(posts.at(-1).data.model,'Rascunho mantido');assert.equal(posts.at(-1).data.salePrice,'18000');assert.equal('price' in posts.at(-1).publication,false);assert.equal(await page.locator('[name=publicPrice]').count(),0);assert.deepEqual(posts.at(-1).photos,[photo]);await page.waitForFunction(()=>!document.querySelector('.publication-action')?.disabled&&document.querySelector('.edit-save-top button.primary')?.disabled);
     await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().waitFor();
     assert.equal(await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().getAttribute('href'),'http://website.fixture/viaturas/vehicle-aaaaaaaaaaaa');
     assert.equal(await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().getAttribute('target'),'_blank');

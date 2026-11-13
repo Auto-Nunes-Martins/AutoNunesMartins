@@ -7,6 +7,7 @@ import { computeSaleFigures } from '../domain/sale.js';
 import Decimal from 'decimal.js';
 import { lockVehicle, recomputeSaleIfExists, saleMutation } from './saleFinancials.js';
 import { cleanupVehiclePhotos, vehicleCleanupPhotos } from './vehiclePhotoCleanup.js';
+import { assertCampaignBasePrice, WebPublicationError } from './campaignBasePrice.js';
 
 const SOLD_STATUSES = new Set(['SOLD', 'DELIVERED']);
 
@@ -163,6 +164,17 @@ export async function updateVehicleInTransaction(
   }
 
   const updateData: Prisma.VehicleUncheckedUpdateInput = {};
+  if (data.salePrice !== undefined && !existing.sale) {
+    if (existing.webPublished && !new Decimal(data.salePrice).gt(0))
+      throw new VehicleStateConflict('Indique um preço de venda superior a zero para uma viatura publicada.', 409, 'salePrice');
+    try {
+      await assertCampaignBasePrice(tx, id, data.salePrice);
+    } catch (error) {
+      if (error instanceof WebPublicationError)
+        throw new VehicleStateConflict(error.message, error.status, 'salePrice');
+      throw error;
+    }
+  }
   if (data.brand !== undefined) updateData.brand = data.brand;
   if (data.model !== undefined) updateData.model = data.model;
   if (data.year !== undefined) updateData.year = data.year;
@@ -176,7 +188,7 @@ export async function updateVehicleInTransaction(
   if (data.licensePlate !== undefined) updateData.licensePlate = data.licensePlate ?? null;
   if (data.purchasePrice !== undefined) updateData.purchasePrice = data.purchasePrice;
   if (data.salePrice !== undefined) updateData.salePrice = data.salePrice;
-  // After sale creation this field mirrors the recorded price, not publicPrice.
+  // After sale creation this field mirrors the recorded transaction price.
   if (pricesChanged && existing.sale)
     updateData.salePrice = data.salePrice ?? existing.sale.salePrice;
   if (data.status !== undefined) updateData.status = data.status;
@@ -346,7 +358,6 @@ export async function getVehicleWithProfit(id: string) {
     ...vehicle,
     purchasePrice: vehicle.purchasePrice.toString(),
     salePrice: vehicle.salePrice?.toString() ?? null,
-    publicPrice: vehicle.publicPrice?.toFixed(2) ?? null,
     expenses: vehicle.expenses.map((e) => ({ ...e, amount: e.amount.toString() })),
     sale: vehicle.sale
       ? {

@@ -104,7 +104,7 @@ describe('post-sale vehicle editing UI', () => {
       expect(html).not.toMatch(/<select[^>]*name="status"/);
       expect(html).toContain('href="/vendas/sale"');
       expect(html).toContain('Guardar alterações');
-      expect(html).toContain('O preço público do website é independente');
+      expect(html).toContain('A viatura vendida não é apresentada no website');
     },
   );
   it('keeps normal stock states and PVP available before a sale is recorded', () => {

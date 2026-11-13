@@ -66,7 +66,6 @@ try {
     updatedAt: true,
     purchasePrice: true,
     salePrice: true,
-    publicPrice: true,
     status: true,
   } as const;
   const vehicles = await prisma.vehicle.findMany({ select, orderBy: { id: 'asc' } });

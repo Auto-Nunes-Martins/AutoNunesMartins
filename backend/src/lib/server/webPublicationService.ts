@@ -1,46 +1,17 @@
+import { WebPublicationError, assertCampaignBasePrice } from './campaignBasePrice.js';
+export { WebPublicationError, assertCampaignBasePrice } from './campaignBasePrice.js';
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { descriptionText } from '@anm/types/richDescription';
 import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
 import { emitActivity } from '../data/activity.js';
 import { preparePhotoDimensions } from './preparePhotoDimensions.js';
 import { activityVehicleLabel } from './activityContext.js';
-import { appliedCampaign, currentCampaign, readCampaigns } from '../data/campaignPricing.js';
-import { Prisma as PrismaValue } from '@prisma/client';
 import {
   isApprovedPhotoPath,
   makePublicSlug,
   SLUG_SUFFIX_LENGTHS,
   type WebPublication,
 } from '../domain/publicVehicle.js';
-
-export class WebPublicationError extends Error {
-  constructor(
-    public readonly status: 404 | 409,
-    message: string,
-    public readonly field?: string,
-  ) {
-    super(message);
-  }
-}
-
-/** Called inside the same serializable transaction that writes the base price. */
-export async function assertCampaignBasePrice(
-  tx: Pick<Prisma.TransactionClient, 'appSetting'>,
-  id: string,
-  price: string | null,
-) {
-  const { items } = await readCampaigns(tx);
-  const campaign = items.find(
-    (item) => item.vehicleId === id && appliedCampaign(item) && currentCampaign(item, Date.now()),
-  );
-  if (campaign && (price === null || new PrismaValue.Decimal(price).lte(campaign.price))) {
-    throw new WebPublicationError(
-      409,
-      'O preço base tem de ser superior ao preço de campanha. Altere ou remova primeiro a campanha.',
-      'price',
-    );
-  }
-}
 
 /** The only web publication write path. CRM availability alone never opts in. */
 export async function setWebPublication(
@@ -99,12 +70,16 @@ export async function applyWebPublication(
       soldDate: true,
       photos: true,
       publicSlug: true,
+      salePrice: true,
       sale: { select: { id: true } },
     },
   });
   if (!vehicle) throw new WebPublicationError(404, 'Vehicle not found');
   if (input.published) {
-    await assertCampaignBasePrice(tx, id, input.price);
+    if (!vehicle.salePrice?.gt(0)) {
+      throw new WebPublicationError(409, 'Indique um preço de venda superior a zero na ficha da viatura.', 'salePrice');
+    }
+    await assertCampaignBasePrice(tx, id, vehicle.salePrice.toFixed(2));
     if (!descriptionText(input.description ?? '').trim()) {
       throw new WebPublicationError(409, 'Uma descrição pública é obrigatória.');
     }
@@ -126,7 +101,6 @@ export async function applyWebPublication(
       ? {
           webPublished: true,
           publicSlug: slug,
-          publicPrice: input.price,
           publicDescription: input.description,
           publicPhotoPaths: orderedPublicPhotos(vehicle.photos),
           publicTransmission: input.transmission,

@@ -15,7 +15,6 @@ export function publicDraftFromForm(form: FormData) {
   return {
     published: get('published') === 'true',
     galleryFraming: galleryFramingSchema.parse(JSON.parse(get('galleryFraming') || '{}')),
-    price: get('publicPrice') || null,
     description: get('publicDescription'),
     photoPaths: form.getAll('vehiclePhotoPaths').map(String),
     transmission: get('publicTransmission') || null,
@@ -46,7 +45,6 @@ export function publicEditKey(value: ReturnType<typeof publicDraftFromForm>) {
   return JSON.stringify({
     ...value,
     description: descriptionHtml(value.description),
-    price: value.price === null ? null : Number(value.price),
     photoPaths: [...value.photoPaths].sort(),
   });
 }

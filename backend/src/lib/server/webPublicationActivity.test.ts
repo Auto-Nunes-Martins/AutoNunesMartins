@@ -1,9 +1,22 @@
+import { Prisma } from '@prisma/client';
 import { beforeEach, expect, it, vi } from 'vitest';
 const emit = vi.hoisted(() => vi.fn());
 vi.mock('../data/activity.js', () => ({ emitActivity: emit }));
 vi.mock('./preparePhotoDimensions.js', () => ({ preparePhotoDimensions: vi.fn() }));
 import { applyWebPublication, assertCampaignBasePrice } from './webPublicationService';
 beforeEach(() => vi.clearAllMocks());
+it.each([null, '0', '-1'])('requires a positive saved sale price (%s)', async (price) => {
+  const tx = {
+    vehicle: {
+      findUnique: vi.fn().mockResolvedValue({ salePrice: price === null ? null : new Prisma.Decimal(price) }),
+      update: vi.fn(),
+    },
+  };
+  await expect(applyWebPublication(tx as never, 'car', {
+    published: true, description: 'Viatura', photoPaths: [], transmission: null,
+  }, 'actor')).rejects.toMatchObject({ status: 409, field: 'salePrice' });
+  expect(tx.vehicle.update).not.toHaveBeenCalled();
+});
 it.each([null, '4000', '4999.99', '5000'])(
   'rejects base %s while a 5000 campaign is active',
   async (price) => {
@@ -29,7 +42,7 @@ it.each([null, '4000', '4999.99', '5000'])(
     };
     await expect(assertCampaignBasePrice(tx as never, 'car', price)).rejects.toMatchObject({
       status: 409,
-      field: 'price',
+      field: 'salePrice',
     });
     await expect(assertCampaignBasePrice(tx as never, 'car', '5000.01')).resolves.toBeUndefined();
     await expect(assertCampaignBasePrice(tx as never, 'car', '8450')).resolves.toBeUndefined();
@@ -49,6 +62,7 @@ it.each([true, false])(
       sale: null,
       photos: [],
       publicSlug: 'slug',
+      salePrice: new Prisma.Decimal(20000),
     };
     const tx = {
       appSetting: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -62,7 +76,6 @@ it.each([true, false])(
       'car',
       {
         published,
-        price: null,
         description: 'Descrição pública',
         photoPaths: [],
         transmission: null,

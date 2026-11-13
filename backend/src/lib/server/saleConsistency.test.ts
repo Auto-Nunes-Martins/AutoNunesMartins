@@ -55,7 +55,6 @@ function fixture(buyerType: 'PARTICULAR' | 'COMERCIANTE' = 'PARTICULAR') {
       status: 'SOLD',
       purchasePrice: new Decimal(10000),
       salePrice: new Decimal(15000),
-      publicPrice: new Decimal(25000),
       soldDate: new Date('2026-10-10'),
       acquisitionDate: new Date('2026-01-01'),
       photos: ['vehicle/photo.jpg'],
@@ -306,7 +305,7 @@ describe.each(['PARTICULAR', 'COMERCIANTE'] as const)(
         expect(state.sale.tradeIn).toEqual(tradeIn);
       },
     );
-    it('synchronizes corrected prices, preserves sale context, and leaves public price independent', async () => {
+    it('synchronizes corrected prices and preserves the recorded sale context', async () => {
       state = fixture(buyerType);
       state.vehicle.status = 'DELIVERED';
       const previous = { ...state.sale };
@@ -332,7 +331,6 @@ describe.each(['PARTICULAR', 'COMERCIANTE'] as const)(
         saleDate: previous.saleDate,
         deliveryStatus: previous.deliveryStatus,
       });
-      expect(state.vehicle.publicPrice.toString()).toBe('25000');
       expect(state.vehicle.status).toBe('DELIVERED');
       expect(state.activity).toContainEqual(
         expect.objectContaining({

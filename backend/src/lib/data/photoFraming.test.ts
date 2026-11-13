@@ -25,7 +25,7 @@ it('projects only approved photo positions in current order, without exposing pr
     status: 'AVAILABLE',
     webPublished: true,
     publicSlug: 'teste-123456abcdef',
-    publicPrice: new Prisma.Decimal(100),
+    salePrice: new Prisma.Decimal(100),
     publicDescription: null,
     publicTransmission: null,
     publicSpecifications: {},
