@@ -172,6 +172,19 @@ it('production upload uses the isolated codec and waits for its exit before fina
 
 describe('photo framing', () => {
   const framing = { desktop: { x: 50, y: 84 }, mobile: { x: 35, y: 75 } };
+  it('updates only the requested campaign destination and rejects nested destination data', async () => {
+    const card = { desktop: { x: 30, y: 40 }, mobile: { x: 45, y: 60 } };
+    mocks.vehicle.findUnique.mockResolvedValue({ photos: [a, b], galleryFraming: { [a]: { ...framing, card } } });
+    const campaign = { desktop: { x: 20, y: 30, zoom: 1.5, fit: 'contain' }, mobile: { x: 50, y: 70, fit: 'auto' } };
+    const send = (value: unknown) => fetch(base + '/framing', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path: a, destination: 'campaign', framing: value }),
+    });
+    const response = await send(campaign);
+    expect(response.status).toBe(200);
+    expect((await response.json()).galleryFraming[a]).toEqual({ ...framing, card, campaign });
+    expect((await send({ ...campaign, card })).status).toBe(400);
+  });
   it('persists independent card coordinates and preserves them for legacy detail updates and resets', async () => {
     const card = { desktop: { x: 50, y: 20 }, mobile: { x: 50, y: 30 } };
     mocks.vehicle.findUnique.mockResolvedValue({

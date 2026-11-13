@@ -10,4 +10,5 @@ export * from './activity.js';
 export * from './publicSpecifications.js';
 export * from './brands.js';
 export * from './photoFraming.js';
+export * from './photoFramingBrowser.js';
 export * from './review.js';

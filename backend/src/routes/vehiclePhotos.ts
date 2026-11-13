@@ -29,8 +29,10 @@ import { Router, type Response, type Request, type NextFunction } from 'express'
 import { z } from 'zod';
 import {
   galleryPhotoFramingSchema,
+  photoFramingSchema,
   galleryFramingSchema,
   mergeGalleryPhotoFraming,
+  withGalleryDestination,
 } from '@anm/types';
 import { lockVehicle } from '../lib/server/saleFinancials.js';
 import { cache } from '../lib/data/cache.js';
@@ -79,8 +81,16 @@ router.post(
   }),
 );
 const framingInput = z
-  .object({ path: z.string().min(1).max(160), framing: galleryPhotoFramingSchema.nullable() })
-  .strict();
+  .object({
+    path: z.string().min(1).max(160),
+    framing: galleryPhotoFramingSchema.nullable(),
+    destination: z.enum(['card', 'campaign', 'detail']).optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.destination && value.framing && !photoFramingSchema.safeParse(value.framing).success)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['framing'], message: 'Enquadramento de destino inválido.' });
+  });
 router.post(
   '/framing',
   requireUser,
@@ -99,7 +109,9 @@ router.post(
       });
       if (!vehicle || !vehicle.photos.includes(parsed.data.path)) return null;
       const framing = galleryFramingSchema.parse(vehicle.galleryFraming);
-      const next = mergeGalleryPhotoFraming(framing[parsed.data.path], parsed.data.framing);
+      const next = parsed.data.destination
+        ? withGalleryDestination(framing[parsed.data.path], parsed.data.destination, parsed.data.framing ?? undefined)
+        : mergeGalleryPhotoFraming(framing[parsed.data.path], parsed.data.framing);
       if (next) framing[parsed.data.path] = next;
       else delete framing[parsed.data.path];
       const cleaned = Object.fromEntries(

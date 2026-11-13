@@ -5,6 +5,8 @@ export const photoPositionSchema = z
   .object({
     x: z.number().finite().min(0).max(100),
     y: z.number().finite().min(0).max(100),
+    zoom: z.number().finite().min(1).max(3).optional(),
+    fit: z.enum(['auto', 'cover', 'contain']).optional(),
   })
   .strict();
 export const photoFramingSchema = z
@@ -18,6 +20,7 @@ export type PhotoFraming = z.infer<typeof photoFramingSchema>;
 // Card coordinates belong to this photo, even while another photo is the cover.
 export const galleryPhotoFramingSchema = photoFramingSchema.extend({
   card: photoFramingSchema.nullable().optional(),
+  campaign: photoFramingSchema.nullable().optional(),
 });
 export type GalleryPhotoFraming = z.infer<typeof galleryPhotoFramingSchema>;
 export const galleryFramingSchema = z
@@ -26,18 +29,23 @@ export const galleryFramingSchema = z
 
 export function withGalleryDestination(
   current: GalleryPhotoFraming | undefined,
-  destination: 'card' | 'detail',
+  destination: 'card' | 'campaign' | 'detail',
   value?: PhotoFraming,
 ): GalleryPhotoFraming | undefined {
   const centre = { desktop: { x: 50, y: 50 }, mobile: { x: 50, y: 50 } };
-  if (destination === 'card')
+  if (destination === 'campaign' && !value) return { ...(current ?? centre), campaign: null };
+  if (destination === 'card' || destination === 'campaign')
     return value
-      ? { ...(current ?? centre), card: value }
-      : current?.card
-        ? { ...current, card: null }
+      ? { ...(current ?? centre), [destination]: value }
+      : current?.[destination]
+        ? { ...current, [destination]: null }
         : current;
-  if (value) return { ...value, ...(current?.card !== undefined ? { card: current.card } : {}) };
-  return current?.card ? { ...centre, card: current.card } : undefined;
+  const destinations = {
+    ...(current?.card !== undefined ? { card: current.card } : {}),
+    ...(current?.campaign !== undefined ? { campaign: current.campaign } : {}),
+  };
+  if (value) return { ...value, ...destinations };
+  return current?.card || current?.campaign ? { ...centre, ...destinations } : undefined;
 }
 
 /** Older callers only know detail coordinates; do not erase a saved card crop. */
@@ -49,10 +57,18 @@ export function mergeGalleryPhotoFraming(
   return {
     ...incoming,
     ...(incoming.card === undefined && current?.card !== undefined ? { card: current.card } : {}),
+    ...(incoming.campaign === undefined && current?.campaign !== undefined
+      ? { campaign: current.campaign }
+      : {}),
   };
 }
 export function framingStyle(value?: PhotoFraming) {
   return value
     ? `--photo-desktop:${value.desktop.x}% ${value.desktop.y}%;--photo-mobile:${value.mobile.x}% ${value.mobile.y}%`
     : undefined;
+}
+
+/** A saved reset is distinct from older photos that inherited their card crop. */
+export function campaignFraming(value?: GalleryPhotoFraming | null): PhotoFraming | undefined {
+  return value?.campaign === null ? undefined : value?.campaign ?? value?.card ?? undefined;
 }
