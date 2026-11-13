@@ -616,7 +616,7 @@
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
             >
-              Data da entrega (opcional)
+              Data da entrega
             </span>
             <DateInput
               name="deliveryDate"
@@ -630,11 +630,6 @@
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"
             >
               Comissão de financiamento líquida (€)
-              <span
-                class="text-[var(--color-text-faint)] normal-case tracking-normal text-[10.5px]"
-              >
-                · opcional
-              </span>
             </span>
             <input
               name="commission"
@@ -837,7 +832,7 @@
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
-                  Matrícula {tradeInDisposition === 'STOCK' ? '' : '(opcional)'}
+                  Matrícula
                 </span>
                 <input
                   name="tradeIn.licensePlate"
@@ -868,7 +863,7 @@
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"
                 >
-                  VIN (opcional)
+                  VIN
                 </span>
                 <input
                   name="tradeIn.vin"
@@ -923,7 +918,7 @@
                 <span
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
                 >
-                  Estado, manutenção e observações (opcional)
+                  Estado, manutenção e observações
                 </span>
                 <textarea
                   name="tradeIn.notes"

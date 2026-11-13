@@ -454,7 +454,7 @@
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex flex-1 min-w-0 flex-col gap-1.5">
             <span class="text-[13px] text-[var(--color-text-muted)]"
-              >Valor líquido (€) · opcional</span
+              >Valor líquido (€)</span
             >
             <input
               name="commission"

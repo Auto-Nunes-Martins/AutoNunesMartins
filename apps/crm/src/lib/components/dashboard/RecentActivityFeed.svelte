@@ -63,7 +63,7 @@
               >
                 <Icon class="activity-icon h-4 w-4 flex-shrink-0" style="color: {s.color};" />
                 <span
-                  class="activity-time font-mono text-[10.5px] tabular-nums text-[var(--color-text-faint)] flex-shrink-0 w-10 text-right"
+                  class="activity-time font-mono text-[10.5px] tabular-nums text-[var(--color-text-faint)] flex-shrink-0 text-right"
                 >
                   {relativeTime(item.createdAt)}
                 </span>
@@ -88,7 +88,7 @@
               <div class="activity-row flex items-center gap-3 px-4 py-2.5">
                 <Icon class="activity-icon h-4 w-4 flex-shrink-0" style="color: {s.color};" />
                 <span
-                  class="activity-time font-mono text-[10.5px] tabular-nums text-[var(--color-text-faint)] flex-shrink-0 w-10 text-right"
+                  class="activity-time font-mono text-[10.5px] tabular-nums text-[var(--color-text-faint)] flex-shrink-0 text-right"
                 >
                   {relativeTime(item.createdAt)}
                 </span>
@@ -118,9 +118,13 @@
 </Panel>
 
 <style>
+  .activity-time {
+    min-width: 2.5rem;
+    white-space: nowrap;
+  }
   .dashboard-activity .activity-row {
     display: grid;
-    grid-template-columns: 16px 38px minmax(0, 1fr) auto;
+    grid-template-columns: 16px max-content minmax(0, 1fr) auto;
     align-items: start;
     column-gap: 14px;
     padding: 15px 20px;
@@ -135,6 +139,7 @@
     color: var(--color-text-muted);
   }
   .dashboard-activity .activity-time {
+    min-width: 38px;
     padding-top: 3px;
   }
   .dashboard-activity .activity-actor {
@@ -160,7 +165,7 @@
     .dashboard-activity .activity-time {
       grid-column: 3;
       grid-row: 1;
-      width: auto;
+      min-width: 0;
     }
     .dashboard-activity .activity-actor {
       grid-column: 2 / 4;

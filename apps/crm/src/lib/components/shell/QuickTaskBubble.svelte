@@ -33,7 +33,7 @@
     { value: 'general', label: 'Gerais' },
   ];
 
-  function desktopPanelTransition() {
+  function desktopPanelTransition(_node: Element) {
     return {
       duration: $reducedMotion ? 0 : 280,
       easing: cubicOut,
