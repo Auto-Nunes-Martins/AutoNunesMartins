@@ -150,17 +150,23 @@
           <span class={fieldLabel()}>Telefone</span>
           <input
             name="phone"
-            autocomplete="tel-national"
+            autocomplete="tel"
             type="tel"
-            inputmode="numeric"
+            inputmode="tel"
             required
-            maxlength="9"
-            pattern={'[0-9]{9}'}
+            maxlength="40"
+            aria-describedby={`${formId}-phone-hint`}
             value={initial.phone ?? ''}
-            placeholder="938272382"
+            placeholder="+351 938 272 382"
             class={inputClass('font-mono tabular-nums')}
             style="border-radius: var(--radius-btn);"
           />
+          <span
+            id={`${formId}-phone-hint`}
+            class="mt-1.5 text-[11px] text-[var(--color-text-muted)]"
+          >
+            Para números estrangeiros, inclua o indicativo (ex.: +33 ou +34).
+          </span>
         </label>
         <label class="flex flex-col crm-field-5">
           <span class={fieldLabel()}>Email</span>

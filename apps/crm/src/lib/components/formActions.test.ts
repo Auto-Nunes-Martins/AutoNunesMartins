@@ -220,12 +220,13 @@ it('preserves a custom vehicle save action and customer NIF save validation', ()
   ).toBe('');
 });
 
-it('renders a usable nine-digit phone pattern in the customer form', () => {
-  // Parse rendered HTML as HTML: a Svelte AST would treat {9} as an expression again.
-  const html = render(CustomerForm, {}).body;
+it('allows international phones without truncation or a national-only browser pattern', () => {
+  const html = render(CustomerForm, { props: { initial: { phone: '+33612345678' } } }).body;
   const phone = html.match(/<input\b[^>]*name="phone"[^>]*>/)![0];
-  const pattern = new RegExp('^(?:' + phone.match(/\bpattern="([^"]*)"/)![1] + ')$');
-  expect(pattern.test('900000000')).toBe(true);
-  expect(pattern.test('90000000')).toBe(false);
-  expect(pattern.test('90000000a')).toBe(false);
+  expect(phone).toContain('value="+33612345678"');
+  expect(phone).toContain('autocomplete="tel"');
+  expect(phone).toContain('inputmode="tel"');
+  expect(Number(phone.match(/maxlength="(\d+)"/)![1])).toBeGreaterThanOrEqual(20);
+  expect(phone).not.toContain('pattern=');
+  expect(html).toContain('inclua o indicativo');
 });
