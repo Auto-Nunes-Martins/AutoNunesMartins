@@ -208,6 +208,7 @@
   .hero-block {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr);
+    grid-template-rows: 580px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     overflow: hidden;
@@ -219,6 +220,7 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+    overflow: auto;
   }
   .eyebrow {
     display: flex;
@@ -567,6 +569,9 @@
     outline-offset: 3px;
   }
   @media (max-width: 1200px) {
+    .hero-block {
+      grid-template-rows: 620px;
+    }
     .hero-copy {
       padding: 24px;
     }
@@ -581,6 +586,7 @@
   @media (max-width: 900px) {
     .hero-block {
       grid-template-columns: 1fr;
+      grid-template-rows: 440px 360px;
     }
     .hero-photo {
       min-height: 360px;
@@ -593,6 +599,9 @@
     }
   }
   @media (max-width: 480px) {
+    .hero-block {
+      grid-template-rows: 440px 280px;
+    }
     .hero-copy {
       padding: 20px;
     }

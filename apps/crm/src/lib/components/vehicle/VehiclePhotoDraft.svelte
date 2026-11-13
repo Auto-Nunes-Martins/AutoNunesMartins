@@ -6,7 +6,7 @@
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
-  import { framingStyle, type GalleryPhotoFraming } from '@anm/types';
+  import { photoFraming, type GalleryPhotoFraming } from '@anm/types';
   import { PHOTO_ACCEPT, validatePhoto, preparePhoto } from '$lib/photoPreparation';
   import { crmPath } from '$lib/paths';
   let {
@@ -300,7 +300,7 @@
             {#if cover && failedCoverUrl !== cover.url}
               <img
                 {...photoAttrs(cover, 800, '320px')}
-                style={framingStyle(framing[cover.path])}
+                use:photoFraming={{ framing: framing[cover.path] }}
                 use:reusablePhoto={{ photo: cover }}
                 alt={cover.path !== persistedCoverPath
                   ? 'Foto principal · por guardar'

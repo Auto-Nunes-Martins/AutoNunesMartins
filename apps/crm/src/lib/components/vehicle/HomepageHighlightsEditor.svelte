@@ -1,8 +1,12 @@
 <script lang="ts">
-  import { reusablePhoto, selectPhoto } from '$lib/reusablePhoto';
-  import { framingStyle } from '@anm/types';
-  import { photoAttrs, photoFallback } from '$lib/vehicleImage';
+  import { flip } from 'svelte/animate';
+  import { slide } from 'svelte/transition';
+  import { reorderMotion, revealFraming } from '$lib/reorderMotion';
+  import { selectPhoto } from '$lib/reusablePhoto';
+  import { framingStyle, photoFraming, type PhotoFraming } from '@anm/types';
+  import { photoFallback } from '$lib/vehicleImage';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
+  import PhotoFramingActions from './PhotoFramingActions.svelte';
   import VehicleCatalogue from './VehicleCatalogue.svelte';
   import { crmPath } from '$lib/paths';
   import { untrack, onMount } from 'svelte';
@@ -10,9 +14,11 @@
   import { sessionFetch } from '$lib/auth/session';
   import { tick } from 'svelte';
   import { formFeedback, markFormSaved, refreshFormFeedback } from '$lib/forms/formFeedback';
-  import { prepareVehicleHighlight } from '$lib/highlightSelection';
+  import { prepareVehicleHighlight, principalHighlightItems } from '$lib/highlightSelection';
   import { toast } from 'svelte-sonner';
-  import { ArrowUp, ArrowDown, Check, Star, Image, RefreshCw, Trash2 } from 'lucide-svelte';
+  import { siteSavedFeedback, type SiteSaveSummary } from '../site/siteSaveFeedback';
+  import { Star, Image, RefreshCw } from 'lucide-svelte';
+  import SelectionOrderActions from '../site/SelectionOrderActions.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import Button from '$lib/components/common/Button.svelte';
@@ -25,13 +31,29 @@
     editor,
     selectedVehicleId = null,
   }: { editor: HighlightsEditor; selectedVehicleId?: string | null } = $props();
-  let items = $state<HighlightItem[]>(untrack(() => editor.items.map((item) => ({ ...item }))));
-  let savedItems = $state<HighlightItem[]>(untrack(() => editor.items));
+  let items = $state<HighlightItem[]>(untrack(() => principalHighlightItems(editor)));
+  let savedItems = $state<HighlightItem[]>(untrack(() => principalHighlightItems(editor)));
+  function saveSummary(submitted: HighlightItem[]): SiteSaveSummary {
+    const previous = new Map(savedItems.map(item => [item.vehicleId, item]));
+    const next = new Map(submitted.map(item => [item.vehicleId, item]));
+    const modified = submitted.filter(item => JSON.stringify(previous.get(item.vehicleId)) !== JSON.stringify(item));
+    const removed = savedItems.filter(item => !next.has(item.vehicleId));
+    const orderChanged = !modified.length && !removed.length && submitted.some((item, index) => savedItems[index]?.vehicleId !== item.vehicleId);
+    if (modified.length + removed.length === 1 && !orderChanged) {
+      const item = modified[0] ?? removed[0]!;
+      const vehicle = editor.candidates.find(vehicle => vehicle.id === item.vehicleId);
+      const removing = !next.has(item.vehicleId);
+      const position = featuredFramingPosition(item.framing, 'desktop');
+      return { kind: 'highlight', title: removing ? 'Viatura retirada dos destaques' : previous.has(item.vehicleId) ? 'Destaque atualizado' : 'Viatura adicionada aos destaques', label: vehicle ? `${vehicle.brand} ${vehicle.model} · ${vehicle.year}` : 'Destaque da homepage', imageUrl: previews[item.photoPath]?.url ?? undefined, imagePosition: `${position.x}% ${position.y}%`, detail: removing ? 'A seleção da homepage foi guardada.' : `Posição ${submitted.indexOf(item) + 1} na homepage · Fotografia e enquadramento guardados.` };
+    }
+    return { kind: 'highlight', title: 'Destaques da homepage guardados', label: orderChanged ? 'Ordem dos destaques atualizada' : `${modified.length + removed.length} alterações guardadas`, detail: submitted.length ? `${submitted.length} ${submitted.length === 1 ? 'viatura em destaque.' : 'viaturas em destaque.'}` : 'A seleção de destaques ficou vazia.' };
+  }
   let revision = $state(untrack(() => editor.revision));
   let query = $state('');
   let saving = $state(false);
   let message = $state('');
   let choosing = $state<string | null>(null);
+  let reordering = $state(false);
   let mounted = $state(false);
   let appliedContext = '';
   let contextMessage = $state('');
@@ -58,6 +80,8 @@
     onGallery: (id, state) => {
       galleries = { ...galleries, [id]: state };
       if (state.status !== 'ready') return;
+      const principal = state.photos[0]?.path;
+      if (principal) items = items.map(item => item.vehicleId === id && item.photoPath !== principal ? { vehicleId: id, photoPath: principal } : item);
       const available = { ...previews };
       for (const photo of state.photos) {
         const thumbnail = selectPhoto(photo, 320);
@@ -84,7 +108,7 @@
   }
   async function prepareInitialPreviews() {
     const paths = [...new Set([
-      ...editor.items.flatMap((item) => editor.candidates.some((vehicle) =>
+      ...principalHighlightItems(editor).flatMap((item) => editor.candidates.some((vehicle) =>
         vehicle.id === item.vehicleId && vehicle.photoPaths.includes(item.photoPath)) ? [item.photoPath] : []),
       ...editor.candidates.flatMap((vehicle) => vehicle.photoPaths.slice(0, 1)),
     ])];
@@ -125,8 +149,8 @@
     if (id) void untrack(() => requests.gallery(id));
   });
   $effect(() => {
-    items = editor.items.map((item) => ({ ...item }));
-    savedItems = editor.items;
+    items = principalHighlightItems(editor);
+    savedItems = principalHighlightItems(editor);
     revision = editor.revision;
   });
   $effect(() => {
@@ -146,7 +170,7 @@
           `[data-highlight-vehicle="${CSS.escape(id)}"]`,
         );
         row?.scrollIntoView({ block: 'center' });
-        row?.querySelector<HTMLButtonElement>('button.text-action')?.focus({ preventScroll: true });
+        row?.querySelector<HTMLButtonElement>('button.frame-photo')?.focus({ preventScroll: true });
       });
     });
   });
@@ -160,24 +184,36 @@
   );
   function add(vehicleId: string, photoPath: string) {
     if (items.length >= 5 || items.some((item) => item.vehicleId === vehicleId)) return;
+    reordering = false;
     items = [...items, { vehicleId, photoPath }];
     choosing = vehicleId;
   }
   function move(index: number, direction: number) {
     const target = index + direction;
     if (target < 0 || target >= items.length) return;
+    reordering = true;
     const next = [...items];
     [next[index], next[target]] = [next[target]!, next[index]!];
     items = next;
   }
+
+  function toggleFraming(id: string) {
+    reordering = false;
+    choosing = choosing === id ? null : id;
+  }
+
+  function remove(index: number) {
+    reordering = true;
+    items = items.filter((_, i) => i !== index);
+  }
 </script>
 
-{#snippet preview(path: string | undefined, alt: string, position?: string)}
+{#snippet preview(path: string | undefined, alt: string, framing?: PhotoFraming, defaultY = 53)}
   {@const thumbnail = path ? previews[path] : undefined}
   {#if thumbnail?.url}
     <img src={thumbnail.url} use:photoFallback={preparing ? null : thumbnail.originalUrl} {alt}
       data-highlight-preview={path}
-      style:object-position={position} decoding="async"
+      use:photoFraming={{ framing, defaultY }} decoding="async"
       onerror={() => { if (path && !preparing) previews = { ...previews, [path]: null }; }} />
   {:else if path && thumbnail === null}
     <button type="button" class="preview-retry" aria-label="Tentar carregar a miniatura novamente"
@@ -206,7 +242,7 @@
   <Panel>
     <PanelHeader icon={Star} title="Carrossel da homepage" meta={`${items.length} / 5`} />
     <div class="intro">
-      Escolha a fotografia de cada viatura e a ordem em que aparece no header do site.
+      Organize os destaques e enquadre a fotografia principal de cada viatura.
       {#if contextMessage}<p class="context-message" role="status">{contextMessage}</p>{/if}
     </div>
     {#if items.length === 0}
@@ -220,16 +256,22 @@
       {#each items as item, index (item.vehicleId)}
         {@const vehicle = editor.candidates.find((candidate) => candidate.id === item.vehicleId)}
         {@const gallery = galleries[item.vehicleId]}
-        {@const selectedPhoto = gallery?.status === 'ready' ? gallery.photos.find((photo) => photo.path === item.photoPath) : undefined}
+        {@const selectedPhoto = gallery?.status === 'ready' ? gallery.photos[0] : undefined}
         {@const selectedPath = gallery?.status === 'ready'
           ? selectedPhoto?.path
           : vehicle?.photoPaths.includes(item.photoPath) ? item.photoPath : undefined}
         {@const focus = featuredFramingPosition(item.framing, 'desktop')}
-        <li data-highlight-vehicle={item.vehicleId}>
+        <li data-highlight-vehicle={item.vehicleId} animate:flip={{ ...reorderMotion(), duration: reordering ? reorderMotion().duration : 0 }}>
           <div class="selected-row">
             <span class="position">{String(index + 1).padStart(2, '0')}</span>
+            <div class="photo-controls">
             <div class="cover unavailable" style:aspect-ratio={featuredFramingRatio.desktop} use:observePreview={selectedPath}>
-              {@render preview(selectedPath, vehicle ? `${vehicle.brand} ${vehicle.model} — fotografia escolhida` : '', `${focus.x}% ${focus.y}%`)}
+              {@render preview(selectedPath, vehicle ? `${vehicle.brand} ${vehicle.model} — fotografia principal` : '', item.framing)}
+            </div>
+
+              {#if vehicle}<button type="button" class="frame-photo" disabled={saving || !selectedPath}
+                aria-expanded={choosing === item.vehicleId}
+                onclick={() => toggleFraming(item.vehicleId)}>Enquadrar</button>{/if}
             </div>
             <div class="vehicle-info">
               <strong
@@ -237,92 +279,29 @@
               >
               <span>{vehicle?.year ?? 'Retirada do site ou vendida'}</span>
               {#if !selectedPath}<span class="warning"
-                  >Não aparece no site. Escolha outra fotografia ou remova este destaque.</span
+                  >Sem fotografia principal disponível. Atualize a viatura ou remova este destaque.</span
                 >{/if}
-              {#if vehicle}<button
-                  type="button"
-                  class="text-action photo-action"
-                  disabled={saving}
-                  onclick={() => (choosing = choosing === item.vehicleId ? null : item.vehicleId)}
-                  >{choosing === item.vehicleId
-                    ? 'Fechar fotografias'
-                    : 'Escolher fotografia'}</button
-                >{/if}
-            </div>
-            <div class="row-actions">
-              <button
-                type="button"
-                aria-label={`Subir destaque ${index + 1}`}
-                title="Subir"
-                disabled={saving || index === 0}
-                onclick={() => move(index, -1)}><ArrowUp size={16} /></button
-              >
-              <button
-                type="button"
-                aria-label={`Descer destaque ${index + 1}`}
-                title="Descer"
-                disabled={saving || index === items.length - 1}
-                onclick={() => move(index, 1)}><ArrowDown size={16} /></button
-              >
-              <button
-                type="button"
-                aria-label={`Remover destaque ${index + 1}`}
-                title="Remover do carrossel"
-                disabled={saving}
-                onclick={() => (items = items.filter((_, i) => i !== index))}
-                ><Trash2 size={16} /></button
-              >
-            </div>
+</div>
+            <SelectionOrderActions {index} count={items.length} kind="destaque" disabled={saving} onmove={(direction) => move(index, direction)} onremove={() => remove(index)} />
           </div>
           {#if choosing === item.vehicleId && vehicle}
-            {#if gallery?.status === 'error'}
+            {#if gallery?.status === 'error' || (gallery?.status === 'ready' && !selectedPhoto?.url)}
               <div class="gallery-status" role="status">
                 <span>Não foi possível carregar as fotografias desta viatura.</span>
                 <Button type="button" variant="outline" onclick={() => void requests.gallery(vehicle.id, true)}>Tentar novamente</Button>
               </div>
-            {:else if gallery?.status === 'ready'}
-            <div
-              class="photo-picker"
-              role="group"
-              aria-label={`Fotografias de ${vehicle.brand} ${vehicle.model}`}
-            >
-              {#each gallery.photos as photo, photoIndex (photo.path)}
-                <button
-                  type="button"
-                  class:chosen={photo.path === item.photoPath}
-                  disabled={saving || !photo.url}
-                  aria-label={`Fotografia ${photoIndex + 1}`}
-                  aria-pressed={photo.path === item.photoPath}
-                  onclick={() =>
-                    (items = items.map((entry) =>
-                      entry.vehicleId === item.vehicleId
-                        ? { ...entry, photoPath: photo.path, framing: undefined }
-                        : entry,
-                    ))}
-                >
-                  {#if photo.url}<img {...photoAttrs(photo,320,'128px')} use:reusablePhoto={{photo}} alt="" loading="eager" />{:else}<Image
-                      size={20}
-                    />{/if}
-                  {#if photo.path === item.photoPath}<span class="photo-check"
-                      ><Check size={14} /></span
-                    >{/if}
-                </button>
-              {/each}
-            </div>
-            {#if gallery.photos.some((photo) => !photo.url)}
-              <div class="gallery-status" role="status"><span>Algumas fotografias não estão disponíveis.</span>
-                <Button type="button" variant="outline" onclick={() => void requests.gallery(vehicle.id, true)}>Tentar novamente</Button>
-              </div>
-            {/if}
-            {#if selectedPhoto?.url}
-              <PhotoFramingEditor photo={selectedPhoto} src={selectedPhoto.url} value={item.framing} context="featured" disabled={saving} onchange={framing => items = items.map(entry => entry.vehicleId === item.vehicleId ? {...entry, framing} : entry)} />
-            {/if}
             {:else}
-              <p class="sr-only" role="status">A carregar fotografias…</p>
-              <div class="photo-picker" aria-hidden="true">
-                {#each vehicle.photoPaths as path (path)}
-                  <div class="photo-picker-placeholder"><Skeleton height="100%" /></div>
-                {/each}
+              <div class="framing-panel" transition:slide|global={reorderMotion()}
+                onintroend={(event) => { if (choosing === item.vehicleId) void revealFraming(event.currentTarget); }}>
+                <PhotoFramingEditor photo={selectedPhoto} src={selectedPhoto?.url ?? previews[item.photoPath]?.url ?? ''}
+                  value={item.framing} context="featured" loading={gallery?.status !== 'ready'} disabled={saving || gallery?.status !== 'ready'}
+                  onchange={framing => items = items.map(entry => entry.vehicleId === item.vehicleId ? {...entry, framing} : entry)}>
+                  {#snippet actions()}
+                    <PhotoFramingActions label={saving ? 'A guardar…' : 'Guardar enquadramento'}
+                      note="Guarda o enquadramento e as alterações aos destaques da homepage."
+                      disabled={saving || !dirty || gallery?.status !== 'ready'} onsave={() => selectionForm.requestSubmit()} />
+                  {/snippet}
+                </PhotoFramingEditor>
               </div>
             {/if}
           {/if}
@@ -335,6 +314,7 @@
       use:formFeedback
       use:enhance={({ formElement }) => {
         const submitted = $state.snapshot(items);
+        const summary = saveSummary(submitted);
         saving = true;
         message = '';
         return async ({ result, update }) => {
@@ -343,6 +323,7 @@
               const savedRevision = result.data?.revision;
               if (typeof savedRevision !== 'string') {
                 message = 'Não foi possível confirmar a gravação. Recarregue antes de tentar novamente.';
+                toast.error(message);
                 return;
               }
               // The save response contains the new revision. Keep the streamed
@@ -354,9 +335,9 @@
               markFormSaved(formElement);
               choosing = null;
               if (selectedVehicleId) contextMessage = savedItems.some(item => item.vehicleId === selectedVehicleId)
-                ? 'Seleção de destaques guardada. A fotografia escolhida foi confirmada.'
+                ? 'Seleção de destaques guardada. O enquadramento da fotografia principal foi confirmado.'
                 : 'A viatura foi retirada da seleção guardada.';
-              toast.success('Destaques da homepage guardados.');
+              siteSavedFeedback(summary);
             } else if (result.type === 'failure') {
               message = (result.data as { error?: string })?.error ?? 'Não foi possível guardar.';
               toast.error(message);
@@ -394,19 +375,12 @@
     placeholder="Marca, modelo ou ano"
     empty={query ? 'Nenhuma viatura encontrada.' : 'Ainda não há viaturas publicadas com fotografias. Publique uma viatura para a adicionar aqui.'}
   >
-    {#snippet intro()}
-      <p class="hint catalogue-hint">
-        Apenas viaturas publicadas com fotografias. Ao serem vendidas ou retiradas do site,
-        deixam de aparecer no carrossel.
-      </p>
-    {/snippet}
     {#snippet thumbnail(vehicle)}
       <div class="candidate-placeholder" style={framingStyle(vehicle.coverFraming)} use:observePreview={vehicle.photoPaths[0]}>
-        {@render preview(vehicle.photoPaths[0], '')}
+        {@render preview(vehicle.photoPaths[0], '', vehicle.coverFraming, 50)}
       </div>
     {/snippet}
     {#snippet detail(vehicle)}{vehicle.year} · {vehicle.photoPaths.length} fotografias{/snippet}
-    {#snippet footer()}<a class="text-action" href={crmPath("/viaturas")}>Consultar viaturas →</a>{/snippet}
   </VehicleCatalogue>
 </div>
 
@@ -458,12 +432,14 @@
     max-width: 300px;
   }
   .selected-list {
+    overflow-anchor: none;
     list-style: none;
     padding: 0;
     margin: 0;
   }
   .selected-list li {
     border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-0);
   }
   .selected-row {
     display: flex;
@@ -476,6 +452,9 @@
     font-size: 12px;
     color: var(--color-red);
   }
+  .photo-controls { width: 128px; flex-shrink: 0; }
+  .frame-photo { display: block; width: 100%; min-height: 36px; margin-top: 6px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-btn); background: var(--color-bg-1); color: var(--color-text); font-size: 12px; line-height: 1.4; }
+  .framing-panel { margin: 0 20px 20px; min-width: 0; }
   .cover {
     position: relative;
     width: 128px;
@@ -538,40 +517,6 @@
     color: var(--color-red);
     line-height: 1.5;
   }
-  .text-action {
-    color: var(--color-text-muted);
-    font-size: 11px;
-    text-align: left;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-  .text-action:hover {
-    color: var(--color-text);
-  }
-  @media (hover: hover) {
-    .photo-action:not(:disabled):hover {
-      color: white;
-      background: transparent;
-      border-color: transparent;
-      box-shadow: none;
-    }
-    :global([data-theme='light']) .photo-action:not(:disabled):hover {
-      color: var(--color-text);
-    }
-  }
-  .row-actions {
-    display: flex;
-    gap: 2px;
-  }
-  .row-actions button {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 34px;
-    color: var(--color-text-muted);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-btn);
-  }
   button:disabled {
     opacity: 0.35;
     cursor: not-allowed;
@@ -579,40 +524,6 @@
   button:not(:disabled):hover {
     color: var(--color-text);
     border-color: var(--color-border-strong);
-  }
-  .photo-picker {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
-    gap: 8px;
-    padding: 0 20px 20px;
-  }
-  .photo-picker button {
-    position: relative;
-    aspect-ratio: 16/10;
-    overflow: hidden;
-    border: 2px solid transparent;
-    border-radius: var(--radius-btn);
-  }
-  .photo-picker-placeholder {
-    display: flex;
-    aspect-ratio: 16 / 10;
-  }
-  .photo-picker .chosen {
-    border-color: var(--color-red);
-  }
-  .photo-picker img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .photo-check {
-    position: absolute;
-    right: 3px;
-    bottom: 3px;
-    background: var(--color-red);
-    color: white;
-    padding: 3px;
-    border-radius: 2px;
   }
   .save-bar {
     display: flex;
@@ -632,7 +543,6 @@
     font-size: 12px;
     padding: 16px 20px 0;
   }
-  .catalogue-hint { margin: 0; }
   .candidate-placeholder {
     position: relative;
     width: 100%;
@@ -643,7 +553,11 @@
     place-items: center;
     color: var(--color-text-faint);
   }
-  .candidate-placeholder img { object-position: var(--photo-desktop, 50% 50%); }
+  .candidate-placeholder img {
+    position: absolute;
+    inset: 0;
+    object-position: var(--photo-desktop, 50% 50%);
+  }
   @media (max-width: 700px) {
     .candidate-placeholder img { object-position: var(--photo-mobile, 50% 50%); }
   }
@@ -658,14 +572,9 @@
       gap: 10px;
       padding: 16px;
     }
-    .cover {
+    .photo-controls, .cover {
       width: 92px;
     }
-    .row-actions {
-      margin-left: auto;
-    }
-    .photo-picker {
-      padding: 0 16px 16px;
-    }
+    .framing-panel { margin: 0 16px 16px; }
   }
 </style>

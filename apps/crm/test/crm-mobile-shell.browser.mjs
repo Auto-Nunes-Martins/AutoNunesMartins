@@ -484,6 +484,22 @@ for (const width of [1366, 390]) {
           .toBe(true);
         const position = width < 860 ? '64% 16%' : '22% 75%';
         await expect(catalog.locator('img')).toHaveCSS('object-position', position);
+        const assertPhotoFrame = async (image) => {
+          const dimensions = await image.evaluate((img) => {
+            const image = img.getBoundingClientRect(),
+              frame = img.parentElement.getBoundingClientRect();
+            return {
+              imageWidth: image.width,
+              imageHeight: image.height,
+              frameWidth: frame.width,
+              frameHeight: frame.height,
+            };
+          });
+          assert.ok(Math.abs(dimensions.imageWidth - dimensions.frameWidth) < 1);
+          assert.ok(Math.abs(dimensions.imageHeight - dimensions.frameHeight) < 1);
+          assert.ok(Math.abs(dimensions.frameWidth / dimensions.frameHeight - 4 / 3) < 0.01);
+        };
+        await assertPhotoFrame(catalog.locator('img'));
         await add.click();
         const card = campaigns.getByRole('article');
         await assertFixedCatalogue(1);
@@ -496,17 +512,32 @@ for (const width of [1366, 390]) {
         ).toBeDisabled();
         await expect(card.locator('img')).toBeVisible();
         await expect(card.locator('img')).toHaveCSS('object-position', position);
+        await assertPhotoFrame(card.locator('img'));
         const price = card.getByLabel('Preço de desconto (€)', { exact: true });
-        const ribbon = card.getByText('SALE', { exact: true });
-        await expect(ribbon).toHaveCount(0);
-        const discount = card.getByLabel('Diferença (%)', { exact: true });
+        const ribbon = card.locator('.promotion-ribbon');
+        await expect(ribbon).toHaveText('SALE');
+        const discount = card.getByLabel('Diferença (€)', { exact: true });
         await expect(price).toHaveCSS('border-top-width', '0px');
+        await price.fill('ab21900,50xyz');
+        await expect(price).toHaveValue('21900,50');
+        await price.press('End');
+        await price.pressSequentially('abc');
+        await expect(price).toHaveValue('21900,50');
+        await price.fill('21900.50');
+        await expect(price).toHaveValue('21900.50');
+        await discount.fill('x2500,5y');
+        await expect(discount).toHaveValue('2500,5');
+        await expect(price).toHaveValue('21399,50');
+        await discount.fill('2500.5');
+        await expect(price).toHaveValue('21399,50');
+        await card.getByLabel('Duração (dias)').fill('a9e');
+        await expect(card.getByLabel('Duração (dias)')).toHaveValue('9');
         await price.fill('24000,00');
         await save.click();
         await expect(card.getByRole('alert')).toContainText('inferior');
         await price.fill('21900,00');
-        await expect(discount).toHaveValue('8');
-        await discount.fill('10');
+        await expect(discount).toHaveValue('2000,00');
+        await discount.fill('2390');
         await expect(price).toHaveValue('21510,00');
         await card.getByLabel('Duração (dias)').fill('9');
         const submission = page.waitForResponse(
@@ -524,17 +555,24 @@ for (const width of [1366, 390]) {
         await expect(campaigns.getByText('Campanhas guardadas.', { exact: true })).toBeVisible({
           timeout: 15000,
         });
+        const savedToast = page.locator('[data-site-save="campaign"]').last();
+        await expect(savedToast).toContainText('BMW Série 3 Touring');
+        await expect(savedToast).toContainText('9 dias');
+        await expect(savedToast).toContainText(/21\s*510,00/);
+        await expect(savedToast).toContainText(/2390,00|2\s*390,00/);
+        await savedToast.screenshot({ path: path.join(crm, '.svelte-kit', 'campaign-saved-' + width + '.png') });
         assert.equal(campaignFixture.items[0].price, '21510.00');
         assert.equal(campaignFixture.items[0].durationDays, 9);
         await expect(ribbon).toBeVisible();
+        await expect(ribbon).toHaveText(/−.*2\s?390/);
         await expect(card.getByText(/\(Lisboa\)|sem comparação/)).toHaveCount(0);
         await expect(card.getByLabel('Duração (dias)')).toHaveValue('9');
         const removeButton = card.getByRole('button', { name: 'Remover BMW Série 3 Touring' });
-        const corner = await card.locator('.sale-ribbon').boundingBox();
+        const corner = await ribbon.boundingBox();
         assert.ok(corner);
         for (const control of [cardTitle, card.locator('img'), removeButton]) {
           const box = await control.boundingBox();
-          assert.ok(box && box.x + box.width + 4 <= corner.x);
+          assert.ok(box && (box.x + box.width <= corner.x || box.y >= corner.y + corner.height));
         }
         await removeButton.focus();
         await expect(removeButton).toBeFocused();

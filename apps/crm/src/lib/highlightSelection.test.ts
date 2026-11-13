@@ -28,7 +28,7 @@ it('opens the existing selected photo without duplicating the vehicle', () => {
     },
     'current',
   );
-  expect(result.items).toEqual([{ vehicleId: 'current', photoPath: 'photo-b' }]);
+  expect(result.items).toEqual([{ vehicleId: 'current', photoPath: 'photo-a' }]);
   expect(result.choosing).toBe('current');
 });
 it('does not replace another selection at the limit or add an ineligible vehicle', () => {

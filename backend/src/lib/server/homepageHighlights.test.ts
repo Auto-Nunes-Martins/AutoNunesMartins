@@ -38,7 +38,7 @@ const fixture = () => ({
   status: 'AVAILABLE',
   webPublished: true,
   publicSlug: 'bmw-serie-3-123456abcdef',
-  publicPrice: new Prisma.Decimal(25000),
+  salePrice: new Prisma.Decimal(25000),
   publicDescription: 'Approved',
   publicPhotoPaths: [photo, otherPhoto],
   publicTransmission: null,
@@ -76,7 +76,7 @@ describe('homepage editorial selection', () => {
   const card = { desktop: { x: 15, y: 90 }, mobile: { x: 42, y: 70 } };
   it.each([
     ['configured', { ...legacy, card }, card],
-    ['legacy', legacy, legacy],
+    ['legacy', legacy, undefined],
     ['reset', { ...legacy, card: null }, undefined],
   ])(
     'returns the %s card crop for the same principal photo in both catalogues',
@@ -87,7 +87,7 @@ describe('homepage editorial selection', () => {
       const editor = await readHighlightsEditor(db);
       expect(editor.candidates[0]?.photoPaths).toEqual([photo, otherPhoto]);
       expect(editor.candidates[0]?.coverFraming).toEqual(expected);
-      expect(editor.items[0]?.photoPath).toBe(otherPhoto);
+      expect(editor.items[0]?.photoPath).toBe(photo);
       const gallery = await readHighlightGallery(db, id);
       expect(gallery?.map(({ path }) => path)).toEqual([photo, otherPhoto]);
       expect(gallery?.[0]?.coverFraming).toEqual(expected);
@@ -97,7 +97,7 @@ describe('homepage editorial selection', () => {
 
   it('validates and carries a highlight crop separately from gallery framing without private paths', async () => {
     const framing = { desktop: { x: 50, y: 80 }, mobile: { x: 50, y: 65 } };
-    const selection = { revision, items: [{ vehicleId: id, photoPath: otherPhoto, framing }] };
+    const selection = { revision, items: [{ vehicleId: id, photoPath: photo, framing }] };
     expect(highlightsInputSchema.parse(selection)).toEqual(selection);
     expect(
       highlightsInputSchema.safeParse({
@@ -153,7 +153,7 @@ describe('homepage editorial selection', () => {
   });
   it('preserves the chosen photo, projects only public fields and filters with current publication rules', async () => {
     const result = await readPublicHighlights(db);
-    expect(result.items[0]?.photoIndex).toBe(1);
+    expect(result.items[0]?.photoIndex).toBe(0);
     expect(result.items[0]?.vehicle.slug).toBe('bmw-serie-3-123456abcdef');
     expect(JSON.stringify(result)).not.toMatch(/PRIVATE|photoPath|vehicleId|signed:|\.jpg/);
     expect(mock.vehicle.findMany.mock.calls[0]![0].where).toMatchObject({
@@ -163,11 +163,21 @@ describe('homepage editorial selection', () => {
       status: { in: ['AVAILABLE', 'RESERVED'] },
     });
   });
-  it('immediately omits a sold/unpublished vehicle and a removed photo without substituting another photo', async () => {
+  it('omits unavailable vehicles and follows the remaining principal photo', async () => {
     mock.vehicle.findMany.mockResolvedValue([]);
     expect((await readPublicHighlights(db)).items).toEqual([]);
     mock.vehicle.findMany.mockResolvedValue([{ ...fixture(), photos: [photo] }]);
+    expect((await readPublicHighlights(db)).items[0]?.photoIndex).toBe(0);
+    mock.vehicle.findMany.mockResolvedValue([{ ...fixture(), photos: [] }]);
     expect((await readPublicHighlights(db)).items).toEqual([]);
+  });
+  it('drops a crop belonging to the old photo and rejects saving a secondary photo', async () => {
+    const framing = { desktop: { x: 50, y: 80 }, mobile: { x: 50, y: 65 } };
+    mock.appSetting.findUnique.mockResolvedValue({ value: { revision, items: [{ vehicleId: id, photoPath: otherPhoto, framing }] } });
+    expect((await readPublicHighlights(db)).items[0]).not.toHaveProperty('framing');
+    expect((await readHighlightsEditor(db)).items[0]).toEqual({ vehicleId: id, photoPath: photo });
+    await expect(saveHighlights(db, { revision, items: [{ vehicleId: id, photoPath: otherPhoto, framing }] }, 'admin')).rejects.toMatchObject({ status: 409 });
+    expect(mock.appSetting.upsert).not.toHaveBeenCalled();
   });
   it('recomputes the independent homepage selection index when vehicle order changes', async () => {
     mock.vehicle.findMany.mockResolvedValue([
@@ -216,11 +226,11 @@ describe('homepage editorial selection', () => {
   it('saves the submitted order and selected photo in a serializable transaction', async () => {
     await saveHighlights(
       db,
-      { revision, items: [{ vehicleId: id, photoPath: otherPhoto }] },
+      { revision, items: [{ vehicleId: id, photoPath: photo }] },
       'admin',
     );
     expect(mock.appSetting.upsert.mock.calls[0]![0].update.value.items).toEqual([
-      { vehicleId: id, photoPath: otherPhoto },
+      { vehicleId: id, photoPath: photo },
     ]);
     expect(mock.$transaction.mock.calls[0]![1]).toEqual({ isolationLevel: 'Serializable' });
   });

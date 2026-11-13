@@ -1,7 +1,14 @@
 import type { HighlightsEditor } from './homepageHighlights';
 
+export function principalHighlightItems(editor: HighlightsEditor) {
+  return editor.items.map(item => {
+    const path = editor.candidates.find(vehicle => vehicle.id === item.vehicleId)?.photoPaths[0];
+    return path && path !== item.photoPath ? { vehicleId: item.vehicleId, photoPath: path } : { ...item };
+  });
+}
+
 export function prepareVehicleHighlight(editor: HighlightsEditor, vehicleId: string) {
-  const items = editor.items.map((item) => ({ ...item }));
+  const items = principalHighlightItems(editor);
   const vehicle = editor.candidates.find((candidate) => candidate.id === vehicleId);
   if (!vehicle?.photoPaths.length)
     return {
@@ -14,7 +21,7 @@ export function prepareVehicleHighlight(editor: HighlightsEditor, vehicleId: str
     return {
       items,
       choosing: vehicleId,
-      message: 'A viatura já está no carrossel. Escolha a fotografia e guarde para atualizar.',
+      message: 'A viatura já está no carrossel. Ajuste o enquadramento da fotografia principal e guarde para atualizar.',
     };
   if (items.length >= 5)
     return {
@@ -28,6 +35,6 @@ export function prepareVehicleHighlight(editor: HighlightsEditor, vehicleId: str
     items,
     choosing: vehicleId,
     message:
-      'Viatura preparada para destaque. Escolha a fotografia e guarde para a apresentar no carrossel.',
+      'Viatura preparada para destaque. Ajuste o enquadramento da fotografia principal e guarde para a apresentar no carrossel.',
   };
 }

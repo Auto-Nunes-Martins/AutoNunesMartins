@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { test } from 'node:test';
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { createServer } from 'vite';
@@ -24,11 +24,11 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
   ] };
   await Promise.all(Object.entries({
     'paths.js': "export const base = '';",
-    'forms.js': 'export const enhance = () => ({}); export const applyAction = async () => {};',
+    'forms.js': `export function enhance(form, submit) {const handler=async event=>{event.preventDefault();let cancelled=false;const callback=await submit({formElement:form,formData:new FormData(form),cancel(){cancelled=true}});if(!cancelled)await callback?.({result:{type:'success',status:200,data:{revision:String(Date.now())}},update:async()=>{}})};form.addEventListener('submit',handler);return {destroy(){form.removeEventListener('submit',handler)}}}; export const applyAction = async () => {};`,
     'index.html': '<meta name="viewport" content="width=device-width, initial-scale=1"><div id="app"></div><script type="module" src="/client.js"></script>',
     'review.css': "@import '../../src/app.css';\n@source '../../src';",
     'client.js': "import './review.css'; import { mount } from 'svelte'; import App from './App.svelte'; mount(App, {target:document.querySelector('#app')});",
-    'App.svelte': `<script>import Editor from '$lib/components/vehicle/HomepageHighlightsEditor.svelte'; import {bindCrmSession} from '$lib/auth/session'; bindCrmSession(async () => 'fixture-token', () => 'fixture');</script><Editor editor={${JSON.stringify(editor)}} selectedVehicleId={new URLSearchParams(location.search).get('viatura')}/>`,
+    'App.svelte': `<script>import {Toaster} from 'svelte-sonner';import Editor from '$lib/components/vehicle/HomepageHighlightsEditor.svelte'; import {bindCrmSession} from '$lib/auth/session'; bindCrmSession(async () => 'fixture-token', () => 'fixture');</script><Editor editor={${JSON.stringify(editor)}} selectedVehicleId={new URLSearchParams(location.search).get('viatura')}/><Toaster closeButton/>`,
   }).map(([name, data]) => writeFile(path.join(directory, name), data)));
 
   const server = await createServer({
@@ -59,7 +59,7 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
         const paths = params.getAll('path');
         previewPaths.push(...paths);
         await previewDelay;
-        return route.fulfill({ json: { photos: paths.filter((path) => path !== failedPath).map((path) => ({ path, url: path === selected ? '/fixture-broken.svg' : '/fixture-thumbnail.svg', originalUrl: src })) } });
+        return route.fulfill({ json: { photos: paths.filter((path) => path !== failedPath).map((path) => ({ path, url: path === first ? '/fixture-broken.svg' : '/fixture-thumbnail.svg', originalUrl: src })) } });
       }
       galleryIds.push(id);
       if (id === a) await firstDelay;
@@ -86,7 +86,7 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
     await page.locator('.candidate-placeholder img').last().waitFor();
     assert.equal(await row(a).locator('.cover img').getAttribute('src'), src, 'a broken miniature uses the decoded original before reveal');
     assert.deepEqual(await page.locator('img[data-highlight-preview]').evaluateAll((images) => images.map((img) => img.naturalWidth)), [400, 400, 400]);
-    assert.deepEqual(new Set(previewPaths), new Set([first, selected, second]));
+    assert.deepEqual(new Set(previewPaths), new Set([first, second]));
     assert.deepEqual(galleryIds, []);
 
     const thumbnails = page.locator('.candidate-placeholder img');
@@ -98,6 +98,12 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
     assert.equal(await chosen.isDisabled(), true);
     assert.equal(await chosen.locator('svg.lucide-check').count(), 1);
     assert.equal(await addAudi.locator('svg.lucide-plus').count(), 1);
+    const cropBox = await thumbnails.first().evaluate(img => {
+      const image = img.getBoundingClientRect(), frame = img.closest('.thumbnail').getBoundingClientRect();
+      return {imageWidth:image.width, imageHeight:image.height, frameWidth:frame.width, frameHeight:frame.height};
+    });
+    assert.ok(Math.abs(cropBox.imageHeight - cropBox.frameHeight) < 1, 'The image must fit the fixed thumbnail crop');
+    assert.ok(Math.abs(cropBox.frameWidth / cropBox.frameHeight - 4 / 3) < .01, 'Thumbnail keeps its crop ratio');
     assert.equal(await position(thumbnails.first()), '23% 79%');
     assert.equal(await position(thumbnails.last()), '50% 50%');
     if (process.env.CAMPAIGN_PREVIEW === '1') {
@@ -105,6 +111,11 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
     }
     await page.setViewportSize({ width: 390, height: 760 });
     assert.equal(await position(thumbnails.first()), '67% 14%');
+    const mobileCrop = await thumbnails.first().evaluate(img => {
+      const frame = img.closest('.thumbnail').getBoundingClientRect();
+      return Math.abs(img.getBoundingClientRect().height - frame.height) < 1;
+    });
+    assert.equal(mobileCrop, true, 'Mobile thumbnail respects its crop frame');
     if (process.env.CAMPAIGN_PREVIEW === '1') {
       await catalogue.screenshot({ path: path.join(output, 'destaques-catalogo-390.png') });
     }
@@ -116,7 +127,7 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
     await page.setViewportSize({ width: 1400, height: 1050 });
 
     const toggle = (id, name) => row(id).getByRole('button', { name, exact: true });
-    const photoAction = toggle(a, 'Escolher fotografia');
+    const photoAction = toggle(a, 'Enquadrar');
     await photoAction.hover();
     const hover = await photoAction.evaluate((button) => {
       const style = getComputedStyle(button);
@@ -127,12 +138,11 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
         shadow: style.boxShadow,
       };
     });
-    assert.deepEqual(hover, {
-      color: 'rgb(255, 255, 255)',
-      background: 'rgba(0, 0, 0, 0)',
-      border: '0px',
-      shadow: 'none',
-    });
+    assert.equal(await page.getByRole('button', { name: 'Escolher fotografia', exact: true }).count(), 0);
+    assert.equal(await row(a).locator('.photo-picker').count(), 0);
+    const actionBox = await photoAction.boundingBox(), photoBox = await row(a).locator('.cover').boundingBox();
+    assert.ok(actionBox.y >= photoBox.y + photoBox.height);
+    assert.equal(Math.round(actionBox.width), Math.round(photoBox.width));
     await photoAction.focus();
     await page.keyboard.press('Tab');
     await page.keyboard.press('Shift+Tab');
@@ -144,16 +154,21 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
     );
     await page.keyboard.press('Enter');
     await row(a).getByText('A carregar fotografias…').waitFor();
-    await toggle(a, 'Fechar fotografias').click();
-    await toggle(a, 'Escolher fotografia').click();
+    await expect.poll(()=>row(a).locator('.framing-panel').evaluate(node=>node.getAnimations().length)).toBe(0);
+    const coldHeight = (await row(a).locator('.framing-panel').boundingBox()).height;
+    assert.ok(coldHeight > 400, 'initial loading reserves the complete editor, not a short skeleton');
+    await toggle(a, 'Enquadrar').click();
+    await toggle(a, 'Enquadrar').click();
     assert.equal(await row(a).locator('.cover img').count(), 1);
     await page.getByRole('button', { name: 'Adicionar Audi Two' }).click();
     await toggle(b, 'Tentar novamente').click();
-    await row(b).getByRole('slider').waitFor();
+    await row(b).getByRole('slider', { name: 'Posição da fotografia', exact: true }).waitFor();
     releaseFirstGallery();
-    await toggle(a, 'Escolher fotografia').click();
-    const frame = row(a).getByRole('slider');
+    await toggle(a, 'Enquadrar').click();
+    const frame = row(a).getByRole('slider', { name: 'Posição da fotografia', exact: true });
     await frame.waitFor();
+    await expect.poll(()=>row(a).locator('.framing-panel').evaluate(node=>node.getAnimations().length)).toBe(0);
+    assert.ok(Math.abs((await row(a).locator('.framing-panel').boundingBox()).height - coldHeight) < 2, 'loading the photograph does not expand the editor a second time');
     await frame.focus();
     await page.keyboard.press('End');
     const crop = (image) => image.evaluate((img) => {
@@ -173,21 +188,64 @@ test('highlights wait for thumbnail pixels, then load galleries and keep the des
     await frame.focus();
     await page.keyboard.press('Home');
     assert.equal((await crop(cardImage)).focus, '50% 100%');
-    await toggle(a, 'Fechar fotografias').click();
-    await toggle(a, 'Escolher fotografia').click();
+    await toggle(a, 'Enquadrar').click();
+    await toggle(a, 'Enquadrar').click();
     assert.deepEqual(galleryIds, [a, b, b]);
+    await row(a).screenshot({path:path.join(output,'highlights-framing-desktop.png')});
+    await page.setViewportSize({width:390,height:1000});
+    await row(a).screenshot({path:path.join(output,'highlights-framing-mobile.png')});
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.setViewportSize({width:1400,height:1000});
     assert.equal((await crop(cardImage)).focus, '50% 100%');
 
+    for (const width of [390, 1400]) {
+      await page.setViewportSize({width,height:1000});
+      await toggle(b, 'Enquadrar').click();
+      await expect(row(a).locator('.framing-panel')).toHaveCount(0);
+      await expect.poll(()=>row(b).locator('.framing-panel').evaluate(node=>node.getAnimations().length)).toBe(0);
+      await expect.poll(async()=> {const box=await row(b).locator('.selected-row').boundingBox();return box.y>=0 && box.y<350;}).toBe(true).catch(async error=>{console.log('scroll debug B',width,await row(b).boundingBox(),await page.evaluate(()=>({y:scrollY,height:innerHeight,doc:document.documentElement.scrollHeight})));await page.screenshot({path:path.join(output,'highlight-scroll-debug.png')});throw error;});
+      const before = (await row(b).locator('.framing-panel').boundingBox()).height;
+      await toggle(b, 'Enquadrar').click();
+      await expect(row(b).locator('.framing-panel')).toHaveCount(0);
+      await toggle(b, 'Enquadrar').click();
+      await expect.poll(()=>row(b).locator('.framing-panel').evaluate(node=>node.getAnimations().length)).toBe(0);
+      assert.ok(Math.abs((await row(b).locator('.framing-panel').boundingBox()).height-before)<2);
+      await toggle(a, 'Enquadrar').click();
+      await expect(row(b).locator('.framing-panel')).toHaveCount(0);
+      await expect.poll(async()=> {const box=await row(a).locator('.selected-row').boundingBox();return box.y>=0 && box.y<350;}).toBe(true).catch(async error=>{console.log('scroll debug',width,await row(a).boundingBox(),await page.evaluate(()=>({y:scrollY,height:innerHeight,doc:document.documentElement.scrollHeight})));await page.screenshot({path:path.join(output,'highlight-scroll-debug.png')});throw error;});
+    }
+
+    await page.getByRole('button', {name:'Descer destaque 1',exact:true}).click();
+    assert.equal(await page.locator('[data-highlight-vehicle]').first().getAttribute('data-highlight-vehicle'), b);
+    assert.ok(await page.locator('[data-highlight-vehicle]').evaluateAll(nodes=>nodes.some(n=>n.getAnimations().length>0)), 'highlight position swap is animated');
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await page.getByRole('button', {name:'Subir destaque 2',exact:true}).click();
+    assert.equal(await page.locator('[data-highlight-vehicle]').first().getAttribute('data-highlight-vehicle'), a);
+    assert.equal(await page.locator('[data-highlight-vehicle]').evaluateAll(nodes=>nodes.some(n=>n.getAnimations().some(a=>a.effect.getTiming().duration>0))),false);
+    await page.emulateMedia({reducedMotion:'no-preference'});
+
+    await row(a).getByRole('button', {name:'Guardar enquadramento',exact:true}).click();
+    const savedToast=page.locator('[data-site-save="highlight"]').last();
+    await savedToast.waitFor();
+    assert.match(await savedToast.textContent(), /2 alterações guardadas/);
+    await toggle(a, 'Enquadrar').click();
+    await row(a).getByRole('button', {name:'Computador',exact:true}).click();
+    await frame.focus();await page.keyboard.press('Home');
+    await page.getByRole('button', {name:'Guardar destaques',exact:true}).click();
+    await page.waitForFunction(()=>[...document.querySelectorAll('[data-site-save="highlight"]')].some(el=>el.textContent.includes('Destaque atualizado')));
+    const individualToast=page.locator('[data-site-save="highlight"]').filter({hasText:'Destaque atualizado'});
+    assert.match(await individualToast.textContent(), /BMW One/);
+    await individualToast.screenshot({path:path.join(output,'highlight-saved.png')});
     galleryIds.length = 0;
     failedPath = first;
     await page.goto(`${origin}/?viatura=${b}`);
     const retryPreview = page.getByRole('button', { name: 'Tentar carregar a miniatura novamente' });
-    await retryPreview.waitFor();
+    await retryPreview.first().waitFor();
     await row(b).locator('.cover img').waitFor();
-    assert.equal(await row(a).locator('.cover img').count(), 1);
+    assert.equal(await row(a).locator('.cover img').count(), 0);
     assert.deepEqual(galleryIds, [], 'the contextual link prepares the selection without opening a gallery');
     failedPath = undefined;
-    await retryPreview.click();
+    await retryPreview.first().click();
     await page.locator('.candidate-placeholder img').first().waitFor();
     assert.equal(await retryPreview.count(), 0);
   } finally {

@@ -7,7 +7,8 @@
   import { Star, Trash2 } from 'lucide-svelte';
   import { committedPhotoOrder, type PhotoOrderItem } from './photoOrder';
   import GalleryFramingEditor from './GalleryFramingEditor.svelte';
-  import { framingStyle, type GalleryPhotoFraming } from '@anm/types';
+  import PhotoFramingActions from './PhotoFramingActions.svelte';
+  import { photoFraming, type GalleryPhotoFraming } from '@anm/types';
   let {
     selected = $bindable<string[]>([]),
     dragging = $bindable(false),
@@ -165,7 +166,7 @@
       aria-describedby={onreorder ? scrollId + '-instructions' : undefined}
     >
       <div class="photo-media">
-      {#if photo}<img {...photoAttrs(photo,320,'(max-width:480px) 160px, 210px')} style={framingStyle(crop)} use:reusablePhoto={{photo}} alt={'Fotografia ' + (index + 1)} draggable="false" />{/if}
+      {#if photo}<img {...photoAttrs(photo,320,'(max-width:480px) 160px, 210px')} use:photoFraming={{ framing: crop }} use:reusablePhoto={{photo}} alt={'Fotografia ' + (index + 1)} draggable="false" />{/if}
       <span class="order-index" aria-hidden="true">{index + 1}</span>
       {#if isPrincipal}<span class="primary-badge"><Star size={11} fill="currentColor" aria-hidden="true" />{staged && item.path !== persistedCoverPath ? 'Foto principal · por guardar' : 'Foto principal'}</span>{/if}
       </div>
@@ -205,7 +206,20 @@
 {#if !allowed.length && !staged}<p class="hint">Sem fotografias. Use «Carregar» para adicionar.</p>{/if}
 {#if framingPath && onframing}
   {@const photo = photos.find(photo => photo.path === framingPath)}
-  {#if photo}<div class="framing-editor" bind:this={framingPanel}><p>Fotografia {allowed.indexOf(photo.path) + 1}{staged ? ' · Aplicar e guardar a ficha para confirmar' : ''}</p><GalleryFramingEditor {photo} value={framingDraft} isPrincipal={(primaryPath ?? selected[0]) === photo.path} disabled={pending} onchange={value => framingDraft = value} /><button type="button" disabled={pending} onclick={async () => { const saved = await onframing?.(photo.path, framingDraft); if (saved !== false) framingPath = undefined; }}>Aplicar enquadramento</button><button type="button" disabled={pending} onclick={() => framingPath = undefined}>Cancelar</button></div>{/if}
+  {#if photo}
+    <div class="framing-editor" bind:this={framingPanel}>
+      <p>Fotografia {allowed.indexOf(photo.path) + 1}</p>
+      <GalleryFramingEditor {photo} value={framingDraft} isPrincipal={(primaryPath ?? selected[0]) === photo.path} disabled={pending} onchange={value => framingDraft = value}>
+        {#snippet actions()}
+          <PhotoFramingActions label="Aplicar enquadramento"
+            note={staged ? 'Depois de aplicar, guarde a ficha da viatura para confirmar.' : 'Aplica os ajustes desta fotografia.'}
+            disabled={pending}
+            onsave={async () => { const saved = await onframing?.(photo.path, framingDraft); if (saved !== false) framingPath = undefined; }}
+            oncancel={() => framingPath = undefined} />
+        {/snippet}
+      </GalleryFramingEditor>
+    </div>
+  {/if}
 {/if}
 {#if staged && allowed.length}<details class="publication-help"><summary>Como funciona a publicação?</summary><p class="hint">Ao publicar a viatura, todas as fotografias guardadas ficam visíveis no site, pela mesma ordem e com a mesma foto principal. Adicionar, ordenar e eliminar só é aplicado ao guardar. Retirar a viatura do site oculta todas as fotografias. O caixote elimina a fotografia da viatura.</p></details>{/if}
 
@@ -218,9 +232,6 @@
     font-size: 12px;
     color: var(--color-text-muted);
     margin-bottom: 8px;
-  }
-  .framing-editor > button {
-    margin: 12px 8px 0 0;
   }
   .actions {
     flex-wrap: wrap;

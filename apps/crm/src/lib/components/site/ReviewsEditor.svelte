@@ -11,6 +11,8 @@
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import { formFeedback, markFormSaved, refreshFormFeedback } from '$lib/forms/formFeedback';
+  import { toast } from 'svelte-sonner';
+  import { siteSavedFeedback } from './siteSaveFeedback';
 
   let { initialItems }: { initialItems: PublicReview[] } = $props();
   let items = $state<PublicReview[]>(untrack(() => [...initialItems]));
@@ -174,6 +176,7 @@
     error = '';
     message = '';
     let metadataSaved = false;
+    const wasEditing = !!editingId;
     try {
       const review = await request(
         editingId ? '/' + editingId : '',
@@ -200,11 +203,23 @@
       clearPreview();
       open = false;
       message = 'Review guardada. Já está disponível na secção do site público.';
+      const saved = items.find((item) => item.id === review.id) ?? review;
+      siteSavedFeedback({
+        kind: 'review',
+        title: wasEditing ? 'Review atualizada' : 'Review adicionada',
+        label: saved.authorName,
+        rating: saved.rating,
+        excerpt: saved.text,
+        imageUrl: reviewAvatarUrl(PUBLIC_BACKEND_URL, saved) ?? undefined,
+        detail: 'Guardada no site público.',
+      });
     } catch (err) {
       error =
         (metadataSaved
           ? 'O nome, as estrelas e o texto foram guardados. Falta guardar a fotografia: '
           : '') + (err instanceof Error ? err.message : 'Tente novamente.');
+      if (metadataSaved) toast.warning('Review parcialmente guardada', { description: error });
+      else toast.error(error);
     } finally {
       saving = false;
     }
@@ -214,13 +229,21 @@
     deleting = true;
     error = '';
     message = '';
+    const removed = items.find((item) => item.id === id);
     try {
       await request('/' + id, 'DELETE');
       items = items.filter((item) => item.id !== id);
       confirmDelete = null;
       message = 'Review removida do site público.';
+      siteSavedFeedback({
+        kind: 'review',
+        title: 'Review removida',
+        label: removed?.authorName ?? 'Review',
+        detail: 'Retirada do site público.',
+      });
     } catch (err) {
       error = err instanceof Error ? err.message : 'Não foi possível remover.';
+      toast.error(error);
     } finally {
       deleting = false;
     }

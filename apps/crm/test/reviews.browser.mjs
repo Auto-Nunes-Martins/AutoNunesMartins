@@ -27,9 +27,9 @@ before(async()=>{
   await write('package.json','{"type":"module"}');
   await write('paths.js',"export const base='/crm';");
   await write('session.js','export const sessionFetch=(...args)=>fetch(...args);');
-  await write('stores.js',`import{writable}from'svelte/store';export const page=writable({url:new URL(window.location.pathname==='/crm'?window.location.origin+'/crm/site/reviews':window.location.href)});`);
+  await write('stores.js',`import{writable}from'svelte/store';export const page=writable({route:{id:window.location.pathname.endsWith('/destaques')?'/(app)/site/destaques':'/(app)/site/reviews'},url:new URL(window.location.pathname==='/crm'?window.location.origin+'/crm/site/reviews':window.location.href)});`);
   await write('enhance.js',`export function enhance(){return{destroy(){}}}`);
-  await write('Crm.svelte',`<script>import Editor from '$editor';import Layout from '$siteLayout';import Highlights from '$highlights';const editor={revision:null,items:[],candidates:Array.from({length:40},(_,i)=>({id:'car-'+i,brand:'Marca',model:'Modelo '+(i+1),year:2020,slug:'car-'+i,photos:[{path:'vehicles/car-'+i+'/photo.webp',url:null}]}))};</script><main style="max-width:1100px;margin:auto;padding:32px 20px"><Layout>{#if window.location.pathname.endsWith('/destaques')}<Highlights {editor}/>{:else}<Editor initialItems={window.reviewData}/>{/if}</Layout></main>`);
+  await write('Crm.svelte',`<script>import {Toaster} from 'svelte-sonner';import Editor from '$editor';import Layout from '$siteLayout';import Highlights from '$highlights';const editor={revision:null,items:[],candidates:Array.from({length:40},(_,i)=>({id:'car-'+i,brand:'Marca',model:'Modelo '+(i+1),year:2020,slug:'car-'+i,photos:[{path:'vehicles/car-'+i+'/photo.webp',url:null}]}))};</script><main style="max-width:1100px;margin:auto;padding:32px 20px"><Layout>{#if window.location.pathname.endsWith('/destaques')}<Highlights {editor}/>{:else}<Editor initialItems={window.reviewData}/>{/if}</Layout></main><Toaster closeButton/>`);
   const publicStyle='--bg:#0c0c0e;--text:#f5f5f1;--muted:#96969d;--line:#ffffff24;--orbit-frame:calc(100% - 40px);--orbit-frame-max:1320px;--orbit-space-section:40px;';
   await write('Public.svelte',`<script>import Reviews from '$publicReviews';import Baseline from './Baseline.svelte';</script><main class="design orbit" style="${publicStyle}">{#if window.isBaseline}<Baseline/>{:else}<Reviews reviews={window.reviewData}/>{/if}</main>`);
   await write('Baseline.svelte',original.replace(/from '(\.\/[^']+)'/g,(_match,rel)=>'from '+JSON.stringify(path.resolve(website,'src/lib/components/stand-concepts',rel))));
@@ -120,7 +120,7 @@ async function assertBoundedTextResize(page){
 for(const width of [1440,390])test(`manual review authoring, photo, initials, errors and public empty state at ${width}px`,async()=>{
   items=[];images.clear();nextId=0;
   const context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce',hasTouch:width===390,isMobile:width===390});
-  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const page=await context.newPage(),errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Review page error:',e.stack)});
   try{
     await page.goto(origin+'/public');await page.waitForLoadState('networkidle');assert.equal(await page.locator('.reviews').count(),0);
     await page.goto(origin+'/crm');await page.emulateMedia({reducedMotion:'no-preference'});await page.getByRole('button',{name:'Adicionar review',exact:true}).first().click();
@@ -176,9 +176,13 @@ for(const width of [1440,390])test(`manual review authoring, photo, initials, er
       await page.screenshot({path:path.join(process.env.REVIEWS_SCREENSHOTS,`reviews-editor-${width}.png`),fullPage:true});
       await page.getByLabel('Texto da review').fill('Atendimento claro e disponível. <script>window.untrusted=true</script>');
     }
-    failSave=true;await page.getByRole('button',{name:'Guardar review',exact:true}).click();await page.getByRole('alert').waitFor();assert.equal(await page.getByLabel('Nome público do autor').inputValue(),'Maria Silva');
+    failSave=true;await page.getByRole('button',{name:'Guardar review',exact:true}).click();await page.getByRole('alert').waitFor();assert.equal(await page.getByLabel('Nome público do autor').inputValue(),'Maria Silva');await expect(page.locator('[data-site-save]')).toHaveCount(0);
     failPhoto=true;await page.getByRole('button',{name:'Guardar review',exact:true}).click();await expect(page.getByRole('alert')).toContainText('foram guardados');assert.equal(items.length,1);
     await page.getByRole('button',{name:'Guardar review',exact:true}).click();await page.getByText('Review guardada.',{exact:false}).waitFor();assert.equal(items.length,1);assert.equal(items[0].rating,4.5);assert.ok(items[0].avatarVersion);
+    const savedToast=page.locator('[data-site-save="review"]').last();
+    await expect(savedToast).toContainText('Maria Silva');await expect(savedToast).toContainText('4,5 de 5 estrelas');
+    await expect(savedToast).toContainText('Guardada no site público.');
+    if(process.env.REVIEWS_SCREENSHOTS)await savedToast.screenshot({path:path.join(process.env.REVIEWS_SCREENSHOTS,'review-saved-'+width+'.png')});
     assert.equal(await page.locator('.saved-stars .half-star').count(),1);
     await page.goto(origin+'/public');await page.locator('.reviews').waitFor();await expect(page.locator('.review-grid:not(.duplicate) h3')).toHaveText('Maria Silva');assert.equal(await page.locator('.review-grid:not(.duplicate) .avatar img').count(),1);assert.equal(await page.evaluate(()=>window.untrusted),undefined);assert.equal(await page.getByText('Verificado',{exact:true}).count(),0);
     await expect(page.locator('.review-grid:not(.duplicate) .stars')).toHaveAttribute('aria-label','4.5 de 5 estrelas');

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { PHOTO_ACCEPT, preparePhoto } from '$lib/photoPreparation';
   import { reusablePhoto } from '$lib/reusablePhoto';
-  import { framingStyle, type GalleryPhotoFraming } from '@anm/types';
+  import { photoFraming, type GalleryPhotoFraming } from '@anm/types';
   import { onDestroy, onMount, tick, untrack, type Snippet } from 'svelte';
   import { sessionFetch } from '$lib/auth/session';
   import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
@@ -458,7 +458,7 @@
                         <img
                           {...photoAttrs(photo, 1600, '(max-width:700px) 100vw, 1100px')}
                           use:reusablePhoto={{ photo }}
-                          style={framingStyle(framing[photo.path])}
+                          use:photoFraming={{ framing: framing[photo.path], active: index === activeIndex }}
                           alt=""
                           class="h-full w-full object-cover"
                           loading={index === activeIndex ? 'eager' : 'lazy'}
@@ -821,6 +821,7 @@
     transform: translate3d(calc(-100% * var(--photo-start)), 0, 0);
   }
   .photo-slide {
+    position: relative;
     display: block;
     flex: 0 0 100%;
     min-width: 0;

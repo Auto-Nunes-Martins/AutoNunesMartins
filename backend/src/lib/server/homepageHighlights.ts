@@ -47,11 +47,9 @@ export class HighlightsError extends Error {
 
 function coverFraming(value: unknown, path: string) {
   const framing = galleryFramingSchema.safeParse(value).data?.[path];
-  if (!framing) return undefined;
-  // Legacy photos used their detail crop in CRM thumbnails. A reset card crop centres the image.
-  return framing.card === undefined
-    ? { desktop: framing.desktop, mobile: framing.mobile }
-    : (framing.card ?? undefined);
+  // Match public cards: gallery/detail coordinates are a separate destination.
+  // Missing or explicitly reset card framing uses the centred default.
+  return framing?.card ?? undefined;
 }
 
 export async function readHighlightsEditor(db: PrismaClient) {
@@ -86,7 +84,17 @@ export async function readHighlightsEditor(db: PrismaClient) {
       },
     ];
   });
-  return { ...readSetting(setting?.value), candidates };
+  const saved = readSetting(setting?.value);
+  return {
+    ...saved,
+    items: saved.items.map(item => {
+      const principal = candidates.find(vehicle => vehicle.id === item.vehicleId)?.photoPaths[0];
+      return principal && principal !== item.photoPath
+        ? { vehicleId: item.vehicleId, photoPath: principal }
+        : item;
+    }),
+    candidates,
+  };
 }
 
 export async function readHighlightPreviews(db: PrismaClient, requested: string[]) {
@@ -119,6 +127,7 @@ export async function readHighlightGallery(db: PrismaClient, id: string) {
     ...photo,
     url: photo.url ?? null,
     ...(photo.path === cover && framing ? { coverFraming: framing } : {}),
+    galleryFraming: galleryFramingSchema.safeParse(vehicle?.galleryFraming).data?.[photo.path],
   }));
 }
 
@@ -144,11 +153,11 @@ export async function saveHighlights(
           const vehicle = vehicles.find((row) => row.id === item.vehicleId);
           if (
             !vehicle ||
-            !vehicle.photos.includes(item.photoPath) ||
+            approvedPaths(vehicle)[0] !== item.photoPath ||
             !isApprovedPhotoPath(vehicle.id, item.photoPath)
           ) {
             throw new HighlightsError(
-              'Uma viatura ou fotografia já não está autorizada no site. Reveja a seleção.',
+              'A viatura ou a fotografia principal mudou. Recarregue os destaques e reveja o enquadramento.',
             );
           }
         }
@@ -180,7 +189,7 @@ export async function saveHighlights(
   }
 }
 
-async function readHighlightSelection(db: PrismaClient, publicPrices = false) {
+async function readHighlightSelection(db: PrismaClient, salePrices = false) {
   const setting = await db.appSetting.findUnique({ where: { key: highlightsKey } });
   const { items } = readSetting(setting?.value);
   const vehicles = items.length
@@ -189,7 +198,7 @@ async function readHighlightSelection(db: PrismaClient, publicPrices = false) {
         select: publicVehicleSelect,
       })
     : [];
-  const campaigns = publicPrices && vehicles.length ? (await readCampaigns(db)).items : [];
+  const campaigns = salePrices && vehicles.length ? (await readCampaigns(db)).items : [];
   const now = Date.now();
   return {
     configured: !!setting,
@@ -198,14 +207,14 @@ async function readHighlightSelection(db: PrismaClient, publicPrices = false) {
       const row = vehicles.find((vehicle) => vehicle.id === item.vehicleId);
       if (!row) return [];
       const approved = approvedPaths(row);
-      const index = approved.indexOf(item.photoPath);
-      if (index < 0) return [];
+      const principal = approved[0];
+      if (!principal) return [];
       return [
         {
           id: row.id,
           vehicle: publicVehicleDto(row, eligibleCampaign(row, campaigns, now)),
-          photoIndex: index,
-          ...(item.framing ? { framing: item.framing } : {}),
+          photoIndex: 0,
+          ...(item.photoPath === principal && item.framing ? { framing: item.framing } : {}),
         },
       ];
     }),

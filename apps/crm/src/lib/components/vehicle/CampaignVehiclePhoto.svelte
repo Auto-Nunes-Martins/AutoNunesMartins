@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CarFront } from 'lucide-svelte';
-  import { framingStyle, type PhotoFraming } from '@anm/types';
+  import { photoFraming, type PhotoFraming } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
   import type { HighlightGalleryPhoto } from '$lib/highlightPhotoRequests';
@@ -59,7 +59,7 @@
     <img
       src={cover.url}
       use:photoFallback={cover.original}
-      style={framingStyle(cover.framing)}
+      use:photoFraming={{ framing: cover.framing }}
       alt=""
       decoding="async"
       onerror={() => (cover = undefined)}
@@ -74,6 +74,8 @@
 
 <style>
   .cover {
+    position: relative;
+    width: 100%;
     display: grid;
     aspect-ratio: 16 / 10;
     overflow: hidden;
@@ -84,6 +86,8 @@
     aspect-ratio: 4 / 3;
   }
   img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
