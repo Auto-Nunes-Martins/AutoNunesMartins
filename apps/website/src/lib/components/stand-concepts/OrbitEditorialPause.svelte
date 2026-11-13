@@ -150,12 +150,38 @@
     outline: 2px solid #fff;
     outline-offset: 5px;
   }
+  a:focus-visible {
+    background: #ffffff0f;
+    border-color: #ffffffd9;
+  }
+  button:focus-visible {
+    background: var(--red, #e30613);
+    border-color: var(--red, #e30613);
+    color: #fff;
+  }
+  a:focus-visible :global(svg) {
+    color: var(--red, #e30613);
+  }
+  a:focus-visible :global(svg),
+  button:focus-visible :global(svg) {
+    transform: translate(3px, -3px);
+  }
   @media (hover: hover) {
-    a:hover,
+    a:hover {
+      background: #ffffff0f;
+      border-color: #ffffffd9;
+    }
     button:hover {
-      background: #fff;
-      color: #111214;
-      border-color: #fff;
+      background: var(--red, #e30613);
+      border-color: var(--red, #e30613);
+      color: #fff;
+    }
+    a:hover :global(svg) {
+      color: var(--red, #e30613);
+    }
+    a:hover :global(svg),
+    button:hover :global(svg) {
+      transform: translate(3px, -3px);
     }
   }
   @media (prefers-reduced-motion: no-preference) {
@@ -179,11 +205,22 @@
     a,
     button {
       transition:
-        color 180ms ease,
-        background-color 180ms ease;
+        color 320ms ease,
+        background-color 320ms ease,
+        border-color 320ms ease;
+    }
+    a :global(svg),
+    button :global(svg) {
+      transition:
+        transform 220ms ease,
+        color 320ms ease;
     }
   }
   @media (prefers-reduced-motion: reduce) {
+    a:is(:hover, :focus-visible) :global(svg),
+    button:is(:hover, :focus-visible) :global(svg) {
+      transform: none;
+    }
     .pause-landscape > img {
       inset: 0;
       height: 100%;

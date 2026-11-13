@@ -489,6 +489,7 @@
     line-height: 1.75;
   }
   .cabin-link {
+    position: relative;
     color: var(--text);
     text-decoration: none;
     min-height: 46px;
@@ -499,6 +500,42 @@
     gap: 24px;
     font-size: 12px;
     white-space: nowrap;
+  }
+  .cabin-link::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 1px;
+    background: var(--red, #e30613);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 420ms ease;
+    pointer-events: none;
+  }
+  .cabin-link :global(svg) {
+    transition: transform 220ms ease;
+  }
+  .cabin-link:focus-visible::after {
+    clip-path: inset(0);
+  }
+  .cabin-link:focus-visible :global(svg) {
+    transform: translate(3px, -3px);
+  }
+  @media (hover: hover) {
+    .cabin-link:hover::after {
+      clip-path: inset(0);
+    }
+    .cabin-link:hover :global(svg) {
+      transform: translate(3px, -3px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cabin-link::after,
+    .cabin-link :global(svg) {
+      transition: none;
+    }
+    .cabin-link:is(:hover, :focus-visible) :global(svg) {
+      transform: none;
+    }
   }
   button:focus-visible,
   a:focus-visible {

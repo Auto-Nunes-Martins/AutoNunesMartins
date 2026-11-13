@@ -35,7 +35,7 @@
         <button class="action primary" onclick={onContact}
           >Vamos conversar <ArrowUpRight size={18} aria-hidden="true" /></button
         >
-        <a class="text-link" href="#a-nossa-historia"
+        <a class="text-link history-link" href="#a-nossa-historia"
           >Conheça-nos melhor <ArrowDown size={17} aria-hidden="true" /></a
         >
       </div>
@@ -220,7 +220,7 @@
     color: white;
     background: var(--red);
   }
-  .primary:hover {
+  .primary:focus-visible {
     background: #c90510;
   }
   .text-link {
@@ -228,8 +228,16 @@
     background: transparent;
     padding: 0;
   }
-  .text-link:hover {
+  .text-link:focus-visible {
     color: var(--red);
+  }
+  @media (hover: hover) {
+    .primary:hover {
+      background: #c90510;
+    }
+    .text-link:hover {
+      color: var(--red);
+    }
   }
   .hero-photo {
     height: clamp(245px, 26vw, 340px);
@@ -366,13 +374,31 @@
       transform: scale(calc(0.6 + var(--chapter) * 0.4));
     }
 
-    .text-link :global(svg) {
-      transition: transform 240ms ease;
+    .action,
+    .text-link {
+      transition:
+        background-color 320ms ease,
+        color 320ms ease;
     }
-    .text-link:hover :global(svg) {
+    .action :global(svg),
+    .text-link :global(svg) {
+      transition: transform 220ms ease;
+    }
+    .action:focus-visible :global(svg),
+    .text-link:focus-visible :global(svg) {
       transform: translate(3px, -3px);
     }
+    .history-link:focus-visible :global(svg) {
+      transform: translateY(3px);
+    }
     @media (hover: hover) {
+      .action:hover :global(svg),
+      .text-link:hover :global(svg) {
+        transform: translate(3px, -3px);
+      }
+      .history-link:hover :global(svg) {
+        transform: translateY(3px);
+      }
     }
   }
   @media (max-width: 1050px) {

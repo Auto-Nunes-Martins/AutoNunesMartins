@@ -1,20 +1,33 @@
-/* Keep the increase local to the right-hand service list. */
-.home-services .services-column .service-row .service-title {
-  font-size: 15px;
-  line-height: 1.4;
+/* Match the homepage's sentence-case hierarchy within the service list. */
+.home-services .services-column .services-heading h2 {
+  font-size: clamp(28px, 2.3vw, 34px);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  text-transform: none;
 }
-.home-services .services-column .service-row .service-description {
-  font-size: 12.5px;
+.home-services .services-column .service-row .service-title {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.015em;
+  text-transform: none;
+}
+.home-services .services-column .service-row .service-copy .service-description {
+  font-size: 14px;
   line-height: 1.6;
 }
 .home-services .services-column .service-list .service-row {
   padding-block: 12px;
 }
 @media (max-width: 700px) {
-  .home-services .services-column .service-row .service-title {
-    font-size: 13px;
+  .home-services .services-column .services-heading h2 {
+    font-size: 26px;
   }
-  .home-services .services-column .service-row .service-description {
-    font-size: 12px;
+  .home-services .services-column .service-row .service-title {
+    font-size: 16px;
+  }
+  .home-services .services-column .service-row .service-copy .service-description {
+    font-size: 13px;
   }
 }

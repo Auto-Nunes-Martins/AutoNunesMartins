@@ -210,6 +210,9 @@
     display: block;
     width: 132px;
     height: auto;
+    /* The artwork starts 33px into the 360px asset. Align its visible edge
+       with the invitation while keeping the footer grid and red rule fixed. */
+    transform: translateX(-9.166667%);
   }
   a {
     color: inherit;

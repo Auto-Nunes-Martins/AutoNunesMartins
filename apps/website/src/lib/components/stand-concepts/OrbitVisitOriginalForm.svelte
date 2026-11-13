@@ -21,7 +21,7 @@
 >
   <ContactFeedback {submission} />
   <p class="eyebrow">COMECE A CONVERSA</p>
-  <h3 id={`${id}-heading`}>O que tem em mente?</h3>
+  <h3 id={`${id}-heading`}>O que tem em mente<span class="question-mark">?</span></h3>
   <div class="form-row">
     <label for={`${id}-name`}
       >Nome<input
@@ -121,6 +121,13 @@
     font-weight: 500;
     line-height: 1.15;
     letter-spacing: -0.04em;
+  }
+  .question-mark {
+    display: inline-block;
+    line-height: 1;
+    background: linear-gradient(to bottom, currentColor 70%, #e30613 70%);
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
   .form-row {
     display: grid;
