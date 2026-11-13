@@ -13,7 +13,7 @@
   let galleryPointerFocus = $state(false);
   let mainPhotoLoading = $state(true);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
-  import { framingStyle } from '@anm/types';
+  import { photoFraming } from '@anm/types';
   import { homePhotoPlaceholder, homePhotoPriority } from '$lib/homePhotoPriority';
   import { publicPhotoVersions } from '$lib/publicVehicles';
   import UnavailableVehiclePanel from './UnavailableVehiclePanel.svelte';
@@ -47,7 +47,8 @@
   import {
     emptyStock,
     publicMileage,
-    publicPrice,
+    formatVehiclePrice,
+    promotionSaving,
     type PublicStock,
     type PublicVehicle,
     type PublicCard,
@@ -56,6 +57,8 @@
   import { publicPhoto, publicHref, fuelLabels, transmissionLabels } from '$lib/publicVehicles';
   import DiscoverVehicles from './DiscoverVehicles.svelte';
   import PromotionTerms from './PromotionTerms.svelte';
+  import CardPromotionPrice from './CardPromotionPrice.svelte';
+  import CardPromotionOverlay from './CardPromotionOverlay.svelte';
   import StandSelection from './StandSelection.svelte';
   import CampaignStrip from './CampaignStrip.svelte';
   import { hybridNav } from './hybridNav';
@@ -187,10 +190,12 @@
     standSelection?: PublicVehicle[];
     reviews?: PublicReview[];
     routeContent?: Snippet<
-      [{
-        card: Snippet<[PublicCard | null, number]>;
-        contact: (message?: string, opener?: EventTarget | null) => Promise<void>;
-      }]
+      [
+        {
+          card: Snippet<[PublicCard | null, number]>;
+          contact: (message?: string, opener?: EventTarget | null) => Promise<void>;
+        },
+      ]
     >;
     galleryRuntime?: VehicleDetailRuntime;
   } = $props();
@@ -270,7 +275,9 @@
           ['Quilometragem', publicMileage(car.km)],
           ...(car.power ? [['Potência', car.power + ' cv']] : []),
           ...(!publicVehicle
-            ? demoCar ? [['Caixa', transmissionFor(demoCar)]] : []
+            ? demoCar
+              ? [['Caixa', transmissionFor(demoCar)]]
+              : []
             : publicVehicle.transmission
               ? [['Caixa', transmissionLabels[publicVehicle.transmission]]]
               : []),
@@ -455,14 +462,23 @@
         (!homeBrand || car.brand === homeBrand) && (!homeYear || car.year >= Number(homeYear)),
     );
     matches.sort((a, b) =>
-      homeOrder === 'preco_asc'
+      homeOrder === 'desconto_desc'
+        ? (b.promotion ? promotionSaving(b.promotion.referencePrice, b.price) : 0) -
+          (a.promotion ? promotionSaving(a.promotion.referencePrice, a.price) : 0)
+        : homeOrder === 'preco_asc'
         ? (a.price ?? Infinity) - (b.price ?? Infinity)
         : homeOrder === 'preco_desc'
           ? (b.price ?? -Infinity) - (a.price ?? -Infinity)
           : homeOrder === 'ano'
             ? b.year - a.year
             : homeOrder === 'km'
-              ? a.km === b.km ? 0 : a.km === null ? 1 : b.km === null ? -1 : a.km - b.km
+              ? a.km === b.km
+                ? 0
+                : a.km === null
+                  ? 1
+                  : b.km === null
+                    ? -1
+                    : a.km - b.km
               : 0,
     );
     return matches.slice(0, 5);
@@ -522,10 +538,13 @@
       galleryOpener?.isConnected &&
       galleryOpener !== document.body &&
       !galleryOpener.closest('[inert]')
-    ) return galleryOpener;
+    )
+      return galleryOpener;
     const root = galleryDialog.closest('.design');
-    return root?.querySelector<HTMLElement>('.photo-expand') ??
-      root?.querySelector<HTMLElement>('.vehicle-photo .photo-rail-slide:not([inert]) button');
+    return (
+      root?.querySelector<HTMLElement>('.photo-expand') ??
+      root?.querySelector<HTMLElement>('.vehicle-photo .photo-rail-slide:not([inert]) button')
+    );
   }
   let contactPointerStartedOutside = false;
   function outsideContact(event: MouseEvent | PointerEvent) {
@@ -740,7 +759,7 @@
         data-theme-logo
         src={isDark ? logoDark : logoLight}
         srcset={isDark ? logoDarkSrcset : logoLightSrcset}
-        sizes="(max-width: 380px) 96px, (max-width: 700px) 120px, 145px"
+        sizes="(max-width: 380px) 108px, (max-width: 700px) 136px, 145px"
         alt="Auto Nunes Martins — início"
         width="180"
         height="80"
@@ -1158,9 +1177,13 @@
           <h1 id="vehicle-title">{car.brand}<br /><span>{car.model}</span></h1>
           {#if car.line}<p class="model-line">{car.line.split(' · ')[0]}</p>{/if}
           <div class="purchase-price">
-            <span>{publicVehicle?.promotion ? 'Preço promocional' : publicVehicle ? 'Preço da viatura' : 'Preço de demonstração'}</span><strong
-              >{publicVehicle ? publicPrice(publicVehicle.price) : eur(car.price)}</strong
-            >
+            <span
+              >{publicVehicle?.promotion
+                ? 'Preço promocional'
+                : publicVehicle
+                  ? 'Preço da viatura'
+                  : 'Preço de demonstração'}</span
+            ><strong>{publicVehicle ? formatVehiclePrice(publicVehicle.price) : eur(car.price)}</strong>
           </div>
           {#if publicVehicle?.promotion}<PromotionTerms promotion={publicVehicle.promotion} />{/if}
           <div class="quick-specs">
@@ -1310,7 +1333,7 @@
                   <span class="related-brand">{item.brand}</span>
                   <h3>{item.model}</h3>
                   <p>{item.year}</p>
-                  <strong class="related-price">{publicPrice(item.price)}</strong>
+                  <strong class="related-price">{formatVehiclePrice(item.price)}</strong>
                 </div></a
               >{/each}
           </div>
@@ -1325,7 +1348,7 @@
       <StandSelection vehicles={standSelection} />
 
       <section class="showroom" id="selecao">
-        <div class="showroom-heading" use:entrance>
+        <div class="showroom-heading">
           <div>
             <h2>
               Novidades no stand<span class="heading-period">.</span>
@@ -1362,7 +1385,7 @@
                 id="home-sort"
                 label="Ordenar por"
                 value={homeOrder}
-                options={Object.entries(sortOptions).map(([value, label]) => ({ value, label }))}
+                options={Object.entries(sortOptions).filter(([value]) => dev || value !== 'desconto_desc').map(([value, label]) => ({ value, label }))}
                 onChange={(value) => (homeOrder = value)}
                 subtle
               />
@@ -1409,7 +1432,9 @@
             Acreditamos em informação clara e no tempo certo para decidir. Descubra a seleção,
             conheça os detalhes e fale connosco sobre aquilo que procura.
           </p>
-          <button class="conversation-pill" onclick={(event) => contact(undefined, event.currentTarget)}
+          <button
+            class="conversation-pill"
+            onclick={(event) => contact(undefined, event.currentTarget)}
             >Vamos conhecer-nos <ArrowUpRight size={18} aria-hidden="true" /></button
           >
           <div class="about-signature">
@@ -1742,6 +1767,7 @@
     use:conditionalEntrance={vehicle && animate ? (index % 2) * 110 : false}
   >
     {#if vehicle}
+      {@const framing = 'approved' in vehicle ? vehicle.cardFraming : undefined}
       {@const waitingPhoto =
         !favorites &&
         !compare &&
@@ -1777,7 +1803,12 @@
                     ? cardPhotoSet(vehicle.image)
                     : responsivePhoto(vehicle.image, 1600),
               }}
-              style={'approved' in vehicle ? framingStyle(vehicle.cardFraming) : undefined}
+              style:--photo-desktop={framing ? `${framing.desktop.x}% ${framing.desktop.y}%` : undefined}
+              style:--photo-mobile={framing ? `${framing.mobile.x}% ${framing.mobile.y}%` : undefined}
+              use:photoFraming={{
+                framing,
+                enabled: 'approved' in vehicle,
+              }}
               src={'approved' in vehicle ? cardPhoto(vehicle.image) : photo(vehicle.image, 1100)}
               srcset={'approved' in vehicle
                 ? cardPhotoSet(vehicle.image)
@@ -1795,7 +1826,15 @@
               class="image-category"
               class:reserved-status={'approved' in vehicle && vehicle.category === 'Reservada'}
               >{vehicle.category}</span
-            >{/if}<span class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span></a
+            >{/if}
+          {#if dev && 'approved' in vehicle && vehicle.promotion}
+            <CardPromotionOverlay
+              price={vehicle.price}
+              promotion={vehicle.promotion}
+              belowCategory={!!vehicle.category}
+            />
+          {/if}
+          <span class="card-arrow"><ArrowUpRight size={23} aria-hidden="true" /></span></a
         >
         {#if 'approved' in vehicle}<div class="card-compare">
             <CompareButton id={vehicle.id} name={`${vehicle.brand} ${vehicle.model}`} overlay />
@@ -1830,15 +1869,18 @@
               >{/if}
           </div>
         </div>
-        <div class="card-price">
-          <strong>{'approved' in vehicle ? publicPrice(vehicle.price) : eur(vehicle.price)}</strong>
+        <div
+          class="card-price"
+          class:has-promotion={dev && 'approved' in vehicle && !!vehicle.promotion}
+        >
+          {#if dev && 'approved' in vehicle && vehicle.promotion}
+            <CardPromotionPrice price={vehicle.price} promotion={vehicle.promotion} />
+          {:else}
+            <strong
+              >{'approved' in vehicle ? formatVehiclePrice(vehicle.price) : eur(vehicle.price)}</strong
+            >
+          {/if}
         </div>
-        {#if dev && 'approved' in vehicle && vehicle.promotion}
-          <div class="card-promotion">
-            <span class="card-promotion-label">Promoção</span>
-            <PromotionTerms promotion={vehicle.promotion} />
-          </div>
-        {/if}
         <div class="card-specs">
           <span><CalendarDays size={22} strokeWidth={1.7} aria-hidden="true" />{vehicle.year}</span
           ><span
@@ -1873,8 +1915,10 @@
 {/snippet}
 
 <style>
-  .card-promotion { display: grid; gap: 5px; margin-block: 0 12px; }
-  .card-promotion-label { color: var(--red); font-size: 11px; font-weight: 650; }
+  .vehicle-card .card-price.has-promotion::before {
+    align-self: flex-end;
+    margin-bottom: 16px;
+  }
   .design.orbit-home main :global(.home-services-comparison + .orbit-perspective) {
     margin-top: 0;
   }
@@ -2084,15 +2128,15 @@
       gap: 9px;
     }
     .design.orbit .stand-header .logo {
-      width: 120px;
-      flex-basis: 120px;
+      width: 136px;
+      flex-basis: 136px;
       padding: 0;
     }
     .design.orbit .stand-header .logo img {
       width: 100%;
     }
     .design.orbit > header.stand-header {
-      padding-inline: 16px;
+      padding-inline: 20px 16px;
       gap: 8px;
     }
   }
@@ -2197,6 +2241,8 @@
   .trade-in-contact:focus-visible {
     outline: 2px solid var(--red);
     outline-offset: 3px;
+    border-color: color-mix(in srgb, var(--text) 35%, transparent);
+    background: color-mix(in srgb, var(--text) 5%, transparent);
   }
   .purchase-followup .fine-print {
     margin: 0;
@@ -2210,8 +2256,8 @@
   @media (prefers-reduced-motion: no-preference) {
     .trade-in-contact {
       transition:
-        background-color 180ms ease,
-        border-color 180ms ease;
+        background-color 320ms ease,
+        border-color 320ms ease;
     }
   }
   @media (min-width: 701px) and (max-width: 1050px) {
@@ -2221,12 +2267,12 @@
   }
   @media (max-width: 380px) {
     .design.orbit > header.stand-header {
-      padding-inline: 8px;
+      padding-inline: 20px 8px;
       gap: 4px;
     }
     .design.orbit .stand-header .logo {
-      width: 96px;
-      flex-basis: 96px;
+      width: 108px;
+      flex-basis: 108px;
       padding: 0;
     }
     .design.orbit .stand-header .logo img {
@@ -2414,8 +2460,12 @@
       animation-timeline: scroll(root block);
     }
     @keyframes read-line-progress {
-      from { transform: scaleX(0); }
-      to { transform: scaleX(1); }
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
     }
   }
   .kicker {
@@ -4471,9 +4521,41 @@
     position: relative;
     isolation: isolate;
     --vehicle-card-title-size: clamp(21px, 1.6vw, 25px);
+    --vehicle-card-photo-extra: 52px;
   }
   .vehicle-card:not(.public-card) {
     --vehicle-card-photo-extra: 32px;
+  }
+  /* Depth study: a softly lit surface and directional shadows, without tilt. */
+  .vehicle-card {
+    --card-surface-top: #1c1c20;
+    --card-surface-bottom: #111114;
+    --card-edge-light: #ffffff12;
+    --vehicle-card-hover-shadow:
+      0 3px 6px -2px #00000070, 0 18px 30px -12px #000000a6, 0 30px 40px -26px #00000080;
+    background: var(--card-surface-bottom);
+    box-shadow:
+      0 2px 4px -1px #00000050,
+      0 9px 18px -10px #0000008c,
+      0 20px 30px -24px #00000066;
+  }
+  :global(html[data-theme='light']) .vehicle-card {
+    --card-surface-top: #fafaf9;
+    --card-surface-bottom: #ececeb;
+    --card-edge-light: #ffffffd9;
+    --vehicle-card-hover-shadow:
+      0 3px 6px -2px #18181b20, 0 18px 30px -12px #18181b35, 0 30px 40px -26px #18181b26;
+    box-shadow:
+      0 2px 4px -1px #18181b16,
+      0 9px 18px -10px #18181b26,
+      0 20px 30px -24px #18181b1f;
+  }
+  .vehicle-card .card-body {
+    background: linear-gradient(150deg, var(--card-surface-top), var(--card-surface-bottom) 80%);
+    box-shadow:
+      inset 0 1px var(--card-edge-light),
+      inset 1px 0 var(--card-edge-light);
+    border-radius: 0 0 4px 4px;
   }
   .card-photo {
     position: relative;
@@ -4491,7 +4573,7 @@
     z-index: 2;
     right: clamp(16px, 1.2vw, 20px);
     top: calc(
-      100cqw / 1.4 + var(--vehicle-card-photo-extra) + clamp(16px, 1.2vw, 20px) + 2px +
+      100cqw / 1.4 + var(--vehicle-card-photo-extra) + clamp(16px, 1.2vw, 20px) - 6px +
         var(--vehicle-card-title-size) * 0.625 - 22px
     );
   }
@@ -4524,7 +4606,7 @@
     padding: clamp(16px, 1.2vw, 20px);
   }
   .vehicle-card .card-body {
-    padding-block: calc(clamp(16px, 1.2vw, 20px) + 2px);
+    padding-block: calc(clamp(16px, 1.2vw, 20px) - 6px);
   }
   .vehicle-card .card-info {
     margin-top: 0;
@@ -4549,7 +4631,7 @@
   }
   .vehicle-card .card-info .card-version {
     display: block;
-    margin-top: 6px;
+    margin-top: 4px;
     font-size: 13px;
     font-weight: 400;
     overflow-wrap: anywhere;
@@ -4565,9 +4647,9 @@
     flex-wrap: wrap;
     justify-content: space-between;
     width: 100%;
-    margin-top: 18px;
+    margin-top: 8px;
     gap: 6px 12px;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.65;
   }
   .vehicle-card .card-specs > span {
@@ -4580,11 +4662,31 @@
   .vehicle-card .card-specs > span :global(svg) {
     flex-shrink: 0;
   }
+  .vehicle-card .card-specs > span:nth-child(1) :global(svg) {
+    width: 26px;
+    height: 26px;
+  }
+  .vehicle-card .card-specs > span:nth-child(2) :global(svg) {
+    width: 30px;
+    height: 30px;
+  }
+  .vehicle-card .card-specs > span:nth-child(3) :global(svg) {
+    width: 24px;
+    height: 24px;
+  }
   .vehicle-card .card-specs > span + span:before {
     content: none;
   }
+  @container (max-width: 300px) {
+    .vehicle-card .card-specs {
+      column-gap: 6px;
+    }
+    .vehicle-card .card-specs > span {
+      gap: 3px;
+    }
+  }
   .vehicle-card .card-price {
-    margin-top: 18px;
+    margin-top: 8px;
     border-top: 0;
     padding-top: 0;
     gap: 12px 16px;
@@ -4604,6 +4706,13 @@
     font-weight: 600;
     line-height: 1.3;
     letter-spacing: -0.035em;
+  }
+  .vehicle-card .card-price strong {
+    font-size: clamp(30px, 9cqw, 36px);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    color: var(--text);
+    text-shadow: none;
   }
   @media (min-width: 701px) {
     /* Let the title area absorb extra space so the price and specs align across a row. */
@@ -4642,6 +4751,7 @@
     outline-color: color-mix(in srgb, var(--text) 50%, var(--bg));
   }
   .vehicle-card:has(:focus-visible),
+  :global(html[data-theme='light']) .vehicle-card:has(:focus-visible),
   .related-grid > a:focus-visible {
     box-shadow: var(--vehicle-card-hover-shadow);
   }
@@ -4661,6 +4771,12 @@
     outline: 2px solid var(--red);
     outline-offset: 4px;
   }
+  .vehicle-card .card-info > a h3 {
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
   @media (hover: hover) {
     .vehicle-card:hover .card-arrow,
     .related-grid > a:hover > .related-image > span {
@@ -4669,14 +4785,13 @@
       rotate: 45deg;
     }
     .vehicle-card:hover,
+    :global(html[data-theme='light']) .vehicle-card:hover,
     .related-grid > a:hover {
       outline-color: color-mix(in srgb, var(--text) 40%, var(--bg));
       box-shadow: var(--vehicle-card-hover-shadow);
     }
     .vehicle-card .card-info > a:hover h3 {
-      text-decoration: underline;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 4px;
+      text-decoration-color: currentColor;
     }
   }
   @media (prefers-reduced-motion: no-preference) {
@@ -4689,6 +4804,28 @@
     .vehicle-card .card-arrow,
     .related-grid > a > .related-image > span {
       transition: rotate 300ms ease;
+    }
+    /* Give normal cards a gentle start and coordinated hover feedback. */
+    .vehicle-card {
+      transition:
+        outline-color 420ms cubic-bezier(0.22, 0.1, 0.25, 1),
+        box-shadow 420ms cubic-bezier(0.22, 0.1, 0.25, 1);
+    }
+    .vehicle-card .card-arrow {
+      transition:
+        rotate 480ms cubic-bezier(0.22, 0.1, 0.25, 1),
+        background-color 420ms cubic-bezier(0.22, 0.1, 0.25, 1),
+        color 420ms cubic-bezier(0.22, 0.1, 0.25, 1);
+    }
+    .vehicle-card .card-info > a h3 {
+      transition: text-decoration-color 420ms cubic-bezier(0.22, 0.1, 0.25, 1);
+    }
+    .vehicle-card .card-favorite :global(button),
+    .vehicle-card .card-compare :global(button) {
+      transition:
+        background-color 320ms cubic-bezier(0.22, 0.1, 0.25, 1),
+        border-color 320ms cubic-bezier(0.22, 0.1, 0.25, 1),
+        color 320ms cubic-bezier(0.22, 0.1, 0.25, 1);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -4766,6 +4903,17 @@
   @media (max-width: 700px) {
     .public-card .card-image img {
       object-position: var(--photo-mobile, 50% 50%);
+    }
+  }
+  /* Align the artwork, rather than its transparent canvas, only in the navbar.
+   * The master starts at x=172/1881. Desktop also has 7px of inset and a
+   * centred 1.06 scale; compensate without changing its visible size. */
+  .design.orbit .stand-header .logo img {
+    translate: calc(-7px - 6.692717%) 0;
+  }
+  @media (max-width: 700px) {
+    .design.orbit .stand-header .logo img {
+      translate: -9.144072% 0;
     }
   }
 </style>

@@ -8,10 +8,10 @@
   import SelectionPreview from './SelectionPreview.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { onMount, tick, untrack } from 'svelte';
-  import { framingStyle } from '@anm/types';
-  import { ArrowUpRight, Plus, X, RotateCcw } from 'lucide-svelte';
+  import { photoFraming } from '@anm/types';
+  import { ArrowUpRight, Plus, X, RotateCcw, Columns3 } from 'lucide-svelte';
   import { useComparison, comparisonRows } from '$lib/comparison';
-  import { publicHref, publicPhoto, publicPrice } from '$lib/publicVehicles';
+  import { publicHref, publicPhoto, formatVehiclePrice } from '$lib/publicVehicles';
   import {
     loadSelectedVehicles,
     rememberSelectionIdentity,
@@ -155,7 +155,10 @@
 <main class="comparison-page">
   <nav class="back-nav" aria-label="Voltar"><OrbitBackLink /></nav>
   <header class="page-heading">
-    <h1 bind:this={heading} tabindex="-1">Comparar viaturas<span>.</span></h1>
+    <div class="heading-intro">
+      <h1 bind:this={heading} tabindex="-1">Comparar viaturas<span>.</span></h1>
+      <Columns3 class="intro-comparison" size={66} strokeWidth={1} aria-hidden="true" />
+    </div>
     {#if $ready && $ids.length}
       <div class="selection-toolbar">
         <p class="selection-count">{$ids.length} de 3 viaturas</p>
@@ -222,6 +225,7 @@
                   {#if entry.status === 0}<div class="pending-photo" aria-hidden="true"></div>
                   {:else if entry.vehicle}
                     {@const session = imageSessions.get(entry.id)!}
+                    {@const framing = entry.vehicle.photos.length ? entry.vehicle.galleryFraming?.[0] : undefined}
                     {@const src = entry.vehicle.photos.length
                       ? sizedPhoto(publicPhoto(entry.vehicle, 0), 800)
                       : catalogPlaceholder}
@@ -240,9 +244,12 @@
                           sizes: '(max-width:700px) 90vw, 560px',
                         }}
                         sizes="(max-width:700px) 90vw, 560px"
-                        style={entry.vehicle.photos.length
-                          ? framingStyle(entry.vehicle.galleryFraming?.[0] ?? undefined)
-                          : undefined}
+                        style:--photo-desktop={framing ? `${framing.desktop.x}% ${framing.desktop.y}%` : undefined}
+                        style:--photo-mobile={framing ? `${framing.mobile.x}% ${framing.mobile.y}%` : undefined}
+                        use:photoFraming={{
+                          framing: framing ?? undefined,
+                          enabled: entry.vehicle.photos.length > 0,
+                        }}
                         alt={entry.vehicle.photos.length
                           ? name(entry)
                           : `Fotografia indisponível: ${name(entry)}`}
@@ -293,7 +300,7 @@
                   <strong class="price"
                     >{entry.vehicle.price === null
                       ? 'Preço não indicado'
-                      : publicPrice(entry.vehicle.price)}</strong
+                      : formatVehiclePrice(entry.vehicle.price)}</strong
                   >
                   <a class="detail-link" href={publicHref(entry.id)}
                     >Ver viatura <ArrowUpRight size={16} aria-hidden="true" /></a
@@ -436,13 +443,24 @@
     flex-wrap: wrap;
     margin-top: 22px;
   }
+  .heading-intro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+  }
+  .heading-intro :global(.intro-comparison) {
+    color: var(--red);
+    flex-shrink: 0;
+    margin-right: 3%;
+  }
   .selection-count {
     margin: 0;
     color: var(--muted);
     font-size: 13px;
   }
   h1 {
-    font-size: clamp(34px, 3.5vw, 48px);
+    font-size: var(--orbit-title-section);
     font-weight: 500;
     letter-spacing: -0.055em;
     line-height: 1.06;
@@ -762,8 +780,23 @@
     overflow: hidden;
     clip-path: inset(50%);
   }
+  .primary:focus-visible {
+    background: var(--red);
+    color: white;
+  }
+  .add:focus-visible {
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+    border-color: color-mix(in srgb, var(--text) 60%, transparent);
+  }
+  .detail-link:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
   @media (hover: hover) {
-    .add:hover,
+    .add:hover {
+      background: color-mix(in srgb, var(--text) 6%, transparent);
+      border-color: color-mix(in srgb, var(--text) 60%, transparent);
+    }
     .primary:hover {
       background: var(--red);
       color: white;
@@ -782,8 +815,23 @@
     .primary,
     .remove {
       transition:
-        background-color 180ms ease,
-        color 180ms ease;
+        background-color 320ms ease,
+        border-color 320ms ease,
+        color 320ms ease;
+    }
+    .primary :global(svg),
+    a.detail-link :global(svg) {
+      transition: transform 220ms ease;
+    }
+    .primary:focus-visible :global(svg),
+    a.detail-link:focus-visible :global(svg) {
+      transform: translate(3px, -3px);
+    }
+    @media (hover: hover) {
+      .primary:hover :global(svg),
+      a.detail-link:hover :global(svg) {
+        transform: translate(3px, -3px);
+      }
     }
   }
   @media (max-width: 700px) {
@@ -803,8 +851,11 @@
       margin-top: 18px;
       gap: 12px;
     }
-    h1 {
-      font-size: clamp(34px, 8.5vw, 44px);
+    .heading-intro {
+      gap: 12px;
+    }
+    .heading-intro :global(.intro-comparison) {
+      width: 40px;
     }
     .actions {
       width: 100%;

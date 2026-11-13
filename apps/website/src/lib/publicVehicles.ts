@@ -133,7 +133,12 @@ const mileageFormatter = new Intl.NumberFormat('pt-PT');
 export const publicMileage = (value: number | null, suffix = ' km') =>
   value === null ? 'Sob consulta' : `${mileageFormatter.format(value)}${suffix}`;
 
-export const publicPrice = (value: string | number | null) =>
+export const promotionSaving = (referencePrice: string | number, price: string | number | null) => {
+  if (price === null) return 0;
+  const cents = Math.round(Number(referencePrice) * 100) - Math.round(Number(price) * 100);
+  return Number.isFinite(cents) ? Math.max(0, cents) / 100 : 0;
+};
+export const formatVehiclePrice = (value: string | number | null) =>
   value === null
     ? 'Preço sob consulta'
     : new Intl.NumberFormat('pt-PT', {

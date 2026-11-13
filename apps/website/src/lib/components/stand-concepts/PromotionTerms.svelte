@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { publicPrice, type PublicVehicle } from '$lib/publicVehicles';
+  import { formatVehiclePrice, type PublicVehicle } from '$lib/publicVehicles';
   let { promotion }: { promotion: NonNullable<PublicVehicle['promotion']> } = $props();
   const dateTime = new Intl.DateTimeFormat('pt-PT', {
     timeZone: 'Europe/Lisbon',
@@ -13,7 +13,7 @@
 </script>
 
 <div class="promotion-terms">
-  <span>Preço base <s>{publicPrice(promotion.referencePrice)}</s></span>
+  <span>Preço base <s>{formatVehiclePrice(promotion.referencePrice)}</s></span>
   <span
     >De <time datetime={promotion.startsAt}>{dateTime.format(new Date(promotion.startsAt))}</time>
     a <time datetime={promotion.endsAt}>{dateTime.format(new Date(promotion.endsAt))}</time></span

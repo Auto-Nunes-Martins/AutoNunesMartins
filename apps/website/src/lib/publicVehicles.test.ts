@@ -6,7 +6,8 @@ import {
   publicCatalogSchema,
   publicCard,
   publicCatalogSeo,
-  publicPrice,
+  formatVehiclePrice,
+  promotionSaving,
   publicMileage,
   publicPhoto,
 } from './publicVehicles';
@@ -26,6 +27,13 @@ export const vehicle = {
   photos: ['/api/public/vehicles/bmw-serie-1-2019-012345abcdef/photos/0'],
 };
 describe('Public website projection', () => {
+  it('shows the exact saving in euros, including cents, instead of a rounded percentage', () => {
+    expect(promotionSaving('23900.00', '21510.00')).toBe(2390);
+    expect(promotionSaving('100.10', '99.99')).toBe(0.11);
+    expect(promotionSaving('23900.00', '21399.50')).toBe(2500.5);
+    expect(promotionSaving('100.00', null)).toBe(0);
+    expect(promotionSaving('100.00', '120.00')).toBe(0);
+  });
   it('keeps an unknown odometer distinct from a recorded zero in cards', () => {
     const unknown = publicVehicleSchema.parse({ ...vehicle, mileage: null });
     const zero = publicVehicleSchema.parse({ ...vehicle, mileage: 0 });
@@ -78,7 +86,7 @@ describe('Public website projection', () => {
       availability: 'RESERVED',
     });
     expect(publicCard(parsed).price).toBeNull();
-    expect(publicPrice(parsed.price)).toBe('Preço sob consulta');
+    expect(formatVehiclePrice(parsed.price)).toBe('Preço sob consulta');
     expect(publicCard(parsed).category).toBe('Reservada');
     expect(publicVehicleSchema.safeParse({ ...vehicle, price: '0.00' }).success).toBe(false);
     expect(publicCard(publicVehicleSchema.parse(vehicle)).category).toBe('');
@@ -119,7 +127,7 @@ describe('Public website projection', () => {
     expect(card.image).toBe(`${card.href}/photos/0`);
     expect(card).not.toHaveProperty('power');
     expect(card).not.toHaveProperty('transmission');
-    expect(publicPrice(card.price)).toContain('900,25');
+    expect(formatVehiclePrice(card.price)).toContain('900,25');
   });
   it('does not substitute a demo car for a missing approved photo', () => {
     const card = publicCard(

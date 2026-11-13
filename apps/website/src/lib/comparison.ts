@@ -5,7 +5,7 @@ import {
   slugPattern,
   fuelLabels,
   transmissionLabels,
-  publicPrice,
+  formatVehiclePrice,
   publicMileage,
   type PublicVehicle,
 } from './publicVehicles';
@@ -117,7 +117,7 @@ const numeric = (value: number | null | undefined, unit = '') =>
   value == null ? missing : `${new Intl.NumberFormat('pt-PT').format(value)}${unit}`;
 const text = (value?: string | null) => value?.trim() || missing;
 export const comparisonRows: { label: string; value: (v: PublicVehicle) => string }[] = [
-  { label: 'Preço', value: (v) => (v.price === null ? missing : publicPrice(v.price)) },
+  { label: 'Preço', value: (v) => (v.price === null ? missing : formatVehiclePrice(v.price)) },
   { label: 'Ano', value: (v) => String(v.year) },
   { label: 'Quilometragem', value: (v) => publicMileage(v.mileage) },
   { label: 'Combustível', value: (v) => fuelLabels[v.fuel] },

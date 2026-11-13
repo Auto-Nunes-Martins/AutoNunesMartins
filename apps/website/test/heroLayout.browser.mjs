@@ -17,7 +17,8 @@ const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
 const interactions = process.argv.includes('--interactions');
 const readingProfile = process.argv.includes('--reading-profile');
-const campaignPreview = process.argv.includes('--campaign-preview');
+const cardPromotionPreview = process.argv.includes('--card-promotion-preview');
+const campaignPreview = process.argv.includes('--campaign-preview') || cardPromotionPreview;
 const productionCampaignCheck = process.argv.includes('--production-campaigns');
 const output = path.join(
   site,
@@ -203,6 +204,7 @@ try {
     assert.ok(!html.includes('id="campanhas"'));
     assert.ok(!html.includes('id="selecao-do-stand"'));
     assert.ok(!/<div[^>]*class="card-promotion(?:\s|")/.test(html));
+    assert.ok(!html.includes('class="card-promotion-overlay'));
     for (const width of [1440, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 950 } });
       await page.goto(origin);
@@ -210,9 +212,11 @@ try {
       await expect(page.locator('#campanhas')).toHaveCount(0);
       await expect(page.locator('#selecao-do-stand')).toHaveCount(0);
       await expect(page.locator('.card-promotion')).toHaveCount(0);
+      await expect(page.locator('.card-promotion-overlay')).toHaveCount(0);
       await expect(page.locator('.card-price').first()).toContainText(/21\s*900/);
       await page.goto(origin + '/viaturas');
       await expect(page.locator('.card-promotion')).toHaveCount(0);
+      await expect(page.locator('.card-promotion-overlay')).toHaveCount(0);
       await expect(page.locator('.card-price').first()).toContainText(/21\s*900/);
       await page.close();
     }
@@ -306,7 +310,7 @@ try {
     else await publicMotionCheck(browser, origin, vehicles[0].slug);
   }
   if (campaignPreview) {
-    for (const width of [1440, 1024, 768, 390, 320]) {
+    for (const width of cardPromotionPreview ? [1440, 390, 320] : [1440, 1024, 768, 390, 320]) {
       selectionCount = 1;
       campaignCount = 1;
       const page = await browser.newPage({
@@ -320,11 +324,67 @@ try {
       );
       await page.goto(origin);
       const section = page.getByRole('region', { name: /Campanhas/ });
-      await expect(page.locator('.card-promotion').first()).toContainText('Promoção');
+      const promotionalPrice = page.locator('.card-promotion').first();
+      const promotedCard = promotionalPrice.locator('xpath=ancestor::article');
+      await expect(promotionalPrice).not.toContainText(/Antes|Agora/);
+      await expect(promotionalPrice.locator('s.previous-price')).toContainText(/23\s*500/);
+      await expect(promotionalPrice.locator('strong.current-price')).toContainText(/21\s*900/);
+      await expect(promotedCard.locator('.card-image .promotion-remaining')).toHaveAttribute(
+        'aria-label',
+        /Termina em.*\d+min/,
+        { timeout: 15000 },
+      );
+      await expect(promotedCard.locator('.card-image .mini-unit')).toHaveCount(4);
+      await expect(promotedCard.locator('.card-image .mini-sheet')).toHaveCount(0);
+      await expect(promotedCard.locator('.card-image .promotion-ribbon')).toHaveCount(1);
+      await expect(promotedCard.locator('.card-image .leaf')).toHaveCount(0);
+      await expect(promotedCard.locator('.card-image .promotion-discount')).toContainText(
+        /1600\s*€|1\s*600\s*€/,
+      );
+      await expect(promotionalPrice).not.toContainText('Preço base');
+      if (cardPromotionPreview) {
+        const card = promotionalPrice.locator('xpath=ancestor::article');
+        for (const theme of ['dark', 'light']) {
+          await page.evaluate((value) => {
+            document.documentElement.dataset.theme = value;
+          }, theme);
+          await card.scrollIntoViewIfNeeded();
+          await expect(card.locator('.card-specs')).toContainText('2021');
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+          const screenshot = path.join(output, `normal-promotion-${theme}-${width}.png`);
+          await card.screenshot({ path: screenshot, animations: 'disabled' });
+          console.log(screenshot);
+        }
+        await page.close();
+        continue;
+      }
       await expect(section.locator('article')).toHaveCount(1);
       await expect(section.locator('article').first()).toContainText(/21\s*900/);
       await expect(section.locator('article').first()).toContainText(/23\s*500/);
       await expect(section.locator('time')).toHaveCount(1);
+      await expect(section.locator('.specs:visible')).toContainText('2021');
+      await expect(section.locator('.specs:visible')).toContainText(/40\s*000/);
+      await expect(section.locator('.specs:visible')).toContainText('Diesel');
+      await expect(section.locator('.countdown-unit')).toHaveCount(4, { timeout: 15000 });
+      if (width === 1440) {
+        const initialCountdown = await section.locator('time').textContent();
+        await expect.poll(() => section.locator('time').textContent()).not.toBe(initialCountdown);
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await expect(section.locator('.motion-toggle')).toHaveCount(0);
+        const ticker = section.locator('.ticker-track');
+        await section.locator('.ticker-window').hover();
+        assert.equal(
+          await ticker.evaluate((node) => getComputedStyle(node).animationPlayState),
+          'running',
+        );
+        const initialTickerPosition = await ticker.evaluate(
+          (node) => getComputedStyle(node).transform,
+        );
+        await expect
+          .poll(() => ticker.evaluate((node) => getComputedStyle(node).transform))
+          .not.toBe(initialTickerPosition);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+      }
       await expect(section.getByText(selected.model)).toHaveCount(0);
       const selection = page.getByRole('region', { name: 'Seleção do stand' });
       await expect(selection.locator('article')).toHaveCount(1);
@@ -334,7 +394,7 @@ try {
       );
       await expect(selection.locator('article a')).toContainText(/19\s*900/);
       await expect(selection.locator('time')).toHaveAttribute('datetime', selected.priceValidUntil);
-      await expect(section.locator('.reduction')).toContainText('6,8%');
+      await expect(section.locator('.reduction')).toContainText(/1600\s*€|1\s*600\s*€/);
       await expect(selection.locator('.promotion-terms')).toHaveCount(0);
       await expect(selection).not.toContainText(/promoção|desconto|sale/i);
       assert.ok(
@@ -349,9 +409,23 @@ try {
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       await section.scrollIntoViewIfNeeded();
       await page.evaluate(() => document.fonts.ready);
+      const campaignCardSize = await section.locator('article').first().boundingBox();
+      await expect(section.locator('h2')).toContainText('Oferta');
+      await expect(section.locator('h2')).not.toContainText('Ofertas');
+      const singleRailWidth = await section.locator('.campaign-rail').evaluate((node) => {
+        const css = getComputedStyle(node);
+        return node.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight);
+      });
+      assert.ok(Math.abs(campaignCardSize.width - singleRailWidth) < 2, 'One offer fills the rail');
       const screenshot = path.join(output, `campanhas-site-${width}.png`);
       await section.screenshot({ path: screenshot, animations: 'disabled' });
       console.log(screenshot);
+      await page.evaluate(() => (document.documentElement.dataset.theme = 'light'));
+      await section.screenshot({
+        path: path.join(output, `campanhas-single-light-${width}.png`),
+        animations: 'disabled',
+      });
+      await page.evaluate(() => (document.documentElement.dataset.theme = 'dark'));
       await selection.screenshot({
         path: path.join(output, `selecao-site-${width}.png`),
         animations: 'disabled',
@@ -362,13 +436,74 @@ try {
       await page.goto(origin + '/viaturas/' + selected.slug);
       await expect(page.locator('.purchase-price')).toContainText(/19\s*900/);
       await expect(page.locator('.purchase .promotion-terms')).toHaveCount(0);
+
       for (const count of [2, 3, 4]) {
         selectionCount = count;
         campaignCount = count;
         await page.goto(origin);
         await expect(selection.locator('article')).toHaveCount(count);
         await expect(section.locator('article')).toHaveCount(count);
+        await expect(section.locator('.countdown-unit')).toHaveCount(count * 4);
+        const currentCardSize = await section.locator('article').first().boundingBox();
+        await expect(section.locator('h2')).toContainText('Ofertas');
+        if (count === 2) {
+          const rail = await section.locator('.campaign-rail').evaluate((node) => {
+            const css = getComputedStyle(node);
+            return {
+              width: node.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight),
+              gap: parseFloat(css.columnGap),
+            };
+          });
+          assert.ok(
+            width > 700
+              ? Math.abs(currentCardSize.width * 2 + rail.gap - rail.width) < 2
+              : Math.abs(currentCardSize.width - rail.width * 0.88) < 2,
+            'Two offers fill equal columns on desktop and retain a compact mobile carousel',
+          );
+          if (width > 700) await expect(section.locator('.rail-controls')).toBeHidden();
+          else await expect(section.locator('.rail-controls')).toBeVisible();
+          await page.evaluate(() => (document.documentElement.dataset.theme = 'light'));
+          await section.screenshot({
+            path: path.join(output, `campanhas-pair-light-${width}.png`),
+            animations: 'disabled',
+          });
+          await page.evaluate(() => (document.documentElement.dataset.theme = 'dark'));
+        } else if (width > 1100) {
+          const railWidth = await section
+            .locator('.campaign-rail')
+            .evaluate((node) => node.clientWidth - 12);
+          assert.ok(
+            Math.abs(currentCardSize.width * count + (count - 1) * 20 - railWidth) < 2,
+            'Three or four desktop cards should fill the available rail width',
+          );
+        }
+        if (count === 2) {
+          assert.ok(
+            Math.abs(currentCardSize.height - campaignCardSize.height - (width > 700 ? 24 : 12)) <
+              1,
+            'Two offers gain a little photo height over the shorter single offer',
+          );
+        } else {
+          assert.ok(
+            currentCardSize.height > campaignCardSize.height + 20,
+            'One and two offers are shorter than the unchanged three/four-card layout',
+          );
+        }
         await expect(section.locator('s').first()).toContainText(/23\s*500/);
+        if (width === 1440 && count === 4) {
+          assert.ok(
+            await section
+              .locator('.campaign-rail')
+              .evaluate((node) => node.scrollWidth <= node.clientWidth + 2),
+            'Four desktop campaign cards must fit without scrolling',
+          );
+        }
+        if (count === 4 && width <= 1024) {
+          await section.getByRole('button', { name: 'Campanha seguinte' }).click();
+          await expect
+            .poll(() => section.locator('.campaign-rail').evaluate((node) => node.scrollLeft))
+            .toBeGreaterThan(0);
+        }
         await section.scrollIntoViewIfNeeded();
         await section.screenshot({
           path: path.join(output, 'campanhas-' + count + '-' + width + '.png'),
@@ -391,7 +526,11 @@ try {
     await expect(page.getByRole('region', { name: /Campanhas/ })).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Seleção do stand' })).toHaveCount(0);
     await page.close();
-    console.log('Campaign section passed at 1440px and 390px, including the empty state.');
+    console.log(
+      cardPromotionPreview
+        ? 'Normal promotion cards passed in both themes at 1440px, 390px and 320px.'
+        : 'Campaign section passed at all five widths, including the empty state.',
+    );
   }
   if (streaming) progressive = await progressiveHero(origin);
   const profiles =
@@ -522,7 +661,7 @@ try {
         else await page.reload({ waitUntil: 'domcontentloaded' });
         await page.locator('.hd-feature').waitFor();
         await page.locator('.hd-root[data-canvas-pinned]').waitFor();
-        await page.locator('.orbit-stats.entered').waitFor();
+        await page.locator('.orbit-stats').waitFor({ state: 'attached' });
         await page.evaluate(async () => {
           const stat = document.querySelector('.orbit-stats .stat');
           await Promise.all(
@@ -609,24 +748,18 @@ try {
             `${width}px ${phase}: visible featured card flashed after entry`,
           );
         }
-        const labels = frames.filter((frame) => Number.isFinite(frame.statLabelY));
-        assert.ok(labels.length > 1, 'Observe the visible statistic label before and after entry');
-        for (let index = 1; index < labels.length; index++) {
-          assert.ok(
-            labels[index].statLabelY - labels[index - 1].statLabelY < 0.1,
-            `${width}px ${phase}: statistic label jumped down before entering`,
+        // Trust metrics follow the hero and precede the vehicle selection in production.
+        await page.locator('.orbit-stats').scrollIntoViewIfNeeded();
+        await page.locator('.orbit-stats.entered').waitFor();
+        await expect(page.locator('.orbit-stats + #selecao')).toHaveCount(1);
+        await page.evaluate(async () => {
+          const stat = document.querySelector('.orbit-stats .stat');
+          await Promise.all(
+            stat.getAnimations().map((animation) => animation.finished.catch(() => {})),
           );
-          assert.ok(
-            labels[index].statOpacity >= labels[index - 1].statOpacity - 0.01,
-            `${width}px ${phase}: visible statistic label flashed during entry`,
-          );
-        }
-        const finalLabel = labels.at(-1);
-        assert.ok(
-          Math.abs(finalLabel.statOffset) < 0.1,
-          'Statistic entry must finish at its normal layout position',
-        );
-        assert.equal(finalLabel.statOpacity, 1, 'Statistic entry must finish fully visible');
+        });
+        await expect(page.locator('.orbit-stats .stat').first()).toHaveCSS('opacity', '1');
+        await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
         console.log(
           `${width}px font+${fontDelay} ${reducedMotion} ${phase}${streaming ? ` CSS+${profile.cssDelay} split:${profile.split}` : ''}: stable`,
         );

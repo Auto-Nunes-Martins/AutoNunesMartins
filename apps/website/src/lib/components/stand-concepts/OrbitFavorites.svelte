@@ -101,7 +101,7 @@
   <link rel="canonical" href={new URL('/favoritos', $page.url.origin).href} /><title>Favoritos — Auto Nunes Martins</title><meta name="robots" content="noindex, follow" /><meta name="description" content="Retome as viaturas que guardou e compare as suas opções ao seu ritmo." /></svelte:head>
 <main class="favorites-page">
   <OrbitBackLink />
-  <div class="intro"><div><p class="eyebrow">AS ESCOLHAS QUE FICAM</p><h1 bind:this={heading} tabindex="-1">Chamaram-lhe<br /><span>a atenção.</span></h1><p class="lead">Guarde o que faz sentido. Volte aos detalhes quando quiser.</p></div><Heart class="intro-heart" size={66} strokeWidth={1} aria-hidden="true" /></div>
+  <div class="intro"><div><h1 bind:this={heading} tabindex="-1">Chamaram-lhe<br /><span>a atenção.</span></h1><p class="lead">Guarde o que faz sentido. Volte aos detalhes quando quiser.</p></div><Heart class="intro-heart" size={66} strokeWidth={1} aria-hidden="true" /></div>
   {#if !$ready}<p role="status">A preparar os seus favoritos…</p>
   {:else if !$ids.length}
     <section class="empty"><Heart size={38} strokeWidth={1.2} aria-hidden="true" /><h2>A sua seleção começa aqui.</h2><p>Use o coração nas viaturas que lhe despertam interesse. Ficam guardadas neste navegador, sem precisar de criar uma conta.</p><a class="primary" href="/viaturas">Descobrir viaturas <ArrowUpRight size={18} aria-hidden="true" /></a></section>
@@ -181,17 +181,11 @@
     flex-shrink: 0;
     margin-right: 3%;
   }
-  .eyebrow {
-    margin: 0 0 20px;
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.12em;
-  }
   h1 {
-    font-size: clamp(42px, 5.5vw, 80px);
+    font-size: var(--orbit-title-section);
     font-weight: 500;
-    letter-spacing: -0.06em;
-    line-height: 1.04;
+    letter-spacing: -0.055em;
+    line-height: 1.06;
     margin: 0;
   }
   h1 span {
@@ -333,6 +327,26 @@
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+  .primary:focus-visible {
+    background: var(--red);
+    color: white;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .primary {
+      transition: background-color 320ms ease, color 320ms ease;
+    }
+    .primary :global(svg) {
+      transition: transform 220ms ease;
+    }
+    .primary:focus-visible :global(svg) {
+      transform: translate(3px, -3px);
+    }
+    @media (hover: hover) {
+      .primary:hover :global(svg) {
+        transform: translate(3px, -3px);
+      }
+    }
+  }
   @media (hover: hover) {
     .primary:hover {
       background: var(--red);
@@ -352,9 +366,6 @@
     .intro {
       padding: 26px 0 32px;
       gap: 12px;
-    }
-    h1 {
-      font-size: clamp(34px, 8vw, 52px);
     }
     .intro :global(.intro-heart) {
       width: 40px;

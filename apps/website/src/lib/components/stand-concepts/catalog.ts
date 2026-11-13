@@ -20,10 +20,11 @@ export const filterLabels = {
 export type FilterKey = keyof typeof filterLabels;
 export const sortOptions = {
   relevancia: 'Últimas entradas',
-  preco_asc: 'Preço: menor primeiro',
-  preco_desc: 'Preço: maior primeiro',
-  ano: 'Ano: mais recente',
-  km: 'Quilometragem: menor primeiro',
+  preco_asc: 'Preço menor',
+  preco_desc: 'Preço maior',
+  desconto_desc: 'Maior desconto',
+  ano: 'Ano mais recente',
+  km: 'Quilometragem menor',
 } as const;
 const normalize = (value: string) =>
   value

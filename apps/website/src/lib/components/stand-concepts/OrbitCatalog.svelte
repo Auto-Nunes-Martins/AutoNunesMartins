@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dev } from '$app/environment';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import type { Snippet } from 'svelte';
   import { tick, onDestroy } from 'svelte';
@@ -370,7 +371,7 @@
             name="ordem"
             value={formParams.get('ordem') ?? 'relevancia'}
             disabled={busy}
-            options={Object.entries(sortOptions).map(([value, label]) => ({ value, label }))}
+            options={Object.entries(sortOptions).filter(([value]) => dev || value !== 'desconto_desc').map(([value, label]) => ({ value, label }))}
             onChange={(value) => update('ordem', value)}
             subtle
           />
@@ -724,6 +725,58 @@
     padding: 8px 0;
     margin-top: 20px;
     background: transparent;
+  }
+  .empty-state button {
+    position: relative;
+  }
+  .empty-state button::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 1px;
+    background: var(--red);
+    clip-path: inset(0 100% 0 0);
+    pointer-events: none;
+  }
+  .apply-filters:not(:disabled):focus-visible {
+    background: var(--red);
+    color: #fff;
+  }
+  .empty-state button:focus-visible::after {
+    clip-path: inset(0);
+  }
+  @media (hover: hover) {
+    .apply-filters:not(:disabled):hover {
+      background: var(--red);
+      color: #fff;
+    }
+    .empty-state button:hover::after {
+      clip-path: inset(0);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .apply-filters {
+      transition:
+        background-color 320ms ease,
+        color 320ms ease;
+    }
+    .empty-state button::after {
+      transition: clip-path 420ms ease;
+    }
+    .apply-filters :global(svg),
+    .empty-state button :global(svg) {
+      transition: transform 220ms ease;
+    }
+    .apply-filters:not(:disabled):focus-visible :global(svg),
+    .empty-state button:focus-visible :global(svg) {
+      transform: translateX(3px);
+    }
+    @media (hover: hover) {
+      .apply-filters:not(:disabled):hover :global(svg),
+      .empty-state button:hover :global(svg) {
+        transform: translateX(3px);
+      }
+    }
   }
   .pagination {
     display: flex;

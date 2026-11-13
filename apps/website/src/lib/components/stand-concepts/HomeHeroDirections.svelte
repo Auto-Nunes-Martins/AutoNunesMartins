@@ -6,7 +6,7 @@
     publicPhoto,
     publicHref,
     publicMileage,
-    publicPrice,
+    formatVehiclePrice,
     fuelLabels,
     type PublicVehicle,
   } from '$lib/publicVehicles';
@@ -60,7 +60,7 @@
   const prices = $derived(
     items
       .filter((item) => item.vehicle.price !== null)
-      .map((item) => publicPrice(item.vehicle.price)),
+      .map((item) => formatVehiclePrice(item.vehicle.price)),
   );
   $effect(() => {
     const request = homeHighlights;
@@ -91,7 +91,7 @@
     'Há mais caminho',
     'pela frente.',
     'Encontre o carro que acompanha os seus planos. Sem pressas.',
-  ];
+  ] as const;
   const background = heroBackgrounds[5];
   function anchorStart(node: HTMLElement, _pending: boolean) {
     // Hydration replaces this element's inline style with its Svelte directives.
@@ -128,6 +128,32 @@
         }
         return { left, top };
       };
+      const feature = node.querySelector<HTMLElement>('.hd-feature');
+      const progressLine = node.querySelector<HTMLElement>('.hd-progress button > span');
+      const scrollHint = node.querySelector<HTMLElement>('.hd-scroll');
+      let nextContentDrop: string | undefined;
+      if (
+        node.dataset.featuredPresence === 'expanded' &&
+        window.innerWidth > 700 &&
+        feature &&
+        progressLine &&
+        scrollHint
+      ) {
+        const featureStyle = getComputedStyle(feature);
+        const scale = featureStyle.scale.split(' ').map(Number);
+        const scaleY = scale[1] || scale[0] || 1;
+        const lineBounds = progressLine.getBoundingClientRect();
+        const hintBounds = scrollHint.getBoundingClientRect();
+        const entryY = parseFloat(featureStyle.translate.split(' ')[1] ?? '0') || 0;
+        const hintTransform = new DOMMatrixReadOnly(getComputedStyle(scrollHint).transform);
+        const lineCentre = lineBounds.top + lineBounds.height / 2 - entryY;
+        // Remove only the breathing transform, retaining the cue's resting position.
+        const hintCentre = hintBounds.top + hintBounds.height / 2 - hintTransform.m42;
+        const currentDrop =
+          parseFloat(featureStyle.getPropertyValue('--featured-content-drop')) || 16;
+        const drop = Math.max(0, Math.round(currentDrop + (hintCentre - lineCentre) / scaleY));
+        nextContentDrop = `${drop}px`;
+      }
       const photo = node.querySelector<HTMLElement>('.hd-photo-stage');
       if (photo) {
         const { left, top } = offset(photo);
@@ -159,6 +185,14 @@
           screen.orientation?.angle ?? 0,
         );
         for (const [target, name, value] of writes) setScrollStyle(target, name, value);
+        if (
+          nextContentDrop &&
+          node.style.getPropertyValue('--featured-content-drop') !== nextContentDrop
+        ) {
+          setScrollStyle(node, '--featured-content-drop', nextContentDrop);
+          // Reconcile the backlight's position after moving the content, without resizing the hero.
+          task.schedule();
+        }
         if (node.dataset.canvasPinned !== pinned) node.dataset.canvasPinned = pinned;
         // Capture after the normal CSS frame is updated, only at initial mount
         // or a real width/orientation change. The child's entry zoom is untouched.
@@ -169,6 +203,8 @@
     const resize = new ResizeObserver(measure);
     function observe() {
       resize.observe(node);
+      const photo = node.querySelector<HTMLElement>('.hd-photo-stage');
+      if (photo) resize.observe(photo);
       for (const plane of node.querySelectorAll<HTMLElement>('.hd-price-motion, .hd-label-motion'))
         resize.observe(plane);
     }
@@ -278,7 +314,9 @@
     <span class="hd-eyebrow"><i aria-hidden="true"></i> Auto Nunes Martins</span>
     <h1 id="hd-title">
       <span class="hd-v1-title-line"><span>{copy[0]}</span></span>
-      <span class="hd-v1-title-line"><em>{copy[1]}</em></span>
+      <span class="hd-v1-title-line"
+        ><em>{copy[1].slice(0, -1)}<span class="hero-final-dot">.</span></em></span
+      >
     </h1>
     <p>{copy[2]}</p>
     <a class="hd-explore" href="/viaturas"
@@ -333,7 +371,7 @@
         <div class="hd-idle-plane">
           <strong
             ><FeaturedPriceWave
-              value={publicPrice(vehicle.price)}
+              value={formatVehiclePrice(vehicle.price)}
               {prices}
               vehicle={sizing ? undefined : vehicle.slug}
             /></strong
@@ -410,6 +448,15 @@
               }
             }}
           />
+          <span class="hd-photo-badge">
+            <svg viewBox="0 0 14 14" aria-hidden="true" fill="currentColor">
+              <path d="m7 1 1.8 3.9 4.3.5L10 8.5l.8 4.5L7 10.8 3.2 13 4 8.5.9 5.4l4.3-.5Z" />
+            </svg>
+            <span>Em destaque</span>
+          </span>
+          <span class="hd-gallery-counter" aria-hidden="true"
+            >{displayedIndex + 1} / {items.length}</span
+          >
         </a>
       {/snippet}
       <div
@@ -521,7 +568,7 @@
         aria-atomic="true"
         data-hero-layout-ready
         >Destaque {displayedIndex + 1} de {items.length}: {car.brand}
-        {car.model}. {publicPrice(car.price)}{car.availability === 'RESERVED'
+        {car.model}. {formatVehiclePrice(car.price)}{car.availability === 'RESERVED'
           ? '. Reservada'
           : ''}.</span
       >
@@ -550,6 +597,7 @@
   class="hero-v1 hd-root hd-1"
   data-photo-variant={version}
   data-featured-card="v5"
+  data-featured-presence="expanded"
   style:--road-focus={background?.focus}
   style:--road-mobile-focus={background?.mobileFocus}
   class:hd-dark={$dark}
@@ -626,6 +674,9 @@
 </section>
 
 <style>
+  .hero-final-dot {
+    color: #e30613;
+  }
   .hd-skeleton .hd-photo {
     background: #313631;
   }

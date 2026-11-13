@@ -4,7 +4,8 @@
   import {
     publicHref,
     publicPhoto,
-    publicPrice,
+    formatVehiclePrice,
+    promotionSaving,
     publicMileage,
     fuelLabels,
     type PublicVehicle,
@@ -51,11 +52,9 @@
               />
               {#if vehicle.promotion}
                 <span class="reduction"
-                  >−{(
-                    Math.floor(
-                      (1 - Number(vehicle.price) / Number(vehicle.promotion.referencePrice)) * 1000,
-                    ) / 10
-                  ).toLocaleString('pt-PT')}%</span
+                  >−{formatVehiclePrice(
+                    promotionSaving(vehicle.promotion.referencePrice, vehicle.price),
+                  )}</span
                 >
               {/if}
             </div>
@@ -73,7 +72,7 @@
                 <span class="price-label"
                   >{vehicle.promotion ? 'Preço promocional' : 'Preço da viatura'}</span
                 >
-                <strong class="price">{publicPrice(vehicle.price)}</strong>
+                <strong class="price">{formatVehiclePrice(vehicle.price)}</strong>
                 {#if vehicle.promotion}
                   <PromotionTerms promotion={vehicle.promotion} />
                 {:else if vehicle.priceValidUntil}

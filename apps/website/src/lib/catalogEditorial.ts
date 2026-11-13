@@ -1,4 +1,4 @@
-import { publicCatalogSeo, publicHref, publicPrice, type PublicStock } from './publicVehicles';
+import { publicCatalogSeo, publicHref, formatVehiclePrice, type PublicStock } from './publicVehicles';
 
 const base = '/viaturas';
 
@@ -67,7 +67,7 @@ export function catalogEditorial(params: URLSearchParams, stock: PublicStock) {
   ];
   const price =
     hasResults && facets.price.min !== null
-      ? `Preços publicados desde ${publicPrice(facets.price.min)}. Confirme o preço na ficha de cada viatura.`
+      ? `Preços publicados desde ${formatVehiclePrice(facets.price.min)}. Confirme o preço na ficha de cada viatura.`
       : '';
   return {
     heading,
@@ -78,7 +78,7 @@ export function catalogEditorial(params: URLSearchParams, stock: PublicStock) {
     vehicles: hasResults
       ? items.slice(0, 3).map((v) => ({
           label: `${v.brand} ${v.model}`,
-          detail: `${v.year} · ${publicPrice(v.price)}${v.availability === 'RESERVED' ? ' · Reservada' : ''}`,
+          detail: `${v.year} · ${formatVehiclePrice(v.price)}${v.availability === 'RESERVED' ? ' · Reservada' : ''}`,
           href: publicHref(v.slug),
         }))
       : [],

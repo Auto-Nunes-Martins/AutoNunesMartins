@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { watchHomeStats } from './whatsappVisibility';
 import { notificationPosition } from './notificationPosition';
 import { perspectiveMotion } from './components/stand-concepts/perspectiveMotion';
+import { campaignMotion } from './components/stand-concepts/campaignMotion';
 
 let frames: Map<number, FrameRequestCallback>;
 let sequence: number;
@@ -87,7 +88,13 @@ beforeEach(() => {
     removeEventListener: (name: string, callback: () => void) =>
       listeners.get(name)?.delete(callback),
   });
-  vi.stubGlobal('document', { body: {}, querySelector: vi.fn(() => null) });
+  vi.stubGlobal('document', {
+    body: {},
+    hidden: false,
+    querySelector: vi.fn(() => null),
+    addEventListener: window.addEventListener,
+    removeEventListener: window.removeEventListener,
+  });
 });
 afterEach(() => {
   cleanup.forEach((cancel) => cancel());
@@ -230,7 +237,7 @@ it('skips distant editorial text, prepares it nearby and cancels work when it le
   );
   advance();
   expect(view.heading.getBoundingClientRect).toHaveBeenCalledOnce();
-  const pose = view.section.style.getPropertyValue('--line-progress');
+  const pose = view.heading.style.getPropertyValue('--line-progress');
   scroll();
   observer.callback(
     [{ isIntersecting: false } as IntersectionObserverEntry],
@@ -243,5 +250,118 @@ it('skips distant editorial text, prepares it nearby and cancels work when it le
     {} as IntersectionObserver,
   );
   advance();
-  expect(view.section.style.getPropertyValue('--line-progress')).toBe(pose);
+  expect(view.heading.style.getPropertyValue('--line-progress')).toBe(pose);
+  expect(view.section.style.getPropertyValue('--line-progress')).toBe('');
+});
+
+it('does no campaign geometry work offscreen and batches reads before unchanged pose writes', () => {
+  const key = element('key'),
+    car = element('car'),
+    percent = element('percent'),
+    motifs = element('motifs');
+  const artwork = new Map([
+    ['.campaign-motifs > .art-key', key],
+    ['.campaign-motifs > .art-car', car],
+    ['.falling-percent-layer > span', percent],
+    ['.campaign-motifs', motifs],
+  ]);
+  const campaign = {
+    ...element('campaign', { top: -500, bottom: 100, height: 600 }),
+    querySelector: (selector: string) => artwork.get(selector) ?? null,
+    dataset: {} as Record<string, string>,
+    parentElement: { querySelector: vi.fn() },
+  };
+  const grid = element('grid', { top: 500 });
+  campaign.parentElement.querySelector.mockImplementation((selector) =>
+    selector.includes('car-grid') ? grid : null,
+  );
+  const destroy = campaignMotion(campaign as unknown as HTMLElement);
+  cleanup.push(destroy);
+  scroll();
+  advance();
+  expect(calls).toEqual([]);
+  expect(campaign.dataset.motionActive).toBe('false');
+  const report = (isIntersecting: boolean) =>
+    intersections[0]!.callback(
+      [{ isIntersecting } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
+    );
+  report(true);
+  advance();
+  expect(calls.findIndex((call) => call.startsWith('write'))).toBeGreaterThan(
+    calls.findLastIndex((call) => call.startsWith('read')),
+  );
+  expect(key.style.getPropertyValue('--campaign-fall')).toBe('84.00px');
+  expect(car.style.getPropertyValue('--campaign-fall')).toBe('84.00px');
+  expect(key.style.getPropertyValue('--campaign-key-tilt')).toBe('-40.32deg');
+  expect(percent.style.getPropertyValue('--campaign-percent-tilt')).toBe('13.44deg');
+  expect(campaign.style.getPropertyValue('--campaign-fall')).toBe('');
+  expect(campaign.style.getPropertyValue('--campaign-key-tilt')).toBe('');
+  expect(campaign.style.getPropertyValue('--campaign-percent-tilt')).toBe('');
+  calls.length = 0;
+  scroll();
+  advance();
+  expect(calls.some((call) => call.startsWith('write'))).toBe(false);
+  calls.length = 0;
+  scroll();
+  report(false);
+  advance();
+  expect(calls).toEqual([]);
+  report(true);
+  Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+  listeners.get('visibilitychange')?.forEach((callback) => callback());
+  advance();
+  expect(calls).toEqual([]);
+  expect(campaign.dataset.motionActive).toBe('false');
+  Object.defineProperty(document, 'hidden', { value: false });
+  listeners.get('visibilitychange')?.forEach((callback) => callback());
+  advance();
+  expect(campaign.dataset.motionActive).toBe('true');
+  expect(calls).toContain('read campaign');
+  scroll();
+  destroy();
+  calls.length = 0;
+  advance();
+  expect(calls).toEqual([]);
+});
+
+it('suspends heading measurements in hidden tabs and observes the heading itself', () => {
+  const view = perspective();
+  cleanup.push(perspectiveMotion(view.section));
+  expect(intersections[0]!.observe).toHaveBeenCalledWith(view.heading);
+  intersections[0]!.callback(
+    [{ isIntersecting: true } as IntersectionObserverEntry],
+    {} as IntersectionObserver,
+  );
+  Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+  listeners.get('visibilitychange')?.forEach((callback) => callback());
+  advance();
+  expect(view.heading.getBoundingClientRect).not.toHaveBeenCalled();
+  Object.defineProperty(document, 'hidden', { value: false });
+  listeners.get('visibilitychange')?.forEach((callback) => callback());
+  advance();
+  expect(view.heading.getBoundingClientRect).toHaveBeenCalledOnce();
+});
+
+it('keeps campaign light off at the page top and scopes updates to the heading', () => {
+  const view = perspective();
+  Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true });
+  cleanup.push(perspectiveMotion(view.section, true));
+  intersections[0]!.callback(
+    [{ isIntersecting: true } as IntersectionObserverEntry],
+    {} as IntersectionObserver,
+  );
+  advance();
+  expect(view.heading.style.getPropertyValue('--line-progress')).toBe('0');
+  expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
+  window.scrollY = 240;
+  scroll();
+  advance();
+  expect(Number(view.heading.style.getPropertyValue('--line-progress'))).toBeGreaterThan(0);
+  expect(view.section.style.getPropertyValue('--line-progress')).toBe('');
+  window.scrollY = 0;
+  scroll();
+  advance();
+  expect(view.heading.style.getPropertyValue('--line-progress')).toBe('0');
+  expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
 });

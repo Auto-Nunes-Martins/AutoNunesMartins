@@ -1,4 +1,4 @@
-/** Only the public website's visible filters; the backend contract stays unchanged. */
+/** Visible public catalog filters, kept in sync with the public API query contract. */
 export const catalogUiLabels = {
   q: 'Pesquisa',
   marca: 'Marca',

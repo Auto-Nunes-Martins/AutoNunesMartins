@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, tick, untrack } from 'svelte';
-  import { framingStyle, type PhotoFraming } from '@anm/types';
+  import { photoFraming, type PhotoFraming } from '@anm/types';
   import { featuredPhotoSizesForRatio } from './images';
   import { cardPhoto, cardPhotoSet, type PhotoDimensions } from '$lib/vehiclePhotoSources';
   import { coverPhotoSizes } from '$lib/coverPhotoSizes';
@@ -97,11 +97,19 @@
 </script>
 
 {#each [...(outgoing ? [outgoing] : []), displayed, ...(pending ? [pending] : [])] as frame (frame.source)}
+  {@const framing = frame.fallback ? undefined : frame.framing}
   <img
     use:coverPhotoSizes={!frame.fallback && frame.dimensions
       ? { source: frame.source, dimensions: frame.dimensions }
       : undefined}
-    style={frame.fallback ? undefined : framingStyle(frame.framing)}
+    style:--photo-desktop={framing ? `${framing.desktop.x}% ${framing.desktop.y}%` : undefined}
+    style:--photo-mobile={framing ? `${framing.mobile.x}% ${framing.mobile.y}%` : undefined}
+    use:photoFraming={{
+      framing: frame.framing,
+      defaultY: 53,
+      active: frame === displayed,
+      enabled: !frame.fallback,
+    }}
     src={frame.fallback ? catalogPlaceholder : cardPhoto(frame.source)}
     srcset={frame.fallback ? undefined : cardPhotoSet(frame.source)}
     sizes={featuredPhotoSizesForRatio(
@@ -122,11 +130,11 @@
 
 <style>
   img {
-    object-position: var(--photo-desktop, 50% 53%) !important;
+    object-position: var(--photo-desktop, 50% 53%);
   }
   @media (max-width: 700px) {
     img {
-      object-position: var(--photo-mobile, 50% 53%) !important;
+      object-position: var(--photo-mobile, 50% 53%);
     }
   }
   img.featured-photo-pending {

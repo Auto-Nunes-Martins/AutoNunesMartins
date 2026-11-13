@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { catalogUiParams, catalogYearOptions, normalizeCatalogUi } from './catalogUiFilters';
 
 describe('visible public catalog filters', () => {
+  it('changes discount ordering while retaining filters and resetting pagination', () => {
+    const selected = catalogUiParams(new URLSearchParams('marca=Audi&pagina=3'), 'ordem', 'desconto_desc');
+    expect(selected.toString()).toBe('marca=Audi&ordem=desconto_desc');
+    expect(normalizeCatalogUi(selected).toString()).toBe(selected.toString());
+  });
   it('removes invisible filters and resets the page, retaining supported filters and unknown validation inputs', () => {
     const clean = normalizeCatalogUi(
       new URLSearchParams(

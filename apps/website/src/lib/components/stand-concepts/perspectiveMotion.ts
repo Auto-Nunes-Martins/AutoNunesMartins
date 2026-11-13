@@ -1,6 +1,6 @@
 import { scrollFrame, setScrollStyle } from './scrollFrame';
 
-export function perspectiveMotion(section: HTMLElement) {
+export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
   const heading = section.querySelector('h2')!;
   const underline = section.querySelector('em')!;
   const lineWindow = section.querySelector<HTMLElement>('.line-window')!;
@@ -12,11 +12,14 @@ export function perspectiveMotion(section: HTMLElement) {
     return p * p * (3 - 2 * p);
   };
   const draw = scrollFrame(() => {
-    if (reduced.matches || !nearby) return;
+    if (reduced.matches || !nearby || document.hidden) return;
     const bounds = heading.getBoundingClientRect();
     const line = lineWindow.getBoundingClientRect();
     // Keep the line's original timing; only the text light trails by 25px of scroll.
-    const journey = (innerHeight * 0.92 - bounds.top) / (innerHeight * 0.84);
+    const viewportJourney = (innerHeight * 0.92 - bounds.top) / (innerHeight * 0.84);
+    const journey = requireScroll
+      ? Math.min(viewportJourney, Math.max(0, window.scrollY) / (innerHeight * 0.84))
+      : viewportJourney;
     const progress = smooth(journey);
     const lightProgress = smooth(journey - 25 / (innerHeight * 0.84));
     const light = smooth(lightProgress / 0.3) * (1 - smooth((lightProgress - 0.72) / 0.28));
@@ -37,9 +40,9 @@ export function perspectiveMotion(section: HTMLElement) {
       // right edge. A fixed window clips the trailing segment; opacity stays 1.
       const x = line.left + line.width * lightProgress * 2;
       const y = line.bottom + line.height * 0.08;
-      setScrollStyle(section, '--line-progress', String(progress));
-      setScrollStyle(section, '--line-light', String(light));
-      setScrollStyle(section, '--accent-light', String(accent));
+      setScrollStyle(heading, '--line-progress', String(progress));
+      setScrollStyle(heading, '--line-light', String(light));
+      setScrollStyle(heading, '--accent-light', String(accent));
       fragments.forEach((fragment, index) => {
         const lightX = fragment === underline ? Math.min(x, line.right) : x;
         setScrollStyle(fragment, '--tip-x', `${lightX - rects[index]!.left}px`);
@@ -48,7 +51,8 @@ export function perspectiveMotion(section: HTMLElement) {
     };
   });
   const schedule = () => {
-    if (nearby) draw.schedule();
+    if (nearby && !document.hidden && !reduced.matches) draw.schedule();
+    else draw.cancel();
   };
   // Editorial text need not force style/layout on every distant scroll.
   // Activate before it can be seen so the existing light is already in place.
@@ -60,11 +64,12 @@ export function perspectiveMotion(section: HTMLElement) {
     },
     { rootMargin: '400px 0px' },
   );
-  proximity.observe(section);
+  proximity.observe(heading);
   const resize = new ResizeObserver(schedule);
   resize.observe(heading);
   window.addEventListener('scroll', schedule, { passive: true });
   window.addEventListener('resize', schedule);
+  document.addEventListener('visibilitychange', schedule);
   reduced.addEventListener('change', schedule);
   draw.runNow(performance.now());
   return () => {
@@ -73,6 +78,7 @@ export function perspectiveMotion(section: HTMLElement) {
     proximity.disconnect();
     window.removeEventListener('scroll', schedule);
     window.removeEventListener('resize', schedule);
+    document.removeEventListener('visibilitychange', schedule);
     reduced.removeEventListener('change', schedule);
   };
 }

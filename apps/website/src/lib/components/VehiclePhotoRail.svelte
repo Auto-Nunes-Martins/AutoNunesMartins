@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { framingStyle } from '@anm/types';
+  import { photoFraming } from '@anm/types';
   import type { PublicVehicle } from '$lib/publicVehicles';
   import { publicPhoto } from '$lib/publicVehicles';
   import { sizedPhoto, vehiclePhotoSet, galleryPhotoSizes } from '$lib/vehiclePhotoSources';
@@ -67,6 +67,7 @@
             draggable={false}
           />
         {:else}
+          {@const framing = vehicle.galleryFraming?.[i]}
           <button type="button" data-swipe-surface onclick={open} tabindex={i === index ? 0 : -1}>
             <img
               {...session?.attrs(src, vehiclePhotoSet(publicPhoto(vehicle, i))) ?? {
@@ -82,7 +83,9 @@
               alt={`Ampliar fotografia: ${vehicle.brand} ${vehicle.model} — fotografia ${i + 1}`}
               loading="eager"
               fetchpriority={i === 0 ? 'high' : 'auto'}
-              style={framingStyle(vehicle.galleryFraming?.[i] ?? undefined)}
+              style:--photo-desktop={framing ? `${framing.desktop.x}% ${framing.desktop.y}%` : undefined}
+              style:--photo-mobile={framing ? `${framing.mobile.x}% ${framing.mobile.y}%` : undefined}
+              use:photoFraming={{ framing: framing ?? undefined }}
               draggable={false}
             />
           </button>
@@ -144,6 +147,7 @@
     overflow: hidden;
   }
   button {
+    position: relative;
     display: block;
     width: 100%;
     height: 100%;

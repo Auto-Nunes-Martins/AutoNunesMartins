@@ -659,6 +659,40 @@
 .design.orbit.orbit-detail .purchase-call:focus-visible {
   outline: 2px solid var(--red);
   outline-offset: 3px;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+/* Keep the main contact action steady, with the same arrow response as other CTAs. */
+.design.orbit.orbit-detail .purchase .pill.primary {
+  transform: none;
+  transition: none;
+}
+.design.orbit.orbit-detail .purchase .pill.primary:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 4px;
+  background: #c90510;
+}
+@media (hover: hover) {
+  .design.orbit.orbit-detail .purchase .pill.primary:hover {
+    background: #c90510;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .design.orbit.orbit-detail .purchase .pill.primary {
+    transition: background-color 320ms ease;
+  }
+  .design.orbit.orbit-detail .purchase .pill.primary svg {
+    transition: transform 220ms ease;
+  }
+  .design.orbit.orbit-detail .purchase .pill.primary:focus-visible svg {
+    transform: translate(3px, -3px);
+  }
+  @media (hover: hover) {
+    .design.orbit.orbit-detail .purchase .pill.primary:hover svg {
+      transform: translate(3px, -3px);
+    }
+  }
 }
 .design.orbit.orbit-detail .purchase-phone-alternative {
   display: flex;
