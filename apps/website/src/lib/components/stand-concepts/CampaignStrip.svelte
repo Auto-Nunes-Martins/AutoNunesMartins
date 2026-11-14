@@ -4,7 +4,6 @@
   import {
     ArrowLeft,
     ArrowRight,
-    ArrowDownRight,
     ArrowUpRight,
     TicketPercent,
     Sparkles,
@@ -103,6 +102,22 @@
     });
   });
 </script>
+
+{#snippet tickerAsterisk()}
+  <svg
+    class="ticker-dot"
+    width="14"
+    height="14"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M8 1v14M1 8h14M3.05 3.05l9.9 9.9M3.05 12.95l9.9-9.9" />
+  </svg>
+{/snippet}
 
 {#if offers.length}
   <section
@@ -358,10 +373,8 @@
               <div class="ticker-group">
                 {#each [0, 1, 2, 3, 4, 5, 6, 7] as item}
                   <span
-                    >Viaturas com desconto <ArrowDownRight size={18} strokeWidth={1.5} /><span
-                      class="ticker-dot">✳</span
-                    >
-                    Campanhas por tempo limitado <span class="ticker-dot">✳</span></span
+                    >Viaturas com desconto <ArrowUpRight size={18} strokeWidth={1.5} />{@render tickerAsterisk()}
+                    Campanhas por tempo limitado {@render tickerAsterisk()}</span
                   >
                 {/each}
               </div>
@@ -723,7 +736,7 @@
     color: #fa8b72;
   }
   .ticker-dot {
-    font-size: 14px;
+    flex: 0 0 14px;
   }
   @keyframes campaign-ticker {
     to {
@@ -2012,6 +2025,19 @@
     }
     .travelling-line {
       transform: translateX(calc((var(--line-progress, 0) * 2 - 1) * 100%));
+    }
+  }
+  @media (max-width: 700px) and (prefers-reduced-motion: no-preference) {
+    .line-window {
+      /* Avoid repainting a filtered clipping surface on every touch-scroll step. */
+      filter: none;
+      opacity: var(--line-visible, 0);
+    }
+    .travelling-line {
+      transform: translate3d(calc((var(--line-progress, 0) * 2 - 1) * 100%), 0, 0);
+      transition: transform 90ms linear;
+      will-change: transform;
+      box-shadow: 0 0 4px var(--red);
     }
   }
   .campaign-copy {

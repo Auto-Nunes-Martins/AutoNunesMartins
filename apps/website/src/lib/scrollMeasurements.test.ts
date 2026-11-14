@@ -172,7 +172,7 @@ function perspective() {
       selector === 'h2' ? heading : selector === 'em' ? underline : line,
     querySelectorAll: () => fragments,
   };
-  return { section: section as unknown as HTMLElement, heading, headingBounds };
+  return { section: section as unknown as HTMLElement, heading, headingBounds, line };
 }
 
 it('coordinates text and notification measurements before either writes its visual state', () => {
@@ -363,5 +363,27 @@ it('keeps campaign light off at the page top and scopes updates to the heading',
   scroll();
   advance();
   expect(view.heading.style.getPropertyValue('--line-progress')).toBe('0');
+  expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
+});
+
+it('removes mobile campaign line fragments and trailing light at both endpoints', () => {
+  const view = perspective();
+  Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
+  Object.defineProperty(window, 'scrollY', { value: 800, writable: true, configurable: true });
+  view.heading.getBoundingClientRect.mockReturnValue({ top: 64 } as DOMRect);
+  cleanup.push(perspectiveMotion(view.section, true));
+  intersections[0]!.callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+  advance();
+  expect(view.heading.style.getPropertyValue('--line-progress')).toBe('1');
+  expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
+  expect(view.line.style.getPropertyValue('--line-visible')).toBe('0');
+  view.heading.getBoundingClientRect.mockReturnValue({ top: 400 } as DOMRect);
+  scroll();
+  advance();
+  expect(view.line.style.getPropertyValue('--line-visible')).toBe('0.95');
+  window.scrollY = 0;
+  scroll();
+  advance();
+  expect(view.line.style.getPropertyValue('--line-visible')).toBe('0');
   expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
 });

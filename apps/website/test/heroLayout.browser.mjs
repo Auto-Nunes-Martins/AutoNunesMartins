@@ -12,13 +12,15 @@ import { expect } from '@playwright/test';
 import sharp from 'sharp';
 import { progressiveHero } from './progressiveHero.mjs';
 import { captureCarouselFrames, publicMotionCheck } from './publicMotionCheck.mjs';
+import { mobileCampaignEffects } from './mobileCampaignEffects.mjs';
 
 const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
 const interactions = process.argv.includes('--interactions');
 const readingProfile = process.argv.includes('--reading-profile');
 const cardPromotionPreview = process.argv.includes('--card-promotion-preview');
-const campaignPreview = process.argv.includes('--campaign-preview') || cardPromotionPreview;
+const effectsCheck = process.argv.includes('--mobile-effects');
+const campaignPreview = process.argv.includes('--campaign-preview') || cardPromotionPreview || effectsCheck;
 const productionCampaignCheck = process.argv.includes('--production-campaigns');
 const output = path.join(
   site,
@@ -321,7 +323,8 @@ try {
     if (process.argv.includes('--frames')) await captureCarouselFrames(browser, origin, output);
     else await publicMotionCheck(browser, origin, vehicles[0].slug);
   }
-  if (campaignPreview) {
+  if (effectsCheck) await mobileCampaignEffects(browser, origin);
+  if (campaignPreview && !effectsCheck) {
     for (const width of cardPromotionPreview ? [1440, 390, 320] : [1440, 1024, 768, 390, 320]) {
       selectionCount = 1;
       campaignCount = 1;
