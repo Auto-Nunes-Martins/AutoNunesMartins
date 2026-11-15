@@ -60,7 +60,7 @@ describe('social main-photo framing', () => {
   it('versions only the approved main photograph and desktop composition, not card/mobile crops', () => {
     const initial = socialPhotoVersion('owner/photo.webp', socialPhotoPosition(framing));
     const previousRecipe = createHash('sha256')
-      .update(JSON.stringify(['social-main-v1', 'owner/photo.webp', socialPhotoPosition(framing)]))
+      .update(JSON.stringify(['social-main-v2-logo', 'owner/photo.webp', socialPhotoPosition(framing)]))
       .digest('hex');
     expect(initial).not.toBe(previousRecipe);
     expect(socialPhotoVersion('owner/other.webp', socialPhotoPosition(framing))).not.toBe(initial);
@@ -99,16 +99,16 @@ describe('social main-photo framing', () => {
         }
       }
       expect(red.length).toBeGreaterThan(2000);
-      expect(red.every(({ x, y }) => x >= 920 && x < 1230 && y >= 745 && y < 870)).toBe(true);
+      expect(red.every(({ x, y }) => x >= 920 && x < 1230 && y >= 700 && y < 825)).toBe(true);
       expect(
         Math.max(...red.map(({ x }) => x)) - Math.min(...red.map(({ x }) => x)),
-      ).toBeGreaterThan(270);
+      ).toBeGreaterThan(230);
       // Neither the original nor areas away from the brand acquire a new tint.
       const expected = await pixel(original, 630, 450);
       const actual = await pixel(result, 630, 450);
       expect(actual.every((channel, i) => Math.abs(channel - expected[i]!) <= 2)).toBe(true);
       const corner = await sharp(result)
-        .extract({ left: 1020, top: 790, width: 200, height: 75 })
+        .extract({ left: 1020, top: 745, width: 200, height: 75 })
         .removeAlpha()
         .raw()
         .toBuffer();

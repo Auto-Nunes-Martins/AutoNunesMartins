@@ -55,7 +55,7 @@ try {
       const actual = await sharp(rendered).resize(420, 300).removeAlpha().raw().toBuffer();
       // The intentional lower-right brand overlay is checked separately; compare
       // the photograph outside that corner to the browser's unchanged crop.
-      const inBrandCorner = (i) => (i / 3) % 420 >= 300 && Math.floor(i / 3 / 420) >= 240;
+      const inBrandCorner = (i) => (i / 3) % 420 >= 287 && Math.floor(i / 3 / 420) >= 225;
       let error = 0,
         samples = 0;
       for (let i = 0; i < actual.length; i += 3) {

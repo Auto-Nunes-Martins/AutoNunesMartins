@@ -3,18 +3,20 @@
 ## Atualização — 15 de novembro de 2026
 
 **Marca nas fotografias de partilha:** o logótipo transparente existente passa a
-aparecer sempre no canto inferior direito, com 300 px de largura e 36 px de margem
-na imagem de 1260 × 900. Uma sombra curta acompanha as letras para manter a leitura
-sobre fundos claros. O enquadramento guardado continua igual; as fotografias do
+aparecer numa faixa cinzenta escura encostada à direita, com 358 × 136 px e
+70 px de fotografia visíveis por baixo, na imagem de 1260 × 900. O logótipo tem
+248 px de largura e está centrado, com 55 px de folga lateral. Os cantos esquerdos
+arredondados, o rebordo e a sombra em duas camadas seguem a referência do story
+aprovada pelo proprietário. O enquadramento guardado continua igual; as fotografias do
 site e os originais não recebem esta marca. O overlay é preparado uma vez por
-processo e reutilizado. A receita muda para `social-main-v2-logo`, para novas
+processo e reutilizado. A receita muda para `social-main-v3-logo-panel`, para novas
 partilhas receberem um endereço diferente. A homepage e o catálogo mantêm a imagem
 anterior só com o logótipo.
 
 Validação deste ajuste: seis testes do renderizador e três testes HTTP passaram;
 o backend compilado inclui os dois logótipos e gera a fotografia com a marca.
 As 15 comparações de enquadramento com CSS continuam a passar fora do canto
-intencionalmente ocupado pela marca (erro RGB médio máximo 3,200/255).
+intencionalmente ocupado pela marca.
 
 **Ajuste posterior pedido pelo proprietário:** início e catálogo voltaram a usar
 apenas o logótipo anterior (`auto-nunes-martins-v1.png`, 1200 × 630), sem texto ou

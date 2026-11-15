@@ -13,51 +13,73 @@ const pending = new Map<string, Promise<SocialImage | null>>();
 let cachedBytes = 0;
 
 // One rasterised brand overlay per process; no fonts or client-side work.
-// Keep the visible logo 36px from the lower/right edges of the share image.
 let watermark: Promise<{ input: Buffer; left: number; top: number }> | undefined;
 function vehicleWatermark() {
   return (watermark ??= (async () => {
+    // Give the mark breathing room within the dark, raised story-style plate.
+    const width = 358;
+    const height = 136;
     const { data: logo, info } = await sharp(
       fileURLToPath(new URL('./social/logo.png', import.meta.url)),
     )
       .trim()
-      .resize({ width: 300 })
-      .ensureAlpha()
-      .raw()
+      .resize({ width: 248 })
+      .png()
       .toBuffer({ resolveWithObject: true });
-    // A tight shadow follows the lettering, keeping it readable on light paint
-    // or paving without putting a rectangle over the photograph.
-    const shade = Buffer.alloc(logo.length);
-    for (let i = 3; i < logo.length; i += 4) shade[i] = Math.round(logo[i]! * 0.85);
-    const padding = 12;
-    const width = info.width + padding * 2;
-    const height = info.height + padding * 2;
-    const shadow = await sharp(shade, { raw: { ...info, channels: 4 } })
-      .extend({
-        top: padding + 2,
-        bottom: padding - 2,
-        left: padding,
-        right: padding,
-        background: '#00000000',
-      })
-      .blur(2)
+    const logoLeft = Math.round((width - info.width) / 2);
+    const logoTop = Math.floor((height - info.height) / 2);
+    // Include room for the shadow to fall left and below the plate.
+    const shadowSpace = 24;
+    const overlayWidth = width + shadowSpace;
+    const overlayHeight = height + shadowSpace;
+    const platePath = `M${overlayWidth + 24} 1H${shadowSpace + 16}
+      A15 15 0 0 0 ${shadowSpace + 1} 16V${height - 16}
+      A15 15 0 0 0 ${shadowSpace + 16} ${height - 1}H${overlayWidth + 24}Z`;
+    const ambientShadow = await sharp(
+      Buffer.from(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${overlayWidth}" height="${overlayHeight}">
+        <path d="${platePath}" transform="translate(-2 7)" fill="#000" opacity=".32"/>
+      </svg>`,
+      ),
+    )
+      .blur(6)
       .png()
       .toBuffer();
-    const input = await sharp(shadow)
+    const contactShadow = await sharp(
+      Buffer.from(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${overlayWidth}" height="${overlayHeight}">
+          <path d="${platePath}" transform="translate(0 3)" fill="#000" opacity=".72"/>
+        </svg>`,
+      ),
+    )
+      .blur(1.5)
+      .png()
+      .toBuffer();
+    const panel = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${overlayWidth}" height="${overlayHeight}">
+        <defs>
+          <linearGradient id="face" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop stop-color="#101314"/><stop offset=".6" stop-color="#0e1112"/><stop offset="1" stop-color="#0c0f10"/>
+          </linearGradient>
+          <linearGradient id="edge" x2="0%" y2="100%">
+            <stop stop-color="#303335"/><stop offset=".45" stop-color="#141718"/><stop offset="1" stop-color="#030405"/>
+          </linearGradient>
+        </defs>
+        <path d="${platePath}" fill="url(#face)" stroke="url(#edge)" stroke-width="1.5"/>
+      </svg>`,
+    );
+    const input = await sharp(ambientShadow)
       .composite([
-        {
-          input: logo,
-          raw: { width: info.width, height: info.height, channels: 4 },
-          left: padding,
-          top: padding,
-        },
+        { input: contactShadow, left: 0, top: 0 },
+        { input: panel, left: 0, top: 0 },
+        { input: logo, left: shadowSpace + logoLeft, top: logoTop },
       ])
       .png()
       .toBuffer();
     return {
       input,
-      left: socialPhotoSize.width - 36 - width + padding,
-      top: socialPhotoSize.height - 36 - height + padding,
+      left: socialPhotoSize.width - overlayWidth,
+      top: socialPhotoSize.height - height - 70,
     };
   })().catch((error) => {
     watermark = undefined;
