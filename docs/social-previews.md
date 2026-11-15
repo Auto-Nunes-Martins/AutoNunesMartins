@@ -2,6 +2,15 @@
 
 ## Atualização — 15 de novembro de 2026
 
+**Ajuste posterior pedido pelo proprietário:** início e catálogo voltaram a usar
+apenas o logótipo anterior (`auto-nunes-martins-v1.png`, 1200 × 630), sem texto ou
+separadores desenhados na imagem. A composição de marca descrita abaixo foi
+experimentada e retirada dos metadados. Mantêm-se os textos mais diretos e o
+enquadramento da fotografia nas partilhas das fichas de viaturas.
+Os endereços antigos da composição de marca também passam a servir apenas o
+logótipo. O renderizador deixa de desenhar texto ou carregar fontes; foi observado
+texto em quadrados na imagem gerada em produção, apesar dos testes locais passarem.
+
 Implementação local, sem alteração das fotografias originais, do CRM ou do desenho
 das páginas. A geração é pedida pelo crawler ao ler a imagem, não durante o
 carregamento normal do site. Não há migração, escrita em base de dados ou upload

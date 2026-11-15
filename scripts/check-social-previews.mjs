@@ -171,14 +171,7 @@ try {
     assert.equal(new URL(one(head, 'og:image')).origin, origin);
     assert.ok(!html.includes('PRIVATE-FIXTURE-MUST-NOT-REACH-HTML'));
     const photo = route === `/viaturas/${vehicles[0].slug}`;
-    const catalog = route === '/viaturas' || route.startsWith('/viaturas?');
-    const expectedBytes = photo
-      ? framedBytes
-      : catalog
-        ? catalogBytes
-        : route === '/'
-          ? homeBytes
-          : bytes;
+    const expectedBytes = photo ? framedBytes : bytes;
     if (photo) {
       assert.equal(
         one(head, 'og:image'),
@@ -188,18 +181,11 @@ try {
       assert.equal(one(head, 'og:image:height'), '900');
       assert.equal(one(head, 'og:image:type'), 'image/jpeg');
     } else {
-      const imagePath = catalog
-        ? `/images/social/catalog-v1.jpg${route.includes('marca=') ? '?marca=Audi' : ''}`
-        : route === '/'
-          ? '/images/social/homepage-v2.jpg'
-          : '/images/social/auto-nunes-martins-v1.png';
+      const imagePath = '/images/social/auto-nunes-martins-v1.png';
       assert.equal(one(head, 'og:image'), origin + imagePath);
       assert.equal(one(head, 'og:image:width'), '1200');
       assert.equal(one(head, 'og:image:height'), '630');
-      assert.equal(
-        one(head, 'og:image:type'),
-        catalog || route === '/' ? 'image/jpeg' : 'image/png',
-      );
+      assert.equal(one(head, 'og:image:type'), 'image/png');
     }
     if (route.startsWith('/viaturas/audi-')) {
       const ld = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(head)[1]);

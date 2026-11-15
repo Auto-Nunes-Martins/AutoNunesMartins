@@ -125,52 +125,11 @@ export function readSocialPhoto(path: string, version: string, position: PhotoFr
   });
 }
 
-const fontfile = fileURLToPath(new URL('./social/Inter-SemiBold.woff2', import.meta.url));
-const logoFile = fileURLToPath(new URL('./social/logo.png', import.meta.url));
-const escapeMarkup = (value: string) =>
-  value.replace(
-    /[&<>"']/g,
-    (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[char]!,
-  );
-async function lettering(text: string, size: number, colour: string, maxWidth: number) {
-  const rendered = await sharp({
-    text: {
-      text: `<span foreground="${colour}">${escapeMarkup(text)}</span>`,
-      font: `Inter SemiBold ${size}`,
-      fontfile,
-      rgba: true,
-    },
-  })
-    .png()
-    .toBuffer();
-  return sharp(rendered).resize({ width: maxWidth, withoutEnlargement: true }).png().toBuffer();
-}
-/** Server-only artwork. No image generator, font or renderer reaches browser JS. */
-export async function renderBrandSocialImage(brand = '', homepage = false) {
-  const heading = homepage
-    ? 'O seu próximo carro.'
-    : brand
-      ? `${brand} usados`
-      : 'Encontre o seu próximo carro.';
-  const logo = await sharp(logoFile).trim().resize({ width: 310 }).png().toBuffer();
-  const title = await lettering(heading, 76, '#f4f4f2', 1072);
-  const subtitle = await lettering(
-    homepage ? 'Há mais caminho pela frente.' : 'Explore as viaturas. Conheça os detalhes.',
-    28,
-    '#aaa9ad',
-    1072,
-  );
-  const footer = await lettering('AUTO NUNES MARTINS  /  CASTELO BRANCO', 19, '#aaa9ad', 1072);
-  const background = Buffer.from(
-    '<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="630" fill="#101112"/><path d="M64 245H1136" stroke="#303033"/><path d="M64 245H152" stroke="#ed1024" stroke-width="4"/><path d="M64 535H1136" stroke="#303033"/></svg>',
-  );
-  return sharp(background)
-    .composite([
-      { input: logo, left: 64, top: 54 },
-      { input: title, left: 64, top: 291 },
-      { input: subtitle, left: 64, top: 405 },
-      { input: footer, left: 64, top: 565 },
-    ])
+/** Compatibility for already-shared artwork URLs: return the original logo,
+ * without font rendering. New metadata points directly at the original PNG.
+ */
+export async function renderBrandSocialImage() {
+  return sharp(fileURLToPath(new URL('./social/logo-preview.png', import.meta.url)))
     .jpeg({ quality: 90, chromaSubsampling: '4:4:4' })
     .toBuffer();
 }

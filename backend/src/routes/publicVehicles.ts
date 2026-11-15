@@ -53,9 +53,7 @@ router.get(
       return;
     }
     try {
-      const image = await cachedSocialImage(`catalog-v1:${query.data.marca ?? ''}`, () =>
-        renderBrandSocialImage(query.data.marca),
-      );
+      const image = await cachedSocialImage('brand-logo-v2', renderBrandSocialImage);
       if (!image) {
         res.status(503).end();
         return;

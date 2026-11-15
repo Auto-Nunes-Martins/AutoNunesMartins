@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { homepageDescription, homepageSocialImage, vehicleSocialImage } from '$lib/socialImages';
+  import { homepageDescription, vehicleSocialImage } from '$lib/socialImages';
   import {
     sizedPhoto,
     vehiclePhotoSet,
@@ -593,9 +593,6 @@
       ? `${car.brand} ${car.model} — Auto Nunes Martins`
       : 'Auto Nunes Martins — Automóveis usados'}
     description={homepageDescription}
-    image={homepageSocialImage}
-    imageType="image/jpeg"
-    imageAlt="Auto Nunes Martins — O seu próximo carro. Há mais caminho pela frente."
     canonical={new URL(id ? $page.url.pathname : '/', $page.url.origin).href}
   />
 {/if}

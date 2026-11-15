@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import { fileURLToPath } from 'node:url';
 import { renderBrandSocialImage, renderSocialPhoto, cachedSocialImage } from './socialImages.js';
 import {
   socialPhotoPosition,
@@ -103,10 +104,12 @@ it('shares in-flight rendering, reuses pixels and bounds concurrent unique rende
   expect(generate).toHaveBeenCalledTimes(1);
   expect(await cachedSocialImage('cache-fixture-1', generate)).toBe(a);
 });
-it('generates distinct branded artwork with actual JPEG dimensions, using the bundled font', async () => {
-  const home = await renderBrandSocialImage('', true);
-  const brand = await renderBrandSocialImage('Mercedes-Benz');
-  expect(home.equals(brand)).toBe(false);
+it('serves the original logo at legacy artwork URLs without rendering any text', async () => {
+  const brand = await renderBrandSocialImage();
+  const original = await sharp(fileURLToPath(new URL('./social/logo-preview.png', import.meta.url)))
+    .jpeg({ quality: 90, chromaSubsampling: '4:4:4' })
+    .toBuffer();
+  expect(brand.equals(original)).toBe(true);
   expect(await sharp(brand).metadata()).toMatchObject({ format: 'jpeg', width: 1200, height: 630 });
   expect(brand.length).toBeLessThan(150_000);
 });

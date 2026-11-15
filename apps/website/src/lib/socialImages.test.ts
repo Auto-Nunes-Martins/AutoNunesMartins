@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { vehicleSocialImage, catalogSocialImage } from './socialImages';
+import { vehicleSocialImage } from './socialImages';
 import { publicVehicleSchema } from './publicVehicles';
 const vehicle = {
   slug: 'bmw-serie-1-2019-012345abcdef',
@@ -33,9 +33,4 @@ it('uses versioned framed photos without inventing dimensions for an older API',
   expect(
     vehicleSocialImage(publicVehicleSchema.parse({ ...vehicle, socialPhotoVersion: 'bad' })),
   ).not.toHaveProperty('imageWidth');
-});
-it('uses only a registered brand for catalogue artwork', () => {
-  expect(catalogSocialImage('BMW')).toBe('/images/social/catalog-v1.jpg?marca=BMW');
-  expect(catalogSocialImage('')).toBe('/images/social/catalog-v1.jpg');
-  expect(catalogSocialImage('<script>')).toBe('/images/social/catalog-v1.jpg');
 });
