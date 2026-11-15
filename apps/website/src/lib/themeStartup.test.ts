@@ -5,6 +5,53 @@ import { describe, expect, it } from 'vitest';
 const startup = readFileSync(new URL('../../assets/orbit-startup.js', import.meta.url), 'utf8');
 const appHtml = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
 const themeBoot = appHtml.match(/<script id="orbit-theme-boot">([\s\S]*?)<\/script>/)![1]!;
+
+describe('featured alignment before hydration', () => {
+  const alignment = startup.slice(
+    startup.indexOf('function alignOrbitFeaturedContent'),
+    startup.indexOf('// A streamed'),
+  );
+  it.each([390, 1440])('preserves the resting pose at %s px without cumulative drift', (width) => {
+    const values = new Map<string, string>();
+    const attributes = new Map([['data-featured-presence', 'expanded']]);
+    const feature = {};
+    const hint = { getBoundingClientRect: () => ({ top: 245, height: 10 }) };
+    const line = {
+      getBoundingClientRect: () => ({
+        top: 203 + (parseFloat(values.get('--featured-content-drop') || '16') - 16) * 0.8,
+        height: 4,
+      }),
+    };
+    const hero = {
+      getAttribute: (key: string) => attributes.get(key),
+      setAttribute: (key: string, value: string) => attributes.set(key, value),
+      querySelector: (selector: string) =>
+        selector === '.hd-feature' ? feature : selector === '.hd-scroll' ? hint : line,
+      style: { setProperty: (key: string, value: string) => values.set(key, value) },
+    };
+    const context = {
+      innerWidth: width,
+      hero,
+      getComputedStyle: (element: object) =>
+        element === feature
+          ? {
+              scale: '0.8',
+              translate: '0px 5px',
+              getPropertyValue: (key: string) => values.get(key) || '',
+            }
+          : { transform: 'matrix(1,0,0,1,0,10)' },
+      DOMMatrixReadOnly: class {
+        m42 = 10;
+      },
+    };
+    const run = () => runInNewContext(`${alignment}\nalignOrbitFeaturedContent(hero);`, context);
+    run();
+    expect(values.get('--featured-content-drop')).toBe(width > 700 ? '66px' : undefined);
+    expect(attributes.get('data-featured-content-drop')).toBe(width > 700 ? '66px' : undefined);
+    run();
+    expect(values.get('--featured-content-drop')).toBe(width > 700 ? '66px' : undefined);
+  });
+});
 describe('theme before the first painted frame', () => {
   it.each(['light', 'dark'])('applies a legacy %s preference before hydration', (theme) => {
     const attributes = new Map([['data-theme', 'dark']]);

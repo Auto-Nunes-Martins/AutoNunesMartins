@@ -8,14 +8,16 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
   try {
-    const vehicle = await vehiclesApi.get(event, event.params.id);
-    const signedPhotos = await vehiclesApi
-      .signedPhotos(event, vehicle.id)
-      .then((result) => result.photos)
-      .catch((err) => {
-        rethrowAuthError(err);
-        return [];
-      });
+    const [vehicle, signedPhotos] = await Promise.all([
+      vehiclesApi.get(event, event.params.id),
+      vehiclesApi
+        .signedPhotos(event, event.params.id)
+        .then((result) => result.photos)
+        .catch((err) => {
+          rethrowAuthError(err);
+          return [];
+        }),
+    ]);
     return { vehicle, signedPhotos };
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {

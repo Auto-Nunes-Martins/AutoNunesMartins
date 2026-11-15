@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { scrollAccent } from './scrollAccent';
+  import { scrollFrame as createScrollFrame } from './scrollFrame';
   import forestSmall from '$lib/assets/images/hero-directions/catalog-forest-640.webp?url&no-inline';
   import forest from '$lib/assets/images/hero-directions/catalog-forest-1280.webp?url&no-inline';
   import type { SceneBackground } from './homeVisualFamilies';
@@ -59,24 +60,25 @@
     const scrollInput = matchMedia('(hover: none), (pointer: coarse)');
     const heading = element.querySelector('strong')!;
     const lineWindow = element.querySelector<HTMLElement>('.title-line')!;
-    let scrollFrame = 0;
     let inView = true;
     const updateDrift = () => {
       driftPaused = !inView || document.hidden;
     };
-    const drawScroll = () => {
-      scrollFrame = 0;
+    const scrollTask = createScrollFrame(() => {
       if (!scrollDriven || reduced) return;
       // Same viewport journey and 25px text-light lag as “fazer sentido”.
-      scrollLight = scrollAccent(
+      const nextLight = scrollAccent(
         heading.getBoundingClientRect().top,
         innerHeight,
         lineWindow.getBoundingClientRect().width,
       );
-    };
+      return () => {
+        scrollLight = nextLight;
+      };
+    });
     const schedule = () => {
-      if (scrollDriven && !reduced && inView && !scrollFrame)
-        scrollFrame = requestAnimationFrame(drawScroll);
+      if (scrollDriven && !reduced && inView && !document.hidden) scrollTask.schedule();
+      else scrollTask.cancel();
     };
     const update = () => {
       reduced = media.matches;
@@ -87,7 +89,7 @@
         clearTimeout(timer);
         phase = 'parked';
       }
-      drawScroll();
+      scrollTask.runNow(performance.now());
     };
     const observer = new IntersectionObserver(([entry]) => {
       inView = entry?.isIntersecting ?? false;
@@ -106,7 +108,7 @@
     return () => {
       clearTimeout(timer);
       cancelAnimationFrame(sweepFrame);
-      cancelAnimationFrame(scrollFrame);
+      scrollTask.cancel();
       observer.disconnect();
       resize.disconnect();
       media.removeEventListener('change', update);

@@ -206,6 +206,8 @@ export const routes = {
   '/tarefas/task-urgent/editar': 'tarefas/[id]/editar',
   '/atividade': 'atividade',
   '/site/destaques': 'site/destaques',
+  '/site/campanhas': 'site/campanhas',
+  '/site/reviews': 'site/reviews',
   '/definicoes': 'definicoes',
   '/guia': 'guia',
 };
@@ -251,13 +253,15 @@ export function dataFor(url, tasks = initialTasks) {
         dashboard: error
           ? { kind: 'error', message: err }
           : {
-              kind: 'success',
+              kind: 'ok',
               payload: {
                 kpis: {
                   vendasMes: { count: 3, previousCount: 2, deltaPct: 50 },
                   faturacaoMes: metric,
                   lucroMes: { ...metric, current: '8300' },
                   comissoesMes: { ...metric, current: '0', previous: '0' },
+                  despesasOperacionaisMes: { ...metric, current: '48.50', previous: '0' },
+                  resultadoAposDespesasMes: { ...metric, current: '8251.50', previous: '0' },
                   margemMedia: { current: 18.25, previous: 16.8, deltaPct: 8.6 },
                   sparklines: {
                     vendas: [1, 2, 1, 3, 2, 3],
@@ -276,6 +280,26 @@ export function dataFor(url, tasks = initialTasks) {
                   ytdSold: 28,
                   ytdRevenue: '398000',
                   ytdAvgMarginPct: 18.25,
+                  ytdProfit: '8300',
+                  ytdCommission: '0',
+                  ytdVat: '747.97',
+                  ytdOperatingExpenses: '48.50',
+                  ytdResultAfterExpenses: '8251.50',
+                  profit: months.map(() => 1000),
+                  commission: months.map(() => 0),
+                  vat: months.map(() => 230),
+                  operatingExpenses: months.map(() => 48.5),
+                  resultAfterExpenses: months.map(() => 951.5),
+                  monthKeys: months.map((_, index) => `2026-${String(index + 1).padStart(2, '0')}`),
+                  totals12m: {
+                    sold: 28,
+                    revenue: '398000',
+                    profit: '8300',
+                    commission: '0',
+                    vat: '747.97',
+                    operatingExpenses: '48.50',
+                    resultAfterExpenses: '8251.50',
+                  },
                 },
                 bestSellers: empty
                   ? []
@@ -398,15 +422,35 @@ export function dataFor(url, tasks = initialTasks) {
     case 'atividade':
       data = { params: filters, result: { ...list(activityRows), pageCount: 1 } };
       break;
+    case 'site/reviews':
+      data = { items: [] };
+      break;
+    case 'site/campanhas':
     case 'site/destaques':
       data = {
         editor: {
-          items: [],
+          revision: 'fixture-revision',
+          items: empty
+            ? []
+            : route === 'site/destaques'
+              ? [{ vehicleId: vehicle.id, photoPath: vehicle.photos[0] }]
+              : [
+                  {
+                    vehicleId: vehicle.id,
+                    price: '14900.00',
+                    referencePrice: vehicle.salePrice,
+                    durationDays: 7,
+                    startsAt: new Date(Date.now() - 86400000).toISOString(),
+                    endsAt: new Date(Date.now() + 6 * 86400000).toISOString(),
+                    applied: true,
+                  },
+                ],
           candidates: empty
             ? []
-            : [{ ...vehicle, photos: [{ path: vehicle.photos[0], url: '/__fixture/photo' }] }],
+            : [{ ...vehicle, price: vehicle.salePrice, photoPaths: vehicle.photos }],
         },
       };
+      if (route === 'site/destaques') data.editor = { ok: true, editor: data.editor };
       break;
     case 'definicoes':
       data = {

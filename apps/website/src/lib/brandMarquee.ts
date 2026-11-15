@@ -10,6 +10,7 @@ export function brandMarquee(node: HTMLElement, initial = { paused: false }) {
     resting = false,
     alive = true;
   let paused = initial.paused;
+  let viewportWidth = 0;
   let period = 0,
     frame = 0,
     previousTime = 0,
@@ -22,7 +23,7 @@ export function brandMarquee(node: HTMLElement, initial = { paused: false }) {
     !document.hidden &&
     mobile.matches &&
     !reduced.matches &&
-    period > node.clientWidth + 1 &&
+    period > viewportWidth + 1 &&
     !hovered &&
     !touching &&
     !resting &&
@@ -47,7 +48,7 @@ export function brandMarquee(node: HTMLElement, initial = { paused: false }) {
   function refresh() {
     if (!alive) return;
     node.dataset.brandLoop = String(
-      mobile.matches && !reduced.matches && period > node.clientWidth + 1,
+      mobile.matches && !reduced.matches && period > viewportWidth + 1,
     );
     if (!canRun()) {
       stop();
@@ -61,8 +62,10 @@ export function brandMarquee(node: HTMLElement, initial = { paused: false }) {
   }
   function measure() {
     period = primary!.getBoundingClientRect().width;
+    // ResizeObserver owns geometry; the animation only advances scrollLeft.
+    viewportWidth = node.clientWidth;
     node.dataset.brandLoop = String(
-      mobile.matches && !reduced.matches && period > node.clientWidth + 1,
+      mobile.matches && !reduced.matches && period > viewportWidth + 1,
     );
     refresh();
   }

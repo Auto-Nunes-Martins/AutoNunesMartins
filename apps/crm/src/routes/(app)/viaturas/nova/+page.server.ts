@@ -13,14 +13,16 @@ export const load: PageServerLoad = async (event) => {
   if (!id)
     return { vehicle: null, signedPhotos: [], intendedStatus: 'AVAILABLE' as const, draftOwner };
   if (!/^c[a-z0-9]{24}$/.test(id)) error(400, 'Viatura inválida.');
-  const vehicle = await vehiclesApi.get(event, id);
-  const signedPhotos = await vehiclesApi
-    .signedPhotos(event, id)
-    .then((result) => result.photos)
-    .catch((err) => {
-      rethrowAuthError(err);
-      return [];
-    });
+  const [vehicle, signedPhotos] = await Promise.all([
+    vehiclesApi.get(event, id),
+    vehiclesApi
+      .signedPhotos(event, id)
+      .then((result) => result.photos)
+      .catch((err) => {
+        rethrowAuthError(err);
+        return [];
+      }),
+  ]);
   const requested = event.url.searchParams.get('estado');
   const intendedStatus: 'AVAILABLE' | 'RESERVED' | 'DOCS_PENDING' =
     requested === 'RESERVED' || requested === 'DOCS_PENDING' ? requested : 'AVAILABLE';

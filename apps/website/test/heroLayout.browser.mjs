@@ -13,6 +13,7 @@ import sharp from 'sharp';
 import { progressiveHero } from './progressiveHero.mjs';
 import { captureCarouselFrames, publicMotionCheck } from './publicMotionCheck.mjs';
 import { mobileCampaignEffects } from './mobileCampaignEffects.mjs';
+import { publicPerformance } from './publicPerformance.mjs';
 
 const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
@@ -20,7 +21,9 @@ const interactions = process.argv.includes('--interactions');
 const readingProfile = process.argv.includes('--reading-profile');
 const cardPromotionPreview = process.argv.includes('--card-promotion-preview');
 const effectsCheck = process.argv.includes('--mobile-effects');
-const campaignPreview = process.argv.includes('--campaign-preview') || cardPromotionPreview || effectsCheck;
+const performanceCheck = process.argv.includes('--performance');
+const campaignPreview =
+  process.argv.includes('--campaign-preview') || cardPromotionPreview || effectsCheck;
 const productionCampaignCheck = process.argv.includes('--production-campaigns');
 const output = path.join(
   site,
@@ -70,7 +73,7 @@ const vehicles = (
     `/api/public/vehicles/hero-check-${String(n).padStart(12, 'a')}/photos/0?v=${String(n + 1).repeat(64)}`,
   ],
 }));
-let showCampaigns = campaignPreview || productionCampaignCheck;
+let showCampaigns = campaignPreview || productionCampaignCheck || performanceCheck;
 let campaignRequests = 0;
 const promoted = [
   {
@@ -199,6 +202,9 @@ try {
   browser = process.argv.includes('--webkit')
     ? await webkit.launch()
     : await chromium.launch({ channel: process.env.BROWSER_CHANNEL || 'chrome', headless: true });
+  if (performanceCheck) {
+    await publicPerformance(browser, origin, vehicles[0].slug);
+  }
   if (productionCampaignCheck) {
     const response = await fetch(origin);
     const html = await response.text();
@@ -219,7 +225,9 @@ try {
       await expect(page.locator('#campanhas time')).toHaveAttribute('aria-label', /seg/);
       const countdown = await page.locator('#campanhas time').textContent();
       await expect(page.locator('#campanhas time')).not.toHaveText(countdown);
-      await page.locator('#campanhas').screenshot({ path: path.join(output, `production-campaigns-${width}.png`) });
+      await page
+        .locator('#campanhas')
+        .screenshot({ path: path.join(output, `production-campaigns-${width}.png`) });
       await expect(page.locator('.card-price').first()).toContainText(/21\s*900/);
       await page.goto(origin + '/viaturas');
       await expect(page.locator('.card-promotion').first()).toBeVisible();
@@ -549,7 +557,7 @@ try {
   }
   if (streaming) progressive = await progressiveHero(origin);
   const profiles =
-    interactions || readingProfile || campaignPreview || productionCampaignCheck
+    interactions || readingProfile || campaignPreview || productionCampaignCheck || performanceCheck
       ? []
       : streaming
         ? [
@@ -783,7 +791,7 @@ try {
       await context.close();
     }
   }
-  if (!interactions && !campaignPreview) {
+  if (!interactions && !campaignPreview && !performanceCheck) {
     console.log(`${results.length} profiles passed; evidence: ${output}`);
   }
 } finally {

@@ -7,6 +7,7 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
   const fragments = [...section.querySelectorAll<HTMLElement>('.read-a, .read-b, em')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let nearby = false;
+  let settledEndpoint: number | undefined;
   const smooth = (value: number) => {
     const p = Math.min(1, Math.max(0, value));
     return p * p * (3 - 2 * p);
@@ -14,7 +15,6 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
   const draw = scrollFrame(() => {
     if (reduced.matches || !nearby || document.hidden) return;
     const bounds = heading.getBoundingClientRect();
-    const line = lineWindow.getBoundingClientRect();
     // Keep the line's original timing; only the text light trails by 25px of scroll.
     const viewportJourney = (innerHeight * 0.92 - bounds.top) / (innerHeight * 0.84);
     const journey = requireScroll
@@ -26,13 +26,19 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
       requireScroll && window.innerWidth <= 700 && (progress === 0 || progress === 1)
         ? progress
         : smooth(journey - 25 / (innerHeight * 0.84));
+    const endpoint =
+      progress === lightProgress && (progress === 0 || progress === 1) ? progress : undefined;
+    // Once both effects are invisible, only the heading position can bring them back.
+    if (endpoint !== undefined && endpoint === settledEndpoint) return;
+    const line = lineWindow.getBoundingClientRect();
     const light = smooth(lightProgress / 0.3) * (1 - smooth((lightProgress - 0.72) / 0.28));
     const segmentStart = line.left + Math.max(0, lightProgress * 2 - 1) * line.width;
     const segmentEnd = line.left + Math.min(1, lightProgress * 2) * line.width;
     const accent = smooth((segmentEnd - segmentStart) / 20);
-    const textLeft = underline.getBoundingClientRect().left;
     const rects = fragments.map((fragment) => fragment.getBoundingClientRect());
+    const textLeft = rects[fragments.indexOf(underline)]!.left;
     return () => {
+      settledEndpoint = endpoint;
       setScrollStyle(underline, '--segment-start', `${segmentStart - textLeft}px`);
       setScrollStyle(underline, '--segment-end', `${segmentEnd - textLeft}px`);
       setScrollStyle(
@@ -74,20 +80,24 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
     { rootMargin: '400px 0px' },
   );
   proximity.observe(heading);
-  const resize = new ResizeObserver(schedule);
+  const remeasure = () => {
+    settledEndpoint = undefined;
+    schedule();
+  };
+  const resize = new ResizeObserver(remeasure);
   resize.observe(heading);
   window.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', schedule);
+  window.addEventListener('resize', remeasure);
   document.addEventListener('visibilitychange', schedule);
-  reduced.addEventListener('change', schedule);
+  reduced.addEventListener('change', remeasure);
   draw.runNow(performance.now());
   return () => {
     draw.cancel();
     resize.disconnect();
     proximity.disconnect();
     window.removeEventListener('scroll', schedule);
-    window.removeEventListener('resize', schedule);
+    window.removeEventListener('resize', remeasure);
     document.removeEventListener('visibilitychange', schedule);
-    reduced.removeEventListener('change', schedule);
+    reduced.removeEventListener('change', remeasure);
   };
 }

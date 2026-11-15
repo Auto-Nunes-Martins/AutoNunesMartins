@@ -32,27 +32,31 @@ await writeFile(
   root + '/App.svelte',
   `<script>
 import Layout from '../../apps/crm/src/routes/(app)/+layout.svelte';
+import SiteLayout from '../../apps/crm/src/routes/(app)/site/+layout.svelte';
+import {writable} from 'svelte/store';
 import {Toaster} from 'svelte-sonner';import {page} from './stores.js';import {theme} from '../../apps/crm/src/lib/stores/theme';import './fixture.css';
 ${[...new Set(Object.values(routes))].map((r, i) => `import Page${i} from '../../apps/crm/src/routes/(app)/${r}/+page.svelte';`).join('\n')}
 const pages={${Object.entries(routes)
     .map(([p, r]) => `${JSON.stringify(p)}:Page${[...new Set(Object.values(routes))].indexOf(r)}`)
     .join(',')}};
-let {initial}=$props();function start(){return initial}let data=$state(start());let current=$state(location.pathname);let form=$state(null);
-window.__crmFixtureUpdate=(next)=>{data=next;current=location.pathname;page.set({url:new URL(location.href),data:next});};
+function withListViews(next){for(const key of ['list','drafts'])if(key in next)next[key+'View']=writable({value:next[key],updating:false,stale:false});return next;}
+let {initial}=$props();function start(){return withListViews(initial)}let data=$state(start());let current=$state(location.pathname);let form=$state(null);
+window.__crmFixtureUpdate=(next)=>{data=withListViews(next);current=location.pathname;page.set({url:new URL(location.href),data,route:{id:'/(app)'+current}});};
 window.__crmSetForm=next=>form=next;window.__crmFixtureUpdate(data);theme.hydrate();
 let Component=$derived(pages[current]??pages['/tarefas']);
 if(new URLSearchParams(location.search).get('__state')==='loading'){for(const key of ['list','expenses','dashboard'])if(key in data)data[key]=new Promise(()=>{});}
 </script>
-<Layout {data}>{#key current}<Component {data} {form}/>{/key}</Layout><Toaster/>`,
+<Layout {data}>{#key current}{#if current.startsWith('/site/')}<SiteLayout><Component {data} {form}/></SiteLayout>{:else}<Component {data} {form}/>{/if}{/key}</Layout><Toaster/>`,
 );
 await writeFile(
   root + '/stores.js',
-  `import {writable} from 'svelte/store';export const page=writable({url:new URL(location.href),data:{}});export const navigating=writable(null);`,
+  `import {writable} from 'svelte/store';export const page=writable({url:new URL(location.href),data:{},route:{id:'/(app)'+location.pathname}});export const navigating=writable(null);`,
 );
 await writeFile(
   root + '/navigation.js',
   `
 export async function invalidateAll(){if(window.__failRefresh){window.__failRefresh=false;throw new Error('Fixture refresh failed')}const data=await fetch('/__fixture/state?url='+encodeURIComponent(location.href)).then(r=>r.json());window.__crmFixtureUpdate(data);await new Promise(r=>setTimeout(r,0));}
+export const invalidate = invalidateAll;
 export async function goto(url,options={}){window.__navigations=(window.__navigations??0)+1;window.__lastGoto=url;history[options.replaceState?'replaceState':'pushState']({},'',url);await invalidateAll();}
 export function beforeNavigate(){}export function afterNavigate(fn){queueMicrotask(()=>fn({from:null,to:null}));}
 `,
@@ -115,6 +119,13 @@ const fixture = {
         res.end(
           '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect fill="#353a40" width="800" height="500"/><path d="M140 330H660L620 240H500L420 180H270L210 240H170Z" fill="#a9b0b7"/><circle cx="260" cy="330" r="45" fill="#17191d"/><circle cx="560" cy="330" r="45" fill="#17191d"/></svg>',
         );
+        return;
+      }
+      if (
+        url.pathname === '/site/destaques/fotografias' ||
+        url.pathname === '/site/campanhas/fotografias'
+      ) {
+        json({ photos: vehicle.photos.map((path) => ({ path, url: '/__fixture/photo' })) });
         return;
       }
       if (url.pathname === '/api/notifications') {
@@ -299,6 +310,17 @@ if (process.argv.includes('--serve')) {
             document.documentElement.dataset.theme = theme;
           }, theme);
           await page.waitForTimeout(150);
+          const menuTrigger = page.locator('.row-actions .more-button:visible').first();
+          if (await menuTrigger.count()) {
+            await menuTrigger.click();
+            await page.locator('.row-actions [popover]:popover-open').waitFor();
+            await page.keyboard.press('Escape');
+            await page.locator('.row-actions [popover]:popover-open').waitFor({ state: 'hidden' });
+            await menuTrigger.click();
+            await page.locator('.row-actions [popover]:popover-open').waitFor();
+            await page.evaluate(() => document.dispatchEvent(new Event('scroll')));
+            await page.locator('.row-actions [popover]:popover-open').waitFor({ state: 'hidden' });
+          }
           await page.screenshot({
             path: output + `/${name}-${width}-${theme}.png`,
             fullPage: true,

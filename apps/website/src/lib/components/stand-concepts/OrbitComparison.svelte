@@ -40,7 +40,8 @@
   // Keep the actual table geometry while fresh data is fetched; never display cached inventory.
   const displayEntries = $derived(
     $ids.map(
-      (id) => entries.find((entry) => entry.id === id) ?? ({ id, status: 0, vehicle: null } as Entry),
+      (id) =>
+        entries.find((entry) => entry.id === id) ?? ({ id, status: 0, vehicle: null } as Entry),
     ),
   );
   const visible = $derived(
@@ -142,6 +143,19 @@
   canonical={new URL('/comparar', $page.url.origin).href}
 />
 
+{#snippet emptyState()}
+  <section class="empty" aria-labelledby="empty-title">
+    <div class="empty-slots" aria-hidden="true">
+      <span>01</span><span>02</span><span>03</span>
+    </div>
+    <h2 id="empty-title">Quais são as suas opções?</h2>
+    <p>Escolha até três viaturas e veja os detalhes lado a lado.</p>
+    <a class="primary" href="/viaturas"
+      >Escolher viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
+    >
+  </section>
+{/snippet}
+
 <svelte:head>
   <link rel="canonical" href={new URL('/comparar', $page.url.origin).href} />
   <title>Comparar viaturas — Auto Nunes Martins</title>
@@ -176,18 +190,12 @@
   </header>
 
   {#if !$ready}
-    <p role="status" class="loading">A carregar as viaturas…</p>
+    <div class="selection-preparing">
+      <p role="status">A carregar as viaturas…</p>
+      <div class="selection-placeholder" aria-hidden="true" inert>{@render emptyState()}</div>
+    </div>
   {:else if !$ids.length}
-    <section class="empty" aria-labelledby="empty-title">
-      <div class="empty-slots" aria-hidden="true">
-        <span>01</span><span>02</span><span>03</span>
-      </div>
-      <h2 id="empty-title">Quais são as suas opções?</h2>
-      <p>Escolha até três viaturas e veja os detalhes lado a lado.</p>
-      <a class="primary" href="/viaturas"
-        >Escolher viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
-      >
-    </section>
+    {@render emptyState()}
   {:else}
     {#if compact && displayEntries.length === 3}
       <div class="pair-picker">
@@ -225,7 +233,9 @@
                   {#if entry.status === 0}<div class="pending-photo" aria-hidden="true"></div>
                   {:else if entry.vehicle}
                     {@const session = imageSessions.get(entry.id)!}
-                    {@const framing = entry.vehicle.photos.length ? entry.vehicle.galleryFraming?.[0] : undefined}
+                    {@const framing = entry.vehicle.photos.length
+                      ? entry.vehicle.galleryFraming?.[0]
+                      : undefined}
                     {@const src = entry.vehicle.photos.length
                       ? sizedPhoto(publicPhoto(entry.vehicle, 0), 800)
                       : catalogPlaceholder}
@@ -244,8 +254,12 @@
                           sizes: '(max-width:700px) 90vw, 560px',
                         }}
                         sizes="(max-width:700px) 90vw, 560px"
-                        style:--photo-desktop={framing ? `${framing.desktop.x}% ${framing.desktop.y}%` : undefined}
-                        style:--photo-mobile={framing ? `${framing.mobile.x}% ${framing.mobile.y}%` : undefined}
+                        style:--photo-desktop={framing
+                          ? `${framing.desktop.x}% ${framing.desktop.y}%`
+                          : undefined}
+                        style:--photo-mobile={framing
+                          ? `${framing.mobile.x}% ${framing.mobile.y}%`
+                          : undefined}
                         use:photoFraming={{
                           framing: framing ?? undefined,
                           enabled: entry.vehicle.photos.length > 0,
@@ -258,14 +272,25 @@
                       /></a
                     >
                   {:else if entry.lastKnownIdentity?.preview}
-                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}><SelectionPreview preview={entry.lastKnownIdentity.preview} /></a>
+                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}
+                      ><SelectionPreview preview={entry.lastKnownIdentity.preview} /></a
+                    >
                   {:else if selectionIdentity(entry)?.photo && !failedPhotos[entry.id]}
-                    <a href={publicHref(entry.id)} aria-label={entry.status === 404 ? `Ver ficha indisponível: ${name(entry)}` : `Ver ${name(entry)}`}><img
-                      src={selectionIdentity(entry)!.photo!}
-                      alt={entry.status === 404 ? `${name(entry)} — já não disponível` : name(entry)}
-                      width="480" height="320"
-                      onerror={() => failedPhotos[entry.id] = true}
-                    /></a>
+                    <a
+                      href={publicHref(entry.id)}
+                      aria-label={entry.status === 404
+                        ? `Ver ficha indisponível: ${name(entry)}`
+                        : `Ver ${name(entry)}`}
+                      ><img
+                        src={selectionIdentity(entry)!.photo!}
+                        alt={entry.status === 404
+                          ? `${name(entry)} — já não disponível`
+                          : name(entry)}
+                        width="480"
+                        height="320"
+                        onerror={() => (failedPhotos[entry.id] = true)}
+                      /></a
+                    >
                   {:else}<div class="missing-photo">
                       <img
                         src={catalogPlaceholder}
@@ -286,7 +311,11 @@
             {/each}
           </tr>
           <tr class="summary-row">
-            <th scope="col" class="attribute-space">{loading || visible.some(entry => entry.vehicle) ? 'Especificações' : 'Seleção'}</th>
+            <th scope="col" class="attribute-space"
+              >{loading || visible.some((entry) => entry.vehicle)
+                ? 'Especificações'
+                : 'Seleção'}</th
+            >
             {#each visible as entry (entry.id)}
               <th scope="col" id={`vehicle-${entry.id}`}>
                 {#if entry.status === 0}
@@ -312,39 +341,59 @@
                     <span class="unavailable-year">{selectionIdentity(entry)!.year}</span>
                   {:else}<h2>{name(entry)}</h2>{/if}
                   <p class="unavailable" class:lookup-error={entry.status === 503}>
-                    {entry.status === 404
-                      ? 'Já não disponível'
-                      : 'Falha na consulta.'}
+                    {entry.status === 404 ? 'Já não disponível' : 'Falha na consulta.'}
                   </p>
-                  {#if entry.status === 503}<p class="lookup-detail">Disponibilidade por confirmar.</p><button class="retry-item detail-link" type="button" disabled={loading} onclick={() => reload += 1}><RotateCcw size={15} aria-hidden="true" />Tentar novamente</button>{/if}
-                  <a class="detail-link" href="/viaturas" onclick={(event) => {
-                    if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-                    event.preventDefault();
-                    comparison.remove(entry.id, name(entry));
-                    void goto('/viaturas');
-                  }}>Substituir <ArrowUpRight size={16} aria-hidden="true" /></a>
+                  {#if entry.status === 503}<p class="lookup-detail">
+                      Disponibilidade por confirmar.
+                    </p>
+                    <button
+                      class="retry-item detail-link"
+                      type="button"
+                      disabled={loading}
+                      onclick={() => (reload += 1)}
+                      ><RotateCcw size={15} aria-hidden="true" />Tentar novamente</button
+                    >{/if}
+                  <a
+                    class="detail-link"
+                    href="/viaturas"
+                    onclick={(event) => {
+                      if (
+                        event.button ||
+                        event.ctrlKey ||
+                        event.metaKey ||
+                        event.shiftKey ||
+                        event.altKey
+                      )
+                        return;
+                      event.preventDefault();
+                      comparison.remove(entry.id, name(entry));
+                      void goto('/viaturas');
+                    }}>Substituir <ArrowUpRight size={16} aria-hidden="true" /></a
+                  >
                 {/if}
               </th>
             {/each}
           </tr>
         </thead>
-        {#if loading || visible.some(entry => entry.vehicle)}
-        {#each facts as row, index}
-          <tbody class="fact-group">
-            <tr class="aligned-fact">
-              <th class="fact-label" scope="row" id={`fact-${index}`}><span>{row.label}</span></th>
-              {#each visible as entry (entry.id)}
-                <td
-                  class="fact-value"
-                  class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'}
-                  headers={`vehicle-${entry.id} fact-${index}`}
-                  >{#if entry.status === 0}<span class="pending-line" aria-hidden="true">&nbsp;</span
-                    >{:else}{entry.vehicle ? row.value(entry.vehicle) : '—'}{/if}</td
+        {#if loading || visible.some((entry) => entry.vehicle)}
+          {#each facts as row, index}
+            <tbody class="fact-group">
+              <tr class="aligned-fact">
+                <th class="fact-label" scope="row" id={`fact-${index}`}><span>{row.label}</span></th
                 >
-              {/each}</tr
-            >
-          </tbody>
-        {/each}
+                {#each visible as entry (entry.id)}
+                  <td
+                    class="fact-value"
+                    class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'}
+                    headers={`vehicle-${entry.id} fact-${index}`}
+                    >{#if entry.status === 0}<span class="pending-line" aria-hidden="true"
+                        >&nbsp;</span
+                      >{:else}{entry.vehicle ? row.value(entry.vehicle) : '—'}{/if}</td
+                  >
+                {/each}</tr
+              >
+            </tbody>
+          {/each}
         {/if}
       </table>
       {#if visible.length === 1}
@@ -355,7 +404,13 @@
         >
       {/if}
     </div>
-    <p class="data-note">{entries.some(entry => entry.vehicle) ? '“Não indicado”: informação não publicada na ficha. “—”: viatura sem dados atuais para comparar.' : entries.some(entry => entry.status === 503) ? 'Não foi possível confirmar a disponibilidade. As escolhas continuam guardadas.' : 'As escolhas continuam guardadas. Pode remover ou substituir as viaturas que já não estão disponíveis.'}</p>
+    <p class="data-note">
+      {entries.some((entry) => entry.vehicle)
+        ? '“Não indicado”: informação não publicada na ficha. “—”: viatura sem dados atuais para comparar.'
+        : entries.some((entry) => entry.status === 503)
+          ? 'Não foi possível confirmar a disponibilidade. As escolhas continuam guardadas.'
+          : 'As escolhas continuam guardadas. Pode remover ou substituir as viaturas que já não estão disponíveis.'}
+    </p>
   {/if}
   <p class="storage-note">
     As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer
@@ -365,6 +420,20 @@
 </main>
 
 <style>
+  /* Reserve the exact empty-state geometry while local selection storage hydrates. */
+  .selection-preparing {
+    position: relative;
+  }
+  .selection-preparing > p {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+  }
+  .selection-placeholder {
+    visibility: hidden;
+  }
+
   .retry-item {
     border: 0;
     background: transparent;

@@ -95,45 +95,131 @@
   }
 </script>
 
-<SocialMetadata title="Favoritos — Auto Nunes Martins" description="Retome as viaturas que guardou e compare as suas opções ao seu ritmo." canonical={new URL('/favoritos', $page.url.origin).href} />
+<SocialMetadata
+  title="Favoritos — Auto Nunes Martins"
+  description="Retome as viaturas que guardou e compare as suas opções ao seu ritmo."
+  canonical={new URL('/favoritos', $page.url.origin).href}
+/>
+
+{#snippet emptyState()}
+  <section class="empty">
+    <Heart size={38} strokeWidth={1.2} aria-hidden="true" />
+    <h2>A sua seleção começa aqui.</h2>
+    <p>
+      Use o coração nas viaturas que lhe despertam interesse. Ficam guardadas neste navegador, sem
+      precisar de criar uma conta.
+    </p>
+    <a class="primary" href="/viaturas"
+      >Descobrir viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
+    >
+  </section>
+{/snippet}
 
 <svelte:head>
-  <link rel="canonical" href={new URL('/favoritos', $page.url.origin).href} /><title>Favoritos — Auto Nunes Martins</title><meta name="robots" content="noindex, follow" /><meta name="description" content="Retome as viaturas que guardou e compare as suas opções ao seu ritmo." /></svelte:head>
+  <link rel="canonical" href={new URL('/favoritos', $page.url.origin).href} /><title
+    >Favoritos — Auto Nunes Martins</title
+  ><meta name="robots" content="noindex, follow" /><meta
+    name="description"
+    content="Retome as viaturas que guardou e compare as suas opções ao seu ritmo."
+  /></svelte:head
+>
 <main class="favorites-page">
   <OrbitBackLink />
-  <div class="intro"><div><h1 bind:this={heading} tabindex="-1">Chamaram-lhe<br /><span>a atenção.</span></h1><p class="lead">Guarde o que faz sentido. Volte aos detalhes quando quiser.</p></div><Heart class="intro-heart" size={66} strokeWidth={1} aria-hidden="true" /></div>
-  {#if !$ready}<p role="status">A preparar os seus favoritos…</p>
+  <div class="intro">
+    <div>
+      <h1 bind:this={heading} tabindex="-1">Chamaram-lhe<br /><span>a atenção.</span></h1>
+      <p class="lead">Guarde o que faz sentido. Volte aos detalhes quando quiser.</p>
+    </div>
+    <Heart class="intro-heart" size={66} strokeWidth={1} aria-hidden="true" />
+  </div>
+  {#if !$ready}
+    <div class="selection-preparing">
+      <p role="status">A preparar os seus favoritos…</p>
+      <div class="selection-placeholder" aria-hidden="true" inert>{@render emptyState()}</div>
+    </div>
   {:else if !$ids.length}
-    <section class="empty"><Heart size={38} strokeWidth={1.2} aria-hidden="true" /><h2>A sua seleção começa aqui.</h2><p>Use o coração nas viaturas que lhe despertam interesse. Ficam guardadas neste navegador, sem precisar de criar uma conta.</p><a class="primary" href="/viaturas">Descobrir viaturas <ArrowUpRight size={18} aria-hidden="true" /></a></section>
+    {@render emptyState()}
   {:else}
-    <div class="toolbar"><p>{$ids.length} {$ids.length === 1 ? 'viatura guardada' : 'viaturas guardadas'}</p><button type="button" onclick={() => remove()}>Limpar favoritos</button></div>
+    <div class="toolbar">
+      <p>{$ids.length} {$ids.length === 1 ? 'viatura guardada' : 'viaturas guardadas'}</p>
+      <button type="button" onclick={() => remove()}>Limpar favoritos</button>
+    </div>
     <p role="status" class="loading">{loading ? 'A consultar os dados atuais…' : '\u00a0'}</p>
     <h2 class="sr-only">Viaturas guardadas</h2>
     <div class="favorites-grid" aria-busy={loading}>
       {#each normal as entry, index (entry.id)}
         <div data-selection-id={entry.id} class="saved-slot">
-        {#if entry.vehicle}{@render card(publicCard(entry.vehicle), index)}
-        {:else if entry.status === 503}<PendingFavorite {entry} position={$ids.indexOf(entry.id) + 1} retrying={!!retrying[entry.id]} onretry={() => retry(entry.id)} onremove={() => remove(entry.id)} />
-        {:else}{@render card(null, index)}
-        {/if}
+          {#if entry.vehicle}{@render card(publicCard(entry.vehicle), index)}
+          {:else if entry.status === 503}<PendingFavorite
+              {entry}
+              position={$ids.indexOf(entry.id) + 1}
+              retrying={!!retrying[entry.id]}
+              onretry={() => retry(entry.id)}
+              onremove={() => remove(entry.id)}
+            />
+          {:else}{@render card(null, index)}
+          {/if}
         </div>
       {/each}
     </div>
     {#if unavailable.length}
       <section class="unavailable-group" aria-labelledby="unavailable-favorites-title">
-        <h2 id="unavailable-favorites-title">Já não disponíveis <span>{unavailable.length}{pages > 1 ? ' nesta página' : ''}</span></h2>
-        <p>Saíram da oferta pública, mas continuam nos seus guardados. Pode removê-las quando quiser.</p>
+        <h2 id="unavailable-favorites-title">
+          Já não disponíveis <span>{unavailable.length}{pages > 1 ? ' nesta página' : ''}</span>
+        </h2>
+        <p>
+          Saíram da oferta pública, mas continuam nos seus guardados. Pode removê-las quando quiser.
+        </p>
         <div class="unavailable-list">
-          {#each unavailable as entry (entry.id)}<div data-selection-id={entry.id}><UnavailableFavorite {entry} position={$ids.indexOf(entry.id) + 1} onremove={() => remove(entry.id)} /></div>{/each}
+          {#each unavailable as entry (entry.id)}<div data-selection-id={entry.id}>
+              <UnavailableFavorite
+                {entry}
+                position={$ids.indexOf(entry.id) + 1}
+                onremove={() => remove(entry.id)}
+              />
+            </div>{/each}
         </div>
       </section>
     {/if}
-    {#if pages > 1}<nav class="pagination" aria-label="Paginação de favoritos"><button type="button" disabled={currentPage === 1} onclick={() => changePage(currentPage - 1)}><ArrowLeft size={16} aria-hidden="true" /> Anterior</button><span>{currentPage} / {pages}</span><button type="button" disabled={currentPage === pages} onclick={() => changePage(currentPage + 1)}>Seguinte <ArrowRight size={16} aria-hidden="true" /></button></nav>{/if}
-    <p class="note">Guardados apenas neste navegador. Limpar os dados do navegador remove a seleção. Os detalhes são consultados no catálogo atual.</p>
+    {#if pages > 1}<nav class="pagination" aria-label="Paginação de favoritos">
+        <button
+          type="button"
+          disabled={currentPage === 1}
+          onclick={() => changePage(currentPage - 1)}
+          ><ArrowLeft size={16} aria-hidden="true" /> Anterior</button
+        ><span>{currentPage} / {pages}</span><button
+          type="button"
+          disabled={currentPage === pages}
+          onclick={() => changePage(currentPage + 1)}
+          >Seguinte <ArrowRight size={16} aria-hidden="true" /></button
+        >
+      </nav>{/if}
+    <p class="note">
+      Guardados apenas neste navegador. Limpar os dados do navegador remove a seleção. Os detalhes
+      são consultados no catálogo atual.
+    </p>
   {/if}
-  <p class="storage-note">As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer momento. <a href="/politica-de-privacidade#escolhas">Política de privacidade</a></p>
+  <p class="storage-note">
+    As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer
+    momento. <a href="/politica-de-privacidade#escolhas">Política de privacidade</a>
+  </p>
 </main>
+
 <style>
+  /* Reserve the exact empty-state geometry while local selection storage hydrates. */
+  .selection-preparing {
+    position: relative;
+  }
+  .selection-preparing > p {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+  }
+  .selection-placeholder {
+    visibility: hidden;
+  }
+
   .sr-only {
     position: absolute;
     width: 1px;
@@ -333,7 +419,9 @@
   }
   @media (prefers-reduced-motion: no-preference) {
     .primary {
-      transition: background-color 320ms ease, color 320ms ease;
+      transition:
+        background-color 320ms ease,
+        color 320ms ease;
     }
     .primary :global(svg) {
       transition: transform 220ms ease;

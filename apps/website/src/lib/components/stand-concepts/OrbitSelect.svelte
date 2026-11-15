@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { tick } from 'svelte';
   import { Check, ChevronDown } from 'lucide-svelte';
   import { brandLogo } from '$lib/brandLogos';
 
@@ -141,7 +141,8 @@
       }
     }
   }
-  onMount(() => {
+  $effect(() => {
+    if (!open) return;
     const outside = (event: Event) => {
       if (open && event.target instanceof Node && !root.contains(event.target)) open = false;
     };

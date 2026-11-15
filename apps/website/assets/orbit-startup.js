@@ -4,6 +4,32 @@
 // app.html sets the document palette before this bundled script is inlined.
 // CSS uses that document state, independently of the SSR component's class.
 
+// Match anchorStart's resting alignment before the first paint, not at hydration.
+function alignOrbitFeaturedContent(hero) {
+  if (innerWidth <= 700 || hero.getAttribute('data-featured-presence') !== 'expanded') return;
+  var feature = hero.querySelector('.hd-feature');
+  var line = hero.querySelector('.hd-progress button > span');
+  var hint = hero.querySelector('.hd-scroll');
+  if (!feature || !line || !hint) return;
+  var style = getComputedStyle(feature);
+  var scale = style.scale.split(' ').map(Number);
+  var scaleY = scale[1] || scale[0] || 1;
+  var lineBounds = line.getBoundingClientRect();
+  var hintBounds = hint.getBoundingClientRect();
+  var entryY = parseFloat(style.translate.split(' ')[1] || '0') || 0;
+  var hintY = new DOMMatrixReadOnly(getComputedStyle(hint).transform).m42;
+  var current = parseFloat(style.getPropertyValue('--featured-content-drop')) || 16;
+  var delta =
+    hintBounds.top +
+    hintBounds.height / 2 -
+    hintY -
+    (lineBounds.top + lineBounds.height / 2 - entryY);
+  var value = Math.max(0, Math.round(current + delta / scaleY)) + 'px';
+  hero.style.setProperty('--featured-content-drop', value);
+  // Svelte owns inline styles; retain the seed when hydration replaces them.
+  hero.setAttribute('data-featured-content-drop', value);
+}
+
 // A streamed response can paint the complete hero before the end-of-body script.
 // Observe only its initial assembly and publish its natural size before rendering;
 // the normal document/component initialization takes over once parsing finishes.
@@ -38,12 +64,14 @@
     if (height > 0 && hero.style.getPropertyValue('--v5-feature-height') !== value) {
       hero.style.setProperty('--v5-feature-height', value);
     }
+    alignOrbitFeaturedContent(hero);
   }
   function connect() {
     var marker = document.querySelector('[data-hero-layout-ready]');
     if (!marker) return;
     hero = marker.closest('.hd-root');
     feature = marker.closest('.hd-feature');
+    if (!hero || !hero.querySelector('.hd-scroll')) return;
     assembly.disconnect();
     if (!hero || !feature) return;
     resize = new ResizeObserver(function (entries) {
@@ -67,8 +95,11 @@
 
 function allowsOrbitScrollStorage() {
   var cmp = window.Cookiebot;
-  return cmp?.hasResponse === true &&
-    cmp.consent?.method === 'explicit' && cmp.consent.preferences === true;
+  return (
+    cmp?.hasResponse === true &&
+    cmp.consent?.method === 'explicit' &&
+    cmp.consent.preferences === true
+  );
 }
 
 // Restoring a document is not a user-requested smooth scroll.
@@ -112,46 +143,66 @@ if (
 // Keep the real img URLs in SSR. Only offscreen mobile-home pictures wait, and any
 // scroll/resize, nearby intersection, hero completion or hero failure releases them.
 window.initializeHomePhotoPriority = function (scope) {
-  (scope || document).querySelectorAll('source[data-home-photo-priority]').forEach(function (source) {
-    if (source.dataset.priorityWatching || source.media === 'not all') return;
-    source.dataset.priorityWatching = 'true';
-    var picture = source.parentElement;
-    var hero = document.querySelector('.hd-landscape img');
-    var observer;
-    var initialWidth = innerWidth;
-    var initialHeight = innerHeight;
-    var initialScroll = scrollY;
-    var viewportChanged = function () {
-      // Chrome can emit initial resize/scroll events without a viewport change.
-      if (scrollY !== initialScroll || innerWidth !== initialWidth || innerHeight !== initialHeight) release();
-    };
-    var release = function () {
-      source.media = 'not all';
-      if (observer) observer.disconnect();
-      if (hero) {
-        hero.removeEventListener('load', release);
-        hero.removeEventListener('error', release);
-      }
-      removeEventListener('scroll', viewportChanged);
-      removeEventListener('resize', viewportChanged);
-      delete source._releaseHomePhoto;
-    };
-    source._releaseHomePhoto = release;
-    if (!matchMedia('(max-width: 700px)').matches || scrollY > 0 || !hero || hero.complete ||
+  (scope || document)
+    .querySelectorAll('source[data-home-photo-priority]')
+    .forEach(function (source) {
+      if (source.dataset.priorityWatching || source.media === 'not all') return;
+      source.dataset.priorityWatching = 'true';
+      var picture = source.parentElement;
+      var hero = document.querySelector('.hd-landscape img');
+      var observer;
+      var initialWidth = innerWidth;
+      var initialHeight = innerHeight;
+      var initialScroll = scrollY;
+      var viewportChanged = function () {
+        // Chrome can emit initial resize/scroll events without a viewport change.
+        if (
+          scrollY !== initialScroll ||
+          innerWidth !== initialWidth ||
+          innerHeight !== initialHeight
+        )
+          release();
+      };
+      var release = function () {
+        source.media = 'not all';
+        if (observer) observer.disconnect();
+        if (hero) {
+          hero.removeEventListener('load', release);
+          hero.removeEventListener('error', release);
+        }
+        removeEventListener('scroll', viewportChanged);
+        removeEventListener('resize', viewportChanged);
+        delete source._releaseHomePhoto;
+      };
+      source._releaseHomePhoto = release;
+      if (
+        !matchMedia('(max-width: 700px)').matches ||
+        scrollY > 0 ||
+        !hero ||
+        hero.complete ||
         picture.parentElement.getBoundingClientRect().top < innerHeight + 400 ||
-        typeof IntersectionObserver === 'undefined') {
-      release();
-      return;
-    }
-    observer = new IntersectionObserver(function (entries) {
-      if (entries.some(function (entry) { return entry.isIntersecting; })) release();
-    }, { rootMargin: '400px' });
-    observer.observe(picture.parentElement);
-    hero.addEventListener('load', release, { once: true });
-    hero.addEventListener('error', release, { once: true });
-    addEventListener('scroll', viewportChanged, { passive: true });
-    addEventListener('resize', viewportChanged, { passive: true });
-  });
+        typeof IntersectionObserver === 'undefined'
+      ) {
+        release();
+        return;
+      }
+      observer = new IntersectionObserver(
+        function (entries) {
+          if (
+            entries.some(function (entry) {
+              return entry.isIntersecting;
+            })
+          )
+            release();
+        },
+        { rootMargin: '400px' },
+      );
+      observer.observe(picture.parentElement);
+      hero.addEventListener('load', release, { once: true });
+      hero.addEventListener('error', release, { once: true });
+      addEventListener('scroll', viewportChanged, { passive: true });
+      addEventListener('resize', viewportChanged, { passive: true });
+    });
 };
 
 window.initializeOrbitDocument = function () {
@@ -162,6 +213,7 @@ window.initializeOrbitDocument = function () {
   document.querySelectorAll('.hd-root[data-featured-card]').forEach(function (hero) {
     var feature = hero.querySelector('.hd-feature');
     if (feature) hero.style.setProperty('--v5-feature-height', feature.offsetHeight + 'px');
+    alignOrbitFeaturedContent(hero);
   });
   document.querySelectorAll('.design.orbit').forEach(function (root) {
     var dark = document.documentElement.getAttribute('data-theme') !== 'light';
@@ -220,10 +272,10 @@ window.initializeOrbitDocument = function () {
     if (orbitHero && orbitRoot.classList.contains('orbit-home')) {
       // Same distance-based arrival as compactNavProgress; no first-paint flash on reload.
       var navDistance = Math.max(100, Math.min(180, innerHeight * 0.18));
-      var navStart = scrollY < 100 ? 100 : Math.max(
-        100,
-        orbitHero.getBoundingClientRect().bottom + scrollY - navDistance,
-      );
+      var navStart =
+        scrollY < 100
+          ? 100
+          : Math.max(100, orbitHero.getBoundingClientRect().bottom + scrollY - navDistance);
       var navProgress = Math.max(0, Math.min(1, (scrollY - navStart) / navDistance));
       var navPinned = scrollY >= navStart;
       orbitRoot.classList.toggle('nav-pinned', navPinned);
@@ -272,11 +324,13 @@ window.initializeOrbitDocument = function () {
           var accentPinTop = Math.max(0, (innerHeight - heroHeight) / 2);
           var accentTop = bounds.top + (innerWidth > 1050 ? scrollY : 0);
           var accentTravel = Math.min(accentRange, Math.max(0, accentPinTop - accentTop));
-          setSceneStyle(scene,
+          setSceneStyle(
+            scene,
             '--accent-stage-shift',
             bounds.top + accentTravel - heroBounds.top + 'px',
           );
-          setSceneStyle(scene,
+          setSceneStyle(
+            scene,
             '--accent-progress',
             accentRange > 1 ? clampOrbit((accentPinTop - accentTop) / accentRange) : 0,
           );
@@ -289,11 +343,13 @@ window.initializeOrbitDocument = function () {
           progress = resting + (1 - resting) * clampOrbit((documentTop - bounds.top) / travel);
         }
         setSceneStyle(scene, '--p', progress);
-        setSceneStyle(scene,
+        setSceneStyle(
+          scene,
           '--through',
           clampOrbit((innerHeight - bounds.top) / Math.max(1, innerHeight + bounds.height)),
         );
-        setSceneStyle(scene,
+        setSceneStyle(
+          scene,
           '--enter',
           clampOrbit((innerHeight * 0.82 - bounds.top) / Math.max(1, innerHeight * 0.52)),
         );
@@ -305,7 +361,8 @@ window.initializeOrbitDocument = function () {
           var denominator = Math.max(1, innerHeight * 0.44 + rect.height / 2);
           var approach = clampOrbit((innerHeight * 0.94 - rect.top) / denominator);
           setSceneStyle(scene, '--approach', approach);
-          setSceneStyle(scene,
+          setSceneStyle(
+            scene,
             '--scan',
             clampOrbit(
               (innerHeight * 0.94 -
@@ -319,11 +376,14 @@ window.initializeOrbitDocument = function () {
           setSceneStyle(scene, '--reveal-c', chapterOrbit(approach, 0.5, 1));
         }
       });
-      setSceneStyle(orbitRoot,
+      setSceneStyle(
+        orbitRoot,
         '--reading',
         clampOrbit(scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight)),
       );
-      sceneWrites.forEach(function (write) { write[0].style.setProperty(write[1], write[2]); });
+      sceneWrites.forEach(function (write) {
+        write[0].style.setProperty(write[1], write[2]);
+      });
     }
   }
   window.initializeHomePhotoPriority();

@@ -99,6 +99,9 @@
     // the background briefly keeps the uncompressed hero height for one frame.
     const feature = node.querySelector<HTMLElement>('.hd-feature');
     if (feature) setScrollStyle(node, '--v5-feature-height', `${feature.offsetHeight}px`);
+    if (node.dataset.featuredContentDrop && window.innerWidth > 700) {
+      setScrollStyle(node, '--featured-content-drop', node.dataset.featuredContentDrop);
+    }
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const mobile = matchMedia('(max-width: 700px), (pointer: coarse)');
     const canvas = node.querySelector<HTMLElement>('.hd-landscape');

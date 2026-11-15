@@ -87,6 +87,15 @@ it('moves slowly only while visible and loops without a growing scroll position'
   expect(frames.size).toBe(0);
 });
 
+it('does not read layout on animation frames between resize measurements', () => {
+  const { node, frame, visible } = setup();
+  const width = vi.fn(() => 200);
+  Object.defineProperty(node, 'clientWidth', { get: width });
+  visible(true);
+  for (let i = 0; i < 20; i++) frame(1000 + i * 16);
+  expect(width).not.toHaveBeenCalled();
+});
+
 it('pauses for touch and wheel interaction, then resumes after a quiet interval', () => {
   const { node, window, frames, visible } = setup();
   visible(true);

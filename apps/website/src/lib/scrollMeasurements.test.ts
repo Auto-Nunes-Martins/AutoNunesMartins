@@ -224,6 +224,34 @@ it('does not rewrite the same text pose and cancels pending geometry on teardown
   expect(listeners.get('scroll')?.size).toBe(0);
 });
 
+it('skips fragment geometry at invisible endpoints but remeasures after resize or re-entry', () => {
+  const view = perspective();
+  view.headingBounds.top = -900;
+  view.heading.getBoundingClientRect.mockImplementation(() => {
+    calls.push('read heading');
+    return { ...view.headingBounds } as DOMRect;
+  });
+  cleanup.push(perspectiveMotion(view.section));
+  intersections[0]!.callback(
+    [{ isIntersecting: true } as IntersectionObserverEntry],
+    {} as IntersectionObserver,
+  );
+  advance();
+  calls.length = 0;
+  scroll();
+  advance();
+  expect(calls).toEqual(['read heading']);
+  listeners.get('resize')?.forEach((callback) => callback());
+  advance();
+  expect(calls).toContain('read line');
+  calls.length = 0;
+  view.headingBounds.top = 350;
+  scroll();
+  advance();
+  expect(calls).toContain('read line');
+  expect(Number(view.heading.style.getPropertyValue('--line-progress'))).toBeLessThan(1);
+});
+
 it('skips distant editorial text, prepares it nearby and cancels work when it leaves', () => {
   const view = perspective();
   cleanup.push(perspectiveMotion(view.section));
@@ -372,7 +400,10 @@ it('removes mobile campaign line fragments and trailing light at both endpoints'
   Object.defineProperty(window, 'scrollY', { value: 800, writable: true, configurable: true });
   view.heading.getBoundingClientRect.mockReturnValue({ top: 64 } as DOMRect);
   cleanup.push(perspectiveMotion(view.section, true));
-  intersections[0]!.callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+  intersections[0]!.callback(
+    [{ isIntersecting: true } as IntersectionObserverEntry],
+    {} as IntersectionObserver,
+  );
   advance();
   expect(view.heading.style.getPropertyValue('--line-progress')).toBe('1');
   expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');

@@ -17,6 +17,8 @@ vi.mock('$lib/server/api', async (original) => ({
 import { ApiError } from './api';
 import { load as detailLoad } from '../../routes/(app)/viaturas/[id]/+page.server';
 import { load as layoutLoad } from '../../routes/(app)/+layout.server';
+import { load as editLoad } from '../../routes/(app)/viaturas/[id]/editar/+page.server';
+import { load as draftLoad } from '../../routes/(app)/viaturas/nova/+page.server';
 const event = { params: { id: 'car' }, locals: { auth: () => ({ userId: 'user' }) } } as any;
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -32,6 +34,59 @@ beforeEach(() => {
   mocks.highlights.mockResolvedValue({ items: [] });
 });
 describe('CRM load latency boundaries', () => {
+  const draftId = 'c' + 'a'.repeat(24);
+  const formEvent = {
+    ...event,
+    params: { id: draftId },
+    url: new URL('http://crm.test/viaturas/nova?viatura=' + draftId),
+  };
+  it.each([
+    ['edit', editLoad],
+    ['draft', draftLoad],
+  ] as const)(
+    'starts independent photo and vehicle reads together for %s, retaining complete form data',
+    async (_name, load) => {
+      const vehicle = deferred<{ id: string }>();
+      const gallery = deferred<{ photos: { path: string; url: string }[] }>();
+      mocks.get.mockReturnValue(vehicle.promise);
+      mocks.photos.mockReturnValue(gallery.promise);
+      const pending = load(formEvent);
+      expect(mocks.get).toHaveBeenCalledOnce();
+      expect(mocks.photos).toHaveBeenCalledWith(formEvent, draftId);
+      let ready = false;
+      void Promise.resolve(pending).then(() => {
+        ready = true;
+      });
+      vehicle.resolve({ id: draftId });
+      await Promise.resolve();
+      expect(ready).toBe(false);
+      gallery.resolve({ photos: [{ path: 'photo', url: 'signed' }] });
+      expect(await pending).toMatchObject({
+        vehicle: { id: draftId },
+        signedPhotos: [{ path: 'photo', url: 'signed' }],
+      });
+    },
+  );
+  it.each([401, 403])(
+    'preserves authorization failures in both parallel form loaders (%s)',
+    async (status) => {
+      mocks.photos.mockRejectedValue(new ApiError(status, null));
+      await expect(editLoad(formEvent)).rejects.toMatchObject({ status });
+      await expect(draftLoad(formEvent)).rejects.toMatchObject({ status });
+    },
+  );
+  it('keeps the existing optional-photo failure fallback and avoids requests for an empty creation', async () => {
+    mocks.photos.mockRejectedValue(new ApiError(503, null));
+    expect(await editLoad(formEvent)).toMatchObject({ signedPhotos: [] });
+    expect(await draftLoad(formEvent)).toMatchObject({ signedPhotos: [] });
+    mocks.photos.mockClear();
+    mocks.get.mockClear();
+    expect(
+      await draftLoad({ ...formEvent, url: new URL('http://crm.test/viaturas/nova') }),
+    ).toMatchObject({ vehicle: null, signedPhotos: [] });
+    expect(mocks.get).not.toHaveBeenCalled();
+    expect(mocks.photos).not.toHaveBeenCalled();
+  });
   it('returns vehicle details while gallery and highlights are still pending', async () => {
     const gallery = deferred<{ photos: { path: string; url: string }[] }>();
     const highlights = deferred<{ items: { id: string }[] }>();

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { tick } from 'svelte';
   import { MoreHorizontal, Pencil } from 'lucide-svelte';
   import type { IconComponent } from '$lib/types/ui';
 
@@ -82,7 +82,9 @@
     close();
     trigger?.focus({ preventScroll: true });
   }
-  onMount(() => {
+  $effect(() => {
+    // A long table must not run a scroll handler for every closed row menu.
+    if (!open) return;
     const onScroll = (event: Event) => {
       if (!(event.target instanceof Node) || !menu?.contains(event.target)) close();
     };
