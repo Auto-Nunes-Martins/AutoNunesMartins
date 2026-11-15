@@ -52,6 +52,30 @@
   const addFormId = $props.id();
 </script>
 
+{#snippet vatFields(vat: string | null | undefined, date: string | null | undefined)}
+  <label class="flex flex-col text-[12px]"
+    >IVA da fatura (€)
+    <input
+      name="vatAmount"
+      type="text"
+      inputmode="decimal"
+      use:numericField={{ min: 0 }}
+      value={vat ?? ''}
+      placeholder="Por identificar"
+      class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)]"
+    />
+    <span>Indique o IVA efetivo, ou 0 se não tem IVA. Dedução de 100% para gestão.</span>
+  </label>
+  <label class="flex flex-col text-[12px]"
+    >Data fiscal da fatura
+    <DateInput
+      name="vatDate"
+      value={date?.slice(0, 10) ?? ''}
+      class="h-10 px-2 bg-[var(--color-bg-2)] border border-[var(--color-border)]"
+    />
+  </label>
+{/snippet}
+
 <section
   class="expense-layout overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-1)]"
   style="border-radius: var(--radius-card);"
@@ -143,7 +167,7 @@
         <span
           class="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
         >
-          Valor (€)
+          Total da fatura (€)
         </span>
         <input
           name="amount"
@@ -170,6 +194,7 @@
           style="border-radius: var(--radius-btn);"
         />
       </label>
+      {@render vatFields(null, null)}
       {#if isSoldLike}
         <label
           class="expense-confirm inline-flex items-center gap-2 text-[12px] text-[var(--color-warning)]"
@@ -308,7 +333,7 @@
                       <span
                         class="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1"
                       >
-                        Valor (€)
+                        Total da fatura (€)
                       </span>
                       <input
                         name="amount"
@@ -336,6 +361,7 @@
                       />
                     </label>
 
+                    {@render vatFields(e.vatAmount, e.vatDate)}
                     {#if isSoldLike}
                       <label
                         class="expense-confirm inline-flex items-center gap-2 text-[12px] text-[var(--color-warning)]"
@@ -392,9 +418,25 @@
                   class="px-4 py-2.5 font-mono text-[11px] text-right text-[var(--color-text-muted)]"
                 >
                   {formatDate(e.date)}
+                  <div class="text-[10px]">
+                    Fiscal: {e.vatDate ? formatDate(e.vatDate) : 'Por confirmar'}
+                  </div>
                 </td>
                 <td data-column="amount" class="px-4 py-2.5 num-value text-[13.5px] text-right">
-                  {formatEUR(e.amount)}
+                  <div>Total da fatura: {formatEUR(e.amount)}</div>
+                  <div class="text-[11px]">
+                    IVA da fatura: {e.vatAmount == null
+                      ? 'Por identificar'
+                      : formatEUR(e.vatAmount)}
+                  </div>
+                  <div class="text-[11px]">
+                    IVA dedutível: {e.vatAmount == null
+                      ? 'Por identificar'
+                      : formatEUR(e.vatAmount)}
+                  </div>
+                  <div class="text-[11px]">
+                    Custo: {formatEUR(Number(e.amount) - Number(e.vatAmount ?? 0))}
+                  </div>
                 </td>
                 <td data-column="actions" class="px-4 py-2.5">
                   <div class="flex items-center justify-end gap-1">
@@ -435,6 +477,7 @@
                       }}
                     >
                       <input type="hidden" name="expenseId" value={e.id} />
+
                       {#if isSoldLike}
                         <input type="hidden" name="confirmedOnSold" value="true" />
                       {/if}

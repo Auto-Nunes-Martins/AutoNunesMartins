@@ -82,7 +82,9 @@
 
 <section class="vehicle-detail pt-8 pb-12 space-y-6">
   <!-- Header -->
-  <div class="vehicle-heading flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 lg:gap-6">
+  <div
+    class="vehicle-heading flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 lg:gap-6"
+  >
     <div class="min-w-0">
       <div class="vehicle-tags mb-2 flex flex-wrap items-center gap-2">
         <StatusBadge status={v.status} />
@@ -103,24 +105,42 @@
           </span>
         {/if}
         {#if v.vin}<span
-          class="vehicle-vin font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
-        >
-          VIN {v.vin}
-        </span>{/if}
+            class="vehicle-vin font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)]"
+          >
+            VIN {v.vin}
+          </span>{/if}
         <span class="featured-slot">
           {#await highlightStatus}
             <span class="highlight-loading">A verificar destaque…</span>
           {:then status}
             {#if status === 'live' || status === 'hidden'}
-              <span class="highlight-status vehicle-state-chip" class:highlight-hidden={status === 'hidden'} title={status === 'live' ? 'Esta viatura aparece no carrossel publicado da homepage e nos destaques do painel.' : 'Está na seleção guardada, mas não aparece no carrossel público. Reveja a publicação e a fotografia escolhida.'}>
-                <Star size={14} aria-hidden="true" fill={status === 'live' ? 'currentColor' : 'none'} />{status === 'live' ? 'Em destaque' : 'Destaque oculto'}
+              <span
+                class="highlight-status vehicle-state-chip"
+                class:highlight-hidden={status === 'hidden'}
+                title={status === 'live'
+                  ? 'Esta viatura aparece no carrossel publicado da homepage e nos destaques do painel.'
+                  : 'Está na seleção guardada, mas não aparece no carrossel público. Reveja a publicação e a fotografia escolhida.'}
+              >
+                <Star
+                  size={14}
+                  aria-hidden="true"
+                  fill={status === 'live' ? 'currentColor' : 'none'}
+                />{status === 'live' ? 'Em destaque' : 'Destaque oculto'}
               </span>
-            {:else if status === 'unknown'}<span class="highlight-loading">Destaque por confirmar</span>{/if}
+            {:else if status === 'unknown'}<span class="highlight-loading"
+                >Destaque por confirmar</span
+              >{/if}
           {:catch}<span class="highlight-loading">Destaque por confirmar</span>
           {/await}
         </span>
       </div>
-      <div class="vehicle-title flex items-center gap-3"><BrandLogo name={v.brand} size={40} /><ItalicHero text={`${v.brand} `} accent={v.model} size="lg" /></div>
+      <div class="vehicle-title flex items-center gap-3">
+        <BrandLogo name={v.brand} size={40} /><ItalicHero
+          text={`${v.brand} `}
+          accent={v.model}
+          size="lg"
+        />
+      </div>
       <p
         class="vehicle-dates mt-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[var(--color-text-muted)]"
       >
@@ -132,7 +152,9 @@
         {/if}
       </p>
       {#if created || edited}
-        <dl class="vehicle-record-times mt-2 hidden flex-wrap gap-x-5 gap-y-1 text-xs text-[var(--color-text-muted)] md:flex">
+        <dl
+          class="vehicle-record-times mt-2 hidden flex-wrap gap-x-5 gap-y-1 text-xs text-[var(--color-text-muted)] md:flex"
+        >
           {#if created}
             <div class="flex items-baseline gap-1.5">
               <dt>Adicionada ao CRM</dt>
@@ -140,7 +162,10 @@
             </div>
           {/if}
           {#if edited}
-            <div class="flex items-baseline gap-1.5" title="Última alteração guardada na ficha, incluindo fotografias, estado e publicação">
+            <div
+              class="flex items-baseline gap-1.5"
+              title="Última alteração guardada na ficha, incluindo fotografias, estado e publicação"
+            >
               <dt>Última edição</dt>
               <dd><time datetime={v.updatedAt}>{edited}</time></dd>
             </div>
@@ -161,26 +186,54 @@
           target="_blank"
           rel="noreferrer"
         >
-          <span class="public-view-text">Ver ficha pública</span> <ArrowUpRight size={16} aria-hidden="true" />
+          <span class="public-view-text">Ver ficha pública</span>
+          <ArrowUpRight size={16} aria-hidden="true" />
         </a>
       {/if}
       {#await highlightStatus}
-        <Button variant="outline" href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}><Star class="h-4 w-4" />Ver destaques</Button>
+        <Button
+          variant="outline"
+          href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}
+          ><Star class="h-4 w-4" />Ver destaques</Button
+        >
       {:then status}
-        <Button variant="outline" class={status === 'live' ? 'featured-vehicle-action' : ''} href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}><Star class="h-4 w-4" fill={status === 'live' ? 'currentColor' : 'none'} />{status === 'live' ? 'Ver destaque' : status === 'hidden' ? 'Rever destaque' : status === 'unknown' ? 'Ver destaques' : 'Destacar viatura'}</Button>
-      {:catch}<Button variant="outline" href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}><Star class="h-4 w-4" />Ver destaques</Button>{/await}
-      <Button variant="outline" class="edit-vehicle-action" href={crmPath(`/viaturas/${v.id}/editar`)}>
+        <Button
+          variant="outline"
+          class={status === 'live' ? 'featured-vehicle-action' : ''}
+          href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}
+          ><Star class="h-4 w-4" fill={status === 'live' ? 'currentColor' : 'none'} />{status ===
+          'live'
+            ? 'Ver destaque'
+            : status === 'hidden'
+              ? 'Rever destaque'
+              : status === 'unknown'
+                ? 'Ver destaques'
+                : 'Destacar viatura'}</Button
+        >
+      {:catch}<Button
+          variant="outline"
+          href={crmPath(`/site/destaques?viatura=${encodeURIComponent(v.id)}`)}
+          ><Star class="h-4 w-4" />Ver destaques</Button
+        >{/await}
+      <Button
+        variant="outline"
+        class="edit-vehicle-action"
+        href={crmPath(`/viaturas/${v.id}/editar`)}
+      >
         <Pencil class="h-4 w-4" />
         Editar
       </Button>
 
       {#if !v.sale && ['AVAILABLE', 'RESERVED', 'DOCS_PENDING'].includes(v.status)}
-        <Button variant="primary" class="sell-vehicle-action" href={crmPath(`/viaturas/${v.id}/vender`)}>
+        <Button
+          variant="primary"
+          class="sell-vehicle-action"
+          href={crmPath(`/viaturas/${v.id}/vender`)}
+        >
           <Check class="h-4 w-4" />
           Vender viatura
         </Button>
       {/if}
-
     </div>
   </div>
 
@@ -272,7 +325,7 @@
           loading
           photoCount={v.photos.length}
           principalPath={vehiclePrincipalPath(v) ?? null}
-            framing={v.galleryFraming??{}}
+          framing={v.galleryFraming ?? {}}
           editable={false}
         />
       {:then signedPhotos}
@@ -281,7 +334,7 @@
           vehicleName={`${v.brand} ${v.model}`}
           photos={signedPhotos}
           principalPath={vehiclePrincipalPath(v) ?? null}
-            framing={v.galleryFraming??{}}
+          framing={v.galleryFraming ?? {}}
           editable={false}
         />
       {:catch}
@@ -292,17 +345,17 @@
           loadError
           photoCount={v.photos.length}
           principalPath={vehiclePrincipalPath(v) ?? null}
-            framing={v.galleryFraming??{}}
+          framing={v.galleryFraming ?? {}}
           editable={false}
         />
       {/await}
 
       {#if v.description?.trim()}<Panel>
-        <PanelHeader icon={FileText} title="Notas" />
-        <div class="p-5 text-[14px] leading-relaxed text-[var(--color-text-muted)]">
-          {v.description}
-        </div>
-      </Panel>{/if}
+          <PanelHeader icon={FileText} title="Notas" />
+          <div class="p-5 text-[14px] leading-relaxed text-[var(--color-text-muted)]">
+            {v.description}
+          </div>
+        </Panel>{/if}
     </div>
 
     <div class="vehicle-sidebar lg:col-span-5 min-w-0 space-y-6">
@@ -324,13 +377,34 @@
 
       <section class="vehicle-document-status" aria-label="Documentação da viatura">
         {#if !docsKnown}
-          <div class="document-summary"><p>Não foi possível confirmar as pendências documentais.</p><a href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</a></div>
+          <div class="document-summary">
+            <p>Não foi possível confirmar as pendências documentais.</p>
+            <a href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</a>
+          </div>
         {:else if pendingCount === 0}
-          <div class="document-summary"><p>Sem pendências documentais</p><a href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</a></div>
+          <div class="document-summary">
+            <p>Sem pendências documentais</p>
+            <a href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</a>
+          </div>
         {:else}
           <Panel>
-            <PanelHeader icon={FileText} title="Documentos pendentes" meta={`${pendingCount} ${pendingCount === 1 ? 'PENDENTE' : 'PENDENTES'}`} />
-            <div class="pending-doc-body"><ul class="pending-document-list">{#each pendingDocs as document (document.key)}<li><FileText size={14} aria-hidden="true" />{document.label}</li>{/each}</ul><Button variant="outline" size="sm" href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</Button></div>
+            <PanelHeader
+              icon={FileText}
+              title="Documentos pendentes"
+              meta={`${pendingCount} ${pendingCount === 1 ? 'PENDENTE' : 'PENDENTES'}`}
+            />
+            <div class="pending-doc-body">
+              <ul class="pending-document-list">
+                {#each pendingDocs as document (document.key)}<li>
+                    <FileText size={14} aria-hidden="true" />{document.label}
+                  </li>{/each}
+              </ul>
+              <Button
+                variant="outline"
+                size="sm"
+                href={crmPath(`/viaturas/${v.id}/editar#documentos`)}>Atualizar</Button
+              >
+            </div>
           </Panel>
         {/if}
       </section>
@@ -343,6 +417,7 @@
     purchasePrice={v.purchasePrice}
     salePrice={v.salePrice}
     expensesTotal={v.expensesTotal}
+    expensesVat={v.expensesVat}
     figures={v.figures}
     sale={v.sale
       ? {
@@ -352,7 +427,6 @@
         }
       : null}
   />
-
 
   {#if v.sale}
     {@const saleId = v.sale.id}

@@ -105,6 +105,10 @@ export interface SmartAlerts {
 }
 
 export interface DashboardPayload {
+  fiscalVat?: {
+    months: { month: string; payable: string; deductible: string; balance: string }[];
+    pendingDocuments: number;
+  };
   kpis: DashboardKpis;
   salesChart: SalesChartData;
   bestSellers: BestSeller[];

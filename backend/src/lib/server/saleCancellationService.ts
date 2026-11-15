@@ -264,6 +264,10 @@ function nextFigures(sale: ResolutionSale, decision: SaleCancellationDecision) {
     salePrice: retoma.sale.salePrice.toString(),
     purchasePrice: decision.independentPurchasePrice!,
     expensesTotal: total(retoma.expenses),
+    expensesVat: retoma.expenses.reduce(
+      (n, e) => n.plus(e.vatAmount?.toString() ?? 0),
+      new Decimal(0),
+    ),
     commission: retoma.sale.commission.toString(),
     buyerType: retoma.sale.buyerType,
   });

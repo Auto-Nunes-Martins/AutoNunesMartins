@@ -13,6 +13,7 @@
   import Panel from '$lib/components/common/Panel.svelte';
   import Skeleton from '$lib/components/common/Skeleton.svelte';
   import SmartAlertsBanner from '$lib/components/dashboard/SmartAlertsBanner.svelte';
+  import VatSummary from '$lib/components/dashboard/VatSummary.svelte';
   import SalesChart from '$lib/components/dashboard/SalesChart.svelte';
   import BestSellers from '$lib/components/dashboard/BestSellers.svelte';
   import StockAgingTable from '$lib/components/dashboard/StockAgingTable.svelte';
@@ -209,7 +210,7 @@
           value={hasComissoes ? comissoes.value : '—'}
           suffix={hasComissoes ? comissoes.suffix : undefined}
           deltaPct={hasComissoes ? d.kpis.comissoesMes.deltaPct : null}
-          deltaCaption="intermediação · isento IVA"
+          deltaCaption="comissão líquida · IVA separado"
           sparkline={hasComissoes ? d.kpis.sparklines.comissoes : undefined}
         />
         <KPICard
@@ -247,6 +248,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div class="lg:col-span-8">
           <SalesChart data={d.salesChart} />
+          {#if d.fiscalVat}<VatSummary data={d.fiscalVat} monthKeys={d.salesChart.monthKeys} />{/if}
         </div>
         <div class="lg:col-span-4">
           <BestSellers items={d.bestSellers} />

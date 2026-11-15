@@ -155,3 +155,11 @@ export async function sumVehicleExpenses(tx: TxClient, vehicleId: string): Promi
   });
   return result._sum.amount?.toString() ?? '0';
 }
+
+export async function sumVehicleExpenseVat(tx: TxClient, vehicleId: string): Promise<string> {
+  const result = await tx.vehicleExpense.aggregate({
+    where: { vehicleId },
+    _sum: { vatAmount: true },
+  });
+  return result._sum.vatAmount?.toString() ?? '0';
+}

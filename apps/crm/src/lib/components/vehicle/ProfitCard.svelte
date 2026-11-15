@@ -7,11 +7,19 @@
     purchasePrice: string;
     salePrice: string | null;
     expensesTotal: string;
+    expensesVat?: string;
     figures: { margin: string; vatAmount: string; commission: string; realProfit: string } | null;
     sale: { vatAmount: string; commission: string; realProfit: string } | null;
   }
 
-  let { purchasePrice, salePrice, expensesTotal, figures, sale }: Props = $props();
+  let {
+    purchasePrice,
+    salePrice,
+    expensesTotal,
+    expensesVat = '0',
+    figures,
+    sale,
+  }: Props = $props();
 
   // If a Sale row exists, the persisted VAT / commission / profit on it is
   // canonical. Otherwise we project off the PVP entered on the Vehicle
@@ -54,10 +62,10 @@
       <div
         class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mb-1.5"
       >
-        Despesas
+        Custo das despesas
       </div>
       <div class="num-value text-[20px]">
-        {formatEUR(expensesTotal)}
+        {formatEUR(Number(expensesTotal) - Number(expensesVat))}
       </div>
     </div>
     <div>
@@ -88,7 +96,7 @@
       <div
         class="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-text-faint)] mb-1.5"
       >
-        IVA · Regime Margem (23/123)
+        IVA da viatura
       </div>
       <div class="num-value text-[18px] md:text-[24px] text-[var(--color-warning)]">
         {effective ? formatEUR(effective.vatAmount) : '—'}
@@ -119,7 +127,7 @@
           ? 'text-[var(--color-red)]'
           : 'text-[var(--color-text-faint)]'}"
       >
-        Lucro Real
+        Resultado estimado
       </div>
       <div
         class="num-value text-[22px] md:text-[32px] {isLoss

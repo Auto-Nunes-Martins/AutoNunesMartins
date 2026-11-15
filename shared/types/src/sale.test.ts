@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tradeInCreateSchema } from './sale.js';
+import { tradeInCreateSchema, saleCreateSchema } from './sale.js';
 
 const stock = {
   brand: 'Renault',
@@ -59,4 +59,18 @@ describe('trade-in identification and initial intake', () => {
       pendingDocFlags: { financing: false, imt: false, registration: false, docs: true },
     });
   });
+});
+
+it('does not fabricate a fiscal date from null, blank or numeric inputs', () => {
+  for (const vatDate of [null, '', 0]) {
+    expect(
+      saleCreateSchema.safeParse({
+        vehicleId: 'v',
+        customerId: 'c',
+        salePrice: '100',
+        saleDate: '2026-01-01',
+        vatDate,
+      }).success,
+    ).toBe(false);
+  }
 });

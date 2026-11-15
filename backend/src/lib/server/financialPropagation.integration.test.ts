@@ -9,7 +9,13 @@ vi.mock('../../env.js', () => ({
   getEnv: () => ({ CLERK_SECRET_KEY: 'isolated-integration-secret' }),
 }));
 vi.mock('../../logger.js', () => ({ logger: { warn: vi.fn() } }));
-import { createSale, listSales, updateSaleDelivery } from './saleService.js';
+import {
+  createSale,
+  listSales,
+  updateSaleDelivery,
+  updateSaleCommission,
+  getSaleById,
+} from './saleService.js';
 import { updateVehicle } from './vehicleService.js';
 import {
   createVehicleExpense,
@@ -68,6 +74,7 @@ const saleA = async () =>
       customerId: 'customerA',
       salePrice: '16000',
       saleDate: new Date('2025-12-15'),
+      vatDate: new Date('2025-12-15'),
       commission: '100',
       buyerType: 'PARTICULAR',
       deliveryStatus: 'PENDING',
@@ -88,14 +95,39 @@ const saleA = async () =>
 describe('real financial services → isolated PostgreSQL → dashboard, lists, customers and public stock', () => {
   it('uses the sale price for the website and campaign catalogue and protects an active discount', async () => {
     await updateVehicle('A', { salePrice: '18000' }, actor);
-    expect((await readCampaignEditor(mocks.db)).candidates.find(v => v.id === 'A')?.price).toBe('18000.00');
+    expect((await readCampaignEditor(mocks.db)).candidates.find((v) => v.id === 'A')?.price).toBe(
+      '18000.00',
+    );
     const row = await mocks.db.vehicle.findUnique({ where: { id: 'A' } });
     expect(publicVehicleDto(row).price).toBe('18000.00');
-    const setting = { revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225', items: [{ vehicleId: 'A', price: '17000.00', durationDays: 7, applied: true, referencePrice: null, startsAt: new Date(Date.now() - 1000).toISOString(), endsAt: new Date(Date.now() + 86400000).toISOString() }] };
-    await db.query('INSERT INTO "AppSetting" (key,value,"updatedAt") VALUES ($1,$2,NOW())', ['publicVehicleCampaigns', JSON.stringify(setting)]);
-    await expect(updateVehicle('A', { salePrice: '16000' }, actor)).rejects.toMatchObject({ status: 409, field: 'salePrice' });
-    expect((await mocks.db.vehicle.findUnique({ where: { id: 'A' } })).salePrice.toFixed(2)).toBe('18000.00');
-    await expect(updateVehicle('A', { salePrice: '0' }, actor)).rejects.toMatchObject({ field: 'salePrice' });
+    const setting = {
+      revision: 'a27087e8-bfce-4ff2-a8c5-92f139686225',
+      items: [
+        {
+          vehicleId: 'A',
+          price: '17000.00',
+          durationDays: 7,
+          applied: true,
+          referencePrice: null,
+          startsAt: new Date(Date.now() - 1000).toISOString(),
+          endsAt: new Date(Date.now() + 86400000).toISOString(),
+        },
+      ],
+    };
+    await db.query('INSERT INTO "AppSetting" (key,value,"updatedAt") VALUES ($1,$2,NOW())', [
+      'publicVehicleCampaigns',
+      JSON.stringify(setting),
+    ]);
+    await expect(updateVehicle('A', { salePrice: '16000' }, actor)).rejects.toMatchObject({
+      status: 409,
+      field: 'salePrice',
+    });
+    expect((await mocks.db.vehicle.findUnique({ where: { id: 'A' } })).salePrice.toFixed(2)).toBe(
+      '18000.00',
+    );
+    await expect(updateVehicle('A', { salePrice: '0' }, actor)).rejects.toMatchObject({
+      field: 'salePrice',
+    });
   });
   it('restores the recorded older customer contact after deleting an erroneous sale', async () => {
     const previous = new Date('2025-11-01');
@@ -211,6 +243,7 @@ describe('real financial services → isolated PostgreSQL → dashboard, lists, 
           customerId: 'customerB',
           salePrice: '8000',
           saleDate: new Date('2026-01-10'),
+          vatDate: new Date('2026-01-10'),
           commission: '100',
           buyerType: 'PARTICULAR',
           deliveryStatus: 'DELIVERED',
@@ -252,14 +285,14 @@ describe('real financial services → isolated PostgreSQL → dashboard, lists, 
       const data = await chart();
       expect(data.salesChart.sold[10]).toBe(0);
       expect(data.salesChart.ytdSold).toBe(1);
-      expect(data.kpis.lucroMes.current).toBe('2742.28');
-      expect(data.salesChart.vat[11]).toBe(607.72);
-      expect(data.kpis.resultadoAposDespesasMes.current).toBe('2542.28');
+      expect(data.kpis.lucroMes.current).toBe('2695.53');
+      expect(data.salesChart.vat[11]).toBe(654.47);
+      expect(data.kpis.resultadoAposDespesasMes.current).toBe('2495.53');
       expect((await listSales({})).totals).toMatchObject({
         count: 1,
         revenue: '8000.00',
-        profit: '2742.28',
-        vat: '607.72',
+        profit: '2695.53',
+        vat: '654.47',
         commission: '100.00',
       });
       expect(await mocks.db.tradeIn.findUnique({ where: { resultingVehicleId: b } })).toBeNull();
@@ -323,5 +356,125 @@ describe('real financial services → isolated PostgreSQL → dashboard, lists, 
     data = await loadDashboard('admin', new Date('2025-12-31T23:59:59Z'));
     expect(data.salesChart.ytdRevenue).toBe('16000.00');
     expect(data.salesChart.monthKeys[11]).toBe('2025-12');
+  });
+});
+
+describe('document VAT periods and propagation', () => {
+  it('includes stock invoices, separates commission dates, preserves history and moves corrected documents', async () => {
+    const expense = await createVehicleExpense(
+      {
+        vehicleId: 'X',
+        category: 'REPAIR',
+        description: 'Fatura stock',
+        amount: '1230',
+        vatAmount: '230',
+        vatDate: new Date('2026-01-03'),
+        date: new Date('2025-12-20'),
+      },
+      actor,
+    );
+    const a = await saleA();
+    await updateSaleCommission(a.id, '123', actor, {
+      gross: true,
+      commissionDate: new Date('2026-01-08'),
+      vatDate: new Date('2025-12-15'),
+    });
+    let data = await chart();
+    expect(data.fiscalVat?.months.find((r) => r.month === '2026-01')).toMatchObject({
+      payable: '23.00',
+      deductible: '230.00',
+      balance: '-207.00',
+    });
+    expect(data.fiscalVat?.months.find((r) => r.month === '2025-12')?.payable).toBe('1121.95');
+    expect(data.salesChart.profit[10]).toBe(4978.05);
+    expect((await getSaleById(a.id))?.commission).toBe('100');
+    await updateVehicleExpense(expense.id, { vatDate: new Date('2025-12-25') }, actor);
+    data = await chart();
+    expect(data.fiscalVat?.months.find((r) => r.month === '2026-01')?.deductible).toBe('0.00');
+    expect(data.fiscalVat?.months.find((r) => r.month === '2025-12')?.deductible).toBe('230.00');
+    await updateSaleCommission(a.id, '246', actor, {
+      gross: true,
+      commissionDate: new Date('2025-12-28'),
+    });
+    expect((await chart()).fiscalVat?.months.find((r) => r.month === '2025-12')?.payable).toBe(
+      '1167.95',
+    );
+    await createVehicleExpense(
+      {
+        vehicleId: 'A',
+        category: 'OTHER',
+        description: 'Sem IVA',
+        amount: '100',
+        vatAmount: '0',
+        vatDate: now,
+        date: now,
+        confirmedOnSold: true,
+      },
+      actor,
+    );
+    const doc = await createVehicleExpense(
+      {
+        vehicleId: 'A',
+        category: 'REPAIR',
+        description: 'Reparação',
+        amount: '123',
+        vatAmount: '23',
+        vatDate: now,
+        date: now,
+        confirmedOnSold: true,
+      },
+      actor,
+    );
+    expect((await getSaleById(a.id))?.realProfit).toBe('4878.05');
+    expect((await listSales({})).totals.expenses).toBe('200.00');
+    await updateVehicleExpense(
+      doc.id,
+      { amount: '246', vatAmount: '46', confirmedOnSold: true },
+      actor,
+    );
+    expect((await getSaleById(a.id))?.realProfit).toBe('4778.05');
+    await deleteVehicleExpense(doc.id, true, actor);
+    expect((await getSaleById(a.id))?.realProfit).toBe('4978.05');
+  });
+  it('never invents historical VAT and validates partial invoice updates atomically', async () => {
+    const a = await saleA();
+    const legacy = await createVehicleExpense(
+      {
+        vehicleId: 'A',
+        category: 'OTHER',
+        description: 'Histórico',
+        amount: '50',
+        date: now,
+        confirmedOnSold: true,
+      },
+      actor,
+    );
+    expect((await getSaleById(a.id))?.commissionGross).toBeNull();
+    expect((await getSaleById(a.id))?.expensesVatUnknown).toBe(1);
+    expect((await chart()).fiscalVat?.pendingDocuments).toBe(2);
+    await expect(
+      updateVehicleExpense(
+        legacy.id,
+        { vatAmount: '51', vatDate: now, confirmedOnSold: true },
+        actor,
+      ),
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      updateVehicleExpense(legacy.id, { vatAmount: '10', confirmedOnSold: true }, actor),
+    ).rejects.toMatchObject({ status: 400 });
+    await updateVehicleExpense(
+      legacy.id,
+      { vatAmount: '10', vatDate: now, confirmedOnSold: true },
+      actor,
+    );
+    await expect(
+      updateVehicleExpense(legacy.id, { amount: '5', confirmedOnSold: true }, actor),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(
+      (await mocks.db.vehicleExpense.findUnique({ where: { id: legacy.id } })).amount.toString(),
+    ).toBe('50');
+    await expect(updateSaleCommission(a.id, '123', actor, { gross: true })).rejects.toMatchObject({
+      status: 400,
+    });
   });
 });

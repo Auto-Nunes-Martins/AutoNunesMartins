@@ -1,7 +1,12 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { DeliveryStatusEnum, saleCommissionSchema, saleCreateSchema } from '@anm/types';
+import {
+  fiscalDateSchema,
+  DeliveryStatusEnum,
+  saleCommissionSchema,
+  saleCreateSchema,
+} from '@anm/types';
 import {
   SaleNotFound,
   TradeInVehicleConflict,
@@ -97,6 +102,10 @@ router.post(
       });
       res.status(201).json(result);
     } catch (err) {
+      if (err instanceof SaleCancellationError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
       if (err instanceof VehicleAlreadySold) {
         res.status(409).json({ error: 'Esta viatura já tem uma venda registada.' });
         return;
@@ -146,7 +155,14 @@ router.patch(
   '/:id/commission',
   requireUser,
   asyncHandler(async (req: AuthedRequest, res: Response) => {
-    const parsed = saleCommissionSchema.safeParse(req.body?.commission);
+    const parsed = z
+      .object({
+        commission: saleCommissionSchema,
+        gross: z.boolean().optional(),
+        commissionDate: fiscalDateSchema.optional(),
+        vatDate: fiscalDateSchema.optional(),
+      })
+      .safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: 'Indique um valor de comissão válido em euros.' });
       return;
@@ -156,10 +172,15 @@ router.patch(
       return;
     }
     try {
-      await updateSaleCommission(param(req, 'id'), parsed.data, {
-        actorId: req.user.id,
-        actorName: req.user.name,
-      });
+      await updateSaleCommission(
+        param(req, 'id'),
+        parsed.data.commission,
+        {
+          actorId: req.user.id,
+          actorName: req.user.name,
+        },
+        parsed.data,
+      );
       res.json({ ok: true });
     } catch (err) {
       if (err instanceof SaleCancellationError) {

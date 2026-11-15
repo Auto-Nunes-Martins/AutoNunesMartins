@@ -1,3 +1,5 @@
+import Decimal from 'decimal.js';
+import { SaleCancellationError } from './saleCancellationService.js';
 import type { Prisma } from '@prisma/client';
 import type { VehicleExpenseCreate, VehicleExpenseUpdate } from '@anm/types';
 import { emitActivity } from '../data/activity.js';
@@ -18,6 +20,17 @@ export class VehicleExpenseNotFound extends Error {
   }
 }
 
+function validateVat(
+  amount: string,
+  vat: string | null | undefined,
+  date: Date | null | undefined,
+) {
+  if (vat != null && (new Decimal(vat).lt(0) || new Decimal(vat).gt(amount) || !date))
+    throw new SaleCancellationError(
+      400,
+      'Indique IVA entre zero e o total da fatura e a data fiscal do documento.',
+    );
+}
 const SOLD_STATUSES = new Set(['SOLD', 'DELIVERED']);
 
 export async function createVehicleExpense(
@@ -42,12 +55,15 @@ export async function createVehicleExpense(
       throw new SaleExistsConfirmationRequired(data.vehicleId);
     }
 
+    validateVat(data.amount, data.vatAmount, data.vatDate);
     const created = await tx.vehicleExpense.create({
       data: {
         vehicleId: data.vehicleId,
         category: data.category,
         description: data.description,
         amount: data.amount,
+        vatAmount: data.vatAmount,
+        vatDate: data.vatDate,
         date: data.date,
       },
     });
@@ -96,7 +112,14 @@ export async function updateVehicleExpense(
       throw new SaleExistsConfirmationRequired(existing.vehicleId);
     }
 
+    validateVat(
+      data.amount ?? existing.amount.toString(),
+      data.vatAmount !== undefined ? data.vatAmount : existing.vatAmount?.toString(),
+      data.vatDate !== undefined ? data.vatDate : existing.vatDate,
+    );
     const updateData: Prisma.VehicleExpenseUpdateInput = {};
+    if (data.vatAmount !== undefined) updateData.vatAmount = data.vatAmount;
+    if (data.vatDate !== undefined) updateData.vatDate = data.vatDate;
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.amount !== undefined) updateData.amount = data.amount;

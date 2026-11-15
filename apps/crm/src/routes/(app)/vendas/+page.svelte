@@ -217,28 +217,45 @@
       {:else}
         <div class="md:hidden divide-y divide-[var(--color-border)]">
           {#each list.items as s (s.id)}
-            <a href={crmPath('/vendas/' + s.id)}
+            <a
+              href={crmPath('/vendas/' + s.id)}
               class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 hover:bg-[var(--color-bg-2)] group"
             >
               <div class="min-w-0 space-y-0.5">
-                <div class="truncate text-[14px] font-semibold group-hover:text-[var(--color-red)]" title={s.vehicle.brand + ' ' + s.vehicle.model}>
-                  {s.vehicle.brand} {s.vehicle.model}
+                <div
+                  class="truncate text-[14px] font-semibold group-hover:text-[var(--color-red)]"
+                  title={s.vehicle.brand + ' ' + s.vehicle.model}
+                >
+                  {s.vehicle.brand}
+                  {s.vehicle.model}
                 </div>
-                <div class="truncate text-[11px] text-[var(--color-text-muted)]" title={s.customer.name}>
+                <div
+                  class="truncate text-[11px] text-[var(--color-text-muted)]"
+                  title={s.customer.name}
+                >
                   {s.vehicle.licensePlate ?? s.vehicle.year} · {s.customer.name}
                 </div>
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <StatusBadge status={s.deliveryStatus} />
-                  {#if s.hasTradeIn}<span class="inline-flex items-center gap-1 text-[10px] text-[var(--color-warning)]">
+                  {#if s.hasTradeIn}<span
+                      class="inline-flex items-center gap-1 text-[10px] text-[var(--color-warning)]"
+                    >
                       <ArrowRightLeft class="h-3 w-3" /> Retoma
                     </span>{/if}
                 </div>
               </div>
               <div class="text-right">
-                <div class="num-value text-[13px] {Number(s.realProfit) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}" title="Lucro real">
+                <div
+                  class="num-value text-[13px] {Number(s.realProfit) < 0
+                    ? 'text-[var(--color-danger)]'
+                    : 'text-[var(--color-success)]'}"
+                  title="Resultado estimado"
+                >
                   {formatEUR(s.realProfit)}
                 </div>
-                <div class="text-[11px] text-[var(--color-text-muted)]">{formatDate(s.saleDate)}</div>
+                <div class="text-[11px] text-[var(--color-text-muted)]">
+                  {formatDate(s.saleDate)}
+                </div>
               </div>
             </a>
           {/each}
@@ -302,18 +319,18 @@
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
                 >
-                  Despesas
+                  Custo despesas
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
                 >
-                  IVA
+                  IVA viatura
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)]"
-                  title="Comissão líquida de financiamento somada ao lucro real"
+                  title="Comissão líquida de financiamento incluída no resultado"
                 >
-                  Comissão
+                  Comissão líquida
                 </th>
                 <th
                   class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] sortable-heading"
@@ -327,7 +344,7 @@
                     type="button"
                     onclick={() => setSort('realProfit')}
                     aria-label="Ordenar vendas por lucro"
-                    >Lucro {sortIndicator('realProfit')}</button
+                    >Resultado {sortIndicator('realProfit')}</button
                   >
                 </th>
                 <th

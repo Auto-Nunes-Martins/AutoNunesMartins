@@ -61,13 +61,18 @@ const deliverySchema = z.object({
 export const actions: Actions = {
   commission: async (event) => {
     const fd = await event.request.formData();
-    const value = fd.get('commission');
+    const preserveLegacy = fd.get('commission') === '' && fd.has('legacyNet');
+    const value = preserveLegacy ? fd.get('legacyNet') : fd.get('commission');
     const parsed = saleCommissionSchema.safeParse(value === '' ? '0' : value);
     if (!parsed.success) {
       return fail(400, { commissionError: 'Indique um valor de comissão válido em euros.' });
     }
     try {
-      await salesApi.updateCommission(event, event.params.id, parsed.data);
+      await salesApi.updateCommission(event, event.params.id, parsed.data, {
+        gross: !preserveLegacy && fd.get('gross') === 'true',
+        commissionDate: fd.get('commissionDate')?.toString() || undefined,
+        vatDate: fd.get('vatDate')?.toString() || undefined,
+      });
       return { commissionSaved: true };
     } catch (err) {
       if (err instanceof ApiError) {

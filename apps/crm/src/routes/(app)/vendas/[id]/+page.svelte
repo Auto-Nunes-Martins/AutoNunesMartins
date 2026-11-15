@@ -108,7 +108,7 @@
           class="font-mono text-[9.5px] uppercase tracking-[0.14em] px-2 py-0.5 border border-[var(--color-border)] text-[var(--color-text-muted)]"
           style="border-radius: 999px;"
           title={isComerciante
-            ? 'Venda B2B a comerciante — sem IVA discriminado pelo vendedor.'
+            ? 'Configuração do CRM: IVA da viatura zero para comerciante.'
             : 'Venda a particular — regime de margem 23/123.'}
         >
           {isComerciante ? 'Comerciante' : 'Particular'}
@@ -143,85 +143,59 @@
     context={data.resolutionContext}
     form={form && 'cancellation' in form ? form : null}
   />
-  <!-- Profit summary. When a financing-referral commission was captured at
-       sale time, it gets its own cell between IVA and Lucro Real so the
-       breakdown clearly shows what's the vehicle margin and what's the
-       intermediation income that lifts the bottom line.
-       `{@const}` must be the immediate child of a control-flow block, so
-       we use a $derived in the script tag's scope. -->
   <Panel>
-    <PanelHeader
-      icon={Receipt}
-      title="Margem · IVA"
-      meta={isComerciante ? 'SEM IVA — COMERCIANTE' : 'REGIME MARGEM 23/123'}
-    />
-    <div class="p-5 grid grid-cols-2 gap-4 {hasCommission ? 'md:grid-cols-5' : 'md:grid-cols-4'}">
-      <div>
-        <div
-          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
-        >
-          Preço Compra
-        </div>
-        <div class="num-value text-[20px]">
-          {formatEUR(v.purchasePrice)}
-        </div>
-      </div>
-      <div>
-        <div
-          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
-        >
-          Preço Venda
-        </div>
-        <div class="num-value text-[20px]">
-          {formatEUR(s.salePrice)}
-        </div>
-      </div>
-      <div>
-        <div
-          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
-        >
-          {isComerciante ? 'IVA' : 'IVA (23/123)'}
-        </div>
-        {#if isComerciante}
-          <div
-            class="num-value text-[20px] text-[var(--color-text-faint)]"
-            title="Venda a comerciante — sem IVA discriminado pelo vendedor."
-          >
-            —
-          </div>
-        {:else}
-          <div class="num-value text-[20px] text-[var(--color-warning)]">
-            {formatEUR(s.vatAmount)}
-          </div>
-        {/if}
-      </div>
-      {#if hasCommission}
-        <div>
-          <div
-            class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
-          >
-            Comissão líquida
-          </div>
-          <div class="num-value text-[20px] text-[var(--color-success)]">
-            + {formatEUR(s.commission)}
-          </div>
-        </div>
-      {/if}
-      <div>
-        <div
-          class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
-        >
-          Lucro Real
-        </div>
-        <div
-          class="num-value text-[24px] {Number(s.realProfit) < 0
-            ? 'text-[var(--color-red)]'
-            : 'text-[var(--color-success)]'}"
-        >
-          {formatEUR(s.realProfit)}
-        </div>
-      </div>
+    <PanelHeader icon={Receipt} title="Resultado estimado do negócio" />
+    <div class="p-5 space-y-4">
+      <div class="num-value text-[32px]">{formatEUR(s.realProfit)}</div>
+      <p class="text-[12px] text-[var(--color-text-muted)]">
+        Antes de gastos gerais e impostos sobre o rendimento.
+      </p>
+      <details>
+        <summary class="cursor-pointer">Ver cálculo</summary>
+        <dl class="grid grid-cols-2 gap-3 mt-4 text-[13px]">
+          <dt>Venda</dt>
+          <dd>{formatEUR(s.salePrice)}</dd>
+          <dt>Compra</dt>
+          <dd>− {formatEUR(v.purchasePrice)}</dd>
+          <dt>Despesas descontado IVA dedutível</dt>
+          <dd>− {formatEUR(s.expensesCost ?? 0)}</dd>
+          <dt>IVA da viatura</dt>
+          <dd>− {formatEUR(s.vatAmount)}</dd>
+          <dt>Comissão líquida</dt>
+          <dd>+ {formatEUR(s.commission)}</dd>
+        </dl>
+      </details>
     </div>
+  </Panel>
+  <Panel>
+    <PanelHeader icon={Receipt} title="IVA associado a este negócio" />
+    <dl class="p-5 grid grid-cols-2 gap-3 text-[13px]">
+      <dt>IVA da viatura — a entregar</dt>
+      <dd>{formatEUR(s.vatAmount)}</dd>
+      <dt>IVA da comissão — a entregar</dt>
+      <dd>
+        {s.commissionVat == null && hasCommission
+          ? 'Por identificar (comissão histórica líquida)'
+          : formatEUR(s.commissionVat ?? 0)}
+      </dd>
+      <dt>IVA das despesas — a deduzir</dt>
+      <dd>{formatEUR(s.expensesVat ?? 0)}</dd>
+      <dt>{Number(s.vatBalance ?? 0) < 0 ? 'Crédito estimado' : 'Saldo estimado a entregar'}</dt>
+      <dd>{formatEUR(Math.abs(Number(s.vatBalance ?? 0)))}</dd>
+    </dl>
+    <p class="px-5 pb-5 text-[12px] text-[var(--color-text-muted)]">
+      Configuração de gestão: IVA da viatura {isComerciante
+        ? 'zero para comerciante'
+        : '23/123 sobre venda menos compra'}, comissão bruta com IVA a 23% e IVA identificado nas
+      despesas integralmente dedutível. O saldo de IVA já está refletido nos componentes do
+      resultado.
+    </p>
+    {#if !s.vatDate || s.expensesVatUnknown || (hasCommission && s.commissionGross == null)}
+      <p class="px-5 pb-5 text-[12px] text-[var(--color-warning)]">
+        Informação fiscal incompleta. Confirme a data fiscal da venda e os documentos de
+        comissão/despesas. Valores não identificados não entram no apuramento por período.
+      </p>
+    {/if}
   </Panel>
 
   <!-- Consolidated trade-in profit appears only when the sold car originally entered stock as a trade-in. It combines the original deal profit, partly retained as the car, with this sale profit to show the effective result of both deals. -->
@@ -454,7 +428,7 @@
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex flex-1 min-w-0 flex-col gap-1.5">
             <span class="text-[13px] text-[var(--color-text-muted)]"
-              >Valor líquido (€)</span
+              >Comissão bruta com IVA (€)</span
             >
             <input
               name="commission"
@@ -463,9 +437,7 @@
               inputmode="decimal"
               value={form && 'commissionInput' in form
                 ? form.commissionInput
-                : Number(s.commission)
-                  ? s.commission
-                  : ''}
+                : (s.commissionGross ?? '')}
               aria-describedby="commission-help"
               aria-invalid={form?.commissionError ? 'true' : undefined}
               class="h-11 w-full min-w-0 px-3 rounded-xs bg-[var(--color-bg-1)] border border-[var(--color-border)] text-[14px] tabular-nums"
@@ -475,9 +447,28 @@
             Guardar comissão
           </Button>
         </div>
+        <label class="block text-[12px]"
+          >Data fiscal da comissão <DateInput
+            name="commissionDate"
+            value={s.commissionDate?.slice(0, 10) ?? ''}
+          /></label
+        >
+        <label class="block text-[12px]"
+          >Data fiscal da venda <DateInput
+            name="vatDate"
+            value={s.vatDate?.slice(0, 10) ?? ''}
+          /></label
+        >
+        {#if s.commissionGross == null}<input
+            type="hidden"
+            name="legacyNet"
+            value={s.commission}
+          />{/if}
+        <input type="hidden" name="gross" value="true" />
         <p id="commission-help" class="text-[12px] text-[var(--color-text-muted)]">
-          Introduza o valor após deduzir o IVA aplicável. É este valor que entra no lucro real.
-          Deixe em branco para retirar a comissão.
+          Introduza o bruto recebido com IVA a 23% incluído. Só o líquido entra no resultado. No
+          histórico, deixe em branco para preservar a comissão líquida antiga; confirme o bruto pelo
+          documento. Introduza 0 para retirar a comissão.
         </p>
         {#if form?.commissionError}<p role="alert" class="text-[13px] text-[var(--color-danger)]">
             {form.commissionError}

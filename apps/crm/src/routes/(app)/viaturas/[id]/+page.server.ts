@@ -61,6 +61,8 @@ export const actions: Actions = {
       category: get('category'),
       description: get('description'),
       amount: get('amount'),
+      vatAmount: get('vatAmount') || null,
+      vatDate: get('vatDate') || null,
       date: get('date'),
       confirmedOnSold: fd.get('confirmedOnSold') === 'true',
     };
@@ -102,6 +104,8 @@ export const actions: Actions = {
       category: get('category'),
       description: get('description'),
       amount: get('amount'),
+      vatAmount: get('vatAmount') || null,
+      vatDate: get('vatDate') || null,
       date: get('date'),
       confirmedOnSold,
     };

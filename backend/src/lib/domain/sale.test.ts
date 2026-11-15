@@ -14,16 +14,16 @@ describe('computeSaleFigures (PT margin scheme)', () => {
     expect(r.vatAmount.plus(r.realProfit).toFixed(2)).toBe('2300.00');
   });
 
-  it('subtracts vehicle expenses from the margin before VAT', () => {
+  it('keeps expenses outside the vehicle VAT base', () => {
     const r = computeSaleFigures({
       salePrice: 17950,
       purchasePrice: 14000,
       expensesTotal: 800,
     });
     expect(r.margin.toFixed(2)).toBe('3150.00');
-    // 3150 × 23 / 123 = 589.0243…  → 589.02 half-up
-    expect(r.vatAmount.toFixed(2)).toBe('589.02');
-    expect(r.realProfit.toFixed(2)).toBe('2560.98');
+    // Vehicle margin 3950 × 23 / 123 → 738.62; expenses stay outside the base.
+    expect(r.vatAmount.toFixed(2)).toBe('738.62');
+    expect(r.realProfit.toFixed(2)).toBe('2411.38');
     expect(r.vatAmount.plus(r.realProfit).toFixed(2)).toBe('3150.00');
   });
 
@@ -38,15 +38,15 @@ describe('computeSaleFigures (PT margin scheme)', () => {
     expect(r.realProfit.toFixed(2)).toBe('-1500.00');
   });
 
-  it('returns zero VAT and zero profit when margin is exactly zero', () => {
+  it('still owes vehicle VAT when expenses consume the trading margin', () => {
     const r = computeSaleFigures({
       salePrice: 10000,
       purchasePrice: 9500,
       expensesTotal: 500,
     });
     expect(r.margin.toFixed(2)).toBe('0.00');
-    expect(r.vatAmount.toFixed(2)).toBe('0.00');
-    expect(r.realProfit.toFixed(2)).toBe('0.00');
+    expect(r.vatAmount.toFixed(2)).toBe('93.50');
+    expect(r.realProfit.toFixed(2)).toBe('-93.50');
   });
 
   it('rounds VAT to 2dp half-up', () => {
@@ -67,9 +67,9 @@ describe('computeSaleFigures (PT margin scheme)', () => {
       expensesTotal: '350.75',
     });
     expect(r.margin.toFixed(2)).toBe('3149.75');
-    // 3149.75 × 23 / 123 = 588.9776…  → 588.98 half-up
-    expect(r.vatAmount.toFixed(2)).toBe('588.98');
-    expect(r.realProfit.toFixed(2)).toBe('2560.77');
+    // Vehicle margin 3500.50 × 23 / 123 → 654.57 half-up.
+    expect(r.vatAmount.toFixed(2)).toBe('654.57');
+    expect(r.realProfit.toFixed(2)).toBe('2495.18');
   });
 
   it('omits commission entirely when not provided (zero echoed back)', () => {
@@ -168,9 +168,9 @@ describe('computeSaleFigures (PT margin scheme)', () => {
         expensesTotal: 500,
       });
       expect(r.margin.toFixed(2)).toBe('2500.00');
-      // 2500 × 23 / 123 = 467.479…  → 467.48 half-up
-      expect(r.vatAmount.toFixed(2)).toBe('467.48');
-      expect(r.realProfit.toFixed(2)).toBe('2032.52');
+      // Vehicle margin 3000 × 23 / 123 → 560.98 half-up.
+      expect(r.vatAmount.toFixed(2)).toBe('560.98');
+      expect(r.realProfit.toFixed(2)).toBe('1939.02');
     });
   });
 
@@ -211,5 +211,49 @@ describe('computeSaleFigures (PT margin scheme)', () => {
       expect(cash.vatAmount.toFixed(2)).toBe('934.96');
       expect(cash.realProfit.toFixed(2)).toBe('4065.04');
     });
+  });
+});
+
+describe('document VAT and net business result', () => {
+  it.each(['PARTICULAR', 'COMERCIANTE'] as const)(
+    'separates all three VAT components for %s',
+    (buyerType) => {
+      const r = computeSaleFigures({
+        salePrice: 12300,
+        purchasePrice: 10000,
+        expensesTotal: 1230,
+        expensesVat: 230,
+        commissionGross: 123,
+        buyerType,
+      });
+      expect(r.commission.toFixed(2)).toBe('100.00');
+      expect(r.commissionVat.toFixed(2)).toBe('23.00');
+      expect(r.expensesCost.toFixed(2)).toBe('1000.00');
+      expect(r.vatAmount.toFixed(2)).toBe(buyerType === 'PARTICULAR' ? '430.08' : '0.00');
+      expect(r.vatBalance.toFixed(2)).toBe(buyerType === 'PARTICULAR' ? '223.08' : '-207.00');
+      expect(r.realProfit.toFixed(2)).toBe(buyerType === 'PARTICULAR' ? '969.92' : '1400.00');
+      expect(r.realProfit.plus(r.vatBalance).toFixed(2)).toBe('1193.00');
+    },
+  );
+  it('preserves unidentified historical net commission and gross expense without inventing VAT', () => {
+    const r = computeSaleFigures({
+      salePrice: 100,
+      purchasePrice: 100,
+      expensesTotal: 25,
+      commission: 10,
+    });
+    expect(r.realProfit.toFixed(2)).toBe('-15.00');
+    expect(r.commissionVat.toFixed(2)).toBe('0.00');
+    expect(r.expensesVat.toFixed(2)).toBe('0.00');
+  });
+  it('rounds gross commission VAT per document to cents', () => {
+    const r = computeSaleFigures({
+      salePrice: 0,
+      purchasePrice: 0,
+      expensesTotal: 0,
+      commissionGross: '0.03',
+    });
+    expect(r.commissionVat.toFixed(2)).toBe('0.01');
+    expect(r.commission.toFixed(2)).toBe('0.02');
   });
 });

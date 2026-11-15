@@ -243,8 +243,8 @@ describe('preserving chains while resolving the first sale', () => {
       );
       expect(review.affectedSale).toMatchObject({
         id: 'saleB',
-        afterProfit: '2742.28',
-        afterVat: '607.72',
+        afterProfit: '2695.53',
+        afterVat: '654.47',
       });
       await cancelSale('saleA', await confirm(keep), actor);
       expect(state.sales.saleA.cancelledAt).toBeInstanceOf(Date);
@@ -260,8 +260,8 @@ describe('preserving chains while resolving the first sale', () => {
         expenses: before.vehicles.B.expenses,
         soldDate: before.vehicles.B.soldDate,
       });
-      expect(new Decimal(state.sales.saleB.realProfit).toFixed(2)).toBe('2742.28');
-      expect(new Decimal(state.sales.saleB.vatAmount).toFixed(2)).toBe('607.72');
+      expect(new Decimal(state.sales.saleB.realProfit).toFixed(2)).toBe('2695.53');
+      expect(new Decimal(state.sales.saleB.vatAmount).toFixed(2)).toBe('654.47');
       expect(state.sales.saleB).toMatchObject({
         customer: { id: 'customerB', name: 'Cliente B' },
         salePrice: before.sales.saleB.salePrice,

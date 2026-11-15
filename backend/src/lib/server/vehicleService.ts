@@ -166,7 +166,11 @@ export async function updateVehicleInTransaction(
   const updateData: Prisma.VehicleUncheckedUpdateInput = {};
   if (data.salePrice !== undefined && !existing.sale) {
     if (existing.webPublished && !new Decimal(data.salePrice).gt(0))
-      throw new VehicleStateConflict('Indique um preço de venda superior a zero para uma viatura publicada.', 409, 'salePrice');
+      throw new VehicleStateConflict(
+        'Indique um preço de venda superior a zero para uma viatura publicada.',
+        409,
+        'salePrice',
+      );
     try {
       await assertCampaignBasePrice(tx, id, data.salePrice);
     } catch (error) {
@@ -349,6 +353,10 @@ export async function getVehicleWithProfit(id: string) {
           salePrice: recordedPrice.toString(),
           purchasePrice: vehicle.purchasePrice.toString(),
           expensesTotal,
+          expensesVat: vehicle.expenses.reduce(
+            (n, e) => n.plus(e.vatAmount?.toString() ?? 0),
+            new Decimal(0),
+          ),
           commission: vehicle.sale?.commission.toString() ?? '0',
           buyerType: vehicle.sale?.buyerType ?? 'PARTICULAR',
         })
@@ -358,7 +366,11 @@ export async function getVehicleWithProfit(id: string) {
     ...vehicle,
     purchasePrice: vehicle.purchasePrice.toString(),
     salePrice: vehicle.salePrice?.toString() ?? null,
-    expenses: vehicle.expenses.map((e) => ({ ...e, amount: e.amount.toString() })),
+    expenses: vehicle.expenses.map((e) => ({
+      ...e,
+      amount: e.amount.toString(),
+      vatAmount: e.vatAmount?.toString() ?? null,
+    })),
     sale: vehicle.sale
       ? {
           ...vehicle.sale,
@@ -386,6 +398,9 @@ export async function getVehicleWithProfit(id: string) {
         }
       : null,
     expensesTotal,
+    expensesVat: vehicle.expenses
+      .reduce((n, e) => n.plus(e.vatAmount?.toString() ?? 0), new Decimal(0))
+      .toFixed(2),
     figures: figures
       ? {
           margin: figures.margin.toString(),

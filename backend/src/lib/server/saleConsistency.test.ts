@@ -68,9 +68,9 @@ function fixture(buyerType: 'PARTICULAR' | 'COMERCIANTE' = 'PARTICULAR') {
       vehicleId: 'vehicle',
       customerId: 'customer',
       salePrice: new Decimal(15000),
-      vatAmount: new Decimal(buyerType === 'COMERCIANTE' ? 0 : '916.26'),
+      vatAmount: new Decimal(buyerType === 'COMERCIANTE' ? 0 : '934.96'),
       commission: new Decimal(500),
-      realProfit: new Decimal(buyerType === 'COMERCIANTE' ? 5400 : '4483.74'),
+      realProfit: new Decimal(buyerType === 'COMERCIANTE' ? 5400 : '4465.04'),
       buyerType,
       saleDate: new Date('2026-10-10'),
       deliveryDate: null,
@@ -236,8 +236,8 @@ describe.each(['PARTICULAR', 'COMERCIANTE'] as const)(
   'post-sale expense recalculation: %s',
   (buyerType) => {
     it.each([
-      ['create', '878.86', '4321.14', '5200'],
-      ['update', '860.16', '4239.84', '5100'],
+      ['create', '934.96', '4265.04', '5200'],
+      ['update', '934.96', '4165.04', '5100'],
       ['delete', '934.96', '4565.04', '5500'],
     ])(
       'preserves buyer type and commission after expense %s through the API',
@@ -276,14 +276,14 @@ describe.each(['PARTICULAR', 'COMERCIANTE'] as const)(
       state = fixture(buyerType);
       state.vehicle.salePrice = new Decimal(19000);
       const result = await getVehicleWithProfit('vehicle');
-      expect(result?.figures?.vatAmount).toBe(buyerType === 'COMERCIANTE' ? '0' : '916.26');
-      expect(result?.figures?.realProfit).toBe(buyerType === 'COMERCIANTE' ? '5400' : '4483.74');
+      expect(result?.figures?.vatAmount).toBe(buyerType === 'COMERCIANTE' ? '0' : '934.96');
+      expect(result?.figures?.realProfit).toBe(buyerType === 'COMERCIANTE' ? '5400' : '4465.04');
       expect(result?.expensesTotal).toBe('100');
       expect(mocks.db.vehicleExpense.aggregate).not.toHaveBeenCalled();
     });
     it.each([
-      [{ salePrice: '16000' }, '1103.25', '5296.75', '6400'],
-      [{ purchasePrice: '11000' }, '729.27', '3670.73', '4400'],
+      [{ salePrice: '16000' }, '1121.95', '5278.05', '6400'],
+      [{ purchasePrice: '11000' }, '747.97', '3652.03', '4400'],
     ])(
       'recalculates a single financial correction %j',
       async (patch, vat, profit, traderProfit) => {
@@ -320,9 +320,9 @@ describe.each(['PARTICULAR', 'COMERCIANTE'] as const)(
       expect(state.vehicle.purchasePrice.toString()).toBe('11000');
       expect(state.vehicle.salePrice.toString()).toBe('16000');
       expect(state.sale.salePrice.toString()).toBe('16000');
-      expect(state.sale.vatAmount.toString()).toBe(buyerType === 'COMERCIANTE' ? '0' : '916.26');
+      expect(state.sale.vatAmount.toString()).toBe(buyerType === 'COMERCIANTE' ? '0' : '934.96');
       expect(state.sale.realProfit.toString()).toBe(
-        buyerType === 'COMERCIANTE' ? '5400' : '4483.74',
+        buyerType === 'COMERCIANTE' ? '5400' : '4465.04',
       );
       expect(state.sale).toMatchObject({
         buyerType,
@@ -469,7 +469,7 @@ describe('post-sale editing and transaction safety', () => {
     const saved = await patch('123.45');
     expect(saved.status).toBe(200);
     expect(state.sale.commission.toFixed(2)).toBe('123.45');
-    expect(state.sale.realProfit.toFixed(2)).toBe('4107.19');
+    expect(state.sale.realProfit.toFixed(2)).toBe('4088.49');
     expect(state.sale).toMatchObject({ salePrice, vatAmount, deliveryStatus });
     expect(cache.get('dashboard:stale')).toBeUndefined();
 
@@ -479,7 +479,7 @@ describe('post-sale editing and transaction safety', () => {
     expect(state.sale.commission.toFixed(2)).toBe('123.45');
     expect((await patch('0')).status).toBe(200);
     expect(state.sale.commission.toFixed(2)).toBe('0.00');
-    expect(state.sale.realProfit.toFixed(2)).toBe('3983.74');
+    expect(state.sale.realProfit.toFixed(2)).toBe('3965.04');
   });
 
   it('uses the delivery action to keep the sale and sold/delivered status aligned', async () => {

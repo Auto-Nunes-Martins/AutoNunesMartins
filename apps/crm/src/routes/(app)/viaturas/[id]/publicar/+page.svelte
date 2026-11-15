@@ -32,11 +32,11 @@
   const projectedMargin = $derived.by(() => {
     const price = Number(salePriceInput);
     const purchase = Number(v.purchasePrice);
-    const expenses = Number(v.expensesTotal);
+    const expenses = Number(v.expensesTotal) - Number(v.expensesVat ?? 0);
     if (!Number.isFinite(price) || price <= 0) return null;
     const margin = price - purchase - expenses;
-    if (margin <= 0) return { margin, vat: 0, profit: margin };
-    const vat = (margin * 23) / 123;
+    if (price - purchase <= 0) return { margin, vat: 0, profit: margin };
+    const vat = Math.round((((price - purchase) * 23) / 123) * 100) / 100;
     return { margin, vat, profit: margin - vat };
   });
 </script>
@@ -147,7 +147,7 @@
             >
               Preço de aquisição: {formatEUR(v.purchasePrice)}
               {#if Number(v.expensesTotal) > 0}
-                · despesas: {formatEUR(v.expensesTotal)}
+                · despesas: {formatEUR(Number(v.expensesTotal) - Number(v.expensesVat ?? 0))}
               {/if}
             </span>
           </label>

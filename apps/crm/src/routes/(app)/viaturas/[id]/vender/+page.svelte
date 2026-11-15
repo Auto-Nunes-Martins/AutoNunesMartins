@@ -118,13 +118,9 @@
   // Read initial salePrice from data directly (not via $derived `v`) to avoid
   // Svelte 5's state_referenced_locally warning. We only need a default.
   let salePriceInput = $state(untrack(() => data.vehicle.salePrice ?? ''));
-  // Optional financing-referral commission. Net amount the dealer actually
-  // pockets from the credit institution — added on top of the vehicle's
-  // net margin in the live preview and persisted on the Sale row.
+  // Gross financing commission with VAT included; preview adds only its net amount.
   let commissionInput = $state('');
-  // Tax regime selector. PARTICULAR → 23/123 margin scheme (IVA leaves the
-  // dealer's pocket). COMERCIANTE → B2B sale without IVA discriminated by
-  // the seller, so the full margin lands in Lucro Real.
+  // Owner configuration: trader sales have zero vehicle VAT; other VAT is independent.
   let buyerType = $state<'PARTICULAR' | 'COMERCIANTE'>('PARTICULAR');
   // ─── Retoma (trade-in) ───────────────────────────────────────────────
   // Off by default — most sales are pure cash. When the dealer toggles it
@@ -176,16 +172,17 @@
   );
 
   // Live margin VAT preview (mirrors backend computation exactly, including
-  // the manual commission fold-in so the previewed "Lucro Real" matches the
+  // the manual commission fold-in so the previewed "Resultado estimado" matches the
   // value that will be persisted on submit).
   const figures = $derived.by(() => {
     const price = Number(normalizeDecimal(salePriceInput));
     const purchase = Number(v.purchasePrice);
-    const expensesTotal = Number(v.expensesTotal);
+    const expensesTotal = Number(v.expensesTotal) - Number(v.expensesVat ?? 0);
     // Commission may be blank, "0", or a positive number. Treat anything
     // not parseable as 0 so the preview never reads NaN.
     const commissionNum = Number(normalizeDecimal(commissionInput));
-    const commission = Number.isFinite(commissionNum) && commissionNum > 0 ? commissionNum : 0;
+    const gross = Number.isFinite(commissionNum) && commissionNum > 0 ? commissionNum : 0;
+    const commission = gross - Math.round(((gross * 23) / 123) * 100) / 100;
 
     if (!Number.isFinite(price) || price <= 0) {
       return {
@@ -199,7 +196,7 @@
     // creating a stock vehicle with cost equal to the allowance. Only the
     // dealer vehicle sale margin matters here (see backend computeSaleFigures).
     const margin = price - purchase - expensesTotal;
-    if (margin <= 0 || buyerType === 'COMERCIANTE') {
+    if (price - purchase <= 0 || buyerType === 'COMERCIANTE') {
       const profit = margin + commission;
       return {
         margin: margin.toFixed(2),
@@ -208,7 +205,7 @@
         profit: profit.toFixed(2),
       };
     }
-    const vat = (margin * 23) / 123;
+    const vat = Math.round((((price - purchase) * 23) / 123) * 100) / 100;
     const profit = margin - vat + commission;
     return {
       margin: margin.toFixed(2),
@@ -501,7 +498,7 @@
       <Panel>
         <PanelHeader icon={Tag} title="Detalhes da venda" />
         <div class="p-5 space-y-4">
-          <!-- Buyer type: private buyers use the 23/123 margin VAT scheme, paid from profit. Dealer sales are B2B with no itemized VAT, retaining the full margin as profit. The selector updates the preview immediately. -->
+          <!-- Buyer type controls only the vehicle VAT calculation. -->
           <div class="flex flex-col">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5"
@@ -557,7 +554,8 @@
               {#if buyerType === 'PARTICULAR'}
                 Regime de margem 23/123 — IVA sai do lucro.
               {:else}
-                Venda B2B sem IVA — margem inteira fica como lucro real.
+                Configuração do CRM: IVA da viatura zero. IVA da comissão e das despesas tratado
+                separadamente.
               {/if}
             </span>
           </div>
@@ -625,14 +623,23 @@
             />
           </label>
 
+          <label class="flex flex-col crm-field-8"
+            >Data fiscal da venda <DateInput name="vatDate" required /></label
+          >
+          <label class="flex flex-col crm-field-8"
+            >Data fiscal da comissão (se existir) <DateInput
+              name="commissionDate"
+              required={Number(commissionInput) > 0}
+            /></label
+          >
           <label class="flex flex-col crm-field-8">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"
             >
-              Comissão de financiamento líquida (€)
+              Comissão de financiamento bruta (€)
             </span>
             <input
-              name="commission"
+              name="commissionGross"
               data-compact-amount
               type="text"
               use:numericField={{ min: 0, max: 9999999999.99 }}
@@ -645,13 +652,14 @@
             <span
               class="mt-1.5 font-mono text-[10px] text-[var(--color-text-faint)] uppercase tracking-[0.12em] leading-relaxed"
             >
-              Introduza o valor após deduzir o IVA aplicável. É este valor que entra no lucro real.
+              Introduza o bruto recebido com IVA a 23% incluído. Apenas a comissão líquida entra no
+              resultado.
             </span>
           </label>
         </div>
       </Panel>
 
-      <!-- Trade-in is disabled by default and appears only when the customer provides a car as part of payment. The allowance offsets the sale price in the margin/VAT calculation. STOCK creates a Vehicle in inventory; SCRAP records the deal without adding stock. -->
+      <!-- Trade-in is disabled by default and appears only when the customer provides a car as part of payment. The allowance is a separate acquisition and never reduces the sale VAT base. STOCK creates a Vehicle in inventory; SCRAP records the deal without adding stock. -->
       <Panel>
         <PanelHeader
           icon={ArrowRightLeft}
@@ -964,7 +972,7 @@
         <div class="p-5 space-y-4">
           <p class="text-[11px] text-[var(--color-text-muted)]">
             {buyerType === 'COMERCIANTE'
-              ? 'Venda a comerciante · sem IVA discriminado'
+              ? 'Comerciante · IVA da viatura zero'
               : 'Regime de margem · IVA 23/123'}
           </p>
           <div class="grid grid-cols-2 gap-4">
@@ -982,10 +990,10 @@
               <div
                 class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
               >
-                Despesas
+                Custo das despesas
               </div>
               <div class="font-display text-[18px] font-bold italic tabular-nums">
-                {formatEUR(v.expensesTotal)}
+                {formatEUR(Number(v.expensesTotal) - Number(v.expensesVat ?? 0))}
               </div>
             </div>
             <div>
@@ -1020,9 +1028,9 @@
                 </div>
                 <div
                   class="font-display text-[18px] font-bold italic tabular-nums text-[var(--color-text-faint)]"
-                  title="Venda a comerciante — sem IVA discriminado pelo vendedor."
+                  title="Configuração do CRM: IVA da viatura zero."
                 >
-                  —
+                  {formatEUR(0)}
                 </div>
               </div>
             {/if}
@@ -1053,11 +1061,9 @@
             <div
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
             >
-              Lucro Real{buyerType === 'PARTICULAR' ? ' (após IVA' : ' (margem inteira'}{Number(
-                figures.commission,
-              ) > 0
-                ? ' + comissão'
-                : ''})
+              Resultado estimado{buyerType === 'PARTICULAR'
+                ? ' (após IVA'
+                : ' (margem inteira'}{Number(figures.commission) > 0 ? ' + comissão' : ''})
             </div>
             <div
               class="font-display text-[26px] md:text-[36px] font-extrabold italic tabular-nums tracking-tight"

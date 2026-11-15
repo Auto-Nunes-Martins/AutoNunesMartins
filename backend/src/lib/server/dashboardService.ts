@@ -1,3 +1,4 @@
+import { loadVatSummary } from './vatSummary.js';
 import type { Prisma } from '@prisma/client';
 import Decimal from 'decimal.js';
 import { prisma } from '../../db.js';
@@ -20,7 +21,7 @@ export interface DashboardKpis {
   lucroMes: MonthlyKpi;
   /**
    * Sum of intermediation commissions (e.g. financing referrals) booked on
-   * sales in the period. VAT-exempt under art. 9.º, 27.º, a) CIVA — already
+   * sales in the period. Net amounts after identified commission VAT, already
    * folded into `lucroMes`, surfaced separately so the dashboard can show
    * how much of the bottom line depends on credit referrals.
    */
@@ -123,6 +124,10 @@ export interface SmartAlerts {
 }
 
 export interface DashboardPayload {
+  fiscalVat?: {
+    months: { month: string; payable: string; deductible: string; balance: string }[];
+    pendingDocuments: number;
+  };
   kpis: DashboardKpis;
   salesChart: SalesChartData;
   bestSellers: BestSeller[];
@@ -565,8 +570,27 @@ export async function loadDashboard(actorId: string, now = new Date()): Promise<
     loadAlerts(actorId, now),
   ]);
 
+  const fiscalVat = await loadVatSummary(
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1)),
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
+  );
+  for (let i = 0; i < buckets.length; i++) {
+    const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11 + i, 1))
+      .toISOString()
+      .slice(0, 7);
+    buckets[i]!.vat = Number(fiscalVat.months.find((r) => r.month === month)?.payable ?? 0);
+  }
   const kpis = buildKpis(buckets);
   const salesChart = buildSalesChart(buckets, now);
 
-  return { kpis, salesChart, bestSellers, stockAged, todayTasks, recentActivity, alerts };
+  return {
+    fiscalVat,
+    kpis,
+    salesChart,
+    bestSellers,
+    stockAged,
+    todayTasks,
+    recentActivity,
+    alerts,
+  };
 }

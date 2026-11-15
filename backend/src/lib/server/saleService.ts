@@ -3,7 +3,7 @@ import Decimal from 'decimal.js';
 import type { SaleCreate, DeliveryStatus } from '@anm/types';
 import { prisma } from '../../db.js';
 import { emitActivity } from '../data/activity.js';
-import { sumVehicleExpenses } from '../data/vehicle.js';
+import { sumVehicleExpenses, sumVehicleExpenseVat } from '../data/vehicle.js';
 import { computeSaleFigures } from '../domain/sale.js';
 import { SaleCancellationError } from './saleCancellationService.js';
 import { lockVehicle, recomputeSaleIfExists, saleMutation } from './saleFinancials.js';
@@ -147,7 +147,7 @@ export async function listSales(params: ListSalesParams): Promise<ListSalesResul
           vin: true,
           licensePlate: true,
           purchasePrice: true,
-          expenses: { select: { amount: true } },
+          expenses: { select: { amount: true, vatAmount: true } },
         },
       },
       customer: { select: { id: true, name: true, nif: true } },
@@ -156,13 +156,18 @@ export async function listSales(params: ListSalesParams): Promise<ListSalesResul
 
   const enriched: SaleListRow[] = allRows.map((r) => {
     const archive = r.cancellationDecision as {
-      snapshot?: { vehicle?: { purchasePrice?: string; expenses?: Array<{ amount: string }> } };
+      snapshot?: {
+        vehicle?: {
+          purchasePrice?: string;
+          expenses?: Array<{ amount: string; vatAmount?: string | null }>;
+        };
+      };
     } | null;
     const recordedExpenses = r.cancelledAt
       ? (archive?.snapshot?.vehicle?.expenses ?? r.vehicle.expenses)
       : r.vehicle.expenses;
     const expensesTotal = recordedExpenses.reduce(
-      (acc, e) => acc.plus(e.amount.toString()),
+      (acc, e) => acc.plus(e.amount.toString()).minus(e.vatAmount?.toString() ?? 0),
       new Decimal(0),
     );
     const salePriceNum = Number(r.salePrice.toString());
@@ -327,6 +332,8 @@ export async function createSale(
     const customer = await tx.customer.findUnique({ where: { id: data.customerId } });
     if (!customer) throw new Error(`Customer ${data.customerId} not found`);
 
+    if (Number(data.commissionGross ?? 0) > 0 && !data.commissionDate)
+      throw new SaleCancellationError(400, 'Indique a data fiscal da comissão.');
     const expensesTotal = await sumVehicleExpenses(tx, vehicle.id);
     // Zod default ensures `commission` is always a string here; if a caller
     // bypasses the schema we fall back to "0" defensively.
@@ -341,6 +348,8 @@ export async function createSale(
       salePrice: data.salePrice,
       purchasePrice: vehicle.purchasePrice.toString(),
       expensesTotal,
+      expensesVat: await sumVehicleExpenseVat(tx, vehicle.id),
+      commissionGross: data.commissionGross,
       commission,
       buyerType,
     });
@@ -353,6 +362,10 @@ export async function createSale(
         salePrice: new Decimal(data.salePrice as string),
         vatAmount: new Decimal(figures.vatAmount.toString()),
         commission: new Decimal(figures.commission.toString()),
+        commissionGross: data.commissionGross,
+        commissionVat: data.commissionGross != null ? figures.commissionVat : null,
+        commissionDate: data.commissionDate,
+        vatDate: data.vatDate,
         buyerType,
         realProfit: new Decimal(figures.realProfit.toString()),
         saleDate: data.saleDate,
@@ -517,6 +530,7 @@ export async function updateSaleCommission(
   saleId: string,
   commission: string,
   actor: ActorContext,
+  document?: { commissionDate?: Date; vatDate?: Date; gross?: boolean },
 ): Promise<void> {
   await saleMutation(async (tx) => {
     const target = await tx.sale.findUnique({
@@ -528,17 +542,61 @@ export async function updateSaleCommission(
     const sale = await tx.sale.findUnique({ where: { id: saleId } });
     if (!sale) throw new SaleNotFound(saleId);
     if (sale.cancelledAt)
-      throw new SaleCancellationError(409, 'A comissão de uma venda anulada não pode ser alterada.');
-    if (sale.commission.eq(commission)) return;
-
-    await recomputeSaleIfExists(tx, sale.vehicleId!, undefined, commission);
+      throw new SaleCancellationError(
+        409,
+        'A comissão de uma venda anulada não pode ser alterada.',
+      );
+    if (!document?.gross && !document?.vatDate && sale.commission.eq(commission)) return;
+    if (document?.gross) {
+      if (Number(commission) > 0 && !document.commissionDate)
+        throw new SaleCancellationError(400, 'Indique a data fiscal da comissão.');
+      const f = computeSaleFigures({
+        salePrice: 0,
+        purchasePrice: 0,
+        expensesTotal: 0,
+        commissionGross: commission,
+      });
+      await tx.sale.update({
+        where: { id: saleId },
+        data: {
+          commissionGross: new Decimal(commission),
+          commissionVat: f.commissionVat,
+          commission: f.commission,
+          commissionDate: document.commissionDate ?? null,
+          ...(document.vatDate ? { vatDate: document.vatDate } : {}),
+        },
+      });
+      await recomputeSaleIfExists(tx, sale.vehicleId!);
+    } else {
+      if (sale.commissionGross != null)
+        throw new SaleCancellationError(
+          400,
+          'Esta comissão tem documento bruto. Edite o bruto e a data fiscal.',
+        );
+      if (document?.vatDate)
+        await tx.sale.update({ where: { id: saleId }, data: { vatDate: document.vatDate } });
+      await recomputeSaleIfExists(tx, sale.vehicleId!, undefined, commission);
+    }
     await emitActivity(tx, {
       actorId: actor.actorId,
       type: 'SALE_UPDATED',
       entityType: 'sale',
       entityId: saleId,
       message: 'Comissão de financiamento actualizada',
-      metadata: { commission: { from: sale.commission.toString(), to: commission } },
+      metadata: {
+        commission: {
+          previousNet: sale.commission.toString(),
+          input: commission,
+          inputIsGross: document?.gross ?? false,
+          previousGross: sale.commissionGross?.toString() ?? null,
+        },
+        fiscalDates: {
+          previousSale: sale.vatDate?.toISOString() ?? null,
+          sale: document?.vatDate?.toISOString(),
+          previousCommission: sale.commissionDate?.toISOString() ?? null,
+          commission: document?.commissionDate?.toISOString(),
+        },
+      },
     });
   });
 }
@@ -611,6 +669,7 @@ export async function getSaleById(id: string) {
           purchasePrice: true,
           photos: true,
           status: true,
+          expenses: true,
           // When the sold vehicle came into stock as a trade-in itself,
           // expose the originating sale's realProfit so the UI can render
           // the consolidated profit of this deal and the original sale.
@@ -644,10 +703,33 @@ export async function getSaleById(id: string) {
   });
   if (!sale) return null;
   const archive = sale.cancellationDecision as {
-    snapshot?: { vehicle?: { purchasePrice?: string } };
+    snapshot?: {
+      vehicle?: {
+        purchasePrice?: string;
+        expenses?: Array<{ amount: string; vatAmount?: string | null }>;
+      };
+    };
   } | null;
+  const expenses = sale.cancelledAt
+    ? (archive?.snapshot?.vehicle?.expenses ?? [])
+    : sale.vehicle.expenses;
+  const expensesTotal = expenses.reduce((n, e) => n.plus(e.amount.toString()), new Decimal(0));
+  const expensesVat = expenses.reduce(
+    (n, e) => n.plus(e.vatAmount?.toString() ?? 0),
+    new Decimal(0),
+  );
   return {
     ...sale,
+    expensesTotal: expensesTotal.toFixed(2),
+    expensesVat: expensesVat.toFixed(2),
+    expensesCost: expensesTotal.minus(expensesVat).toFixed(2),
+    expensesVatUnknown: expenses.filter((e) => e.vatAmount == null).length,
+    commissionGross: sale.commissionGross?.toString() ?? null,
+    commissionVat: sale.commissionVat?.toString() ?? null,
+    vatBalance: new Decimal(sale.vatAmount.toString())
+      .plus(sale.commissionVat?.toString() ?? 0)
+      .minus(expensesVat)
+      .toFixed(2),
     salePrice: sale.salePrice.toString(),
     vatAmount: sale.vatAmount.toString(),
     commission: sale.commission.toString(),

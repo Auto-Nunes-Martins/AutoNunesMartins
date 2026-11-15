@@ -95,6 +95,14 @@ export interface SaleDetailResponse {
   salePrice: string;
   vatAmount: string;
   commission: string;
+  commissionGross?: string | null;
+  commissionVat?: string | null;
+  commissionDate?: string | null;
+  vatDate?: string | null;
+  expensesCost?: string;
+  expensesVat?: string;
+  expensesVatUnknown?: number;
+  vatBalance?: string;
   buyerType: BuyerType;
   realProfit: string;
   saleDate: string;
@@ -293,10 +301,15 @@ export const salesApi = {
   get(event: Ev, id: string): Promise<SaleDetailResponse> {
     return apiJson(event, `/api/sales/${id}`);
   },
-  updateCommission(event: Ev, id: string, commission: string): Promise<{ ok: true }> {
+  updateCommission(
+    event: Ev,
+    id: string,
+    commission: string,
+    document?: { gross?: boolean; commissionDate?: string; vatDate?: string },
+  ): Promise<{ ok: true }> {
     return apiJson(event, `/api/sales/${id}/commission`, {
       method: 'PATCH',
-      body: JSON.stringify({ commission }),
+      body: JSON.stringify({ commission, ...document }),
     });
   },
   updateDelivery(

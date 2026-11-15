@@ -44,6 +44,8 @@ export interface VehicleExpenseDto {
   category: string;
   description: string;
   amount: string;
+  vatAmount?: string | null;
+  vatDate?: string | null;
   date: string;
   createdAt: string;
 }
@@ -77,6 +79,7 @@ export interface VehicleDetailResponse {
   updatedAt: string;
   expenses: VehicleExpenseDto[];
   expensesTotal: string;
+  expensesVat?: string;
   figures: {
     margin: string;
     vatAmount: string;

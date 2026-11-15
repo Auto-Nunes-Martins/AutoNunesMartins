@@ -1,8 +1,14 @@
+import { fiscalDateSchema } from './expense.js';
 import { registeredBrandSchema } from './brands.js';
 import { z } from 'zod';
 import { BuyerTypeEnum, DeliveryStatusEnum, FuelEnum, TradeInDispositionEnum } from './enums.js';
 import { moneySchema } from './decimal.js';
-import { knownMileageSchema, licensePlatePtSchema, pendingDocFlagsSchema, vehicleCreateSchema } from './vehicle.js';
+import {
+  knownMileageSchema,
+  licensePlatePtSchema,
+  pendingDocFlagsSchema,
+  vehicleCreateSchema,
+} from './vehicle.js';
 
 const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
 
@@ -55,18 +61,12 @@ export const saleCreateSchema = z.object({
   saleDate: z.coerce.date(),
   deliveryDate: z.coerce.date().optional(),
   deliveryStatus: DeliveryStatusEnum.default('PENDING'),
-  /**
-   * Manual extra income for the sale. Typical use: a referral commission
-   * paid by a credit institution when the customer financed the purchase
-   * through them. Optional; defaults to "0" so existing callers keep
-   * working without change.
-   */
+  /** Legacy net input retained for older callers. New CRM uses commissionGross. */
   commission: saleCommissionSchema.optional().default('0'),
-  /**
-   * Tax regime selector. PARTICULAR (default) applies the 23/123 margin
-   * scheme; COMERCIANTE marks a B2B sale with no VAT discriminated by
-   * the seller, so the full margin lands in `realProfit`.
-   */
+  commissionGross: saleCommissionSchema.optional(),
+  commissionDate: fiscalDateSchema.optional(),
+  vatDate: fiscalDateSchema.optional(),
+  /** Owner configuration: zero vehicle VAT for COMERCIANTE; other VAT unaffected. */
   buyerType: BuyerTypeEnum.default('PARTICULAR'),
   /**
    * Optional trade-in, recorded as a separate acquisition without changing

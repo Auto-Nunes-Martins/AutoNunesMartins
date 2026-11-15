@@ -42,10 +42,10 @@ export const GET: RequestHandler = async (event) => {
     'Data',
     'Compra',
     'Venda',
-    'Despesas',
-    'IVA',
-    'Comissão',
-    'Lucro',
+    'Custo das despesas',
+    'IVA da viatura',
+    'Comissão líquida',
+    'Resultado estimado',
     'Margem%',
   ];
   const rows = result.items.map((s) => [

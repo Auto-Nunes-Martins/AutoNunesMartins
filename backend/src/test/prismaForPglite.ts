@@ -4,9 +4,16 @@ import Decimal from 'decimal.js';
 export function prismaForPglite(db: any, ids = { next: 0 }): any {
   const decimalFields: Record<string, string[]> = {
     Vehicle: ['purchasePrice', 'salePrice'],
-    Sale: ['salePrice', 'vatAmount', 'commission', 'realProfit'],
+    Sale: [
+      'salePrice',
+      'vatAmount',
+      'commission',
+      'realProfit',
+      'commissionGross',
+      'commissionVat',
+    ],
     TradeIn: ['allowanceValue'],
-    VehicleExpense: ['amount'],
+    VehicleExpense: ['amount', 'vatAmount'],
     OperationalExpense: ['amount'],
   };
   const normalize = (v: any): any =>

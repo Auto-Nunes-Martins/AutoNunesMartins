@@ -11,6 +11,7 @@ import {
 import { requireUser, type AuthedRequest } from '../middleware/clerk.js';
 import { param } from '../lib/http.js';
 
+import { SaleCancellationError } from '../lib/server/saleCancellationService.js';
 const router = Router();
 
 router.post(
@@ -36,6 +37,10 @@ router.post(
       });
       res.status(201).json(result);
     } catch (err) {
+      if (err instanceof SaleCancellationError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
       if (err instanceof SaleExistsConfirmationRequired) {
         res.status(409).json({
           error: 'SaleExistsConfirmationRequired',
@@ -72,6 +77,10 @@ router.patch(
       });
       res.json(result);
     } catch (err) {
+      if (err instanceof SaleCancellationError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
       if (err instanceof VehicleExpenseNotFound) {
         res.status(404).json({ error: 'Expense not found' });
         return;
@@ -105,6 +114,10 @@ router.delete(
       });
       res.json(result);
     } catch (err) {
+      if (err instanceof SaleCancellationError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
       if (err instanceof VehicleExpenseNotFound) {
         res.status(404).json({ error: 'Expense not found' });
         return;

@@ -1,3 +1,4 @@
+import { PDFDocument } from 'pdf-lib';
 import { createHash } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
 import { buildDashboardPdf } from './dashboardPdf';
@@ -38,6 +39,17 @@ it('preserves the exact dashboard and table PDF bytes recorded before the module
       draftVehicles: 4,
     },
   } as DashboardPayload;
+  const fiscalPdf = await PDFDocument.load(
+    await buildDashboardPdf({
+      ...data,
+      salesChart: { ...data.salesChart, monthKeys: ['2026-01'] },
+      fiscalVat: {
+        months: [{ month: '2026-01', payable: '23.00', deductible: '230.00', balance: '-207.00' }],
+        pendingDocuments: 2,
+      },
+    }),
+  );
+  expect(fiscalPdf.getPageCount()).toBe(2);
   const digest = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
   // Generated from ad704756 with the same fixed clock and locked pdf-lib version.
   expect(digest(await buildDashboardPdf(data))).toBe(

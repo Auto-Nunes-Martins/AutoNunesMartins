@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import Decimal from 'decimal.js';
 import { prisma } from '../../db.js';
 import { cache } from '../data/cache.js';
-import { sumVehicleExpenses } from '../data/vehicle.js';
+import { sumVehicleExpenses, sumVehicleExpenseVat } from '../data/vehicle.js';
 import { computeSaleFigures } from '../domain/sale.js';
 
 /** Serialize financial/status changes for one vehicle inside the transaction. */
@@ -40,6 +40,8 @@ export async function recomputeSaleIfExists(
     salePrice: correctedSalePrice ?? sale.salePrice.toString(),
     purchasePrice: vehicle.purchasePrice.toString(),
     expensesTotal: await sumVehicleExpenses(tx, vehicleId),
+    expensesVat: await sumVehicleExpenseVat(tx, vehicleId),
+    commissionGross: correctedCommission !== undefined ? null : sale.commissionGross?.toString(),
     commission: correctedCommission ?? sale.commission.toString(),
     buyerType: sale.buyerType,
   });

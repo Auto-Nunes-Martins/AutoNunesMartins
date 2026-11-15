@@ -169,12 +169,16 @@ model VehicleExpense {
   category    VehicleExpenseCategory
   description String
   amount      Decimal                @db.Decimal(12, 2)
+  /// Null means unidentified VAT; zero means explicitly no VAT.
+  vatAmount   Decimal?               @db.Decimal(12, 2)
+  vatDate     DateTime?
   date        DateTime
   createdAt   DateTime               @default(now())
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId])
+  @@index([vatDate])
 }
 
 // ─── Customers ───────────────────────────────────────────────────────────
@@ -208,15 +212,14 @@ model Sale {
   customerId           String
   salePrice            Decimal        @db.Decimal(12, 2)
   vatAmount            Decimal        @db.Decimal(12, 2)
-  /// Manual extra income captured per-sale: typically a referral commission
-  /// paid by a credit institution when the customer financed the purchase
-  /// through them. Folded into `realProfit` so the dashboard KPI and the
-  /// "Lucro por viatura" view automatically include it.
+  /// Net commission retained for compatibility; gross and VAT are explicit document fields.
+  commissionGross      Decimal?       @db.Decimal(12, 2)
+  commissionVat        Decimal?       @db.Decimal(12, 2)
+  commissionDate       DateTime?
+  vatDate DateTime?
+  legacyFinancials     Json?
   commission           Decimal        @default(0) @db.Decimal(12, 2)
-  /// Buyer type for VAT. PARTICULAR uses the margin scheme;
-  /// 23/123 is paid from the dealer margin. COMERCIANTE is a B2B sale
-  /// without itemized VAT, so the full margin is profit. The default
-  /// preserves the original behavior of existing sales.
+  /// Owner configuration: vehicle VAT zero for COMERCIANTE; commission/expenses independent.
   buyerType            BuyerType      @default(PARTICULAR)
   realProfit           Decimal        @db.Decimal(12, 2)
   saleDate             DateTime
@@ -234,6 +237,8 @@ model Sale {
   @@index([customerId])
   @@index([originalVehicleId])
   @@index([cancelledAt, saleDate])
+  @@index([vatDate])
+  @@index([commissionDate])
 }
 
 // ─── Trade-ins ───────────────────────────────────────────────────────────
@@ -260,9 +265,7 @@ model TradeIn {
   licensePlate String?
   vin          String?
 
-  /// Allowance attributed to the trade-in. Subtracted from `Sale.salePrice`
-  /// before margin/VAT is computed (PT margin scheme cares about the *net*
-  /// the dealer effectively received in cash).
+  /// Separate acquisition value; never deducted from the originating sale VAT base.
   allowanceValue Decimal @db.Decimal(12, 2)
 
   disposition        TradeInDisposition

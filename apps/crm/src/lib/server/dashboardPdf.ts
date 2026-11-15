@@ -210,6 +210,40 @@ export async function buildDashboardPdf(data: DashboardPayload): Promise<Uint8Ar
   // Alerts strip in the footer.
   drawAlertsStrip(page, margin, margin, W - margin * 2, 60, data.alerts, fonts);
 
+  if (data.fiscalVat) {
+    const fiscal = pdf.addPage([W, H]);
+    txt(fiscal, 'IVA por período fiscal — documentos registados', {
+      x: margin,
+      y: H - 40,
+      size: 16,
+      font: bold,
+    });
+    txt(
+      fiscal,
+      'Mês                         A pagar (vendas + comissões)               A deduzir                 Saldo estimado',
+      { x: margin, y: H - 75, size: 10, font: bold },
+    );
+    data.salesChart.monthKeys.forEach((month, i) => {
+      const r = data.fiscalVat!.months.find((row) => row.month === month);
+      const y = H - 100 - i * 24;
+      [month, fmtEur(r?.payable ?? 0), fmtEur(r?.deductible ?? 0), fmtEur(r?.balance ?? 0)].forEach(
+        (s, j) => txt(fiscal, s, { x: [margin, 230, 480, 650][j]!, y, size: 10, font }),
+      );
+    });
+    txt(fiscal, 'Saldo negativo = crédito estimado. Não descontar novamente ao resultado.', {
+      x: margin,
+      y: 90,
+      size: 10,
+      font,
+    });
+    txt(
+      fiscal,
+      'Registos fiscais pendentes no histórico global: ' +
+        data.fiscalVat.pendingDocuments +
+        '. Componentes por identificar excluídos.',
+      { x: margin, y: 65, size: 10, font },
+    );
+  }
   return await pdf.save();
 }
 

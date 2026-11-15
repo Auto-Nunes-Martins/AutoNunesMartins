@@ -41,7 +41,11 @@ describe('CRM commission form action', () => {
     expect(await actions.commission!(event({ commission: input }))).toEqual({
       commissionSaved: true,
     });
-    expect(mocks.commission).toHaveBeenCalledWith(expect.anything(), 'sale', expected);
+    expect(mocks.commission).toHaveBeenCalledWith(expect.anything(), 'sale', expected, {
+      gross: false,
+      commissionDate: undefined,
+      vatDate: undefined,
+    });
   });
 
   it('rejects missing or invalid values instead of clearing the existing amount', async () => {
@@ -180,5 +184,31 @@ describe('CRM cancellation form actions', () => {
       ),
     ).toMatchObject({ status: 400 });
     expect(mocks.preview).not.toHaveBeenCalled();
+  });
+});
+
+it('preserves historical net commission when only its sale document date is confirmed', async () => {
+  await actions.commission!(
+    event({ commission: '', gross: 'true', legacyNet: '500', vatDate: '2026-01-01' }),
+  );
+  expect(mocks.commission).toHaveBeenCalledWith(expect.anything(), 'sale', '500', {
+    gross: false,
+    commissionDate: undefined,
+    vatDate: '2026-01-01',
+  });
+});
+it('passes the explicitly entered gross commission and its own fiscal date', async () => {
+  await actions.commission!(
+    event({
+      commission: '615',
+      gross: 'true',
+      commissionDate: '2026-02-01',
+      vatDate: '2026-01-01',
+    }),
+  );
+  expect(mocks.commission).toHaveBeenCalledWith(expect.anything(), 'sale', '615', {
+    gross: true,
+    commissionDate: '2026-02-01',
+    vatDate: '2026-01-01',
   });
 });

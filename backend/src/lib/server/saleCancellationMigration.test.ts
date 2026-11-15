@@ -10,7 +10,7 @@ describe('cancellation migration on isolated PostgreSQL', () => {
   beforeAll(async () => {
     db = await PGlite.create();
     for (const dir of readdirSync(root)
-      .filter((dir) => /^\d/.test(dir) && dir !== migration)
+      .filter((dir) => /^\d/.test(dir) && dir !== migration && dir < '20261115120000_document_vat')
       .sort()) {
       await db.exec(readFileSync(resolve(root, dir, 'migration.sql'), 'utf8'));
     }
