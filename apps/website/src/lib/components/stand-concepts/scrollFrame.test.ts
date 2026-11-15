@@ -201,6 +201,7 @@ describe('scroll action read/write integration', () => {
     vi.stubGlobal('MutationObserver', observer);
     return {
       calls,
+      node,
       readingIndicator,
       root: root as unknown as HTMLElement,
       header: header as unknown as HTMLElement,
@@ -229,6 +230,37 @@ describe('scroll action read/write integration', () => {
     win.addEventListener.mock.calls.find(([event]) => event === 'scroll')![1]();
     advance();
     expect(calls.filter((call) => call.startsWith('write --'))).toEqual([]);
+  });
+
+  it('updates only a through-only scene and does not schedule unused pinned easing', () => {
+    const { node, root, win, calls } = fixture();
+    Object.assign(node.dataset, { scene: 'through' });
+    const motion = designMotion(root);
+    cleanup.push(motion.destroy);
+    advance();
+    advance();
+    node.getBoundingClientRect = () => ({ top: -120, bottom: 480, height: 600 });
+    calls.length = 0;
+    win.addEventListener.mock.calls.find(([event]) => event === 'scroll')![1]();
+    advance();
+    expect(calls.filter((call) => call.startsWith('write --'))).toEqual(['write --through']);
+    expect(frames.size).toBe(0);
+  });
+
+  it.each([
+    ['approach', false],
+    ['approach reveal', true],
+  ])('retains approach choreography with optional chapter reveals: %s', (scene, reveal) => {
+    const { node, root } = fixture();
+    Object.assign(node.dataset, { scene });
+    node.hasAttribute = (name?: string) => name === 'data-approach';
+    const motion = designMotion(root);
+    cleanup.push(motion.destroy);
+    advance();
+    expect(node.style.getPropertyValue('--approach')).not.toBe('');
+    expect(node.style.getPropertyValue('--through')).toBe('');
+    expect(node.style.getPropertyValue('--p')).toBe('');
+    expect(node.style.getPropertyValue('--reveal-a') !== '').toBe(reveal);
   });
 
   it.each(['orbit-home', 'public-detail'])(

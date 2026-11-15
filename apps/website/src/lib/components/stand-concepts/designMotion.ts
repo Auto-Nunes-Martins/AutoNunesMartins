@@ -24,7 +24,28 @@ export function designMotion(
     targetY = 0,
     x = 0,
     y = 0;
-  let sections = Array.from(root.querySelectorAll<HTMLElement>('[data-scene]'));
+  // Public scenes opt into only the channels their CSS consumes. An empty attribute
+  // preserves the full choreography used by the interactive design previews.
+  const scenes = () =>
+    Array.from(root.querySelectorAll<HTMLElement>('[data-scene]')).map((node) => {
+      const channels = new Set(node.dataset.scene?.split(/\s+/).filter(Boolean));
+      const full = channels.size === 0;
+      return {
+        node,
+        full,
+        through: full || channels.has('through'),
+        reveal: full || channels.has('reveal'),
+        pin: full ? node.querySelector<HTMLElement>(':scope > [data-pin]') : null,
+        heroStage:
+          full && node.hasAttribute('data-scroll-hero')
+            ? node.querySelector<HTMLElement>(':scope > [data-hero-stage]')
+            : null,
+        approachTarget: node.hasAttribute('data-approach')
+          ? node.querySelector<HTMLElement>('[data-approach-target]')
+          : null,
+      };
+    });
+  let sections = scenes();
   const clamp = (n: number) => Math.min(1, Math.max(0, n));
   const draw = (time: number) => {
     if (reduced.matches || document.hidden) return;
@@ -42,27 +63,32 @@ export function designMotion(
         ? clamp(scrollY / Math.max(1, document.documentElement.scrollHeight - height))
         : 0;
     const rows = sections
-      .map((node) => ({ node, bounds: node.getBoundingClientRect() }))
+      .map((scene) => ({ ...scene, bounds: scene.node.getBoundingClientRect() }))
       .filter(({ bounds }) => bounds.bottom >= -50 && bounds.top <= height + 50)
-      .map(({ node, bounds }) => {
-        const pin = node.querySelector<HTMLElement>(':scope > [data-pin]');
-        const sticky = pin && getComputedStyle(pin).position === 'sticky';
-        const heroStage = node.hasAttribute('data-scroll-hero')
-          ? node.querySelector<HTMLElement>(':scope > [data-hero-stage]')
-          : null;
+      .map((scene) => {
+        const { pin, heroStage, approachTarget } = scene;
+        const pinStyle = pin ? getComputedStyle(pin) : null;
+        const sticky = pinStyle?.position === 'sticky';
         return {
-          node,
-          bounds,
-          approachBounds: node
-            .querySelector<HTMLElement>('[data-approach-target]')
-            ?.getBoundingClientRect(),
+          ...scene,
+          approachBounds: approachTarget?.getBoundingClientRect(),
           pinHeight: sticky && pin ? pin.offsetHeight : null,
-          pinTop: sticky && pin ? Number.parseFloat(getComputedStyle(pin).top) || 0 : 0,
+          pinTop: sticky && pinStyle ? Number.parseFloat(pinStyle.top) || 0 : 0,
           heroBounds: heroStage?.getBoundingClientRect() ?? null,
         };
       });
     return () => {
-      for (const { node, bounds, approachBounds, pinHeight, pinTop, heroBounds } of rows) {
+      for (const {
+        node,
+        full,
+        through: usesThrough,
+        reveal,
+        bounds,
+        approachBounds,
+        pinHeight,
+        pinTop,
+        heroBounds,
+      } of rows) {
         if (bounds.bottom < -50 || bounds.top > height + 50) continue;
         const {
           through,
@@ -97,20 +123,22 @@ export function designMotion(
           setScrollStyle(node, '--accent-progress', String(value));
           if (Math.abs(accent.progress - value) > 0.0005) settling = true;
         }
-        const previous = progress.get(node) ?? targetProgress;
-        // Restore/jump navigation lands immediately; normal scrolling gets a short scrub.
-        const difference = targetProgress - previous;
-        const pinned =
-          Math.abs(difference) > 0.65 || Math.abs(difference) < 0.0005
-            ? targetProgress
-            : previous + difference * damping;
-        progress.set(node, pinned);
-        if (Math.abs(targetProgress - pinned) > 0.0005) settling = true;
-        setScrollStyle(node, '--through', String(through));
-        setScrollStyle(node, '--p', String(pinned));
-        setScrollStyle(node, '--stage-a', String(chapterProgress(pinned, 0, 0.88)));
-        setScrollStyle(node, '--stage-b', String(chapterProgress(pinned, 0.1, 1)));
-        setScrollStyle(node, '--enter', String(enter));
+        if (full) {
+          const previous = progress.get(node) ?? targetProgress;
+          // Restore/jump navigation lands immediately; normal scrolling gets a short scrub.
+          const difference = targetProgress - previous;
+          const pinned =
+            Math.abs(difference) > 0.65 || Math.abs(difference) < 0.0005
+              ? targetProgress
+              : previous + difference * damping;
+          progress.set(node, pinned);
+          if (Math.abs(targetProgress - pinned) > 0.0005) settling = true;
+          setScrollStyle(node, '--p', String(pinned));
+          setScrollStyle(node, '--stage-a', String(chapterProgress(pinned, 0, 0.88)));
+          setScrollStyle(node, '--stage-b', String(chapterProgress(pinned, 0.1, 1)));
+          setScrollStyle(node, '--enter', String(enter));
+        }
+        if (usesThrough) setScrollStyle(node, '--through', String(through));
         if (node.hasAttribute('data-approach')) {
           const targetBounds = approachBounds ?? bounds;
           const target = approachProgress(targetBounds.top, targetBounds.height, height);
@@ -140,9 +168,11 @@ export function designMotion(
             setScrollStyle(node, '--scan', String(scan));
             if (Math.abs(scanTarget - scan) > 0.0005) settling = true;
           }
-          setScrollStyle(node, '--reveal-a', String(chapterProgress(value, 0.06, 0.58)));
-          setScrollStyle(node, '--reveal-b', String(chapterProgress(value, 0.28, 0.83)));
-          setScrollStyle(node, '--reveal-c', String(chapterProgress(value, 0.5, 1)));
+          if (reveal) {
+            setScrollStyle(node, '--reveal-a', String(chapterProgress(value, 0.06, 0.58)));
+            setScrollStyle(node, '--reveal-b', String(chapterProgress(value, 0.28, 0.83)));
+            setScrollStyle(node, '--reveal-c', String(chapterProgress(value, 0.5, 1)));
+          }
         }
       }
       if (pointerParallax) {
@@ -189,7 +219,7 @@ export function designMotion(
   const resize = new ResizeObserver(schedule);
   resize.observe(root);
   const mutation = new MutationObserver(() => {
-    sections = Array.from(root.querySelectorAll<HTMLElement>('[data-scene]'));
+    sections = scenes();
     for (const node of progress.keys()) if (!root.contains(node)) progress.delete(node);
     for (const node of approach.keys()) if (!root.contains(node)) approach.delete(node);
     schedule();

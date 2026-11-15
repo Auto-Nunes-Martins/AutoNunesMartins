@@ -1,0 +1,822 @@
+{
+  "note": "Production build; synthetic stock/photos; local origin only (third parties blocked); CPU 6x mobile / 4x desktop; network 1.6 Mbps and 120 ms. Event Timing samples are lab interactions, not field INP. Scroll is scripted, not a physical device.",
+  "results": [
+    {
+      "width": 390,
+      "route": "/",
+      "initial": {
+        "cls": 0.00007838202398854452,
+        "longTasks": [
+          {
+            "start": 1445.199999988079,
+            "duration": 616
+          },
+          {
+            "start": 2078.5999999940395,
+            "duration": 95
+          },
+          {
+            "start": 3494,
+            "duration": 200
+          },
+          {
+            "start": 4029.5,
+            "duration": 105
+          },
+          {
+            "start": 4166.0999999940395,
+            "duration": 961
+          },
+          {
+            "start": 5132.9000000059605,
+            "duration": 83
+          },
+          {
+            "start": 5305,
+            "duration": 60
+          }
+        ],
+        "interactions": [],
+        "nodes": 1557
+      },
+      "scroll": {
+        "LayoutCount": 59,
+        "RecalcStyleCount": 557,
+        "LayoutDuration": 0.07550100000000004,
+        "RecalcStyleDuration": 1.8182850000000002,
+        "ScriptDuration": 0.31758300000000006,
+        "TaskDuration": 5.334122999999999,
+        "frameP95": 37.599999999998545,
+        "framesOver50": 8
+      },
+      "final": {
+        "cls": 0.00007838202398854452,
+        "longTasks": [
+          {
+            "start": 1445.199999988079,
+            "duration": 616
+          },
+          {
+            "start": 2078.5999999940395,
+            "duration": 95
+          },
+          {
+            "start": 3494,
+            "duration": 200
+          },
+          {
+            "start": 4029.5,
+            "duration": 105
+          },
+          {
+            "start": 4166.0999999940395,
+            "duration": 961
+          },
+          {
+            "start": 5132.9000000059605,
+            "duration": 83
+          },
+          {
+            "start": 5305,
+            "duration": 60
+          },
+          {
+            "start": 7192,
+            "duration": 247
+          },
+          {
+            "start": 7478.699999988079,
+            "duration": 195
+          },
+          {
+            "start": 7685.5,
+            "duration": 202
+          },
+          {
+            "start": 11462.5,
+            "duration": 67
+          },
+          {
+            "start": 11643.59999999404,
+            "duration": 63
+          },
+          {
+            "start": 13137.300000011921,
+            "duration": 178
+          },
+          {
+            "start": 14375.40000000596,
+            "duration": 195
+          },
+          {
+            "start": 16356.199999988079,
+            "duration": 197
+          },
+          {
+            "start": 20032.5,
+            "duration": 51
+          },
+          {
+            "start": 22598.40000000596,
+            "duration": 148
+          },
+          {
+            "start": 23028.69999998808,
+            "duration": 180
+          }
+        ],
+        "interactions": [
+          {
+            "name": "pointerdown",
+            "duration": 96
+          },
+          {
+            "name": "pointerup",
+            "duration": 96
+          },
+          {
+            "name": "click",
+            "duration": 96
+          },
+          {
+            "name": "pointerdown",
+            "duration": 72
+          },
+          {
+            "name": "pointerup",
+            "duration": 72
+          },
+          {
+            "name": "click",
+            "duration": 72
+          }
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "route": "/viaturas",
+      "initial": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 2431.800000011921,
+            "duration": 86
+          },
+          {
+            "start": 2680.300000011921,
+            "duration": 481
+          }
+        ],
+        "interactions": [],
+        "nodes": 738
+      },
+      "scroll": {
+        "LayoutCount": 18,
+        "RecalcStyleCount": 753,
+        "LayoutDuration": 0.015831999999999957,
+        "RecalcStyleDuration": 0.267164,
+        "ScriptDuration": 0.16856000000000002,
+        "TaskDuration": 1.635697,
+        "frameP95": 6.399999999999636,
+        "framesOver50": 1
+      },
+      "final": {
+        "cls": 0.005011679881404281,
+        "longTasks": [
+          {
+            "start": 2431.800000011921,
+            "duration": 86
+          },
+          {
+            "start": 2680.300000011921,
+            "duration": 481
+          },
+          {
+            "start": 4377.200000017881,
+            "duration": 86
+          },
+          {
+            "start": 8840.800000011921,
+            "duration": 68
+          },
+          {
+            "start": 8909.5,
+            "duration": 73
+          },
+          {
+            "start": 9174.700000017881,
+            "duration": 74
+          },
+          {
+            "start": 9249.59999999404,
+            "duration": 71
+          },
+          {
+            "start": 9518.90000000596,
+            "duration": 66
+          }
+        ],
+        "interactions": [
+          {
+            "name": "pointerdown",
+            "duration": 184
+          },
+          {
+            "name": "pointerup",
+            "duration": 184
+          },
+          {
+            "name": "click",
+            "duration": 184
+          },
+          {
+            "name": "pointerdown",
+            "duration": 176
+          },
+          {
+            "name": "pointerup",
+            "duration": 176
+          },
+          {
+            "name": "click",
+            "duration": 176
+          },
+          {
+            "name": "pointerdown",
+            "duration": 104
+          },
+          {
+            "name": "pointerup",
+            "duration": 104
+          },
+          {
+            "name": "click",
+            "duration": 104
+          },
+          {
+            "name": "keydown",
+            "duration": 40
+          },
+          {
+            "name": "keyup",
+            "duration": 24
+          }
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "route": "/quem-somos",
+      "initial": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 1433.2999999821186,
+            "duration": 547
+          },
+          {
+            "start": 2297.899999976158,
+            "duration": 77
+          },
+          {
+            "start": 3015.399999976158,
+            "duration": 457
+          }
+        ],
+        "interactions": [],
+        "nodes": 589
+      },
+      "scroll": {
+        "LayoutCount": 18,
+        "RecalcStyleCount": 780,
+        "LayoutDuration": 0.017952999999999997,
+        "RecalcStyleDuration": 1.058144,
+        "ScriptDuration": 0.30290300000000003,
+        "TaskDuration": 2.947252,
+        "frameP95": 18.799999999999272,
+        "framesOver50": 1
+      },
+      "final": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 1433.2999999821186,
+            "duration": 547
+          },
+          {
+            "start": 2297.899999976158,
+            "duration": 77
+          },
+          {
+            "start": 3015.399999976158,
+            "duration": 457
+          },
+          {
+            "start": 6317.199999988079,
+            "duration": 93
+          }
+        ],
+        "interactions": []
+      }
+    },
+    {
+      "width": 390,
+      "gallery": {
+        "portrait": {
+          "width": 374,
+          "height": 249.41125000000002,
+          "box": {
+            "x": 8,
+            "y": 62,
+            "width": 374,
+            "height": 708,
+            "top": 62,
+            "right": 382,
+            "bottom": 770,
+            "left": 8
+          }
+        },
+        "844x390": {
+          "width": 524.5548266166824,
+          "height": 349.8125,
+          "box": {
+            "x": 8,
+            "y": 32.1875,
+            "width": 756,
+            "height": 349.8125,
+            "top": 32.1875,
+            "right": 764,
+            "bottom": 382,
+            "left": 8
+          }
+        },
+        "667x375": {
+          "width": 502.0618556701031,
+          "height": 334.8125,
+          "box": {
+            "x": 8,
+            "y": 32.1875,
+            "width": 579,
+            "height": 334.8125,
+            "top": 32.1875,
+            "right": 587,
+            "bottom": 367,
+            "left": 8
+          }
+        },
+        "740x320": {
+          "width": 419.5876288659794,
+          "height": 279.8125,
+          "box": {
+            "x": 8,
+            "y": 32.1875,
+            "width": 652,
+            "height": 279.8125,
+            "top": 32.1875,
+            "right": 660,
+            "bottom": 312,
+            "left": 8
+          }
+        }
+      }
+    },
+    {
+      "width": 390,
+      "route": "/viaturas/hero-check-aaaaaaaaaaa0",
+      "initial": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 2510.300000011921,
+            "duration": 75
+          },
+          {
+            "start": 2945.300000011921,
+            "duration": 604
+          },
+          {
+            "start": 3550.800000011921,
+            "duration": 74
+          }
+        ],
+        "interactions": [],
+        "nodes": 770
+      },
+      "scroll": {
+        "LayoutCount": 10,
+        "RecalcStyleCount": 516,
+        "LayoutDuration": 0.01009900000000008,
+        "RecalcStyleDuration": 1.3775,
+        "ScriptDuration": 0.15050599999999997,
+        "TaskDuration": 2.636498,
+        "frameP95": 31.300000000000182,
+        "framesOver50": 2
+      },
+      "final": {
+        "cls": 0.004506300397565194,
+        "longTasks": [
+          {
+            "start": 2510.300000011921,
+            "duration": 75
+          },
+          {
+            "start": 2945.300000011921,
+            "duration": 604
+          },
+          {
+            "start": 3550.800000011921,
+            "duration": 74
+          },
+          {
+            "start": 4875.600000023842,
+            "duration": 85
+          },
+          {
+            "start": 9352.200000017881,
+            "duration": 72
+          },
+          {
+            "start": 9435.600000023842,
+            "duration": 292
+          },
+          {
+            "start": 10747.5,
+            "duration": 86
+          },
+          {
+            "start": 11725.800000011921,
+            "duration": 79
+          },
+          {
+            "start": 12725.200000017881,
+            "duration": 108
+          },
+          {
+            "start": 13731.5,
+            "duration": 95
+          },
+          {
+            "start": 14633.200000017881,
+            "duration": 155
+          }
+        ],
+        "interactions": [
+          {
+            "name": "pointerdown",
+            "duration": 320
+          },
+          {
+            "name": "pointerup",
+            "duration": 320
+          },
+          {
+            "name": "click",
+            "duration": 320
+          },
+          {
+            "name": "pointerdown",
+            "duration": 104
+          },
+          {
+            "name": "pointerup",
+            "duration": 104
+          },
+          {
+            "name": "click",
+            "duration": 104
+          }
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "route": "/",
+      "initial": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 1388,
+            "duration": 354
+          },
+          {
+            "start": 1747.7999999821186,
+            "duration": 68
+          },
+          {
+            "start": 3389,
+            "duration": 117
+          },
+          {
+            "start": 3689.2999999821186,
+            "duration": 62
+          },
+          {
+            "start": 3763.0999999940395,
+            "duration": 574
+          }
+        ],
+        "interactions": [],
+        "nodes": 1557
+      },
+      "scroll": {
+        "LayoutCount": 122,
+        "RecalcStyleCount": 642,
+        "LayoutDuration": 0.17148000000000008,
+        "RecalcStyleDuration": 1.604014,
+        "ScriptDuration": 0.35033899999999996,
+        "TaskDuration": 4.900227,
+        "frameP95": 25.099999999999454,
+        "framesOver50": 2
+      },
+      "final": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 1388,
+            "duration": 354
+          },
+          {
+            "start": 1747.7999999821186,
+            "duration": 68
+          },
+          {
+            "start": 3389,
+            "duration": 117
+          },
+          {
+            "start": 3689.2999999821186,
+            "duration": 62
+          },
+          {
+            "start": 3763.0999999940395,
+            "duration": 574
+          },
+          {
+            "start": 6771.899999976158,
+            "duration": 153
+          },
+          {
+            "start": 6950.299999982119,
+            "duration": 162
+          },
+          {
+            "start": 17465,
+            "duration": 89
+          },
+          {
+            "start": 17908,
+            "duration": 182
+          },
+          {
+            "start": 18109.29999998212,
+            "duration": 53
+          }
+        ],
+        "interactions": []
+      }
+    },
+    {
+      "width": 1440,
+      "route": "/viaturas",
+      "initial": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 2307.7000000178814,
+            "duration": 61
+          },
+          {
+            "start": 2605.300000011921,
+            "duration": 433
+          }
+        ],
+        "interactions": [],
+        "nodes": 738
+      },
+      "scroll": {
+        "LayoutCount": 3,
+        "RecalcStyleCount": 686,
+        "LayoutDuration": 0.003685999999999967,
+        "RecalcStyleDuration": 0.263026,
+        "ScriptDuration": 0.144121,
+        "TaskDuration": 1.5135300000000003,
+        "frameP95": 6.399999999999636,
+        "framesOver50": 1
+      },
+      "final": {
+        "cls": 0.002689525462962963,
+        "longTasks": [
+          {
+            "start": 2307.7000000178814,
+            "duration": 61
+          },
+          {
+            "start": 2605.300000011921,
+            "duration": 433
+          },
+          {
+            "start": 4294.300000011921,
+            "duration": 66
+          },
+          {
+            "start": 8720.600000023842,
+            "duration": 67
+          },
+          {
+            "start": 8797.100000023842,
+            "duration": 54
+          },
+          {
+            "start": 8944,
+            "duration": 59
+          }
+        ],
+        "interactions": [
+          {
+            "name": "pointerdown",
+            "duration": 64
+          },
+          {
+            "name": "pointerup",
+            "duration": 64
+          },
+          {
+            "name": "click",
+            "duration": 64
+          },
+          {
+            "name": "pointerdown",
+            "duration": 88
+          },
+          {
+            "name": "pointerup",
+            "duration": 88
+          },
+          {
+            "name": "click",
+            "duration": 88
+          },
+          {
+            "name": "keydown",
+            "duration": 40
+          },
+          {
+            "name": "keyup",
+            "duration": 16
+          }
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "route": "/quem-somos",
+      "initial": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 1445.7000000178814,
+            "duration": 460
+          },
+          {
+            "start": 1921.300000011921,
+            "duration": 152
+          },
+          {
+            "start": 2165.4000000059605,
+            "duration": 62
+          },
+          {
+            "start": 2957,
+            "duration": 278
+          }
+        ],
+        "interactions": [],
+        "nodes": 589
+      },
+      "scroll": {
+        "LayoutCount": 4,
+        "RecalcStyleCount": 976,
+        "LayoutDuration": 0.003807000000000005,
+        "RecalcStyleDuration": 1.079937,
+        "ScriptDuration": 0.267073,
+        "TaskDuration": 2.4864509999999997,
+        "frameP95": 12.5,
+        "framesOver50": 0
+      },
+      "final": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 1445.7000000178814,
+            "duration": 460
+          },
+          {
+            "start": 1921.300000011921,
+            "duration": 152
+          },
+          {
+            "start": 2165.4000000059605,
+            "duration": 62
+          },
+          {
+            "start": 2957,
+            "duration": 278
+          }
+        ],
+        "interactions": []
+      }
+    },
+    {
+      "width": 1440,
+      "gallery": {
+        "portrait": {
+          "width": 1109.6532333645735,
+          "height": 740,
+          "box": {
+            "x": 80,
+            "y": 70,
+            "width": 1280,
+            "height": 740,
+            "top": 70,
+            "right": 1360,
+            "bottom": 810,
+            "left": 80
+          }
+        }
+      }
+    },
+    {
+      "width": 1440,
+      "route": "/viaturas/hero-check-aaaaaaaaaaa0",
+      "initial": {
+        "cls": 0,
+        "longTasks": [
+          {
+            "start": 2866.0999999940395,
+            "duration": 404
+          }
+        ],
+        "interactions": [],
+        "nodes": 770
+      },
+      "scroll": {
+        "LayoutCount": 3,
+        "RecalcStyleCount": 598,
+        "LayoutDuration": 0.003145999999999982,
+        "RecalcStyleDuration": 1.155814,
+        "ScriptDuration": 0.11639300000000001,
+        "TaskDuration": 2.096022,
+        "frameP95": 18.800000000000182,
+        "framesOver50": 0
+      },
+      "final": {
+        "cls": 0.002689525462962963,
+        "longTasks": [
+          {
+            "start": 2866.0999999940395,
+            "duration": 404
+          },
+          {
+            "start": 4522,
+            "duration": 52
+          },
+          {
+            "start": 8942.699999988079,
+            "duration": 158
+          },
+          {
+            "start": 10064.699999988079,
+            "duration": 68
+          }
+        ],
+        "interactions": [
+          {
+            "name": "pointerdown",
+            "duration": 256
+          },
+          {
+            "name": "pointerup",
+            "duration": 256
+          },
+          {
+            "name": "click",
+            "duration": 256
+          },
+          {
+            "name": "pointerdown",
+            "duration": 40
+          },
+          {
+            "name": "pointerup",
+            "duration": 40
+          },
+          {
+            "name": "click",
+            "duration": 40
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -71,7 +71,7 @@
         {#each content.origins.paragraphs as paragraph}<p>{paragraph}</p>{/each}
       </div>
     </div>
-    <div class="timeline" data-scene data-approach>
+    <div class="timeline" data-scene="approach reveal" data-approach>
       <div class="timeline-track" aria-hidden="true"><span></span></div>
       <ol data-approach-target>
         {#each content.history as moment, i}
@@ -86,7 +86,7 @@
     </div>
   </section>
 
-  <section class="approach frame" data-scene data-approach aria-labelledby="approach-title">
+  <section class="approach frame" data-scene="through" aria-labelledby="approach-title">
     <figure class="detail-photo" data-approach-target>
       <picture style="display: contents">
         <source

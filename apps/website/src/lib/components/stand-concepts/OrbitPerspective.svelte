@@ -25,8 +25,6 @@
   bind:this={section}
   class="orbit-perspective"
   class:grouped
-  data-scene
-  data-approach
   aria-labelledby={id}
 >
   <div class="perspective-inner">

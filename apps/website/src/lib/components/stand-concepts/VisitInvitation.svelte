@@ -46,7 +46,7 @@
   id={compactComparison ? 'visita-compacta' : undefined}
   class="visit-invitation"
   class:compact-comparison={compactComparison}
-  data-scene
+  data-scene="approach"
   data-approach
   data-scan-delay="0.05"
   aria-labelledby={headingId}

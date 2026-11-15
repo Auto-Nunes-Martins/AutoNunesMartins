@@ -51,7 +51,12 @@
   </picture>
 {/snippet}
 
-<section class="cabin-reveal" data-scene data-approach aria-labelledby="cabin-heading">
+<section
+  class="cabin-reveal"
+  data-scene="approach reveal"
+  data-approach
+  aria-labelledby="cabin-heading"
+>
   <div class="cabin-heading">
     <div>
       <h2 id="cabin-heading">O melhor lugar.<br /><span>O seu.</span></h2>

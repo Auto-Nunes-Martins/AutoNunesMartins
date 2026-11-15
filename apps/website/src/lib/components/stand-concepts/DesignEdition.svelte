@@ -928,7 +928,7 @@
           >{/if}
       </div>
 
-      <section class="vehicle-layout" data-scene>
+      <section class="vehicle-layout">
         <div class="vehicle-photography">
           <div class="vehicle-gallery">
             <!-- Arrow keys coordinate the gallery's focused buttons; explicit previous/next controls remain available. -->
@@ -1258,7 +1258,7 @@
           </section>
         {/if}
         {#if !publicVehicle || publicVehicle.photos.length > 0}
-          <section class="detail-band" data-scene>
+          <section class="detail-band" data-scene="through">
             <img
               use:coverPhotoSizes
               use:vehiclePhoto={{

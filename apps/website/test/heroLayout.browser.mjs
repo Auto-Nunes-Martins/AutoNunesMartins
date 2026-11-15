@@ -15,6 +15,8 @@ import { captureCarouselFrames, publicMotionCheck } from './publicMotionCheck.mj
 import { mobileCampaignEffects } from './mobileCampaignEffects.mjs';
 import { publicPerformance } from './publicPerformance.mjs';
 import { heroDelivery } from './heroDelivery.mjs';
+import { slowDevices } from './slowDevices.mjs';
+import { galleryRotation } from './galleryRotation.mjs';
 
 const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
@@ -25,6 +27,8 @@ const effectsCheck =
   process.argv.includes('--mobile-effects') || process.argv.includes('--production-effects');
 const performanceCheck = process.argv.includes('--performance');
 const heroDeliveryCheck = process.argv.includes('--hero-delivery');
+const slowDeviceCheck = process.argv.includes('--slow-devices');
+const galleryRotationCheck = process.argv.includes('--gallery-rotation');
 const campaignPreview =
   process.argv.includes('--campaign-preview') ||
   cardPromotionPreview ||
@@ -78,7 +82,17 @@ const vehicles = (
     `/api/public/vehicles/hero-check-${String(n).padStart(12, 'a')}/photos/0?v=${String(n + 1).repeat(64)}`,
   ],
 }));
-let showCampaigns = campaignPreview || productionCampaignCheck || performanceCheck || effectsCheck;
+if (galleryRotationCheck) {
+  vehicles[0].model = 'Série 3 Touring 320d EfficientDynamics Advantage Automatic';
+  for (const vehicle of vehicles)
+    vehicle.photos = [0, 1, 2].map((index) =>
+      vehicle.photos[0]
+        .replace('/photos/0?', `/photos/${index}?`)
+        .replace(/v=[^&]+/, 'v=' + String(index + 1).repeat(64)),
+    );
+}
+let showCampaigns =
+  campaignPreview || productionCampaignCheck || performanceCheck || effectsCheck || slowDeviceCheck;
 let campaignRequests = 0;
 const promoted = [
   {
@@ -97,6 +111,12 @@ let campaignCount = 1;
 const backend = createServer((request, response) => {
   const url = new URL(request.url, 'http://fixture');
   if (url.pathname.endsWith('/campaigns')) campaignRequests++;
+  if (url.pathname.endsWith('/photos/access')) {
+    const second = url.pathname.includes('hero-check-aaaaaaaaaaa1');
+    response.setHeader('content-type', 'application/json');
+    response.end(JSON.stringify({ versions: [(second ? '2' : '1').repeat(64)] }));
+    return;
+  }
   if (url.pathname.includes('/photos/')) {
     response.setHeader('content-type', 'image/png');
     const second = url.pathname.includes('hero-check-aaaaaaaaaaa1');
@@ -211,6 +231,8 @@ try {
     await publicPerformance(browser, origin, vehicles[0].slug);
   }
   if (heroDeliveryCheck) await heroDelivery(browser, origin);
+  if (slowDeviceCheck) await slowDevices(browser, origin, vehicles[0].slug, photo);
+  if (galleryRotationCheck) await galleryRotation(browser, origin, vehicles[0].slug);
   if (productionCampaignCheck) {
     const response = await fetch(origin);
     const html = await response.text();
@@ -569,6 +591,8 @@ try {
     productionCampaignCheck ||
     performanceCheck ||
     heroDeliveryCheck ||
+    slowDeviceCheck ||
+    galleryRotationCheck ||
     effectsCheck
       ? []
       : streaming
@@ -808,6 +832,8 @@ try {
     !campaignPreview &&
     !performanceCheck &&
     !heroDeliveryCheck &&
+    !slowDeviceCheck &&
+    !galleryRotationCheck &&
     !effectsCheck
   ) {
     console.log(`${results.length} profiles passed; evidence: ${output}`);

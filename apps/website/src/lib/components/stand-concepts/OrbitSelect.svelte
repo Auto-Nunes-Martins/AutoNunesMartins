@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
   import { Check, ChevronDown } from 'lucide-svelte';
   import { brandLogo } from '$lib/brandLogos';
+  import { scrollFrame } from './scrollFrame';
 
   let {
     id,
@@ -48,19 +49,23 @@
     open = false;
   });
 
-  function position() {
+  function measurePosition() {
     const bounds = trigger.getBoundingClientRect();
     const viewport = window.visualViewport;
     const top = viewport?.offsetTop ?? 0;
     const bottom = top + (viewport?.height ?? window.innerHeight);
     const below = bottom - bounds.bottom - 16;
     const over = bounds.top - top - 16;
-    above = below < Math.min(280, options.length * 44 + 12) && over > below;
-    maxHeight = Math.max(44, Math.min(280, above ? over : below));
+    const nextAbove = below < Math.min(280, options.length * 44 + 12) && over > below;
+    const nextHeight = Math.max(44, Math.min(280, nextAbove ? over : below));
+    return () => {
+      above = nextAbove;
+      maxHeight = nextHeight;
+    };
   }
   async function reveal(index = Math.max(0, selected)) {
     if (disabled || !options.length) return;
-    position();
+    measurePosition()();
     active = index;
     open = true;
     await tick();
@@ -146,15 +151,17 @@
     const outside = (event: Event) => {
       if (open && event.target instanceof Node && !root.contains(event.target)) open = false;
     };
-    const reposition = () => {
-      if (open) position();
-    };
+    // Scroll bubbling from the list and viewport resize can arrive in one frame.
+    // Read geometry once with the other scroll actions, before any of them write.
+    const layout = scrollFrame(() => (open ? measurePosition() : undefined));
+    const reposition = () => layout.schedule();
     document.addEventListener('pointerdown', outside);
     document.addEventListener('focusin', outside);
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition, true);
     window.visualViewport?.addEventListener('resize', reposition);
     return () => {
+      layout.cancel();
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('focusin', outside);
       window.removeEventListener('resize', reposition);

@@ -27,6 +27,7 @@ export function publicGalleryPhoto(
   let cancelSeed: (() => void) | undefined;
   let clearPreview: (() => void) | undefined;
   let displayedWidth = 0;
+  let resizeFrame: number | undefined;
   let unsubscribe = session?.subscribe?.(() => void show());
   session?.attach();
 
@@ -186,8 +187,19 @@ export function publicGalleryPhoto(
     renderer?.update({ src: copy.url, onLoading: () => source.onLoading?.(false) });
   }
   function resized() {
-    if (source.fullscreen) void upgrade();
-    else if (session) void show();
+    if (resizeFrame !== undefined) return;
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = undefined;
+      if (!alive) return;
+      if (source.fullscreen) void upgrade();
+      // Mobile browser chrome/keyboard also fires resize. Retained inline photos
+      // need no acquisition or decode unless their useful resolution has grown.
+      else if (
+        session &&
+        (!displayedWidth || !session.width || session.width(source.src) > displayedWidth)
+      )
+        void show();
+    });
   }
   if (typeof window !== 'undefined') window.addEventListener('resize', resized);
   if (typeof window !== 'undefined') window.visualViewport?.addEventListener('resize', resized);
@@ -247,6 +259,7 @@ export function publicGalleryPhoto(
     },
     destroy() {
       alive = false;
+      if (resizeFrame !== undefined) cancelAnimationFrame(resizeFrame);
       revision++;
       clearPreview?.();
       cancelSeed?.();

@@ -1,0 +1,94 @@
+[
+  {
+    "width": 390,
+    "route": "/",
+    "appearance": [
+      {
+        "selector": ".orbit-perspective",
+        "changedRatio": 0
+      },
+      {
+        "selector": ".cabin-reveal",
+        "changedRatio": 0
+      },
+      {
+        "selector": ".visit-invitation",
+        "changedRatio": 0.0002643681400158084
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "route": "/quem-somos",
+    "appearance": [
+      {
+        "selector": ".orbit-perspective",
+        "changedRatio": 0
+      },
+      {
+        "selector": ".timeline",
+        "changedRatio": 0
+      },
+      {
+        "selector": ".approach.frame",
+        "changedRatio": 0
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "route": "/viaturas/hero-check-aaaaaaaaaaa0",
+    "appearance": [
+      {
+        "selector": ".detail-band",
+        "changedRatio": 0
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/",
+    "appearance": [
+      {
+        "selector": ".orbit-perspective",
+        "changedRatio": 0
+      },
+      {
+        "selector": ".cabin-reveal",
+        "changedRatio": 0
+      },
+      {
+        "selector": ".visit-invitation",
+        "changedRatio": 0.00001948051948051948
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/quem-somos",
+    "appearance": [
+      {
+        "selector": ".orbit-perspective",
+        "changedRatio": 0
+      },
+      {
+        "selector": ".timeline",
+        "changedRatio": 0
+      },
+      {
+        "selector": ".approach.frame",
+        "changedRatio": 0
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "route": "/viaturas/hero-check-aaaaaaaaaaa0",
+    "appearance": [
+      {
+        "selector": ".detail-band",
+        "changedRatio": 0
+      }
+    ]
+  }
+]

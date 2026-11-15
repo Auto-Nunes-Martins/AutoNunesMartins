@@ -480,6 +480,52 @@ html:has(dialog.gallery-dialog[open]) {
   position: relative;
   z-index: 2;
 }
+/* On a sideways phone, spend the full safe height on the photograph. Keep the
+   caption and controls in the existing side rail, never over the image. */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .design.orbit .gallery-dialog .viewer-stage {
+    grid-row: 1 / -1;
+  }
+  .design.orbit .gallery-dialog .viewer-heading {
+    grid-column: 2;
+    grid-row: 1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .design.orbit .gallery-dialog .viewer-heading #gallery-caption {
+    flex: none;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 2px;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+  .design.orbit .gallery-dialog .viewer-vehicle-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .design.orbit .gallery-dialog .viewer-photo-position {
+    min-width: 0;
+    text-align: center;
+  }
+  .design.orbit .gallery-dialog .viewer-heading .dialog-close {
+    position: static;
+    order: -1;
+    align-self: center;
+    width: 44px;
+    height: 44px;
+  }
+  .design.orbit .gallery-dialog .viewer-thumbnails {
+    grid-row: 2;
+    min-height: 0;
+    max-height: 100%;
+    margin-top: 0;
+  }
+}
 @starting-style {
   .design.orbit .gallery-dialog[open]::backdrop {
     background-color: rgb(8 8 10 / 0);

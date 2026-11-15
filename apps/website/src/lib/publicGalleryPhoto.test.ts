@@ -25,6 +25,53 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
+
+it('coalesces viewport changes and only rereads inline photos when their resolution grows', async () => {
+  const win = new EventTarget();
+  const viewport = new EventTarget();
+  Object.assign(win, { visualViewport: viewport });
+  vi.stubGlobal('window', win);
+  let frame: FrameRequestCallback | undefined;
+  vi.stubGlobal(
+    'requestAnimationFrame',
+    vi.fn((callback) => {
+      frame = callback;
+      return 1;
+    }),
+  );
+  const cancel = vi.fn();
+  vi.stubGlobal('cancelAnimationFrame', cancel);
+  let width = 800;
+  const session = {
+    attach: vi.fn(),
+    detach: vi.fn(),
+    width: () => width,
+    read: vi.fn().mockResolvedValue({ url: 'blob:copy' }),
+  } as unknown as PublicGallerySession;
+  const action = publicGalleryPhoto(new Image() as unknown as HTMLImageElement, {
+    src: '/photo',
+    session,
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  vi.mocked(session.read).mockClear();
+  win.dispatchEvent(new Event('resize'));
+  viewport.dispatchEvent(new Event('resize'));
+  expect(requestAnimationFrame).toHaveBeenCalledOnce();
+  frame!(0);
+  expect(session.read).not.toHaveBeenCalled();
+  width = 1600;
+  win.dispatchEvent(new Event('resize'));
+  frame!(0);
+  expect(session.read).toHaveBeenCalledOnce();
+  await Promise.resolve();
+  await Promise.resolve();
+  win.dispatchEvent(new Event('resize'));
+  action.destroy();
+  expect(cancel).toHaveBeenCalledWith(1);
+  frame!(0);
+  expect(session.read).toHaveBeenCalledOnce();
+});
 it('finishes a pending base copy when a hidden fullscreen slide becomes active', async () => {
   const node = new Image();
   let resolve!: (copy: { url: string }) => void;
