@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { renderBrandSocialImage, renderSocialPhoto, cachedSocialImage } from './socialImages.js';
 import {
   socialPhotoPosition,
@@ -58,6 +59,10 @@ describe('social main-photo framing', () => {
   });
   it('versions only the approved main photograph and desktop composition, not card/mobile crops', () => {
     const initial = socialPhotoVersion('owner/photo.webp', socialPhotoPosition(framing));
+    const previousRecipe = createHash('sha256')
+      .update(JSON.stringify(['social-main-v1', 'owner/photo.webp', socialPhotoPosition(framing)]))
+      .digest('hex');
+    expect(initial).not.toBe(previousRecipe);
     expect(socialPhotoVersion('owner/other.webp', socialPhotoPosition(framing))).not.toBe(initial);
     expect(
       socialPhotoVersion('owner/photo.webp', socialPhotoPosition({ ...framing, desktop: centre })),
@@ -74,6 +79,45 @@ describe('social main-photo framing', () => {
       zoom: 1,
       fit: 'cover',
     });
+  });
+  it('keeps the same red-and-white brand in the lower-right on light and dark photos', async () => {
+    for (const background of ['#ffffff', '#101112']) {
+      const original = await sharp({
+        create: { width: 1260, height: 900, channels: 3, background },
+      })
+        .png()
+        .toBuffer();
+      const result = await renderSocialPhoto(original, { ...centre, zoom: 2 });
+      const { data, info } = await sharp(result)
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const red = [];
+      for (let i = 0; i < data.length; i += 3) {
+        if (data[i]! > 150 && data[i + 1]! < 100 && data[i + 2]! < 100) {
+          red.push({ x: (i / 3) % info.width, y: Math.floor(i / 3 / info.width) });
+        }
+      }
+      expect(red.length).toBeGreaterThan(2000);
+      expect(red.every(({ x, y }) => x >= 920 && x < 1230 && y >= 745 && y < 870)).toBe(true);
+      expect(
+        Math.max(...red.map(({ x }) => x)) - Math.min(...red.map(({ x }) => x)),
+      ).toBeGreaterThan(270);
+      // Neither the original nor areas away from the brand acquire a new tint.
+      const expected = await pixel(original, 630, 450);
+      const actual = await pixel(result, 630, 450);
+      expect(actual.every((channel, i) => Math.abs(channel - expected[i]!) <= 2)).toBe(true);
+      const corner = await sharp(result)
+        .extract({ left: 1020, top: 790, width: 200, height: 75 })
+        .removeAlpha()
+        .raw()
+        .toBuffer();
+      let white = 0;
+      for (let i = 0; i < corner.length; i += 3) {
+        if (corner[i]! > 240 && corner[i + 1]! > 240 && corner[i + 2]! > 240) white++;
+      }
+      expect(white).toBeGreaterThan(1000);
+    }
   });
 });
 it('shares in-flight rendering, reuses pixels and bounds concurrent unique renders', async () => {

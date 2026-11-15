@@ -18,6 +18,6 @@ export function savedSocialPhotoPosition(value: unknown, path: string) {
 }
 export function socialPhotoVersion(path: string, position: ReturnType<typeof socialPhotoPosition>) {
   return createHash('sha256')
-    .update(JSON.stringify(['social-main-v1', path, position]))
+    .update(JSON.stringify(['social-main-v2-logo', path, position]))
     .digest('hex');
 }

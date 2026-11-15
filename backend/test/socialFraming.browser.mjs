@@ -53,14 +53,23 @@ try {
       // interpolation along the deliberately high-contrast synthetic grid.
       const expected = await sharp(reference).resize(420, 300).removeAlpha().raw().toBuffer();
       const actual = await sharp(rendered).resize(420, 300).removeAlpha().raw().toBuffer();
-      let error = 0;
-      for (let i = 0; i < actual.length; i++) error += Math.abs(actual[i] - expected[i]);
-      const meanError = error / actual.length;
+      // The intentional lower-right brand overlay is checked separately; compare
+      // the photograph outside that corner to the browser's unchanged crop.
+      const inBrandCorner = (i) => (i / 3) % 420 >= 300 && Math.floor(i / 3 / 420) >= 240;
+      let error = 0,
+        samples = 0;
+      for (let i = 0; i < actual.length; i += 3) {
+        if (inBrandCorner(i)) continue;
+        for (let c = 0; c < 3; c++) error += Math.abs(actual[i + c] - expected[i + c]);
+        samples += 3;
+      }
+      const meanError = error / samples;
       // Dark circular landmarks measure the actual placement/scale independently
       // of JPEG and browser interpolation on the white one-pixel grid lines.
       let intersection = 0,
         union = 0;
       for (let i = 0; i < actual.length; i += 3) {
+        if (inBrandCorner(i)) continue;
         const a = actual[i] < 50 && actual[i + 1] < 50 && actual[i + 2] < 50;
         const b = expected[i] < 50 && expected[i + 1] < 50 && expected[i + 2] < 50;
         if (a && b) intersection++;

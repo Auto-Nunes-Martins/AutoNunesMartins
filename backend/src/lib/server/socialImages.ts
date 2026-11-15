@@ -11,6 +11,60 @@ type SocialImage = { buffer: Buffer; etag: string; contentType: string };
 const cache = new Map<string, SocialImage & { until: number }>();
 const pending = new Map<string, Promise<SocialImage | null>>();
 let cachedBytes = 0;
+
+// One rasterised brand overlay per process; no fonts or client-side work.
+// Keep the visible logo 36px from the lower/right edges of the share image.
+let watermark: Promise<{ input: Buffer; left: number; top: number }> | undefined;
+function vehicleWatermark() {
+  return (watermark ??= (async () => {
+    const { data: logo, info } = await sharp(
+      fileURLToPath(new URL('./social/logo.png', import.meta.url)),
+    )
+      .trim()
+      .resize({ width: 300 })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    // A tight shadow follows the lettering, keeping it readable on light paint
+    // or paving without putting a rectangle over the photograph.
+    const shade = Buffer.alloc(logo.length);
+    for (let i = 3; i < logo.length; i += 4) shade[i] = Math.round(logo[i]! * 0.85);
+    const padding = 12;
+    const width = info.width + padding * 2;
+    const height = info.height + padding * 2;
+    const shadow = await sharp(shade, { raw: { ...info, channels: 4 } })
+      .extend({
+        top: padding + 2,
+        bottom: padding - 2,
+        left: padding,
+        right: padding,
+        background: '#00000000',
+      })
+      .blur(2)
+      .png()
+      .toBuffer();
+    const input = await sharp(shadow)
+      .composite([
+        {
+          input: logo,
+          raw: { width: info.width, height: info.height, channels: 4 },
+          left: padding,
+          top: padding,
+        },
+      ])
+      .png()
+      .toBuffer();
+    return {
+      input,
+      left: socialPhotoSize.width - 36 - width + padding,
+      top: socialPhotoSize.height - 36 - height + padding,
+    };
+  })().catch((error) => {
+    watermark = undefined;
+    throw error;
+  }));
+}
+
 export async function cachedSocialImage(key: string, generate: () => Promise<Buffer | null>) {
   const hit = cache.get(key);
   if (hit && hit.until > Date.now()) {
@@ -113,7 +167,10 @@ export async function renderSocialPhoto(input: Buffer, position: PhotoFraming['d
         .png()
         .toBuffer();
   return sharp(background)
-    .composite([{ input: foreground, left: Math.round(left), top: Math.round(top) }])
+    .composite([
+      { input: foreground, left: Math.round(left), top: Math.round(top) },
+      await vehicleWatermark(),
+    ])
     .jpeg({ quality: 84, progressive: true, chromaSubsampling: '4:4:4' })
     .toBuffer();
 }

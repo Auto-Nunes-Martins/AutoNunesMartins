@@ -130,6 +130,14 @@ html:has(dialog.gallery-dialog[open]) {
   cursor: pointer;
   opacity: 0.5;
 }
+/* Slightly smaller than the inline gallery's 112px, 3:2 thumbnails. */
+@media (min-width: 701px) and (pointer: fine) {
+  .design.orbit .gallery-dialog .viewer-thumbnails button {
+    flex-basis: 104px;
+    height: auto;
+    aspect-ratio: 3 / 2;
+  }
+}
 .design.orbit .gallery-dialog .viewer-thumbnails button[aria-pressed='true'] {
   opacity: 1;
 }
