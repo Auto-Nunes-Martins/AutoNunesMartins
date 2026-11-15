@@ -52,7 +52,7 @@
   }
 
   function toggleChip(key: string, value: string, currentValue: string | undefined) {
-    setFilter(key, currentValue === value ? undefined : value);
+    setFilter(key, currentValue === value ? (key === 'status' ? 'ALL' : undefined) : value);
   }
 
   const hasFilters = $derived(
@@ -71,7 +71,7 @@
   );
 
   function clearAll() {
-    navigation.clear();
+    navigation.clear({ status: 'ALL' });
   }
 </script>
 

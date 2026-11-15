@@ -28,7 +28,8 @@ export function vehiclesFilters(url: URL): VehicleListParams {
     brand: sp.get('brand') ?? undefined,
     model: sp.get('model') ?? undefined,
     fuel: pickFuel(sp.get('fuel')),
-    status: pickStatus(sp.get('status')),
+    // ALL records an explicit cleared filter; a fresh visit starts with available stock.
+    status: sp.get('status') === 'ALL' ? undefined : (pickStatus(sp.get('status')) ?? 'AVAILABLE'),
     yearMin: sp.get('yearMin') ? Number(sp.get('yearMin')) : undefined,
     yearMax: sp.get('yearMax') ? Number(sp.get('yearMax')) : undefined,
     mileageMin: sp.get('mileageMin') ? Number(sp.get('mileageMin')) : undefined,

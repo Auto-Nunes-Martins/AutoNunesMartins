@@ -72,4 +72,14 @@ describe('filter navigation', () => {
     expect(mocks.goto).toHaveBeenCalledTimes(1);
     expect(mocks.goto.mock.calls[0]![0]).toBe('/tarefas');
   });
+
+  it('clears vehicle filters explicitly so the available default is not reapplied', () => {
+    url = new URL('https://crm.example/viaturas?status=SOLD&page=3');
+    const filters = filterNavigation(() => url);
+    filters.set('q', 'BMW', true);
+    filters.clear({ status: 'ALL' });
+    vi.advanceTimersByTime(300);
+    expect(mocks.goto).toHaveBeenCalledTimes(1);
+    expect(mocks.goto.mock.calls[0]![0]).toBe('/viaturas?status=ALL');
+  });
 });

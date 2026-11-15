@@ -1,6 +1,7 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
 import { vehiclesApi, type VehicleListParams } from '$lib/server/vehicles';
 import { buildCsv, buildPdfTable } from '$lib/server/exports';
+import { vehiclesFilters } from '$lib/listFilters';
 import type { Fuel, VehicleStatus } from '@anm/types';
 
 const FUEL_LABELS: Record<Fuel, string> = {
@@ -39,20 +40,9 @@ export const GET: RequestHandler = async (event) => {
   const format = sp.get('format') === 'pdf' ? 'pdf' : 'csv';
 
   const params: VehicleListParams = {
-    agedStock: sp.get('agedStock') === 'true' || undefined,
-    brand: sp.get('brand') ?? undefined,
-    model: sp.get('model') ?? undefined,
-    fuel: (sp.get('fuel') as Fuel) ?? undefined,
-    status: (sp.get('status') as VehicleStatus) ?? undefined,
-    yearMin: sp.get('yearMin') ? Number(sp.get('yearMin')) : undefined,
-    yearMax: sp.get('yearMax') ? Number(sp.get('yearMax')) : undefined,
-    mileageMin: sp.get('mileageMin') ? Number(sp.get('mileageMin')) : undefined,
-    mileageMax: sp.get('mileageMax') ? Number(sp.get('mileageMax')) : undefined,
-    q: sp.get('q') ?? undefined,
+    ...vehiclesFilters(event.url),
     page: 1,
     pageSize: 100,
-    sortBy: (sp.get('sortBy') as VehicleListParams['sortBy']) ?? 'createdAt',
-    sortDir: sp.get('sortDir') === 'asc' ? 'asc' : 'desc',
   };
 
   // Page through everything

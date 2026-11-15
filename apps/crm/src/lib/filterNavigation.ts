@@ -42,9 +42,13 @@ export function filterNavigation(currentUrl: () => URL) {
       if (typing && value) timer = setTimeout(() => flush(true), 250);
       else flush(typing);
     },
-    clear() {
+    clear(query: Record<string, string> = {}) {
       cancel();
-      void goto(currentUrl().pathname, { keepFocus: true, noScroll: true });
+      const search = new URLSearchParams(query).toString();
+      void goto(currentUrl().pathname + (search ? `?${search}` : ''), {
+        keepFocus: true,
+        noScroll: true,
+      });
     },
     flush: () => flush(true),
   };

@@ -217,7 +217,7 @@
             : 'Adicione uma viatura para começar a organizar o stock.'}
         >
           {#snippet actions()}
-            {#if filtered}<Button variant="outline" size="md" href={crmPath('/viaturas')}
+            {#if filtered}<Button variant="outline" size="md" href={crmPath('/viaturas?status=ALL')}
                 >Limpar filtros</Button
               >{:else}<Button variant="primary" size="md" href={crmPath('/viaturas/nova')}>
                 <Plus class="h-4 w-4" />

@@ -17,7 +17,7 @@ import { ApiError } from './api';
 import { load as vehiclesLoad } from './listPages/vehicles';
 import { load as activityLoad } from '../../routes/(app)/atividade/+page.server';
 import { load as dashboardLoad } from '../../routes/(app)/dashboard/+page.server';
-const event = { url: new URL('https://crm.example.test/crm/viaturas') } as any;
+const event = { url: new URL('https://crm.example.test/crm/viaturas?status=ALL') } as any;
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.users.mockResolvedValue({ items: [] });
@@ -25,6 +25,19 @@ beforeEach(() => {
   mocks.highlights.mockResolvedValue({ items: [] });
 });
 describe('authenticated load failures remain distinct from empty business data', () => {
+  it('requests only available inventory by default', async () => {
+    mocks.vehicles.mockResolvedValue({ items: [], total: 0 });
+    const initial = { ...event, url: new URL('https://crm.example.test/crm/viaturas') };
+    const result = vehiclesLoad(initial);
+    await result.list;
+    expect(mocks.vehicles).toHaveBeenCalledTimes(1);
+    expect(mocks.vehicles).toHaveBeenCalledWith(
+      initial,
+      expect.objectContaining({ status: 'AVAILABLE' }),
+    );
+    expect(result.filters.status).toBe('AVAILABLE');
+    expect(await result.drafts).toMatchObject({ items: [] });
+  });
   it.each([401, 403, 503])(
     'marks inventory and draft failures with status%s and a safe message',
     async (status) => {

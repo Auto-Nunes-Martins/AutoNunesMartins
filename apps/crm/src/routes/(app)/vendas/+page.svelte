@@ -244,9 +244,7 @@
           {/each}
         </div>
 
-        <!-- Desktop: full table with margin breakdown columns. Mirrors the
-             layout the financeiro/Lucro tab used to show, so margin analysis
-             happens here on the same screen as the rest of the sale data. -->
+        <!-- Desktop: sale amounts, costs and profit alongside delivery details. -->
         <!-- Keyboard access to native horizontal scrolling. -->
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
@@ -330,21 +328,6 @@
                     onclick={() => setSort('realProfit')}
                     aria-label="Ordenar vendas por lucro"
                     >Lucro {sortIndicator('realProfit')}</button
-                  >
-                </th>
-                <th
-                  class="text-right px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-faint)] sortable-heading"
-                  aria-sort={data.filters.sortBy === 'marginPct'
-                    ? data.filters.sortDir === 'asc'
-                      ? 'ascending'
-                      : 'descending'
-                    : undefined}
-                >
-                  <button
-                    type="button"
-                    onclick={() => setSort('marginPct')}
-                    aria-label="Ordenar vendas por margem"
-                    >Margem {sortIndicator('marginPct')}</button
                   >
                 </th>
                 <th
@@ -448,9 +431,6 @@
                   >
                     {formatEUR(s.realProfit)}
                   </td>
-                  <td class="px-4 py-3 num-value text-[13px] text-right">
-                    {s.marginPct.toFixed(1)}%
-                  </td>
                   <td class="px-4 py-3">
                     <StatusBadge status={s.deliveryStatus} />
                   </td>
@@ -492,9 +472,6 @@
                 </td>
                 <td class="px-4 py-3 num-value text-[16px] text-right text-[var(--color-success)]">
                   {formatEUR(list.totals.profit)}
-                </td>
-                <td class="px-4 py-3 num-value text-[13px] text-right">
-                  {list.totals.avgMarginPct.toFixed(1)}%
                 </td>
                 <td></td>
               </tr>
