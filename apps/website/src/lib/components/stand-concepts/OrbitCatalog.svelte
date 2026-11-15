@@ -1,5 +1,6 @@
 <script lang="ts">
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
+  import { catalogSocialImage } from '$lib/socialImages';
   import type { Snippet } from 'svelte';
   import { tick, onDestroy } from 'svelte';
   import { page, navigating } from '$app/stores';
@@ -213,6 +214,9 @@
 <svelte:window onkeydown={closeFilters} />
 
 <SocialMetadata
+  image={catalogSocialImage(seo.brand)}
+  imageType="image/jpeg"
+  imageAlt={`${seo.brand ? seo.brand + ' usados' : 'Encontre o seu próximo carro'} — Auto Nunes Martins`}
   title={`${seo.heading} — Auto Nunes Martins`}
   description={seo.description}
   canonical={seo.canonical}

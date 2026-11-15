@@ -5,10 +5,17 @@ import type { PhotoWidth } from '../lib/server/photoVariants.js';
 import { readPublicHighlights } from '../lib/server/homepageHighlights.js';
 import { Router } from 'express';
 import { z } from 'zod';
+import { registeredBrandSchema } from '@anm/types';
+import {
+  cachedSocialImage,
+  readSocialPhoto,
+  renderBrandSocialImage,
+} from '../lib/server/socialImages.js';
 import { prisma } from '../db.js';
 import { logger } from '../logger.js';
 import {
   getPublicPhotoPath,
+  getPublicSocialPhoto,
   getPublicPhotoVersions,
   getPublicSelection,
   publicPhotoVersion,
@@ -33,6 +40,94 @@ router.use((_req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
 });
+
+router.get(
+  '/social/catalog',
+  asyncHandler(async (req, res) => {
+    const query = z
+      .object({ marca: registeredBrandSchema.optional() })
+      .strict()
+      .safeParse(req.query);
+    if (!query.success) {
+      res.status(400).end();
+      return;
+    }
+    try {
+      const image = await cachedSocialImage(`catalog-v1:${query.data.marca ?? ''}`, () =>
+        renderBrandSocialImage(query.data.marca),
+      );
+      if (!image) {
+        res.status(503).end();
+        return;
+      }
+      res.set({
+        'Content-Type': image.contentType,
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'public, max-age=3600',
+        ETag: image.etag,
+      });
+      if (req.get('if-none-match') === image.etag) {
+        res.status(304).end();
+        return;
+      }
+      res.send(image.buffer);
+    } catch {
+      res.status(503).end();
+    }
+  }),
+);
+
+router.get(
+  '/:slug/social-image',
+  asyncHandler(async (req, res) => {
+    const slug = publicSlugSchema.safeParse(req.params.slug);
+    const query = z
+      .object({
+        v: z
+          .string()
+          .regex(/^[a-f0-9]{64}$/)
+          .optional(),
+      })
+      .strict()
+      .safeParse(req.query);
+    if (!slug.success) {
+      res.status(404).end();
+      return;
+    }
+    if (!query.success) {
+      res.status(400).end();
+      return;
+    }
+    try {
+      const cover = await getPublicSocialPhoto(prisma, slug.data);
+      if (!cover || (query.data.v && query.data.v !== cover.version)) {
+        res.status(404).end();
+        return;
+      }
+      const image = await readSocialPhoto(cover.path, cover.version, cover.position);
+      if (!image) {
+        res.status(404).end();
+        return;
+      }
+      res.set({
+        'Content-Type': image.contentType,
+        'X-Content-Type-Options': 'nosniff',
+        'Cross-Origin-Resource-Policy': 'cross-origin',
+        'Cache-Control': REVALIDATE_PUBLIC_PHOTO,
+        'X-Social-Photo-Version': cover.version,
+        ETag: image.etag,
+      });
+      if (req.get('if-none-match') === image.etag) {
+        res.status(304).end();
+        return;
+      }
+      res.send(image.buffer);
+    } catch {
+      logger.error('Public social photo unavailable');
+      res.status(503).end();
+    }
+  }),
+);
 
 router.get(
   '/',
@@ -119,7 +214,10 @@ router.get(
   '/campaigns',
   asyncHandler(async (_req, res) => {
     try {
-      const vehicles = await withCoverPhotoDimensions(prisma, await listPublicCampaignVehicles(prisma));
+      const vehicles = await withCoverPhotoDimensions(
+        prisma,
+        await listPublicCampaignVehicles(prisma),
+      );
       res.json({
         items: vehicles.filter((vehicle) => vehicle.promotion),
         selection: vehicles.filter((vehicle) => !vehicle.promotion),

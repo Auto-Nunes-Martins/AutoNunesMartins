@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { homepageDescription, homepageSocialImage, vehicleSocialImage } from '$lib/socialImages';
   import {
     sizedPhoto,
     vehiclePhotoSet,
@@ -584,18 +585,17 @@
     title={vehicleSeo(publicVehicle).title}
     description={vehicleSeo(publicVehicle).description}
     canonical={publicVehicleCanonical(publicVehicle, $page.url.origin)}
-    image={publicVehicle.photos.length ? publicPhoto(publicVehicle, 0) : undefined}
-    imageAlt={publicVehicle.photos.length
-      ? `${publicVehicle.brand} ${publicVehicle.model} (${publicVehicle.year}) — fotografia publicada`
-      : undefined}
-    brandImage={!publicVehicle.photos.length}
+    {...vehicleSocialImage(publicVehicle)}
   />
 {:else if !favorites && !compare && !about && !catalog && !privacy && !errorStatus}
   <SocialMetadata
     title={car
       ? `${car.brand} ${car.model} — Auto Nunes Martins`
       : 'Auto Nunes Martins — Automóveis usados'}
-    description="Conheça a Auto Nunes Martins e consulte as viaturas publicadas. Compare preço, ano e quilometragem e contacte-nos para saber mais."
+    description={homepageDescription}
+    image={homepageSocialImage}
+    imageType="image/jpeg"
+    imageAlt="Auto Nunes Martins — O seu próximo carro. Há mais caminho pela frente."
     canonical={new URL(id ? $page.url.pathname : '/', $page.url.origin).href}
   />
 {/if}
@@ -642,10 +642,7 @@
       >{car
         ? `${car.brand} ${car.model} — Auto Nunes Martins`
         : 'Auto Nunes Martins — Automóveis usados'}</title
-    ><meta
-      name="description"
-      content="Conheça a Auto Nunes Martins e consulte as viaturas publicadas. Compare preço, ano e quilometragem e contacte-nos para saber mais."
-    />{/if}
+    ><meta name="description" content={homepageDescription} />{/if}
   {#if id && !favorites && !compare && !about && !catalog && !privacy && !publicVehicle && !errorStatus}<meta
       name="robots"
       content="noindex, follow"

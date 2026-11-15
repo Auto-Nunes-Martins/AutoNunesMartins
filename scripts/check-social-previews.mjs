@@ -7,10 +7,19 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import sharp from 'sharp';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const website = path.join(root, 'apps/website');
 const bytes = await readFile(path.join(website, 'static/images/social/auto-nunes-martins-v1.png'));
+const homeBytes = await readFile(path.join(website, 'static/images/social/homepage-v2.jpg'));
+const framedBytes = await sharp({
+  create: { width: 1260, height: 900, channels: 3, background: '#416f74' },
+})
+  .jpeg()
+  .toBuffer();
+const catalogBytes = await sharp(homeBytes).jpeg().toBuffer();
+const version = 'a'.repeat(64);
 const vehicles = [true, false].map((photo, i) => ({
   slug: `audi-a3-${i ? 'abcdef123457' : 'abcdef123456'}`,
   brand: 'Audi',
@@ -24,6 +33,7 @@ const vehicles = [true, false].map((photo, i) => ({
   transmission: 'MANUAL',
   availability: 'AVAILABLE',
   photos: photo ? ['/api/public/vehicles/audi-a3-abcdef123456/photos/0'] : [],
+  ...(photo ? { socialPhotoVersion: version } : {}),
   // Deliberate extra private field: the public projection must strip it.
   storageSecret: 'PRIVATE-FIXTURE-MUST-NOT-REACH-HTML',
 }));
@@ -39,6 +49,20 @@ const facets = {
 const api = createServer((request, response) => {
   const url = new URL(request.url, 'http://localhost');
   const route = url.pathname.replace('/api/public/vehicles', '');
+  if (route === `/${vehicles[0].slug}/social-image` || route === '/social/catalog') {
+    const photo = route.endsWith('/social-image');
+    if (photo && url.searchParams.get('v') !== version) {
+      response.writeHead(404);
+      response.end();
+      return;
+    }
+    response.writeHead(200, {
+      'content-type': 'image/jpeg',
+      ...(photo ? { 'x-social-photo-version': version } : {}),
+    });
+    response.end(photo ? framedBytes : catalogBytes);
+    return;
+  }
   if (route === `/${vehicles[0].slug}/photos/0`) {
     response.writeHead(200, { 'content-type': 'image/png' });
     response.end(bytes);
@@ -147,21 +171,42 @@ try {
     assert.equal(new URL(one(head, 'og:image')).origin, origin);
     assert.ok(!html.includes('PRIVATE-FIXTURE-MUST-NOT-REACH-HTML'));
     const photo = route === `/viaturas/${vehicles[0].slug}`;
+    const catalog = route === '/viaturas' || route.startsWith('/viaturas?');
+    const expectedBytes = photo
+      ? framedBytes
+      : catalog
+        ? catalogBytes
+        : route === '/'
+          ? homeBytes
+          : bytes;
     if (photo) {
-      assert.equal(one(head, 'og:image'), `${origin}/viaturas/${vehicles[0].slug}/photos/0`);
-      assert.equal(metadata(head, 'og:image:width').length, 0, 'no invented photo dimensions');
+      assert.equal(
+        one(head, 'og:image'),
+        `${origin}/viaturas/${vehicles[0].slug}/social-image?v=${version}`,
+      );
+      assert.equal(one(head, 'og:image:width'), '1260');
+      assert.equal(one(head, 'og:image:height'), '900');
+      assert.equal(one(head, 'og:image:type'), 'image/jpeg');
     } else {
-      assert.equal(one(head, 'og:image'), `${origin}/images/social/auto-nunes-martins-v1.png`);
+      const imagePath = catalog
+        ? `/images/social/catalog-v1.jpg${route.includes('marca=') ? '?marca=Audi' : ''}`
+        : route === '/'
+          ? '/images/social/homepage-v2.jpg'
+          : '/images/social/auto-nunes-martins-v1.png';
+      assert.equal(one(head, 'og:image'), origin + imagePath);
       assert.equal(one(head, 'og:image:width'), '1200');
       assert.equal(one(head, 'og:image:height'), '630');
-      assert.equal(one(head, 'og:image:type'), 'image/png');
+      assert.equal(
+        one(head, 'og:image:type'),
+        catalog || route === '/' ? 'image/jpeg' : 'image/png',
+      );
     }
     if (route.startsWith('/viaturas/audi-')) {
       const ld = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(head)[1]);
       assert.equal(ld.url, one(head, 'og:url'));
       assert.equal(
         ld.image?.[0],
-        photo ? one(head, 'og:image') : undefined,
+        photo ? `${origin}/viaturas/${vehicles[0].slug}/photos/0` : undefined,
         'brand fallback is not a vehicle photograph',
       );
     }
@@ -181,12 +226,21 @@ try {
       headers: { 'user-agent': agents[index % agents.length] },
     });
     assert.equal(image.status, 200);
-    assert.equal(image.headers.get('content-type')?.split(';')[0], 'image/png');
+    assert.equal(image.headers.get('content-type')?.split(';')[0], one(head, 'og:image:type'));
     const actual = Buffer.from(await image.arrayBuffer());
-    assert.deepEqual(actual, bytes);
-    assert.equal(actual.readUInt32BE(16), 1200);
-    assert.equal(actual.readUInt32BE(20), 630);
+    assert.deepEqual(actual, expectedBytes);
+    const dimensions = await sharp(actual).metadata();
+    assert.equal(dimensions.width, Number(one(head, 'og:image:width')));
+    assert.equal(dimensions.height, Number(one(head, 'og:image:height')));
     console.log(`PASS SSR + public image: ${route}`);
+  }
+  for (const route of [
+    `/viaturas/${vehicles[0].slug}/social-image?v=${'b'.repeat(64)}`,
+    '/images/social/catalog-v1.jpg?marca=unknown-brand',
+  ]) {
+    const response = await fetch(origin + route);
+    assert.ok([400, 404].includes(response.status), route);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
   }
   const robots = await (await fetch(`${origin}/robots.txt`)).text();
   assert.ok(robots.includes('Allow: /'));

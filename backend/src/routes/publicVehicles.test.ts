@@ -56,6 +56,7 @@ import {
   webPublicationSchema,
 } from '../lib/domain/publicVehicle.js';
 import { setWebPublication } from '../lib/server/webPublicationService.js';
+import { savedSocialPhotoPosition, socialPhotoVersion } from '../lib/server/socialPhotoIdentity.js';
 import { mutateVehiclePhotos } from '../lib/server/vehiclePhotoService.js';
 
 const id = 'clabcdefghijklmnopqrstuvw';
@@ -98,6 +99,76 @@ const db = mocks.db as unknown as PrismaClient;
 let server: Server;
 let base: string;
 let photoBytes: Buffer;
+
+describe('social preview image boundary', () => {
+  it('renders the approved cover, revalidates cached pixels and invalidates a changed crop', async () => {
+    const url = `${base}/api/public/vehicles/${slug}/social-image`;
+    const version = socialPhotoVersion(photo, savedSocialPhotoPosition({}, photo));
+    const first = await fetch(`${url}?v=${version}`);
+    expect(first.status).toBe(200);
+    expect(first.headers.get('content-type')).toContain('image/jpeg');
+    expect(first.headers.get('cache-control')).toContain('must-revalidate');
+    expect(await sharp(Buffer.from(await first.arrayBuffer())).metadata()).toMatchObject({
+      width: 1260,
+      height: 900,
+    });
+    const etag = first.headers.get('etag')!;
+    const conditional = await fetch(`${url}?v=${version}`, { headers: { 'if-none-match': etag } });
+    expect(conditional.status).toBe(304);
+    mocks.db.vehicle.findFirst.mockResolvedValueOnce({
+      ...fixture(),
+      galleryFraming: { [photo]: { desktop: { x: 50, y: 100 }, mobile: { x: 50, y: 50 } } },
+    });
+    expect((await fetch(`${url}?v=${version}`)).status).toBe(404);
+    mocks.db.vehicle.findFirst.mockResolvedValueOnce(null);
+    const unpublished = await fetch(`${url}?v=${version}`, { headers: { 'if-none-match': etag } });
+    expect(unpublished.status).toBe(404);
+    expect(unpublished.headers.get('cache-control')).toBe('no-store');
+    expect(mocks.db.vehicle.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          webPublished: true,
+          soldDate: null,
+          sale: { is: null },
+          status: { in: ['AVAILABLE', 'RESERVED'] },
+        }),
+      }),
+    );
+  });
+  it('never exposes foreign/unapproved covers and rejects arbitrary processing parameters', async () => {
+    const url = `${base}/api/public/vehicles/${slug}/social-image`;
+    mocks.db.vehicle.findFirst.mockResolvedValueOnce({
+      ...fixture(),
+      photos: ['foreign/private.jpg'],
+    });
+    expect((await fetch(url)).status).toBe(404);
+    for (const query of [
+      '?v=invalid',
+      '?v=' + 'a'.repeat(64) + '&v=' + 'a'.repeat(64),
+      '?w=99999',
+      '?url=https://example.com/private.jpg',
+    ])
+      expect((await fetch(url + query)).status).toBe(400);
+    expect(mocks.download).not.toHaveBeenCalled();
+  });
+  it('limits catalogue artwork to registered brands and supports no-JavaScript callers', async () => {
+    const url = `${base}/api/public/vehicles/social/catalog`;
+    const response = await fetch(`${url}?marca=BMW`, { headers: { 'user-agent': 'WhatsApp/2.0' } });
+    expect(response.status).toBe(200);
+    expect(await sharp(Buffer.from(await response.arrayBuffer())).metadata()).toMatchObject({
+      format: 'jpeg',
+      width: 1200,
+      height: 630,
+    });
+    for (const query of [
+      '?marca=unknown-brand',
+      '?marca=BMW&marca=Audi',
+      '?text=arbitrary',
+      '?modelo=private',
+    ])
+      expect((await fetch(url + query)).status).toBe(400);
+  });
+});
 
 beforeAll(async () => {
   photoBytes = await sharp({
@@ -439,6 +510,7 @@ describe('public HTTP responses never disclose private inventory', () => {
     const body = await response.json();
     expect(body.items[0]).toEqual({
       slug,
+      socialPhotoVersion: socialPhotoVersion(photo, savedSocialPhotoPosition({}, photo)),
       brand: 'BMW',
       model: 'Série 1',
       year: 2019,
@@ -929,9 +1001,7 @@ describe('explicit publication and stable unique slugs', () => {
     expect(webPublicationSchema.safeParse({ ...publication, description: '  ' }).success).toBe(
       false,
     );
-    expect(
-      webPublicationSchema.safeParse({ ...publication, photoPaths: [] }).success,
-    ).toBe(true);
+    expect(webPublicationSchema.safeParse({ ...publication, photoPaths: [] }).success).toBe(true);
     expect(webPublicationSchema.safeParse({ published: true }).success).toBe(false);
     expect(webPublicationSchema.safeParse({ ...publication, price: '0' }).success).toBe(false);
     expect(webPublicationSchema.safeParse({ ...publication, vin: 'SECRET' }).success).toBe(false);

@@ -1,5 +1,63 @@
 # Previews de links públicos
 
+## Atualização — 15 de novembro de 2026
+
+Implementação local, sem alteração das fotografias originais, do CRM ou do desenho
+das páginas. A geração é pedida pelo crawler ao ler a imagem, não durante o
+carregamento normal do site. Não há migração, escrita em base de dados ou upload
+de novas fotografias para Storage.
+
+- Início: composição de marca própria, JPEG 1200 × 630, com o logótipo existente
+  e «O seu próximo carro. Há mais caminho pela frente.». Texto de apresentação
+  mais direto. A imagem estática pesa aproximadamente 55 kB.
+- Catálogo: composição 1200 × 630 com a marca registada da pesquisa (por exemplo,
+  «BMW usados»); pesquisa por modelo mantém a marca na imagem e o modelo no título.
+  Estados vazios e regras de canonical/noindex continuam a ser respeitados.
+- Viatura: preço público no título, ano/quilómetros/combustível na descrição e
+  reserva explícita quando aplicável; preço e quilometragem desconhecidos não são
+  inventados. JSON-LD continua a referir a fotografia original pública.
+- Imagem de viatura: JPEG 1260 × 900 (proporção 1,4 da moldura principal desktop),
+  aplicando posição, zoom e fit guardados para a primeira fotografia pública.
+  Usa a geometria partilhada com o editor e a galeria, incluindo o fundo desfocado
+  quando a fotografia é mostrada inteira. Não usa o enquadramento independente
+  dos cartões nem o mobile: uma imagem de partilha é fixa e não muda ao rodar o ecrã.
+  Não se força 1200 × 630 na viatura, porque isso cortaria uma região diferente.
+- O endereço muda se a foto principal, posição, zoom ou fit desktop mudar.
+  Imagens vindas de versões antigas da API mantêm o fallback anterior, sem
+  anunciar dimensões desconhecidas. Fichas sem foto mantêm a imagem de marca.
+- O endpoint revalida publicação, elegibilidade e pertença antes de servir bytes
+  ou responder 304. Versões antigas de uma foto/enquadramento deixam de ser
+  servidas; respostas de falha usam `no-store`. As plataformas externas podem
+  conservar imagens já descarregadas; não prometemos atualização ou remoção
+  imediata de mensagens antigas.
+- A cache guarda apenas bytes em memória: até 8 MiB, 64 entradas, uma hora, com
+  duas gerações simultâneas e reutilização de pedidos iguais. Pode voltar a gerar
+  após expiração, expulsão ou reinício. A geração tem custo de CPU no servidor;
+  não é trabalho manual, nem processamento no telemóvel do visitante.
+- Inter completa, licença OFL e logótipo acompanham o backend compilado; nenhuma
+  dependência nativa ou fonte de geração entra no JavaScript do navegador.
+
+Validação: 11 páginas SSR e quatro user agents de crawlers, limites e versões das
+imagens, autorização/revogação, desconhecidos/reservas, cache concorrente e
+comparação com CSS no Chrome em 15 combinações de proporções/posição/zoom. Na
+comparação à escala de preview, sobreposição dos elementos de referência ≥ 98%
+e erro médio RGB máximo 3,165/255 (JPEG e interpolação diferentes). Foi também
+inspecionada uma cópia local do BMW do exemplo usando o seu enquadramento público.
+Build do site e backend e verificação Svelte passaram. As verificações locais não
+substituem uma partilha real após publicação; o formato final do cartão pertence
+à aplicação que recebe o link.
+
+Comandos de regressão:
+
+```sh
+node scripts/check-social-previews.mjs
+node --import tsx backend/test/socialFraming.browser.mjs
+npm run test --workspace @anm/backend -- src/lib/server/socialImages.test.ts src/routes/publicVehicles.test.ts
+npm run test --workspace @anm/website -- src/lib/socialImages.test.ts src/lib/server/socialImages.test.ts src/lib/vehicleSeo.test.ts
+```
+
+### Registo original
+
 Implementação e verificação local: 14 de outubro de 2026. Não constitui aprovação de publicação.
 
 ## Cobertura

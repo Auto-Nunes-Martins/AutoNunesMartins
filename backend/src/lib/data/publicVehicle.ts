@@ -2,6 +2,11 @@ import { Prisma, type PrismaClient } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { publicSpecificationsSchema, galleryFramingSchema } from '@anm/types';
 import { orderedPublicPhotos } from '../../../../shared/vehiclePhotoPrincipal.mjs';
+import {
+  savedSocialPhotoPosition,
+  socialPhotoPosition,
+  socialPhotoVersion,
+} from '../server/socialPhotoIdentity.js';
 import { isApprovedPhotoPath, type PublicVehicleQuery } from '../domain/publicVehicle.js';
 import {
   currentCampaign,
@@ -93,7 +98,9 @@ export function approvedPaths(row: Pick<PublicRow, 'id' | 'photos'>): string[] {
 export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
   const referencePrice = campaignComparisonPrice(row.salePrice, promotion);
   const framing = galleryFramingSchema.safeParse(row.galleryFraming).data ?? {};
-  const positions = approvedPaths(row).map((path) => framing[path] ?? null);
+  const paths = approvedPaths(row);
+  const positions = paths.map((path) => framing[path] ?? null);
+  const cover = paths[0];
   if (
     !row.webPublished ||
     !row.publicSlug ||
@@ -104,6 +111,9 @@ export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
   }
   return {
     slug: row.publicSlug,
+    ...(cover
+      ? { socialPhotoVersion: socialPhotoVersion(cover, socialPhotoPosition(framing[cover])) }
+      : {}),
     ...(positions.some(Boolean) ? { galleryFraming: positions } : {}),
     brand: row.brand,
     model: row.model,
@@ -128,7 +138,7 @@ export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
     availability: row.status,
     // Immutable upload identities invalidate browser cache after replacement/reorder.
     // Storage paths/tokens stay private; every request reaching the server checks approval.
-    photos: approvedPaths(row).map(
+    photos: paths.map(
       (path, index) =>
         `/api/public/vehicles/${row.publicSlug}/photos/${index}?v=${publicPhotoVersion(path)}`,
     ),
@@ -415,8 +425,7 @@ export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
         ...new Map(
           [...below, ...above, ...promoted]
             .filter(
-              (row) =>
-                row.id !== current.id && row.salePrice?.isFinite() && row.salePrice.gt(0),
+              (row) => row.id !== current.id && row.salePrice?.isFinite() && row.salePrice.gt(0),
             )
             .map((row) => [row.publicSlug, row]),
         ).values(),
@@ -470,6 +479,18 @@ function currentPublicPhotoPaths(db: PrismaClient, slug: string): Promise<string
 export async function getPublicPhotoPath(db: PrismaClient, slug: string, index: number) {
   const paths = await currentPublicPhotoPaths(db, slug);
   return paths?.[index] ?? null;
+}
+
+/** Fresh approval and crop read even when rendered bytes are already cached. */
+export async function getPublicSocialPhoto(db: PrismaClient, slug: string) {
+  const row = await db.vehicle.findFirst({
+    where: { ...publicVehicleWhere(), publicSlug: slug },
+    select: { id: true, photos: true, galleryFraming: true },
+  });
+  const path = row && approvedPaths(row)[0];
+  if (!path) return null;
+  const position = savedSocialPhotoPosition(row.galleryFraming, path);
+  return { path, position, version: socialPhotoVersion(path, position) };
 }
 
 export const publicPhotoVersion = (path: string) => createHash('sha256').update(path).digest('hex');

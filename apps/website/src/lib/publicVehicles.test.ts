@@ -158,7 +158,8 @@ describe('Public website projection', () => {
       stock,
     );
     expect(seo.heading).toBe('BMW Série 1 usados');
-    expect(seo.description).toContain('Compare preço, ano e quilometragem');
+    expect(seo.description).toContain('Explore BMW Série 1 usados');
+    expect(seo.description).toContain('fotografias, preços e características');
     expect(seo.description).not.toMatch(/\d+ resultado/);
     expect(seo.noindex).toBe(false);
     expect(seo.canonical).toContain('pagina=2');

@@ -52,6 +52,11 @@ export const publicVehicleSchema = z
       .optional()
       .catch(undefined),
     galleryFraming: z.array(galleryPhotoFramingSchema.nullable()).max(20).optional(),
+    socialPhotoVersion: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional()
+      .catch(undefined),
     // Optional during rolling deployment/backfill. Never trust a dimension for another version.
     coverPhotoDimensions: z
       .object({
@@ -237,7 +242,7 @@ export function publicCatalogSeo(params: URLSearchParams, origin: string, stock:
         ? 'Consulte o catálogo de viaturas usadas da Auto Nunes Martins ou contacte-nos para esclarecer a sua pesquisa.'
         : stock.catalog.total === 0
           ? 'Não há viaturas para esta pesquisa. Ajuste os filtros ou explore o catálogo de usados da Auto Nunes Martins.'
-          : `${heading}. Compare preço, ano e quilometragem na Auto Nunes Martins e conheça os detalhes de cada viatura.`,
+          : `${label ? `Explore ${label} usados` : 'Encontre o seu próximo carro'} na Auto Nunes Martins. Veja fotografias, preços e características das viaturas disponíveis.`,
     contextual: label
       ? `Explore ${label} nesta seleção de viaturas publicadas. Compare os dados de cada ficha e confirme connosco o histórico e as condições antes de decidir.`
       : '',
