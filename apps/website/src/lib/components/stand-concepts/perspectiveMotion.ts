@@ -8,6 +8,16 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let nearby = false;
   let settledEndpoint: number | undefined;
+  let geometry:
+    | {
+        width: number;
+        height: number;
+        line: DOMRect;
+        fragments: DOMRect[];
+        top: number;
+        left: number;
+      }
+    | undefined;
   const smooth = (value: number) => {
     const p = Math.min(1, Math.max(0, value));
     return p * p * (3 - 2 * p);
@@ -21,21 +31,39 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
       ? Math.min(viewportJourney, Math.max(0, window.scrollY) / (innerHeight * 0.84))
       : viewportJourney;
     const progress = smooth(journey);
-    // End both the line and its trailing light together, including subpixel tails.
-    const lightProgress =
-      requireScroll && window.innerWidth <= 700 && (progress === 0 || progress === 1)
-        ? progress
-        : smooth(journey - 25 / (innerHeight * 0.84));
+    // Keep the same trailing-light timing on touch screens and desktop.
+    const lightProgress = smooth(journey - 25 / (innerHeight * 0.84));
     const endpoint =
       progress === lightProgress && (progress === 0 || progress === 1) ? progress : undefined;
     // Once both effects are invisible, only the heading position can bring them back.
     if (endpoint !== undefined && endpoint === settledEndpoint) return;
-    const line = lineWindow.getBoundingClientRect();
+    // These headings translate with the document; their internal layout does not
+    // animate. Reuse that layout through scrolling, invalidating for wrapping,
+    // fonts or content changes. Only one viewport measurement is needed per frame.
+    if (!geometry || geometry.width !== bounds.width || geometry.height !== bounds.height) {
+      geometry = {
+        width: bounds.width,
+        height: bounds.height,
+        top: bounds.top,
+        left: bounds.left,
+        line: lineWindow.getBoundingClientRect(),
+        fragments: fragments.map((fragment) => fragment.getBoundingClientRect()),
+      };
+    }
+    const dx = bounds.left - geometry.left;
+    const dy = bounds.top - geometry.top;
+    const line = {
+      left: geometry.line.left + dx,
+      right: geometry.line.right + dx,
+      bottom: geometry.line.bottom + dy,
+      width: geometry.line.width,
+      height: geometry.line.height,
+    };
     const light = smooth(lightProgress / 0.3) * (1 - smooth((lightProgress - 0.72) / 0.28));
     const segmentStart = line.left + Math.max(0, lightProgress * 2 - 1) * line.width;
     const segmentEnd = line.left + Math.min(1, lightProgress * 2) * line.width;
     const accent = smooth((segmentEnd - segmentStart) / 20);
-    const rects = fragments.map((fragment) => fragment.getBoundingClientRect());
+    const rects = geometry.fragments.map((rect) => ({ left: rect.left + dx, top: rect.top + dy }));
     const textLeft = rects[fragments.indexOf(underline)]!.left;
     return () => {
       settledEndpoint = endpoint;
@@ -82,10 +110,14 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
   proximity.observe(heading);
   const remeasure = () => {
     settledEndpoint = undefined;
+    geometry = undefined;
     schedule();
   };
   const resize = new ResizeObserver(remeasure);
   resize.observe(heading);
+  const content = new MutationObserver(remeasure);
+  content.observe(heading, { childList: true, characterData: true, subtree: true });
+  document.fonts?.addEventListener('loadingdone', remeasure);
   window.addEventListener('scroll', schedule, { passive: true });
   window.addEventListener('resize', remeasure);
   document.addEventListener('visibilitychange', schedule);
@@ -94,6 +126,8 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
   return () => {
     draw.cancel();
     resize.disconnect();
+    content.disconnect();
+    document.fonts?.removeEventListener('loadingdone', remeasure);
     proximity.disconnect();
     window.removeEventListener('scroll', schedule);
     window.removeEventListener('resize', remeasure);

@@ -15,7 +15,7 @@ const jobs = [
   [
     'forest-wide',
     'forest-ribbon-5472.webp',
-    [1280, 1920, 2304, 2560, 2688, 2880, 3072, 3840, 4096, 5472],
+    [1280, 1600, 1920, 2304, 2560, 2688, 2880, 3072, 3840, 4096, 5472],
   ],
   // Intermediate mobile densities should not jump straight from 1280 to 1920.
   // Keep the original framing/encoding quality and let sizes + DPR select the source.

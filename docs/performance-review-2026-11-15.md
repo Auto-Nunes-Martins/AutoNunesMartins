@@ -71,3 +71,60 @@ node --test deployment/*.test.mjs
 ```
 
 `PERFORMANCE_ROUTES` e `PERFORMANCE_OUTPUT` limitam rotas/destino das medições públicas. `CRM_ROUTES` e `CRM_ALL_THEMES=1` permitem focar a matriz do CRM. Os relatórios detalhados locais estão em `.cache/performance-*`; capturas da homepage em `apps/website/.svelte-kit/hero-*` e do CRM em `.cache/crm-review`. Nenhum destes testes grava dados de negócio.
+
+## Seguimento dos relatórios Lighthouse enviados pelo proprietário
+
+Referência deste seguimento: `f2c9c42`. Os dois JSONs Lighthouse 13.5.0, recolhidos em 15/11/2026 cerca das 16:23 UTC, identificam os modos em `configSettings.formFactor`:
+
+| Métrica     | Mobile | Desktop |
+| ----------- | -----: | ------: |
+| Performance |     70 |      91 |
+| FCP         | 2,51 s |  0,68 s |
+| LCP         | 6,67 s |  1,97 s |
+| TBT         | 202 ms |   23 ms |
+| CLS         |      0 |       0 |
+
+O LCP é a floresta do header em ambos. As durações acima são simuladas pelo Lighthouse; não devem ser somadas aos tempos observados do detalhe de rede. Os ficheiros enviados não contêm dados de INP de utilizadores reais.
+
+### Ajustes aplicados
+
+- Corrigida a estimativa de tamanho das imagens mobile para o header compacto atual. Mantêm-se o recorte aprovado, a posição, o zoom inicial de 1,055, a seleção nativa por DPR e os mesmos derivados existentes. O preload e o `picture` usam a mesma constante. Não se alteram masters, receitas de compressão nem fotografias das viaturas.
+- Acrescentado um derivado desktop de 1600 px, entre 1280 e 1920, em AVIF e WebP, com a receita já existente (AVIF 55/effort 5/4:2:0; WebP 88). Evita o salto para 1920 em ecrãs que precisam de aproximadamente 1500–1600 píxeis úteis. Os derivados maiores continuam disponíveis.
+- Nas ofertas mobile, repostos os quatro brilhos do sublinhado do desktop, removido o atraso adicional de 90 ms e conservado o percurso da luz sobre as letras. Continua sem aparecer uma linha residual nos extremos nem brilho no topo da página. A palavra “Oferta(s)” continua sem iluminação; deixou também de receber cálculos de luz que já não eram usados pelo seu CSS.
+- Nos títulos animados, reutilizada a geometria interna durante o scroll. Mudanças de tamanho, quebra de linha, fontes ou conteúdo invalidam essa medição. A sequência partilhada continua a ler antes de escrever. No CTA “Ver todas as viaturas”, uma frame pendente é cancelada ao sair de vista e o efeito é reconciliado ao voltar a um separador visível.
+
+### Transferência da imagem do header
+
+Comparação local com cache nova e o mesmo stock sintético, não comparação de notas Lighthouse. Bytes do corpo AVIF selecionado pelo browser. Nos perfis alterados, a densidade cobre o DPR e o zoom inicial; o perfil 430 px/DPR 3 mantém exatamente o mesmo maior derivado, já limitado pela resolução original.
+
+| Ecrã / DPR    |     Antes |  Depois | Redução |
+| ------------- | --------: | ------: | ------: |
+| 320×568 / 2   |   709 706 | 471 552 |   33,6% |
+| 375×667 / 2   |   761 369 | 471 552 |   38,1% |
+| 390×844 / 2   |   629 597 | 485 992 |   22,8% |
+| 412×823 / 1,5 |   389 937 | 282 360 |   27,6% |
+| 540×720 / 2   | 1 032 606 | 709 706 |   31,3% |
+| 1440×900 / 1  |   580 646 | 410 547 |   29,3% |
+
+Também verificados 430×932, 700×950, 701×950, 1050×900, 1564×917 e 1920×1080. Quando o tamanho necessário não muda de candidato, não há redução de bytes. As imagens renderizadas foram comparadas no enquadramento real e em recortes de detalhe. Derivados de resoluções diferentes não têm píxeis idênticos; não se mudou composição, luminosidade, filtros ou parâmetros de qualidade.
+
+### Verificação e limites deste seguimento
+
+- Build público concluído; Svelte/TypeScript sem erros nem avisos; 921 testes aprovados.
+- Sublinhados das ofertas, “Ver todas as viaturas”, “fazer sentido” e da mensagem de confiança em Quem Somos: brilho, geometria, scroll, hover, swipe e movimento reduzido verificados na compilação de produção em 390, 700, 701 e 1440 px. Capturas locais guardadas em `.cache/underline-review-*`.
+- As verificações acima também concluíram em WebKit 26.4 para Windows. O processo de teste ficou preso ao encerrar depois de imprimir os quatro resultados; foram terminados apenas esse processo e o seu servidor isolado. Não é uma verificação num iPhone físico.
+- 16 perfis de fontes/reload/movimento reduzido e cinco de HTML/CSS progressivos continuam estáveis.
+- Homepage e Quem Somos: CLS observado de zero em 390 e 1440 px; sem erros de execução, com CPU 4× no mobile. Rede local, sem simular a rede de produção.
+- O script Cookiebot mantém a ordem necessária ao bloqueio automático. A documentação do fornecedor exige que este modo seja carregado antes dos outros scripts e sem `async`/`defer`: [funcionamento do bloqueio automático](https://support.cookiebot.com/hc/en-us/articles/11438730619804-How-does-auto-blocking-work). Não se trocou consentimento por uma melhoria artificial da pontuação.
+
+A comparação não atribui uma nova nota de produção nem garante um ganho global de LCP/INP. Depois do deploy, é necessário repetir os dois relatórios nas mesmas condições. Este seguimento não altera o CRM nem as otimizações anteriormente publicadas.
+
+Repetir os testes adicionais a partir de `apps/website`:
+
+```powershell
+node test/heroLayout.browser.mjs --hero-delivery
+node test/heroLayout.browser.mjs --production-effects
+node test/heroLayout.browser.mjs --production-effects --webkit
+```
+
+O último comando requer o browser WebKit do Playwright instalado. `HERO_DELIVERY_OUTPUT` escolhe um diretório novo para medições e capturas; `HERO_DELIVERY_BASELINE` aceita um `results.json` anterior para comparar o enquadramento na mesma página.

@@ -14,16 +14,21 @@ import { progressiveHero } from './progressiveHero.mjs';
 import { captureCarouselFrames, publicMotionCheck } from './publicMotionCheck.mjs';
 import { mobileCampaignEffects } from './mobileCampaignEffects.mjs';
 import { publicPerformance } from './publicPerformance.mjs';
+import { heroDelivery } from './heroDelivery.mjs';
 
 const site = fileURLToPath(new URL('../', import.meta.url));
 const streaming = process.argv.includes('--stream');
 const interactions = process.argv.includes('--interactions');
 const readingProfile = process.argv.includes('--reading-profile');
 const cardPromotionPreview = process.argv.includes('--card-promotion-preview');
-const effectsCheck = process.argv.includes('--mobile-effects');
+const effectsCheck =
+  process.argv.includes('--mobile-effects') || process.argv.includes('--production-effects');
 const performanceCheck = process.argv.includes('--performance');
+const heroDeliveryCheck = process.argv.includes('--hero-delivery');
 const campaignPreview =
-  process.argv.includes('--campaign-preview') || cardPromotionPreview || effectsCheck;
+  process.argv.includes('--campaign-preview') ||
+  cardPromotionPreview ||
+  process.argv.includes('--mobile-effects');
 const productionCampaignCheck = process.argv.includes('--production-campaigns');
 const output = path.join(
   site,
@@ -73,7 +78,7 @@ const vehicles = (
     `/api/public/vehicles/hero-check-${String(n).padStart(12, 'a')}/photos/0?v=${String(n + 1).repeat(64)}`,
   ],
 }));
-let showCampaigns = campaignPreview || productionCampaignCheck || performanceCheck;
+let showCampaigns = campaignPreview || productionCampaignCheck || performanceCheck || effectsCheck;
 let campaignRequests = 0;
 const promoted = [
   {
@@ -205,6 +210,7 @@ try {
   if (performanceCheck) {
     await publicPerformance(browser, origin, vehicles[0].slug);
   }
+  if (heroDeliveryCheck) await heroDelivery(browser, origin);
   if (productionCampaignCheck) {
     const response = await fetch(origin);
     const html = await response.text();
@@ -557,7 +563,13 @@ try {
   }
   if (streaming) progressive = await progressiveHero(origin);
   const profiles =
-    interactions || readingProfile || campaignPreview || productionCampaignCheck || performanceCheck
+    interactions ||
+    readingProfile ||
+    campaignPreview ||
+    productionCampaignCheck ||
+    performanceCheck ||
+    heroDeliveryCheck ||
+    effectsCheck
       ? []
       : streaming
         ? [
@@ -791,7 +803,13 @@ try {
       await context.close();
     }
   }
-  if (!interactions && !campaignPreview && !performanceCheck) {
+  if (
+    !interactions &&
+    !campaignPreview &&
+    !performanceCheck &&
+    !heroDeliveryCheck &&
+    !effectsCheck
+  ) {
     console.log(`${results.length} profiles passed; evidence: ${output}`);
   }
 } finally {

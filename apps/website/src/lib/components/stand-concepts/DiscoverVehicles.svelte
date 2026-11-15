@@ -65,7 +65,7 @@
       driftPaused = !inView || document.hidden;
     };
     const scrollTask = createScrollFrame(() => {
-      if (!scrollDriven || reduced) return;
+      if (!scrollDriven || reduced || !inView || document.hidden) return;
       // Same viewport journey and 25px text-light lag as “fazer sentido”.
       const nextLight = scrollAccent(
         heading.getBoundingClientRect().top,
@@ -94,7 +94,7 @@
     const observer = new IntersectionObserver(([entry]) => {
       inView = entry?.isIntersecting ?? false;
       updateDrift();
-      if (inView) schedule();
+      schedule();
     });
     observer.observe(element);
     const resize = new ResizeObserver(schedule);
@@ -102,7 +102,11 @@
     update();
     media.addEventListener('change', update);
     scrollInput.addEventListener('change', update);
-    document.addEventListener('visibilitychange', updateDrift);
+    const visibility = () => {
+      updateDrift();
+      schedule();
+    };
+    document.addEventListener('visibilitychange', visibility);
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
     return () => {
@@ -113,7 +117,7 @@
       resize.disconnect();
       media.removeEventListener('change', update);
       scrollInput.removeEventListener('change', update);
-      document.removeEventListener('visibilitychange', updateDrift);
+      document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
     };

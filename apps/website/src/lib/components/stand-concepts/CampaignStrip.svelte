@@ -1,13 +1,7 @@
 <script lang="ts">
   import PromotionRibbonFabric from './PromotionRibbonFabric.svelte';
   import { onMount } from 'svelte';
-  import {
-    ArrowLeft,
-    ArrowRight,
-    ArrowUpRight,
-    TicketPercent,
-    Sparkles,
-  } from 'lucide-svelte';
+  import { ArrowLeft, ArrowRight, ArrowUpRight, TicketPercent, Sparkles } from 'lucide-svelte';
   import { campaignFraming, photoFraming } from '@anm/types';
   import { catalogPlaceholder } from '$lib/localAssets';
   import {
@@ -230,7 +224,7 @@
     <div class="campaign-inner" class:three-offers={offers.length === 3}>
       <div class="campaign-intro">
         <h2 id="campaign-heading">
-          <span class="sr-only">Campanhas. </span><span class="campaign-heading-lead read-a"
+          <span class="sr-only">Campanhas. </span><span class="campaign-heading-lead"
             >{offers.length === 1 ? 'Oferta' : 'Ofertas'}</span
           >
           <span class="campaign-offer-phrase"
@@ -283,8 +277,12 @@
                       : offers.length === 3
                         ? '(max-width: 700px) 82vw, (max-width: 1100px) 46vw, 32vw'
                         : '(max-width: 700px) 82vw, (max-width: 1100px) 46vw, 23vw'}
-                  style:--photo-desktop={framing ? `${framing.desktop.x}% ${framing.desktop.y}%` : undefined}
-                  style:--photo-mobile={framing ? `${framing.mobile.x}% ${framing.mobile.y}%` : undefined}
+                  style:--photo-desktop={framing
+                    ? `${framing.desktop.x}% ${framing.desktop.y}%`
+                    : undefined}
+                  style:--photo-mobile={framing
+                    ? `${framing.mobile.x}% ${framing.mobile.y}%`
+                    : undefined}
                   use:photoFraming={{
                     framing: framing ?? undefined,
                     defaultFit: 'cover',
@@ -373,7 +371,10 @@
               <div class="ticker-group">
                 {#each [0, 1, 2, 3, 4, 5, 6, 7] as item}
                   <span
-                    >Viaturas com desconto <ArrowUpRight size={18} strokeWidth={1.5} />{@render tickerAsterisk()}
+                    >Viaturas com desconto <ArrowUpRight
+                      size={18}
+                      strokeWidth={1.5}
+                    />{@render tickerAsterisk()}
                     Campanhas por tempo limitado {@render tickerAsterisk()}</span
                   >
                 {/each}
@@ -2029,15 +2030,8 @@
   }
   @media (max-width: 700px) and (prefers-reduced-motion: no-preference) {
     .line-window {
-      /* Avoid repainting a filtered clipping surface on every touch-scroll step. */
-      filter: none;
+      /* Keep the desktop aura; suppress only subpixel tails at the endpoints. */
       opacity: var(--line-visible, 0);
-    }
-    .travelling-line {
-      transform: translate3d(calc((var(--line-progress, 0) * 2 - 1) * 100%), 0, 0);
-      transition: transform 90ms linear;
-      will-change: transform;
-      box-shadow: 0 0 4px var(--red);
     }
   }
   .campaign-copy {
@@ -3756,7 +3750,9 @@
     gap: 6px;
   }
   .campaign-rail:is(.three, .four):not(.single):not(.pair) .countdown,
-  :global(html[data-theme='light']) .campaign-rail:is(.three, .four):not(.single):not(.pair) .countdown {
+  :global(html[data-theme='light'])
+    .campaign-rail:is(.three, .four):not(.single):not(.pair)
+    .countdown {
     padding-top: 8px;
     gap: 6px;
   }
@@ -3838,7 +3834,9 @@
     gap: 3px;
   }
   .campaign-rail:is(.three, .four):not(.single):not(.pair) .countdown,
-  :global(html[data-theme='light']) .campaign-rail:is(.three, .four):not(.single):not(.pair) .countdown {
+  :global(html[data-theme='light'])
+    .campaign-rail:is(.three, .four):not(.single):not(.pair)
+    .countdown {
     padding-top: 6px;
     gap: 4px;
   }
@@ -3857,7 +3855,9 @@
     font-size: calc(clamp(30px, 15cqw, 48px) - 3px);
   }
   @media (max-width: 1199px) {
-    .campaign-rail.pair .now > strong { font-size: 29px; }
+    .campaign-rail.pair .now > strong {
+      font-size: 29px;
+    }
   }
   @media (max-width: 700px) {
     .campaign-rail:is(.three, .four) .now > strong {

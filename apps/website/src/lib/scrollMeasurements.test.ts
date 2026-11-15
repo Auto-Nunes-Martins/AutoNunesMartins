@@ -172,7 +172,7 @@ function perspective() {
       selector === 'h2' ? heading : selector === 'em' ? underline : line,
     querySelectorAll: () => fragments,
   };
-  return { section: section as unknown as HTMLElement, heading, headingBounds, line };
+  return { section: section as unknown as HTMLElement, heading, headingBounds, line, fragments };
 }
 
 it('coordinates text and notification measurements before either writes its visual state', () => {
@@ -192,7 +192,7 @@ it('coordinates text and notification measurements before either writes its visu
   calls.length = 0;
   view.heading.getBoundingClientRect.mockImplementation(() => {
     calls.push('read heading');
-    return { top: 200 } as DOMRect;
+    return { top: 200, left: 10, width: 100, height: 20 } as DOMRect;
   });
   scroll();
   positioning.schedule();
@@ -229,7 +229,7 @@ it('skips fragment geometry at invisible endpoints but remeasures after resize o
   view.headingBounds.top = -900;
   view.heading.getBoundingClientRect.mockImplementation(() => {
     calls.push('read heading');
-    return { ...view.headingBounds } as DOMRect;
+    return { left: 10, width: 100, height: 20, ...view.headingBounds } as DOMRect;
   });
   cleanup.push(perspectiveMotion(view.section));
   intersections[0]!.callback(
@@ -248,7 +248,7 @@ it('skips fragment geometry at invisible endpoints but remeasures after resize o
   view.headingBounds.top = 350;
   scroll();
   advance();
-  expect(calls).toContain('read line');
+  expect(calls.filter((value) => value.startsWith('read'))).toEqual(['read heading']);
   expect(Number(view.heading.style.getPropertyValue('--line-progress'))).toBeLessThan(1);
 });
 
@@ -394,11 +394,12 @@ it('keeps campaign light off at the page top and scopes updates to the heading',
   expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
 });
 
-it('removes mobile campaign line fragments and trailing light at both endpoints', () => {
+it('preserves the desktop trailing light on mobile and removes subpixel line remnants', () => {
   const view = perspective();
   Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
   Object.defineProperty(window, 'scrollY', { value: 800, writable: true, configurable: true });
-  view.heading.getBoundingClientRect.mockReturnValue({ top: 64 } as DOMRect);
+  const rect = { left: 10, width: 100, height: 20 };
+  view.heading.getBoundingClientRect.mockReturnValue({ ...rect, top: 64 } as DOMRect);
   cleanup.push(perspectiveMotion(view.section, true));
   intersections[0]!.callback(
     [{ isIntersecting: true } as IntersectionObserverEntry],
@@ -406,9 +407,13 @@ it('removes mobile campaign line fragments and trailing light at both endpoints'
   );
   advance();
   expect(view.heading.style.getPropertyValue('--line-progress')).toBe('1');
-  expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
+  expect(Number(view.heading.style.getPropertyValue('--accent-light'))).toBeGreaterThan(0);
   expect(view.line.style.getPropertyValue('--line-visible')).toBe('0');
-  view.heading.getBoundingClientRect.mockReturnValue({ top: 400 } as DOMRect);
+  view.heading.getBoundingClientRect.mockReturnValue({ ...rect, top: 39 } as DOMRect);
+  scroll();
+  advance();
+  expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
+  view.heading.getBoundingClientRect.mockReturnValue({ ...rect, top: 400 } as DOMRect);
   scroll();
   advance();
   expect(view.line.style.getPropertyValue('--line-visible')).toBe('0.95');
@@ -417,4 +422,34 @@ it('removes mobile campaign line fragments and trailing light at both endpoints'
   advance();
   expect(view.line.style.getPropertyValue('--line-visible')).toBe('0');
   expect(view.heading.style.getPropertyValue('--accent-light')).toBe('0');
+});
+
+it('reuses internal text geometry during scroll and refreshes it when text wraps', () => {
+  const view = perspective();
+  const rect = { left: 10, top: 400, width: 100, height: 20 };
+  view.heading.getBoundingClientRect.mockImplementation(() => {
+    calls.push('read heading');
+    return { ...rect } as DOMRect;
+  });
+  cleanup.push(perspectiveMotion(view.section));
+  intersections[0]!.callback(
+    [{ isIntersecting: true } as IntersectionObserverEntry],
+    {} as IntersectionObserver,
+  );
+  advance();
+  const before = Number.parseFloat(view.fragments[0]!.style.getPropertyValue('--tip-y'));
+  calls.length = 0;
+  rect.top -= 40;
+  scroll();
+  advance();
+  expect(calls.filter((value) => value.startsWith('read'))).toEqual(['read heading']);
+  // Both text and line moved up with the document; their local vertical relationship is unchanged.
+  expect(Number.parseFloat(view.fragments[0]!.style.getPropertyValue('--tip-y'))).toBeCloseTo(
+    before,
+  );
+  calls.length = 0;
+  rect.height = 40;
+  scroll();
+  advance();
+  expect(calls).toContain('read line');
 });
