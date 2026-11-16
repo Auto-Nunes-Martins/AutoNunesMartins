@@ -1,6 +1,8 @@
 import { photoGeometry, type PhotoFraming } from '@anm/types';
 
-/** Use the same fit, zoom and focal position as the shared framing editor. */
+// Fill only when at least 85% of the photo remains visible along each axis.
+const minimumVisibleFraction = 0.85;
+
 export function dashboardPhotoGeometry(
   image: { width: number; height: number },
   frame: { width: number; height: number },
@@ -8,7 +10,22 @@ export function dashboardPhotoGeometry(
   framing?: PhotoFraming,
 ) {
   const position = framing?.[mobile ? 'mobile' : 'desktop'] ?? { x: 50, y: 50 };
-  return photoGeometry(image, frame, position);
+  if (image.height > image.width || position.fit === 'contain') {
+    return photoGeometry(image, frame, {
+      ...position,
+      fit: position.fit === 'contain' ? 'contain' : 'auto',
+      zoom: 1,
+    });
+  }
+
+  const cover = photoGeometry(image, frame, { ...position, fit: 'cover', zoom: 1 });
+  if (!cover) return;
+  const visibleFraction = Math.min(frame.width / cover.width, frame.height / cover.height);
+  if (visibleFraction < minimumVisibleFraction) {
+    return photoGeometry(image, frame, { ...position, fit: 'contain', zoom: 1 });
+  }
+  const zoom = Math.min(position.zoom ?? 1, visibleFraction / minimumVisibleFraction);
+  return photoGeometry(image, frame, { ...position, fit: 'cover', zoom });
 }
 /** Recompute after decoding and when the photo panel resizes. */
 export function dashboardPhotoFraming(
@@ -29,11 +46,7 @@ export function dashboardPhotoFraming(
     for (const key of ['width', 'height', 'left', 'top'] as const)
       node.style[key] = `${geometry[key]}px`;
     if (options.active) {
-      const fills =
-        geometry.width >= parent.clientWidth - 1 &&
-        geometry.height >= parent.clientHeight - 1 &&
-        geometry.left <= 1 &&
-        geometry.top <= 1;
+      const fills = !geometry.backdrop;
       parent.dataset.dashboardFit = fills ? 'fill' : 'safe';
       // Reuse the decoded responsive variant, never request a separate master/backdrop URL.
       parent.style.setProperty(

@@ -30,15 +30,15 @@ describe('dashboard shared framing', () => {
     expect(mobile.left).toBeCloseTo((346 - mobile.width) * 0.75);
     expect(JSON.stringify(automatic)).toBe(before);
   });
-  it('honours explicit fill and zoom for a portrait while preserving both device settings', () => {
+  it('keeps a portrait fully visible even when the saved crop requests fill and zoom', () => {
     const image = { width: 800, height: 1067 },
       frame = { width: 683, height: 588 };
     const custom = { desktop: { x: 25, y: 75, zoom: 1.5, fit: 'cover' as const }, mobile: { x: 70, y: 50, fit: 'contain' as const } };
     const result = dashboardPhotoGeometry(image, frame, false, custom)!;
-    expect(result.width).toBeCloseTo(frame.width * 1.5);
-    expect(result.top).toBeCloseTo((frame.height - result.height) * 0.75);
+    expect(result.width).toBeCloseTo((frame.height * image.width) / image.height);
+    expect(result.top).toBeCloseTo(0);
     expect(result.left).toBeCloseTo((frame.width - result.width) * 0.25);
-    expect(result.backdrop).toBe(false);
+    expect(result.backdrop).toBe(true);
     const mobile = dashboardPhotoGeometry(image, frame, true, custom)!;
     expect(mobile.height).toBeCloseTo(frame.height);
     expect(mobile.backdrop).toBe(true);
@@ -55,8 +55,8 @@ describe('dashboard shared framing', () => {
           expect([result.width, result.height, result.scale, result.left, result.top].every(Number.isFinite)).toBe(true);
           expect(result.width / result.height).toBeCloseTo(image.width / image.height);
           expect(result.scale).toBeGreaterThan(0);
-          const fillScale = Math.max(600 / image.width, 400 / image.height);
-          expect(result.scale).toBe(fillScale);
+          expect(result.scale).toBe(Math.min(600 / image.width, 400 / image.height));
+          expect(result.backdrop).toBe(true);
         }
     expect(
       dashboardPhotoGeometry({ width: 0, height: 1000 }, { width: 600, height: 400 }, false),
@@ -106,15 +106,26 @@ describe('dashboard shared framing', () => {
     )!;
     expect(close.width).toBeGreaterThanOrEqual(346);
     expect(close.height).toBeGreaterThanOrEqual(280);
-    // A wider landscape photo still fills the panel and uses the saved focal point.
+    // A wider landscape photo uses the backdrop when filling would crop too much.
     const different = dashboardPhotoGeometry(
       { width: 1600, height: 900 },
       { width: 346, height: 280 },
       true,
       framing,
     )!;
-    expect(different.width).toBeCloseTo(1600 * (280 / 900));
-    expect(different.height).toBeCloseTo(280);
-    expect(different.left).toBeCloseTo((346 - different.width) * 0.75);
+    expect(different.width).toBeCloseTo(346);
+    expect(different.height).toBeCloseTo(346 * (900 / 1600));
+    expect(different.backdrop).toBe(true);
+  });
+
+  it('limits saved zoom on landscape photos that can fill the frame', () => {
+    const result = dashboardPhotoGeometry({ width: 1200, height: 800 }, { width: 600, height: 400 }, false, {
+      desktop: { ...framing.desktop, zoom: 2 },
+      mobile: framing.mobile,
+    })!;
+    expect(600 / result.width).toBeCloseTo(0.85);
+    expect(400 / result.height).toBeCloseTo(0.85);
+    expect(result.left).toBeCloseTo((600 - result.width) * 0.2);
+    expect(result.backdrop).toBe(false);
   });
 });

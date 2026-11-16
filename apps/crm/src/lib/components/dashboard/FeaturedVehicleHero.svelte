@@ -403,7 +403,7 @@
     inset: 0;
     right: auto;
     bottom: auto;
-    object-fit: cover;
+    object-fit: contain;
     object-position: var(--photo-desktop, 50% 50%);
     opacity: 0;
     transition: opacity 180ms ease;
