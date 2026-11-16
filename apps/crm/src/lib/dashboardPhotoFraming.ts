@@ -7,8 +7,8 @@ export function dashboardPhotoGeometry(
   mobile: boolean,
   framing?: PhotoFraming,
 ) {
-  const position = framing?.[mobile ? 'mobile' : 'desktop'] ?? { x: 50, y: 53 };
-  return photoGeometry(image, frame, position, 'auto');
+  const position = framing?.[mobile ? 'mobile' : 'desktop'] ?? { x: 50, y: 50 };
+  return photoGeometry(image, frame, position);
 }
 /** Recompute after decoding and when the photo panel resizes. */
 export function dashboardPhotoFraming(
@@ -40,8 +40,7 @@ export function dashboardPhotoFraming(
         '--dashboard-backdrop',
         fills ? 'none' : `url("${node.currentSrc || node.src}")`,
       );
-      const position = options.framing?.[device.matches ? 'mobile' : 'desktop'] ?? { x: 50, y: 53 };
-      parent.style.setProperty('--dashboard-backdrop-position', `${position.x}% ${position.y}%`);
+      parent.style.setProperty('--dashboard-backdrop-position', `${geometry.x}% ${geometry.y}%`);
     }
   };
   const observer = new ResizeObserver(render);

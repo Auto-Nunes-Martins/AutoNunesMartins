@@ -117,6 +117,7 @@ describe('dashboard operational overview', () => {
               id: 'vehicle-test',
               licensePlate: null,
               photoIndex: 0,
+              framing: { desktop: { x: 90, y: 90 }, mobile: { x: 90, y: 90 } },
               vehicle: {
                 brand: 'Test',
                 model: 'Car',
@@ -127,12 +128,16 @@ describe('dashboard operational overview', () => {
                 description: null,
                 availability: 'AVAILABLE',
                 photos: [path + (versioned ? `?v=${version}` : '')],
+                galleryFraming: [
+                  { desktop: { x: 24, y: 62 }, mobile: { x: 41, y: 70 } },
+                ],
               },
             },
           ],
         },
       }).body.replaceAll('&amp;', '&');
       const src = html.match(/<img[^>]+src="([^"]+)"/)?.[1];
+      expect(html).toContain('--photo-desktop:24% 62%;--photo-mobile:41% 70%');
       const srcset = html.match(/<img[^>]+srcset="([^"]+)"/)?.[1];
       expect(srcset).toBeDefined();
       const candidates = srcset!.split(', ').map((candidate) => candidate.split(' ')[0]!);

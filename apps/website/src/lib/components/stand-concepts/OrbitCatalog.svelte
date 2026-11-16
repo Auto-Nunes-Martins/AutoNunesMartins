@@ -807,10 +807,24 @@
   .pagination > span {
     flex-shrink: 0;
   }
+  .pagination a {
+    border-radius: 8px;
+  }
+  .pagination > a {
+    padding-inline: 10px;
+  }
   .pagination [aria-current] {
     background: var(--text);
     color: var(--bg);
     border-radius: 50%;
+  }
+  @media (hover: hover) {
+    .pagination a:hover {
+      box-shadow: inset 0 0 0 2px var(--red);
+    }
+    .pagination a:not([aria-current]):hover {
+      background: var(--surface);
+    }
   }
   .disabled {
     color: var(--muted);

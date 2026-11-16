@@ -4,18 +4,22 @@ import { dashboardPhotoGeometry } from './dashboardPhotoFraming';
 describe('dashboard shared framing', () => {
   const framing = { desktop: { x: 20, y: 80 }, mobile: { x: 75, y: 65 } };
   it('uses natural dimensions and each device crop without modifying the selection', () => {
-    const before = JSON.stringify(framing);
+    const automatic = {
+      desktop: { ...framing.desktop, fit: 'auto' as const },
+      mobile: { ...framing.mobile, fit: 'auto' as const },
+    };
+    const before = JSON.stringify(automatic);
     const desktop = dashboardPhotoGeometry(
       { width: 800, height: 1067 },
       { width: 683, height: 588 },
       false,
-      framing,
+      automatic,
     )!;
     const mobile = dashboardPhotoGeometry(
       { width: 800, height: 1067 },
       { width: 346, height: 280 },
       true,
-      framing,
+      automatic,
     )!;
     expect(desktop.height).toBeCloseTo(588);
     expect(mobile.height).toBeCloseTo(280);
@@ -24,7 +28,7 @@ describe('dashboard shared framing', () => {
     expect(desktop.scale).toBeLessThan(Math.max(683 / 800, 588 / 1067));
     expect(desktop.left).toBeCloseTo((683 - desktop.width) * 0.2);
     expect(mobile.left).toBeCloseTo((346 - mobile.width) * 0.75);
-    expect(JSON.stringify(framing)).toBe(before);
+    expect(JSON.stringify(automatic)).toBe(before);
   });
   it('honours explicit fill and zoom for a portrait while preserving both device settings', () => {
     const image = { width: 800, height: 1067 },
@@ -52,11 +56,7 @@ describe('dashboard shared framing', () => {
           expect(result.width / result.height).toBeCloseTo(image.width / image.height);
           expect(result.scale).toBeGreaterThan(0);
           const fillScale = Math.max(600 / image.width, 400 / image.height);
-          if (image.width >= image.height) {
-            expect(result.scale).toBe(fillScale);
-          } else {
-            expect(result.scale).toBeLessThan(fillScale);
-          }
+          expect(result.scale).toBe(fillScale);
         }
     expect(
       dashboardPhotoGeometry({ width: 0, height: 1000 }, { width: 600, height: 400 }, false),
@@ -73,8 +73,8 @@ describe('dashboard shared framing', () => {
         const choices = [-3, 0, 3].map(
           (delta) =>
             dashboardPhotoGeometry(image, frame, mobile, {
-              desktop: { x: 50, y: 74 + delta },
-              mobile: { x: 50, y: 70 + delta },
+              desktop: { x: 50, y: 74 + delta, fit: 'auto' },
+              mobile: { x: 50, y: 70 + delta, fit: 'auto' },
             })!,
         );
         expect(choices[0]!.top).toBeGreaterThanOrEqual(choices[1]!.top);

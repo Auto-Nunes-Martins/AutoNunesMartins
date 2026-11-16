@@ -127,6 +127,7 @@
     {#if highlights.length}
       {#each highlights as entry, slide (entry.id)}
         {@const image = entry.vehicle.photos[entry.photoIndex]}
+        {@const framing = entry.vehicle.galleryFraming?.[entry.photoIndex] ?? undefined}
         {#if image}<img
             src={publicVehiclePhotoUrl(PUBLIC_BACKEND_URL, image, 1600)}
             srcset={[320, 800, 1600, 2560]
@@ -137,8 +138,8 @@
             sizes="(max-width:1050px) 100vw, 800px"
             alt={`${entry.vehicle.brand} ${entry.vehicle.model}`}
             class:is-active={slide === index}
-            style={framingStyle(entry.framing)}
-            use:dashboardPhotoFraming={{ framing: entry.framing, active: slide === index }}
+            style={framingStyle(framing)}
+            use:dashboardPhotoFraming={{ framing, active: slide === index }}
             aria-hidden={slide !== index}
             onerror={() => (failedImages[entry.id] = true)}
             onload={() => (failedImages[entry.id] = false)}
@@ -208,7 +209,6 @@
   .hero-block {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr);
-    grid-template-rows: 580px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     overflow: hidden;
@@ -221,6 +221,11 @@
     flex-direction: column;
     min-width: 0;
     overflow: auto;
+  }
+  @media (min-width: 901px) {
+    .hero-copy {
+      contain: size;
+    }
   }
   .eyebrow {
     display: flex;
@@ -383,8 +388,11 @@
   }
   .hero-photo {
     position: relative;
+    width: 100%;
     overflow: hidden;
-    min-height: 460px;
+    align-self: start;
+    aspect-ratio: 1.5;
+    max-height: 570px;
     background: var(--color-bg-2);
     isolation: isolate;
   }
@@ -396,7 +404,7 @@
     right: auto;
     bottom: auto;
     object-fit: cover;
-    object-position: var(--photo-desktop, 50% 53%);
+    object-position: var(--photo-desktop, 50% 50%);
     opacity: 0;
     transition: opacity 180ms ease;
   }
@@ -415,8 +423,12 @@
     opacity: 1;
   }
   @media (max-width: 700px) {
+    .hero-photo {
+      aspect-ratio: 1.3;
+      max-height: 400px;
+    }
     .hero-photo > img {
-      object-position: var(--photo-mobile, 50% 53%);
+      object-position: var(--photo-mobile, 50% 50%);
     }
   }
   .photo-shade {
@@ -569,9 +581,6 @@
     outline-offset: 3px;
   }
   @media (max-width: 1200px) {
-    .hero-block {
-      grid-template-rows: 620px;
-    }
     .hero-copy {
       padding: 24px;
     }
@@ -586,10 +595,6 @@
   @media (max-width: 900px) {
     .hero-block {
       grid-template-columns: 1fr;
-      grid-template-rows: 440px 360px;
-    }
-    .hero-photo {
-      min-height: 360px;
     }
     .specs {
       grid-template-columns: 1fr 1fr;
@@ -599,14 +604,8 @@
     }
   }
   @media (max-width: 480px) {
-    .hero-block {
-      grid-template-rows: 440px 280px;
-    }
     .hero-copy {
       padding: 20px;
-    }
-    .hero-photo {
-      min-height: 280px;
     }
     .photo-top,
     .photo-bottom {

@@ -488,6 +488,10 @@
   .brand-content {
     transition: opacity 0.15s ease;
   }
+  .brand-content :global(img) {
+    /* Match the public footer's compensation for 33px of padding in the 360px logo. */
+    transform: translateX(-9.166667%);
+  }
   .sidebar.collapsed .brand-content {
     opacity: 0;
     pointer-events: none;
