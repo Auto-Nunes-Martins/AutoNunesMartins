@@ -73,8 +73,6 @@ function parseForm(fd: FormData) {
     // Empty field → "0" so the schema's default kicks in cleanly and the
     // resulting sale row stores 0 rather than NULL or a stray string.
     commissionGross: get('commissionGross') || '0',
-    commissionDate: get('commissionDate') || undefined,
-    vatDate: get('vatDate') || undefined,
     buyerType: get('buyerType') || 'PARTICULAR',
     ...(tradeIn ? { tradeIn } : {}),
   };

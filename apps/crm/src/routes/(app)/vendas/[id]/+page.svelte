@@ -190,10 +190,9 @@
       despesas integralmente dedutível. O saldo de IVA já está refletido nos componentes do
       resultado.
     </p>
-    {#if !s.vatDate || s.expensesVatUnknown || (hasCommission && s.commissionGross == null)}
+    {#if s.expensesVatUnknown || (hasCommission && s.commissionGross == null)}
       <p class="px-5 pb-5 text-[12px] text-[var(--color-warning)]">
-        Informação fiscal incompleta. Confirme a data fiscal da venda e os documentos de
-        comissão/despesas. Valores não identificados não entram no apuramento por período.
+        Informação fiscal incompleta. Confirme os documentos de comissão e despesas. Valores não identificados não entram no apuramento por período.
       </p>
     {/if}
   </Panel>
@@ -447,18 +446,6 @@
             Guardar comissão
           </Button>
         </div>
-        <label class="block text-[12px]"
-          >Data fiscal da comissão <DateInput
-            name="commissionDate"
-            value={s.commissionDate?.slice(0, 10) ?? ''}
-          /></label
-        >
-        <label class="block text-[12px]"
-          >Data fiscal da venda <DateInput
-            name="vatDate"
-            value={s.vatDate?.slice(0, 10) ?? ''}
-          /></label
-        >
         {#if s.commissionGross == null}<input
             type="hidden"
             name="legacyNet"

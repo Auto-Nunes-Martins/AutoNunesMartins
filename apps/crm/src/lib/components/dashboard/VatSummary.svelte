@@ -24,7 +24,7 @@
   class="border border-[var(--color-border)] bg-[var(--color-bg-1)] p-5 space-y-4 rounded-sm"
 >
   <div class="flex flex-wrap justify-between gap-3">
-    <h2 class="font-semibold">IVA por período fiscal</h2>
+    <h2 class="font-semibold">IVA estimado por período</h2>
     <label class="text-[12px]"
       >Período <select
         bind:value={period}
@@ -49,8 +49,8 @@
     </div>
   </dl>
   <p class="text-[12px] text-[var(--color-text-muted)]">
-    Pela data fiscal de cada documento, incluindo despesas de viaturas em stock. O saldo não é
-    descontado novamente ao resultado.
+    Vendas e comissões pela data da venda. Despesas pela data da fatura, incluindo viaturas em
+    stock.
   </p>
   {#if data.pendingDocuments}<p class="text-[12px] text-[var(--color-warning)]">
       {data.pendingDocuments} registos com informação fiscal por confirmar no histórico global. Os componentes

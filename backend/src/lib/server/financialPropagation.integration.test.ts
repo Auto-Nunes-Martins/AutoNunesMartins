@@ -360,7 +360,7 @@ describe('real financial services → isolated PostgreSQL → dashboard, lists, 
 });
 
 describe('document VAT periods and propagation', () => {
-  it('includes stock invoices, separates commission dates, preserves history and moves corrected documents', async () => {
+  it('groups commission VAT with the sale and moves expenses when invoice dates change', async () => {
     const expense = await createVehicleExpense(
       {
         vehicleId: 'X',
@@ -381,20 +381,19 @@ describe('document VAT periods and propagation', () => {
     });
     let data = await chart();
     expect(data.fiscalVat?.months.find((r) => r.month === '2026-01')).toMatchObject({
-      payable: '23.00',
+      payable: '0.00',
       deductible: '230.00',
-      balance: '-207.00',
+      balance: '-230.00',
     });
-    expect(data.fiscalVat?.months.find((r) => r.month === '2025-12')?.payable).toBe('1121.95');
+    expect(data.fiscalVat?.months.find((r) => r.month === '2025-12')?.payable).toBe('1144.95');
     expect(data.salesChart.profit[10]).toBe(4978.05);
     expect((await getSaleById(a.id))?.commission).toBe('100');
     await updateVehicleExpense(expense.id, { vatDate: new Date('2025-12-25') }, actor);
     data = await chart();
-    expect(data.fiscalVat?.months.find((r) => r.month === '2026-01')?.deductible).toBe('0.00');
+    expect(data.fiscalVat?.months.find((r) => r.month === '2026-01')?.deductible ?? '0.00').toBe('0.00');
     expect(data.fiscalVat?.months.find((r) => r.month === '2025-12')?.deductible).toBe('230.00');
     await updateSaleCommission(a.id, '246', actor, {
       gross: true,
-      commissionDate: new Date('2025-12-28'),
     });
     expect((await chart()).fiscalVat?.months.find((r) => r.month === '2025-12')?.payable).toBe(
       '1167.95',
@@ -473,8 +472,8 @@ describe('document VAT periods and propagation', () => {
     expect(
       (await mocks.db.vehicleExpense.findUnique({ where: { id: legacy.id } })).amount.toString(),
     ).toBe('50');
-    await expect(updateSaleCommission(a.id, '123', actor, { gross: true })).rejects.toMatchObject({
-      status: 400,
-    });
+    await updateSaleCommission(a.id, '123', actor, { gross: true });
+    expect((await getSaleById(a.id))?.commissionVat).toBe('23');
+    expect((await chart()).fiscalVat?.pendingDocuments).toBe(0);
   });
 });

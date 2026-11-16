@@ -627,15 +627,6 @@
             />
           </label>
 
-          <label class="flex flex-col crm-field-8"
-            >Data fiscal da venda <DateInput name="vatDate" required /></label
-          >
-          <label class="flex flex-col crm-field-8"
-            >Data fiscal da comissão (se existir) <DateInput
-              name="commissionDate"
-              required={Number(commissionInput) > 0}
-            /></label
-          >
           <label class="flex flex-col crm-field-8">
             <span
               class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)] mb-1.5 flex items-center gap-2"

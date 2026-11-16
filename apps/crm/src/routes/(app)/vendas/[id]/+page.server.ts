@@ -70,8 +70,6 @@ export const actions: Actions = {
     try {
       await salesApi.updateCommission(event, event.params.id, parsed.data, {
         gross: !preserveLegacy && fd.get('gross') === 'true',
-        commissionDate: fd.get('commissionDate')?.toString() || undefined,
-        vatDate: fd.get('vatDate')?.toString() || undefined,
       });
       return { commissionSaved: true };
     } catch (err) {

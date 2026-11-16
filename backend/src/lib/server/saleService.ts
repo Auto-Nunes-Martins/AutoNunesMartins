@@ -332,8 +332,6 @@ export async function createSale(
     const customer = await tx.customer.findUnique({ where: { id: data.customerId } });
     if (!customer) throw new Error(`Customer ${data.customerId} not found`);
 
-    if (Number(data.commissionGross ?? 0) > 0 && !data.commissionDate)
-      throw new SaleCancellationError(400, 'Indique a data fiscal da comissão.');
     const expensesTotal = await sumVehicleExpenses(tx, vehicle.id);
     // Zod default ensures `commission` is always a string here; if a caller
     // bypasses the schema we fall back to "0" defensively.
@@ -364,7 +362,7 @@ export async function createSale(
         commission: new Decimal(figures.commission.toString()),
         commissionGross: data.commissionGross,
         commissionVat: data.commissionGross != null ? figures.commissionVat : null,
-        commissionDate: data.commissionDate,
+        commissionDate: data.commissionDate ?? (Number(data.commissionGross) > 0 ? data.saleDate : undefined),
         vatDate: data.vatDate,
         buyerType,
         realProfit: new Decimal(figures.realProfit.toString()),
@@ -548,8 +546,6 @@ export async function updateSaleCommission(
       );
     if (!document?.gross && !document?.vatDate && sale.commission.eq(commission)) return;
     if (document?.gross) {
-      if (Number(commission) > 0 && !document.commissionDate)
-        throw new SaleCancellationError(400, 'Indique a data fiscal da comissão.');
       const f = computeSaleFigures({
         salePrice: 0,
         purchasePrice: 0,
@@ -562,7 +558,7 @@ export async function updateSaleCommission(
           commissionGross: new Decimal(commission),
           commissionVat: f.commissionVat,
           commission: f.commission,
-          commissionDate: document.commissionDate ?? null,
+          commissionDate: document.commissionDate ?? (Number(commission) > 0 ? sale.commissionDate ?? sale.saleDate : null),
           ...(document.vatDate ? { vatDate: document.vatDate } : {}),
         },
       });

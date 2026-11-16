@@ -41,7 +41,7 @@ test('fiscal period selector separates payable, deductible and credit at desktop
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('http://127.0.0.1:' + vite.httpServer.address().port);
-    await page.getByText('IVA por período fiscal').waitFor();
+    await page.getByText('IVA estimado por período').waitFor();
     for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 800 });
       await page.getByRole('combobox').selectOption('2026-01');

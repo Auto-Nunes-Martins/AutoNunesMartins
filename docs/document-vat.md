@@ -13,9 +13,9 @@ Implementação autorizada pelo proprietário em 15-11-2026. Não constitui decl
 
 ## Datas e resumo fiscal
 
-Datas fiscais de venda, comissão e despesa independentes das datas operacionais. Dashboard: mês, ano atual ou últimos 12 meses, com IVA a pagar, a deduzir e saldo (negativo = crédito estimado). Inclui faturas de viaturas em stock. CSV/PDF separam as três componentes. Outros impostos e despesas operacionais sem IVA documentado não entram neste apuramento.
+O dashboard estima o IVA por mês, ano atual ou últimos 12 meses. Usa a data da venda para o IVA da viatura e da comissão, e a data da fatura para as despesas, incluindo viaturas em stock. CSV e PDF separam os valores a pagar, a deduzir e o saldo.
 
-Datas desconhecidas ficam vazias. O contador global assinala registos com componentes por confirmar, sem os atribuir a períodos fictícios. Vendas anuladas são excluídas, seguindo o comportamento de gestão existente; este relatório não substitui uma declaração nem regista notas de crédito fiscais.
+O contador global inclui comissões antigas sem bruto confirmado e despesas com IVA ou data da fatura por confirmar. O resumo serve para gestão interna. Vendas anuladas ficam excluídas.
 
 ## Migração e compatibilidade
 
@@ -23,7 +23,7 @@ Migração aditiva: backend/prisma/migrations/20261115120000_document_vat/migrat
 
 Preserva montantes originais de despesas e comissões líquidas antigas. Não infere bruto, IVA nem datas fiscais. Guarda valores anteriores de IVA/resultado/comissão em Sale.legacyFinancials antes de recalcular estimativas das vendas ativas; vendas anuladas e snapshots não são recalculados. O resultado histórico estimado pode mudar pela correção da fórmula, sem inventar deduções históricas.
 
-Editar despesas na ficha da viatura para confirmar IVA e data fiscal. Editar comissão/data fiscal na venda: bruto vazio numa comissão antiga preserva o líquido; bruto confirmado converte explicitamente; 0 retira a comissão. API antiga com commission líquido compatível; comissão já documentada exige edição bruta. Formulário novo envia commissionGross.
+Editar despesas na ficha da viatura para confirmar IVA e data fiscal. Editar comissão na venda: bruto vazio numa comissão antiga preserva o líquido; bruto confirmado converte explicitamente; 0 retira a comissão. API antiga com commission líquido compatível; comissão já documentada exige edição bruta. Formulário novo envia commissionGross.
 
 Sem rollback automático. Preservar documentos novos antes de qualquer reversão; não eliminar colunas com documentos registados.
 

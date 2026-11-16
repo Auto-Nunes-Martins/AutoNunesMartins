@@ -212,7 +212,7 @@ export async function buildDashboardPdf(data: DashboardPayload): Promise<Uint8Ar
 
   if (data.fiscalVat) {
     const fiscal = pdf.addPage([W, H]);
-    txt(fiscal, 'IVA por período fiscal — documentos registados', {
+    txt(fiscal, 'IVA estimado por período', {
       x: margin,
       y: H - 40,
       size: 16,
