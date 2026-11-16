@@ -182,12 +182,14 @@
     // not parseable as 0 so the preview never reads NaN.
     const commissionNum = Number(normalizeDecimal(commissionInput));
     const gross = Number.isFinite(commissionNum) && commissionNum > 0 ? commissionNum : 0;
-    const commission = gross - Math.round(((gross * 23) / 123) * 100) / 100;
+    const commissionVat = Math.round(((gross * 23) / 123) * 100) / 100;
+    const commission = gross - commissionVat;
 
     if (!Number.isFinite(price) || price <= 0) {
       return {
         margin: '0.00',
         vat: '0.00',
+        commissionVat,
         commission: commission.toFixed(2),
         profit: commission.toFixed(2),
       };
@@ -201,6 +203,7 @@
       return {
         margin: margin.toFixed(2),
         vat: '0.00',
+        commissionVat,
         commission: commission.toFixed(2),
         profit: profit.toFixed(2),
       };
@@ -210,6 +213,7 @@
     return {
       margin: margin.toFixed(2),
       vat: vat.toFixed(2),
+      commissionVat,
       commission: commission.toFixed(2),
       profit: profit.toFixed(2),
     };
@@ -1011,7 +1015,7 @@
                 <div
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
                 >
-                  IVA (23/123)
+                  IVA da viatura (23/123)
                 </div>
                 <div
                   class="font-display text-[18px] font-bold italic tabular-nums text-[var(--color-warning)]"
@@ -1024,7 +1028,7 @@
                 <div
                   class="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-faint)] mb-1.5"
                 >
-                  IVA
+                  IVA da viatura
                 </div>
                 <div
                   class="font-display text-[18px] font-bold italic tabular-nums text-[var(--color-text-faint)]"
@@ -1072,6 +1076,25 @@
             >
               {formatEUR(figures.profit)}
             </div>
+            <details class="mt-3 text-[13px]">
+              <summary class="cursor-pointer">Ver cálculo</summary>
+              <dl class="mt-3 grid grid-cols-2 gap-2">
+                <dt>Margem após despesas</dt>
+                <dd>{formatEUR(figures.margin)}</dd>
+                <dt>IVA da viatura</dt>
+                <dd>− {formatEUR(figures.vat)}</dd>
+                <dt>Comissão líquida</dt>
+                <dd>+ {formatEUR(figures.commission)}</dd>
+              </dl>
+              <dl class="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--color-border)] pt-3">
+                <dt>IVA da comissão — a entregar</dt>
+                <dd>{formatEUR(figures.commissionVat)}</dd>
+                <dt>IVA das despesas — a deduzir</dt>
+                <dd>{formatEUR(v.expensesVat ?? 0)}</dd>
+                <dt>Saldo estimado de IVA</dt>
+                <dd>{formatEUR(Number(figures.vat) + figures.commissionVat - Number(v.expensesVat ?? 0))}</dd>
+              </dl>
+            </details>
           </div>
         </div>
         <div
