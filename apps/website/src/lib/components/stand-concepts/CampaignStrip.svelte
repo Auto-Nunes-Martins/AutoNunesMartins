@@ -1027,12 +1027,6 @@
       linear-gradient(130deg, #222226, #141416);
     border-top: 1px solid #ffffff0d;
   }
-  @media (max-width: 700px) {
-    .campaign-copy {
-      /* Keep the panel dimensions without drawing a divider below the photo. */
-      border-top-color: transparent;
-    }
-  }
   .before {
     color: #e0c0ba;
     font-size: 11px;
@@ -3907,6 +3901,15 @@
   @media (max-width: 700px) {
     .campaign-inner.three-offers {
       padding-bottom: 62px;
+    }
+  }
+  @media (max-width: 700px) {
+    .campaign-rail .campaign-copy {
+      /* Paint over the clipped photo edge. Start the gradient at the border
+         so WebKit does not leave the card background visible in the join. */
+      margin-top: -1px;
+      border-top: 2px solid transparent;
+      background-origin: border-box;
     }
   }
 </style>
