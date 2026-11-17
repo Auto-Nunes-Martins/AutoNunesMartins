@@ -1027,6 +1027,12 @@
       linear-gradient(130deg, #222226, #141416);
     border-top: 1px solid #ffffff0d;
   }
+  @media (max-width: 700px) {
+    .campaign-copy {
+      /* Keep the panel dimensions without drawing a divider below the photo. */
+      border-top-color: transparent;
+    }
+  }
   .before {
     color: #e0c0ba;
     font-size: 11px;
