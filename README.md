@@ -1,27 +1,27 @@
 <p align="center">
-  <img src="apps/website/static/images/social/auto-nunes-martins-v1.png" width="480" alt="Logótipo da Auto Nunes Martins">
+  <img src="apps/website/static/images/social/auto-nunes-martins-v1.png" width="480" alt="Auto Nunes Martins logo">
 </p>
 
 # Auto Nunes Martins
 
-Site público e plataforma de gestão de um stand de automóveis usados. O site apresenta o catálogo, as fichas das viaturas e as campanhas. O CRM gere o stock, os clientes, as vendas e o acompanhamento operacional e financeiro.
+Public website and management platform for a used car dealership in Portugal. The website showcases the inventory, vehicle details, and promotions. The CRM manages stock, customers, sales, and day-to-day operations and finances.
 
-[Visitar o site](https://www.autonunesmartins.pt/) · [Instalação local](#desenvolvimento-local) · [Documentação](#documentação)
+[Visit the website](https://www.autonunesmartins.pt/) · [Local setup](#local-development) · [Documentation](#documentation)
 
-## Estrutura do projeto
+## Project structure
 
-| Área              | Pasta                        | Responsabilidade                                                                      |
-| ----------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
-| Site público      | [apps/website](apps/website) | Catálogo, fichas de viaturas, campanhas, favoritos, comparação e contactos            |
-| CRM               | [apps/crm](apps/crm)         | Gestão de viaturas, clientes, vendas, tarefas, despesas e conteúdos do site           |
-| Backend           | [backend](backend)           | API pública e autenticada, regras de negócio, persistência e processamento de imagens |
-| Código partilhado | [shared](shared)             | Tipos, validação e código reutilizado pelas aplicações                                |
+| Area | Directory | Responsibilities |
+| --- | --- | --- |
+| Public website | [apps/website](apps/website) | Inventory, vehicle pages, promotions, favorites, comparisons, and contact information |
+| CRM | [apps/crm](apps/crm) | Manage vehicles, customers, sales, tasks, expenses, and website content |
+| Backend | [backend](backend) | Public and authenticated APIs, business logic, persistence, and image processing |
+| Shared code | [shared](shared) | Types, validation, and code shared between the applications |
 
-O site e o CRM usam SvelteKit, Svelte e TypeScript. A API usa Express e Prisma, com PostgreSQL e Storage no Supabase. O acesso ao CRM usa Clerk. O monorepo é gerido com Yarn Workspaces.
+The website and CRM use SvelteKit, Svelte, and TypeScript. The API uses Express and Prisma, with PostgreSQL and Storage on Supabase. Clerk handles CRM authentication. The monorepo uses Yarn Workspaces.
 
-## Desenvolvimento local
+## Local development
 
-É necessário ter Node.js 20 ou superior, Git e Yarn 4 via Corepack, além de projetos de desenvolvimento no Supabase e no Clerk.
+You need Node.js 20 or later, Git, Yarn 4 via Corepack, and development projects in Supabase and Clerk.
 
 ```powershell
 yarn install
@@ -31,7 +31,7 @@ Copy-Item apps\crm\.env.example apps\crm\.env
 Copy-Item apps\website\.env.example apps\website\.env
 ```
 
-Preenche os ficheiros locais conforme os exemplos. Usa apenas serviços de desenvolvimento para aplicar migrações, carregar dados de exemplo e preparar o bucket. Guarda as credenciais nos ficheiros locais de configuração.
+Fill in the local configuration using the example files. Use development services for migrations, sample data, and bucket setup. Keep credentials in local configuration files.
 
 ```powershell
 yarn workspace @anm/backend prisma:migrate
@@ -40,13 +40,13 @@ yarn workspace @anm/backend supabase:bucket
 yarn dev
 ```
 
-| Serviço      | Endereço local                           |
-| ------------ | ---------------------------------------- |
-| Site público | [localhost:5173](http://localhost:5173/) |
-| CRM          | [localhost:5174](http://localhost:5174/) |
-| API          | [localhost:4000](http://localhost:4000/) |
+| Service | Local address |
+| --- | --- |
+| Public website | [localhost:5173](http://localhost:5173/) |
+| CRM | [localhost:5174](http://localhost:5174/) |
+| API | [localhost:4000](http://localhost:4000/) |
 
-## Verificação
+## Checks
 
 ```powershell
 yarn typecheck
@@ -55,12 +55,12 @@ yarn test
 yarn build
 ```
 
-Para testar a integração do site e do CRM com o gateway, usa `yarn test:service`. Para iniciar só uma das aplicações frontend, usa `yarn dev:website` ou `yarn dev:crm`, com o backend disponível.
+Use `yarn test:service` to verify website and CRM integration with the gateway. To start only one frontend, run `yarn dev:website` or `yarn dev:crm` with the backend running.
 
-## Documentação
+## Documentation
 
-- [Alojamento e configuração no Render](docs/render-single-service.md)
-- [Checklist de publicação do site público](docs/publication-readiness.md)
-- [Foto principal, variantes e política de entrega](docs/photo-delivery-experiment.md)
-- [Pré-visualizações de partilha](docs/social-previews.md)
-- [IVA documentado e resultado de gestão](docs/document-vat.md)
+- [Render hosting and configuration](docs/render-single-service.md)
+- [Public website launch checklist](docs/publication-readiness.md)
+- [Main photo, image variants, and delivery policy](docs/photo-delivery-experiment.md)
+- [Social sharing previews](docs/social-previews.md)
+- [Documented VAT and management reporting](docs/document-vat.md)
