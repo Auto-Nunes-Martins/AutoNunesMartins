@@ -49,11 +49,11 @@ it('accepts explicit HTTPS official links and provides unique local destinations
 });
 it('keeps the published storage inventory aligned with the keys actually used by the preference stores', () => {
   const page = readFileSync(
-    new URL('./components/PrivacyPreferences.svelte', import.meta.url),
+    new URL('./features/privacy/PrivacyPreferences.svelte', import.meta.url),
     'utf8',
   );
   for (const key of [FAVORITES_KEY, COMPARISON_KEY, THEME_KEY]) expect(page).toContain(key);
-  const startup = readFileSync(new URL('../../assets/orbit-startup.js', import.meta.url), 'utf8');
+  const startup = readFileSync(new URL('../../assets/site-startup.js', import.meta.url), 'utf8');
   const sessionKey = startup.match(/sessionStorage\.setItem\(\s*'([^']+)'/)!;
   expect(sessionKey).not.toBeNull();
   expect(page).toContain(sessionKey[1]);

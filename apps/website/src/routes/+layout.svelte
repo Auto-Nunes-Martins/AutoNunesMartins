@@ -3,6 +3,8 @@
   import NavigationProgress from '../../../../shared/ui/NavigationProgress.svelte';
   import WebsiteIconHead from '$lib/components/WebsiteIconHead.svelte';
   import WhatsAppContact from '$lib/components/WhatsAppContact.svelte';
+  import ConsentPanel from '$lib/features/privacy/ConsentPanel.svelte';
+  import { watchGoogleAdsConsent } from '$lib/features/privacy/googleAdsConsent';
   import { onMount, setContext, tick } from 'svelte';
   import { browser } from '$app/environment';
   import { afterNavigate, beforeNavigate, goto, pushState } from '$app/navigation';
@@ -88,6 +90,7 @@
       () => sessionStorage,
     );
     favorites.initialize(() => localStorage);
+    const stopGoogleAdsConsent = watchGoogleAdsConsent();
     const sync = (event: StorageEvent) => {
       try {
         if (event.storageArea !== localStorage) return;
@@ -102,6 +105,7 @@
       cancelNavigationThumbnails();
       anchors?.destroy();
       window.removeEventListener('storage', sync);
+      stopGoogleAdsConsent();
       notifications.destroy();
     };
   });
@@ -112,3 +116,4 @@
 {@render children()}
 <WhatsAppContact />
 <NotificationHost />
+<ConsentPanel />

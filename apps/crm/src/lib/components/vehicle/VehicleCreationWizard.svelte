@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { createPhotoStaging } from '$lib/photoStaging';
-  import { readyPhoto } from '$lib/photoPreparation';
+  import { createPhotoStaging } from '$lib/photos/photoStaging';
+  import { readyPhoto } from '$lib/photos/photoPreparation';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { onMount, tick, untrack, type ComponentProps } from 'svelte';
@@ -22,7 +22,7 @@
     type EditIssue,
   } from '$lib/forms/vehicleEditErrors';
   import type { VehicleDetailResponse } from '$lib/server/vehicles';
-  import type { SignedVariantPhoto } from '$lib/vehicleImage';
+  import type { SignedVariantPhoto } from '$lib/photos/vehicleImage';
   import { publicDraftFromForm, type EditPhoto } from './vehicleEditDraft';
   import {
     creationDetailsIssues,

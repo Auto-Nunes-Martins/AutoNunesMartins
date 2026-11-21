@@ -1,7 +1,7 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
 import { vehiclesApi, type VehicleListParams } from '$lib/server/vehicles';
 import { buildCsv, buildPdfTable } from '$lib/server/exports';
-import { vehiclesFilters } from '$lib/listFilters';
+import { vehiclesFilters } from '$lib/lists/listFilters';
 import type { Fuel, VehicleStatus } from '@anm/types';
 
 const FUEL_LABELS: Record<Fuel, string> = {

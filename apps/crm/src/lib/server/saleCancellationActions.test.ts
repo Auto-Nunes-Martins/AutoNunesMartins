@@ -187,17 +187,15 @@ describe('CRM cancellation form actions', () => {
   });
 });
 
-it('preserves historical net commission when only its sale document date is confirmed', async () => {
+it('preserves historical net commission and ignores obsolete form date fields', async () => {
   await actions.commission!(
     event({ commission: '', gross: 'true', legacyNet: '500', vatDate: '2026-01-01' }),
   );
   expect(mocks.commission).toHaveBeenCalledWith(expect.anything(), 'sale', '500', {
     gross: false,
-    commissionDate: undefined,
-    vatDate: '2026-01-01',
   });
 });
-it('passes the explicitly entered gross commission and its own fiscal date', async () => {
+it('forwards the explicit gross commission and leaves fiscal dates to the sale', async () => {
   await actions.commission!(
     event({
       commission: '615',
@@ -208,7 +206,5 @@ it('passes the explicitly entered gross commission and its own fiscal date', asy
   );
   expect(mocks.commission).toHaveBeenCalledWith(expect.anything(), 'sale', '615', {
     gross: true,
-    commissionDate: '2026-02-01',
-    vatDate: '2026-01-01',
   });
 });

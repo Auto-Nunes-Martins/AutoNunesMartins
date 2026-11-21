@@ -3,9 +3,9 @@
   import { photoFraming, type PhotoFraming } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
-  import type { HighlightGalleryPhoto } from '$lib/highlightPhotoRequests';
-  import { selectPhoto } from '$lib/reusablePhoto';
-  import { photoFallback } from '$lib/vehicleImage';
+  import type { HighlightGalleryPhoto } from '$lib/highlights/highlightPhotoRequests';
+  import { selectPhoto } from '$lib/photos/reusablePhoto';
+  import { photoFallback } from '$lib/photos/vehicleImage';
 
   let { vehicleId, compact = false }: { vehicleId: string; compact?: boolean } = $props();
   let cover = $state<{ url: string; original: string | null; framing?: PhotoFraming }>();

@@ -3,9 +3,9 @@
   import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
-  import { linkedRow } from '$lib/linkedRow';
+  import { linkedRow } from '$lib/lists/linkedRow';
   import { goto } from '$app/navigation';
-  import { filterNavigation } from '$lib/filterNavigation';
+  import { filterNavigation } from '$lib/lists/filterNavigation';
   import { page } from '$app/stores';
   import { ArrowRightLeft, Receipt, Search, X } from 'lucide-svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';

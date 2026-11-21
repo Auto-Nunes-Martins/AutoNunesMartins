@@ -5,7 +5,7 @@ import { prisma } from '../src/db.js';
 import { getSupabase, getBucketName } from '../src/lib/data/storage.js';
 import { makePublicSlug } from '../src/lib/domain/publicVehicle.js';
 import { highlightsKey, saveHighlights } from '../src/lib/server/homepageHighlights.js';
-import { cars, photo } from '../../apps/website/src/lib/components/stand-concepts/data.js';
+import { cars, photo } from '../../apps/website/src/lib/features/catalog/catalogSampleData.js';
 
 const marker = '[DEMONSTRAÇÃO HOMEPAGE]';
 const vinFor = (index: number) => `ANMDEMA${String(index + 1).padStart(10, '0')}`;

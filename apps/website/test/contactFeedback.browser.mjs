@@ -14,7 +14,7 @@ const reserve=createServer();await new Promise(r=>reserve.listen(0,'127.0.0.1',r
 const focusOnly = !!process.env.CONTACT_FOCUS_ONLY;
 await mkdir('.svelte-kit',{recursive:true});const configPath=path.resolve('.svelte-kit/contact-feedback-vite.config.mjs'),clientPath=path.resolve('.svelte-kit/contact-review.client.js');
 if (!focusOnly) {
-await writeFile(clientPath,"import {mount} from 'svelte';import Studio from '../src/lib/components/stand-concepts/OrbitVisitStudio.svelte';import '../src/app.css';mount(Studio,{target:document.querySelector('#app'),props:{id:'studio-test',formTreatment:'minimal'}});");
+await writeFile(clientPath,"import {mount} from 'svelte';import Studio from '../src/lib/features/contact/VisitSection.svelte';import '../src/app.css';mount(Studio,{target:document.querySelector('#app'),props:{id:'studio-test',formTreatment:'minimal'}});");
 await writeFile(configPath,`import base from ${JSON.stringify(path.resolve('vite.config.ts'))};export default {...base,optimizeDeps:{include:['htmlparser2','zod','lucide-svelte']},plugins:[...base.plugins,{name:'contact-review-only',configureServer(server){server.middlewares.use('/contact-review',async(req,res)=>{res.setHeader('content-type','text/html; charset=utf-8');res.end(await server.transformIndexHtml('/contact-review','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div><script type="module" src="/.svelte-kit/contact-review.client.js"></script></body></html>'));});}}],server:{...base.server,fs:{allow:${JSON.stringify([path.resolve('../..'),await realpath('../../node_modules')])}}}};`);
 }
 const serverArgs = focusOnly
@@ -66,7 +66,7 @@ try{
   for(const [old,target]of [['/cookies-e-preferencias','/politica-de-privacidade#preferencias'],['/resolucao-de-litigios','/informacao-legal#litigios']]){const response=await fetch(origin+old,{redirect:'manual'});assert.equal(response.status,308);assert.equal(response.headers.get('location'),target);assert.ok(!(await response.text()).includes('<title>'));}
   for(const width of [1366,390])for(const theme of ['light','dark']){
     const context=await browser.newContext({viewport:{width,height:950},reducedMotion:'reduce'}),page=await context.newPage(),pageErrors=[];page.setDefaultNavigationTimeout(60000);page.on('pageerror',e=>pageErrors.push(e.message));
-    await context.addInitScript(({theme,slug})=>{localStorage.setItem('anm-orbit-theme',theme);localStorage.setItem('anm-favorites-v1',JSON.stringify([slug]));localStorage.setItem('anm-comparison-v1',JSON.stringify([slug]));},{theme,slug:vehicle.slug});
+    await context.addInitScript(({theme,slug})=>{localStorage.setItem('anm-theme',theme);localStorage.setItem('anm-favorites-v1',JSON.stringify([slug]));localStorage.setItem('anm-comparison-v1',JSON.stringify([slug]));},{theme,slug:vehicle.slug});
     await page.route('https://**/*',route=>route.abort());
     try{
       for(const route of legalRoutes){
@@ -88,6 +88,11 @@ try{
     const mobile = width === 390;
     const touch = mobile && ['dialog', 'vehicle'].includes(mode);
     const context=await browser.newContext({viewport:{width,height:950},isMobile:touch,hasTouch:touch,serviceWorkers:'block',reducedMotion:mobile?'reduce':'no-preference'}),page=await context.newPage(),posts=[],errors=[];let reply='success',release;
+    await context.addInitScript(() => {
+      localStorage.setItem('anm-site-consent-v1', JSON.stringify({
+        preferences: false, maps: true, expires: Date.now() + 600000,
+      }));
+    });
     page.setDefaultTimeout(20000);page.setDefaultNavigationTimeout(60000);page.on('pageerror',e=>errors.push(e.message));
     await page.route('**/*',route=>route.request().method()==='GET'?route.continue():route.abort());
     await page.route('**/api/contact',async route=>{posts.push(route.request().postDataJSON());if(reply==='delay')await new Promise(r=>release=r);if(reply==='offline')return route.abort();if(reply==='limited')return route.fulfill({status:429,json:{error:'private provider data'}});if(reply==='unavailable')return route.fulfill({status:503,json:{error:'technical'}});if(reply==='conflict')return route.fulfill({status:409,json:{error:'technical'}});return route.fulfill({status:202,json:{ok:true}});});

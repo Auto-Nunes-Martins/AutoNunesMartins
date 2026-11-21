@@ -3,7 +3,7 @@ import { vehicleExpenseCreateSchema, vehicleExpenseUpdateSchema } from '@anm/typ
 import { vehiclesApi } from '$lib/server/vehicles';
 import { expensesApi } from '$lib/server/vehicleExpenses';
 import { dashboardApi } from '$lib/server/dashboard';
-import { homepageHighlightStatus, type HighlightStatus } from '$lib/highlightStatus';
+import { homepageHighlightStatus, type HighlightStatus } from '$lib/highlights/highlightStatus';
 import { ApiError, rethrowAuthError } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 

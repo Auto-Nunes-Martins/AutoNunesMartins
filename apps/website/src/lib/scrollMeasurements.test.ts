@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { watchHomeStats } from './whatsappVisibility';
 import { notificationPosition } from './notificationPosition';
-import { perspectiveMotion } from './components/stand-concepts/perspectiveMotion';
-import { campaignMotion } from './components/stand-concepts/campaignMotion';
+import { perspectiveMotion } from './features/home/perspectiveMotion';
+import { campaignMotion } from './features/campaigns/campaignMotion';
 
 let frames: Map<number, FrameRequestCallback>;
 let sequence: number;

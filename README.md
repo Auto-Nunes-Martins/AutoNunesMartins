@@ -19,6 +19,12 @@ Public website and management platform for a used car dealership in Portugal. Th
 
 The website and CRM use SvelteKit, Svelte, and TypeScript. The API uses Express and Prisma, with PostgreSQL and Storage on Supabase. Clerk handles CRM authentication. The monorepo uses Yarn Workspaces.
 
+### Finding the code for a change
+
+- **Public website.** Start at the URL in `apps/website/src/routes`. Its page composes components from [website features](apps/website/src/lib/features). For example, the consent dialog, stored choices and Google Ads integration are together in [privacy](apps/website/src/lib/features/privacy). The homepage hero, catalogue and vehicle details each have their own directory. [SitePage](apps/website/src/lib/features/layout/SitePage.svelte) composes the shared frame and imports its scoped styles in cascade order.
+- **CRM.** Start at the route under `apps/crm/src/routes/(app)`. [CRM components](apps/crm/src/lib/components) are grouped by screen or feature. Supporting code for photos, highlights, activities, filters and forms lives in the corresponding directory under [the CRM library](apps/crm/src/lib). Server-only API clients are in `lib/server`.
+- **Backend.** [app.ts](backend/src/app.ts) maps HTTP paths to handlers in [routes](backend/src/routes). Public endpoints, inventory, tasks, dashboard data and website management have separate directories. Handlers call services in `src/lib/server`, business rules in `src/lib/domain` and data access in `src/lib/data`.
+
 ## Local development
 
 You need Node.js 20 or later, Git, Yarn 4 via Corepack, and development projects in Supabase and Clerk.

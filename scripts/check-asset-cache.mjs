@@ -186,15 +186,15 @@ try {
       const html = await response.text();
       assert(!html.includes('%anm.startup%'), 'startup template resolved');
       assert(
-        !/(?:src|href)=["'][^"']*\/(?:logo-transparent(?:-white-v3)?\.png|catalog-placeholder\.svg|orbit-startup\.js)/.test(
+        !/(?:src|href)=["'][^"']*\/(?:logo-transparent(?:-white-v3)?\.png|catalog-placeholder\.svg|site-startup\.js)/.test(
           html,
         ),
         `no fixed UI assets: ${url}`,
       );
       if (!url.startsWith('/crm')) {
-        assert.match(html, /<script id="orbit-startup">[\s\S]*?window\.initializeOrbitDocument/);
+        assert.match(html, /<script id="site-startup">[\s\S]*?window\.initializeSiteDocument/);
         assert(
-          html.indexOf('id="orbit-startup"') < html.indexOf('<body'),
+          html.indexOf('id="site-startup"') < html.indexOf('<body'),
           'classic startup stays parser blocking in head without a network request',
         );
       }

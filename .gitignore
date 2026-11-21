@@ -171,22 +171,7 @@ deployment/build.json
 /apps/website/src/lib/assets/images/hero-directions/woodland-curves-3840.webp
 /apps/website/src/lib/assets/images/hero-directions/woodland-curves-portrait-1080.webp
 /apps/website/src/lib/assets/images/hero-directions/woodland-curves-portrait-640.webp
-/apps/website/src/lib/components/stand-concepts/featuredHover.ts
-/apps/website/src/lib/components/stand-concepts/geometricStandCrop.test.ts
-/apps/website/src/lib/components/stand-concepts/geometricStandCrop.ts
-/apps/website/src/lib/components/stand-concepts/heroBackgroundFade.ts
-/apps/website/src/lib/components/stand-concepts/HeroBackgroundTuner.svelte
-/apps/website/src/lib/components/stand-concepts/HeroStandBackground.svelte
-/apps/website/src/lib/components/stand-concepts/heroStandSettings.ts
-/apps/website/src/lib/components/stand-concepts/OrbitCatalogFooter.svelte
-/apps/website/src/lib/components/stand-concepts/OrbitTrust.svelte
-/apps/website/src/lib/components/stand-concepts/PorscheDetailLab.svelte
-/apps/website/src/lib/components/stand-concepts/porscheLabData.ts
-/apps/website/src/lib/components/stand-concepts/responsiveStandFraming.test.ts
-/apps/website/src/lib/components/stand-concepts/responsiveStandFraming.ts
-/apps/website/src/lib/components/stand-concepts/StageBackdrop.svelte
-/apps/website/src/lib/components/stand-concepts/trustRow.test.ts
-/apps/website/src/lib/components/stand-concepts/trustRow.ts
+/apps/website/src/lib/components/stand-concepts/
 /scripts/check-stand-tuner.mjs
 
 # Manual checks for removed hero variants/tuner

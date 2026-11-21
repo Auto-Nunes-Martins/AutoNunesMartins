@@ -1,0 +1,1044 @@
+<script lang="ts">
+  import BackLink from '../ui/BackLink.svelte';
+  import { sizedPhoto, vehiclePhotoSet } from '$lib/vehiclePhotoSources';
+  import { createThumbnailSession, publicThumbnail, thumbnailAttrs } from '$lib/publicThumbnail';
+  import { catalogPlaceholder } from '$lib/localAssets';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import SelectionPreview from '../catalog/SelectionPreview.svelte';
+  import SocialMetadata from '$lib/components/SocialMetadata.svelte';
+  import { onMount, tick, untrack } from 'svelte';
+  import { photoFraming } from '@anm/types';
+  import { ArrowUpRight, Plus, X, RotateCcw, Columns3 } from 'lucide-svelte';
+  import { useComparison, comparisonRows } from '$lib/comparison';
+  import { publicHref, publicPhoto, formatVehiclePrice } from '$lib/publicVehicles';
+  import {
+    loadSelectedVehicles,
+    rememberSelectionIdentity,
+    retainSelectionIdentity,
+    selectionIdentity,
+    type SelectionIdentity,
+    type SelectedVehicle as Entry,
+  } from '$lib/selectedVehicles';
+  const comparison = useComparison();
+  const { ids, ready } = comparison;
+  const memory = new Map<string, SelectionIdentity>();
+  let entries = $state<Entry[]>([]);
+  let loading = $state(false);
+  let reload = $state(0);
+  let heading: HTMLHeadingElement;
+  let compact = $state(false);
+  let announcement = $state('');
+  let loadedReload = -1;
+  let pair = $state('0-1');
+  const failedPhotos = $state<Record<string, boolean>>({});
+  const pairs = [
+    [0, 1],
+    [0, 2],
+    [1, 2],
+  ] as const;
+  // Keep the actual table geometry while fresh data is fetched; never display cached inventory.
+  const displayEntries = $derived(
+    $ids.map(
+      (id) =>
+        entries.find((entry) => entry.id === id) ?? ({ id, status: 0, vehicle: null } as Entry),
+    ),
+  );
+  const visible = $derived(
+    compact && displayEntries.length === 3
+      ? pair
+          .split('-')
+          .map((index) => displayEntries[Number(index)]!)
+          .filter(Boolean)
+      : displayEntries,
+  );
+  const facts = comparisonRows.filter((row) => row.label !== 'Preço');
+  const sessions = new WeakMap<Entry, ReturnType<typeof createThumbnailSession>>();
+  const imageSessions = $derived(
+    new Map(
+      entries
+        .filter((entry) => entry.vehicle)
+        .map((entry) => {
+          let session = sessions.get(entry);
+          if (!session) {
+            session = createThumbnailSession(entry.id, entry.photoVersions);
+            sessions.set(entry, session);
+          }
+          return [entry.id, session];
+        }),
+    ),
+  );
+  onMount(() => {
+    const media = matchMedia('(max-width: 700px)');
+    const update = () => {
+      compact = media.matches;
+    };
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  });
+  const name = (entry: Entry) =>
+    selectionIdentity(entry)
+      ? `${selectionIdentity(entry)!.brand} ${selectionIdentity(entry)!.model}`
+      : `Viatura selecionada ${$ids.indexOf(entry.id) + 1}`;
+  $effect(() => {
+    const selected = [...$ids];
+    const requestedReload = reload;
+    for (const id of memory.keys()) if (!selected.includes(id)) memory.delete(id);
+    if (!$ready || !selected.length) {
+      entries = [];
+      loading = false;
+      return;
+    }
+    const controller = new AbortController();
+    const current = untrack(() => entries);
+    if (
+      loadedReload === requestedReload &&
+      selected.every((id) => current.some((entry) => entry.id === id))
+    ) {
+      entries = current.filter((entry) => selected.includes(entry.id));
+      return;
+    }
+    rememberSelectionIdentity(
+      current.filter((entry) => selected.includes(entry.id)),
+      memory,
+      document.querySelector('.comparison-page'),
+    );
+    entries = current.filter((entry) => selected.includes(entry.id));
+    loading = true;
+    void (async () => {
+      try {
+        const fresh = await loadSelectedVehicles(selected, controller.signal);
+        if (!controller.signal.aborted) {
+          rememberSelectionIdentity(entries, memory, document.querySelector('.comparison-page'));
+          entries = retainSelectionIdentity(fresh, memory);
+          loadedReload = requestedReload;
+        }
+      } catch {
+        if (!controller.signal.aborted)
+          entries = retainSelectionIdentity(
+            selected.map((id) => ({ id, status: 503, vehicle: null })),
+            memory,
+          );
+      } finally {
+        if (!controller.signal.aborted) loading = false;
+      }
+    })();
+    return () => controller.abort();
+  });
+  async function remove(entry?: Entry) {
+    if (entry) comparison.remove(entry.id, name(entry));
+    else comparison.clear();
+    announcement = entry
+      ? `${name(entry)} removido da comparação. ${$ids.length} ${$ids.length === 1 ? 'viatura selecionada' : 'viaturas selecionadas'}.`
+      : 'Seleção de comparação limpa.';
+    await tick();
+    heading?.focus({ preventScroll: true });
+  }
+</script>
+
+<SocialMetadata
+  title="Comparar viaturas — Auto Nunes Martins"
+  description="Compare até três viaturas lado a lado: preço, quilometragem e características publicadas."
+  canonical={new URL('/comparar', $page.url.origin).href}
+/>
+
+{#snippet emptyState()}
+  <section class="empty" aria-labelledby="empty-title">
+    <div class="empty-slots" aria-hidden="true">
+      <span>01</span><span>02</span><span>03</span>
+    </div>
+    <h2 id="empty-title">Quais são as suas opções?</h2>
+    <p>Escolha até três viaturas e veja os detalhes lado a lado.</p>
+    <a class="primary" href="/viaturas"
+      >Escolher viaturas <ArrowUpRight size={18} aria-hidden="true" /></a
+    >
+  </section>
+{/snippet}
+
+<svelte:head>
+  <link rel="canonical" href={new URL('/comparar', $page.url.origin).href} />
+  <title>Comparar viaturas — Auto Nunes Martins</title>
+  <meta
+    name="description"
+    content="Compare até três viaturas lado a lado: preço, quilometragem e características publicadas."
+  />
+  <meta name="robots" content="noindex, follow" />
+</svelte:head>
+
+<main class="comparison-page">
+  <nav class="back-nav" aria-label="Voltar"><BackLink /></nav>
+  <header class="page-heading">
+    <div class="heading-intro">
+      <h1 bind:this={heading} tabindex="-1">Comparar viaturas<span>.</span></h1>
+      <Columns3 class="intro-comparison" size={66} strokeWidth={1} aria-hidden="true" />
+    </div>
+    {#if $ready && $ids.length}
+      <div class="selection-toolbar">
+        <p class="selection-count">{$ids.length} de 3 viaturas</p>
+        <div class="actions">
+          <a class="add" href="/viaturas"
+            >{#if $ids.length < 3}<Plus size={17} aria-hidden="true" /> Adicionar viatura{:else}Ver
+              catálogo <ArrowUpRight size={17} aria-hidden="true" />{/if}</a
+          >
+          <button class="clear" type="button" onclick={() => remove()}
+            ><RotateCcw size={15} aria-hidden="true" /> Limpar seleção</button
+          >
+        </div>
+      </div>
+    {/if}
+  </header>
+
+  {#if !$ready}
+    <div class="selection-preparing">
+      <p role="status">A carregar as viaturas…</p>
+      <div class="selection-placeholder" aria-hidden="true" inert>{@render emptyState()}</div>
+    </div>
+  {:else if !$ids.length}
+    {@render emptyState()}
+  {:else}
+    {#if compact && displayEntries.length === 3}
+      <div class="pair-picker">
+        <label for="comparison-pair">Comparar lado a lado</label>
+        <select id="comparison-pair" bind:value={pair}>
+          {#each pairs as indexes}
+            <option value={indexes.join('-')}
+              >{loading
+                ? `Viaturas ${indexes[0] + 1} e ${indexes[1] + 1}`
+                : `${name(displayEntries[indexes[0]]!)} + ${name(displayEntries[indexes[1]]!)}`}</option
+            >
+          {/each}
+        </select>
+      </div>
+    {/if}
+    <div
+      class="comparison-board"
+      aria-busy={loading}
+      class:single={visible.length === 1}
+      class:pair={visible.length === 2}
+      class:triple={visible.length === 3}
+    >
+      {#if loading}<p class="sr-only" role="status">A carregar as viaturas…</p>{/if}
+      <table>
+        <caption class="sr-only">Comparação de {visible.map(name).join(' e ')}</caption>
+        <colgroup
+          ><col class="attribute-column" />{#each visible as entry}<col />{/each}</colgroup
+        >
+        <thead>
+          <tr class="photo-row">
+            <td class="attribute-space" aria-hidden="true"></td>
+            {#each visible as entry (entry.id)}
+              <td>
+                <div class="vehicle-photo" data-selection-id={entry.id}>
+                  {#if entry.status === 0}<div class="pending-photo" aria-hidden="true"></div>
+                  {:else if entry.vehicle}
+                    {@const session = imageSessions.get(entry.id)!}
+                    {@const framing = entry.vehicle.photos.length
+                      ? entry.vehicle.galleryFraming?.[0]
+                      : undefined}
+                    {@const src = entry.vehicle.photos.length
+                      ? sizedPhoto(publicPhoto(entry.vehicle, 0), 800)
+                      : catalogPlaceholder}
+                    {@const srcset = entry.vehicle.photos.length
+                      ? vehiclePhotoSet(publicPhoto(entry.vehicle, 0))
+                      : undefined}
+                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}
+                      ><img
+                        class:gallery-photo={entry.vehicle.photos.length > 0}
+                        {...thumbnailAttrs(session, src, srcset)}
+                        use:publicThumbnail={{
+                          session,
+                          index: 0,
+                          src,
+                          srcset,
+                          sizes: '(max-width:700px) 90vw, 560px',
+                        }}
+                        sizes="(max-width:700px) 90vw, 560px"
+                        style:--photo-desktop={framing
+                          ? `${framing.desktop.x}% ${framing.desktop.y}%`
+                          : undefined}
+                        style:--photo-mobile={framing
+                          ? `${framing.mobile.x}% ${framing.mobile.y}%`
+                          : undefined}
+                        use:photoFraming={{
+                          framing: framing ?? undefined,
+                          enabled: entry.vehicle.photos.length > 0,
+                        }}
+                        alt={entry.vehicle.photos.length
+                          ? name(entry)
+                          : `Fotografia indisponível: ${name(entry)}`}
+                        width="480"
+                        height="320"
+                      /></a
+                    >
+                  {:else if entry.lastKnownIdentity?.preview}
+                    <a href={publicHref(entry.id)} aria-label={`Ver ${name(entry)}`}
+                      ><SelectionPreview preview={entry.lastKnownIdentity.preview} /></a
+                    >
+                  {:else if selectionIdentity(entry)?.photo && !failedPhotos[entry.id]}
+                    <a
+                      href={publicHref(entry.id)}
+                      aria-label={entry.status === 404
+                        ? `Ver ficha indisponível: ${name(entry)}`
+                        : `Ver ${name(entry)}`}
+                      ><img
+                        src={selectionIdentity(entry)!.photo!}
+                        alt={entry.status === 404
+                          ? `${name(entry)} — já não disponível`
+                          : name(entry)}
+                        width="480"
+                        height="320"
+                        onerror={() => (failedPhotos[entry.id] = true)}
+                      /></a
+                    >
+                  {:else}<div class="missing-photo">
+                      <img
+                        src={catalogPlaceholder}
+                        alt="Fotografia indisponível"
+                        width="480"
+                        height="320"
+                      />
+                    </div>{/if}
+                  <button
+                    class="remove"
+                    type="button"
+                    disabled={entry.status === 0}
+                    aria-label={`Remover ${name(entry)} da comparação`}
+                    onclick={() => remove(entry)}><X size={18} aria-hidden="true" /></button
+                  >
+                </div>
+              </td>
+            {/each}
+          </tr>
+          <tr class="summary-row">
+            <th scope="col" class="attribute-space"
+              >{loading || visible.some((entry) => entry.vehicle)
+                ? 'Especificações'
+                : 'Seleção'}</th
+            >
+            {#each visible as entry (entry.id)}
+              <th scope="col" id={`vehicle-${entry.id}`}>
+                {#if entry.status === 0}
+                  <span class="brand pending-line" aria-hidden="true">&nbsp;</span>
+                  <div class="pending-line pending-title" aria-hidden="true">&nbsp;</div>
+                  <strong class="price pending-line" aria-hidden="true">&nbsp;</strong>
+                  <span class="detail-link pending-line" aria-hidden="true">&nbsp;</span>
+                {:else if entry.vehicle}
+                  <span class="brand">{entry.vehicle.brand}</span>
+                  <h2><a href={publicHref(entry.id)}>{entry.vehicle.model}</a></h2>
+                  <strong class="price"
+                    >{entry.vehicle.price === null
+                      ? 'Preço não indicado'
+                      : formatVehiclePrice(entry.vehicle.price)}</strong
+                  >
+                  <a class="detail-link" href={publicHref(entry.id)}
+                    >Ver viatura <ArrowUpRight size={16} aria-hidden="true" /></a
+                  >
+                {:else}
+                  {#if selectionIdentity(entry)}
+                    <span class="brand">{selectionIdentity(entry)!.brand}</span>
+                    <h2><a href={publicHref(entry.id)}>{selectionIdentity(entry)!.model}</a></h2>
+                    <span class="unavailable-year">{selectionIdentity(entry)!.year}</span>
+                  {:else}<h2>{name(entry)}</h2>{/if}
+                  <p class="unavailable" class:lookup-error={entry.status === 503}>
+                    {entry.status === 404 ? 'Já não disponível' : 'Falha na consulta.'}
+                  </p>
+                  {#if entry.status === 503}<p class="lookup-detail">
+                      Disponibilidade por confirmar.
+                    </p>
+                    <button
+                      class="retry-item detail-link"
+                      type="button"
+                      disabled={loading}
+                      onclick={() => (reload += 1)}
+                      ><RotateCcw size={15} aria-hidden="true" />Tentar novamente</button
+                    >{/if}
+                  <a
+                    class="detail-link"
+                    href="/viaturas"
+                    onclick={(event) => {
+                      if (
+                        event.button ||
+                        event.ctrlKey ||
+                        event.metaKey ||
+                        event.shiftKey ||
+                        event.altKey
+                      )
+                        return;
+                      event.preventDefault();
+                      comparison.remove(entry.id, name(entry));
+                      void goto('/viaturas');
+                    }}>Substituir <ArrowUpRight size={16} aria-hidden="true" /></a
+                  >
+                {/if}
+              </th>
+            {/each}
+          </tr>
+        </thead>
+        {#if loading || visible.some((entry) => entry.vehicle)}
+          {#each facts as row, index}
+            <tbody class="fact-group">
+              <tr class="aligned-fact">
+                <th class="fact-label" scope="row" id={`fact-${index}`}><span>{row.label}</span></th
+                >
+                {#each visible as entry (entry.id)}
+                  <td
+                    class="fact-value"
+                    class:missing={!entry.vehicle || row.value(entry.vehicle) === 'Não indicado'}
+                    headers={`vehicle-${entry.id} fact-${index}`}
+                    >{#if entry.status === 0}<span class="pending-line" aria-hidden="true"
+                        >&nbsp;</span
+                      >{:else}{entry.vehicle ? row.value(entry.vehicle) : '—'}{/if}</td
+                  >
+                {/each}</tr
+              >
+            </tbody>
+          {/each}
+        {/if}
+      </table>
+      {#if visible.length === 1}
+        <a class="second-option" href="/viaturas"
+          ><Plus size={26} strokeWidth={1.3} aria-hidden="true" /><span
+            >Adicionar outra viatura</span
+          ></a
+        >
+      {/if}
+    </div>
+    <p class="data-note">
+      {entries.some((entry) => entry.vehicle)
+        ? '“Não indicado”: informação não publicada na ficha. “—”: viatura sem dados atuais para comparar.'
+        : entries.some((entry) => entry.status === 503)
+          ? 'Não foi possível confirmar a disponibilidade. As escolhas continuam guardadas.'
+          : 'As escolhas continuam guardadas. Pode remover ou substituir as viaturas que já não estão disponíveis.'}
+    </p>
+  {/if}
+  <p class="storage-note">
+    As suas escolhas ficam guardadas neste navegador, sem criar conta. Pode removê-las a qualquer
+    momento. <a href="/politica-de-privacidade#escolhas">Política de privacidade</a>
+  </p>
+  <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
+</main>
+
+<style>
+  /* Reserve the exact empty-state geometry while local selection storage hydrates. */
+  .selection-preparing {
+    position: relative;
+  }
+  .selection-preparing > p {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+  }
+  .selection-placeholder {
+    visibility: hidden;
+  }
+
+  .retry-item {
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    min-height: 44px;
+    padding: 0;
+    font: inherit;
+  }
+  .retry-item:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+  .unavailable.lookup-error,
+  .lookup-detail {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .unavailable-year {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .pending-photo {
+    background: var(--surface);
+  }
+  .pending-line {
+    display: block;
+    background: var(--surface);
+    border-radius: 3px;
+    width: 80%;
+  }
+  .comparison-page {
+    width: var(--site-frame);
+    max-width: var(--site-frame-max);
+    margin: auto;
+    padding: var(--site-space-page-start) 0 88px;
+    color: var(--text);
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  a:focus-visible,
+  button:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 4px;
+  }
+  h1:focus {
+    outline: none;
+  }
+  .back-nav {
+    display: block;
+  }
+  .page-heading {
+    display: block;
+    margin: 16px 0 36px;
+    max-width: 1200px;
+  }
+  .selection-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+  }
+  .heading-intro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+  }
+  .heading-intro :global(.intro-comparison) {
+    color: var(--red);
+    flex-shrink: 0;
+    margin-right: 3%;
+  }
+  .selection-count {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  h1 {
+    font-size: var(--site-title-section);
+    font-weight: 500;
+    letter-spacing: -0.055em;
+    line-height: 1.06;
+    margin: 0;
+  }
+  h1 > span {
+    color: var(--red);
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .add,
+  .primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 46px;
+    padding: 11px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+  }
+  .add {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+  }
+  .primary {
+    background: var(--text);
+    color: var(--bg);
+  }
+  .clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    background: none;
+    min-height: 44px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .clear:hover {
+    color: var(--text);
+  }
+  .comparison-board {
+    position: relative;
+    max-width: 1200px;
+    margin-inline: 0;
+  }
+  table {
+    width: calc(100% + 32px);
+    margin-inline: -16px;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+  }
+  .attribute-column {
+    width: clamp(130px, 17vw, 190px);
+  }
+  td,
+  th {
+    min-width: 0;
+    text-align: left;
+    vertical-align: top;
+    font-weight: 400;
+  }
+  .photo-row td,
+  .summary-row th,
+  .fact-value {
+    padding-inline: 16px;
+  }
+  .vehicle-photo {
+    position: relative;
+    overflow: hidden;
+    border-radius: 5px;
+    background: var(--surface);
+    aspect-ratio: var(--inline-gallery-photo-ratio);
+  }
+  .vehicle-photo :is(a, .pending-photo, .missing-photo) {
+    position: absolute;
+    inset: 0;
+  }
+  .vehicle-photo img,
+  .vehicle-photo :global(canvas) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .vehicle-photo .gallery-photo:not([src*='catalog-placeholder']) {
+    object-position: var(--photo-desktop, 50% 50%);
+  }
+  @media (width > 1920px) {
+    /* Match the detail gallery's 988px wide frame and its 690px height cap. */
+    .vehicle-photo {
+      aspect-ratio: 988 / 690;
+    }
+  }
+  @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+    .vehicle-photo {
+      --landscape-gallery-width: min(96vw, 100vw - 48px, var(--site-frame-max));
+      aspect-ratio: tan(
+        atan2(var(--landscape-gallery-width), var(--inline-gallery-landscape-height))
+      );
+    }
+    .vehicle-photo .gallery-photo:not([src*='catalog-placeholder']) {
+      object-fit: contain;
+      background: #0b0c0e;
+    }
+  }
+  .remove {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+  }
+  .summary-row th {
+    padding-block: 14px 18px;
+    position: sticky;
+    top: var(--nav-visible-height, 80px);
+    z-index: 2;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .summary-row .attribute-space {
+    position: sticky;
+    top: var(--nav-visible-height, 80px);
+    z-index: 2;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  h2,
+  .pending-title {
+    margin: 0;
+    font-size: clamp(21px, 2vw, 28px);
+    line-height: 1.15;
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    overflow-wrap: anywhere;
+  }
+  .summary-row h2,
+  .pending-title {
+    min-height: 2.3em;
+  }
+  .price {
+    display: block;
+    margin-top: 10px;
+    font-size: clamp(20px, 1.7vw, 24px);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+  }
+  .detail-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    min-height: 44px;
+    margin-top: 4px;
+  }
+  .fact-label {
+    padding: 12px 16px 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: left;
+  }
+  .aligned-fact .fact-label {
+    padding: 14px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--line);
+  }
+  .fact-value {
+    padding-block: 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 16px;
+    line-height: 1.45;
+    text-align: left;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .fact-value + .fact-value {
+    border-left: 1px solid var(--line);
+  }
+  .fact-value.missing {
+    color: var(--muted);
+    font-size: 15px;
+  }
+  :global(html[data-theme='light']) .fact-group .fact-value,
+  :global(html[data-theme='light']) .aligned-fact .fact-label {
+    background: var(--site-gray-surface);
+  }
+  .single {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .second-option {
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+    box-sizing: border-box;
+    height: clamp(150px, 12vw, 210px);
+    min-height: 150px;
+    border: 1px dashed var(--line);
+    border-radius: 5px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .second-option :global(svg) {
+    color: var(--red);
+  }
+  .pair-picker {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .pair-picker label {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .pair-picker select {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 10px 32px 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--bg);
+    font-size: 14px;
+    text-overflow: ellipsis;
+  }
+  .empty {
+    padding: 44px 0 54px;
+    border-top: 1px solid var(--line);
+  }
+  .empty-slots {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .empty-slots span {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 58px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    color: var(--muted);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+  .empty-slots span:first-child {
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .empty h2 {
+    font-size: clamp(28px, 3vw, 42px);
+  }
+  .empty p {
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 16px;
+    margin: 18px 0 28px;
+  }
+  .loading {
+    padding: 60px 0;
+    border-block: 1px solid var(--line);
+    font-size: 16px;
+    color: var(--muted);
+  }
+  .unavailable {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .data-note,
+  .storage-note {
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 13px;
+    margin: 24px 0 0;
+    max-width: 82ch;
+  }
+  .storage-note {
+    margin-top: 36px;
+  }
+  .storage-note a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .primary:focus-visible {
+    background: var(--red);
+    color: white;
+  }
+  .add:focus-visible {
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+    border-color: color-mix(in srgb, var(--text) 60%, transparent);
+  }
+  .detail-link:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  @media (hover: hover) {
+    .add:hover {
+      background: color-mix(in srgb, var(--text) 6%, transparent);
+      border-color: color-mix(in srgb, var(--text) 60%, transparent);
+    }
+    .primary:hover {
+      background: var(--red);
+      color: white;
+    }
+    .detail-link:hover {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+    .remove:hover {
+      background: var(--text);
+      color: var(--bg);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .add,
+    .primary,
+    .remove {
+      transition:
+        background-color 320ms ease,
+        border-color 320ms ease,
+        color 320ms ease;
+    }
+    .primary :global(svg),
+    a.detail-link :global(svg) {
+      transition: transform 220ms ease;
+    }
+    .primary:focus-visible :global(svg),
+    a.detail-link:focus-visible :global(svg) {
+      transform: translate(3px, -3px);
+    }
+    @media (hover: hover) {
+      .primary:hover :global(svg),
+      a.detail-link:hover :global(svg) {
+        transform: translate(3px, -3px);
+      }
+    }
+  }
+  @media (max-width: 700px) {
+    .vehicle-photo {
+      --landscape-gallery-width: 90vw;
+    }
+    .vehicle-photo .gallery-photo:not([src*='catalog-placeholder']) {
+      object-position: var(--photo-mobile, 50% 50%);
+    }
+    .comparison-page {
+      padding: 32px 0 64px;
+    }
+    .page-heading {
+      margin: 12px 0 30px;
+    }
+    .selection-toolbar {
+      margin-top: 18px;
+      gap: 12px;
+    }
+    .heading-intro {
+      gap: 12px;
+    }
+    .heading-intro :global(.intro-comparison) {
+      width: 40px;
+    }
+    .actions {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 18px;
+    }
+    .add {
+      min-height: 44px;
+      padding: 10px 18px;
+    }
+    .photo-row td,
+    .summary-row th,
+    .fact-value {
+      padding-inline: 8px;
+    }
+    table {
+      width: calc(100% + 16px);
+      margin-inline: -8px;
+    }
+    .vehicle-photo {
+      border-radius: 3px;
+    }
+    .remove {
+      top: 5px;
+      right: 5px;
+      width: 36px;
+      height: 36px;
+    }
+    .remove::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+    }
+    .summary-row th {
+      padding-block: 12px 14px;
+    }
+    .brand {
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    h2,
+    .pending-title {
+      font-size: clamp(18px, 4.8vw, 23px);
+      line-height: 1.15;
+    }
+    .price {
+      font-size: clamp(18px, 4.8vw, 23px);
+      margin-top: 8px;
+    }
+    .detail-link {
+      gap: 8px;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .fact-label {
+      font-size: 12px;
+      padding-block: 14px 9px;
+    }
+    .single .fact-label {
+      padding-inline: 8px;
+    }
+    .attribute-column {
+      width: 100px;
+    }
+    .aligned-fact .fact-label {
+      padding-inline: 8px;
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+    .summary-row .attribute-space {
+      font-size: 11px;
+      padding-inline: 8px;
+      vertical-align: bottom;
+    }
+    .fact-value {
+      font-size: 15px;
+      padding-block: 12px;
+      line-height: 1.45;
+    }
+    .fact-value.missing {
+      font-size: 14px;
+    }
+    .single {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .single table {
+      max-width: none;
+    }
+    .single .vehicle-photo {
+      max-width: 440px;
+    }
+    .single .second-option {
+      order: -1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 12px 16px;
+      height: auto;
+      min-height: 52px;
+      width: 100%;
+      font-size: 14px;
+      gap: 12px;
+    }
+    .empty {
+      padding-block: 24px 36px;
+    }
+    .empty h2 {
+      font-size: 28px;
+    }
+    .data-note,
+    .storage-note {
+      font-size: 13px;
+    }
+  }
+</style>

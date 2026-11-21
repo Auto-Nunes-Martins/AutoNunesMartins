@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import startupScript from '../assets/orbit-startup.js?raw';
+import startupScript from '../assets/site-startup.js?raw';
 
 // Public app only: deliberately no session provider, auth middleware or CRM credentials.
 export const handle: Handle = async ({ event, resolve }) => {

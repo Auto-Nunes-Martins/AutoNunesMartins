@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { apiJson } from './api.js';
-import type { ActivityContext } from '$lib/activityPresentation';
+import type { ActivityContext } from '$lib/activity/activityPresentation';
 import type { GalleryPhotoFraming } from '@anm/types';
 
 export interface DashboardKpis {

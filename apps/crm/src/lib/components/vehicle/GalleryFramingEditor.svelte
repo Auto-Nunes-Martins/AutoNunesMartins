@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import { LayoutGrid, Images } from 'lucide-svelte';
   import { withGalleryDestination, type GalleryPhotoFraming } from '@anm/types';
-  import type { SignedVariantPhoto } from '$lib/vehicleImage';
+  import type { SignedVariantPhoto } from '$lib/photos/vehicleImage';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
   let {
     photo,

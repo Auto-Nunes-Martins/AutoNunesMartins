@@ -1,7 +1,7 @@
 <script lang="ts">
   import ListFreshness from '$lib/components/common/ListFreshness.svelte';
   import { crmPath } from '$lib/paths';
-  import { linkedRow } from '$lib/linkedRow';
+  import { linkedRow } from '$lib/lists/linkedRow';
   import { ArrowRight, Car, Plus, Tag, AlertCircle, RefreshCw } from 'lucide-svelte';
   import { invalidateAll } from '$app/navigation';
   import { refreshCrmSession } from '$lib/auth/session';

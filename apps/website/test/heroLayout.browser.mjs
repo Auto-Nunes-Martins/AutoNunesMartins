@@ -646,7 +646,7 @@ try {
         let previousReserve = '';
         new MutationObserver(() => {
           const hero = document.querySelector('.hd-root');
-          const value = hero?.style.getPropertyValue('--v5-feature-height');
+          const value = hero?.style.getPropertyValue('--hero-feature-height');
           if (value && value !== previousReserve) {
             previousReserve = value;
             window.heroLayoutProbe.reserveWrites.push({ time: performance.now(), value });
@@ -670,7 +670,7 @@ try {
           if (hero) {
             const rect = hero.getBoundingClientRect();
             const landscape = hero.querySelector('.hd-landscape').getBoundingClientRect();
-            const stats = document.querySelector('.orbit-stats');
+            const stats = document.querySelector('.site-stats');
             const stat = stats?.querySelector('.stat');
             const grid = stats?.querySelector('.stats-grid');
             const label = stat?.querySelector('p');
@@ -682,7 +682,7 @@ try {
                 .getEntriesByType('paint')
                 .some((entry) => entry.name === 'first-contentful-paint'),
               finalInitializerPresent: [...document.scripts].some(
-                (script) => script.textContent.trim() === 'window.initializeOrbitDocument();',
+                (script) => script.textContent.trim() === 'window.initializeSiteDocument();',
               ),
               height: rect.height,
               nextY: hero.nextElementSibling?.getBoundingClientRect().top,
@@ -720,9 +720,9 @@ try {
         else await page.reload({ waitUntil: 'domcontentloaded' });
         await page.locator('.hd-feature').waitFor();
         await page.locator('.hd-root[data-canvas-pinned]').waitFor();
-        await page.locator('.orbit-stats').waitFor({ state: 'attached' });
+        await page.locator('.site-stats').waitFor({ state: 'attached' });
         await page.evaluate(async () => {
-          const stat = document.querySelector('.orbit-stats .stat');
+          const stat = document.querySelector('.site-stats .stat');
           await Promise.all(
             stat.getAnimations().map((animation) => animation.finished.catch(() => {})),
           );
@@ -808,16 +808,16 @@ try {
           );
         }
         // Trust metrics follow the hero and precede the vehicle selection in production.
-        await page.locator('.orbit-stats').scrollIntoViewIfNeeded();
-        await page.locator('.orbit-stats.entered').waitFor();
-        await expect(page.locator('.orbit-stats + #selecao')).toHaveCount(1);
+        await page.locator('.site-stats').scrollIntoViewIfNeeded();
+        await page.locator('.site-stats.entered').waitFor();
+        await expect(page.locator('.site-stats + #selecao')).toHaveCount(1);
         await page.evaluate(async () => {
-          const stat = document.querySelector('.orbit-stats .stat');
+          const stat = document.querySelector('.site-stats .stat');
           await Promise.all(
             stat.getAnimations().map((animation) => animation.finished.catch(() => {})),
           );
         });
-        await expect(page.locator('.orbit-stats .stat').first()).toHaveCSS('opacity', '1');
+        await expect(page.locator('.site-stats .stat').first()).toHaveCSS('opacity', '1');
         await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
         console.log(
           `${width}px font+${fontDelay} ${reducedMotion} ${phase}${streaming ? ` CSS+${profile.cssDelay} split:${profile.split}` : ''}: stable`,

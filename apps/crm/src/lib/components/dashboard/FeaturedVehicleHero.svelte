@@ -2,10 +2,10 @@
   import { crmPath } from '$lib/paths';
   import { descriptionPreviewHtml } from '@anm/types/richDescription';
   import { PUBLIC_BACKEND_URL, PUBLIC_WEBSITE_URL } from '$env/static/public';
-  import { publicVehiclePhotoUrl } from '$lib/publicVehiclePhoto';
+  import { publicVehiclePhotoUrl } from '$lib/photos/publicVehiclePhoto';
   import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { framingStyle } from '@anm/types';
-  import { dashboardPhotoFraming } from '$lib/dashboardPhotoFraming';
+  import { dashboardPhotoFraming } from '$lib/highlights/dashboardPhotoFraming';
   import {
     ArrowLeft,
     ArrowRight,

@@ -218,11 +218,11 @@ try {
   );
   console.log('PASS detail/gallery: failure, recovery, failure again');
   await page.goto(origin);
-  await check(page.locator('.orbit-main-photo img').first(), true);
+  await check(page.locator('.site-main-photo img').first(), true);
   console.log('PASS featured hero photo failure');
   assert.deepEqual(badUrls, [], 'no imported URLs routed to Unsplash');
   assert.deepEqual(errors, [], 'no browser exceptions');
-  const resource = await page.locator('.orbit-main-photo img').first().getAttribute('src');
+  const resource = await page.locator('.site-main-photo img').first().getAttribute('src');
   const response = await fetch(new URL(resource, origin));
   assert.equal(response.status, 200);
   assert.match(response.headers.get('content-type'), /image\/svg\+xml/);

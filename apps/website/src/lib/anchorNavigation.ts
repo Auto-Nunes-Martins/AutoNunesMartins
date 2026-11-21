@@ -2,9 +2,9 @@ import {
   anchorTarget,
   createAnchorScroller,
   internalAnchor,
-} from './components/stand-concepts/slowAnchor';
-import type { AnchorScrollProfile } from './components/stand-concepts/slowAnchor';
-import type { AnchorArrival } from './components/stand-concepts/slowAnchor';
+} from './features/motion/slowAnchor';
+import type { AnchorScrollProfile } from './features/motion/slowAnchor';
+import type { AnchorArrival } from './features/motion/slowAnchor';
 import './anchorNavigation.css';
 
 type Options = {

@@ -1,7 +1,7 @@
 import { descriptionPreviewHtml } from '@anm/types/richDescription';
 import { framingStyle } from '@anm/types';
-import { dashboardPhotoFraming } from '$lib/dashboardPhotoFraming';
-import { photoAttrs } from '$lib/vehicleImage';
+import { dashboardPhotoFraming } from '$lib/highlights/dashboardPhotoFraming';
+import { photoAttrs } from '$lib/photos/vehicleImage';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,9 +14,9 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import * as format from '$lib/utils/format';
 import * as taskPresentation from '$lib/components/task/presentation';
-import { linkedRow } from '$lib/linkedRow';
-import { activityHref } from '$lib/activityNavigation';
-import { publicVehiclePhotoUrl } from '$lib/publicVehiclePhoto';
+import { linkedRow } from '$lib/lists/linkedRow';
+import { activityHref } from '$lib/activity/activityNavigation';
+import { publicVehiclePhotoUrl } from '$lib/photos/publicVehiclePhoto';
 import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
 
 // Render the actual overview components. Icons are decorative; panel snippets
@@ -42,8 +42,8 @@ function fromSource(source: string, file: string): any {
       };
     else if (specifier === '@anm/types/richDescription') value = { descriptionPreviewHtml };
     else if (specifier === '@anm/types') value = { framingStyle };
-    else if (specifier === '$lib/dashboardPhotoFraming') value = { dashboardPhotoFraming };
-    else if (specifier === '$lib/publicVehiclePhoto') value = { publicVehiclePhotoUrl };
+    else if (specifier === '$lib/highlights/dashboardPhotoFraming') value = { dashboardPhotoFraming };
+    else if (specifier === '$lib/photos/publicVehiclePhoto') value = { publicVehiclePhotoUrl };
     else if (specifier === '$lib/utils/publicVehicleUrl') value = { publicVehicleUrl };
     else if (specifier === '$app/navigation') value = { invalidateAll: async () => {} };
     else if (specifier === '$lib/auth/session')
@@ -54,15 +54,15 @@ function fromSource(source: string, file: string): any {
       };
     else if (specifier === '$lib/utils/format') value = format;
     else if (specifier === '$lib/components/task/presentation') value = taskPresentation;
-    else if (specifier === '$lib/linkedRow') value = { linkedRow };
-    else if (specifier === '$lib/activityNavigation') value = { activityHref };
+    else if (specifier === '$lib/lists/linkedRow') value = { linkedRow };
+    else if (specifier === '$lib/activity/activityNavigation') value = { activityHref };
     // This text/navigation test stubs decorative event icons as above.
-    else if (specifier === '$lib/activityPresentation')
+    else if (specifier === '$lib/activity/activityPresentation')
       value = {
         activityStyle: () => ({ icon, color: 'var(--color-info)', label: 'Evento' }),
         activityContextText: () => null,
       };
-    else if (specifier === '$lib/vehicleImage') value = { photoFallback: () => ({}), photoAttrs };
+    else if (specifier === '$lib/photos/vehicleImage') value = { photoFallback: () => ({}), photoAttrs };
     else if (specifier.endsWith('.svelte'))
       value = {
         default: load(

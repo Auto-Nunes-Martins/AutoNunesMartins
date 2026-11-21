@@ -1,10 +1,10 @@
 <script lang="ts">
   import LegalInformation from '$lib/components/LegalInformation.svelte';
-  import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
+  import SitePage from '$lib/features/layout/SitePage.svelte';
 </script>
 
-<DesignEdition privacy legalInformation>
+<SitePage privacy legalInformation>
   {#snippet routeContent()}
     <LegalInformation />
   {/snippet}
-</DesignEdition>
+</SitePage>

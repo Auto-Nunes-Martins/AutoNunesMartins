@@ -1,0 +1,213 @@
+dialog {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 45px;
+  max-height: 90svh;
+  overflow: auto;
+}
+dialog::backdrop {
+  background: #000b;
+  backdrop-filter: blur(12px);
+}
+.contact-dialog {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  overflow: clip;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+.contact-dialog::backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+.contact-scrim {
+  position: absolute;
+  inset: 0;
+  background: #000b;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  touch-action: none;
+}
+.contact-viewport {
+  position: absolute;
+  top: var(--contact-top, 0px);
+  left: var(--contact-left, 0px);
+  width: var(--contact-width, 100%);
+  height: var(--contact-height, 100%);
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  pointer-events: none;
+}
+.contact-panel-shell {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  pointer-events: auto;
+}
+.contact-panel {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 36px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+:global(html.contact-scroll-locked) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+:global(html.contact-scroll-locked body) {
+  position: fixed;
+  top: var(--contact-scroll-top);
+  left: var(--contact-scroll-left);
+  width: 100%;
+  overflow: hidden;
+}
+.dialog-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+}
+.contact-panel > .kicker {
+  margin-bottom: 22px;
+  padding-right: 36px;
+}
+.contact-dialog h2 {
+  font-size: 48px;
+  margin-bottom: 22px;
+}
+.contact-panel > p:not(.kicker) {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+.contact-dialog form {
+  margin-top: 25px;
+}
+.contact-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+  font-size: 10px;
+}
+.contact-dialog input,
+.contact-dialog select,
+.contact-dialog textarea {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  width: 100%;
+}
+.contact-dialog textarea {
+  resize: vertical;
+}
+.contact-panel h2:focus {
+  outline: none;
+}
+.contact-dialog input:focus-visible,
+.contact-dialog select:focus-visible,
+.contact-dialog textarea:focus-visible {
+  outline: none;
+}
+.contact-dialog :is(input, select, textarea) {
+  border-width: 1px;
+}
+.contact-dialog .dialog-close {
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.contact-dialog .dialog-close:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+@media (hover: hover) {
+  .contact-dialog :is(input, select, textarea):hover {
+    background: color-mix(in srgb, var(--bg) 94%, var(--text));
+    border-color: color-mix(in srgb, var(--line) 55%, var(--text));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--text) 3%, transparent);
+  }
+  .contact-dialog .dialog-close:hover {
+    color: var(--red);
+    border-color: var(--red);
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+  }
+}
+.contact-dialog :is(input, select, textarea):focus {
+  box-shadow: inset 0 0 0 0.35px var(--text);
+  background: color-mix(in srgb, var(--bg) 92%, var(--text));
+  border-color: var(--text);
+  outline: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .contact-dialog .dialog-close {
+    transition:
+      color 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+  .contact-dialog :is(input, select, textarea) {
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+  .contact-dialog[open] .contact-panel-shell {
+    animation: contact-arrive 220ms ease-out;
+  }
+  @keyframes contact-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+.contact-dialog .pill {
+  width: 100%;
+  margin-top: 10px;
+}
+.gallery-dialog {
+  background: #111;
+  color: white;
+  padding: 45px 25px 20px;
+  width: 95vw;
+  max-width: 1800px;
+}
+.gallery-dialog img {
+  width: 100%;
+  height: 75svh;
+  object-fit: contain;
+}
+.gallery-dialog p {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding-top: 15px;
+  text-align: center;
+}

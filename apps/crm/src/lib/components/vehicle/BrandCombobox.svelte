@@ -1,6 +1,6 @@
 <script lang="ts">
   import { vehicleBrands, searchVehicleBrands, registeredBrand } from '@anm/types';
-  import { brandLogo } from '$lib/brandLogos';
+  import { brandLogo } from '$lib/vehicles/brandLogos';
   import { tick } from 'svelte';
   let { value = $bindable(''), name = 'brand' }: { value?: string; name?: string } = $props();
   const id = $props.id();

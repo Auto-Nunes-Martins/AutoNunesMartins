@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { reusablePhoto } from '$lib/reusablePhoto';
-  import { photoAttrs } from '$lib/vehicleImage';
+  import { reusablePhoto } from '$lib/photos/reusablePhoto';
+  import { photoAttrs } from '$lib/photos/vehicleImage';
   import { onDestroy, untrack } from 'svelte';
   import { Camera, Plus, Upload, X, Check } from 'lucide-svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
   import type { EditPhoto } from './vehicleEditDraft';
   import { photoFraming, type GalleryPhotoFraming } from '@anm/types';
-  import { PHOTO_ACCEPT, validatePhoto, preparePhoto } from '$lib/photoPreparation';
+  import { PHOTO_ACCEPT, validatePhoto, preparePhoto } from '$lib/photos/photoPreparation';
   import { crmPath } from '$lib/paths';
   let {
     photos = $bindable<EditPhoto[]>([]),

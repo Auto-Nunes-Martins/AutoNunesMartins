@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { reusablePhoto } from '$lib/reusablePhoto';
-  import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
+  import { reusablePhoto } from '$lib/photos/reusablePhoto';
+  import { photoAttrs, type SignedVariantPhoto } from '$lib/photos/vehicleImage';
   import { tick, untrack, type Snippet } from 'svelte';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { flip } from 'svelte/animate';

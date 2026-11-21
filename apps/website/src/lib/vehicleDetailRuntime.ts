@@ -7,12 +7,12 @@ import {
 import { vehicleShareData } from './vehicleShare';
 import { vehicleSeo } from './vehicleSeo';
 import { descriptionText } from '@anm/types/richDescription';
-import OrbitBackLink from './components/stand-concepts/OrbitBackLink.svelte';
-import PublicVehicleStory from './components/stand-concepts/PublicVehicleStory.svelte';
+import BackLink from './features/ui/BackLink.svelte';
+import PublicVehicleStory from './features/vehicles/PublicVehicleStory.svelte';
 import VehicleShareButton from './components/VehicleShareButton.svelte';
 import VehiclePhotoRail from './components/VehiclePhotoRail.svelte';
 import RichDescription from './components/VehicleDescription.svelte';
-import RelatedCarousel from './components/stand-concepts/RelatedCarousel.svelte';
+import RelatedCarousel from './features/vehicles/RelatedCarousel.svelte';
 import GalleryContactSlide from './components/GalleryContactSlide.svelte';
 /** Route-owned gallery dependencies. SSR and hydration receive the same functions. */
 import { publicGalleryPhoto } from './publicGalleryPhoto';
@@ -29,8 +29,8 @@ import {
   animateGalleryOpening,
   animateGalleryClosing,
 } from './galleryOpening';
-import './components/stand-concepts/photoViewer.css';
-import './components/stand-concepts/orbitDetail.css';
+import './features/vehicles/photoViewer.css';
+import './features/vehicles/vehicleDetail.css';
 
 export const vehicleDetailRuntime = {
   captureOpeningPhoto,
@@ -42,7 +42,7 @@ export const vehicleDetailRuntime = {
   VehicleShareButton,
   VehiclePhotoRail,
   PublicVehicleStory,
-  OrbitBackLink,
+  BackLink,
   publicVehicleCanonical,
   vehicleJsonLdScript,
   vehicleBreadcrumbItems,

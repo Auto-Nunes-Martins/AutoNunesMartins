@@ -147,8 +147,8 @@ const options = [
     source: '--bg: #f3f3ef',
   },
 ];
-const css = ['DesignEdition.svelte', 'OrbitCompactFooter.svelte', 'VisitInvitation.svelte']
-  .map((f) => fs.readFileSync(`apps/website/src/lib/components/stand-concepts/${f}`, 'utf8'))
+const css = ['layout/pageShell.css', 'layout/CompactFooter.svelte', 'contact/VisitInvitation.svelte']
+  .map((f) => fs.readFileSync(`apps/website/src/lib/features/${f}`, 'utf8'))
   .join('\n');
 function geometry(item, size, native = true) {
   const scale = size / 64,

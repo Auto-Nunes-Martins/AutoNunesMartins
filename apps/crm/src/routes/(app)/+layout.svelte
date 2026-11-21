@@ -2,7 +2,7 @@
   import { crmRoute } from '$lib/paths';
   import { onMount } from 'svelte';
   import UnsavedChangesGuard from '$lib/components/common/UnsavedChangesGuard.svelte';
-  import { usesFullCrmWidth } from '$lib/layoutWidth';
+  import { usesFullCrmWidth } from '$lib/layout/layoutWidth';
   import { page } from '$app/stores';
   import CrmBrandHead from '$lib/components/brand/CrmBrandHead.svelte';
   import RedWedge from '$lib/components/brand/RedWedge.svelte';

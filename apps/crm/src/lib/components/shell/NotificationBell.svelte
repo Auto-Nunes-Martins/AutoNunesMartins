@@ -1,11 +1,11 @@
 <script lang="ts">
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
-  import { activityHref as hrefFor } from '$lib/activityNavigation';
+  import { activityHref as hrefFor } from '$lib/activity/activityNavigation';
   import { onMount, onDestroy, untrack } from 'svelte';
   import { panelTransition } from './panelTransition';
   import { page } from '$app/stores';
-  import { activeCreationDraftId } from '$lib/activeCreationDraft';
+  import { activeCreationDraftId } from '$lib/forms/activeCreationDraft';
   import { draftNotificationsRevision } from '$lib/components/vehicle/creationLifecycle';
   import {
     Activity,
@@ -24,7 +24,7 @@
   } from 'lucide-svelte';
   import ContactNotificationList from './ContactNotificationList.svelte';
   import BrandBell from '$lib/components/brand/icons/BrandBell.svelte';
-  import { activityStyle as styleForType } from '$lib/activityPresentation';
+  import { activityStyle as styleForType } from '$lib/activity/activityPresentation';
   import type { NotificationsPayload } from '$lib/server/notifications';
 
   let { isOpen = $bindable(false) }: { isOpen?: boolean } = $props();

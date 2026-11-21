@@ -148,7 +148,7 @@ save(
         { file: 'apps/website/src/app.html', value: 'html background and theme-color #0A0A0B' },
       ],
       distinction:
-        'Orbit content --bg is #0c0c0e; the document html/body background #0a0a0b is the darker actual page backdrop. Neither is pure #000000.',
+        'Auto Nunes Martins content --bg is #0c0c0e; the document html/body background #0a0a0b is the darker actual page backdrop. Neither is pure #000000.',
       svgOnlyBackgroundChanged: true,
       files,
     },
@@ -158,11 +158,11 @@ save(
 );
 save(
   `${root}/README.md`,
-  '# Variante 29 — opção 25 com fundo do website\n\nÚnica alteração: #101012 → #0A0A0B. Composição, dimensões, espaçamento, alinhamento, vermelho, letras e geometria da opção 25 preservados. Cada PNG da opção 25 foi reconstruído e comparado píxel a píxel antes da alteração do fundo. O SVG só muda o atributo fill do retângulo de fundo.\n\n#0A0A0B é o fundo global de html/body em apps/website/src/app.css, e o fundo inicial/theme-color de apps/website/src/app.html. É o mais escuro dos fundos principais: o conteúdo Orbit usa --bg #0C0C0E. A cor anterior de 25 era #101012, do rodapé, não preto puro.\n\nSVG com raster original incorporado; PNG 16/32/48/64/128/180/256; ICO 16/32/48/64. A opção 25 original mantém-se intacta. Nenhum favicon foi ativado; sem troca dinâmica de tema, commit, push ou deploy.\n',
+  '# Variante 29 — opção 25 com fundo do website\n\nÚnica alteração: #101012 → #0A0A0B. Composição, dimensões, espaçamento, alinhamento, vermelho, letras e geometria da opção 25 preservados. Cada PNG da opção 25 foi reconstruído e comparado píxel a píxel antes da alteração do fundo. O SVG só muda o atributo fill do retângulo de fundo.\n\n#0A0A0B é o fundo global de html/body em apps/website/src/app.css, e o fundo inicial/theme-color de apps/website/src/app.html. É o mais escuro dos fundos principais: o conteúdo Auto Nunes Martins usa --bg #0C0C0E. A cor anterior de 25 era #101012, do rodapé, não preto puro.\n\nSVG com raster original incorporado; PNG 16/32/48/64/128/180/256; ICO 16/32/48/64. A opção 25 original mantém-se intacta. Nenhum favicon foi ativado; sem troca dinâmica de tema, commit, push ou deploy.\n',
 );
 save(
   `${root}/index.html`,
-  '<!doctype html><html lang="pt"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Variante 29 · fundo do website</title><style>body{font:17px system-ui;max-width:1160px;margin:30px auto;padding:20px;background:#eeeef0;color:#17181c}img{max-width:100%;height:auto}a{color:#a00013}</style><h1>Variante 29 · opção 25 com fundo do website</h1><p>Só muda o fundo: #101012 → #0A0A0B. O documento usa #0A0A0B em html/body e theme-color; o conteúdo Orbit usa #0C0C0E, ligeiramente mais claro. A opção 25 fica preservada.</p><p><a href="favicon.ico">ICO 16/32/48/64</a> · <a href="favicon.svg">SVG</a> · <a href="favicon-180.png">PNG 180</a> · <a href="favicon-256.png">PNG 256</a> · <a href="verificacao.json">Verificação de igualdade da composição</a></p><img src="comparacao-25-29.png" alt="Comparação nativa e ampliada de 25 com 29"><p>Nenhuma opção foi ativada.</p></html>',
+  '<!doctype html><html lang="pt"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Variante 29 · fundo do website</title><style>body{font:17px system-ui;max-width:1160px;margin:30px auto;padding:20px;background:#eeeef0;color:#17181c}img{max-width:100%;height:auto}a{color:#a00013}</style><h1>Variante 29 · opção 25 com fundo do website</h1><p>Só muda o fundo: #101012 → #0A0A0B. O documento usa #0A0A0B em html/body e theme-color; o conteúdo Auto Nunes Martins usa #0C0C0E, ligeiramente mais claro. A opção 25 fica preservada.</p><p><a href="favicon.ico">ICO 16/32/48/64</a> · <a href="favicon.svg">SVG</a> · <a href="favicon-180.png">PNG 180</a> · <a href="favicon-256.png">PNG 256</a> · <a href="verificacao.json">Verificação de igualdade da composição</a></p><img src="comparacao-25-29.png" alt="Comparação nativa e ampliada de 25 com 29"><p>Nenhuma opção foi ativada.</p></html>',
 );
 console.log(
   `${root}/comparacao-25-29.png — seven exact source reconstructions passed; background ${oldColor} → ${newColor}.`,

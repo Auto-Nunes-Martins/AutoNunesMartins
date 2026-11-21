@@ -27,7 +27,7 @@ before(async () => {
     `<script>
 import {onMount} from 'svelte';
 import VehiclePhotoDraft from '$review/VehiclePhotoDraft.svelte';
-import {preparePhoto,readyPhoto} from '$lib/photoPreparation';
+import {preparePhoto,readyPhoto} from '$lib/photos/photoPreparation';
 import {Toaster,toast} from 'svelte-sonner';
 import {vehicleSavedFeedback} from '$review/vehicleSaveFeedback';
 const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="gray"/></svg>');

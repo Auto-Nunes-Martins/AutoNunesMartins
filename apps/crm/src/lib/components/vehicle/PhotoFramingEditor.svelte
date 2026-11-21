@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { Monitor, Smartphone, RotateCcw } from 'lucide-svelte';
-  import { reusablePhoto } from '$lib/reusablePhoto';
-  import { featuredFramingPosition, featuredFramingRatio } from '$lib/homepageHighlights';
+  import { reusablePhoto } from '$lib/photos/reusablePhoto';
+  import { featuredFramingPosition, featuredFramingRatio } from '$lib/highlights/homepageHighlights';
   import { photoFraming, photoGeometry, type PhotoFraming, type PhotoPosition } from '@anm/types';
   let {
     src,

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
+  import SitePage from '$lib/features/layout/SitePage.svelte';
   import PublicLegalContent from '$lib/components/PublicLegalContent.svelte';
 </script>
 
-<DesignEdition privacy>{#snippet routeContent()}<PublicLegalContent />{/snippet}</DesignEdition>
+<SitePage privacy>{#snippet routeContent()}<PublicLegalContent />{/snippet}</SitePage>

@@ -1,10 +1,10 @@
 <script lang="ts">
   import { flip } from 'svelte/animate';
   import { slide } from 'svelte/transition';
-  import { reorderMotion, revealFraming } from '$lib/reorderMotion';
-  import { selectPhoto } from '$lib/reusablePhoto';
+  import { reorderMotion, revealFraming } from '$lib/photos/reorderMotion';
+  import { selectPhoto } from '$lib/photos/reusablePhoto';
   import { framingStyle, photoFraming, type PhotoFraming } from '@anm/types';
-  import { photoFallback } from '$lib/vehicleImage';
+  import { photoFallback } from '$lib/photos/vehicleImage';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
   import PhotoFramingActions from './PhotoFramingActions.svelte';
   import VehicleCatalogue from './VehicleCatalogue.svelte';
@@ -14,7 +14,7 @@
   import { sessionFetch } from '$lib/auth/session';
   import { tick } from 'svelte';
   import { formFeedback, markFormSaved, refreshFormFeedback } from '$lib/forms/formFeedback';
-  import { prepareVehicleHighlight, principalHighlightItems } from '$lib/highlightSelection';
+  import { prepareVehicleHighlight, principalHighlightItems } from '$lib/highlights/highlightSelection';
   import { toast } from 'svelte-sonner';
   import { siteSavedFeedback, type SiteSaveSummary } from '../site/siteSaveFeedback';
   import { Star, Image, RefreshCw } from 'lucide-svelte';
@@ -24,8 +24,8 @@
   import Button from '$lib/components/common/Button.svelte';
   import Skeleton from '$lib/components/common/Skeleton.svelte';
   import HomepageHighlightsSkeleton from './HomepageHighlightsSkeleton.svelte';
-  import { featuredFramingPosition, featuredFramingRatio, type HighlightsEditor, type HighlightItem } from '$lib/homepageHighlights';
-  import { createHighlightPhotoRequests, decodeHighlightPreview, type HighlightGalleryPhoto, type HighlightGalleryState, type HighlightPreview } from '$lib/highlightPhotoRequests';
+  import { featuredFramingPosition, featuredFramingRatio, type HighlightsEditor, type HighlightItem } from '$lib/highlights/homepageHighlights';
+  import { createHighlightPhotoRequests, decodeHighlightPreview, type HighlightGalleryPhoto, type HighlightGalleryState, type HighlightPreview } from '$lib/highlights/highlightPhotoRequests';
 
   let {
     editor,

@@ -30,7 +30,7 @@
   import Button from '$lib/components/common/Button.svelte';
   import Skeleton from '$lib/components/common/Skeleton.svelte';
   import { formatDate, formatDateLong, formatEUR } from '$lib/utils/format';
-  import { activityStyle as styleFor } from '$lib/activityPresentation';
+  import { activityStyle as styleFor } from '$lib/activity/activityPresentation';
   import type { PageData } from './$types';
   import type { ActionData } from './$types';
   import CancellationPanel from '$lib/components/sale/CancellationPanel.svelte';

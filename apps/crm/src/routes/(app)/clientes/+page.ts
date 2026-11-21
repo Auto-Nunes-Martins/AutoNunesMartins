@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
-import { customersFilters } from '$lib/listFilters';
+import { customersFilters } from '$lib/lists/listFilters';
 import { loadListPage } from '$lib/lists/loadListPage';
 
 export const load: PageLoad = async (event) => {

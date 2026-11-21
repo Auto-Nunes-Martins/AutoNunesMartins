@@ -3,7 +3,7 @@
   import FilterChoice from '$lib/components/common/FilterChoice.svelte';
   import FilterChoiceGroup from '$lib/components/common/FilterChoiceGroup.svelte';
   import { page } from '$app/stores';
-  import { filterNavigation } from '$lib/filterNavigation';
+  import { filterNavigation } from '$lib/lists/filterNavigation';
   import { Search, X } from 'lucide-svelte';
   import type { Fuel, VehicleStatus } from '@anm/types';
 

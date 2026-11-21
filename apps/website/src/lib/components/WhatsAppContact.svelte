@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
-  import { standContact } from './stand-concepts/standContact';
+  import { standContact } from '../features/contact/standContact';
   import { whatsappUrl } from '$lib/whatsappContact';
   import { watchHomeStats } from '$lib/whatsappVisibility';
 

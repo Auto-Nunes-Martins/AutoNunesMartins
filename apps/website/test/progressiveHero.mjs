@@ -11,7 +11,7 @@ const { Parser } = await import(pathToFileURL(sharedRequire.resolve('htmlparser2
 const hash = (buffer) => createHash('sha256').update(buffer).digest('hex');
 
 function boundaryFor(html, split) {
-  const target = split === 'stats' ? 'orbit-stats' : 'hd-root';
+  const target = split === 'stats' ? 'site-stats' : 'hd-root';
   const stack = [];
   let depth = null;
   let boundary = null;
@@ -42,7 +42,7 @@ function boundaryFor(html, split) {
   assert.equal(count, 1, `Expected one ${target} section`);
   assert.ok(boundary > 0);
   assert.equal(html.slice(boundary - 10, boundary), '</section>');
-  assert.ok(html.lastIndexOf('window.initializeOrbitDocument();') > boundary);
+  assert.ok(html.lastIndexOf('window.initializeSiteDocument();') > boundary);
   return Buffer.byteLength(html.slice(0, boundary));
 }
 
@@ -81,7 +81,7 @@ export async function progressiveHero(upstream) {
           originalSha256: hash(body),
           rejoinedSha256: hash(Buffer.concat([prefix, suffix])),
           markerInPrefix: prefix.includes(Buffer.from('data-hero-layout-ready')),
-          initializerInSuffix: suffix.includes(Buffer.from('window.initializeOrbitDocument();')),
+          initializerInSuffix: suffix.includes(Buffer.from('window.initializeSiteDocument();')),
           prefixEpoch: Date.now(),
         };
         deliveries.push(delivery);

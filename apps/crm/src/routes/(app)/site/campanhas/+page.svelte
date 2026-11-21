@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import { tick, untrack } from 'svelte';
   import { flip } from 'svelte/animate';
-  import { reorderMotion } from '$lib/reorderMotion';
+  import { reorderMotion } from '$lib/photos/reorderMotion';
   import { Tag } from 'lucide-svelte';
   import SelectionOrderActions from '$lib/components/site/SelectionOrderActions.svelte';
   import CampaignRemaining from '$lib/components/site/CampaignRemaining.svelte';

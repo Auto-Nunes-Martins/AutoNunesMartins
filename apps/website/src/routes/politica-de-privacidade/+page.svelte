@@ -1,10 +1,10 @@
 <script lang="ts">
-  import OrbitPrivacy from '$lib/components/stand-concepts/OrbitPrivacy.svelte';
-  import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
+  import PrivacyPage from '$lib/features/privacy/PrivacyPage.svelte';
+  import SitePage from '$lib/features/layout/SitePage.svelte';
 </script>
 
-<DesignEdition privacy>
+<SitePage privacy>
   {#snippet routeContent()}
-    <OrbitPrivacy />
+    <PrivacyPage />
   {/snippet}
-</DesignEdition>
+</SitePage>

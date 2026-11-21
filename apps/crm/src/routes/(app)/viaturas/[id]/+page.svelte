@@ -1,7 +1,7 @@
 <script lang="ts">
   import BrandLogo from '$lib/components/vehicle/BrandLogo.svelte';
   import { crmPath } from '$lib/paths';
-  import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
+  import { vehiclePrincipalPath } from '$lib/vehicles/vehiclePrincipal';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { publicVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import {
@@ -18,7 +18,7 @@
     Tag,
   } from 'lucide-svelte';
   import WebsiteStatus from '$lib/components/vehicle/WebsiteStatus.svelte';
-  import { websiteVisibility } from '$lib/websiteVisibility';
+  import { websiteVisibility } from '$lib/vehicles/websiteVisibility';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
   import SpecRow from '$lib/components/brand/SpecRow.svelte';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
@@ -31,7 +31,7 @@
   import ProfitCard from '$lib/components/vehicle/ProfitCard.svelte';
   import { formatDate, formatEUR, formatKm, formatLisbonDateTime } from '$lib/utils/format';
   import type { PageData } from './$types';
-  import type { HighlightStatus } from '$lib/highlightStatus';
+  import type { HighlightStatus } from '$lib/highlights/highlightStatus';
 
   interface Props {
     data: PageData;

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
+  import SitePage from '$lib/features/layout/SitePage.svelte';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
 </script>
 
-<DesignEdition
+<SitePage
   brandDirectory={data.brandDirectory}
   homeHighlights={data.highlights}
   stock={data.stock}

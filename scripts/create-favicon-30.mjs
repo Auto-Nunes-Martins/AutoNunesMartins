@@ -1,4 +1,4 @@
-// Exact option 25 composition. Only the backdrop changes to the visible dark Orbit page background.
+// Exact option 25 composition. Only the backdrop changes to the visible dark Auto Nunes Martins page background.
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -15,7 +15,7 @@ const save = (file, bytes) => {
 };
 const digest = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 const css = fs.readFileSync(
-  'apps/website/src/lib/components/stand-concepts/DesignEdition.svelte',
+  'apps/website/src/lib/features/layout/pageShell.css',
   'utf8',
 );
 assert(
@@ -116,7 +116,7 @@ icoImages.forEach(({ size, bytes }, i) => {
 });
 save(`${root}/favicon.ico`, Buffer.concat([header, ...icoImages.map((image) => image.bytes)]));
 let sheet =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="590"><rect width="1160" height="590" fill="#eeeef0"/><g font-family="Arial,sans-serif" fill="#17181c"><text x="32" y="42" font-size="25" font-weight="700">Opção 25 → variante 30 · apenas o fundo muda</text><text x="32" y="73" font-size="15">Mesmas letras, composição, margens e píxeis de texto · fundo visível da página Orbit em modo escuro #0C0C0E</text>';
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="590"><rect width="1160" height="590" fill="#eeeef0"/><g font-family="Arial,sans-serif" fill="#17181c"><text x="32" y="42" font-size="25" font-weight="700">Opção 25 → variante 30 · apenas o fundo muda</text><text x="32" y="73" font-size="15">Mesmas letras, composição, margens e píxeis de texto · fundo visível da página Auto Nunes Martins em modo escuro #0C0C0E</text>';
 const layers = [];
 for (const [i, item] of [
   { folder: sourceRoot, name: '25 · original', color: oldColor },
@@ -149,13 +149,13 @@ save(
       newColor,
       evidence: [
         {
-          file: 'apps/website/src/lib/components/stand-concepts/DesignEdition.svelte',
+          file: 'apps/website/src/lib/features/layout/pageShell.css',
           selector: ":global(:where(html)[data-theme='dark']) .design",
           value: '--bg: #0c0c0e; background: var(--bg);',
         },
       ],
       distinction:
-        'Selected the visible Orbit content background #0c0c0e. The html/body fallback #0a0a0b belongs to variant29 and is not selected here.',
+        'Selected the visible Auto Nunes Martins content background #0c0c0e. The html/body fallback #0a0a0b belongs to variant29 and is not selected here.',
       svgOnlyBackgroundChanged: true,
       files,
     },
@@ -165,11 +165,11 @@ save(
 );
 save(
   `${root}/README.md`,
-  '# Variante 30 — opção 25 com fundo do website\n\nÚnica alteração: #101012 → #0C0C0E. Composição, dimensões, espaçamento, alinhamento, vermelho, letras e geometria da opção 25 preservados. Cada PNG da opção 25 foi reconstruído e comparado píxel a píxel antes da alteração do fundo. O SVG só muda o atributo fill do retângulo de fundo.\n\n#0C0C0E é o fundo visível do conteúdo Orbit em modo escuro: o seletor dark de .design define --bg: #0c0c0e, aplicado por background: var(--bg), em apps/website/src/lib/components/stand-concepts/DesignEdition.svelte. A variante 29 com o fallback global #0A0A0B fica preservada; não é a cor selecionada aqui.\n\nSVG com raster original incorporado; PNG 16/32/48/64/128/180/256; ICO 16/32/48/64. A opção 25 original mantém-se intacta. Nenhum favicon foi ativado; sem troca dinâmica de tema, commit, push ou deploy.\n',
+  '# Variante 30 — opção 25 com fundo do website\n\nÚnica alteração: #101012 → #0C0C0E. Composição, dimensões, espaçamento, alinhamento, vermelho, letras e geometria da opção 25 preservados. Cada PNG da opção 25 foi reconstruído e comparado píxel a píxel antes da alteração do fundo. O SVG só muda o atributo fill do retângulo de fundo.\n\n#0C0C0E é o fundo visível do conteúdo Auto Nunes Martins em modo escuro: o seletor dark de .design define --bg: #0c0c0e, aplicado por background: var(--bg), em apps/website/src/lib/features/layout/pageShell.css. A variante 29 com o fallback global #0A0A0B fica preservada; não é a cor selecionada aqui.\n\nSVG com raster original incorporado; PNG 16/32/48/64/128/180/256; ICO 16/32/48/64. A opção 25 original mantém-se intacta. Nenhum favicon foi ativado; sem troca dinâmica de tema, commit, push ou deploy.\n',
 );
 save(
   `${root}/index.html`,
-  '<!doctype html><html lang="pt"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Variante 30 · fundo do website</title><style>body{font:17px system-ui;max-width:1160px;margin:30px auto;padding:20px;background:#eeeef0;color:#17181c}img{max-width:100%;height:auto}a{color:#a00013}</style><h1>Variante 30 · opção 25 com fundo do website</h1><p>Só muda o fundo: #101012 → #0C0C0E. Esta é a cor visível do conteúdo Orbit em modo escuro (--bg em .design), aplicada por background: var(--bg). A variante 29 com o fallback global fica preservada. A opção 25 fica preservada.</p><p><a href="favicon.ico">ICO 16/32/48/64</a> · <a href="favicon.svg">SVG</a> · <a href="favicon-180.png">PNG 180</a> · <a href="favicon-256.png">PNG 256</a> · <a href="verificacao.json">Verificação de igualdade da composição</a></p><img src="comparacao-25-30.png" alt="Comparação nativa e ampliada de 25 com 30"><p>Nenhuma opção foi ativada.</p></html>',
+  '<!doctype html><html lang="pt"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Variante 30 · fundo do website</title><style>body{font:17px system-ui;max-width:1160px;margin:30px auto;padding:20px;background:#eeeef0;color:#17181c}img{max-width:100%;height:auto}a{color:#a00013}</style><h1>Variante 30 · opção 25 com fundo do website</h1><p>Só muda o fundo: #101012 → #0C0C0E. Esta é a cor visível do conteúdo Auto Nunes Martins em modo escuro (--bg em .design), aplicada por background: var(--bg). A variante 29 com o fallback global fica preservada. A opção 25 fica preservada.</p><p><a href="favicon.ico">ICO 16/32/48/64</a> · <a href="favicon.svg">SVG</a> · <a href="favicon-180.png">PNG 180</a> · <a href="favicon-256.png">PNG 256</a> · <a href="verificacao.json">Verificação de igualdade da composição</a></p><img src="comparacao-25-30.png" alt="Comparação nativa e ampliada de 25 com 30"><p>Nenhuma opção foi ativada.</p></html>',
 );
 console.log(
   `${root}/comparacao-25-30.png — seven exact source reconstructions passed; background ${oldColor} → ${newColor}.`,

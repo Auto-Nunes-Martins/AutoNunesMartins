@@ -3,7 +3,7 @@ import { createServer, request as httpRequest, type Server } from 'node:http';
 import { createHmac, randomUUID } from 'node:crypto';
 import express from 'express';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createPublicContactRouter } from '../../../../../../backend/src/routes/publicContact';
+import { createPublicContactRouter } from '../../../../../../backend/src/routes/public/publicContact';
 
 // Deployment is a separate native Node JS program (covered by node --test),
 // not part of the Svelte application's TypeScript module graph.

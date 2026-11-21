@@ -1,10 +1,10 @@
 <script lang="ts">
-  import OrbitAbout from '$lib/components/stand-concepts/OrbitAbout.svelte';
-  import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
+  import AboutPage from '$lib/features/about/AboutPage.svelte';
+  import SitePage from '$lib/features/layout/SitePage.svelte';
 </script>
 
-<DesignEdition about>
+<SitePage about>
   {#snippet routeContent({ contact })}
-    <OrbitAbout onContact={(event) => contact(undefined, event.currentTarget)} />
+    <AboutPage onContact={(event) => contact(undefined, event.currentTarget)} />
   {/snippet}
-</DesignEdition>
+</SitePage>

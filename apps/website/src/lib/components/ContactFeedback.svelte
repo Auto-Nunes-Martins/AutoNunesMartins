@@ -175,7 +175,7 @@
     box-shadow:
       0 10px 24px #00000024,
       0 2px 6px #00000014;
-    font-family: 'Orbit Inter', Inter, Arial, sans-serif;
+    font-family: 'ANM Inter', Inter, Arial, sans-serif;
   }
   .contact-toast:popover-open {
     display: grid;

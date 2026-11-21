@@ -128,7 +128,7 @@ try {
       });
       await context.addInitScript(
         (theme) => {
-          localStorage.setItem('anm-orbit-theme', theme);
+          localStorage.setItem('anm-theme', theme);
         },
         width === 390 ? 'dark' : 'light',
       );

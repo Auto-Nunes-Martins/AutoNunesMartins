@@ -1,6 +1,6 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
-  import { linkedRow } from '$lib/linkedRow';
+  import { linkedRow } from '$lib/lists/linkedRow';
   import { Phone, Mail, FileText, User as UserIcon } from 'lucide-svelte';
   import RowActions from '$lib/components/common/RowActions.svelte';
   import { formatDate } from '$lib/utils/format';

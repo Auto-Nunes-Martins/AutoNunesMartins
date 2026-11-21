@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { PHOTO_ACCEPT, preparePhoto } from '$lib/photoPreparation';
-  import { reusablePhoto } from '$lib/reusablePhoto';
+  import { PHOTO_ACCEPT, preparePhoto } from '$lib/photos/photoPreparation';
+  import { reusablePhoto } from '$lib/photos/reusablePhoto';
   import { photoFraming, type GalleryPhotoFraming } from '@anm/types';
   import { onDestroy, onMount, tick, untrack, type Snippet } from 'svelte';
   import { sessionFetch } from '$lib/auth/session';
-  import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
+  import { photoAttrs, type SignedVariantPhoto } from '$lib/photos/vehicleImage';
   import { crmPath } from '$lib/paths';
   import { trapDialogTab } from '../../../../../../shared/ui/dialogFocus';
   import { photoSwipe } from '../../../../../../shared/ui/photoSwipe';

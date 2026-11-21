@@ -10,7 +10,7 @@ async function verifyMotionAppearance(page, output, width) {
   // choose different fallbacks on separate cold loads under a throttled network.
   const results = [];
   for (const selector of [
-    '.orbit-perspective',
+    '.site-perspective',
     '.cabin-reveal',
     '.visit-invitation',
     '.timeline',
@@ -216,7 +216,7 @@ export async function slowDevices(browser, origin, slug, photo) {
         // Capture settled motion at the same viewport-relative positions before and after.
         for (const selector of [
           '#campanhas',
-          '.orbit-perspective',
+          '.site-perspective',
           '.cabin-reveal',
           '.visit-invitation',
         ]) {

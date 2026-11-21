@@ -1,6 +1,6 @@
 <script lang="ts">
   import { legalValue } from '$lib/publicLegal';
-  import { standContact } from './stand-concepts/standContact';
+  import { standContact } from '../features/contact/standContact';
   const controller = legalValue('controller');
   const privacyContact = legalValue('privacyContact');
 </script>

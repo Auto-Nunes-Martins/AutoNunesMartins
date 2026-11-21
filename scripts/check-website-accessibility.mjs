@@ -177,7 +177,7 @@ try {
   }
   await visit('/');
   await page.screenshot({ path: '.cache/a11y-desktop.png' });
-  const featured = page.locator('a#orbit-featured');
+  const featured = page.locator('a#site-featured');
   const caption = await featured.locator('#featured-vehicle-caption').innerText();
   assert.equal(
     (await featured.ariaSnapshot())

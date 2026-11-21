@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
+  import SitePage from '$lib/features/layout/SitePage.svelte';
   import { publicErrorCopy } from '$lib/publicError';
   const content = $derived(publicErrorCopy($page.status, $page.url.pathname));
   const unavailableVehicle = $derived(
@@ -16,4 +16,4 @@
   >
   <meta name="robots" content="noindex, follow" />
 </svelte:head>
-<DesignEdition id="unavailable" errorStatus={$page.status} {unavailableVehicle} />
+<SitePage id="unavailable" errorStatus={$page.status} {unavailableVehicle} />

@@ -1,4 +1,4 @@
-import { salesFilters } from '$lib/listFilters';
+import { salesFilters } from '$lib/lists/listFilters';
 import { apiFailure } from '$lib/server/api';
 import type { RequestEvent } from '@sveltejs/kit';
 import { salesApi, type SaleListResponse } from '$lib/server/sales';

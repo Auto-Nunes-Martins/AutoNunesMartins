@@ -1,4 +1,4 @@
-import { scrollFrame } from './components/stand-concepts/scrollFrame';
+import { scrollFrame } from './features/motion/scrollFrame';
 
 export function notificationPosition(
   active: () => boolean,

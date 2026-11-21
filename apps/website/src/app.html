@@ -4,18 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0A0A0B" />
-    <script
-      id="Cookiebot"
-      src="https://consent.cookiebot.com/uc.js"
-      data-cbid="df98b47d-50b5-4495-9371-0cd46914087d"
-      data-blockingmode="auto"
-      type="text/javascript"
-    ></script>
-    <script id="orbit-theme-boot">
+    <script id="site-theme-boot">
       (function () {
         var theme = 'dark';
         try {
-          var stored = localStorage.getItem('anm-orbit-theme');
+          var stored = localStorage.getItem('anm-theme');
+          if (stored === null) {
+            stored = localStorage.getItem('anm-orbit-theme');
+            if (stored === 'light' || stored === 'dark') {
+              theme = stored;
+              localStorage.setItem('anm-theme', stored);
+              localStorage.removeItem('anm-orbit-theme');
+            }
+          }
           if (stored === 'light' || stored === 'dark') theme = stored;
         } catch (_) { /* Use the default when local storage is unavailable. */ }
         document.documentElement.setAttribute('data-theme', theme);
@@ -26,14 +27,14 @@
       html { background: #0a0a0b; color-scheme: dark; }
       html[data-theme='light'] { background: #f5f5f1; color-scheme: light; }
     </style>
-    <script id="orbit-startup">%anm.startup%</script>
+    <script id="site-startup">%anm.startup%</script>
     <style>
-      html[data-orbit-restoring] {
+      html[data-site-restoring] {
         scroll-behavior: auto !important;
         overflow-anchor: none;
       }
-      html[data-orbit-restoring] body {
-        min-height: var(--orbit-restore-height, 0px);
+      html[data-site-restoring] body {
+        min-height: var(--site-restore-height, 0px);
       }
     </style>
     %sveltekit.head%
@@ -41,7 +42,7 @@
   <body data-sveltekit-preload-code="hover" data-sveltekit-preload-data="off">
     <div style="display: contents">%sveltekit.body%</div>
     <script>
-      window.initializeOrbitDocument();
+      window.initializeSiteDocument();
     </script>
   </body>
 </html>

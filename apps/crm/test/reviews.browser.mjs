@@ -17,7 +17,7 @@ const crm = fileURLToPath(new URL('../', import.meta.url)), project = path.resol
 const website = path.join(project,'apps/website');
 let server,vite,browser,origin,items=[],nextId=0,failSave=false,failPhoto=false,avatar;
 const images=new Map();
-const original=readFileSync(new URL('./fixtures/OrbitReviews.original.svelte.txt',import.meta.url),'utf8');
+const original=readFileSync(new URL('./fixtures/Reviews.original.svelte.txt',import.meta.url),'utf8');
 const originalExamples=new Function('return '+original.match(/const examples = (\[[\s\S]*?\n  \]);/)[1])();
 const equivalent=originalExamples.map((r,i)=>({id:'reference-'+i,authorName:r.name,rating:r.rating,text:r.text,avatarVersion:null}));
 before(async()=>{
@@ -30,9 +30,9 @@ before(async()=>{
   await write('stores.js',`import{writable}from'svelte/store';export const page=writable({route:{id:window.location.pathname.endsWith('/destaques')?'/(app)/site/destaques':'/(app)/site/reviews'},url:new URL(window.location.pathname==='/crm'?window.location.origin+'/crm/site/reviews':window.location.href)});`);
   await write('enhance.js',`export function enhance(){return{destroy(){}}}`);
   await write('Crm.svelte',`<script>import {Toaster} from 'svelte-sonner';import Editor from '$editor';import Layout from '$siteLayout';import Highlights from '$highlights';const editor={revision:null,items:[],candidates:Array.from({length:40},(_,i)=>({id:'car-'+i,brand:'Marca',model:'Modelo '+(i+1),year:2020,slug:'car-'+i,photos:[{path:'vehicles/car-'+i+'/photo.webp',url:null}]}))};</script><main style="max-width:1100px;margin:auto;padding:32px 20px"><Layout>{#if window.location.pathname.endsWith('/destaques')}<Highlights {editor}/>{:else}<Editor initialItems={window.reviewData}/>{/if}</Layout></main><Toaster closeButton/>`);
-  const publicStyle='--bg:#0c0c0e;--text:#f5f5f1;--muted:#96969d;--line:#ffffff24;--orbit-frame:calc(100% - 40px);--orbit-frame-max:1320px;--orbit-space-section:40px;';
-  await write('Public.svelte',`<script>import Reviews from '$publicReviews';import Baseline from './Baseline.svelte';</script><main class="design orbit" style="${publicStyle}">{#if window.isBaseline}<Baseline/>{:else}<Reviews reviews={window.reviewData}/>{/if}</main>`);
-  await write('Baseline.svelte',original.replace(/from '(\.\/[^']+)'/g,(_match,rel)=>'from '+JSON.stringify(path.resolve(website,'src/lib/components/stand-concepts',rel))));
+  const publicStyle='--bg:#0c0c0e;--text:#f5f5f1;--muted:#96969d;--line:#ffffff24;--site-frame:calc(100% - 40px);--site-frame-max:1320px;--site-space-section:40px;';
+  await write('Public.svelte',`<script>import Reviews from '$publicReviews';import Baseline from './Baseline.svelte';</script><main class="design site" style="${publicStyle}">{#if window.isBaseline}<Baseline/>{:else}<Reviews reviews={window.reviewData}/>{/if}</main>`);
+  await write('Baseline.svelte',original.replace(/from '(\.\/[^']+)'/g,(_match,rel)=>'from '+JSON.stringify(path.resolve(website,'src/lib/features/reviews',rel))));
   await write('crm.css',`@import ${JSON.stringify(path.join(crm,'src/app.css'))};\n@source ${JSON.stringify(path.join(crm,'src'))};`);
   await write('public.css',`@import ${JSON.stringify(path.join(website,'src/app.css'))};\n@source ${JSON.stringify(path.join(website,'src'))};`);
   for(const name of ['Crm','Public'])await write(name+'.js',`import './${name==='Crm'?'crm':'public'}.css';import {mount} from 'svelte';import App from './${name}.svelte';document.documentElement.dataset.theme='dark';mount(App,{target:document.querySelector('#app')});`);
@@ -76,7 +76,7 @@ before(async()=>{
     {find:'$highlights',replacement:path.join(crm,'src/lib/components/vehicle/HomepageHighlightsEditor.svelte')},
     {find:'$lib/auth/enhance',replacement:path.join(directory,'enhance.js')},
     {find:'$app/stores',replacement:path.join(directory,'stores.js')},
-    {find:'$publicReviews',replacement:path.join(website,'src/lib/components/stand-concepts/OrbitReviews.svelte')},
+    {find:'$publicReviews',replacement:path.join(website,'src/lib/features/reviews/Reviews.svelte')},
     {find:'$lib/auth/session',replacement:path.join(directory,'session.js')},
     {find:'$lib/brandMarquee',replacement:path.join(website,'src/lib/brandMarquee.ts')},
     {find:'$app/paths',replacement:path.join(directory,'paths.js')},

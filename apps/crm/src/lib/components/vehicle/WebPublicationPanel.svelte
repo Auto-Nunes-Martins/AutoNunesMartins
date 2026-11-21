@@ -1,16 +1,16 @@
 <script lang="ts">
   import { normalizeDecimal } from '$lib/forms/numericField';
   import { ArrowUpRight } from 'lucide-svelte';
-  import { reusablePhoto } from '$lib/reusablePhoto';
-  import { photoAttrs, type SignedVariantPhoto } from '$lib/vehicleImage';
+  import { reusablePhoto } from '$lib/photos/reusablePhoto';
+  import { photoAttrs, type SignedVariantPhoto } from '$lib/photos/vehicleImage';
   import type { GalleryPhotoFraming } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import { invalidateAll } from '$app/navigation';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import WebsiteStatus from './WebsiteStatus.svelte';
-  import { websiteVisibility } from '$lib/websiteVisibility';
+  import { websiteVisibility } from '$lib/vehicles/websiteVisibility';
   import { crmPath } from '$lib/paths';
-  import { vehiclePrincipalPath } from '$lib/vehiclePrincipal';
+  import { vehiclePrincipalPath } from '$lib/vehicles/vehiclePrincipal';
   import { enhance } from '$lib/auth/enhance';
   import { tick, untrack, type Snippet } from 'svelte';
   import { publicationDraftKey } from './publicationDraft';

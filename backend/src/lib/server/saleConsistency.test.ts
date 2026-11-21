@@ -34,8 +34,8 @@ import {
 } from './vehicleExpenseService.js';
 import { updateVehicle, getVehicleWithProfit } from './vehicleService.js';
 import { updateSaleDelivery } from './saleService.js';
-import vehiclesRouter from '../../routes/vehicles.js';
-import expensesRouter from '../../routes/vehicleExpenses.js';
+import vehiclesRouter from '../../routes/inventory/vehicles.js';
+import expensesRouter from '../../routes/inventory/vehicleExpenses.js';
 import salesRouter from '../../routes/sales.js';
 import { errorHandler } from '../../middleware/errorHandler.js';
 import { cache } from '../data/cache.js';

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { createPhotoStaging } from '$lib/photoStaging';
-  import { readyPhoto } from '$lib/photoPreparation';
+  import { createPhotoStaging } from '$lib/photos/photoStaging';
+  import { readyPhoto } from '$lib/photos/photoPreparation';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
   import { publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { sessionFetch } from '$lib/auth/session';
@@ -9,14 +9,14 @@
   import { onMount, onDestroy, tick, untrack } from 'svelte';
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
   import { afterNavigate, goto, invalidateAll } from '$app/navigation';
-  import { vehicleEditReturn } from '$lib/vehicleEditReturn';
+  import { vehicleEditReturn } from '$lib/vehicles/vehicleEditReturn';
   import { toast } from 'svelte-sonner';
   import VehicleSaveProgress from '$lib/components/vehicle/VehicleSaveProgress.svelte';
   import { vehicleSavedFeedback } from '$lib/components/vehicle/vehicleSaveFeedback';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import WebsiteStatus from '$lib/components/vehicle/WebsiteStatus.svelte';
-  import { websiteVisibility } from '$lib/websiteVisibility';
+  import { websiteVisibility } from '$lib/vehicles/websiteVisibility';
   import VehicleForm from '$lib/components/vehicle/VehicleForm.svelte';
   import VehicleDeletePanel from '$lib/components/vehicle/VehicleDeletePanel.svelte';
   import WebPublicationPanel from '$lib/components/vehicle/WebPublicationPanel.svelte';

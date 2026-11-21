@@ -32,7 +32,7 @@ try {
   const page = await context.newPage();
   await page.goto(origin + '/__local_preview_test');
   const result = await page.evaluate(async bytes => {
-    const { reusablePhoto } = await import('/src/lib/reusablePhoto.ts');
+    const { reusablePhoto } = await import('/src/lib/photos/reusablePhoto.ts');
     const urls = Array.from({ length: 14 }, () => URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'image/png' })));
     const original = HTMLImageElement.prototype.decode;
     let candidateAttempts = 0;
@@ -58,7 +58,7 @@ try {
   assert.equal(result.loaded, 14, 'A valid local preview must recover from one transient decode failure');
   assert.equal(result.candidateAttempts, 2, 'Recovery must be bounded to one retry');
   const permanent = await page.evaluate(async bytes => {
-    const { reusablePhoto } = await import('/src/lib/reusablePhoto.ts');
+    const { reusablePhoto } = await import('/src/lib/photos/reusablePhoto.ts');
     const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'image/png' }));
     const original = HTMLImageElement.prototype.decode; let attempts = 0;
     HTMLImageElement.prototype.decode = function () {
@@ -74,7 +74,7 @@ try {
   }, [...pixels]);
   assert.equal(permanent, 2, 'A permanent failure must not create an automatic retry loop');
   const replacement = await page.evaluate(async bytes => {
-    const { reusablePhoto } = await import('/src/lib/reusablePhoto.ts');
+    const { reusablePhoto } = await import('/src/lib/photos/reusablePhoto.ts');
     const urls = [0, 1].map(() => URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'image/png' })));
     const original = HTMLImageElement.prototype.decode; let release;
     HTMLImageElement.prototype.decode = function () {
@@ -94,7 +94,7 @@ try {
   assert.equal(replacement, true, 'Old decoding must not replace a newer local preview');
   await page.route('**/fixture-*.png', route => route.fulfill({ body: pixels, contentType: 'image/png' }));
   const remote = await page.evaluate(async origin => {
-    const { reusablePhoto } = await import('/src/lib/reusablePhoto.ts');
+    const { reusablePhoto } = await import('/src/lib/photos/reusablePhoto.ts');
     const original = HTMLImageElement.prototype.decode; let small = 0, master = 0;
     HTMLImageElement.prototype.decode = function () {
       if (!this.isConnected && this.src.endsWith('/fixture-small.png')) { small++; return Promise.reject(new DOMException('Missing derivative', 'EncodingError')); }

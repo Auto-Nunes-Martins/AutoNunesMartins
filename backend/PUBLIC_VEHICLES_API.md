@@ -199,7 +199,7 @@ No email/contact endpoint was added.
 - Backend TypeScript check, Prisma schema validation and lint of changed source
   files passed. Full backend lint still reports the pre-existing type-only import
   error in `src/lib/server/dashboardService.ts` and an existing unused directive
-  warning in `src/routes/vehiclePhotos.ts`; neither file was changed.
+  warning in `src/routes/inventory/vehiclePhotos.ts`; neither file was changed.
 - Prisma Client generated in the main checkout after applying the authorized migration.
 - Real authorized cycles passed for Dacia and the vehicle without price/photos: immediate
   list removal and detail 404 on unpublish, republication preserving slug and CRM status.

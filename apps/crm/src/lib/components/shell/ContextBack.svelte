@@ -2,7 +2,7 @@
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/stores';
   import { crmPath, crmRoute } from '$lib/paths';
-  import { contextualParent, listContext } from '$lib/navigationContext';
+  import { contextualParent, listContext } from '$lib/lists/navigationContext';
   let { userKey }: { userKey: string } = $props();
   let lists = $state<Record<string, string>>({});
   $effect(() => {

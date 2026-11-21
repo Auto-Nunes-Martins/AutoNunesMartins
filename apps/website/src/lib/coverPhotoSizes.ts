@@ -1,5 +1,5 @@
 import { coverSourceWidth } from './coverImageSizes';
-import { scrollFrame } from './components/stand-concepts/scrollFrame';
+import { scrollFrame } from './features/motion/scrollFrame';
 import {
   cardPhoto,
   cardPhotoSet,

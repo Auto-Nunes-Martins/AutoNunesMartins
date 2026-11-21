@@ -1,0 +1,1552 @@
+<script lang="ts">
+  import { locationMap } from '$lib/localAssets';
+  import alternateLocationMap from '$lib/assets/images/stand-location-map-alternate.svg?url&no-inline';
+  import { createContactForm } from '$lib/contactForm.svelte';
+  import ContactFeedback from '$lib/components/ContactFeedback.svelte';
+  import ContactFormFooter from '$lib/components/ContactFormFooter.svelte';
+  import { onMount } from 'svelte';
+  import { watchSiteConsent } from '$lib/features/privacy/siteConsent';
+  import { ArrowUpRight, ArrowRight, Phone, Mail, MapPin, Clock3, LoaderCircle } from 'lucide-svelte';
+  import { standContact, type StandContact } from './standContact';
+  import { photo } from '../catalog/responsiveImages';
+  import { responsivePhoto } from '../catalog/responsiveImages';
+  import VisitContactForm from './VisitContactForm.svelte';
+  import FormSelectField from './FormSelectField.svelte';
+  import VisitLabel from './VisitLabel.svelte';
+  import ScenePhotograph from '../home/ScenePhotograph.svelte';
+  import VisitMapArtwork from './VisitMapArtwork.svelte';
+  import type { SceneBackground } from '../home/homeScenes';
+
+  let {
+    id = 'contactos-proposta',
+    contact = standContact,
+    comparison = false,
+    backgroundTone = 'studio',
+    comparisonLabel = 'Nova proposta',
+    backgroundReferenceId,
+    compareBackgroundTones = false,
+    formTreatment = 'minimal',
+    formDivider = false,
+    showDemoNote = true,
+    showCallIcon = false,
+    borderlessPanels = false,
+    formTitle = 'O que tem em mente?',
+    formIntro = 'Uma pergunta é um bom começo.',
+    mapArtwork = 'studio',
+    harmonizedTypography = false,
+    background,
+  }: {
+    id?: string;
+    contact?: StandContact;
+    comparison?: boolean;
+    backgroundTone?: 'studio' | 'original';
+    comparisonLabel?: string;
+    backgroundReferenceId?: string;
+    compareBackgroundTones?: boolean;
+    formTreatment?: 'minimal' | 'refined' | 'original';
+    formDivider?: boolean;
+    showDemoNote?: boolean;
+    showCallIcon?: boolean;
+    borderlessPanels?: boolean;
+    formTitle?: string;
+    formIntro?: string;
+    mapArtwork?: 'studio' | 'original';
+    harmonizedTypography?: boolean;
+    background?: SceneBackground;
+  } = $props();
+  let section: HTMLElement;
+  let useReferenceTone = $state(true);
+  let selectedLocation = $state(0);
+  let allowEmbeddedMap = $state(false);
+  const embeddedMapActive = $derived(selectedLocation === 0 && !!contact.mapEmbedUrl && allowEmbeddedMap);
+  onMount(() =>
+    watchSiteConsent((choice) => {
+      allowEmbeddedMap = choice?.maps === true;
+    }),
+  );
+  let mapCard = $state<HTMLDivElement>();
+  let mapContent = $state<HTMLDivElement>();
+  let mapMinimum = $state(0);
+  let mapMaximum = $state(0);
+  let mapExpansion = $state(0);
+  let resizePointer: number | null = null;
+  let resizeStartY = 0;
+  let resizeStartExpansion = 0;
+
+  function clampMapExpansion(value: number) {
+    return Math.min(Math.max(0, mapMaximum - mapMinimum), Math.max(0, value));
+  }
+  function startMapResize(event: PointerEvent & { currentTarget: HTMLDivElement }) {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    resizePointer = event.pointerId;
+    resizeStartY = event.clientY;
+    resizeStartExpansion = mapExpansion;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function moveMapResize(event: PointerEvent) {
+    if (event.pointerId !== resizePointer) return;
+    mapExpansion = clampMapExpansion(resizeStartExpansion + event.clientY - resizeStartY);
+  }
+  function finishMapResize(event: PointerEvent & { currentTarget: HTMLDivElement }) {
+    if (event.pointerId !== resizePointer) return;
+    resizePointer = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+  function keyMapResize(event: KeyboardEvent) {
+    const changes: Record<string, number> = { ArrowDown: 20, ArrowUp: -20, PageDown: 80, PageUp: -80 };
+    const change = changes[event.key];
+    if (event.key === 'Home') mapExpansion = 0;
+    else if (event.key === 'End') mapExpansion = mapMaximum - mapMinimum;
+    else if (change !== undefined) mapExpansion = clampMapExpansion(mapExpansion + change);
+    else return;
+    event.preventDefault();
+  }
+  onMount(() => {
+    if (!mapCard || !mapContent) return;
+    const card = mapCard, content = mapContent;
+    const measure = () => {
+      const style = getComputedStyle(card);
+      // The original card is its normal-flow content plus padding/borders; the map is absolute.
+      mapMinimum = Math.max(parseFloat(style.minHeight) || 0,
+        content.getBoundingClientRect().height + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+        + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth));
+      mapMaximum = Math.max(mapMinimum, Math.min(720, Math.floor(window.innerHeight * 0.75)));
+      mapExpansion = clampMapExpansion(mapExpansion);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(card);
+    observer.observe(content);
+    window.addEventListener('resize', measure);
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); resizePointer = null; };
+  });
+  const submission = createContactForm();
+  const sending = $derived(submission.state.phase === 'sending');
+  let fields = $state({ name: '', email: '', subject: 'Informações gerais', message: '' });
+  const subjects = [
+    'Informações gerais',
+    'Conhecer uma viatura',
+    'Marcar uma visita',
+    'Falar sobre uma retoma',
+  ];
+  const demoId = $derived(contact.isDemo ? `${id}-demo` : undefined);
+
+  // In the comparison, retain the original image/gradient canvas size instead of
+  // compressing it into this shorter layout. Only absolute paint layers resize;
+  // neither form nor section geometry depends on the reference.
+  onMount(() => {
+    if (backgroundTone !== 'original' || !backgroundReferenceId) return;
+    const reference = document.getElementById(backgroundReferenceId);
+    if (!reference) return;
+    const syncBackground = () => {
+      section.style.setProperty(
+        '--reference-background-height',
+        `${reference.getBoundingClientRect().height}px`,
+      );
+    };
+    syncBackground();
+    const observer = new ResizeObserver(syncBackground);
+    observer.observe(reference);
+    return () => observer.disconnect();
+  });
+</script>
+
+<section
+  class="visit-studio landscape-window"
+  bind:this={section}
+  class:original-tone={backgroundTone === 'original'}
+  class:reference-tone={backgroundReferenceId && (!compareBackgroundTones || useReferenceTone)}
+  class:tone-comparison={compareBackgroundTones}
+  class:refined-form={formTreatment === 'refined'}
+  class:has-form-divider={formDivider}
+  class:borderless-panels={borderlessPanels}
+  class:harmonized-type={harmonizedTypography}
+  class:family-theme={!!background?.theme}
+  style={background?.theme
+    ? Object.entries(background.theme)
+        .map(([key, value]) => `--visit-${key}:${value}`)
+        .join(';')
+    : undefined}
+  {id}
+  aria-labelledby={`${id}-heading`}
+>
+  <div class="studio-landscape" aria-hidden="true">
+    {#if background}<ScenePhotograph {background} bounded />{:else}
+      <img
+        class="studio-photo"
+        src={photo('photo-1576212767334-9e289e294c77', backgroundTone === 'original' ? 2200 : 1280)}
+        srcset={responsivePhoto('photo-1576212767334-9e289e294c77')}
+        sizes="(prefers-reduced-motion: reduce) 100vw, (max-aspect-ratio: 3/2) 150vh, 100vw"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+    {/if}
+  </div>
+  <div class="studio-inner">
+    <div class="visit-copy">
+      {#if background}
+        <div class="mobile-body-photo" aria-hidden="true"><ScenePhotograph {background} /></div>
+      {/if}
+      <div class="visit-heading">
+        <div class="heading-line">
+          <VisitLabel />
+          {#if compareBackgroundTones}
+            <button
+              class="background-toggle"
+              type="button"
+              role="switch"
+              aria-label={`${useReferenceTone ? 'Tom original' : 'Tom atual'} — usar tom original do fundo`}
+              aria-checked={useReferenceTone}
+              onclick={() => (useReferenceTone = !useReferenceTone)}
+            >
+              <span class="toggle-track" aria-hidden="true"><span></span></span>
+              {useReferenceTone ? 'Tom original' : 'Tom atual'}
+            </button>
+          {:else if comparison}<span class="comparison-label">{comparisonLabel}</span>{/if}
+        </div>
+        <h2 id={`${id}-heading`}>
+          Venha <span class="heading-tail">conhecer-nos<span class="period">.</span></span>
+        </h2>
+      </div>
+
+      <div class="location" id={`${id}-map-preview`} class:original-map={mapArtwork === 'original'} class:has-embedded-map={embeddedMapActive}
+        bind:this={mapCard} style:height={mapExpansion > 0 && mapMinimum > 0 ? `${mapMinimum + mapExpansion}px` : undefined}>
+        {#if !embeddedMapActive}
+        {#if mapArtwork === 'original'}
+          {#if background?.theme}<span class="location-map" data-map-image="0" class:is-active={selectedLocation===0} aria-hidden="true"
+              ><VisitMapArtwork {id} /></span
+            >{:else}
+            <img
+              class="location-map"
+              data-map-image="0"
+              class:is-active={selectedLocation===0}
+              src={locationMap}
+              alt=""
+              width="1728"
+              height="684"
+              loading="lazy"
+              decoding="async"
+            />
+          {/if}
+        {:else}
+          <svg
+            class="location-map"
+            data-map-image="0"
+            class:is-active={selectedLocation===0}
+            viewBox="0 0 540 220"
+            preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              class="map-block"
+              d="M15 12H104V61H15ZM135 9H210V59H135ZM244 8H324V58H244ZM365 12H469V59H365ZM12 99H96V145H12ZM139 99H213V143H139ZM247 99H321V142H247ZM365 99H444V145H365ZM15 178H99V215H15ZM140 178H212V216H140ZM250 178H322V216H250ZM365 178H470V218H365Z"
+            />
+            <g class="map-street" fill="none" stroke-width="10">
+              <path d="M-20 80H560M-20 160H560M118-20V240M229-20V240M346-20V240M489-20V240" />
+              <path d="M370-30L242 95 103 245" stroke-width="17" />
+            </g>
+            <path
+              d="M370-30L242 95 103 245"
+              fill="none"
+              stroke="currentColor"
+              stroke-opacity=".12"
+              stroke-width="1.5"
+            />
+            <circle cx="328" cy="107" r="36" fill="#e30613" opacity=".07" />
+            <circle cx="328" cy="107" r="22" fill="#e30613" opacity=".09" />
+            <path
+              d="M328 76c-10 0-18 8-18 18 0 14 18 32 18 32s18-18 18-32c0-10-8-18-18-18Z"
+              fill="#e30613"
+            />
+            <circle cx="328" cy="94" r="5.5" fill="white" />
+          </svg>
+        {/if}
+        {#if background?.theme}<span class="location-map" data-map-image="1" class:is-active={selectedLocation===1} aria-hidden="true"><VisitMapArtwork id={`${id}-alternate`} alternate/></span>
+        {:else}<img class="location-map" data-map-image="1" class:is-active={selectedLocation===1} src={alternateLocationMap} alt="" width="1728" height="684" loading="eager" decoding="async"/>{/if}
+        {/if}
+        <div class="location-copy" bind:this={mapContent}>
+          <h3><MapPin size={15} aria-hidden="true" /> Encontre-nos</h3>
+          <address>{#if contact.address}<button class="address-choice" type="button" aria-pressed={selectedLocation===0} aria-controls={`${id}-map-preview`} onclick={()=>selectedLocation=0}>{contact.address}</button>{:else}Morada por confirmar.{/if}</address>
+          {#if contact.directionsUrl}
+            <a
+              class="map-link"
+              href={contact.directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-describedby={demoId}
+            >
+              Abrir no mapa <ArrowUpRight size={16} aria-hidden="true" /><span class="sr-only">
+                (abre num novo separador)</span
+              >
+            </a>
+          {/if}
+          {#if contact.additionalAddress}
+            <address><button class="address-choice" type="button" aria-pressed={selectedLocation===1} aria-controls={`${id}-map-preview`} onclick={()=>selectedLocation=1}>{contact.additionalAddress}</button></address>
+            <a
+              class="map-link"
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.additionalAddress.replace(/\n/g, ', '))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Abrir no mapa <ArrowUpRight size={16} aria-hidden="true" />
+              <span class="sr-only">(abre num novo separador)</span>
+            </a>
+          {/if}
+        </div>
+        {#if embeddedMapActive}
+          <iframe
+            class="location-map location-embed is-active"
+            data-map-image="0"
+            src={contact.mapEmbedUrl}
+            title={`Google Maps — ${contact.name}, ${contact.address?.replace(/\n/g, ', ')}`}
+            width="800"
+            height="600"
+            allowfullscreen
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+        {:else}
+          <span class="map-preview-note">Mapa ilustrativo</span>
+        {/if}
+        <span class="sr-only" role="status" aria-live="polite" aria-atomic="true">{embeddedMapActive ? 'Mapa Google Maps' : 'Pré-visualização ilustrativa'}: {(selectedLocation===1?contact.additionalAddress:contact.address)?.replace(/\n/g,', ')}</span>
+        <div class="map-resize-handle" role="spinbutton"
+          aria-label="Redimensionar altura do mapa" aria-describedby={`${id}-resize-help`}
+          aria-controls={`${id}-map-preview`} aria-valuemin={Math.round(mapMinimum)} aria-valuemax={Math.round(mapMaximum)}
+          aria-valuenow={Math.round(mapMinimum + mapExpansion)} aria-valuetext={`${Math.round(mapMinimum + mapExpansion)} píxeis de altura`}
+          tabindex="0" onpointerdown={startMapResize} onpointermove={moveMapResize}
+          onpointerup={finishMapResize} onpointercancel={finishMapResize}
+          onlostpointercapture={() => resizePointer = null} onkeydown={keyMapResize}></div>
+        <span id={`${id}-resize-help`} class="sr-only">Arraste para ajustar a altura. Use as setas para cima e para baixo, Page Up e Page Down, Home para a altura mínima ou End para a máxima.</span>
+      </div>
+
+      <div class="contact-details">
+        <div class="channels">
+          <div>
+            <h3><Phone size={14} aria-hidden="true" /> Telefone</h3>
+            {#if contact.phone}<a
+                class="contact-value"
+                href={`tel:${contact.phone.international}`}
+                aria-describedby={demoId}>{contact.phone.display}</a
+              >{:else}<p>Por confirmar.</p>{/if}
+            {#if contact.additionalPhone}<a
+                class="contact-value"
+                href={`tel:${contact.additionalPhone.international}`}
+                >{contact.additionalPhone.display}</a
+              >{/if}
+          </div>
+          <div>
+            <h3><Mail size={14} aria-hidden="true" /> Email</h3>
+            {#if contact.email}<a
+                class="contact-value email"
+                href={`mailto:${contact.email}`}
+                aria-describedby={demoId}>{contact.email}</a
+              >{:else}<p>Por confirmar.</p>{/if}
+          </div>
+        </div>
+        <div class="opening-hours">
+          <h3><Clock3 size={14} aria-hidden="true" /> Quando nos visitar</h3>
+          {#if contact.hours.length}
+            <dl>
+              {#each contact.hours as hours}<div>
+                  <dt>{hours.days}</dt>
+                  <dd>{hours.time}</dd>
+                </div>{/each}
+            </dl>
+          {:else}<p>Horário por confirmar.</p>{/if}
+        </div>
+      </div>
+
+      <div class="direct-actions">
+        {#if contact.phone}<a
+            class="call-action"
+            href={`tel:${contact.phone.international}`}
+            aria-describedby={demoId}
+            ><span class="call-label"
+              >{#if showCallIcon}<Phone
+                  class="call-phone-icon"
+                  size={15}
+                  strokeWidth={1.7}
+                  aria-hidden="true"
+                />{/if}<span class="action-text">Ligar agora</span></span
+            ><span class="action-arrow"><ArrowUpRight size={18} aria-hidden="true" /></span></a
+          >{/if}
+        {#if contact.email}<a
+            class="email-action"
+            href={`mailto:${contact.email}`}
+            aria-describedby={demoId}
+            ><span class="email-label">Enviar email</span>
+            <ArrowUpRight size={18} aria-hidden="true" /></a
+          >{/if}
+      </div>
+      {#if contact.isDemo}<p class="demo-note" class:sr-only={!showDemoNote} id={demoId}>
+          Demonstração: morada, mapa, contactos e horário ilustrativos.
+        </p>{/if}
+    </div>
+
+    {#if formTreatment === 'original'}
+      {#if formDivider}
+        <div class="original-form-divider">
+          {#if background}
+            <div class="mobile-body-photo" aria-hidden="true"><ScenePhotograph {background} /></div>
+          {/if}
+          <VisitContactForm id={`${id}-form`} {showDemoNote} />
+        </div>
+      {:else}
+        <VisitContactForm id={`${id}-form`} {showDemoNote} />
+      {/if}
+    {:else}
+      <form
+        class="message-card"
+        aria-labelledby={`${id}-form-heading`}
+        aria-describedby={`${id}-form-note`}
+  use:submission.enhance
+  aria-busy={sending}
+      >
+  <ContactFeedback {submission}/>
+        <div class="form-heading">
+          <span class="message-icon" aria-hidden="true"
+            ><Mail size={20} strokeWidth={1.5} aria-hidden="true" /></span
+          >
+          <div>
+            <h3 id={`${id}-form-heading`}>{formTitle}</h3>
+            <p>{formIntro}</p>
+          </div>
+        </div>
+        <div class="form-fields">
+          <div class="field-row">
+            <label for={`${id}-name`}
+              >Nome<input
+                id={`${id}-name`}
+                name="name"
+                maxlength="120"
+                autocomplete="name"
+                placeholder="O seu nome"
+                bind:value={fields.name}
+                required
+              /></label
+            >
+            <label for={`${id}-email`}
+              >Email<input
+                id={`${id}-email`}
+                name="email"
+                maxlength="254"
+                type="email"
+                autocomplete="email"
+                placeholder="nome@exemplo.pt"
+                bind:value={fields.email}
+                required
+              /></label
+            >
+          </div>
+          <label for={`${id}-subject`}
+            >Gostava de falar sobre<FormSelectField
+              ><select id={`${id}-subject`} name="subject" bind:value={fields.subject}
+                >{#each subjects as subject}<option>{subject}</option>{/each}</select
+              ></FormSelectField
+            ></label
+          >
+          <label for={`${id}-message`}
+            >Mensagem<textarea
+              id={`${id}-message`}
+              name="message"
+              maxlength="5000"
+              rows="4"
+              placeholder="Conte-nos o que procura ou como podemos ajudar."
+              bind:value={fields.message}
+              required
+            ></textarea></label
+          >
+        </div>
+        <ContactFormFooter>
+        <button class="send-button" type="submit" aria-busy={sending} disabled={sending || submission.state.kind === "conflict"}
+          >{sending ? 'A enviar…' : 'Enviar pedido'}
+          {#if sending}<LoaderCircle class="contact-submit-spinner" size={19} aria-hidden="true" />{:else}<ArrowRight size={19} aria-hidden="true" />{/if}</button
+        >
+        </ContactFormFooter>
+        <p class="form-note" id={`${id}-form-note`}>
+          O pedido de visita depende de confirmação do stand.
+        </p>
+</form>
+    {/if}
+  </div>
+</section>
+
+<style>
+  .mobile-body-photo {
+    display: none;
+  }
+  .visit-studio.landscape-window {
+    /* Keep the reserved border geometry without a bright rule at the photo edge. */
+    border-block-color: transparent;
+  }
+  .studio-landscape {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    isolation: isolate;
+  }
+
+  .visit-studio,
+  .visit-studio * {
+    box-sizing: border-box;
+  }
+  .visit-studio {
+    --bg: #17231e;
+    --text: #f5f5f1;
+    --muted: #c2cbc5;
+    --line: #ffffff30;
+    --studio-panel: #17231e50;
+    --studio-soft: #22342b;
+    position: relative;
+    isolation: isolate;
+    background: var(--bg);
+    color: var(--text);
+    border-block: 1px solid var(--line);
+    margin: 0;
+    scroll-margin-top: calc(var(--company-nav-height, 80px) + 20px);
+  }
+  .studio-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 54%;
+    z-index: -2;
+  }
+  .borderless-panels .location,
+  .borderless-panels :global(.inline-contact) {
+    border-color: transparent;
+  }
+  .studio-landscape::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(100deg, #0c1c16ed 0%, #12251ddb 48%, #0e211bea 100%);
+  }
+  /* Background treatment from ContactFooter, without changing the studio layout. */
+  .original-tone {
+    background: #111214;
+    overflow: hidden;
+  }
+  .original-tone .studio-photo {
+    object-position: center 58%;
+    filter: saturate(0.45);
+  }
+  .original-tone .studio-landscape::before {
+    background:
+      linear-gradient(90deg, #101114a6 0%, #10111480 48%, #10111433 100%),
+      linear-gradient(0deg, #0c0c0e99, #0c0c0e0d 75%);
+  }
+  .original-tone.reference-tone .studio-landscape {
+    bottom: auto;
+    height: max(100%, var(--reference-background-height, 100%));
+  }
+  .studio-inner {
+    --column-gap: clamp(40px, 6vw, 96px);
+    width: var(--site-frame, 90%);
+    max-width: var(--site-frame-max, 1720px);
+    margin-inline: auto;
+    padding-block: clamp(32px, 3.5vw, 54px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    gap: var(--column-gap);
+    align-items: start;
+  }
+  .visit-heading {
+    display: contents;
+  }
+  .original-form-divider {
+    position: relative;
+    min-width: 0;
+  }
+  .has-form-divider .studio-inner {
+    --column-gap: clamp(64px, 9vw, 144px);
+    gap: var(--column-gap);
+  }
+  .original-form-divider::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--column-gap) / -2);
+    width: 1px;
+    background: var(--line);
+    pointer-events: none;
+  }
+  h2,
+  h3,
+  p,
+  dl,
+  dd {
+    margin: 0;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  .heading-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .comparison-label {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .background-toggle {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 132px;
+    min-height: 36px;
+    flex-shrink: 0;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #10111455;
+    color: var(--text);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .tone-comparison .heading-line {
+    position: relative;
+    padding-right: 150px;
+  }
+  .background-toggle:focus-visible {
+    outline-color: var(--text);
+  }
+  .toggle-track {
+    display: block;
+    width: 24px;
+    height: 14px;
+    padding: 2px;
+    border-radius: 9px;
+    background: #ffffff30;
+  }
+  .toggle-track > span {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--text);
+  }
+  .background-toggle[aria-checked='true'] .toggle-track > span {
+    transform: translateX(10px);
+  }
+  h2 {
+    margin-top: 18px;
+    max-width: 16ch;
+    font-size: clamp(34px, 3.3vw, 49px);
+    letter-spacing: -0.055em;
+    font-weight: 500;
+    line-height: 1.05;
+  }
+  .period {
+    color: var(--red);
+  }
+  .heading-tail {
+    white-space: nowrap;
+  }
+  .location {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin-top: 28px;
+    min-height: 130px;
+    padding: 15px 18px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--studio-soft);
+  }
+  .location-map {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 70%;
+    height: 100%;
+    z-index: -2;
+    opacity: 0.8;
+    color: var(--text);
+  }
+  .map-block {
+    fill: color-mix(in srgb, var(--text) 8%, var(--bg));
+  }
+  .map-street {
+    stroke: var(--bg);
+  }
+  .location::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(90deg, var(--studio-soft) 34%, transparent 84%);
+  }
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .location h3 {
+    color: var(--text);
+  }
+  address {
+    font-size: 15px;
+    font-style: normal;
+    line-height: 1.6;
+    white-space: pre-line;
+    margin-top: 10px;
+    max-width: 250px;
+  }
+  .map-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    min-height: 30px;
+    margin-top: 8px;
+  }
+  .map-link > :global(svg) {
+    color: #fff;
+    transition: color 180ms ease;
+  }
+  .contact-details {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 22px;
+    margin-top: 22px;
+  }
+  .channels {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+  }
+  .contact-value {
+    display: inline-block;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-top: 5px;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+  }
+  .contact-value.email {
+    font-size: 14px;
+  }
+  .contact-value + .contact-value {
+    display: block;
+  }
+  .opening-hours {
+    border-left: 1px solid var(--line);
+    padding-left: 25px;
+    min-width: 0;
+  }
+  dl {
+    margin-top: 10px;
+    display: grid;
+    gap: 9px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  dl > div {
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+  }
+  dt {
+    color: var(--text);
+  }
+  dd {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .direct-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 26px;
+    align-items: center;
+    margin-top: 20px;
+  }
+  .call-action,
+  .email-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 26px;
+    min-height: 45px;
+    font-size: 13px;
+  }
+  .call-action {
+    padding: 10px 17px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--studio-panel);
+  }
+  .call-action {
+    position: relative;
+    isolation: isolate;
+  }
+  .call-action::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    pointer-events: none;
+    background: inherit;
+    border: inherit;
+    border-radius: inherit;
+    box-shadow: 0 3px 10px #00000000;
+  }
+  .action-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+  .call-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .call-label :global(svg) {
+    flex-shrink: 0;
+  }
+  .email-action {
+    gap: 12px;
+  }
+  .email-action > :global(svg) {
+    color: #fff;
+  }
+  .original-tone .call-action {
+    background: #fff;
+    border-color: #fff;
+    color: #17231e;
+  }
+  .original-tone .call-action :global(svg) {
+    color: #e30613;
+  }
+  .original-tone .call-action :global(svg.call-phone-icon) {
+    color: #111;
+  }
+  .call-action:focus-visible .action-arrow :global(svg) {
+    transform: translate(3px, -3px);
+  }
+  .call-action:focus-visible::before {
+    box-shadow: 0 3px 10px #00000026;
+  }
+  .email-action:focus-visible > :global(svg) {
+    transform: translate(3px, -3px);
+  }
+  @media (hover: hover) {
+    .call-action:hover .action-arrow :global(svg) {
+      transform: translate(3px, -3px);
+    }
+    .call-action:hover::before {
+      box-shadow: 0 3px 10px #00000026;
+    }
+    .email-action:hover > :global(svg) {
+      transform: translate(3px, -3px);
+    }
+    .map-link:hover {
+      text-decoration: underline;
+      text-decoration-color: currentColor;
+      text-underline-offset: 4px;
+    }
+    .map-link:hover > :global(svg) {
+      color: #fff;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .call-action .action-arrow :global(svg),
+    .email-action > :global(svg) {
+      transition:
+        transform 220ms ease,
+        color 300ms ease;
+    }
+    .call-action::before {
+      transition: box-shadow 300ms ease;
+    }
+  }
+  .demo-note {
+    font-size: 11px;
+    line-height: 1.65;
+    color: var(--muted);
+    margin-top: 12px;
+  }
+  .demo-note.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  .message-card {
+    position: relative;
+    padding: 4px 0 0 clamp(28px, 3.5vw, 54px);
+    border-left: 1px solid var(--line);
+    min-width: 0;
+  }
+  .form-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding-bottom: 0;
+  }
+  .message-icon {
+    display: grid;
+    place-items: center;
+    width: 43px;
+    height: 43px;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--muted);
+  }
+  .form-heading h3 {
+    color: var(--text);
+    font-size: clamp(23px, 2vw, 28px);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.035em;
+  }
+  .form-heading p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+  .form-fields {
+    display: grid;
+    gap: 15px;
+    margin-block: 22px 18px;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    color: var(--text);
+    font-size: 12px;
+    min-width: 0;
+  }
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: var(--site-type-control, 16px);
+    line-height: 1.5;
+    background: #10201988;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  input,
+  select {
+    min-height: 44px;
+  }
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+  option {
+    background: var(--bg);
+    color: var(--text);
+  }
+  /* Original fields use a translucent light surface, not a second dark veil.
+     Keep the former dark field treatment in the comparison's current-tone mode. */
+  .original-tone.reference-tone :is(input, select, textarea) {
+    background: #ffffff09;
+  }
+  :is(input, select, textarea):focus {
+    border-color: var(--text);
+    box-shadow: inset 0 0 0 0.35px var(--text);
+    outline: none;
+  }
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 4px;
+  }
+  .send-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 49px;
+    gap: 20px;
+    padding: 12px 17px;
+    background: #f5f5f1;
+    color: #17231e;
+    border: 1px solid #f5f5f1;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .original-tone .send-button {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--line);
+  }
+  .form-note {
+    margin-top: 13px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  @media (hover: hover) {
+    .visit-copy a:hover {
+      color: white;
+    }
+    .call-action:hover {
+      border-color: #ffffff90;
+    }
+    .original-tone .call-action:hover {
+      background: #e9ede8;
+      border-color: #e9ede8;
+      color: #17231e;
+    }
+    :is(input, select, textarea):hover {
+      background: color-mix(in srgb, var(--text) 2%, var(--bg));
+      border-color: color-mix(in srgb, var(--text) 40%, transparent);
+    }
+    .original-tone.reference-tone :is(input, select, textarea):hover {
+      background: #ffffff13;
+    }
+    .send-button:hover {
+      background: #e0e8df;
+      border-color: #e0e8df;
+    }
+    .original-tone .send-button:hover {
+      background: #ffffff09;
+      border-color: #ffffff70;
+    }
+    .map-link:hover :global(svg) {
+      transform: translateX(3px);
+    }
+  }
+  .original-tone.reference-tone :is(input, select, textarea):focus {
+    background: #ffffff16;
+  }
+  /* Refined comparison: local reading surfaces, not a large opaque form panel. */
+  .refined-form .form-heading {
+    padding: 18px;
+    border: 1px solid #ffffff30;
+    border-radius: 4px;
+    background: #102019c9;
+    align-items: center;
+  }
+  .refined-form .form-heading h3 {
+    color: #fff;
+    font-weight: 600;
+    font-size: clamp(23px, 2vw, 28px);
+    letter-spacing: -0.035em;
+  }
+  .refined-form .form-heading p {
+    color: #dde4df;
+    margin-top: 7px;
+  }
+  .refined-form .message-icon {
+    color: #f5f5f1;
+    border-color: #ffffff50;
+  }
+  .refined-form label {
+    font-weight: 500;
+    color: #fff;
+    text-shadow: 0 1px 4px #0008;
+  }
+  .refined-form :is(input, select, textarea) {
+    background: #0d1714d9;
+    border-color: #ffffff60;
+    color: #fff;
+    text-shadow: none;
+    font-weight: 400;
+  }
+  .refined-form :is(input, textarea)::placeholder {
+    color: #d2dbd5;
+  }
+  .refined-form .send-button {
+    color: #fff;
+    border-color: #ffffff70;
+    text-shadow: 0 1px 4px #0008;
+  }
+  .refined-form .form-note {
+    color: #e4e9e5;
+    text-shadow: 0 1px 4px #000a;
+  }
+  @media (hover: hover) {
+    .refined-form :is(input, select, textarea):hover {
+      background: #14261eeb;
+      border-color: #ffffff90;
+    }
+    .refined-form .send-button:hover {
+      background: #ffffff09;
+      border-color: #ffffffb0;
+    }
+  }
+  .refined-form :is(input, select, textarea):focus {
+    background: #14261efa;
+    border-color: #f5f5f1;
+    box-shadow: inset 0 0 0 0.35px #f5f5f1;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    a,
+    button,
+    input,
+    select,
+    textarea {
+      transition:
+        color 180ms ease,
+        border-color 180ms ease,
+        background-color 180ms ease,
+        box-shadow 180ms ease;
+    }
+    .map-link :global(svg),
+    .send-button :global(svg) {
+      transition: transform 220ms ease;
+    }
+  }
+  @media (max-width: 1100px) {
+    .studio-inner {
+      gap: 36px;
+    }
+    .contact-details {
+      grid-template-columns: 1fr;
+      gap: 22px;
+    }
+    .channels {
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .opening-hours {
+      border-left: 0;
+      padding-left: 0;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .opening-hours dl {
+      max-width: 370px;
+    }
+  }
+  @media (max-width: 900px) {
+    .map-link {
+      min-height: 44px;
+    }
+    .has-form-divider .studio-inner {
+      --column-gap: 102px;
+    }
+    .borderless-panels :global(.inline-contact :is(input, select, textarea)) {
+      border-color: transparent;
+      box-shadow: none;
+    }
+    .borderless-panels :global(.inline-contact :is(input, select, textarea):focus) {
+      /* Keep selection visible without restoring an outer frame. */
+      box-shadow: inset 0 -2px 0 #f5f5f1;
+    }
+    .original-form-divider::before {
+      top: calc(var(--column-gap) / -2);
+      bottom: auto;
+      left: 0;
+      width: 100%;
+      height: 1px;
+    }
+    .studio-inner {
+      grid-template-columns: 1fr;
+      gap: 34px;
+    }
+    .visit-copy h2 {
+      max-width: none;
+    }
+    .contact-details {
+      grid-template-columns: 1fr 1fr;
+    }
+    .channels {
+      grid-template-columns: 1fr;
+    }
+    .opening-hours {
+      border-top: 0;
+      padding-top: 0;
+      border-left: 1px solid var(--line);
+      padding-left: 24px;
+    }
+    .message-card {
+      padding: 28px 0 0;
+      border-left: 0;
+      border-top: 1px solid var(--line);
+    }
+  }
+  @media (max-width: 700px) {
+    .has-form-divider .studio-inner {
+      --column-gap: 90px;
+    }
+    .refined-form .form-heading {
+      padding: 16px;
+    }
+    .refined-form .form-heading h3 {
+      font-size: 24px;
+    }
+    .original-tone .studio-photo {
+      object-position: 62% center;
+    }
+    .original-tone .studio-landscape::before {
+      background:
+        linear-gradient(90deg, #101114a6, #10111473), linear-gradient(0deg, #0c0c0e99, transparent);
+    }
+    .studio-inner {
+      padding-block: 36px;
+      gap: 30px;
+    }
+    .visit-copy h2 {
+      font-size: clamp(35px, 9vw, 46px);
+      max-width: 12ch;
+      margin-top: 20px;
+    }
+    .location {
+      padding: 20px;
+      margin-top: 24px;
+    }
+    .location-map {
+      width: 90%;
+      opacity: 0.65;
+    }
+    .location::before {
+      background: linear-gradient(90deg, var(--studio-soft) 24%, transparent 100%);
+    }
+    address {
+      font-size: 14px;
+    }
+    .contact-details {
+      grid-template-columns: 1fr;
+      margin-top: 23px;
+      gap: 22px;
+    }
+    .channels {
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .opening-hours {
+      border: 0;
+      border-top: 1px solid var(--line);
+      padding: 19px 0 0;
+    }
+    dl {
+      font-size: 13px;
+    }
+    .message-card {
+      padding: 24px 0 0;
+    }
+    .form-heading {
+      gap: 12px;
+      padding-bottom: 0;
+    }
+    .message-icon {
+      width: 36px;
+      height: 36px;
+    }
+    .form-heading h3 {
+      font-size: 24px;
+    }
+    .form-fields {
+      margin-top: 23px;
+    }
+    .field-row {
+      grid-template-columns: 1fr;
+      gap: 19px;
+    }
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+  @media (max-width: 380px) {
+    .channels {
+      grid-template-columns: 1fr;
+    }
+    .direct-actions {
+      gap: 8px 18px;
+    }
+    .call-action,
+    .email-action {
+      font-size: 12px;
+    }
+    .form-heading {
+      gap: 10px;
+    }
+    .message-icon {
+      display: none;
+    }
+  }
+  /* Approved homepage typography; other instances retain their existing treatment. */
+  .harmonized-type h2 {
+    margin-top: 15px;
+    font-size: clamp(30px, 3.1vw, 46px);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 1.15;
+  }
+  .harmonized-type h3 {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .harmonized-type .contact-value,
+  .harmonized-type address {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .harmonized-type .contact-value.email {
+    font-size: 15px;
+  }
+  .harmonized-type dl {
+    font-size: 15px;
+    line-height: 1.65;
+    gap: 10px;
+  }
+  .harmonized-type dd {
+    font-weight: 500;
+  }
+  .harmonized-type .map-link,
+  .harmonized-type .call-action,
+  .harmonized-type .email-action {
+    font-size: 14px;
+  }
+  .harmonized-type :global(.inline-contact label) {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .harmonized-type :global(.inline-contact h3) {
+    font-size: clamp(24px, 2vw, 30px);
+    letter-spacing: -0.035em;
+    line-height: 1.2;
+  }
+  @media (max-width: 700px) {
+    .harmonized-type h2 {
+      font-size: 32px;
+    }
+  }
+  /* Original map artwork and tint, without changing the approved card geometry. */
+  .location.original-map .location-map {
+    width: 100%;
+    opacity: 1;
+    object-fit: cover;
+    object-position: center;
+  }
+  .location.original-map::before {
+    background: linear-gradient(90deg, #101913f2 0%, #101913df 48%, #10191373 100%);
+  }
+
+  .email-action {
+    text-decoration: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .call-action {
+      transition:
+        background-color 300ms ease,
+        border-color 300ms ease,
+        color 180ms ease;
+    }
+  }
+  /* Only the map surface changes; all neutral text/actions remain original. */
+  .family-theme .location.original-map {
+    background: var(--visit-map-surface);
+  }
+  .family-theme .location.original-map::before {
+    background: linear-gradient(
+      90deg,
+      var(--visit-map-surface) 0%,
+      color-mix(in srgb, var(--visit-map-surface) 90%, transparent) 44%,
+      color-mix(in srgb, var(--visit-map-surface) 22%, transparent) 100%
+    );
+  }
+  :global(html[data-theme='light']) .original-tone .studio-landscape::before,
+  :global(html[data-theme='dark']) .original-tone .studio-landscape::before {
+    background:
+      linear-gradient(90deg, #10111491 0%, #1011146b 48%, #10111426 100%),
+      linear-gradient(0deg, #0c0c0e80, #0c0c0e09 75%);
+  }
+  :global(html[data-theme='light']) .family-theme .studio-inner,
+  :global(html[data-theme='dark']) .family-theme .studio-inner {
+    --visit-form-panel: #262626c9;
+    --visit-map-surface: #262626;
+  }
+
+  .email-action {
+    position: relative;
+    gap: 24px;
+    padding: 12px 0;
+    border-bottom: 1px solid #ffffff50;
+  }
+  .email-action::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 1px;
+    background: #e30613;
+    clip-path: inset(0 100% 0 0);
+    pointer-events: none;
+    transition: clip-path 420ms ease;
+  }
+  .email-action:focus-visible::after {
+    clip-path: inset(0);
+  }
+  .send-button:not(:disabled):focus-visible :global(svg) {
+    transform: translate(3px, -3px);
+  }
+  @media (hover: hover) {
+    .email-action:hover::after {
+      clip-path: inset(0);
+    }
+    .send-button:not(:disabled):hover :global(svg) {
+      transform: translate(3px, -3px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .email-action::after,
+    .email-action > :global(svg),
+    .email-action:is(:hover, :focus-visible) > :global(svg),
+    .map-link > :global(svg),
+    .call-action .action-arrow :global(svg),
+    .call-action:is(:hover, :focus-visible) .action-arrow :global(svg),
+    .send-button :global(svg),
+    .send-button:not(:disabled):is(:hover, :focus-visible) :global(svg) {
+      transition: none;
+      transform: none;
+    }
+  }
+  @media (max-width: 700px) {
+    .studio-landscape {
+      inset: 0 0 auto;
+      height: 260px;
+      overflow: hidden;
+    }
+    .studio-landscape :global(picture.bounded) {
+      height: 100%;
+      bottom: 0;
+      mask-image: none;
+    }
+    .studio-inner {
+      padding-top: 0;
+    }
+    .has-form-divider .studio-inner {
+      --column-gap: 40px;
+      gap: 40px;
+    }
+    .visit-heading {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      box-sizing: border-box;
+      height: 260px;
+      margin-inline: -5.5555556%;
+      padding: 24px 5.5555556%;
+      border-bottom: 1px solid var(--line);
+    }
+    .visit-heading h2 {
+      margin-top: 14px;
+      font-size: clamp(30px, 8.8vw, 36px);
+      line-height: 1.12;
+      max-width: 12ch;
+    }
+    .channels {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .channels .contact-value {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      max-width: 100%;
+    }
+    .visit-copy,
+    .original-form-divider {
+      position: relative;
+      isolation: isolate;
+    }
+    .mobile-body-photo {
+      display: block;
+      position: absolute;
+      inset: -20px -5.5555556%;
+      z-index: -1;
+      pointer-events: none;
+      overflow: hidden;
+      mask-image: linear-gradient(transparent, #000 32px, #000 calc(100% - 32px), transparent);
+    }
+    .visit-copy > .mobile-body-photo {
+      top: 240px;
+    }
+    .mobile-body-photo::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, #101114b8, #10111491 60%, #101114a6);
+    }
+  }
+
+  .location .location-map[data-map-image] {opacity:0;pointer-events:none;}
+  /* Keep the original layers and geometry while gestures reach the map below the fade. */
+  .location .location-embed[data-map-image] {
+    border: 0;
+    pointer-events: auto;
+  }
+  .map-resize-handle {position:absolute;right:0;bottom:0;width:24px;height:24px;z-index:2;cursor:ns-resize;touch-action:none;user-select:none;color:var(--text);}
+  .map-resize-handle::after {content:'';position:absolute;right:3px;bottom:3px;width:12px;height:12px;clip-path:polygon(100% 0,100% 100%,0 100%);background:repeating-linear-gradient(135deg,transparent 0 3px,currentColor 3px 4px);pointer-events:none;}
+  .map-resize-handle:focus-visible {outline:2px solid currentColor;outline-offset:-3px;background:var(--studio-soft);}
+  .has-embedded-map .location-copy {pointer-events:none;}
+  .has-embedded-map .location-copy :is(button,a) {pointer-events:auto;}
+  /* Owner-selected tuning: 97% strength, stops 0/18/49; same 0.9/0.22 alpha factors. */
+  .visit-studio .location::before,
+  .visit-studio .location.original-map::before {
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--visit-map-surface, var(--studio-soft)) 97%, transparent) 0%,
+      color-mix(in srgb, var(--visit-map-surface, var(--studio-soft)) 87.3%, transparent) 18%,
+      color-mix(in srgb, var(--visit-map-surface, var(--studio-soft)) 21.34%, transparent) 49%);
+  }
+  .location .location-map[data-map-image].is-active {opacity:var(--map-preview-opacity,.8);}
+  .location.original-map {--map-preview-opacity:1;}
+  .address-choice {display:block;width:calc(100% + 12px);margin:-4px -6px;padding:4px 6px;border:0;border-radius:3px;background:transparent;color:inherit;font:inherit;line-height:inherit;white-space:pre-line;text-align:left;cursor:pointer;}
+  .address-choice[aria-pressed='true'] {background:#ffffff08;box-shadow:inset 2px 0 #ffffff70;}
+  .address-choice:focus-visible {outline:2px solid currentColor;outline-offset:3px;}
+  .map-preview-note {position:absolute;right:10px;bottom:8px;font-size:9px;line-height:1.5;color:#f5f5f1;background:#262626ce;padding:3px 6px;border-radius:2px;pointer-events:none;}
+  @media(hover:hover) {.address-choice:hover {background:#ffffff10;text-decoration:underline;text-underline-offset:4px;}}
+  @media(prefers-reduced-motion:no-preference) {.location .location-map[data-map-image] {transition:opacity 180ms ease;}}
+  @media(max-width:700px) {.location:not(.original-map) {--map-preview-opacity:.65;}.address-choice {min-height:44px;}}
+</style>

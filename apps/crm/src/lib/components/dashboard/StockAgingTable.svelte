@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { photoFallback } from '$lib/vehicleImage';
+  import { photoFallback } from '$lib/photos/vehicleImage';
   import { crmPath } from '$lib/paths';
-  import { linkedRow } from '$lib/linkedRow';
+  import { linkedRow } from '$lib/lists/linkedRow';
   import { Car, ChevronRight, Clock } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';

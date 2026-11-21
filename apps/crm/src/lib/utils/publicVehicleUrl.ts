@@ -1,4 +1,4 @@
-import { websiteVisibility, type WebsiteVehicle } from '$lib/websiteVisibility';
+import { websiteVisibility, type WebsiteVehicle } from '$lib/vehicles/websiteVisibility';
 export function publicVehicleUrl(websiteUrl: string, slug: string): string {
   return `${websiteUrl.replace(/\/+$/, '')}/viaturas/${encodeURIComponent(slug)}`;
 }

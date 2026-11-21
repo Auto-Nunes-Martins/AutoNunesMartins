@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { coverPhotoSizes } from './coverPhotoSizes';
-import { scrollFrame } from './components/stand-concepts/scrollFrame';
+import { scrollFrame } from './features/motion/scrollFrame';
 import { cardPhotoSet } from './vehiclePhotoSources';
 
 const photo = (version = 'a') => `/viaturas/car-012345abcdef/photos/0?v=${version.repeat(64)}`;

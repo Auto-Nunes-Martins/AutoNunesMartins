@@ -27,7 +27,7 @@ try {
     const zoom = await page.locator('.hd-landscape picture').evaluate((picture) => {
       const animation = picture
         .getAnimations()
-        .find((a) => a.animationName === 'hd-v1-wallpaper-settle');
+        .find((a) => a.animationName === 'hd-wallpaper-settle');
       return {
         duration: animation.effect.getTiming().duration,
         scales: animation.effect.getKeyframes().map((k) => k.scale),

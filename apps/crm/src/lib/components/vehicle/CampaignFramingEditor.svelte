@@ -1,10 +1,10 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { slide } from 'svelte/transition';
-  import { reorderMotion, revealFraming } from '$lib/reorderMotion';
+  import { reorderMotion, revealFraming } from '$lib/photos/reorderMotion';
   import { sessionFetch } from '$lib/auth/session';
   import { crmPath } from '$lib/paths';
-  import type { HighlightGalleryPhoto } from '$lib/highlightPhotoRequests';
+  import type { HighlightGalleryPhoto } from '$lib/highlights/highlightPhotoRequests';
   import { campaignFraming, type GalleryPhotoFraming, type PhotoFraming } from '@anm/types';
   import PhotoFramingEditor from './PhotoFramingEditor.svelte';
   import PhotoFramingActions from './PhotoFramingActions.svelte';

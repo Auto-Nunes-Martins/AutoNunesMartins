@@ -200,7 +200,7 @@ export async function mobileCampaignEffects(browser, origin) {
           await page.goto(origin + route);
           await page.locator('.design.motion-on').waitFor();
         }
-        const heading = page.locator('.orbit-perspective h2').first();
+        const heading = page.locator('.site-perspective h2').first();
         await heading.scrollIntoViewIfNeeded();
         for (const fraction of [0.65, 0.45, 0.25]) {
           await heading.evaluate(

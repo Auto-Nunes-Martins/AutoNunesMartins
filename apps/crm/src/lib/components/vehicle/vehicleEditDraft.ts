@@ -1,4 +1,4 @@
-import type { SignedVariantPhoto } from '$lib/vehicleImage';
+import type { SignedVariantPhoto } from '$lib/photos/vehicleImage';
 import { descriptionHtml } from '@anm/types/richDescription';
 import { galleryFramingSchema } from '@anm/types';
 export type EditPhoto = SignedVariantPhoto & {

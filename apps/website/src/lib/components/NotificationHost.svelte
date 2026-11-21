@@ -233,7 +233,7 @@
     gap: 10px;
     padding: 6px 16px 36px;
     pointer-events: none;
-    font-family: 'Orbit Inter', Arial, sans-serif;
+    font-family: 'ANM Inter', Arial, sans-serif;
   }
   :global(:where(html)[data-theme='dark']) .notification-stack {
     --notice-bg: #1b1e1b;

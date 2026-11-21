@@ -1,6 +1,6 @@
 <script lang="ts">
   import { registeredBrand } from '@anm/types';
-  import { brandLogo } from '$lib/brandLogos';
+  import { brandLogo } from '$lib/vehicles/brandLogos';
   let { name, size = 28 }: { name: string; size?: number } = $props();
   let failed = $state(false);
   const src = $derived(brandLogo(registeredBrand(name)?.logo ?? null));

@@ -73,7 +73,7 @@
     <aside class="login-art" aria-label="Auto Nunes Martins">
       <img
         src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=85"
-        alt="Porsche — fotografia ilustrativa usada no Stand Orbit"
+        alt="Porsche — fotografia ilustrativa usada no Stand Auto Nunes Martins"
         width="1600"
         height="1100"
         fetchpriority="high"

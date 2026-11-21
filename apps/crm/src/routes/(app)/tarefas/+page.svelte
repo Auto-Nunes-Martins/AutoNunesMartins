@@ -5,7 +5,7 @@
   import { tick, untrack } from 'svelte';
   import { CalendarClock, Plus, Search, X } from 'lucide-svelte';
   import { invalidateAll } from '$app/navigation';
-  import { filterNavigation } from '$lib/filterNavigation';
+  import { filterNavigation } from '$lib/lists/filterNavigation';
   import { page } from '$app/stores';
   import {
     dndzone,

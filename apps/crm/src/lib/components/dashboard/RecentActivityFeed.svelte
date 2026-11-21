@@ -1,12 +1,12 @@
 <script lang="ts">
   import { crmPath } from '$lib/paths';
-  import { activityHref as hrefFor } from '$lib/activityNavigation';
+  import { activityHref as hrefFor } from '$lib/activity/activityNavigation';
   import { Activity, User as UserIcon } from 'lucide-svelte';
   import Panel from '$lib/components/common/Panel.svelte';
   import PanelHeader from '$lib/components/brand/PanelHeader.svelte';
   import { formatDate } from '$lib/utils/format';
   import type { RecentActivityRow } from '$lib/server/dashboard';
-  import { activityStyle as styleFor, activityContextText } from '$lib/activityPresentation';
+  import { activityStyle as styleFor, activityContextText } from '$lib/activity/activityPresentation';
 
   interface Props {
     items: RecentActivityRow[];

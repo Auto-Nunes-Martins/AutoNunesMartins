@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowUpRight, Phone } from 'lucide-svelte';
-  import { standContact } from './stand-concepts/standContact';
+  import { standContact } from '../features/contact/standContact';
   let { onContact }: { onContact: (event: MouseEvent) => void } = $props();
 </script>
 

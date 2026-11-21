@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { apiErrorMessage, apiJson, ApiError } from '$lib/server/api';
-import type { HighlightsEditor } from '$lib/homepageHighlights';
+import type { HighlightsEditor } from '$lib/highlights/homepageHighlights';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load = ((event) => {

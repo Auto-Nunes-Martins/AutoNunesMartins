@@ -2,13 +2,13 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-const startup = readFileSync(new URL('../../assets/orbit-startup.js', import.meta.url), 'utf8');
+const startup = readFileSync(new URL('../../assets/site-startup.js', import.meta.url), 'utf8');
 const appHtml = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
-const themeBoot = appHtml.match(/<script id="orbit-theme-boot">([\s\S]*?)<\/script>/)![1]!;
+const themeBoot = appHtml.match(/<script id="site-theme-boot">([\s\S]*?)<\/script>/)![1]!;
 
 describe('featured alignment before hydration', () => {
   const alignment = startup.slice(
-    startup.indexOf('function alignOrbitFeaturedContent'),
+    startup.indexOf('function alignSiteFeaturedContent'),
     startup.indexOf('// A streamed'),
   );
   it.each([390, 1440])('preserves the resting pose at %s px without cumulative drift', (width) => {
@@ -44,7 +44,7 @@ describe('featured alignment before hydration', () => {
         m42 = 10;
       },
     };
-    const run = () => runInNewContext(`${alignment}\nalignOrbitFeaturedContent(hero);`, context);
+    const run = () => runInNewContext(`${alignment}\nalignSiteFeaturedContent(hero);`, context);
     run();
     expect(values.get('--featured-content-drop')).toBe(width > 700 ? '66px' : undefined);
     expect(attributes.get('data-featured-content-drop')).toBe(width > 700 ? '66px' : undefined);
@@ -53,6 +53,23 @@ describe('featured alignment before hydration', () => {
   });
 });
 describe('theme before the first painted frame', () => {
+  it('migrates a previously saved light theme before the first paint', () => {
+    const values = new Map([['anm-orbit-theme', 'light']]);
+    const attributes = new Map<string, string>();
+    runInNewContext(themeBoot, {
+      localStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+        removeItem: (key: string) => values.delete(key),
+      },
+      document: {
+        documentElement: { setAttribute: (key: string, value: string) => attributes.set(key, value) },
+        querySelector: () => ({ setAttribute() {} }),
+      },
+    });
+    expect(attributes.get('data-theme')).toBe('light');
+    expect([...values]).toEqual([['anm-theme', 'light']]);
+  });
   it.each(['light', 'dark'])('applies a legacy %s preference before hydration', (theme) => {
     const attributes = new Map([['data-theme', 'dark']]);
     let darkClass = true;
@@ -74,7 +91,7 @@ describe('theme before the first painted frame', () => {
           setAttribute: (_name: string, value: string) => (metadata = value),
         }),
         querySelectorAll: (selector: string) =>
-          selector === '.design.orbit'
+          selector === '.design.site'
             ? [
                 {
                   classList: { toggle: (_name: string, value: boolean) => (darkClass = value) },
@@ -104,7 +121,7 @@ describe('theme before the first painted frame', () => {
     runInNewContext(startup, context);
     expect(attributes.get('data-theme')).toBe(theme);
     // This parser-blocking callback runs after SSR markup, before framework hydration.
-    (context.window as { initializeOrbitDocument: () => void }).initializeOrbitDocument();
+    (context.window as { initializeSiteDocument: () => void }).initializeSiteDocument();
     expect(darkClass).toBe(theme === 'dark');
     expect(logoSource).toBe(
       `/_app/immutable/assets/${theme === 'dark' ? 'dark' : 'light'}.hash.webp`,

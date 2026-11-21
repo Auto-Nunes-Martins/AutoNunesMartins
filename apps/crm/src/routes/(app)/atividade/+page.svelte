@@ -3,7 +3,7 @@
   import FilterChoiceGroup from '$lib/components/common/FilterChoiceGroup.svelte';
   import DateInput from '$lib/components/common/DateInput.svelte';
   import { crmPath } from '$lib/paths';
-  import { activityHref as hrefFor } from '$lib/activityNavigation';
+  import { activityHref as hrefFor } from '$lib/activity/activityNavigation';
   import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
@@ -31,7 +31,7 @@
   import Pagination from '$lib/components/common/Pagination.svelte';
   import EmptyState from '$lib/components/common/EmptyState.svelte';
   import { formatDate, formatDateLong } from '$lib/utils/format';
-  import { activityStyle as styleFor, activityContextText } from '$lib/activityPresentation';
+  import { activityStyle as styleFor, activityContextText } from '$lib/activity/activityPresentation';
   import type { PageData } from './$types';
 
   interface Props {

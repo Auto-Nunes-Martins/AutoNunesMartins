@@ -3,7 +3,7 @@ import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { homePhotoPlaceholder } from './homePhotoPriority';
 
-const startup = readFileSync(new URL('../../assets/orbit-startup.js', import.meta.url), 'utf8');
+const startup = readFileSync(new URL('../../assets/site-startup.js', import.meta.url), 'utf8');
 function setup({ top = 1600, scroll = 0, complete = false, mobile = true, observer = true } = {}) {
   const listeners = new Map<string, () => void>();
   let intersection: (entries: { isIntersecting: boolean }[]) => void = () => {};

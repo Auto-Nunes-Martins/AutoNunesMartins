@@ -117,7 +117,7 @@ for (const app of ['website', 'crm']) {
   }
   if (app === 'website') {
     module +=
-      "export { default as catalogPlaceholder } from './assets/catalog-placeholder.svg?url&no-inline';\nexport { default as locationMap } from './assets/images/orbit-location-map.svg?url&no-inline';\n";
+      "export { default as catalogPlaceholder } from './assets/catalog-placeholder.svg?url&no-inline';\nexport { default as locationMap } from './assets/images/stand-location-map.svg?url&no-inline';\n";
   } else {
     module +=
       "export { default as faviconLight } from './assets/optimized/current-favicon-light-64.png?url&no-inline';\nexport { default as faviconDark } from './assets/optimized/current-favicon-dark-64.png?url&no-inline';\n";

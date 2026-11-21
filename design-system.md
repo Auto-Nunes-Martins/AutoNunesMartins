@@ -1,7 +1,7 @@
 # Design Handoff — Auto Dealer Admin Panel
 
-For the public Orbit storefront (distinct from this admin system), see
-[Orbit visual identity](docs/orbit-visual-identity.md), including the reusable
+For the public Auto Nunes Martins storefront (distinct from this admin system), see
+[Auto Nunes Martins visual identity](docs/site-visual-identity.md), including the reusable
 signature red-line glow.
 
 ## Overview

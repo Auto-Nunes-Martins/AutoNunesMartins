@@ -32,8 +32,8 @@
 </main>
 <style>
   .legal-page {
-    width: var(--orbit-frame, 90%);
-    max-width: var(--orbit-frame-max, 1640px);
+    width: var(--site-frame, 90%);
+    max-width: var(--site-frame-max, 1640px);
     margin: auto;
     padding: 56px 0 88px;
     color: var(--text);

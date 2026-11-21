@@ -1,10 +1,10 @@
 <script lang="ts">
-  import OrbitFavorites from '$lib/components/stand-concepts/OrbitFavorites.svelte';
-  import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
+  import FavoritesPage from '$lib/features/selection/FavoritesPage.svelte';
+  import SitePage from '$lib/features/layout/SitePage.svelte';
 </script>
 
-<DesignEdition favorites>
+<SitePage favorites>
   {#snippet routeContent({ card })}
-    <OrbitFavorites {card} />
+    <FavoritesPage {card} />
   {/snippet}
-</DesignEdition>
+</SitePage>

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import OrbitComparison from '$lib/components/stand-concepts/OrbitComparison.svelte';
-  import DesignEdition from '$lib/components/stand-concepts/DesignEdition.svelte';
+  import ComparisonPage from '$lib/features/selection/ComparisonPage.svelte';
+  import SitePage from '$lib/features/layout/SitePage.svelte';
 </script>
 
-<DesignEdition compare>
+<SitePage compare>
   {#snippet routeContent()}
-    <OrbitComparison />
+    <ComparisonPage />
   {/snippet}
-</DesignEdition>
+</SitePage>

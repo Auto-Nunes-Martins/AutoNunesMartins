@@ -1,4 +1,4 @@
-import { vehiclesFilters } from '$lib/listFilters';
+import { vehiclesFilters } from '$lib/lists/listFilters';
 import type { RequestEvent } from '@sveltejs/kit';
 import { apiFailure } from '$lib/server/api';
 import { vehiclesApi, type VehicleListResponse } from '$lib/server/vehicles';

@@ -35,7 +35,7 @@ vi.mock('@clerk/express', () => ({
 import { asyncHandler } from './asyncHandler.js';
 import { clerkMiddleware, requireUser } from './clerk.js';
 import { contactErrorHandler, errorHandler } from './errorHandler.js';
-import tasksRouter from '../routes/tasks.js';
+import tasksRouter from '../routes/tasks/tasks.js';
 import customersRouter from '../routes/customers.js';
 import usersRouter from '../routes/users.js';
 import { cache } from '../lib/data/cache.js';

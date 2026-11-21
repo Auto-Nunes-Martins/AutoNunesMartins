@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { installAnchorNavigation } from './anchorNavigation';
-import { internalAnchor, anchorTarget } from './components/stand-concepts/slowAnchor';
+import { internalAnchor, anchorTarget } from './features/motion/slowAnchor';
 
 afterEach(() => {
   vi.useRealTimers();

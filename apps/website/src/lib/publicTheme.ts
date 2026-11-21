@@ -1,7 +1,7 @@
 import { getContext } from 'svelte';
 import { get, writable } from 'svelte/store';
 
-export const THEME_KEY = 'anm-orbit-theme';
+export const THEME_KEY = 'anm-theme';
 export const publicThemeContext = Symbol('public-theme');
 type ThemeStorage = Pick<Storage, 'getItem' | 'setItem'>;
 

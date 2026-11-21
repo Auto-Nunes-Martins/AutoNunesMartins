@@ -17,7 +17,7 @@ const palettes = [
     label: 'Carvão · página',
     color: '#0c0c0e',
     tone: 'dark',
-    file: 'DesignEdition.svelte',
+    file: 'layout/pageShell.css',
     literal: '--bg: #0c0c0e',
   },
   {
@@ -26,7 +26,7 @@ const palettes = [
     label: 'Carvão · rodapé',
     color: '#101012',
     tone: 'dark',
-    file: 'OrbitCompactFooter.svelte',
+    file: 'layout/CompactFooter.svelte',
     literal: 'background: #101012',
   },
   {
@@ -35,7 +35,7 @@ const palettes = [
     label: 'Carvão · superfície',
     color: '#17171a',
     tone: 'dark',
-    file: 'DesignEdition.svelte',
+    file: 'layout/pageShell.css',
     literal: '--surface: #17171a',
   },
   {
@@ -44,7 +44,7 @@ const palettes = [
     label: 'Grafite · controlo',
     color: '#252528',
     tone: 'dark',
-    file: 'DesignEdition.svelte',
+    file: 'layout/pageShell.css',
     literal: 'background: #252528',
   },
   {
@@ -53,16 +53,16 @@ const palettes = [
     label: 'Branco · superfície',
     color: '#ffffff',
     tone: 'light',
-    file: 'DesignEdition.svelte',
+    file: 'layout/pageShell.css',
     literal: '--surface: #fff;',
   },
   {
     number: 18,
     id: '18-branco-orbit',
-    label: 'Branco suave · Orbit',
+    label: 'Branco suave · Auto Nunes Martins',
     color: '#f5f5f1',
     tone: 'light',
-    file: 'DesignEdition.svelte',
+    file: 'layout/pageShell.css',
     literal: '--bg: #f5f5f1',
   },
   {
@@ -71,7 +71,7 @@ const palettes = [
     label: 'Branco suave · base',
     color: '#f3f3ef',
     tone: 'light',
-    file: 'DesignEdition.svelte',
+    file: 'layout/pageShell.css',
     literal: '--bg: #f3f3ef',
   },
   {
@@ -80,7 +80,7 @@ const palettes = [
     label: 'Papel · convite',
     color: '#f6f4ef',
     tone: 'light',
-    file: 'VisitInvitation.svelte',
+    file: 'contact/VisitInvitation.svelte',
     literal: 'background: #f6f4ef',
   },
 ];
@@ -102,7 +102,7 @@ function ico(images) {
   return Buffer.concat([header, ...images.map((image) => image.bytes)]);
 }
 for (const item of palettes) {
-  const file = `apps/website/src/lib/components/stand-concepts/${item.file}`;
+  const file = `apps/website/src/lib/features/${item.file}`;
   assert(
     fs.readFileSync(file, 'utf8').includes(item.literal),
     `Actual theme color: ${item.literal}`,
@@ -163,6 +163,6 @@ save(
 save(`${root}/palette-sources.json`, JSON.stringify(palettes, null, 2) + '\n');
 save(
   `${root}/README.md`,
-  '# Série 13–20 — fundos reais do website\n\nSó varia o fundo da composição AUTO/NUNES das opções 09/10. Os elementos image dos SVG, incluindo dados dos recortes originais e geometria, são verificados como idênticos aos da opção de origem. Cores e proveniência CSS em palette-sources.json.\n\n13 #0C0C0E página escura; 14 #101012 rodapé; 15 #17171A superfície escura; 16 #252528 controlo grafite; 17 #FFFFFF superfície clara; 18 #F5F5F1 Orbit claro; 19 #F3F3EF base clara; 20 #F6F4EF papel do convite. O branco/escuro das letras vem do logótipo original apropriado, sem recoloração.\n\nPNG 16/32/48/64/128/180/256, ICO com 16/32/48/64, SVG auto-contido com a arte original incorporada. Comparar index.html a 100% de zoom ou comparacao-13-20.png. Todas as séries anteriores foram preservadas. Nenhuma proposta aplicada às apps; não há troca automática por tema, commit, push ou deploy.\n',
+  '# Série 13–20 — fundos reais do website\n\nSó varia o fundo da composição AUTO/NUNES das opções 09/10. Os elementos image dos SVG, incluindo dados dos recortes originais e geometria, são verificados como idênticos aos da opção de origem. Cores e proveniência CSS em palette-sources.json.\n\n13 #0C0C0E página escura; 14 #101012 rodapé; 15 #17171A superfície escura; 16 #252528 controlo grafite; 17 #FFFFFF superfície clara; 18 #F5F5F1 Auto Nunes Martins claro; 19 #F3F3EF base clara; 20 #F6F4EF papel do convite. O branco/escuro das letras vem do logótipo original apropriado, sem recoloração.\n\nPNG 16/32/48/64/128/180/256, ICO com 16/32/48/64, SVG auto-contido com a arte original incorporada. Comparar index.html a 100% de zoom ou comparacao-13-20.png. Todas as séries anteriores foram preservadas. Nenhuma proposta aplicada às apps; não há troca automática por tema, commit, push ou deploy.\n',
 );
 console.log(`${root}/comparacao-13-20.png`);

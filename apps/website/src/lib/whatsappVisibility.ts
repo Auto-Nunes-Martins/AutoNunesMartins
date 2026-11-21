@@ -11,7 +11,7 @@ export function watchHomeStats(isHome: () => boolean, update: (passed: boolean) 
     { threshold: [0, 1] },
   );
   const refresh = () => {
-    const next = isHome() ? document.querySelector('.orbit-home .orbit-stats') : null;
+    const next = isHome() ? document.querySelector('.site-home .site-stats') : null;
     if (next === stats && !stats) return;
     intersection.disconnect();
     if (next !== stats) {

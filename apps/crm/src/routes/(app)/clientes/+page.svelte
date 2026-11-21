@@ -3,7 +3,7 @@
   import ErrorRecovery from '$lib/components/common/ErrorRecovery.svelte';
   import { crmPath } from '$lib/paths';
   import { Plus, Search, Users, X } from 'lucide-svelte';
-  import { filterNavigation } from '$lib/filterNavigation';
+  import { filterNavigation } from '$lib/lists/filterNavigation';
   import { page } from '$app/stores';
   import ItalicHero from '$lib/components/brand/ItalicHero.svelte';
   import Panel from '$lib/components/common/Panel.svelte';

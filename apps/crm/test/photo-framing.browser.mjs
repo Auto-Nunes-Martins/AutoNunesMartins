@@ -34,12 +34,12 @@ test(
       `<script>
 import Editor from '@crm/components/vehicle/PhotoFramingEditor.svelte';
 import Picker from '@crm/components/vehicle/PublicPhotoPicker.svelte';
-import Featured from '@website/components/stand-concepts/FeaturedPhoto.svelte';
+import Featured from '@website/features/home/hero/FeaturedPhoto.svelte';
 import Rail from '@website/components/VehiclePhotoRail.svelte';
 import Gallery from '@crm/components/vehicle/PhotoGallery.svelte';
-import Design from '@website/components/stand-concepts/DesignEdition.svelte';
+import Design from '@website/features/layout/SitePage.svelte';
 import {emptyStock,publicCard} from '@website/publicVehicles';
-import '@website/components/stand-concepts/homeHeroDirections.css';
+import '@website/features/home/hero/homeHero.css';
 let src=$state(${JSON.stringify(src)});
 window.setReviewPhoto = (next) => src = next;
 const draftSrc=URL.createObjectURL(new Blob([${JSON.stringify(svg)}],{type:'image/svg+xml'}));
@@ -62,7 +62,7 @@ const stock=$derived({...emptyStock('ready'),catalog:{...emptyStock('ready').cat
 <button type="button" onclick={()=>localStorage.setItem('framing-fixture',JSON.stringify(framing))}>Guardar ficha</button>
 <output id="gallery">{JSON.stringify(framing)}</output><button onclick={()=>selected=['b','a','draft:new']}>Trocar principal</button><button onclick={()=>selected=['a','b','draft:new']}>Repor principal</button>
 <div id="crm-gallery"><Gallery vehicleId="fixture" photos={[{path:'a',url:src},{path:'b',url:src}]} {framing} editable={false}/></div>
-<section class="hd-root hd-1"><div class="hd-photo" style="width:100%;height:300px"><Featured source={src} framing={value} alt="Destaque" onfailure={()=>{}} ondisplay={()=>{}}/></div></section>
+<section class="hd-root hd-featured"><div class="hd-photo" style="width:100%;height:300px"><Featured source={src} framing={value} alt="Destaque" onfailure={()=>{}} ondisplay={()=>{}}/></div></section>
 <div id="inline" style="height:300px"><Rail {vehicle} index={0} onContact={()=>{}}/></div>
 <div id="full" style="height:300px"><Rail {vehicle} {session} index={0} fullscreen onContact={()=>{}}/></div>
 </main><div id="public-card"><Design catalog {stock}>{#snippet routeContent({card})}<div style="width:min(380px,100%)">{@render card(publicCard(cardVehicle),0,false)}</div>{/snippet}</Design></div>`,

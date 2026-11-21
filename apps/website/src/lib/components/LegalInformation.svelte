@@ -8,7 +8,7 @@
     officialLegalUrl,
     registeredOfficeAddress,
   } from '$lib/publicLegal';
-  import { standContact } from './stand-concepts/standContact';
+  import { standContact } from '../features/contact/standContact';
   const sections = [
     { id: 'operador', label: 'Identificação do operador' },
     { id: 'litigios', label: 'Resolução de litígios' },

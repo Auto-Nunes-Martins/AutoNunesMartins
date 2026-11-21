@@ -1,0 +1,898 @@
+/* Homepage-only composition. Keep motion, pinning and component internals untouched.
+ * The contact/footer frame is the common alignment; each chapter owns its trailing
+ * space so adjacent component margins cannot silently add another pause.
+ */
+.design .nav-reserve {
+  display: none;
+}
+
+/* Shared inner-page frame: the whole page fills a screen, rather than reserving
+ * an extra screen above the common contact/footer. Longer content grows naturally.
+ * Homepage compositions, including the preserved V2, keep their own layout. */
+.design.site.site-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+.design.site.site-inner > main {
+  box-sizing: border-box;
+  flex: 1 0 auto;
+  min-block-size: calc(clamp(760px, 90svh, 1200px) - 15px);
+}
+.design.site.site-inner > header {
+  flex-shrink: 0;
+}
+
+/* Navigation feedback is neutral; reserve red for the established brand accents. */
+.design.site > .stand-header > nav > a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: color-mix(in srgb, var(--text) 85%, var(--muted));
+}
+.design.site > .stand-header > nav > a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 1px;
+  background: var(--muted);
+  opacity: 0;
+}
+.design.site > .stand-header > nav > a:focus-visible {
+  color: var(--text);
+}
+.design.site > .stand-header > nav > a:focus-visible::after {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .design.site > .stand-header > nav > a:hover {
+    color: var(--text);
+  }
+  .design.site > .stand-header > nav > a:hover::after {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .design.site > .stand-header > nav > a {
+    transition: color 180ms ease-out;
+  }
+  .design.site > .stand-header > nav > a::after {
+    transition: opacity 180ms ease-out;
+  }
+}
+/* Animated descendants must not become scroll anchors during a restored visit. */
+.design.site-home {
+  overflow-anchor: none;
+}
+.design.site .site-edition-label {
+  display: none;
+}
+.design.site .nav-phone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 18px;
+  border-radius: 4px;
+  background: var(--red);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.design.site .nav-phone:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+.design.site .nav-phone {
+  gap: 8px;
+}
+/* Increase the glyph while reserving its original horizontal advance inside the CTA. */
+.design.site .nav-phone svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-inline: -2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .design.site .nav-phone svg {
+    animation: site-phone-attention 5s ease-in-out infinite;
+  }
+  /* 4.48 seconds at rest, then the original 520ms ringing gesture. */
+  @keyframes site-phone-attention {
+    0%,
+    89.6%,
+    100% {
+      transform: rotate(0);
+    }
+    91.68% {
+      transform: rotate(-16deg);
+    }
+    93.76% {
+      transform: rotate(12deg);
+    }
+    95.84% {
+      transform: rotate(-8deg);
+    }
+    97.92% {
+      transform: rotate(4deg);
+    }
+  }
+}
+.design.site .nav-phone {
+  box-shadow:
+    inset 0 0 0 1px #ffffff00,
+    0 3px 12px #e3061300;
+}
+.design.site .nav-phone:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px #ffffff40,
+    0 3px 12px #e3061333;
+}
+@media (hover: hover) {
+  .design.site .nav-phone:hover {
+    background: color-mix(in srgb, var(--red) 90%, #000);
+    box-shadow:
+      inset 0 0 0 1px #ffffff40,
+      0 3px 12px #e3061333;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .design.site .nav-phone {
+    transition:
+      background-color 300ms ease,
+      box-shadow 300ms ease;
+  }
+}
+@media (max-width: 700px) {
+  .design.site .stand-header {
+    gap: 12px;
+  }
+  .design.site header .logo {
+    width: 120px;
+    min-width: 0;
+    flex: 0 0 120px;
+  }
+  .design.site header .logo img {
+    width: 120px;
+  }
+  .design.site header .header-actions {
+    gap: 8px;
+  }
+  .design.site .nav-phone {
+    min-height: 40px;
+    padding: 10px;
+    font-size: 11px;
+  }
+  .design.site .nav-phone {
+    gap: 6px;
+  }
+  .design.site .nav-phone svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+@media (max-width: 380px) {
+  .design.site .stand-header {
+    padding-inline: 8px;
+    gap: 6px;
+  }
+  .design.site header .header-actions {
+    gap: 4px;
+  }
+  .design.site .nav-phone {
+    padding-inline: 8px;
+    font-size: 10px;
+  }
+  .design.site header .mobile-menu {
+    width: 34px;
+    height: 38px;
+  }
+}
+.design.site .not-found {
+  width: var(--site-frame);
+  max-width: var(--site-frame-max);
+  margin: auto;
+  padding: var(--site-space-section) 0;
+  min-height: 0;
+}
+.design.site .not-found h1 {
+  font-size: clamp(36px, 4.5vw, 64px);
+  max-width: 22ch;
+  line-height: 1.06;
+  letter-spacing: -0.05em;
+}
+.design.site .not-found.known-unavailable,
+.design.site .not-found.vehicle-error {
+  padding-block: var(--site-space-page-start) var(--site-space-section);
+}
+@media (max-width: 700px) {
+  .design.site .not-found.known-unavailable {
+    padding-top: 32px;
+  }
+}
+.design.site .not-found > p:not(.kicker) {
+  color: var(--muted);
+  line-height: 1.75;
+  margin-block: 24px;
+}
+.design.site-home.nav-pinned .nav-reserve {
+  display: block;
+  height: 94px;
+}
+.design.site.site-home.nav-pinned > header,
+.design.site.site-inner.nav-compact > header.stand-header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  height: 80px;
+  padding-block: 0;
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom-color: color-mix(in srgb, var(--line) 55%, transparent);
+  opacity: var(--nav-progress, 0);
+  transform: translateY(calc(-18px * (1 - var(--nav-progress, 0))));
+  transition: none;
+}
+.design.site.site-home.nav-pinned > header[inert] {
+  pointer-events: none;
+}
+/* Match the perspective surface composited over the page, retaining subtle translucency. */
+:where(html)[data-theme='light'] .design.site {
+  --site-nav-surface: color-mix(in srgb, var(--text) 2%, var(--bg));
+}
+:where(html)[data-theme='light'] .design.site > header.stand-header,
+:where(html)[data-theme='light'] .design.site.site-home > header.stand-header,
+:where(html)[data-theme='light'] .design.site.site-inner.nav-compact > header.stand-header,
+:where(html)[data-theme='light'] .design.site.site-company > header.stand-header {
+  background: color-mix(in srgb, var(--site-nav-surface) 94%, transparent);
+  backdrop-filter: blur(8px);
+}
+.design.site-home.nav-pinned header .edition-label {
+  display: none;
+}
+.design.site-home.nav-pinned .catalog-controls {
+  top: 104px;
+}
+.design.site-home :is(section[id], [id='selecao']) {
+  scroll-margin-top: 104px;
+}
+.design.site-home :is(a, button, input, select) {
+  scroll-margin-top: 104px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .design.site.site-home.nav-pinned > header {
+    transform: none;
+  }
+}
+@media (max-width: 700px) {
+  .design.site-home.nav-pinned .nav-reserve {
+    height: 82px;
+  }
+  .design.site.site-home.nav-pinned > header {
+    height: 72px;
+  }
+  .design.site.site-home header nav {
+    top: 100%;
+    max-height: calc(100svh - 82px);
+    overflow-y: auto;
+  }
+  .design.site.site-home.nav-pinned header nav {
+    max-height: calc(100svh - 72px);
+  }
+  :where(html)[data-theme='light'] .design.site > header.stand-header > nav {
+    background: color-mix(in srgb, var(--site-nav-surface) 98%, transparent);
+    backdrop-filter: blur(8px);
+  }
+}
+
+.design.site {
+  /* Signature line glow: see docs/site-visual-identity.md. */
+  --site-line-glow: drop-shadow(0 0 2.5px rgb(255 51 76 / 90%)) drop-shadow(0 0 5px #e3061366)
+    drop-shadow(0 0 12px #e3061399) drop-shadow(0 0 26px #e3061359);
+  --site-panel-bg: color-mix(in srgb, var(--text) 2%, transparent);
+  --site-frame: min(96%, calc(100% - 48px));
+  --site-frame-max: 1320px;
+  --site-space-section: clamp(64px, 6vw, 96px);
+  --site-space-page-start: clamp(32px, 3vw, 48px);
+  --site-space-half: calc(var(--site-space-section) / 2);
+  --site-space-arrival: clamp(96px, 8vw, 128px);
+  --site-space-heading: clamp(28px, 3vw, 44px);
+  --site-space-grid: clamp(24px, 3vw, 48px);
+  --site-title-section: clamp(38px, 4.1vw, 64px);
+  --site-title-bridge: clamp(30px, 3.1vw, 46px);
+  --site-type-label: 10px;
+  --site-type-body: 15px;
+  /* Functional type scale. Hero/display typography deliberately stays independent. */
+  --site-type-reading: 16px;
+  --site-leading-reading: 1.7;
+  --site-type-question: clamp(18px, 1.4vw, 21px);
+  --site-type-control: 16px;
+}
+
+/* Preserve the Full HD frame; wider CSS viewports switch directly to 1440px. */
+@media (width > 1920px) {
+  .design.site {
+    --site-frame-max: 1440px;
+  }
+}
+
+@media (max-width: 700px) {
+  .design.site {
+    --site-type-reading: 15px;
+    --site-type-question: 17px;
+  }
+}
+
+.design.site.site-home .site-intro,
+.design.site.site-home.motion-on .site-intro,
+.design.site-home .showroom,
+.design.site-home .about,
+.design.site-home .cabin-reveal,
+.design.site-home .visit-invitation,
+.design.site-home > .services,
+.design.site-home > .questions {
+  width: var(--site-frame);
+  max-width: var(--site-frame-max);
+  margin-inline: auto;
+}
+
+.design.site-home .showroom {
+  padding-block: var(--site-space-section) 0;
+}
+
+/* Solid glyphs stay readable while the existing title/photo choreography runs. */
+.design.site-home .hero-period {
+  color: var(--red);
+}
+
+.design.site-home .showroom-heading {
+  margin-bottom: var(--site-space-heading);
+}
+
+/* Reserve the upper projection of the folding panels throughout their approach. */
+.design.site-home .cabin-heading {
+  margin-bottom: var(--site-space-section);
+}
+
+.design.site-home .showroom-heading h2,
+.design.site-home .about-head h2,
+.design.site-home .cabin-heading h2,
+.design.site-home .invitation-copy h2 {
+  font-size: var(--site-title-section);
+  line-height: 1.12;
+  letter-spacing: -0.05em;
+}
+
+.design.site-home .editorial-pause h2 {
+  font-size: var(--site-title-bridge);
+}
+
+.design.site-home .showroom-heading .kicker,
+.design.site-home .about-head .kicker,
+.design.site-home .invitation-copy .eyebrow {
+  margin-bottom: 20px;
+  font-size: var(--site-type-label);
+  line-height: 1.5;
+  letter-spacing: 0.13em;
+}
+
+.design.site-home .showroom-layout {
+  gap: var(--site-space-grid);
+}
+
+.design.site-home .car-grid {
+  grid-auto-rows: 1fr;
+  gap: var(--site-space-half) 24px;
+}
+
+.design.site-home .about {
+  background: var(--site-panel-bg);
+  box-shadow: 0 0 0 100vmax var(--site-panel-bg);
+  clip-path: inset(0 -100vmax);
+  /* Close the dense catalogue before the quieter editorial reading begins. */
+  margin-top: var(--site-space-half);
+  border-top: 1px solid var(--line);
+  padding-block: var(--site-space-arrival) var(--site-space-section);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--site-space-grid);
+}
+
+/* Extend the same panel surface through the full band, retaining its content frame. */
+.design.site .site-faq {
+  background: var(--site-panel-bg);
+  box-shadow: 0 0 0 100vmax var(--site-panel-bg);
+  clip-path: inset(0 -100vmax);
+}
+
+.design.site .site-faq + .contact {
+  margin-top: 0;
+}
+
+.design.site-home .about-content {
+  padding-top: 35px;
+}
+
+.design.site-home .about-content > p {
+  max-width: 46ch;
+}
+
+.design.site-home .about-content > p.muted,
+.design.site-home .cabin-intro,
+.design.site-home .cabin-description p,
+.design.site-home .invitation-intro,
+.design.site-home .services p,
+.design.site-home .questions details p {
+  font-size: var(--site-type-body);
+  line-height: 1.75;
+}
+
+.design.site-home .questions summary {
+  font-size: 16px;
+}
+
+.design.site-home .questions details p {
+  max-width: 64ch;
+}
+
+.design.site-home .about-signature {
+  margin-top: var(--site-space-heading);
+}
+
+.design.site-home .cabin-reveal {
+  margin-block: 0;
+  padding-block: var(--site-space-section);
+}
+
+.design.site-home .cabin-caption {
+  padding-top: var(--site-space-heading);
+  column-gap: var(--site-space-grid);
+}
+
+.design.site-home .editorial-pause {
+  margin-block: 0;
+  width: 100%;
+  max-width: none;
+}
+
+.design.site-home .pause-inner {
+  padding-block: clamp(48px, 4vw, 64px);
+}
+
+.design.site-home .visit-invitation {
+  margin-block: 0;
+  padding-block: var(--site-space-section) var(--site-space-half);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--site-space-grid);
+}
+
+.design.site-home > .services {
+  padding-block: var(--site-space-section);
+}
+
+.design.site-home .services > .kicker {
+  padding-bottom: var(--site-space-heading);
+}
+
+.design.site .services article {
+  background: var(--site-panel-bg);
+  padding-top: var(--site-space-heading);
+  padding-inline: 35px;
+}
+
+@media (max-width: 700px) {
+  .design.site .services article,
+  .design.site .services article + article {
+    padding-inline: 24px;
+  }
+}
+
+.design.site-home > .questions {
+  padding-block: var(--site-space-half) var(--site-space-section);
+  gap: var(--site-space-grid);
+  align-items: start;
+}
+
+.design.site-home .questions > .kicker {
+  padding-top: 22px;
+}
+
+@media (min-width: 701px) {
+  .design.site header .logo img {
+    transform: scale(1.06);
+  }
+  .design.site.site-home header {
+    padding-inline: max(24px, 2%, calc((100% - var(--site-frame-max)) / 2));
+  }
+
+  .design.site-home .site-title,
+  .design.site-home .site-title-note,
+  .design.site-home .site-bottom {
+    left: 0;
+  }
+
+  .design.site-home .site-topline {
+    left: 0;
+    right: 0;
+  }
+}
+
+/* Three compact cards balance the catalogue with the editorial chapters.
+ * The existing sticky filters, keyed cards and entrance actions stay in place.
+ */
+@media (min-width: 1200px) {
+  .design.site-home .car-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .design.site {
+    --site-frame: 90%;
+    --site-space-section: 52px;
+    --site-space-arrival: 72px;
+    --site-space-heading: 28px;
+    --site-space-grid: 28px;
+    --site-title-section: clamp(32px, 9.7vw, 42px);
+    --site-title-bridge: 32px;
+    --site-type-body: 14px;
+  }
+
+  .design.site.site-home .site-intro,
+  .design.site.site-home.motion-on .site-intro,
+  .design.site-home .editorial-pause {
+    width: 100%;
+  }
+
+  .design.site-home .showroom-heading h2 {
+    max-width: 15ch;
+  }
+
+  .design.site.site-home .showroom {
+    padding-top: 28px;
+  }
+
+  .design.site-home .about {
+    grid-template-columns: minmax(0, 1fr);
+    border-top-color: transparent;
+  }
+
+  .design.site-home .about-content {
+    padding-top: 0;
+  }
+
+  .design.site-home .car-grid {
+    row-gap: var(--site-space-grid);
+  }
+
+  .design.site-home .pause-inner {
+    padding-block: 48px;
+  }
+
+  .design.site-home .questions > .kicker {
+    padding-top: 0;
+  }
+
+  .design.site-home .questions summary {
+    font-size: 15px;
+  }
+}
+
+/* Stable copy and unchanged content geometry; only the ambient canvas bleeds out. */
+.design.site.site-home .site-stage {
+  overflow: visible;
+}
+.design.site.site-home .site-object {
+  z-index: 1;
+}
+/* Light is composited on the existing surfaces; neither text nor photo moves. */
+.design.site.site-home .site-main-photo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 240px 170px at var(--light-x, 0px) var(--light-y, 0px),
+    #fa183c66,
+    #e306131c 44%,
+    transparent 75%
+  );
+  opacity: var(--nearby-light, 0);
+  mix-blend-mode: screen;
+}
+.design.site.site-home .site-copy .site-title,
+.design.site.site-home .site-copy .site-title-note {
+  /* Base glyphs are white in dark mode (ink in light mode for contrast).
+     Only the small, moving pool of light can tint individual nearby letters. */
+  background-image:
+    radial-gradient(
+      ellipse 480px 420px at var(--light-x, -1000px) var(--light-y, -1000px),
+      rgb(255 48 70 / calc(var(--nearby-light, 0) * 0.98)),
+      rgb(244 42 61 / calc(var(--nearby-light, 0) * 0.68)) 38%,
+      transparent 100%
+    ),
+    linear-gradient(var(--text), var(--text));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--text);
+  text-shadow: none;
+}
+.design.site.site-home .site-copy .site-title span {
+  color: inherit;
+  -webkit-text-fill-color: inherit;
+  text-shadow: none;
+}
+@media (max-width: 700px) {
+  .design.site.site-home .site-copy .site-title,
+  .design.site.site-home .site-copy .site-title-note {
+    background-image:
+      radial-gradient(
+        ellipse 260px 250px at var(--light-x, -1000px) var(--light-y, -1000px),
+        rgb(255 48 70 / calc(var(--nearby-light, 0) * 0.98)),
+        rgb(244 42 61 / calc(var(--nearby-light, 0) * 0.58)) 38%,
+        transparent 100%
+      ),
+      linear-gradient(var(--text), var(--text));
+  }
+  .design.site.site-home .site-main-photo::before {
+    background: radial-gradient(
+      ellipse 140px 95px at var(--light-x, 0px) var(--light-y, 0px),
+      #fa183c66,
+      #e306131c 44%,
+      transparent 75%
+    );
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .design.site.site-home .site-main-photo::before {
+    opacity: 0;
+  }
+  .design.site.site-home .site-copy .site-title,
+  .design.site.site-home .site-copy .site-title-note {
+    background-image: linear-gradient(var(--text), var(--text));
+  }
+}
+.design.site.site-home .site-stage::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  top: -24px;
+  bottom: -24px;
+  left: 50%;
+  width: 100vw;
+  translate: -50% 0;
+  background: radial-gradient(ellipse at 70% 55%, #00000012, transparent 70%);
+  mask-image: linear-gradient(transparent, #000 18%, #000 78%, transparent);
+}
+.design.site.site-home .site-copy {
+  --copy-top: calc(var(--intro-height) * 0.17 - 5px);
+  position: absolute;
+  z-index: 2;
+  top: var(--copy-top);
+  left: 0;
+  width: 40%;
+  isolation: isolate;
+  perspective: 900px;
+  transform-style: preserve-3d;
+}
+.design.site.site-home .site-copy::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -26px -42px -30px -34px;
+  /* Extend only the decorative surface to the stage floor, not the copy or scene. */
+  min-height: calc(var(--intro-height) - var(--copy-top) + 26px);
+  border-left: 2px solid transparent;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg) 88%, transparent),
+    transparent 92%
+  );
+  /* Fade out before the 3D layer's right edge so it cannot seam over the tilted photo. */
+  mask-image: linear-gradient(90deg, #000 80%, transparent 96%);
+  opacity: 0.92;
+  pointer-events: none;
+  transform: translateZ(-8px);
+}
+.design.site.site-home .site-copy::after {
+  /* Keep the red accent at its original height while the background continues below. */
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -26px -42px -30px -34px;
+  border-left: 2px solid color-mix(in srgb, var(--red) 72%, transparent);
+  opacity: 0.92;
+  pointer-events: none;
+  transform: translateZ(-8px);
+}
+.design.site.site-home .site-hero-signature {
+  display: block;
+  width: clamp(251px, 25.8vw, 381px);
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 24px;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 17%)) drop-shadow(0 2px 1px rgb(0 0 0 / 11%))
+    drop-shadow(0 8px 10px rgb(0 0 0 / 11%));
+  transform: translateZ(18px) rotateY(-1.5deg);
+}
+.design.site.site-home .site-title {
+  position: relative;
+  inset: auto;
+  margin: 0;
+  font-size: clamp(64px, 7.1vw, 110px);
+  font-family: 'ANM Barlow', 'ANM Inter', Arial, sans-serif;
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.065em;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 24%)) drop-shadow(0 2.4px 0 rgb(0 0 0 / 12%))
+    drop-shadow(0 8px 9px rgb(0 0 0 / 14%));
+  transform: translateZ(24px);
+}
+.design.site.site-home .site-title > span {
+  margin-top: 0.035em;
+  font-style: italic;
+  color: color-mix(in srgb, var(--text) 94%, var(--red));
+  text-shadow: 0 0 24px #e306130a;
+}
+.design.site.site-home .site-copy .site-title,
+.design.site.site-home .site-copy .site-title > span,
+.design.site.site-home .site-copy .site-title-note {
+  animation: none;
+  transition: none;
+  transform: none;
+  translate: none;
+  opacity: 1;
+}
+.design.site.site-home .site-title-note {
+  position: relative;
+  inset: auto;
+  display: block;
+  margin: 28px 0 0;
+  max-width: 32ch;
+  font-size: clamp(14px, 1.18vw, 18px);
+  line-height: 1.75;
+  letter-spacing: -0.015em;
+  color: color-mix(in srgb, var(--text) 70%, var(--muted));
+  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--bg) 38%, transparent));
+  transform: translateZ(14px);
+}
+.design.site.site-home .site-copy .site-title {
+  transform: translateZ(24px) rotateY(-1.5deg);
+}
+@media (min-width: 701px) and (max-width: 1050px) {
+  .design.site.site-home .site-copy {
+    --copy-top: calc(var(--intro-height) * 0.27);
+    width: 40%;
+  }
+  .design.site.site-home .site-title {
+    font-size: clamp(48px, 6.4vw, 68px);
+  }
+  .design.site.site-home .site-title-note {
+    font-size: 13px;
+    margin-top: 22px;
+  }
+}
+@media (max-width: 700px) {
+  .design.site.site-home {
+    --mobile-stage-reference: max(820px, calc(100svh - 40px));
+    --mobile-copy-height: calc(
+      224px * 836 / 1881 + 18px + clamp(46px, 13vw, 72px) * 1.995 + 18px + 41.6px
+    );
+    --intro-height: calc(var(--mobile-photo-top) + var(--mobile-photo-height) + 94px);
+    --mobile-photo-height: calc(var(--mobile-stage-reference) * 0.35);
+    /* Follow the copy rather than keeping the old empty percentage-based slot. */
+    --mobile-photo-top: calc(
+      46px + var(--mobile-copy-height) + clamp(52px, calc(3.6vw + 36px), 62px)
+    );
+  }
+  .design.site.site-home .car-grid {
+    grid-template-rows: repeat(var(--home-result-rows), minmax(0, 1fr)) minmax(0, 0.5fr);
+    /* Reserve the extra space taken by the final, half-height CTA row. */
+    padding-bottom: 60px;
+  }
+  .design.site.site-home .car-grid > .discover {
+    min-height: 0;
+    height: calc(100% + 60px);
+    padding-top: 18px;
+    padding-bottom: 76px;
+  }
+  .design.site.site-home .site-intro,
+  .design.site.site-home.motion-on .site-intro {
+    /* The stacked scene is shorter, not just translated inside the old empty space. */
+    height: calc(var(--intro-height) + 20px);
+    min-height: 0;
+    padding-top: 20px;
+  }
+  .design.site.site-home .site-stage {
+    /* Keep the approved photo projection independent of the scene's new height. */
+    perspective-origin: 50% calc(var(--mobile-photo-top) + var(--mobile-stage-reference) * 0.03);
+  }
+  .design.site.site-home .site-hero-signature {
+    width: 224px;
+    margin-bottom: 18px;
+  }
+  .design.site.site-home .site-topline {
+    top: 20px;
+  }
+  .design.site.site-home .site-copy {
+    --copy-top: 46px;
+    left: 5%;
+    width: 90%;
+  }
+  .design.site.site-home .site-copy::after {
+    /* The desktop -34px offset places this stroke beyond the mobile viewport. */
+    left: -10px;
+  }
+  .design.site.site-home .site-title {
+    font-size: clamp(46px, 13vw, 72px);
+    line-height: 0.98;
+  }
+  .design.site.site-home .site-title-note {
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 18px;
+  }
+  .design.site.site-home .site-object,
+  .design.site.site-home.motion-on .site-object {
+    /* The stacked mobile photo stays above the copy's extended decorative surface. */
+    z-index: 3;
+    top: var(--mobile-photo-top);
+    height: var(--mobile-photo-height);
+  }
+  .design.site.site-home .site-side {
+    top: calc(var(--mobile-photo-top) + var(--mobile-photo-height) + 34px);
+    bottom: auto;
+  }
+}
+/* Dedicated local faces avoid a late external font swap in the public Auto Nunes Martins site. */
+@font-face {
+  font-family: 'ANM Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url('@fontsource/inter/files/inter-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'ANM Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: optional;
+  src: url('@fontsource/inter/files/inter-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'ANM Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: optional;
+  src: url('@fontsource/inter/files/inter-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'ANM Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url('@fontsource/inter/files/inter-latin-700-normal.woff2') format('woff2');
+}
+.design.site {
+  font-family: 'ANM Inter', Arial, sans-serif;
+}
+@font-face {
+  font-family: 'ANM Barlow';
+  font-style: normal;
+  font-weight: 600;
+  font-display: optional;
+  src: url('@fontsource/barlow/files/barlow-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'ANM Barlow';
+  font-style: italic;
+  font-weight: 600;
+  font-display: optional;
+  src: url('@fontsource/barlow/files/barlow-latin-600-italic.woff2') format('woff2');
+}

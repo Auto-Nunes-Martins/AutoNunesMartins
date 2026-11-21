@@ -16,4 +16,4 @@ import dark1881 from './assets/optimized/logo-dark-1881.webp?url&no-inline';
 export const logoDark = dark360;
 export const logoDarkSrcset = `${dark180} 180w, ${dark240} 240w, ${dark360} 360w, ${dark720} 720w, ${dark1200} 1200w, ${dark1881} 1881w`;
 export { default as catalogPlaceholder } from './assets/catalog-placeholder.svg?url&no-inline';
-export { default as locationMap } from './assets/images/orbit-location-map.svg?url&no-inline';
+export { default as locationMap } from './assets/images/stand-location-map.svg?url&no-inline';

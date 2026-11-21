@@ -1,7 +1,7 @@
 <script lang="ts">
   import '$lib/styles/vehicleStateTags.css';
   import { Globe, EyeOff } from 'lucide-svelte';
-  import { websiteVisibility, type WebsiteVehicle } from '$lib/websiteVisibility';
+  import { websiteVisibility, type WebsiteVehicle } from '$lib/vehicles/websiteVisibility';
   let {
     vehicle,
     compact = false,
