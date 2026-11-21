@@ -49,7 +49,7 @@ try {
           navLeft: nav.left + parseFloat(style.paddingLeft),
           navRight: nav.right - parseFloat(style.paddingRight),
           bannerLeft: document.querySelector('.notice .brand').getBoundingClientRect().left,
-          bannerRight: document.querySelector('.notice .secondary').getBoundingClientRect().right,
+          bannerRight: document.querySelector('.notice .customize').getBoundingClientRect().right,
         };
       });
       expect(edges.bannerLeft, path + ' at ' + width).toBeCloseTo(edges.navLeft, 0);
@@ -62,6 +62,10 @@ try {
     const bounds = await notice.boundingBox();
     expect(bounds.width).toBe(await page.evaluate(() => document.documentElement.clientWidth));
     await expect(notice.getByRole('img', { name: 'Auto Nunes Martins' })).toBeVisible();
+    await expect(notice.getByRole('button', { name: 'Recusar' })).toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)',
+    );
     if (width === 1440) {
       if (process.env.CONSENT_BANNER_SCREENSHOT)
         await notice.screenshot({ path: process.env.CONSENT_BANNER_SCREENSHOT });

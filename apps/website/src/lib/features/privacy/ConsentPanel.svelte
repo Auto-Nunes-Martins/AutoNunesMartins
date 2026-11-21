@@ -126,8 +126,8 @@
       </div>
       <div class="notice-actions">
         <button class="primary" onclick={() => save(acceptAll)}>Aceitar tudo</button>
-        <button onclick={() => save(essentialOnly)}>Recusar</button>
-        <button class="secondary" onclick={open}>Personalizar</button>
+        <button class="secondary" onclick={() => save(essentialOnly)}>Recusar</button>
+        <button class="secondary customize" onclick={open}>Personalizar</button>
       </div>
     </div>
   </section>
