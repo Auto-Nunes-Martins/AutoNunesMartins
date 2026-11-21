@@ -1,3 +1,12 @@
+/* Shared by the navigation and the fixed cookie notice on each page. */
+:root {
+  --nav-inline-space: max(2.5%, calc((100vw - var(--site-frame-max, 1440px)) / 2));
+  --nav-inline-start: var(--nav-inline-space);
+}
+:root:where(:has(.site-home, .site-catalog, .site-privacy, .site-detail)) {
+  --nav-inline-space: max(24px, 2%, calc((100% - var(--site-frame-max, 1440px)) / 2));
+}
+
 /* The contact strip stays in document flow; only the navigation can pin. */
 .design.site.has-address {
   --nav-address-height: 30px;
@@ -5,10 +14,6 @@
   --nav-compact-row-height: 80px;
   --nav-full-height: var(--nav-row-height);
   --nav-visible-height: var(--nav-full-height);
-  --nav-inline-space: max(2.5%, calc((100vw - var(--site-frame-max, 1440px)) / 2));
-}
-.design.site.has-address:is(.site-home, .site-catalog, .site-privacy, .site-detail) {
-  --nav-inline-space: max(24px, 2%, calc((100% - var(--site-frame-max, 1440px)) / 2));
 }
 .design.site.has-address.site-company {
   --nav-row-height: 80px;
@@ -23,7 +28,7 @@
   min-height: var(--nav-visible-height);
   padding-top: 0;
   padding-bottom: 0;
-  padding-inline: var(--nav-inline-space);
+  padding-inline: var(--nav-inline-start) var(--nav-inline-space);
 }
 .design.site.has-address.site-home.nav-pinned > .nav-reserve {
   height: var(--nav-full-height);
@@ -147,22 +152,20 @@
 }
 @media (max-width: 700px) {
   /* Align the visible navbar logo with the mobile hero title. */
-  .design.site.has-address.has-address > header.stand-header {
-    padding-inline-start: 20px;
+  :root {
+    --nav-inline-start: 20px;
+    --nav-inline-space: 16px;
   }
   .design.site.has-address {
     --nav-row-height: 76px;
     --nav-compact-row-height: 72px;
-  }
-  .design.site.has-address.has-address {
-    --nav-inline-space: 16px;
   }
   .design.site.has-address.site-company {
     --nav-row-height: 76px;
   }
 }
 @media (max-width: 380px) {
-  .design.site.has-address.has-address {
+  :root {
     --nav-inline-space: 8px;
   }
 }

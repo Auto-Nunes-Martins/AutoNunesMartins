@@ -289,13 +289,16 @@
   }
 }
 
+:root {
+  --site-frame-max: 1320px;
+}
+
 .design.site {
   /* Signature line glow: see docs/site-visual-identity.md. */
   --site-line-glow: drop-shadow(0 0 2.5px rgb(255 51 76 / 90%)) drop-shadow(0 0 5px #e3061366)
     drop-shadow(0 0 12px #e3061399) drop-shadow(0 0 26px #e3061359);
   --site-panel-bg: color-mix(in srgb, var(--text) 2%, transparent);
   --site-frame: min(96%, calc(100% - 48px));
-  --site-frame-max: 1320px;
   --site-space-section: clamp(64px, 6vw, 96px);
   --site-space-page-start: clamp(32px, 3vw, 48px);
   --site-space-half: calc(var(--site-space-section) / 2);
@@ -315,7 +318,7 @@
 
 /* Preserve the Full HD frame; wider CSS viewports switch directly to 1440px. */
 @media (width > 1920px) {
-  .design.site {
+  :root {
     --site-frame-max: 1440px;
   }
 }

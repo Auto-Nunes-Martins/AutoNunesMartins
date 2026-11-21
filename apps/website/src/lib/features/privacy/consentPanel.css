@@ -40,6 +40,9 @@ dialog {
   z-index: 1100;
   inset: auto auto 0 0;
   width: 100vw;
+  box-sizing: border-box;
+  /* Paint through the browser gutter, but align the contents with the page. */
+  padding-right: max(0px, calc(100vw - 100%));
   border-top: 1px solid var(--edge);
   box-shadow: 0 -8px 48px #0003;
   max-height: 90dvh;
@@ -47,14 +50,13 @@ dialog {
 }
 .notice-inner {
   box-sizing: border-box;
-  max-width: 90rem;
-  margin: auto;
   display: grid;
   grid-template-columns: clamp(9rem, 16vw, 14rem) minmax(0, 1fr) clamp(11rem, 16vw, 14rem);
   align-items: center;
   gap: clamp(1.5rem, 3vw, 4rem);
-  padding: 1.25rem max(4vw, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom))
-    max(4vw, env(safe-area-inset-left));
+  padding-block: 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+  padding-inline: max(var(--nav-inline-start), env(safe-area-inset-left))
+    max(var(--nav-inline-space), env(safe-area-inset-right));
 }
 .brand {
   display: grid;
@@ -307,8 +309,7 @@ footer {
   .notice-inner {
     grid-template-columns: 1fr;
     gap: 0.65rem;
-    padding: 0.75rem max(1rem, env(safe-area-inset-right)) max(0.9rem, env(safe-area-inset-bottom))
-      max(1rem, env(safe-area-inset-left));
+    padding-block: 0.75rem max(0.9rem, env(safe-area-inset-bottom));
   }
   .brand {
     border: 0;

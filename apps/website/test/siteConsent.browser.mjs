@@ -34,6 +34,29 @@ try {
     'background-color',
     'rgb(197, 18, 36)',
   );
+  // The bar fills the viewport, including the scrollbar gutter. Its contents
+  // follow the same left and right edges as the navigation on the current page.
+  for (const path of ['/', '/quem-somos']) {
+    if (path !== '/') await page.goto(origin + path);
+    await expect(notice).toBeVisible();
+    for (const width of [320, 390, 1024, 1440, 1920, 2160]) {
+      await page.setViewportSize({ width, height: 800 });
+      const edges = await page.evaluate(() => {
+        const header = document.querySelector('.stand-header');
+        const nav = header.getBoundingClientRect();
+        const style = getComputedStyle(header);
+        return {
+          navLeft: nav.left + parseFloat(style.paddingLeft),
+          navRight: nav.right - parseFloat(style.paddingRight),
+          bannerLeft: document.querySelector('.notice .brand').getBoundingClientRect().left,
+          bannerRight: document.querySelector('.notice .secondary').getBoundingClientRect().right,
+        };
+      });
+      expect(edges.bannerLeft, path + ' at ' + width).toBeCloseTo(edges.navLeft, 0);
+      expect(edges.bannerRight, path + ' at ' + width).toBeCloseTo(edges.navRight, 0);
+    }
+  }
+  await page.goto(origin);
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 800 });
     const bounds = await notice.boundingBox();
