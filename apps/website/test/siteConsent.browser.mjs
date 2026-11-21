@@ -29,6 +29,11 @@ try {
   const map = page.locator('iframe[src*="google.com/maps/embed"]');
   await page.goto(origin);
   await expect(notice).toBeVisible();
+  await expect(notice).toHaveCSS('color-scheme', 'dark');
+  await expect(notice.getByRole('button', { name: 'Aceitar tudo' })).toHaveCSS(
+    'background-color',
+    'rgb(197, 18, 36)',
+  );
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 800 });
     const bounds = await notice.boundingBox();
@@ -47,10 +52,24 @@ try {
     }
     await notice.getByRole('button', { name: 'Personalizar' }).click();
     await expect(dialog.getByRole('tab')).toHaveCount(3);
+    await expect(dialog).toHaveCSS('color-scheme', 'dark');
+    await expect(dialog.getByRole('button', { name: 'Guardar escolhas' })).toHaveCSS(
+      'background-color',
+      'rgb(197, 18, 36)',
+    );
     expect((await dialog.boundingBox()).width).toBeGreaterThan(width === 1440 ? 800 : width - 32);
     await dialog.getByRole('switch', { name: /Medição de publicidade/ }).check();
     await dialog.getByRole('tab', { name: 'Detalhes' }).click();
     await expect(dialog.getByRole('tabpanel')).toContainText('Google Tag Manager');
+    if (width === 320) {
+      const scroller = dialog.locator('.content');
+      await expect(scroller).toHaveAttribute('data-more-below', '');
+      await expect(scroller).not.toHaveCSS('mask-image', 'none');
+      await scroller.evaluate((node) => node.scrollTo(0, node.scrollHeight));
+      await expect(scroller).toHaveCSS('mask-image', 'none');
+      await scroller.evaluate((node) => node.scrollTo(0, 0));
+      await expect(scroller).toHaveAttribute('data-more-below', '');
+    }
     await page.keyboard.press('ArrowRight');
     await expect(dialog.getByRole('tab', { name: 'Sobre' })).toBeFocused();
     await expect(dialog.getByRole('tabpanel')).toContainText('Auto Nunes Martins');
@@ -59,6 +78,15 @@ try {
     await dialog.getByRole('button', { name: 'Fechar preferências' }).click();
     expect(gtmRequests()).toHaveLength(0);
   }
+  await page.getByRole('button', { name: 'Mudar para tema claro' }).first().click();
+  await expect(notice).toHaveCSS('background-color', 'rgb(251, 250, 247)');
+  await page.reload();
+  await expect(notice).toHaveCSS('color-scheme', 'light');
+  await notice.getByRole('button', { name: 'Personalizar' }).click();
+  await expect(dialog).toHaveCSS('color-scheme', 'light');
+  await dialog.getByRole('button', { name: 'Fechar preferências' }).click();
+  await page.getByRole('button', { name: 'Mudar para tema escuro' }).first().click();
+  await expect(notice).toHaveCSS('color-scheme', 'dark');
   await page.setViewportSize({ width: 360, height: 760 });
   await expect(map).toHaveCount(0);
   await notice.getByRole('button', { name: 'Personalizar' }).click();

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { X } from 'lucide-svelte';
-  import { logoLight, logoLightSrcset } from '$lib/localAssets';
+  import { logoDark, logoDarkSrcset, logoLight, logoLightSrcset } from '$lib/localAssets';
+  import { usePublicTheme } from '$lib/publicTheme';
   import {
     essentialOnly,
     readSiteConsent,
@@ -13,6 +14,7 @@
 
   const tabs = ['Consentimento', 'Detalhes', 'Sobre'] as const;
   type Tab = (typeof tabs)[number];
+  const { dark } = usePublicTheme();
   const options = [
     {
       key: 'preferences',
@@ -42,6 +44,28 @@
   let dialog: HTMLDialogElement;
   let opener: HTMLElement | null = null;
   const acceptAll = { preferences: true, maps: true, ads: true };
+  let moreBelow = $state(false);
+
+  function trackOverflow(node: HTMLElement, tab: Tab) {
+    function measure() {
+      moreBelow = node.scrollHeight - node.scrollTop - node.clientHeight > 1;
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    for (const panel of node.children) observer.observe(panel);
+    node.addEventListener('scroll', measure, { passive: true });
+    return {
+      update(next: Tab) {
+        if (next !== tab) node.scrollTop = 0;
+        tab = next;
+        measure();
+      },
+      destroy() {
+        observer.disconnect();
+        node.removeEventListener('scroll', measure);
+      },
+    };
+  }
 
   function open() {
     if (dialog.open) return;
@@ -84,8 +108,8 @@
     <div class="notice-inner">
       <div class="brand">
         <img
-          src={logoLight}
-          srcset={logoLightSrcset}
+          src={$dark ? logoDark : logoLight}
+          srcset={$dark ? logoDarkSrcset : logoLightSrcset}
           sizes="(max-width: 700px) 108px, 188px"
           width="360"
           height="160"
@@ -101,7 +125,7 @@
         <a href="/politica-de-privacidade#preferencias">Política de Privacidade</a>
       </div>
       <div class="notice-actions">
-        <button onclick={() => save(acceptAll)}>Aceitar tudo</button>
+        <button class="primary" onclick={() => save(acceptAll)}>Aceitar tudo</button>
         <button onclick={() => save(essentialOnly)}>Recusar</button>
         <button class="secondary" onclick={open}>Personalizar</button>
       </div>
@@ -116,8 +140,8 @@
 >
   <header>
     <img
-      src={logoLight}
-      srcset={logoLightSrcset}
+      src={$dark ? logoDark : logoLight}
+      srcset={$dark ? logoDarkSrcset : logoLightSrcset}
       sizes="120px"
       width="360"
       height="160"
@@ -141,7 +165,7 @@
       >
     {/each}
   </div>
-  <div class="content">
+  <div class="content" data-more-below={moreBelow ? '' : undefined} use:trackOverflow={activeTab}>
     {#each tabs as tab, i}
       <div
         hidden={activeTab !== tab}
@@ -198,7 +222,7 @@
   </div>
   <footer>
     <button class="secondary" onclick={() => save(essentialOnly)}>Recusar</button>
-    <button onclick={() => save(draft)}>Guardar escolhas</button>
+    <button class="primary" onclick={() => save(draft)}>Guardar escolhas</button>
   </footer>
 </dialog>
 

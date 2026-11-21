@@ -1,8 +1,19 @@
 .notice,
 dialog {
-  color-scheme: light;
-  color: #202327;
-  background: #fbfaf7;
+  color-scheme: dark;
+  --text: #f6f6f5;
+  --muted: #c5c7c9;
+  --surface: #202225;
+  --footer: #191b1d;
+  --line: #44474a;
+  --edge: #777d81;
+  --neutral-button: #494d50;
+  --neutral-hover: #5b6064;
+  --hover: #35383b;
+  --indicator: #ff6571;
+  --scroll-thumb: #92989c;
+  color: var(--text);
+  background: var(--surface);
   font:
     400 16px/1.5 'ANM Inter',
     Inter,
@@ -10,12 +21,26 @@ dialog {
     sans-serif;
   text-align: left;
 }
+:global(html[data-theme='light']) :is(.notice, dialog) {
+  color-scheme: light;
+  --text: #202327;
+  --muted: #52565a;
+  --surface: #fbfaf7;
+  --footer: #f3f2ed;
+  --line: #d9d8d1;
+  --edge: #858885;
+  --neutral-button: #282b2c;
+  --neutral-hover: #424549;
+  --hover: #e8e7e1;
+  --indicator: #a51929;
+  --scroll-thumb: #797b78;
+}
 .notice {
   position: fixed;
   z-index: 1100;
   inset: auto auto 0 0;
   width: 100vw;
-  border-top: 1px solid #b9b8b3;
+  border-top: 1px solid var(--edge);
   box-shadow: 0 -8px 48px #0003;
   max-height: 90dvh;
   overflow: auto;
@@ -35,7 +60,7 @@ dialog {
   display: grid;
   align-items: center;
   align-self: stretch;
-  border-right: 1px solid #d9d8d1;
+  border-right: 1px solid var(--line);
   padding-inline-end: clamp(1rem, 2vw, 2rem);
 }
 img {
@@ -60,14 +85,14 @@ h2 {
 p,
 dd,
 .description {
-  color: #52565a;
+  color: var(--muted);
 }
 .intro p {
   margin: 0.5rem 0;
   max-width: 62ch;
 }
 a {
-  color: #333639;
+  color: var(--text);
   text-decoration: underline;
   text-underline-offset: 0.2em;
   font-weight: 600;
@@ -84,27 +109,34 @@ button {
 .notice-actions button,
 footer button {
   min-height: 44px;
-  border: 1px solid #282b2c;
+  border: 1px solid var(--neutral-button);
   padding: 0.5rem 1.25rem;
   border-radius: 7px;
   color: white;
-  background: #282b2c;
+  background: var(--neutral-button);
   font-size: 0.9375em;
   font-weight: 650;
 }
+button.primary {
+  background: #c51224;
+  border-color: #c51224;
+}
 button.secondary {
   background: transparent;
-  color: #272a2d;
-  border-color: #959694;
+  color: var(--text);
+  border-color: var(--edge);
 }
 @media (hover: hover) {
   .notice-actions button:hover,
   footer button:hover {
-    background: #424549;
+    background: var(--neutral-hover);
+  }
+  button.primary:hover {
+    background: #ab1020;
   }
   button.secondary:hover,
   .close:hover {
-    background: #e8e7e1;
+    background: var(--hover);
   }
 }
 dialog {
@@ -114,7 +146,7 @@ dialog {
   max-height: none;
   padding: 0;
   margin: auto;
-  border: 1px solid #cfcec8;
+  border: 1px solid var(--edge);
   border-radius: 16px;
   box-shadow: 0 24px 80px #0005;
 }
@@ -150,29 +182,29 @@ header img {
   padding: 0;
   display: grid;
   place-items: center;
-  border: 1px solid #cdcec9;
+  border: 1px solid var(--edge);
   border-radius: 8px;
-  color: #343739;
+  color: var(--text);
   background: transparent;
 }
 .tabs {
   display: flex;
   gap: clamp(1rem, 3vw, 2.25rem);
-  border-bottom: 1px solid #d9d8d1;
+  border-bottom: 1px solid var(--line);
 }
 .tabs button {
   padding: 0.65rem 0;
   min-height: 44px;
   border: 0;
   border-bottom: 3px solid transparent;
-  color: #585c60;
+  color: var(--muted);
   font-size: 0.9375em;
   font-weight: 600;
   background: transparent;
 }
 .tabs button[aria-selected='true'] {
-  border-bottom-color: #ba1628;
-  color: #222427;
+  border-bottom-color: var(--indicator);
+  color: var(--text);
 }
 .content {
   flex: 1;
@@ -181,6 +213,10 @@ header img {
   overscroll-behavior: contain;
   padding-block: 1.25rem;
   scrollbar-gutter: stable;
+  scrollbar-color: var(--scroll-thumb) var(--surface);
+}
+.content[data-more-below] {
+  mask-image: linear-gradient(to bottom, black calc(100% - 22px), transparent);
 }
 .content p {
   max-width: 66ch;
@@ -195,7 +231,7 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border-top: 1px solid #d9d8d1;
+  border-top: 1px solid var(--line);
   padding: 1rem 0;
   cursor: pointer;
 }
@@ -259,12 +295,12 @@ footer {
   justify-content: flex-end;
   gap: 0.75rem;
   padding-block: 0.95rem;
-  border-top: 1px solid #d9d8d1;
-  background: #f3f2ed;
+  border-top: 1px solid var(--line);
+  background: var(--footer);
 }
 :is(button, a, [role='tabpanel']):focus-visible,
 .switch input:focus-visible + span {
-  outline: 2px solid #9d1726;
+  outline: 2px solid var(--indicator);
   outline-offset: 2px;
 }
 @media (max-width: 700px) {
@@ -319,7 +355,7 @@ footer {
     padding-inline: 0.6rem;
   }
 }
-@media (max-height: 430px) {
+@media (max-height: 275px) {
   dialog[open] {
     display: block;
     overflow: auto;
