@@ -4,11 +4,60 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0A0A0B" />
+    <script id="anm-gtm-consent" data-cookieconsent="ignore">
+      (function () {
+        var dataLayer = window.dataLayer = window.dataLayer || [];
+        var loaded = false;
+        var previous;
+
+        function gtag() { dataLayer.push(arguments); }
+
+        function consentCommand(action, value) {
+          gtag('consent', action, {
+            analytics_storage: value,
+            ad_storage: value,
+            ad_user_data: value,
+            ad_personalization: value
+          });
+        }
+
+        consentCommand('default', 'denied');
+
+        function sync() {
+          var cmp = window.Cookiebot;
+          var consent = cmp && cmp.consent;
+          var allowed = Boolean(cmp && cmp.hasResponse === true && consent &&
+            consent.method === 'explicit' && consent.statistics === true && consent.marketing === true);
+          if (allowed === previous) return;
+          previous = allowed;
+          consentCommand('update', allowed ? 'granted' : 'denied');
+
+          if (!allowed) {
+            // A loaded container can include third-party code. Reopen without it after withdrawal.
+            if (loaded) window.location.reload();
+            return;
+          }
+          if (loaded) return;
+          loaded = true;
+          dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+          var tag = document.createElement('script');
+          tag.async = true;
+          tag.setAttribute('data-cookieconsent', 'ignore');
+          tag.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-W83CLHNR';
+          document.head.appendChild(tag);
+        }
+
+        ['CookiebotOnConsentReady', 'CookiebotOnAccept', 'CookiebotOnDecline', 'pageshow']
+          .forEach(function (event) { window.addEventListener(event, sync); });
+        sync();
+      })();
+    </script>
     <script
       id="Cookiebot"
       src="https://consent.cookiebot.com/uc.js"
       data-cbid="df98b47d-50b5-4495-9371-0cd46914087d"
       data-blockingmode="auto"
+      data-consentmode="disabled"
       type="text/javascript"
     ></script>
     <script id="orbit-theme-boot">

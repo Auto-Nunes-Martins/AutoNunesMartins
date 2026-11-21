@@ -122,9 +122,10 @@
       cookies nesta política.
     </p>
     <p>
-      A lista final de prestadores, logs, regiões e prazos do alojamento está por confirmar. Não
-      foram identificados analytics ou pixels de publicidade integrados no código desta versão; isso
-      não certifica os serviços do ambiente publicado.
+      O Google Tag Manager só é carregado após consentimento explícito para Estatísticas e
+      Marketing. O carregamento comunica dados técnicos da ligação à Google. Pode alterar ou retirar
+      o consentimento no painel abaixo. As etiquetas ativas e respetivos serviços, bem como a lista
+      final de prestadores, logs, regiões e prazos do alojamento, estão por confirmar.
     </p>
   </section>
   <PrivacyPreferences />

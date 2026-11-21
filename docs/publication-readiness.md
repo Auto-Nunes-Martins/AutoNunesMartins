@@ -6,6 +6,8 @@ Antes de responder a «está pronto para publicar?», consultar este documento, 
 
 ## Fontes de estado
 
+- Google Tag Manager (21/11/2026): o proprietário forneceu o contentor `GTM-W83CLHNR`. O código do site público só o carrega após consentimento explícito para Estatísticas e Marketing e volta a carregar a página sem o contentor quando esse consentimento é retirado. A agência ainda precisa de confirmar as etiquetas, os acionadores, as categorias e os pedidos efetivos com Tag Assistant. O ID do contentor resolve apenas a identificação mencionada no registo de 06/11/2026.
+
 - Campos públicos: `apps/website/src/lib/publicationReadiness.json`. `null` é apresentado como «Por preencher / Por confirmar antes da publicação». Não incluir segredos ou documentos pessoais neste ficheiro público.
 - Contactos da interface: `apps/website/src/lib/components/stand-concepts/standContact.ts`, atualmente `isDemo: false`; WhatsApp ativo com o número principal confirmado, sem número fictício.
 - Informação legal: `/informacao-legal`; privacidade: `/politica-de-privacidade`.
