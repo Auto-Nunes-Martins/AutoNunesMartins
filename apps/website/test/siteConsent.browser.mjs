@@ -29,6 +29,37 @@ try {
   const map = page.locator('iframe[src*="google.com/maps/embed"]');
   await page.goto(origin);
   await expect(notice).toBeVisible();
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    const bounds = await notice.boundingBox();
+    expect(bounds.width).toBe(await page.evaluate(() => document.documentElement.clientWidth));
+    await expect(notice.getByRole('img', { name: 'Auto Nunes Martins' })).toBeVisible();
+    if (width === 1440) {
+      if (process.env.CONSENT_BANNER_SCREENSHOT)
+        await notice.screenshot({ path: process.env.CONSENT_BANNER_SCREENSHOT });
+      const logo = await notice.getByRole('img').boundingBox();
+      const heading = await notice.getByRole('heading').boundingBox();
+      expect(logo.x + logo.width).toBeLessThan(heading.x);
+      const buttons = await notice.getByRole('button').all();
+      const [accept, refuse, customize] = await Promise.all(buttons.map((b) => b.boundingBox()));
+      expect(refuse.y).toBeGreaterThanOrEqual(accept.y + accept.height);
+      expect(customize.y).toBeGreaterThanOrEqual(refuse.y + refuse.height);
+    }
+    await notice.getByRole('button', { name: 'Personalizar' }).click();
+    await expect(dialog.getByRole('tab')).toHaveCount(3);
+    expect((await dialog.boundingBox()).width).toBeGreaterThan(width === 1440 ? 800 : width - 32);
+    await dialog.getByRole('switch', { name: /Medição de publicidade/ }).check();
+    await dialog.getByRole('tab', { name: 'Detalhes' }).click();
+    await expect(dialog.getByRole('tabpanel')).toContainText('Google Tag Manager');
+    await page.keyboard.press('ArrowRight');
+    await expect(dialog.getByRole('tab', { name: 'Sobre' })).toBeFocused();
+    await expect(dialog.getByRole('tabpanel')).toContainText('Auto Nunes Martins');
+    await page.keyboard.press('Home');
+    await expect(dialog.getByRole('switch', { name: /Medição de publicidade/ })).toBeChecked();
+    await dialog.getByRole('button', { name: 'Fechar preferências' }).click();
+    expect(gtmRequests()).toHaveLength(0);
+  }
+  await page.setViewportSize({ width: 360, height: 760 });
   await expect(map).toHaveCount(0);
   await notice.getByRole('button', { name: 'Personalizar' }).click();
   await expect(dialog).toBeVisible();
@@ -43,7 +74,7 @@ try {
   await expect(notice.getByRole('button', { name: 'Personalizar' })).toBeFocused();
   const favorites = JSON.stringify(['favorito-teste-123456789abc']);
   await page.evaluate((value) => localStorage.setItem('anm-favorites-v1', value), favorites);
-  await notice.getByRole('button', { name: 'Rejeitar opcionais' }).click();
+  await notice.getByRole('button', { name: 'Recusar' }).click();
   await page.reload();
   await expect(notice).toBeHidden();
   await expect(map).toHaveCount(0);
@@ -136,6 +167,12 @@ try {
   await expect(page.locator('script[src*="googletagmanager"]')).toHaveCount(0);
   expect(gtmRequests()).toHaveLength(1);
   expect(thirdParty.filter((url) => /cookiebot|google-analytics/.test(url))).toEqual([]);
+  await page.evaluate(() => localStorage.removeItem('anm-site-consent-v1'));
+  await page.reload();
+  await notice.getByRole('button', { name: 'Aceitar tudo' }).click();
+  await page.getByRole('button', { name: 'Alterar preferências' }).click();
+  for (const toggle of await dialog.getByRole('switch').all()) await expect(toggle).toBeChecked();
+  await expect.poll(() => gtmRequests().length).toBe(2);
   console.log(
     'Consent banner, keyboard, refusal, optional features, expiry and withdrawal passed.',
   );

@@ -1,0 +1,349 @@
+.notice,
+dialog {
+  color-scheme: light;
+  color: #202327;
+  background: #fbfaf7;
+  font:
+    400 16px/1.5 'ANM Inter',
+    Inter,
+    system-ui,
+    sans-serif;
+  text-align: left;
+}
+.notice {
+  position: fixed;
+  z-index: 1100;
+  inset: auto auto 0 0;
+  width: 100vw;
+  border-top: 1px solid #b9b8b3;
+  box-shadow: 0 -8px 48px #0003;
+  max-height: 90dvh;
+  overflow: auto;
+}
+.notice-inner {
+  box-sizing: border-box;
+  max-width: 90rem;
+  margin: auto;
+  display: grid;
+  grid-template-columns: clamp(9rem, 16vw, 14rem) minmax(0, 1fr) clamp(11rem, 16vw, 14rem);
+  align-items: center;
+  gap: clamp(1.5rem, 3vw, 4rem);
+  padding: 1.25rem max(4vw, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom))
+    max(4vw, env(safe-area-inset-left));
+}
+.brand {
+  display: grid;
+  align-items: center;
+  align-self: stretch;
+  border-right: 1px solid #d9d8d1;
+  padding-inline-end: clamp(1rem, 2vw, 2rem);
+}
+img {
+  display: block;
+  width: 100%;
+  max-width: 188px;
+  height: auto;
+}
+h2,
+h3,
+p,
+dl,
+dd {
+  margin: 0;
+}
+h2 {
+  font-size: clamp(1.45rem, 2.25vw, 2.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  font-weight: 650;
+}
+p,
+dd,
+.description {
+  color: #52565a;
+}
+.intro p {
+  margin: 0.5rem 0;
+  max-width: 62ch;
+}
+a {
+  color: #333639;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  font-weight: 600;
+  font-size: 0.875em;
+}
+.notice-actions {
+  display: grid;
+  gap: 0.4rem;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+}
+.notice-actions button,
+footer button {
+  min-height: 44px;
+  border: 1px solid #282b2c;
+  padding: 0.5rem 1.25rem;
+  border-radius: 7px;
+  color: white;
+  background: #282b2c;
+  font-size: 0.9375em;
+  font-weight: 650;
+}
+button.secondary {
+  background: transparent;
+  color: #272a2d;
+  border-color: #959694;
+}
+@media (hover: hover) {
+  .notice-actions button:hover,
+  footer button:hover {
+    background: #424549;
+  }
+  button.secondary:hover,
+  .close:hover {
+    background: #e8e7e1;
+  }
+}
+dialog {
+  width: min(920px, calc(100% - 3rem));
+  box-sizing: border-box;
+  height: min(610px, calc(100dvh - 3rem));
+  max-height: none;
+  padding: 0;
+  margin: auto;
+  border: 1px solid #cfcec8;
+  border-radius: 16px;
+  box-shadow: 0 24px 80px #0005;
+}
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+dialog::backdrop {
+  background: #101216ae;
+}
+header,
+.tabs,
+.content,
+footer {
+  padding-inline: clamp(1.25rem, 4vw, 3rem);
+}
+header {
+  position: relative;
+  padding-block: 1.2rem 1rem;
+}
+header img {
+  width: 120px;
+  margin: 0 0 0.75rem -10px;
+}
+.close {
+  position: absolute;
+  top: 1.25rem;
+  right: clamp(1.25rem, 4vw, 3rem);
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #cdcec9;
+  border-radius: 8px;
+  color: #343739;
+  background: transparent;
+}
+.tabs {
+  display: flex;
+  gap: clamp(1rem, 3vw, 2.25rem);
+  border-bottom: 1px solid #d9d8d1;
+}
+.tabs button {
+  padding: 0.65rem 0;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: #585c60;
+  font-size: 0.9375em;
+  font-weight: 600;
+  background: transparent;
+}
+.tabs button[aria-selected='true'] {
+  border-bottom-color: #ba1628;
+  color: #222427;
+}
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block: 1.25rem;
+  scrollbar-gutter: stable;
+}
+.content p {
+  max-width: 66ch;
+  margin-bottom: 1rem;
+}
+h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid #d9d8d1;
+  padding: 1rem 0;
+  cursor: pointer;
+}
+strong,
+dt {
+  font-weight: 650;
+}
+.description {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.94em;
+}
+.switch {
+  display: grid;
+  align-items: center;
+  position: relative;
+  flex: 0 0 48px;
+  height: 44px;
+}
+.switch input {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.switch span {
+  box-sizing: border-box;
+  width: 100%;
+  height: 27px;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  background: #707579;
+  border: 1px solid transparent;
+  border-radius: 99px;
+}
+.switch span::before {
+  content: '';
+  background: white;
+  border-radius: 50%;
+  width: 19px;
+  height: 19px;
+}
+.switch input:checked + span {
+  background: #aa1626;
+  justify-content: flex-end;
+}
+dt {
+  margin-top: 0.9rem;
+}
+dd {
+  margin-top: 0.15rem;
+  max-width: 72ch;
+}
+footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-block: 0.95rem;
+  border-top: 1px solid #d9d8d1;
+  background: #f3f2ed;
+}
+:is(button, a, [role='tabpanel']):focus-visible,
+.switch input:focus-visible + span {
+  outline: 2px solid #9d1726;
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .notice-inner {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    padding: 0.75rem max(1rem, env(safe-area-inset-right)) max(0.9rem, env(safe-area-inset-bottom))
+      max(1rem, env(safe-area-inset-left));
+  }
+  .brand {
+    border: 0;
+    padding: 0;
+  }
+  .brand img {
+    width: 108px;
+    margin-left: -9px;
+  }
+  .intro p {
+    font-size: 0.92em;
+    margin: 0.35rem 0;
+  }
+  .notice-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .notice-actions .secondary {
+    grid-column: 1 / -1;
+  }
+  dialog {
+    width: calc(100% - 1rem);
+    height: min(610px, calc(100dvh - 1rem));
+    max-width: none;
+    border-radius: 12px;
+  }
+  header {
+    padding-block: 0.75rem;
+  }
+  header img {
+    width: 104px;
+  }
+  .close {
+    top: 0.6rem;
+    right: 1rem;
+  }
+  .option {
+    padding-block: 0.8rem;
+  }
+  footer {
+    display: grid;
+    grid-template-columns: auto 1fr;
+  }
+  footer button {
+    padding-inline: 0.6rem;
+  }
+}
+@media (max-height: 430px) {
+  dialog[open] {
+    display: block;
+    overflow: auto;
+  }
+  .content {
+    overflow: visible;
+  }
+}
+@media (forced-colors: active) {
+  .tabs button[aria-selected='true'] {
+    border-color: Highlight;
+  }
+  .switch span {
+    forced-color-adjust: none;
+    background: Canvas;
+    border: 1px solid ButtonText;
+  }
+  .switch span::before {
+    background: ButtonText;
+  }
+  .switch input:checked + span {
+    background: Highlight;
+  }
+  .switch input:checked + span::before {
+    background: HighlightText;
+  }
+}
