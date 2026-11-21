@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { X } from 'lucide-svelte';
   import { logoDark, logoDarkSrcset, logoLight, logoLightSrcset } from '$lib/localAssets';
   import { usePublicTheme } from '$lib/publicTheme';
+  import { consentOptions } from './consentOptions';
   import {
     essentialOnly,
     readSiteConsent,
@@ -15,33 +16,12 @@
   const tabs = ['Consentimento', 'Detalhes', 'Sobre'] as const;
   type Tab = (typeof tabs)[number];
   const { dark } = usePublicTheme();
-  const options = [
-    {
-      key: 'preferences',
-      label: 'Retomar a leitura',
-      summary: 'Voltar ao mesmo ponto ao recarregar a página.',
-      detail:
-        'Com esta opção ativa, o site guarda o endereço da página, a posição e a hora neste separador. Ao recarregar, pode repor essa posição durante 60 segundos.',
-    },
-    {
-      key: 'maps',
-      label: 'Mapa incorporado do Google',
-      summary: 'Ver o mapa da primeira morada do stand.',
-      detail:
-        'Ao carregar o mapa, o navegador comunica com o Google Maps. A Google recebe dados da ligação e pode utilizar cookies. A morada continua disponível se recusar.',
-    },
-    {
-      key: 'ads',
-      label: 'Medição de publicidade',
-      summary: 'Permitir ao Google Ads medir resultados dos anúncios.',
-      detail:
-        'Com a sua autorização, o site carrega o Google Tag Manager para executar etiquetas de medição do Google Ads. A Google pode usar cookies e dados da ligação e da visita.',
-    },
-  ] as const;
   let showNotice = $state(false);
   let draft = $state<ConsentOptions>({ ...essentialOnly });
   let activeTab = $state<Tab>('Consentimento');
   let dialog: HTMLDialogElement;
+  let noticeHeading = $state<HTMLHeadingElement>();
+  let noticeOpener: HTMLElement | null = null;
   let opener: HTMLElement | null = null;
   const acceptAll = { preferences: true, maps: true, ads: true };
   let moreBelow = $state(false);
@@ -79,6 +59,8 @@
   function save(choice: ConsentOptions) {
     saveSiteConsent(choice);
     if (dialog.open) dialog.close();
+    if (noticeOpener?.isConnected) noticeOpener.focus({ preventScroll: true });
+    noticeOpener = null;
   }
 
   function navigateTabs(event: KeyboardEvent, index: number) {
@@ -95,7 +77,12 @@
 
   onMount(() => {
     const stop = watchSiteConsent((choice) => (showNotice = !choice?.hasAdsDecision));
-    const stopOpening = watchConsentOpening(open);
+    const stopOpening = watchConsentOpening(async (button) => {
+      noticeOpener = button;
+      showNotice = true;
+      await tick();
+      noticeHeading?.focus({ preventScroll: true });
+    });
     return () => {
       stop();
       stopOpening();
@@ -117,7 +104,9 @@
         />
       </div>
       <div class="intro">
-        <h2 id="consent-notice-title">Cookies e privacidade</h2>
+        <h2 id="consent-notice-title" bind:this={noticeHeading} tabindex="-1">
+          Cookies e privacidade
+        </h2>
         <p>
           Escolha se permite retomar a leitura, mostrar o mapa da Google e medir os resultados dos
           nossos anúncios.
@@ -179,7 +168,7 @@
             Escolha as funções que quer ativar neste navegador. Pode alterar a sua decisão a
             qualquer momento.
           </p>
-          {#each options as option}
+          {#each consentOptions as option}
             <label class="option">
               <span
                 ><strong>{option.label}</strong><span class="description">{option.summary}</span
@@ -200,7 +189,7 @@
               O site memoriza a sua decisão neste navegador durante 180 dias, incluindo quando
               recusa todas as opções.
             </dd>
-            {#each options as option}<dt>{option.label}</dt>
+            {#each consentOptions as option}<dt>{option.label}</dt>
               <dd>{option.detail}</dd>{/each}
           </dl>
         {:else}

@@ -136,11 +136,28 @@ try {
   expect(await page.evaluate(() => localStorage.getItem('anm-favorites-v1'))).toBe(favorites);
 
   const policy = origin + '/politica-de-privacidade#preferencias';
+  const settings = page.locator('.settings', {
+    has: page.getByRole('button', { name: 'Alterar preferências' }),
+  });
+  const change = settings.getByRole('button', { name: 'Alterar preferências' });
+  async function reopenPreferences() {
+    await change.click();
+    await expect(notice.getByRole('heading')).toBeFocused();
+    await expect(dialog).toBeHidden();
+    await notice.getByRole('button', { name: 'Personalizar' }).click();
+    await expect(dialog).toBeVisible();
+  }
   await page.goto(policy);
-  await page.getByRole('button', { name: 'Alterar preferências' }).click();
+  await expect(settings.getByRole('status')).toContainText('Consentimento inativo');
+  await expect(
+    settings.getByRole('button', { name: 'Sem consentimento para retirar' }),
+  ).toBeDisabled();
+  await reopenPreferences();
   await dialog.getByRole('switch', { name: /Mapa incorporado/ }).check();
   await dialog.getByRole('button', { name: 'Guardar escolhas' }).click();
   await expect(dialog).toBeHidden();
+  await expect(change).toBeFocused();
+  await expect(settings.getByRole('status')).toContainText('Mapa incorporado do Google');
   await page.goto(origin);
   await expect(map).toHaveCount(1);
   await map.scrollIntoViewIfNeeded();
@@ -150,14 +167,18 @@ try {
 
   const otherTab = await context.newPage();
   await otherTab.goto(policy);
+  await expect(otherTab.getByText('Consentimento ativo', { exact: true })).toBeVisible();
   await otherTab.getByRole('button', { name: 'Retirar consentimento' }).click();
+  await expect(otherTab.getByRole('button', { name: 'Consentimento retirado' })).toBeDisabled();
+  await expect(otherTab.getByText('Consentimento inativo', { exact: true })).toBeVisible();
   await expect(map).toHaveCount(0);
   await otherTab.close();
   await page.reload();
   await expect(map).toHaveCount(0);
 
   await page.goto(policy);
-  await page.getByRole('button', { name: 'Alterar preferências' }).click();
+  await expect(settings.getByRole('button', { name: 'Consentimento retirado' })).toBeDisabled();
+  await reopenPreferences();
   await dialog.getByRole('switch', { name: /Retomar a leitura/ }).check();
   await dialog.getByRole('button', { name: 'Guardar escolhas' }).click();
   await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
@@ -180,6 +201,7 @@ try {
   );
   await page.reload();
   await expect(notice).toBeVisible();
+  await expect(settings.getByRole('status')).toContainText('Sem escolha guardada');
   expect(gtmRequests()).toHaveLength(0);
 
   await page.evaluate(() =>
@@ -220,12 +242,15 @@ try {
     page.getByRole('button', { name: 'Retirar consentimento' }).click(),
   ]);
   await expect(page.locator('script[src*="googletagmanager"]')).toHaveCount(0);
+  await expect(settings.getByRole('button', { name: 'Consentimento retirado' })).toBeDisabled();
   expect(gtmRequests()).toHaveLength(1);
   expect(thirdParty.filter((url) => /cookiebot|google-analytics/.test(url))).toEqual([]);
   await page.evaluate(() => localStorage.removeItem('anm-site-consent-v1'));
   await page.reload();
   await notice.getByRole('button', { name: 'Aceitar tudo' }).click();
-  await page.getByRole('button', { name: 'Alterar preferências' }).click();
+  await expect(settings.getByRole('status')).toContainText('Medição de publicidade');
+  await reopenPreferences();
+  await expect(dialog.getByRole('switch')).toHaveCount(3);
   for (const toggle of await dialog.getByRole('switch').all()) await expect(toggle).toBeChecked();
   await expect.poll(() => gtmRequests().length).toBe(2);
   console.log(
