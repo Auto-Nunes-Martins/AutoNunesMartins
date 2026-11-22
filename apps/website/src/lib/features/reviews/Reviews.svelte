@@ -18,6 +18,8 @@
   let activeCopies: number[] = [];
   let track: HTMLDivElement;
   let viewport: HTMLDivElement;
+  let marquee: ReturnType<typeof brandMarquee>;
+  $: marquee?.update({ paused: expandedReviews.length > 0 });
   let interaction = 0;
   let readingCard: HTMLElement | null = null;
 
@@ -66,11 +68,30 @@
   }
 
   onMount(() => {
-    if (!section) return;
+    const reviewSection = section;
+    if (!reviewSection) return;
+    // The cards and their buttons are already in the HTML. Measure them shortly
+    // before they enter view, or immediately when someone interacts with them.
+    let expansion: ReturnType<typeof reviewExpansion> | undefined;
+    function prepare() {
+      if (expansion || !reviewSection.isConnected) return;
+      approaching.disconnect();
+      marquee = brandMarquee(viewport, { paused: expandedReviews.length > 0 });
+      expansion = reviewExpansion(track);
+    }
+    const approaching = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) prepare();
+      },
+      { rootMargin: '600px 0px' },
+    );
+    approaching.observe(reviewSection);
+    reviewSection.addEventListener('focusin', prepare, true);
+    reviewSection.addEventListener('pointerdown', prepare, true);
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry?.isIntersecting ?? false;
     });
-    observer.observe(section);
+    observer.observe(reviewSection);
     const updateVisibility = () => {
       pageVisible = !document.hidden;
     };
@@ -89,6 +110,11 @@
     };
     window.addEventListener('resize', resize);
     return () => {
+      approaching.disconnect();
+      reviewSection.removeEventListener('focusin', prepare, true);
+      reviewSection.removeEventListener('pointerdown', prepare, true);
+      expansion?.destroy();
+      marquee?.destroy();
       observer.disconnect();
       document.removeEventListener('visibilitychange', updateVisibility);
       window.removeEventListener('resize', resize);
@@ -99,16 +125,12 @@
 {#if reviews.length}
   <section class="reviews" bind:this={section} aria-labelledby="reviews-heading">
     <div class="heading"><h2 id="reviews-heading">Quem veio, conta.</h2></div>
-    <div
-      class="review-viewport"
-      bind:this={viewport}
-      use:brandMarquee={{ paused: expandedReviews.length > 0 }}
-    >
+    <div class="review-viewport" bind:this={viewport}>
       <div
         id="reviews-track"
         class="review-track"
+        class:awaiting-size={!marquee}
         bind:this={track}
-        use:reviewExpansion
         class:paused={!visible || !pageVisible || expandedReviews.length > 0}
       >
         {#each [false, true] as duplicate}
@@ -237,6 +259,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
     align-items: start;
+  }
+  .awaiting-size .review-grid {
+    grid-auto-rows: 1fr;
+    align-items: stretch;
   }
   .duplicate {
     display: none;

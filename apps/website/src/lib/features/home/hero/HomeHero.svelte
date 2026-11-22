@@ -93,13 +93,11 @@
   ] as const;
   const background = heroBackground;
   function anchorStart(node: HTMLElement, _pending: boolean) {
-    // Hydration replaces this element's inline style with its Svelte directives.
-    // Restore the startup measurement before reading canvas geometry; otherwise
-    // the background briefly keeps the uncompressed hero height for one frame.
-    const feature = node.querySelector<HTMLElement>('.hd-feature');
-    if (feature) setScrollStyle(node, '--hero-feature-height', `${feature.offsetHeight}px`);
-    if (node.dataset.featuredContentDrop && window.innerWidth > 700) {
-      setScrollStyle(node, '--featured-content-drop', node.dataset.featuredContentDrop);
+    // The parser sets the reserve before first paint. Client-side navigation
+    // starts with a new hero and needs the same reserve before measuring the canvas.
+    if (!node.style.getPropertyValue('--hero-feature-height')) {
+      const feature = node.querySelector<HTMLElement>('.hd-feature');
+      if (feature) setScrollStyle(node, '--hero-feature-height', `${feature.offsetHeight}px`);
     }
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const mobile = matchMedia('(max-width: 700px), (pointer: coarse)');
@@ -108,16 +106,13 @@
     const task = scrollFrame(() => {
       // Complete geometry reads before changing canvas styles or any label pivot.
       const bounds = node.getBoundingClientRect();
+      const feature = node.querySelector<HTMLElement>('.hd-feature');
       const writes: [HTMLElement, string, string][] = [
         [node, '--v1-anchor-start', `${bounds.top + scrollY}px`],
         [node, '--v1-canvas-left', `${bounds.left}px`],
         [node, '--v1-canvas-width', `${bounds.width}px`],
         [node, '--v1-canvas-height', `${bounds.height}px`],
-        [
-          node,
-          '--hero-feature-height',
-          `${node.querySelector<HTMLElement>('.hd-feature')?.offsetHeight ?? 0}px`,
-        ],
+        [node, '--hero-feature-height', `${feature?.offsetHeight ?? 0}px`],
       ];
       const offset = (plane: HTMLElement) => {
         let left = 0;
@@ -130,7 +125,6 @@
         }
         return { left, top };
       };
-      const feature = node.querySelector<HTMLElement>('.hd-feature');
       const progressLine = node.querySelector<HTMLElement>('.hd-progress button > span');
       const scrollHint = node.querySelector<HTMLElement>('.hd-scroll');
       let nextContentDrop: string | undefined;
@@ -156,7 +150,8 @@
         const drop = Math.max(0, Math.round(currentDrop + (hintCentre - lineCentre) / scaleY));
         nextContentDrop = `${drop}px`;
       }
-      const photo = node.querySelector<HTMLElement>('.hd-photo-stage');
+      // Only the desktop backlight and tilt use the photo's position and pivot.
+      const photo = window.innerWidth > 700 && node.querySelector<HTMLElement>('.hd-photo-stage');
       if (photo) {
         const { left, top } = offset(photo);
         const width = photo.offsetWidth;
@@ -600,8 +595,6 @@
   data-home-hero
   data-featured-card
   data-featured-presence="expanded"
-  style:--road-focus={background?.focus}
-  style:--road-mobile-focus={background?.mobileFocus}
   class:hd-dark={$dark}
   aria-labelledby="hd-title"
   use:anchorStart={highlightsPending}

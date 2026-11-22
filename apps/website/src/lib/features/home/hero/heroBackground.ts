@@ -10,6 +10,4 @@ export const heroBackground = {
   avifPortrait: portrait.avif,
   width: wide.width,
   height: wide.height,
-  focus: '50% 70%',
-  mobileFocus: '50% 50%',
 } as const;

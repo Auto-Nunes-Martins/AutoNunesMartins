@@ -32,16 +32,20 @@ export function hybridNav(header: HTMLElement, initial: Options) {
       return reset;
     }
     const y = Math.max(0, window.scrollY);
-    if (heroBottom === undefined) {
+    // The header cannot pin in the first 100px, regardless of the hero's height.
+    if (y >= 100 && heroBottom === undefined) {
       const hero = root.querySelector<HTMLElement>('.home-hero, .site-intro');
       if (!hero) return reset;
       heroBottom = hero.getBoundingClientRect().bottom + y;
     }
-    const state = compactNavProgress(y, heroBottom, innerHeight);
+    const state = compactNavProgress(y, heroBottom ?? 0, innerHeight);
     // Never fade a menu or a keyboard target out from under its current user.
+    const wasPinned = y > 100 && root.classList.contains('nav-pinned');
     const engaged =
-      state.progress < 1 && (options.open || !!header.querySelector(':focus-visible'));
-    const pinned = state.pinned || (root.classList.contains('nav-pinned') && engaged && y > 100);
+      state.progress < 1 &&
+      (state.pinned || wasPinned) &&
+      (options.open || !!header.querySelector(':focus-visible'));
+    const pinned = state.pinned || (wasPinned && engaged);
     const progress = pinned && engaged ? 1 : state.progress;
     if (pinned === lastPinned && progress === lastProgress) return;
     return () => {

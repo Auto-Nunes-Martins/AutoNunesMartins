@@ -13,7 +13,6 @@ describe('featured alignment before hydration', () => {
   );
   it.each([390, 1440])('preserves the resting pose at %s px without cumulative drift', (width) => {
     const values = new Map<string, string>();
-    const attributes = new Map([['data-featured-presence', 'expanded']]);
     const feature = {};
     const hint = { getBoundingClientRect: () => ({ top: 245, height: 10 }) };
     const line = {
@@ -23,8 +22,7 @@ describe('featured alignment before hydration', () => {
       }),
     };
     const hero = {
-      getAttribute: (key: string) => attributes.get(key),
-      setAttribute: (key: string, value: string) => attributes.set(key, value),
+      getAttribute: (key: string) => (key === 'data-featured-presence' ? 'expanded' : null),
       querySelector: (selector: string) =>
         selector === '.hd-feature' ? feature : selector === '.hd-scroll' ? hint : line,
       style: { setProperty: (key: string, value: string) => values.set(key, value) },
@@ -47,7 +45,6 @@ describe('featured alignment before hydration', () => {
     const run = () => runInNewContext(`${alignment}\nalignSiteFeaturedContent(hero);`, context);
     run();
     expect(values.get('--featured-content-drop')).toBe(width > 700 ? '66px' : undefined);
-    expect(attributes.get('data-featured-content-drop')).toBe(width > 700 ? '66px' : undefined);
     run();
     expect(values.get('--featured-content-drop')).toBe(width > 700 ? '66px' : undefined);
   });

@@ -143,15 +143,19 @@ export const promotionSaving = (referencePrice: string | number, price: string |
   const cents = Math.round(Number(referencePrice) * 100) - Math.round(Number(price) * 100);
   return Number.isFinite(cents) ? Math.max(0, cents) / 100 : 0;
 };
-export const formatVehiclePrice = (value: string | number | null) =>
-  value === null
-    ? 'Preço sob consulta'
-    : new Intl.NumberFormat('pt-PT', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: Number(value) % 1 ? 2 : 0,
-        maximumFractionDigits: 2,
-      }).format(Number(value));
+const euroFormatters: Partial<Record<0 | 2, Intl.NumberFormat>> = {};
+export function formatVehiclePrice(value: string | number | null) {
+  if (value === null) return 'Preço sob consulta';
+  const amount = Number(value);
+  const digits = amount % 1 ? 2 : 0;
+  const formatter = (euroFormatters[digits] ??= new Intl.NumberFormat('pt-PT', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: 2,
+  }));
+  return formatter.format(amount);
+}
 export const publicHref = (slug: string) => `/viaturas/${slug}`;
 export function publicPhoto(
   vehicle: string | Pick<PublicVehicle, 'slug' | 'photos'>,

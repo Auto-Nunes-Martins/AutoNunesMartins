@@ -19,23 +19,27 @@ export function reviewExpansion(node: HTMLElement) {
     item.card.style.removeProperty('overflow');
   };
   const measure = () => {
-    const measured = cards
-      .filter((item) => item.content.offsetWidth)
-      .map((item) => {
-        const style = getComputedStyle(item.card);
-        const frame = [
-          style.paddingTop,
-          style.paddingBottom,
-          style.borderTopWidth,
-          style.borderBottomWidth,
-        ].reduce((sum, value) => sum + (parseFloat(value) || 0), 0);
-        const natural = item.content.offsetHeight + frame;
-        return {
+    const measured = cards.flatMap((item) => {
+      const width = item.content.offsetWidth;
+      if (!width) return [];
+      const style = getComputedStyle(item.card);
+      const frame = [
+        style.paddingTop,
+        style.paddingBottom,
+        style.borderTopWidth,
+        style.borderBottomWidth,
+      ].reduce((sum, value) => sum + (parseFloat(value) || 0), 0);
+      const natural = item.content.offsetHeight + frame;
+      return [
+        {
           item,
           natural,
+          width,
+          from: item.animation ? parseFloat(style.height) : item.height,
           collapsed: natural - item.copy.offsetHeight + item.baseline.offsetHeight,
-        };
-      });
+        },
+      ];
+    });
     const common = Math.ceil(
       Math.max(
         0,
@@ -44,11 +48,9 @@ export function reviewExpansion(node: HTMLElement) {
         ),
       ),
     );
-    for (const { item, natural } of measured) {
+    for (const { item, natural, width, from } of measured) {
       const height = Math.ceil(Math.max(common, natural));
-      const width = item.content.offsetWidth;
       if (height === item.height && width === item.width) continue;
-      const from = item.animation ? parseFloat(getComputedStyle(item.card).height) : item.height;
       const resized = width !== item.width;
       const initial = !item.height;
       item.height = height;

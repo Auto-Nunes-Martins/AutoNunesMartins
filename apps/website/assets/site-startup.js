@@ -26,8 +26,6 @@ function alignSiteFeaturedContent(hero) {
     (lineBounds.top + lineBounds.height / 2 - entryY);
   var value = Math.max(0, Math.round(current + delta / scaleY)) + 'px';
   hero.style.setProperty('--featured-content-drop', value);
-  // Svelte owns inline styles; retain the seed when hydration replaces them.
-  hero.setAttribute('data-featured-content-drop', value);
 }
 
 // A streamed response can paint the complete hero before the end-of-body script.

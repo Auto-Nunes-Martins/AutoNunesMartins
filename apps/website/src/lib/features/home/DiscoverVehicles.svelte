@@ -60,7 +60,7 @@
     const scrollInput = matchMedia('(hover: none), (pointer: coarse)');
     const heading = element.querySelector('strong')!;
     const lineWindow = element.querySelector<HTMLElement>('.title-line')!;
-    let inView = true;
+    let inView = false;
     const updateDrift = () => {
       driftPaused = !inView || document.hidden;
     };

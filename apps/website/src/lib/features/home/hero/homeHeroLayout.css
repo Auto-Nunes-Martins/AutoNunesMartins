@@ -1,10 +1,10 @@
 /* Permanent fifth composition: preserve its approved framing and entry. */
 .hd-root[data-home-hero] .hd-landscape img {
-  object-position: var(--road-focus, 50% 100%);
+  object-position: 50% 70%;
 }
 @media (max-width: 700px) {
   .hd-root[data-home-hero] .hd-landscape img {
-    object-position: var(--road-mobile-focus, 50% 50%);
+    object-position: 50% 50%;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
