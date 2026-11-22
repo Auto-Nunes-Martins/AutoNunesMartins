@@ -1,8 +1,8 @@
 <script lang="ts">
-  import fabric from './promotion-ribbon-fabric.svg?url&no-inline';
+  import fabric from './promotion-ribbon-fabric.webp?url&no-inline';
 </script>
 
-<!-- Reuse the same immutable texture instead of hydrating its filter tree per card. -->
+<!-- The adjacent SVG is the master. Its lighting and fabric grain are baked at 3×. -->
 <img class="ribbon-fabric" src={fabric} alt="" aria-hidden="true" width="220" height="44" />
 
 <style>

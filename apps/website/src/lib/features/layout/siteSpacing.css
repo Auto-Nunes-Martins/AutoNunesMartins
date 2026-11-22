@@ -251,6 +251,11 @@
   background: color-mix(in srgb, var(--site-nav-surface) 94%, transparent);
   backdrop-filter: blur(8px);
 }
+/* The pinned bar crosses every image on the homepage during the first scroll. */
+.design.site.site-home.nav-pinned > header.stand-header {
+  backdrop-filter: none;
+  background: var(--site-nav-surface, var(--bg));
+}
 .design.site-home.nav-pinned header .edition-label {
   display: none;
 }

@@ -38,7 +38,12 @@ function startupProgress(
     },
   };
   const root = {
-    querySelector: (selector: string) => (selector === '.home-hero, .site-intro' ? scene : null),
+    querySelector: (selector: string) =>
+      selector === '.home-hero, .site-intro'
+        ? scene
+        : selector === '.stand-header'
+          ? { style: scene.style, setAttribute() {} }
+          : null,
     querySelectorAll: () => [scene],
     classList: {
       add: () => {},

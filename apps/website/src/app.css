@@ -51,6 +51,11 @@ body {
   background: #e30613;
   color: white;
 }
+@media (prefers-reduced-motion: no-preference) {
+  [data-entrance-pending] {
+    opacity: 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

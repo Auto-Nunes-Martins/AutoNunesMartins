@@ -214,4 +214,14 @@
         linear-gradient(var(--perspective-base), var(--perspective-base));
     }
   }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.motion-on) h2:not(:global(.light-active)) :is(.read-a, .read-b, em) {
+      color: var(--perspective-base);
+      background: none;
+    }
+    h2:not(:global(.light-active)) .line-window {
+      opacity: 0;
+      filter: none;
+    }
+  }
 </style>

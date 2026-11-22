@@ -20,7 +20,10 @@ export function watchHomeStats(isHome: () => boolean, update: (passed: boolean) 
     }
     if (stats) intersection.observe(stats);
   };
-  const changes = new MutationObserver(refresh);
+  const changes = new MutationObserver(() => {
+    if (isHome() && !stats?.isConnected) refresh();
+    else if (!isHome() && stats) refresh();
+  });
   changes.observe(document.body, { childList: true, subtree: true });
   window.addEventListener('resize', refresh);
   window.visualViewport?.addEventListener('resize', refresh);

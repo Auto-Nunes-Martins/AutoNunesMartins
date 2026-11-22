@@ -23,6 +23,7 @@ const scroll = () => listeners.get('scroll')?.forEach((callback) => callback());
 function element(name: string, bounds: Partial<DOMRect> = {}) {
   const properties = new Map<string, string>();
   return {
+    classList: { toggle: vi.fn() },
     getBoundingClientRect: vi.fn(() => {
       calls.push(`read ${name}`);
       return { top: 100, left: 10, bottom: 400, right: 110, width: 100, height: 2, ...bounds };

@@ -6,7 +6,7 @@ type Options = { enabled: boolean; open: boolean; directional: boolean };
 export function catalogNavigation(header: HTMLElement, initial: Options) {
   let options = initial;
   const root = header.parentElement!;
-  let previous = window.scrollY;
+  let previous = options.enabled ? window.scrollY : 0;
   let travel = 0;
   const show = () => header.classList.remove('catalog-nav-hidden');
   const draw = () => {
@@ -54,7 +54,9 @@ export function catalogNavigation(header: HTMLElement, initial: Options) {
     };
   };
   const task = scrollFrame(draw);
-  const schedule = () => task.schedule();
+  const schedule = () => {
+    if (options.enabled) task.schedule();
+  };
   const focus = () => {
     show();
     travel = 0;
@@ -62,11 +64,13 @@ export function catalogNavigation(header: HTMLElement, initial: Options) {
   window.addEventListener('scroll', schedule, { passive: true });
   window.addEventListener('resize', schedule);
   header.addEventListener('focusin', focus);
-  task.runNow(performance.now());
+  if (options.enabled) task.runNow(performance.now());
   return {
     update(next: Options) {
+      const wasEnabled = options.enabled;
       options = next;
-      schedule();
+      if (options.enabled && !wasEnabled) previous = window.scrollY;
+      if (options.enabled || wasEnabled) task.schedule();
     },
     destroy() {
       task.cancel();

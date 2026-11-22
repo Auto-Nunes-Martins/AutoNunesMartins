@@ -58,7 +58,7 @@
     ];
   }
   function updateNavigation() {
-    if (!rail) return;
+    if (!rail || offers.length < 2) return;
     atStart = rail.scrollLeft <= 2;
     atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 2;
   }
@@ -76,11 +76,9 @@
     });
   }
   $effect(() => {
-    offers.length;
-    if (!rail) return;
+    if (offers.length < 2 || !rail) return;
     const observer = new ResizeObserver(updateNavigation);
     observer.observe(rail);
-    updateNavigation();
     return () => observer.disconnect();
   });
   $effect(() => {
@@ -3910,6 +3908,16 @@
       margin-top: -1px;
       border-top: 2px solid transparent;
       background-origin: border-box;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    h2:not(:global(.light-active)) :is(.campaign-heading-lead, em) {
+      color: var(--perspective-base);
+      background: none;
+    }
+    h2:not(:global(.light-active)) .line-window {
+      opacity: 0;
+      filter: none;
     }
   }
 </style>

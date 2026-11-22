@@ -78,18 +78,12 @@ function alignSiteFeaturedContent(hero) {
       measure(entries[0]);
     });
     resize.observe(feature);
-    measure();
-  }
-  function stylesheetLoaded(event) {
-    if (event.target.tagName === 'LINK' || event.target.tagName === 'STYLE') measure();
   }
   function finish() {
     assembly.disconnect();
     if (resize) resize.disconnect();
-    document.removeEventListener('load', stylesheetLoaded, true);
   }
   assembly.observe(document.documentElement, { childList: true, subtree: true });
-  document.addEventListener('load', stylesheetLoaded, true);
   document.addEventListener('DOMContentLoaded', finish, { once: true });
 })();
 
@@ -150,59 +144,26 @@ window.initializeHomePhotoPriority = function (scope) {
       if (source.dataset.priorityWatching || source.media === 'not all') return;
       source.dataset.priorityWatching = 'true';
       var picture = source.parentElement;
-      var hero = document.querySelector('.hd-landscape img');
       var observer;
-      var initialWidth = innerWidth;
-      var initialHeight = innerHeight;
-      var initialScroll = scrollY;
-      var viewportChanged = function () {
-        // Chrome can emit initial resize/scroll events without a viewport change.
-        if (
-          scrollY !== initialScroll ||
-          innerWidth !== initialWidth ||
-          innerHeight !== initialHeight
-        )
-          release();
-      };
       var release = function () {
         source.media = 'not all';
         if (observer) observer.disconnect();
-        if (hero) {
-          hero.removeEventListener('load', release);
-          hero.removeEventListener('error', release);
-        }
-        removeEventListener('scroll', viewportChanged);
-        removeEventListener('resize', viewportChanged);
         delete source._releaseHomePhoto;
       };
-      source._releaseHomePhoto = release;
-      if (
-        !matchMedia('(max-width: 700px)').matches ||
-        scrollY > 0 ||
-        !hero ||
-        hero.complete ||
-        picture.parentElement.getBoundingClientRect().top < innerHeight + 400 ||
-        typeof IntersectionObserver === 'undefined'
-      ) {
+      if (!matchMedia('(max-width: 700px)').matches || typeof IntersectionObserver === 'undefined') {
         release();
         return;
       }
+      // Give each card a viewport's head start, including after a fast scroll
+      // or history restoration, without releasing the whole selection at once.
       observer = new IntersectionObserver(
         function (entries) {
-          if (
-            entries.some(function (entry) {
-              return entry.isIntersecting;
-            })
-          )
-            release();
+          if (entries.some(function (entry) { return entry.isIntersecting; })) release();
         },
-        { rootMargin: '400px' },
+        { rootMargin: Math.max(600, innerHeight) + 'px 0px' },
       );
       observer.observe(picture.parentElement);
-      hero.addEventListener('load', release, { once: true });
-      hero.addEventListener('error', release, { once: true });
-      addEventListener('scroll', viewportChanged, { passive: true });
-      addEventListener('resize', viewportChanged, { passive: true });
+      source._releaseHomePhoto = function () { observer.disconnect(); };
     });
 };
 
@@ -290,8 +251,8 @@ window.initializeSiteDocument = function () {
       var navPinned = scrollY >= navStart;
       siteRoot.classList.toggle('nav-pinned', navPinned);
       siteRoot.classList.remove('nav-hidden');
-      siteRoot.style.setProperty('--nav-progress', String(navProgress));
       var siteHeader = siteRoot.querySelector('.stand-header');
+      if (siteHeader) siteHeader.style.setProperty('--nav-progress', String(navProgress));
       if (siteHeader && navPinned && navProgress <= 0) {
         siteHeader.inert = true;
         siteHeader.setAttribute('aria-hidden', 'true');

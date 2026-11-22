@@ -46,6 +46,7 @@ export function designMotion(
       };
     });
   let sections = scenes();
+  const distant = new WeakSet<Element>();
   const clamp = (n: number) => Math.min(1, Math.max(0, n));
   const draw = (time: number) => {
     if (reduced.matches || document.hidden) return;
@@ -63,6 +64,7 @@ export function designMotion(
         ? clamp(scrollY / Math.max(1, document.documentElement.scrollHeight - height))
         : 0;
     const rows = sections
+      .filter(({ node }) => !distant.has(node))
       .map((scene) => ({ ...scene, bounds: scene.node.getBoundingClientRect() }))
       .filter(({ bounds }) => bounds.bottom >= -50 && bounds.top <= height + 50)
       .map((scene) => {
@@ -218,8 +220,35 @@ export function designMotion(
   };
   const resize = new ResizeObserver(schedule);
   resize.observe(root);
-  const mutation = new MutationObserver(() => {
+  const proximity =
+    typeof IntersectionObserver === 'undefined'
+      ? null
+      : new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) distant.delete(entry.target);
+              else distant.add(entry.target);
+            }
+            schedule();
+          },
+          { rootMargin: '200px 0px' },
+        );
+  for (const { node } of sections) proximity?.observe(node);
+  const sceneParts = '[data-scene], [data-pin], [data-hero-stage], [data-approach-target]';
+  const containsScene = (node: Node) =>
+    node instanceof Element && (node.matches(sceneParts) || !!node.querySelector(sceneParts));
+  const mutation = new MutationObserver((changes) => {
+    if (
+      !changes.some(
+        ({ addedNodes, removedNodes }) =>
+          Array.from(addedNodes).some(containsScene) ||
+          Array.from(removedNodes).some(containsScene),
+      )
+    )
+      return;
+    proximity?.disconnect();
     sections = scenes();
+    for (const { node } of sections) proximity?.observe(node);
     for (const node of progress.keys()) if (!root.contains(node)) progress.delete(node);
     for (const node of approach.keys()) if (!root.contains(node)) approach.delete(node);
     schedule();
@@ -266,6 +295,7 @@ export function designMotion(
       approach.clear();
       task.cancel();
       resize.disconnect();
+      proximity?.disconnect();
       mutation.disconnect();
       window.removeEventListener('scroll', schedule);
       document.removeEventListener('visibilitychange', visibility);
@@ -295,51 +325,58 @@ export function conditionalEntrance(node: HTMLElement, delay: number | false) {
 
 export function entrance(node: HTMLElement, delay = 0) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  // Never hide content already visible on load, restoration or a filter change.
-  if (reduced.matches || node.getBoundingClientRect().top < window.innerHeight - 48) return;
+  if (reduced.matches) return;
+  let waiting = false;
   let animation: Animation | undefined;
-  animation = node.animate(
-    [
-      { opacity: 0, transform: 'translateY(24px)' },
-      { opacity: 1, transform: 'translateY(0)' },
-    ],
-    {
-      duration: 780,
-      delay: Math.min(delay, 80),
-      easing: 'cubic-bezier(.22,.61,.36,1)',
-      fill: 'both',
-    },
-  );
-  animation.pause();
-  animation.onfinish = () => animation?.cancel();
   const observer = new IntersectionObserver(
-    (entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return;
-      observer.disconnect();
-      if (reduced.matches) {
-        animation?.cancel();
+    ([entry]) => {
+      if (!entry) return;
+      if (
+        !waiting &&
+        entry.boundingClientRect.top >= window.innerHeight - 48 &&
+        !entry.isIntersecting
+      ) {
+        waiting = true;
+        node.setAttribute('data-entrance-pending', '');
         return;
       }
-      animation?.play();
+      if (waiting && !entry.isIntersecting) return;
+      observer.disconnect();
+      node.removeAttribute('data-entrance-pending');
+      // Already visible at hydration or after history restoration.
+      if (!waiting || reduced.matches) return;
+      animation = node.animate(
+        [
+          { opacity: 0, transform: 'translateY(24px)' },
+          { opacity: 1, transform: 'translateY(0)' },
+        ],
+        {
+          duration: 780,
+          delay: Math.min(delay, 80),
+          easing: 'cubic-bezier(.22,.61,.36,1)',
+          fill: 'both',
+        },
+      );
+      animation.onfinish = () => animation?.cancel();
     },
-    { threshold: 0, rootMargin: '0px 0px -48px 0px' },
+    { rootMargin: '0px 0px -48px 0px' },
   );
-  const cancel = () => {
-    if (reduced.matches) animation?.cancel();
-  };
-  const focus = () => {
+  const reveal = () => {
     observer.disconnect();
+    node.removeAttribute('data-entrance-pending');
     animation?.cancel();
   };
-  node.addEventListener('focusin', focus);
-  reduced.addEventListener('change', cancel);
+  const change = () => {
+    if (reduced.matches) reveal();
+  };
+  node.addEventListener('focusin', reveal);
+  reduced.addEventListener('change', change);
   observer.observe(node);
   return {
     destroy() {
-      observer.disconnect();
-      node.removeEventListener('focusin', focus);
-      animation?.cancel();
-      reduced.removeEventListener('change', cancel);
+      reveal();
+      node.removeEventListener('focusin', reveal);
+      reduced.removeEventListener('change', change);
     },
   };
 }

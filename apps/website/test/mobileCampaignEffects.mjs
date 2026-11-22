@@ -179,7 +179,7 @@ export async function mobileCampaignEffects(browser, origin) {
       assert.ok(poses[0] < poses[2] && poses[2] < poses[4]);
       if (mobile) {
         await expect(campaign.locator('.line-window')).toHaveCSS('opacity', '0');
-        await expect(campaign.locator('.line-window')).not.toHaveCSS('filter', 'none');
+        await expect(campaign.locator('.line-window')).toHaveCSS('filter', 'none');
         await expect(campaign.locator('.travelling-line')).toHaveCSS('transition-duration', '0s');
         await expect(campaign.locator('.travelling-line')).toHaveCSS('box-shadow', 'none');
         await expect(campaign.locator('h2')).toHaveCSS('--accent-light', '0');

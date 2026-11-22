@@ -260,9 +260,10 @@
   }
   let navOpen = $state(false);
   let contactDialog: HTMLDialogElement;
-  let contactPanel: HTMLElement;
-  let contactName: HTMLInputElement;
-  let contactHeading: HTMLHeadingElement;
+  let contactFormMounted = $state(false);
+  let contactPanel = $state<HTMLElement>();
+  let contactName = $state<HTMLInputElement>();
+  let contactHeading = $state<HTMLHeadingElement>();
   let contactOpener: HTMLElement | undefined;
   let unlockContact: (() => void) | undefined;
   onDestroy(() => unlockContact?.());
@@ -366,6 +367,7 @@
   }
   async function contact(message?: string, opener?: EventTarget | null) {
     if (contactDialog.open) return;
+    contactFormMounted = true;
     contactOpener = opener instanceof HTMLElement ? opener : undefined;
     if (submission.state.phase === 'success') submission.reset();
     if (submission.state.phase === 'idle')
@@ -374,7 +376,7 @@
         (car ? `Gostava de conhecer o ${car.brand} ${car.model}.` : 'Gostava de saber mais.');
     const touchLayout = window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
     await tick();
-    if (contactDialog.open) return;
+    if (contactDialog.open || !contactPanel || !contactName || !contactHeading) return;
     // Native showModal focuses an autofocus target before returning.
     contactHeading.autofocus = touchLayout;
     contactName.autofocus = !touchLayout;
@@ -1277,74 +1279,76 @@
     }}
     onclick={contactBackdropClick}
   >
-    <div class="contact-scrim" aria-hidden="true"></div>
-    <div class="contact-viewport">
-      <div class="contact-panel-shell">
-        <button
-          class="dialog-close icon-button"
-          onclick={() => contactDialog.close()}
-          aria-label="Fechar"><X size={22} aria-hidden="true" /></button
-        >
-        <div class="contact-panel" bind:this={contactPanel}>
-          <p class="kicker">VAMOS CONVERSAR</p>
-          <h2 id="contact-heading" bind:this={contactHeading} tabindex="-1">
-            O que tem<br />em mente?
-          </h2>
-          <form use:submission.enhance aria-busy={sending}>
-            <ContactFeedback {submission} />
-            <label
-              >Nome<input
-                bind:this={contactName}
-                required
-                name="name"
-                maxlength="120"
-                autocomplete="name"
-                placeholder="O seu nome"
-              /></label
-            ><label
-              >Email<input
-                required
-                type="email"
-                name="email"
-                maxlength="254"
-                autocomplete="email"
-                placeholder="nome@exemplo.pt"
-              /></label
-            ><label
-              >Assunto<FormSelectField
-                ><select name="subject">
-                  <option>Informações gerais</option>
-                  <option>Conhecer uma viatura</option>
-                  <option>Marcar uma visita</option>
-                  <option>Falar sobre uma retoma</option>
-                </select></FormSelectField
-              ></label
-            ><label
-              >Mensagem<textarea
-                name="message"
-                required
-                maxlength="5000"
-                rows="3"
-                bind:value={reason}
-              ></textarea></label
-            ><ContactFormFooter>
-              <button
-                class="pill primary"
-                type="submit"
-                aria-busy={sending}
-                disabled={sending || submission.state.kind === 'conflict'}
-                >{sending ? 'A enviar…' : 'Enviar pedido'}
-                {#if sending}<LoaderCircle
-                    class="contact-submit-spinner"
-                    size={18}
-                    aria-hidden="true"
-                  />{:else}<ArrowUpRight size={18} aria-hidden="true" />{/if}</button
-              >
-            </ContactFormFooter>
-          </form>
+    {#if contactFormMounted}
+      <div class="contact-scrim" aria-hidden="true"></div>
+      <div class="contact-viewport">
+        <div class="contact-panel-shell">
+          <button
+            class="dialog-close icon-button"
+            onclick={() => contactDialog.close()}
+            aria-label="Fechar"><X size={22} aria-hidden="true" /></button
+          >
+          <div class="contact-panel" bind:this={contactPanel}>
+            <p class="kicker">VAMOS CONVERSAR</p>
+            <h2 id="contact-heading" bind:this={contactHeading} tabindex="-1">
+              O que tem<br />em mente?
+            </h2>
+            <form use:submission.enhance aria-busy={sending}>
+              <ContactFeedback {submission} />
+              <label
+                >Nome<input
+                  bind:this={contactName}
+                  required
+                  name="name"
+                  maxlength="120"
+                  autocomplete="name"
+                  placeholder="O seu nome"
+                /></label
+              ><label
+                >Email<input
+                  required
+                  type="email"
+                  name="email"
+                  maxlength="254"
+                  autocomplete="email"
+                  placeholder="nome@exemplo.pt"
+                /></label
+              ><label
+                >Assunto<FormSelectField
+                  ><select name="subject">
+                    <option>Informações gerais</option>
+                    <option>Conhecer uma viatura</option>
+                    <option>Marcar uma visita</option>
+                    <option>Falar sobre uma retoma</option>
+                  </select></FormSelectField
+                ></label
+              ><label
+                >Mensagem<textarea
+                  name="message"
+                  required
+                  maxlength="5000"
+                  rows="3"
+                  bind:value={reason}
+                ></textarea></label
+              ><ContactFormFooter>
+                <button
+                  class="pill primary"
+                  type="submit"
+                  aria-busy={sending}
+                  disabled={sending || submission.state.kind === 'conflict'}
+                  >{sending ? 'A enviar…' : 'Enviar pedido'}
+                  {#if sending}<LoaderCircle
+                      class="contact-submit-spinner"
+                      size={18}
+                      aria-hidden="true"
+                    />{:else}<ArrowUpRight size={18} aria-hidden="true" />{/if}</button
+                >
+              </ContactFormFooter>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    {/if}
   </dialog>
   <dialog
     bind:this={galleryDialog}

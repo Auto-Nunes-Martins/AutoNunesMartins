@@ -16,27 +16,40 @@ export function compactNavProgress(scrollY: number, heroBottom: number, viewport
 export function hybridNav(header: HTMLElement, initial: Options) {
   let options = initial;
   const root = header.parentElement!;
+  let heroBottom: number | undefined;
+  let lastPinned: boolean | undefined;
+  let lastProgress: number | undefined;
   const reset = () => {
+    lastPinned = undefined;
+    lastProgress = undefined;
     root.classList.remove('nav-pinned', 'nav-hidden');
-    root.style.removeProperty('--nav-progress');
+    header.style.removeProperty('--nav-progress');
     header.inert = false;
     header.removeAttribute('aria-hidden');
   };
   const draw = () => {
-    const hero = root.querySelector<HTMLElement>('.home-hero, .site-intro');
-    if (!options.enabled || !hero) {
+    if (!options.enabled) {
       return reset;
     }
     const y = Math.max(0, window.scrollY);
-    const state = compactNavProgress(y, hero.getBoundingClientRect().bottom + y, innerHeight);
+    if (heroBottom === undefined) {
+      const hero = root.querySelector<HTMLElement>('.home-hero, .site-intro');
+      if (!hero) return reset;
+      heroBottom = hero.getBoundingClientRect().bottom + y;
+    }
+    const state = compactNavProgress(y, heroBottom, innerHeight);
     // Never fade a menu or a keyboard target out from under its current user.
-    const engaged = options.open || !!header.querySelector(':focus-visible');
+    const engaged =
+      state.progress < 1 && (options.open || !!header.querySelector(':focus-visible'));
     const pinned = state.pinned || (root.classList.contains('nav-pinned') && engaged && y > 100);
     const progress = pinned && engaged ? 1 : state.progress;
+    if (pinned === lastPinned && progress === lastProgress) return;
     return () => {
+      lastPinned = pinned;
+      lastProgress = progress;
       root.classList.toggle('nav-pinned', pinned);
       root.classList.remove('nav-hidden');
-      setScrollStyle(root, '--nav-progress', String(progress));
+      setScrollStyle(header, '--nav-progress', String(progress));
       const invisible = pinned && progress <= 0;
       header.inert = invisible;
       if (invisible) header.setAttribute('aria-hidden', 'true');
@@ -47,6 +60,10 @@ export function hybridNav(header: HTMLElement, initial: Options) {
   const schedule = () => {
     task.schedule();
   };
+  const measure = () => {
+    heroBottom = undefined;
+    schedule();
+  };
   const keydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && options.open) {
       options.close();
@@ -54,27 +71,28 @@ export function hybridNav(header: HTMLElement, initial: Options) {
     }
   };
   window.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', schedule);
-  window.addEventListener('pageshow', schedule);
+  window.addEventListener('resize', measure);
+  window.addEventListener('pageshow', measure);
   header.addEventListener('focusin', schedule);
   header.addEventListener('focusout', schedule);
   header.addEventListener('keydown', keydown);
-  const resize = new ResizeObserver(schedule);
+  const resize = new ResizeObserver(measure);
   resize.observe(root);
+  resize.observe(header);
   const hero = root.querySelector('.home-hero, .site-intro');
   if (hero) resize.observe(hero);
   task.runNow(performance.now());
   return {
     update(next: Options) {
       options = next;
-      schedule();
+      measure();
     },
     destroy() {
       task.cancel();
       resize.disconnect();
       window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
-      window.removeEventListener('pageshow', schedule);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('pageshow', measure);
       header.removeEventListener('focusin', schedule);
       header.removeEventListener('focusout', schedule);
       header.removeEventListener('keydown', keydown);

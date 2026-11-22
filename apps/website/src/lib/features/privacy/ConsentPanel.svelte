@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { flushSync, onMount, tick } from 'svelte';
   import { X } from 'lucide-svelte';
   import { logoDark, logoDarkSrcset, logoLight, logoLightSrcset } from '$lib/localAssets';
   import { usePublicTheme } from '$lib/publicTheme';
@@ -20,6 +20,7 @@
   let draft = $state<ConsentOptions>({ ...essentialOnly });
   let activeTab = $state<Tab>('Consentimento');
   let dialog: HTMLDialogElement;
+  let panelMounted = $state(false);
   let noticeHeading = $state<HTMLHeadingElement>();
   let noticeOpener: HTMLElement | null = null;
   let opener: HTMLElement | null = null;
@@ -53,6 +54,7 @@
     draft = { preferences, maps, ads };
     activeTab = 'Consentimento';
     opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!panelMounted) flushSync(() => (panelMounted = true));
     dialog.showModal();
   }
 
@@ -127,92 +129,94 @@
   aria-labelledby="site-consent-title"
   onclose={() => opener?.isConnected && opener.focus()}
 >
-  <header>
-    <img
-      src={$dark ? logoDark : logoLight}
-      srcset={$dark ? logoDarkSrcset : logoLightSrcset}
-      sizes="120px"
-      width="360"
-      height="160"
-      alt="Auto Nunes Martins"
-    />
-    <button class="close" aria-label="Fechar preferências" onclick={() => dialog.close()}
-      ><X size={20} aria-hidden="true" /></button
-    >
-    <h2 id="site-consent-title">Preferências de privacidade</h2>
-  </header>
-  <div class="tabs" role="tablist" aria-label="Preferências de privacidade">
-    {#each tabs as tab, i}
-      <button
-        role="tab"
-        id={'consent-tab-' + i}
-        aria-selected={activeTab === tab}
-        aria-controls={'consent-content-' + i}
-        tabindex={activeTab === tab ? 0 : -1}
-        onclick={() => (activeTab = tab)}
-        onkeydown={(e) => navigateTabs(e, i)}>{tab}</button
+  {#if panelMounted}
+    <header>
+      <img
+        src={$dark ? logoDark : logoLight}
+        srcset={$dark ? logoDarkSrcset : logoLightSrcset}
+        sizes="120px"
+        width="360"
+        height="160"
+        alt="Auto Nunes Martins"
+      />
+      <button class="close" aria-label="Fechar preferências" onclick={() => dialog.close()}
+        ><X size={20} aria-hidden="true" /></button
       >
-    {/each}
-  </div>
-  <div class="content" data-more-below={moreBelow ? '' : undefined} use:trackOverflow={activeTab}>
-    {#each tabs as tab, i}
-      <div
-        hidden={activeTab !== tab}
-        role="tabpanel"
-        id={'consent-content-' + i}
-        aria-labelledby={'consent-tab-' + i}
-        tabindex="0"
-      >
-        {#if tab === 'Consentimento'}
-          <p>
-            Escolha as funções que quer ativar neste navegador. Pode alterar a sua decisão a
-            qualquer momento.
-          </p>
-          {#each consentOptions as option}
-            <label class="option">
-              <span
-                ><strong>{option.label}</strong><span class="description">{option.summary}</span
-                ></span
-              >
-              <span class="switch"
-                ><input type="checkbox" role="switch" bind:checked={draft[option.key]} /><span
-                  aria-hidden="true"
-                ></span></span
-              >
-            </label>
-          {/each}
-        {:else if tab === 'Detalhes'}
-          <h3>O que o site utiliza</h3>
-          <dl>
-            <dt>Registo das escolhas</dt>
-            <dd>
-              O site memoriza a sua decisão neste navegador durante 180 dias, incluindo quando
-              recusa todas as opções.
-            </dd>
-            {#each consentOptions as option}<dt>{option.label}</dt>
-              <dd>{option.detail}</dd>{/each}
-          </dl>
-        {:else}
-          <h3>Sobre estas preferências</h3>
-          <p>
-            Este painel é gerido pela Auto Nunes Martins. As opções aplicam-se ao navegador onde as
-            guardar.
-          </p>
-          <p>
-            Para mudar de ideias, abra «Cookies e preferências» na Política de Privacidade. Aí pode
-            alterar uma opção ou retirar o consentimento para todas.
-          </p>
-          <a href="/politica-de-privacidade#preferencias" onclick={() => dialog.close()}
-            >Consultar a Política de Privacidade</a
-          >
-        {/if}
-      </div>
-    {/each}
-  </div>
-  <footer>
-    <button class="secondary" onclick={() => save(essentialOnly)}>Recusar</button>
-    <button class="primary" onclick={() => save(draft)}>Guardar escolhas</button>
-  </footer>
+      <h2 id="site-consent-title">Preferências de privacidade</h2>
+    </header>
+    <div class="tabs" role="tablist" aria-label="Preferências de privacidade">
+      {#each tabs as tab, i}
+        <button
+          role="tab"
+          id={'consent-tab-' + i}
+          aria-selected={activeTab === tab}
+          aria-controls={'consent-content-' + i}
+          tabindex={activeTab === tab ? 0 : -1}
+          onclick={() => (activeTab = tab)}
+          onkeydown={(e) => navigateTabs(e, i)}>{tab}</button
+        >
+      {/each}
+    </div>
+    <div class="content" data-more-below={moreBelow ? '' : undefined} use:trackOverflow={activeTab}>
+      {#each tabs as tab, i}
+        <div
+          hidden={activeTab !== tab}
+          role="tabpanel"
+          id={'consent-content-' + i}
+          aria-labelledby={'consent-tab-' + i}
+          tabindex="0"
+        >
+          {#if tab === 'Consentimento'}
+            <p>
+              Escolha as funções que quer ativar neste navegador. Pode alterar a sua decisão a
+              qualquer momento.
+            </p>
+            {#each consentOptions as option}
+              <label class="option">
+                <span
+                  ><strong>{option.label}</strong><span class="description">{option.summary}</span
+                  ></span
+                >
+                <span class="switch"
+                  ><input type="checkbox" role="switch" bind:checked={draft[option.key]} /><span
+                    aria-hidden="true"
+                  ></span></span
+                >
+              </label>
+            {/each}
+          {:else if tab === 'Detalhes'}
+            <h3>O que o site utiliza</h3>
+            <dl>
+              <dt>Registo das escolhas</dt>
+              <dd>
+                O site memoriza a sua decisão neste navegador durante 180 dias, incluindo quando
+                recusa todas as opções.
+              </dd>
+              {#each consentOptions as option}<dt>{option.label}</dt>
+                <dd>{option.detail}</dd>{/each}
+            </dl>
+          {:else}
+            <h3>Sobre estas preferências</h3>
+            <p>
+              Este painel é gerido pela Auto Nunes Martins. As opções aplicam-se ao navegador onde as
+              guardar.
+            </p>
+            <p>
+              Para mudar de ideias, abra «Cookies e preferências» na Política de Privacidade. Aí pode
+              alterar uma opção ou retirar o consentimento para todas.
+            </p>
+            <a href="/politica-de-privacidade#preferencias" onclick={() => dialog.close()}
+              >Consultar a Política de Privacidade</a
+            >
+          {/if}
+        </div>
+      {/each}
+    </div>
+    <footer>
+      <button class="secondary" onclick={() => save(essentialOnly)}>Recusar</button>
+      <button class="primary" onclick={() => save(draft)}>Guardar escolhas</button>
+    </footer>
+  {/if}
 </dialog>
 
 <style lang="postcss">

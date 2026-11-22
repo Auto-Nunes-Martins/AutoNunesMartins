@@ -66,6 +66,7 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
     const rects = geometry.fragments.map((rect) => ({ left: rect.left + dx, top: rect.top + dy }));
     const textLeft = rects[fragments.indexOf(underline)]!.left;
     return () => {
+      heading.classList.toggle('light-active', endpoint === undefined);
       settledEndpoint = endpoint;
       setScrollStyle(underline, '--segment-start', `${segmentStart - textLeft}px`);
       setScrollStyle(underline, '--segment-end', `${segmentEnd - textLeft}px`);

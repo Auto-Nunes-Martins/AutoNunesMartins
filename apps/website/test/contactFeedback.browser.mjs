@@ -88,11 +88,12 @@ try{
     const mobile = width === 390;
     const touch = mobile && ['dialog', 'vehicle'].includes(mode);
     const context=await browser.newContext({viewport:{width,height:950},isMobile:touch,hasTouch:touch,serviceWorkers:'block',reducedMotion:mobile?'reduce':'no-preference'}),page=await context.newPage(),posts=[],errors=[];let reply='success',release;
-    await context.addInitScript(() => {
+    await context.addInitScript((origin) => {
+      if (location.origin !== origin || window !== window.top) return;
       localStorage.setItem('anm-site-consent-v1', JSON.stringify({
-        preferences: false, maps: true, expires: Date.now() + 600000,
+        preferences: false, maps: true, ads: false, expires: Date.now() + 600000,
       }));
-    });
+    }, origin);
     page.setDefaultTimeout(20000);page.setDefaultNavigationTimeout(60000);page.on('pageerror',e=>errors.push(e.message));
     await page.route('**/*',route=>route.request().method()==='GET'?route.continue():route.abort());
     await page.route('**/api/contact',async route=>{posts.push(route.request().postDataJSON());if(reply==='delay')await new Promise(r=>release=r);if(reply==='offline')return route.abort();if(reply==='limited')return route.fulfill({status:429,json:{error:'private provider data'}});if(reply==='unavailable')return route.fulfill({status:503,json:{error:'technical'}});if(reply==='conflict')return route.fulfill({status:409,json:{error:'technical'}});return route.fulfill({status:202,json:{ok:true}});});

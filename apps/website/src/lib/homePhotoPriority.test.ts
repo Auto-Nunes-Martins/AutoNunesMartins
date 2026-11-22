@@ -56,40 +56,22 @@ function setup({ top = 1600, scroll = 0, complete = false, mobile = true, observ
 }
 
 describe('mobile homepage photo request priority', () => {
-  it.each(['load', 'error', 'scroll', 'resize'])(
-    'releases pending offscreen photos on %s',
-    (event) => {
-      const test = setup();
+  it('keeps distant photos deferred across first scroll, hero load and restoration', () => {
+    for (const options of [{}, { scroll: 800 }, { complete: true }]) {
+      const test = setup(options);
+      for (const event of ['scroll', 'resize', 'load']) test.listeners.get(event)?.();
       expect(test.source.media).not.toBe('not all');
-      if (event === 'scroll') test.context.scrollY = 100;
-      if (event === 'resize') test.context.innerWidth = 430;
-      test.listeners.get(event)!();
+      test.intersect();
       expect(test.source.media).toBe('not all');
       expect(test.disconnected()).toBe(true);
-      expect(test.listeners.size).toBe(0);
-    },
-  );
-  it('ignores initial browser events that do not change the viewport', () => {
-    const test = setup();
-    test.listeners.get('scroll')!();
-    test.listeners.get('resize')!();
-    expect(test.source.media).not.toBe('not all');
-    test.context.scrollY = 50;
-    test.listeners.get('scroll')!();
-    expect(test.source.media).toBe('not all');
+    }
   });
   it('releases photos when approaching the viewport', () => {
     const test = setup();
     test.intersect();
     expect(test.source.media).toBe('not all');
   });
-  it.each([
-    { top: 900 },
-    { scroll: 800 },
-    { complete: true },
-    { mobile: false },
-    { observer: false },
-  ])('fails open for %j', (options) => {
+  it.each([{ mobile: false }, { observer: false }])('fails open for %j', (options) => {
     expect(setup(options).source.media).toBe('not all');
   });
   it('retains the source aspect ratio without accepting invalid dimensions', () => {

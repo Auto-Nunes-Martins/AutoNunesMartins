@@ -64,21 +64,24 @@ export function photoFraming(node: HTMLImageElement, options: Options = {}) {
     if (options.enabled === false) { restore(); return; }
     const device = options.device ?? (media.matches ? 'mobile' : 'desktop');
     const position = options.framing?.[device] ?? { x: 50, y: options.defaultY ?? 50 };
-    const origin = `${position.x}% ${position.y}%`;
+    const width = node.naturalWidth;
+    const height = node.naturalHeight;
+    const requested = position.fit ?? options.defaultFit ?? 'cover';
+    const fit = requested === 'auto' ? (height > width ? 'contain' : 'cover') : requested;
+    // A cover crop at or above its natural zoom fills any frame. In particular,
+    // mounting a grid of these photos does not need to flush layout per card.
+    const fillsFrame = fit === 'cover' && (position.zoom ?? 1) >= 1;
+    const geometry = width && height && !fillsFrame ? photoGeometry(
+      { width, height }, { width: node.clientWidth, height: node.clientHeight },
+      position, options.defaultFit,
+    ) : undefined;
+    const origin = `${geometry?.x ?? position.x}% ${geometry?.y ?? position.y}%`;
     node.style.setProperty('object-position', origin, 'important');
     node.style.setProperty('transform-origin', origin);
     if ((position.zoom ?? 1) !== 1) node.style.transform = `scale(${position.zoom})`;
     else node.style.removeProperty('transform');
-    const geometry = photoGeometry(
-      { width: node.naturalWidth, height: node.naturalHeight },
-      { width: node.clientWidth, height: node.clientHeight }, position, options.defaultFit,
-    );
-    if (!geometry) { clearBackdrop(); return; }
-    const fittedOrigin = `${geometry.x}% ${geometry.y}%`;
-    node.style.setProperty('object-position', fittedOrigin, 'important');
-    node.style.setProperty('transform-origin', fittedOrigin);
-    node.style.setProperty('object-fit', geometry.fit, 'important');
-    if (geometry.backdrop && options.active !== false) {
+    if (width && height) node.style.setProperty('object-fit', fit, 'important');
+    if (geometry?.backdrop && options.active !== false) {
       if (!backdrop) {
         backdrop = document.createElement('div');
         backdrop.setAttribute('aria-hidden', 'true');
