@@ -326,12 +326,13 @@ window.initializeSiteDocument = function () {
         setSceneStyle(scene, '--stage-b', chapterProgress(progress, 0.1, 1));
         if (scene.hasAttribute('data-approach')) {
           var target = scene.querySelector('[data-approach-target]');
+          var output = scene.dataset.approach === 'target' && target ? target : scene;
           var rect = target ? target.getBoundingClientRect() : bounds;
           var denominator = Math.max(1, innerHeight * 0.44 + rect.height / 2);
           var approach = clampProgress((innerHeight * 0.94 - rect.top) / denominator);
-          setSceneStyle(scene, '--approach', approach);
+          setSceneStyle(output, '--approach', approach);
           setSceneStyle(
-            scene,
+            output,
             '--scan',
             clampProgress(
               (innerHeight * 0.94 -
@@ -340,9 +341,9 @@ window.initializeSiteDocument = function () {
                 denominator,
             ),
           );
-          setSceneStyle(scene, '--reveal-a', chapterProgress(approach, 0.06, 0.58));
-          setSceneStyle(scene, '--reveal-b', chapterProgress(approach, 0.28, 0.83));
-          setSceneStyle(scene, '--reveal-c', chapterProgress(approach, 0.5, 1));
+          setSceneStyle(output, '--reveal-a', chapterProgress(approach, 0.06, 0.58));
+          setSceneStyle(output, '--reveal-b', chapterProgress(approach, 0.28, 0.83));
+          setSceneStyle(output, '--reveal-c', chapterProgress(approach, 0.5, 1));
         }
       });
       setSceneStyle(

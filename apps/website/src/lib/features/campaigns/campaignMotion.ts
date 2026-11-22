@@ -8,18 +8,20 @@ export function campaignMotion(element: HTMLElement) {
   const percent = element.querySelector<HTMLElement>('.falling-percent-layer > span');
   const motifs = element.querySelector<HTMLElement>('.campaign-motifs');
   let nearby = false;
+  let measureExtent = true;
   const draw = scrollFrame(() => {
     if (!nearby || document.hidden) return;
     const rect = element.getBoundingClientRect();
     const distance = reduced.matches
       ? 0
       : Math.max(0, innerHeight / 2 - rect.top - rect.height / 2) * 0.14;
-    const nextVehicles = element.parentElement?.querySelector('#selecao .car-grid');
-    // Read both geometries before changing any inline style (shared with other scroll effects).
+    // Scrolling moves both edges equally. Only a layout change can alter this gap.
+    const nextVehicles = measureExtent && element.parentElement?.querySelector('#selecao .car-grid');
     const fadeEnd = nextVehicles
       ? nextVehicles.getBoundingClientRect().top - (rect.bottom - 201) - 12
       : null;
     return () => {
+      measureExtent = false;
       // Scope changing values to the artwork, not every card and masked surface.
       if (key) setScrollStyle(key, '--campaign-fall', `${distance.toFixed(2)}px`);
       if (car) setScrollStyle(car, '--campaign-fall', `${distance.toFixed(2)}px`);
@@ -56,6 +58,7 @@ export function campaignMotion(element: HTMLElement) {
     if (nearby && !document.hidden && !reduced.matches) draw.schedule();
   };
   const refresh = () => {
+    measureExtent = true;
     element.dataset.motionActive = String(nearby && !document.hidden);
     if (nearby && !document.hidden) draw.schedule();
     else draw.cancel();
@@ -70,6 +73,7 @@ export function campaignMotion(element: HTMLElement) {
   const resize = new ResizeObserver(refresh);
   proximity.observe(element);
   resize.observe(element);
+  if (element.parentElement) resize.observe(element.parentElement);
   const nextSection = element.parentElement?.querySelector('#selecao');
   if (nextSection) resize.observe(nextSection);
   window.addEventListener('scroll', schedule, { passive: true });

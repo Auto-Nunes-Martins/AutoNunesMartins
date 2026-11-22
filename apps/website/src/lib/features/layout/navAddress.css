@@ -18,7 +18,6 @@
 .design.site.has-address.site-company {
   --nav-row-height: 80px;
 }
-.design.site.has-address.site-home.nav-pinned,
 .design.site.has-address.site-inner.nav-compact {
   --nav-visible-height: var(--nav-compact-row-height);
 }
@@ -123,7 +122,7 @@
   scroll-margin-top: calc(var(--nav-visible-height) + 20px);
 }
 .design.site.has-address.site-home.nav-pinned .catalog-controls {
-  top: calc(var(--nav-visible-height) + 24px);
+  top: calc(var(--nav-compact-row-height) + 24px);
 }
 .design.site.has-address.site-home .site-intro {
   --hero-nav-space: calc(var(--nav-full-height) + var(--nav-address-height));
@@ -159,6 +158,14 @@
   .design.site.has-address {
     --nav-row-height: 76px;
     --nav-compact-row-height: 72px;
+  }
+  /* Only the mobile header changes height on pin. Keep that change local
+     so the first scroll doesn't invalidate inherited styles across the page. */
+  .design.site.has-address.site-home.nav-pinned > header.stand-header {
+    --nav-visible-height: var(--nav-compact-row-height);
+  }
+  .design.site.has-address.site-home.nav-pinned :is(section[id], [id='selecao'], a, button, input, select) {
+    scroll-margin-top: calc(var(--nav-compact-row-height) + 20px);
   }
   .design.site.has-address.site-company {
     --nav-row-height: 76px;

@@ -263,6 +263,30 @@ describe('scroll action read/write integration', () => {
     expect(node.style.getPropertyValue('--reveal-a') !== '').toBe(reveal);
   });
 
+  it('keeps the invitation timing while writing its pose only to the ticket artwork', () => {
+    const { node, root } = fixture(390);
+    const values = new Map<string, string>();
+    const ticket = {
+      getBoundingClientRect: () => ({ top: 380, height: 520 }),
+      style: {
+        getPropertyValue: (key: string) => values.get(key) ?? '',
+        setProperty: (key: string, value: string) => values.set(key, value),
+      },
+    };
+    Object.assign(node, {
+      dataset: { scene: 'approach', approach: 'target', scanDelay: '0.05' },
+      hasAttribute: (name: string) => name === 'data-approach' || name === 'data-scan-delay',
+      querySelector: (selector: string) => selector === '[data-approach-target]' ? ticket : null,
+    });
+    const motion = designMotion(root);
+    cleanup.push(motion.destroy);
+    advance();
+    expect(Number(values.get('--approach'))).toBeCloseTo((800 * 0.94 - 380) / (800 * 0.44 + 260));
+    expect(Number(values.get('--scan'))).toBeCloseTo((800 * 0.94 - 420) / (800 * 0.44 + 260));
+    expect(node.style.getPropertyValue('--approach')).toBe('');
+    expect(node.style.getPropertyValue('--scan')).toBe('');
+  });
+
   it.each(['site-home', 'public-detail'])(
     'does not attach unused pointer parallax on %s',
     (page) => {

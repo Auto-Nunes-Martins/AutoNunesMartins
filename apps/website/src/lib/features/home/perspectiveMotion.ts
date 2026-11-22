@@ -5,6 +5,7 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
   const underline = section.querySelector('em')!;
   const lineWindow = section.querySelector<HTMLElement>('.line-window')!;
   const fragments = [...section.querySelectorAll<HTMLElement>('.read-a, .read-b, em')];
+  const underlineIndex = fragments.indexOf(underline);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let nearby = false;
   let settledEndpoint: number | undefined;
@@ -14,8 +15,6 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
         height: number;
         line: DOMRect;
         fragments: DOMRect[];
-        top: number;
-        left: number;
       }
     | undefined;
   const smooth = (value: number) => {
@@ -44,27 +43,18 @@ export function perspectiveMotion(section: HTMLElement, requireScroll = false) {
       geometry = {
         width: bounds.width,
         height: bounds.height,
-        top: bounds.top,
-        left: bounds.left,
         line: lineWindow.getBoundingClientRect(),
         fragments: fragments.map((fragment) => fragment.getBoundingClientRect()),
       };
     }
-    const dx = bounds.left - geometry.left;
-    const dy = bounds.top - geometry.top;
-    const line = {
-      left: geometry.line.left + dx,
-      right: geometry.line.right + dx,
-      bottom: geometry.line.bottom + dy,
-      width: geometry.line.width,
-      height: geometry.line.height,
-    };
+    // Only offsets inside the heading are used below: scroll translates the
+    // line and all fragments by the same amount, so their differences stay exact.
+    const { line, fragments: rects } = geometry;
     const light = smooth(lightProgress / 0.3) * (1 - smooth((lightProgress - 0.72) / 0.28));
     const segmentStart = line.left + Math.max(0, lightProgress * 2 - 1) * line.width;
     const segmentEnd = line.left + Math.min(1, lightProgress * 2) * line.width;
     const accent = smooth((segmentEnd - segmentStart) / 20);
-    const rects = geometry.fragments.map((rect) => ({ left: rect.left + dx, top: rect.top + dy }));
-    const textLeft = rects[fragments.indexOf(underline)]!.left;
+    const textLeft = rects[underlineIndex]!.left;
     return () => {
       heading.classList.toggle('light-active', endpoint === undefined);
       settledEndpoint = endpoint;

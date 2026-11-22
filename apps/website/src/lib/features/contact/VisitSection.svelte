@@ -76,8 +76,24 @@
   function clampMapExpansion(value: number) {
     return Math.min(Math.max(0, mapMaximum - mapMinimum), Math.max(0, value));
   }
+  function updateMapMaximum() {
+    mapMaximum = Math.max(mapMinimum, Math.min(720, Math.floor(window.innerHeight * 0.75)));
+    mapExpansion = clampMapExpansion(mapExpansion);
+  }
+  function measureMap(contentHeight = mapContent?.getBoundingClientRect().height) {
+    if (!mapCard || contentHeight === undefined) return;
+    const style = getComputedStyle(mapCard);
+    // Only the normal-flow content, padding and borders determine the collapsed height.
+    mapMinimum = Math.max(
+      parseFloat(style.minHeight) || 0,
+      contentHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+        + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
+    );
+    updateMapMaximum();
+  }
   function startMapResize(event: PointerEvent & { currentTarget: HTMLDivElement }) {
     if (!event.isPrimary || event.button !== 0) return;
+    if (!mapMinimum) measureMap();
     event.preventDefault();
     resizePointer = event.pointerId;
     resizeStartY = event.clientY;
@@ -94,6 +110,7 @@
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   }
   function keyMapResize(event: KeyboardEvent) {
+    if (!mapMinimum) measureMap();
     const changes: Record<string, number> = { ArrowDown: 20, ArrowUp: -20, PageDown: 80, PageUp: -80 };
     const change = changes[event.key];
     if (event.key === 'Home') mapExpansion = 0;
@@ -105,21 +122,20 @@
   onMount(() => {
     if (!mapCard || !mapContent) return;
     const card = mapCard, content = mapContent;
-    const measure = () => {
-      const style = getComputedStyle(card);
-      // The original card is its normal-flow content plus padding/borders; the map is absolute.
-      mapMinimum = Math.max(parseFloat(style.minHeight) || 0,
-        content.getBoundingClientRect().height + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
-        + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth));
-      mapMaximum = Math.max(mapMinimum, Math.min(720, Math.floor(window.innerHeight * 0.75)));
-      mapExpansion = clampMapExpansion(mapExpansion);
+    let contentHeight: number | undefined;
+    const observer = new ResizeObserver((entries) => {
+      const resized = entries.find((entry) => entry.target === content);
+      if (resized) contentHeight = resized.borderBoxSize?.[0]?.blockSize ?? resized.contentRect.height;
+      if (contentHeight !== undefined) measureMap(contentHeight);
+    });
+    observer.observe(card, { box: 'border-box' });
+    observer.observe(content, { box: 'border-box' });
+    window.addEventListener('resize', updateMapMaximum);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateMapMaximum);
+      resizePointer = null;
     };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(card);
-    observer.observe(content);
-    window.addEventListener('resize', measure);
-    return () => { observer.disconnect(); window.removeEventListener('resize', measure); resizePointer = null; };
   });
   const submission = createContactForm();
   const sending = $derived(submission.state.phase === 'sending');

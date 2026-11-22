@@ -2673,6 +2673,10 @@
     transform: translateY(calc(var(--campaign-fall, 0px) * 1.02));
     transition: transform 300ms cubic-bezier(0.2, 0.7, 0.3, 1);
   }
+  /* Keep the moving icons and their shadows on separate layers near the viewport. */
+  .campaign-strip:global([data-motion-active='true']) .campaign-motifs > :is(.art-car, .art-key) {
+    will-change: transform;
+  }
   .campaign-motifs :global(svg) {
     display: block;
   }

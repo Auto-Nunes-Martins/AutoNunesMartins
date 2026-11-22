@@ -330,7 +330,11 @@ it('does no campaign geometry work offscreen and batches reads before unchanged 
   calls.length = 0;
   scroll();
   advance();
+  expect(calls).not.toContain('read grid');
   expect(calls.some((call) => call.startsWith('write'))).toBe(false);
+  listeners.get('resize')?.forEach((callback) => callback());
+  advance();
+  expect(calls).toContain('read grid');
   calls.length = 0;
   scroll();
   report(false);

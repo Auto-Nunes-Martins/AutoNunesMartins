@@ -5,13 +5,84 @@ import path from 'node:path';
 import { expect } from '@playwright/test';
 import sharp from 'sharp';
 
+// A full-page screenshot can scroll a mobile viewport, changing the very animation being checked.
+// Photograph each part of the section in a normal viewport, at its native device resolution.
+async function captureMotionSection(page, node) {
+  const parts = await node.evaluate((el) =>
+    Math.ceil(el.getBoundingClientRect().height / innerHeight),
+  );
+  const tiles = [];
+  const positions = [];
+  let height = 0;
+  for (let part = 0; part < parts; part++) {
+    await node.evaluate(
+      (el, { part, parts }) => {
+        const rect = el.getBoundingClientRect();
+        const center = rect.top + ((part + 0.5) / parts) * rect.height;
+        scrollTo({ top: scrollY + center - innerHeight / 2, behavior: 'instant' });
+      },
+      { part, parts },
+    );
+    await page.waitForTimeout(1500);
+    // The scrubber stops within 0.0005 of its target. Reconcile the final position on
+    // each side, particularly at the cabin's narrow transition to a flat photograph.
+    await page.evaluate(async () => {
+      window.dispatchEvent(new Event('scroll'));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+    const { scroll, clip } = await node.evaluate(
+      (el, { part, parts }) => {
+        const r = el.getBoundingClientRect();
+        const pixel = (value) => Math.round(value * devicePixelRatio);
+        const left = pixel(Math.max(0, r.left));
+        const top = pixel(r.top + (r.height * part) / parts);
+        return {
+          scroll: scrollY,
+          clip: {
+            left,
+            top,
+            width: pixel(Math.min(innerWidth, r.right)) - left,
+            height: pixel(r.top + (r.height * (part + 1)) / parts) - top,
+          },
+        };
+      },
+      { part, parts },
+    );
+    const viewport = await page.screenshot();
+    assert.equal(await page.evaluate(() => scrollY), scroll, 'Screenshot moved the viewport');
+    const input = await sharp(viewport).extract(clip).png().toBuffer();
+    tiles.push({ input, top: height, left: 0 });
+    positions.push({ scroll, clip });
+    height += clip.height;
+  }
+  const image =
+    tiles.length === 1
+      ? tiles[0].input
+      : await sharp({
+          create: {
+            width: positions[0].clip.width,
+            height,
+            channels: 4,
+            background: 'transparent',
+          },
+        })
+          .composite(tiles)
+          .png()
+          .toBuffer();
+  return { image, positions };
+}
+
 async function verifyMotionAppearance(page, output, width) {
   // Compare both channel sets in one document: optional fonts can legitimately
   // choose different fallbacks on separate cold loads under a throttled network.
   const results = [];
+  // Keep the fixed navigation from obscuring any part of the compared sections.
+  const hideHeader = await page.addStyleTag({
+    content: '.stand-header { visibility: hidden !important; }',
+  });
   for (const selector of [
     '.site-perspective',
-    '.cabin-reveal',
+    '.cabin-stage',
     '.visit-invitation',
     '.timeline',
     '.approach.frame',
@@ -19,32 +90,47 @@ async function verifyMotionAppearance(page, output, width) {
   ]) {
     const node = page.locator(selector).first();
     if (!(await node.count())) continue;
-    await node.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(1500);
-    // Element screenshots scroll tall sections again. Capture a document clip
-    // instead, keeping the viewport and sticky navigation identical for both poses.
-    const capture = async () => {
-      const clip = await node.evaluate((el) => {
-        const r = el.getBoundingClientRect();
-        return { x: r.x + scrollX, y: r.y + scrollY, width: r.width, height: r.height };
-      });
-      return page.screenshot({ clip, fullPage: true, animations: 'disabled' });
-    };
-    const optimized = await capture();
+    // Keep wall-clock loops (e.g. the three hotspot rings) in the same phase for both poses.
+    // Their real scroll-driven transforms still update between viewport positions.
+    const loops = await node.evaluateHandle((el) => {
+      const running = el
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation.timeline === document.timeline &&
+            animation.playState === 'running' &&
+            animation.effect?.getTiming().iterations === Infinity,
+        );
+      for (const animation of running) animation.pause();
+      return running;
+    });
+    const optimized = await captureMotionSection(page, node);
     const original = await node.evaluate((el, selector) => {
       const attrs = [el.getAttribute('data-scene'), el.getAttribute('data-approach')];
+      if (attrs[1] === 'target') {
+        const target = el.querySelector('[data-approach-target]');
+        // Let the reference pose inherit from the section as the full channel set did.
+        target?.style.removeProperty('--approach');
+        target?.style.removeProperty('--scan');
+      }
       el.setAttribute('data-scene', '');
       if (selector !== '.detail-band') el.setAttribute('data-approach', '');
       // Refresh the scene inventory just as a component mount does.
       const marker = document.createElement('span');
+      marker.setAttribute('data-scene', '');
       el.append(marker);
       marker.remove();
       return attrs;
     }, selector);
-    await page.waitForTimeout(1500);
-    const legacy = await capture();
-    const a = await sharp(optimized).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const b = await sharp(legacy).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const legacy = await captureMotionSection(page, node);
+    await loops.evaluate((animations) => animations.forEach((animation) => animation.play()));
+    await loops.dispose();
+    assert.deepEqual(optimized.positions, legacy.positions, selector + ' viewport positions');
+    const a = await sharp(optimized.image)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const b = await sharp(legacy.image).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     assert.deepEqual(a.info, b.info, selector + ' dimensions');
     let changed = 0;
     for (let i = 0; i < a.data.length; i += 4) {
@@ -52,14 +138,15 @@ async function verifyMotionAppearance(page, output, width) {
     }
     const changedRatio = changed / (a.info.width * a.info.height);
     const name = `${width}-${selector.replaceAll('.', '')}`;
-    await writeFile(path.join(output, `${name}-optimized.png`), optimized);
-    await writeFile(path.join(output, `${name}-legacy.png`), legacy);
+    await writeFile(path.join(output, `${name}-optimized.png`), optimized.image);
+    await writeFile(path.join(output, `${name}-legacy.png`), legacy.image);
     results.push({ selector, changedRatio });
     await node.evaluate((el, attrs) => {
       ['data-scene', 'data-approach'].forEach((key, i) =>
         attrs[i] === null ? el.removeAttribute(key) : el.setAttribute(key, attrs[i]),
       );
       const marker = document.createElement('span');
+      marker.setAttribute('data-scene', '');
       el.append(marker);
       marker.remove();
     }, original);
@@ -68,6 +155,7 @@ async function verifyMotionAppearance(page, output, width) {
       `${selector}: ${(changedRatio * 100).toFixed(3)}% pixels changed`,
     );
   }
+  await hideHeader.evaluate((el) => el.remove());
   return results;
 }
 

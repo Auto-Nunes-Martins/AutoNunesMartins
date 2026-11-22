@@ -47,7 +47,7 @@
   class="visit-invitation"
   class:compact-comparison={compactComparison}
   data-scene="approach"
-  data-approach
+  data-approach="target"
   data-scan-delay="0.05"
   aria-labelledby={headingId}
 >

@@ -97,9 +97,10 @@
     };
     updateVisibility();
     document.addEventListener('visibilitychange', updateVisibility);
-    compactReviews = innerWidth <= 700;
+    const compactWidth = matchMedia('(max-width: 700px)');
+    compactReviews = compactWidth.matches;
     const resize = () => {
-      compactReviews = innerWidth <= 700;
+      compactReviews = compactWidth.matches;
       ++interaction;
       if (innerWidth > 1100 || innerWidth <= 700) {
         track.style.translate = '0px';

@@ -85,7 +85,10 @@ export function hybridNav(header: HTMLElement, initial: Options) {
   resize.observe(header);
   const hero = root.querySelector('.home-hero, .site-intro');
   if (hero) resize.observe(hero);
-  task.runNow(performance.now());
+  // The parser has already applied the restored header pose on a document load.
+  // Recheck it with the other frame reads, after hydration has finished its writes.
+  if (header.style.getPropertyValue('--nav-progress')) schedule();
+  else task.runNow(performance.now());
   return {
     update(next: Options) {
       options = next;

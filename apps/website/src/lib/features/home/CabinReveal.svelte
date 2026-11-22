@@ -51,19 +51,14 @@
   </picture>
 {/snippet}
 
-<section
-  class="cabin-reveal"
-  data-scene="approach reveal"
-  data-approach
-  aria-labelledby="cabin-heading"
->
+<section class="cabin-reveal" aria-labelledby="cabin-heading">
   <div class="cabin-heading">
     <div>
       <h2 id="cabin-heading">O melhor lugar.<br /><span>O seu.</span></h2>
     </div>
     <p class="cabin-intro">Não é só sobre chegar.<br />É sobre como se sente pelo caminho.</p>
   </div>
-  <div class="cabin-stage" data-approach-target>
+  <div class="cabin-stage" data-scene="approach" data-approach>
     <div class="cabin-light" aria-hidden="true"></div>
     <div
       class="panorama"
@@ -138,12 +133,6 @@
     display: contents;
   }
   .cabin-reveal {
-    --approach: 1;
-    --reveal-a: 1;
-    --reveal-b: 1;
-    --reveal-c: 1;
-    --unfold: 1;
-    --flat: clamp(0, calc((var(--unfold) - 0.999) * 1000), 1);
     width: 95%;
     max-width: 1640px;
     margin: 22px auto 78px;
@@ -176,6 +165,9 @@
     margin: 0 0 3px;
   }
   .cabin-stage {
+    --approach: 1;
+    --unfold: 1;
+    --flat: clamp(0, calc((var(--unfold) - 0.999) * 1000), 1);
     position: relative;
     height: clamp(350px, 35vw, 505px);
     perspective: 1600px;
@@ -564,7 +556,7 @@
         transform: none;
       }
     }
-    :global(.motion-on) .cabin-reveal {
+    :global(.motion-on) .cabin-stage {
       --unfold: var(--approach);
     }
     :global(.motion-on) .panel-0 {
@@ -582,16 +574,20 @@
     :global(.motion-on) .panorama-caption {
       opacity: calc(0.55 + var(--unfold) * 0.45);
     }
+    /* Each hotspot derives its reveal from the same measured gallery progress. */
     :global(.motion-on) .cabin-points button:nth-child(1) {
-      transform: translateY(calc((1 - var(--reveal-a)) * 20px));
+      --reveal: clamp(0, (var(--approach) - 0.06) / 0.52, 1);
     }
     :global(.motion-on) .cabin-points button:nth-child(2) {
-      transform: translateY(calc((1 - var(--reveal-b)) * 20px));
+      --reveal: clamp(0, (var(--approach) - 0.28) / 0.55, 1);
     }
     :global(.motion-on) .cabin-points button:nth-child(3) {
-      transform: translateY(calc((1 - var(--reveal-c)) * 20px));
+      --reveal: clamp(0, (var(--approach) - 0.5) / 0.5, 1);
     }
-    :global(.motion-on) .cabin-reveal:focus-within {
+    :global(.motion-on) .cabin-points button {
+      transform: translateY(calc((1 - var(--reveal)) * 20px));
+    }
+    :global(.motion-on) .cabin-reveal:focus-within .cabin-stage {
       --unfold: 1;
     }
   }

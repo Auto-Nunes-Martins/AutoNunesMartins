@@ -87,6 +87,7 @@ export function designMotion(
         reveal,
         bounds,
         approachBounds,
+        approachTarget,
         pinHeight,
         pinTop,
         heroBounds,
@@ -142,6 +143,7 @@ export function designMotion(
         }
         if (usesThrough) setScrollStyle(node, '--through', String(through));
         if (node.hasAttribute('data-approach')) {
+          const output = node.dataset.approach === 'target' && approachTarget ? approachTarget : node;
           const targetBounds = approachBounds ?? bounds;
           const target = approachProgress(targetBounds.top, targetBounds.height, height);
           const prior = approach.get(node) ?? target;
@@ -150,7 +152,7 @@ export function designMotion(
             Math.abs(delta) > 0.8 || Math.abs(delta) < 0.0005 ? target : prior + delta * damping;
           approach.set(node, value);
           if (Math.abs(target - value) > 0.0005) settling = true;
-          setScrollStyle(node, '--approach', String(value));
+          setScrollStyle(output, '--approach', String(value));
           if (node.hasAttribute('data-scan-delay')) {
             // Shift only the scan by a small viewport offset; keep its scroll slope unchanged.
             const delay = Number(node.dataset.scanDelay) || 0;
@@ -159,7 +161,7 @@ export function designMotion(
               targetBounds.height,
               height,
             );
-            const scanPrior = Number.parseFloat(node.style.getPropertyValue('--scan'));
+            const scanPrior = Number.parseFloat(output.style.getPropertyValue('--scan'));
             const scanDelta = scanTarget - scanPrior;
             const scan =
               !Number.isFinite(scanPrior) ||
@@ -167,13 +169,13 @@ export function designMotion(
               Math.abs(scanDelta) < 0.0005
                 ? scanTarget
                 : scanPrior + scanDelta * damping;
-            setScrollStyle(node, '--scan', String(scan));
+            setScrollStyle(output, '--scan', String(scan));
             if (Math.abs(scanTarget - scan) > 0.0005) settling = true;
           }
           if (reveal) {
-            setScrollStyle(node, '--reveal-a', String(chapterProgress(value, 0.06, 0.58)));
-            setScrollStyle(node, '--reveal-b', String(chapterProgress(value, 0.28, 0.83)));
-            setScrollStyle(node, '--reveal-c', String(chapterProgress(value, 0.5, 1)));
+            setScrollStyle(output, '--reveal-a', String(chapterProgress(value, 0.06, 0.58)));
+            setScrollStyle(output, '--reveal-b', String(chapterProgress(value, 0.28, 0.83)));
+            setScrollStyle(output, '--reveal-c', String(chapterProgress(value, 0.5, 1)));
           }
         }
       }

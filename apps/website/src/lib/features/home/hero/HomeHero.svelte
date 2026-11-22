@@ -95,7 +95,8 @@
   function anchorStart(node: HTMLElement, _pending: boolean) {
     // The parser sets the reserve before first paint. Client-side navigation
     // starts with a new hero and needs the same reserve before measuring the canvas.
-    if (!node.style.getPropertyValue('--hero-feature-height')) {
+    const hasInitialLayout = !!node.style.getPropertyValue('--hero-feature-height');
+    if (!hasInitialLayout) {
       const feature = node.querySelector<HTMLElement>('.hd-feature');
       if (feature) setScrollStyle(node, '--hero-feature-height', `${feature.offsetHeight}px`);
     }
@@ -210,7 +211,8 @@
     reduced.addEventListener('change', measure);
     mobile.addEventListener('change', measure);
     screen.orientation?.addEventListener('change', measure);
-    task.runNow(performance.now());
+    if (hasInitialLayout) measure();
+    else task.runNow(performance.now());
     return {
       update() {
         resize.disconnect();
