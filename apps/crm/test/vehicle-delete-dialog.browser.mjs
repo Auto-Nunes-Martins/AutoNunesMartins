@@ -120,10 +120,12 @@ for (const width of [390, 1366])
           name: 'Mais opções de BMW Série 3 · AA-00-AA',
           exact: true,
         });
+        await opener.waitFor();
+        assert.equal(await page.locator('.action-menu [role="menuitem"]').count(), 0);
         if (width >= 768) {
           const logo = page.locator('.vehicle-name:visible img').first();
           assert.equal(await logo.getAttribute('width'), '16');
-          assert.equal(await logo.evaluate((n) => getComputedStyle(n.parentElement).gap), '9px');
+          assert.equal(await logo.evaluate((n) => getComputedStyle(n.parentElement).columnGap), '9px');
         }
         await opener.click();
         const menu = page.getByRole('menu', {
@@ -135,6 +137,7 @@ for (const width of [390, 1366])
         await dialog.waitFor();
         assert.equal(await page.evaluate(() => window.fixturePosts.length), 0);
         await dialog.getByRole('button', { name: 'Cancelar', exact: true }).click();
+        assert.equal(await page.locator('.action-menu [role="menuitem"]').count(), 0);
         await dialog.waitFor({ state: 'hidden' });
         assert.equal(await page.evaluate(() => window.fixturePosts.length), 0);
         await opener.click();

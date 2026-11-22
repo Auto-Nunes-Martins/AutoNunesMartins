@@ -15,6 +15,7 @@ import { captureCarouselFrames, publicMotionCheck } from './publicMotionCheck.mj
 import { mobileCampaignEffects } from './mobileCampaignEffects.mjs';
 import { publicPerformance } from './publicPerformance.mjs';
 import { heroDelivery } from './heroDelivery.mjs';
+import { checkFeaturedEntry, featuredFraming } from './featuredEntry.mjs';
 import { slowDevices } from './slowDevices.mjs';
 import { galleryRotation } from './galleryRotation.mjs';
 
@@ -27,6 +28,7 @@ const effectsCheck =
   process.argv.includes('--mobile-effects') || process.argv.includes('--production-effects');
 const performanceCheck = process.argv.includes('--performance');
 const heroDeliveryCheck = process.argv.includes('--hero-delivery');
+const featuredEntryCheck = process.argv.includes('--featured-entry');
 const slowDeviceCheck = process.argv.includes('--slow-devices');
 const galleryRotationCheck = process.argv.includes('--gallery-rotation');
 const campaignPreview =
@@ -108,6 +110,7 @@ const promoted = [
 const selected = { ...vehicles[1], price: '19900.00', priceValidUntil: '2026-11-18T23:59:00.000Z' };
 let selectionCount = 1;
 let campaignCount = 1;
+let pendingHighlights;
 const backend = createServer((request, response) => {
   const url = new URL(request.url, 'http://fixture');
   if (url.pathname.endsWith('/campaigns')) campaignRequests++;
@@ -127,7 +130,14 @@ const backend = createServer((request, response) => {
   let data;
   const inventory = showCampaigns ? [...promoted, selected] : vehicles;
   if (url.pathname.endsWith('/homepage-highlights'))
-    data = { configured: true, items: inventory.map((vehicle) => ({ vehicle, photoIndex: 0 })) };
+    data = {
+      configured: true,
+      items: inventory.map((vehicle) => ({
+        vehicle,
+        photoIndex: 0,
+        framing: featuredEntryCheck ? featuredFraming : undefined,
+      })),
+    };
   else if (url.pathname.endsWith('/campaigns'))
     data = showCampaigns
       ? {
@@ -180,7 +190,9 @@ const backend = createServer((request, response) => {
       },
     };
   response.setHeader('content-type', 'application/json');
-  response.end(JSON.stringify(data));
+  if (pendingHighlights && url.pathname.endsWith('/homepage-highlights')) {
+    pendingHighlights.then(() => response.end(JSON.stringify(data)));
+  } else response.end(JSON.stringify(data));
 });
 await new Promise((resolve) => backend.listen(0, '127.0.0.1', resolve));
 const api = `http://127.0.0.1:${backend.address().port}`;
@@ -231,6 +243,8 @@ try {
     await publicPerformance(browser, origin, vehicles[0].slug);
   }
   if (heroDeliveryCheck) await heroDelivery(browser, origin);
+  if (featuredEntryCheck)
+    await checkFeaturedEntry(browser, origin, photo, (gate) => (pendingHighlights = gate));
   if (slowDeviceCheck) await slowDevices(browser, origin, vehicles[0].slug, photo);
   if (galleryRotationCheck) await galleryRotation(browser, origin, vehicles[0].slug);
   if (productionCampaignCheck) {
@@ -591,6 +605,7 @@ try {
     productionCampaignCheck ||
     performanceCheck ||
     heroDeliveryCheck ||
+    featuredEntryCheck ||
     slowDeviceCheck ||
     galleryRotationCheck ||
     effectsCheck
@@ -832,6 +847,7 @@ try {
     !campaignPreview &&
     !performanceCheck &&
     !heroDeliveryCheck &&
+    !featuredEntryCheck &&
     !slowDeviceCheck &&
     !galleryRotationCheck &&
     !effectsCheck

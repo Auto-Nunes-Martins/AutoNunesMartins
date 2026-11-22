@@ -4,7 +4,8 @@ export function hoveringCard(node: HTMLElement, enabled: boolean) {
   const motion = matchMedia(
     '(min-width: 701px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)',
   );
-  let entered = node.getAnimations().some((a) => a.effect?.getComputedTiming().progress === 1);
+  const entry = node.getAnimations();
+  let entered = !entry.length || entry.some((a) => a.effect?.getComputedTiming().progress === 1);
   let visible = false;
   let started = false;
   const hoverTargets = [...node.querySelectorAll<HTMLElement>('.hd-photo, .hd-price-motion')];

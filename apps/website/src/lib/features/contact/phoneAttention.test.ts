@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { phoneAttention, startPhoneAttention } from './phoneAttention';
+import { phoneAttention, ringPhone, startPhoneAttention } from './phoneAttention';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -11,6 +11,20 @@ afterEach(() => {
 });
 
 describe('navbar phone local timer', () => {
+  it('rings immediately over the idle CSS loop and skips a second simultaneous gesture', () => {
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) });
+    const animations: { playState: string; animationName?: string }[] = [
+      { playState: 'running', animationName: 'site-phone-attention' },
+    ];
+    const icon = {
+      getAnimations: () => animations,
+      animate: vi.fn(() => animations.push({ playState: 'running' })),
+    };
+    expect(ringPhone(icon as unknown as SVGElement)).toBe(true);
+    expect(ringPhone(icon as unknown as SVGElement)).toBe(false);
+    expect(icon.animate).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps ringing every three minutes with no visit limit', () => {
     const ring = vi.fn(() => true);
     const timer = startPhoneAttention({ eligible: () => true, ring });

@@ -157,10 +157,7 @@
   display: block;
   height: 100%;
   width: 100%;
-  object-fit: cover;
-  object-position: 50% 53%;
   animation: hd-photo-in 700ms both;
-  transition: transform 850ms cubic-bezier(0.2, 0.65, 0.3, 1);
 }
 .hd-root .hd-photo-arrow {
   position: absolute;
@@ -764,7 +761,7 @@
     transition: none !important;
     scroll-behavior: auto !important;
   }
-  .hd-root :is(.hd-copy, .hd-feature, .hd-landscape img, .hd-place img, .hd-photo img) {
+  .hd-root :is(.hd-copy, .hd-feature, .hd-landscape img, .hd-place img) {
     transform: none !important;
   }
 }

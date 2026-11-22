@@ -36,7 +36,10 @@
   }
   async function onToggle(event: ToggleEvent) {
     open = event.newState === 'open';
-    if (!open || !trigger || !menu) return;
+    if (!open) return;
+    // Mount only the open menu's actions before measuring and focusing it.
+    await tick();
+    if (!popover?.matches(':popover-open') || !trigger || !menu) return;
     const anchor = trigger.getBoundingClientRect();
     const bounds = menu.getBoundingClientRect();
     left = Math.max(12, Math.min(innerWidth - bounds.width - 12, anchor.right - bounds.width));
@@ -152,7 +155,7 @@
         style:visibility={open ? 'visible' : 'hidden'}
         onkeydown={onMenuKey}
       >
-        {#each menuActions as action (action.href ?? action.label)}
+        {#each open ? menuActions : [] as action (action.href ?? action.label)}
           {#if action.href}<a href={action.href} role="menuitem" onclick={close}
               ><action.icon class="h-4 w-4" />{action.label}</a
             >{:else}<button

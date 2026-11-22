@@ -28,6 +28,32 @@
     framing?: PhotoFraming;
     dimensions?: PhotoDimensions;
   };
+  // The cover, zoom and focus must already be represented in the server HTML.
+  // The active device can change before hydration or while a slide is downloading.
+  function cropStyle(device: 'desktop' | 'mobile', position?: PhotoFraming['desktop']) {
+    if (!position) return '';
+    const { x, y, fit = 'cover', zoom = 1 } = position;
+    const focus =
+      fit === 'contain' ? `var(--contain-x, ${x}%) var(--contain-y, ${y}%)` : `${x}% ${y}%`;
+    return `--focus-${device}:${focus};--fit-${device}:${fit === 'auto' ? 'var(--auto-fit, cover)' : fit};--zoom-${device}:${zoom};`;
+  }
+
+  function hydratePhoto(node: HTMLImageElement, options: Parameters<typeof photoFraming>[1]) {
+    const framing = photoFraming(node, options);
+    node.dataset.framingLive = '';
+    // A cached image can finish before this node is connected on client navigation.
+    if (node.complete && node.naturalWidth && !node.hasAttribute('aria-hidden')) {
+      void node
+        .decode()
+        .then(() => {
+          if (node.isConnected && !node.hasAttribute('aria-hidden')) {
+            node.closest('.hd-feature')?.setAttribute('data-featured-photo-ready', '');
+          }
+        })
+        .catch(() => {});
+    }
+    return framing;
+  }
   let displayed = $state<Frame>(
     untrack(() => ({ source, alt, framing, dimensions, fallback: false })),
   );
@@ -55,8 +81,10 @@
     try {
       await image.decode();
     } catch {
-      return;
+      if (!image.complete || !image.naturalWidth) return;
     }
+    if (displayed === frame)
+      image.closest('.hd-feature')?.setAttribute('data-featured-photo-ready', '');
     if (pending !== frame || source !== frame.source || transitioning === frame) return;
     transitioning = frame;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -64,6 +92,7 @@
     // Confirm the decoded entry once: photo, metadata, link and progress all
     // change in the same render. Only the old decorative layer fades away.
     displayed = frame;
+    image.closest('.hd-feature')?.setAttribute('data-featured-photo-ready', '');
     pending = undefined;
     transitioning = undefined;
     onfailure(frame.fallback);
@@ -89,8 +118,13 @@
     outgoing = undefined;
     crossfade = undefined;
   }
-  function failed(frame: Frame) {
-    if (frame.fallback || frame.source !== source) return;
+  function failed(frame: Frame, image: HTMLImageElement) {
+    if (frame.source !== source) return;
+    if (frame.fallback) {
+      if (frame === displayed)
+        image.closest('.hd-feature')?.setAttribute('data-featured-photo-ready', '');
+      return;
+    }
     frame.fallback = true;
     if (frame === displayed) onfailure(true);
   }
@@ -99,12 +133,23 @@
 {#each [...(outgoing ? [outgoing] : []), displayed, ...(pending ? [pending] : [])] as frame (frame.source)}
   {@const framing = frame.fallback ? undefined : frame.framing}
   <img
+    data-featured-photo
+    data-featured-letterbox={framing &&
+    [framing.desktop.fit, framing.mobile.fit].some((fit) => fit === 'auto' || fit === 'contain')
+      ? ''
+      : undefined}
+    data-photo-shape={frame.dimensions
+      ? frame.dimensions.width > frame.dimensions.height
+        ? 'landscape'
+        : frame.dimensions.width < frame.dimensions.height
+          ? 'portrait'
+          : undefined
+      : undefined}
     use:coverPhotoSizes={!frame.fallback && frame.dimensions
       ? { source: frame.source, dimensions: frame.dimensions }
       : undefined}
-    style:--photo-desktop={framing ? `${framing.desktop.x}% ${framing.desktop.y}%` : undefined}
-    style:--photo-mobile={framing ? `${framing.mobile.x}% ${framing.mobile.y}%` : undefined}
-    use:photoFraming={{
+    style={cropStyle('desktop', framing?.desktop) + cropStyle('mobile', framing?.mobile)}
+    use:hydratePhoto={{
       framing: frame.framing,
       defaultY: 53,
       active: frame === displayed,
@@ -124,17 +169,30 @@
     fetchpriority="high"
     decoding="async"
     onload={(event) => ready(frame, event.currentTarget as HTMLImageElement)}
-    onerror={() => failed(frame)}
+    onerror={(event) => failed(frame, event.currentTarget as HTMLImageElement)}
   />
 {/each}
 
 <style>
   img {
-    object-position: var(--photo-desktop, 50% 53%);
+    object-fit: var(--fit-desktop, cover);
+    object-position: var(--focus-desktop, 50% 53%);
+    transform-origin: var(--focus-desktop, 50% 53%);
+    transform: scale(var(--zoom-desktop, 1));
+  }
+  img[data-photo-shape='portrait'] {
+    --auto-fit: contain;
+    --contain-x: 50%;
+  }
+  img[data-photo-shape='landscape'] {
+    --contain-y: 50%;
   }
   @media (max-width: 700px) {
     img {
-      object-position: var(--photo-mobile, 50% 53%);
+      object-fit: var(--fit-mobile, cover);
+      object-position: var(--focus-mobile, 50% 53%);
+      transform-origin: var(--focus-mobile, 50% 53%);
+      transform: scale(var(--zoom-mobile, 1));
     }
   }
   img.featured-photo-pending {

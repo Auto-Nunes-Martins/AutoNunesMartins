@@ -14,7 +14,12 @@ export function ringPhone(icon: SVGElement | null): boolean {
   if (
     !icon ||
     window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-    icon.getAnimations().some((animation) => animation.playState === 'running')
+    // The idle CSS ring is running even during the rest between gestures.
+    icon.getAnimations().some(
+      (animation) =>
+        animation.playState === 'running' &&
+        !('animationName' in animation && animation.animationName === 'site-phone-attention'),
+    )
   )
     return false;
   icon.animate(

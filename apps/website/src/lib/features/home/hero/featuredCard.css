@@ -132,6 +132,35 @@
   isolation: isolate;
   background: transparent;
 }
+/* Let the first decoded photo and its frame appear together without reserving them twice. */
+html[data-featured-photo-loading]
+  [data-featured-card]
+  .hd-feature:is([aria-roledescription='carrossel'], .hd-skeleton):not([data-featured-photo-ready])
+  .hd-photo-stage,
+html[data-featured-photo-loading]
+  [data-featured-card]
+  .hd-feature:is([aria-roledescription='carrossel'], .hd-skeleton):not(
+    [data-featured-photo-ready]
+  )::before,
+html[data-featured-photo-loading]
+  [data-featured-card]
+  .hd-feature:is([aria-roledescription='carrossel'], .hd-skeleton):not(
+    [data-featured-photo-ready]
+  )::after {
+  opacity: 0;
+}
+/* Use the same backdrop as the hydrated framing action for the first letterboxed photo. */
+.hd-root[data-featured-card]
+  .hd-photo:has(> img[data-featured-letterbox]:not([data-framing-live]))::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--featured-preview-backdrop, none) center / cover;
+  filter: blur(12px) brightness(0.55);
+  transform: scale(1.08);
+  pointer-events: none;
+}
 .hd-root[data-featured-card] .hd-photo::after {
   content: '';
   position: absolute;
@@ -303,7 +332,7 @@
 }
 @media (min-width: 701px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   [data-featured-card] .hd-feature[data-idle-ready='true'] .hd-idle-plane {
-    animation: hd-v5-hovering 12s linear infinite;
+    animation: hd-v5-hovering 12s linear 2.08s infinite;
     animation-play-state: running;
     transform-origin: var(--featured-pivot, 50% 50%);
     /* One continuous phase; harmonic offsets keep the axes moving through turns.
@@ -311,7 +340,9 @@
     transform: perspective(1400px)
       translate3d(
         calc(4.5px * sin(var(--hero-float-phase)) + 1px * sin(calc(2 * var(--hero-float-phase)))),
-        calc(6px * (cos(var(--hero-float-phase)) - 1) + 0.8px * sin(calc(2 * var(--hero-float-phase)))),
+        calc(
+          6px * (cos(var(--hero-float-phase)) - 1) + 0.8px * sin(calc(2 * var(--hero-float-phase)))
+        ),
         calc(4px * (1 - cos(var(--hero-float-phase))))
       )
       rotateX(calc(0.24deg * (sin(calc(var(--hero-float-phase) + 60deg)) - sin(60deg))))

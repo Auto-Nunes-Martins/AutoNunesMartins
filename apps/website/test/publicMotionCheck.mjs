@@ -353,6 +353,11 @@ export async function publicMotionCheck(browser, origin, slug) {
       });
       const page = await context.newPage();
       await page.goto(origin, { waitUntil: 'domcontentloaded' });
+      // Keep Playwright from scrolling the controls out from behind the banner mid-measurement.
+      const notice = page.locator('.notice');
+      await notice.getByRole('button', { name: 'Recusar' }).click();
+      await expect(notice).toBeHidden();
+      if (!mobile) await page.mouse.move(0, 0);
       await page.evaluate(() => document.fonts.ready);
       const feature = page.getByRole('region', { name: 'Viaturas em destaque' });
       await feature.evaluate((node) =>

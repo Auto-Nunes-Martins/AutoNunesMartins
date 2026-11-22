@@ -93,6 +93,8 @@
   ] as const;
   const background = heroBackground;
   function anchorStart(node: HTMLElement, _pending: boolean) {
+    // Client navigation can mount the loading frame before its first image exists.
+    document.documentElement.setAttribute('data-featured-photo-loading', '');
     // The parser sets the reserve before first paint. Client-side navigation
     // starts with a new hero and needs the same reserve before measuring the canvas.
     const hasInitialLayout = !!node.style.getPropertyValue('--hero-feature-height');

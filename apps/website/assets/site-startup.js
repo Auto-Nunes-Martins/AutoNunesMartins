@@ -4,6 +4,43 @@
 // app.html sets the document palette before this bundled script is inlined.
 // CSS uses that document state, independently of the SSR component's class.
 
+// A cached or slowly streamed first photo can load before Svelte runs. Keep its
+// frame in the layout and reveal the two together as soon as the image is decoded.
+if (location.pathname === '/' && typeof document.addEventListener === 'function') {
+  document.documentElement.setAttribute('data-featured-photo-loading', '');
+  var stopFeaturedLoad = function () {
+    document.removeEventListener('load', firstFeaturedLoad, true);
+    document.removeEventListener('error', firstFeaturedLoad, true);
+  };
+  var firstFeaturedLoad = function (event) {
+    var image = event.target;
+    if (!image.matches || !image.matches('img[data-featured-photo]') || image.hasAttribute('aria-hidden')) return;
+    if (event.type === 'error') {
+      // Keep the native alternative text available, including if hydration never arrives.
+      image.closest('.hd-feature')?.setAttribute('data-featured-photo-ready', '');
+      stopFeaturedLoad();
+      return;
+    }
+    if (!image.naturalWidth) return;
+    var source = image.currentSrc;
+    var reveal = function () {
+      if (!image.isConnected || image.currentSrc !== source || image.hasAttribute('aria-hidden')) return;
+      image.dataset.photoShape = image.naturalWidth === image.naturalHeight ? 'square'
+        : image.naturalWidth > image.naturalHeight ? 'landscape' : 'portrait';
+      if (!image.hasAttribute('data-framing-live') && image.hasAttribute('data-featured-letterbox')) {
+        image.parentElement.style.setProperty('--featured-preview-backdrop', 'url(' + JSON.stringify(source) + ')');
+      }
+      image.closest('.hd-feature')?.setAttribute('data-featured-photo-ready', '');
+      stopFeaturedLoad();
+    };
+    if (typeof image.decode === 'function') image.decode().then(reveal, reveal);
+    else reveal();
+  };
+  document.addEventListener('load', firstFeaturedLoad, true);
+  document.addEventListener('error', firstFeaturedLoad, true);
+  addEventListener('load', stopFeaturedLoad, { once: true });
+}
+
 // Match anchorStart's resting alignment before the first paint, not at hydration.
 function alignSiteFeaturedContent(hero) {
   if (innerWidth <= 700 || hero.getAttribute('data-featured-presence') !== 'expanded') return;
