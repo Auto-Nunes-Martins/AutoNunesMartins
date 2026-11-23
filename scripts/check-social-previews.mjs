@@ -70,9 +70,18 @@ const api = createServer((request, response) => {
   }
   let data;
   if (route === '/brands') data = facets.brands;
-  else if (!route || route === '/')
-    data = { items: vehicles, total: 2, page: 1, pageSize: 9, totalPages: 1, facets };
-  else if (route.endsWith('/related')) data = [];
+  else if (!route || route === '/') {
+    const page = Number(url.searchParams.get('pagina') ?? 1);
+    const items = url.searchParams.get('marca') === 'Unknown' ? [] : vehicles.slice(page - 1, page);
+    data = {
+      items,
+      total: items.length ? vehicles.length : 0,
+      page,
+      pageSize: 1,
+      totalPages: items.length ? vehicles.length : 0,
+      facets,
+    };
+  } else if (route.endsWith('/related')) data = [];
   else data = vehicles.find((vehicle) => route === `/${vehicle.slug}`);
   response.writeHead(data ? 200 : 404, { 'content-type': 'application/json' });
   response.end(JSON.stringify(data ?? {}));
@@ -127,16 +136,26 @@ try {
     if (i === 119) throw new Error(`Vite startup timeout: ${logs}`);
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  const routes = [
+  const brandImageRoutes = [
     '/',
     '/quem-somos',
     '/viaturas',
     '/viaturas?marca=Audi',
+    '/viaturas?pagina=2',
+    '/viaturas?marca=Audi&pagina=2',
+  ];
+  const noindexRoutes = [
     '/viaturas?marca=Audi&combustivel=DIESEL',
+    '/viaturas?marca=Unknown',
     '/favoritos',
     '/comparar',
     '/informacao-legal',
     '/politica-de-privacidade',
+    '/termos-de-utilizacao',
+  ];
+  const routes = [
+    ...brandImageRoutes,
+    ...noindexRoutes,
     ...vehicles.map((v) => `/viaturas/${v.slug}`),
   ];
   const agents = ['Discordbot/2.0', 'Twitterbot/1.0', 'facebookexternalhit/1.1', 'WhatsApp/2.0'];
@@ -170,6 +189,33 @@ try {
     assert.equal(new URL(one(head, 'og:url')).origin, origin);
     assert.equal(new URL(one(head, 'og:image')).origin, origin);
     assert.ok(!html.includes('PRIVATE-FIXTURE-MUST-NOT-REACH-HTML'));
+    const structuredData = [
+      ...head.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g),
+    ].map(([, json]) => JSON.parse(json));
+    const primaryImages = structuredData.filter((entry) => 'primaryImageOfPage' in entry);
+    if (brandImageRoutes.includes(route)) {
+      const thumbnailUrl = `${origin}/images/auto-nunes-martins-miniatura.png`;
+      assert.equal(decode(canonical[0][1]), origin + route);
+      assert.deepEqual(primaryImages, [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'WebPage',
+          url: decode(canonical[0][1]),
+          primaryImageOfPage: thumbnailUrl,
+        },
+      ]);
+      assert.ok(!html.slice(html.indexOf('</head>')).includes('auto-nunes-martins-miniatura.png'));
+      if (route === '/') {
+        const thumbnail = await fetch(thumbnailUrl);
+        assert.equal(thumbnail.status, 200);
+        assert.equal(thumbnail.headers.get('content-type')?.split(';')[0], 'image/png');
+        const { width, height } = await sharp(Buffer.from(await thumbnail.arrayBuffer())).metadata();
+        assert.equal(width, 512);
+        assert.equal(height, 512);
+      }
+    } else {
+      assert.deepEqual(primaryImages, [], route);
+    }
     const photo = route === `/viaturas/${vehicles[0].slug}`;
     const expectedBytes = photo ? framedBytes : bytes;
     if (photo) {
@@ -188,7 +234,7 @@ try {
       assert.equal(one(head, 'og:image:type'), 'image/png');
     }
     if (route.startsWith('/viaturas/audi-')) {
-      const ld = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(head)[1]);
+      const ld = structuredData[0];
       assert.equal(ld.url, one(head, 'og:url'));
       assert.equal(
         ld.image?.[0],
@@ -196,17 +242,7 @@ try {
         'brand fallback is not a vehicle photograph',
       );
     }
-    if (
-      [
-        '/favoritos',
-        '/comparar',
-        '/informacao-legal',
-        '/politica-de-privacidade',
-        '/demo/porsche-911',
-      ].includes(route) ||
-      route.includes('combustivel')
-    )
-      assert.equal(one(head, 'robots'), 'noindex, follow');
+    if (noindexRoutes.includes(route)) assert.equal(one(head, 'robots'), 'noindex, follow');
     if (['/', '/quem-somos'].includes(route)) assert.equal(metadata(head, 'robots').length, 0);
     const image = await fetch(one(head, 'og:image'), {
       headers: { 'user-agent': agents[index % agents.length] },
@@ -234,6 +270,7 @@ try {
     const response = await fetch(origin + removed);
     assert.equal(response.status, 404, removed);
     assert.equal(response.headers.get('x-robots-tag'), 'noindex, follow');
+    assert.ok(!(await response.text()).includes('auto-nunes-martins-miniatura.png'));
   }
   const sitemapResponse = await fetch(origin + '/sitemap.xml');
   assert.equal(sitemapResponse.status, 200);

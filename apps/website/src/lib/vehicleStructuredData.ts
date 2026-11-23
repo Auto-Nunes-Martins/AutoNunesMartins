@@ -5,6 +5,7 @@ import {
   transmissionLabels,
   type PublicVehicle,
 } from './publicVehicles';
+import { jsonLdScript } from './jsonLdScript';
 
 /** The same absolute URL is used by both the canonical link and JSON-LD. */
 export const publicVehicleCanonical = (vehicle: Pick<PublicVehicle, 'slug'>, origin: string) =>
@@ -138,17 +139,6 @@ export function vehicleBreadcrumbItems(input: unknown) {
     { name: brand, href: `/viaturas?${new URLSearchParams({ marca: brand })}` },
     { name: model, href: publicHref(slug) },
   ];
-}
-
-/** Escape HTML-significant characters before inserting JSON into a script raw-text node. */
-function jsonLdScript(data: unknown) {
-  const json = JSON.stringify(data)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029');
-  return `<script type="application/ld+json">${json}</script>`;
 }
 
 export function vehicleJsonLdScript(vehicle: unknown, origin: string) {

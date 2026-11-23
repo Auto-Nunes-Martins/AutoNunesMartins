@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PreferredBrandImage from '$lib/components/PreferredBrandImage.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import type { Snippet } from 'svelte';
   import { tick, onDestroy } from 'svelte';
@@ -211,6 +212,10 @@
 </script>
 
 <svelte:window onkeydown={closeFilters} />
+
+{#if !seo.noindex}
+  <PreferredBrandImage canonical={seo.canonical} />
+{/if}
 
 <SocialMetadata
   title={`${seo.heading} — Auto Nunes Martins`}

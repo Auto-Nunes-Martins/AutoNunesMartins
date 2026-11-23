@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import PreferredBrandImage from '$lib/components/PreferredBrandImage.svelte';
   import SocialMetadata from '$lib/components/SocialMetadata.svelte';
   import { ArrowUpRight, ArrowDown } from 'lucide-svelte';
   import { aboutContent as content } from './aboutContent';
@@ -8,16 +9,19 @@
   import { entrance } from '../motion/designMotion';
   import Perspective from '../home/Perspective.svelte';
   let { onContact }: { onContact: (event: MouseEvent) => void } = $props();
+  const canonical = $derived(new URL('/quem-somos', $page.url.origin).href);
 </script>
+
+<PreferredBrandImage {canonical} />
 
 <SocialMetadata
   title="Quem somos — Auto Nunes Martins"
   description="Conheça a Auto Nunes Martins e encontre os contactos para esclarecer dúvidas sobre a escolha do seu próximo automóvel."
-  canonical={new URL('/quem-somos', $page.url.origin).href}
+  {canonical}
 />
 
 <svelte:head>
-  <link rel="canonical" href={new URL('/quem-somos', $page.url.origin).href} />
+  <link rel="canonical" href={canonical} />
   <title>Quem somos — Auto Nunes Martins</title>
   <meta
     name="description"
