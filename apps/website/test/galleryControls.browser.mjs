@@ -20,6 +20,10 @@ const photos = await Promise.all(
   ),
 );
 
+const coverFraming = {
+  desktop: { x: 22, y: 76, zoom: 1.35 },
+  mobile: { x: 79, y: 18, zoom: 1.2 },
+};
 const vehicles = Array.from({ length: 5 }, (_, i) => {
   const slug = `gallery-check-${String(i).padStart(12, 'a')}`;
   return {
@@ -43,6 +47,7 @@ const vehicles = Array.from({ length: 5 }, (_, i) => {
     photos: [0, 1, 2].map(
       (n) => `/api/public/vehicles/${slug}/photos/${n}?v=${String(n + 1).repeat(64)}`,
     ),
+    ...(i === 0 ? { galleryFraming: [coverFraming] } : {}),
   };
 });
 const backend = createServer((req, res) => {
@@ -60,7 +65,7 @@ const backend = createServer((req, res) => {
         ? { versions: [1, 2, 3].map((n) => String(n).repeat(64)) }
         : url.pathname.endsWith('/related')
           ? vehicles
-          : vehicles[0],
+          : (vehicles.find((vehicle) => url.pathname.endsWith(`/${vehicle.slug}`)) ?? vehicles[0]),
     ),
   );
 });
@@ -148,7 +153,9 @@ try {
           if (!['127.0.0.1', 'localhost'].includes(url.hostname)) return route.abort();
           return route.continue();
         });
-        await page.goto(`${origin}/viaturas/${vehicles[0].slug}`);
+        const hasSavedFraming = reducedMotion === 'no-preference';
+        const vehicle = vehicles[hasSavedFraming ? 0 : 1];
+        await page.goto(`${origin}/viaturas/${vehicle.slug}`);
         const opener = page.locator('.vehicle-photo .photo-rail-slide:not([inert]) button');
         await opener.waitFor();
         await page.waitForFunction(() => {
@@ -195,6 +202,35 @@ try {
           });
         };
         const inlineSelected = (index) => page.locator('.detail-thumbnails button').nth(index);
+        const position = hasSavedFraming
+          ? coverFraming[width > 700 ? 'desktop' : 'mobile']
+          : { x: 50, y: 50 };
+        const expectedPosition = `${position.x}% ${position.y}%`;
+        const contactThumbnail = page.locator('.detail-thumbnails .contact-thumbnail');
+        const mainContactSlide = stage.locator('.rail-contact');
+        assert.equal(
+          await opener.locator('img').evaluate((img) => getComputedStyle(img).objectPosition),
+          expectedPosition,
+        );
+        await activate(contactThumbnail);
+        assert.equal(await contactThumbnail.getAttribute('aria-pressed'), 'true');
+        assert.equal(await mainContactSlide.getAttribute('aria-hidden'), 'false');
+        for (const image of [
+          contactThumbnail.locator('img'),
+          mainContactSlide.locator('img'),
+          page.locator('.detail-band > img'),
+        ]) {
+          const crop = await image.evaluate((img) => {
+            const { objectPosition, objectFit } = getComputedStyle(img);
+            return { objectPosition, objectFit };
+          });
+          assert.deepEqual(crop, { objectPosition: expectedPosition, objectFit: 'cover' });
+        }
+        await activate(inlineSelected(0));
+        await page.waitForFunction(
+          () =>
+            document.querySelector('.vehicle-photo .photo-rail-track')?.dataset.moving === 'false',
+        );
         const equipment = page.locator('.public-story li').first();
         assert.equal(
           await equipment.evaluate((item) => getComputedStyle(item).fontSize),

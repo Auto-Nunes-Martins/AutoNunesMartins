@@ -13,7 +13,7 @@
   let galleryPointerFocus = $state(false);
   let mainPhotoLoading = $state(true);
   import { vehiclePhoto } from '$lib/vehiclePhoto';
-  import { photoFraming } from '@anm/types';
+  import { framingStyle, photoFraming } from '@anm/types';
   import { homePhotoPlaceholder, homePhotoPriority } from '$lib/homePhotoPriority';
   import { publicPhotoVersions } from '$lib/publicVehicles';
   import UnavailableVehiclePanel from '../vehicles/UnavailableVehiclePanel.svelte';
@@ -751,6 +751,7 @@
       </div>
     </main>
   {:else if car && publicVehicle}
+    {@const coverPosition = framingStyle(publicVehicle.galleryFraming?.[0] ?? undefined)}
     <main class="vehicle-page">
       <div class="detail-top-actions">
         <BackLink useHistory /><VehicleShareButton
@@ -951,6 +952,7 @@
                         src: sizedPhoto(publicPhoto(publicVehicle, 0), 1600),
                       }}
                       sizes={galleryPhotoSizes(publicVehicle, 0)}
+                      style={coverPosition}
                       alt=""
                       loading="eager"
                     /><ArrowUpRight size={24} aria-hidden="true" /><span>Fale connosco</span
@@ -1063,6 +1065,7 @@
               src={sizedPhoto(publicPhoto(publicVehicle, 0), 1600)}
               srcset={vehiclePhotoSet(publicPhoto(publicVehicle, 0))}
               sizes="(max-width:700px) 100vw, (min-width:1920px) 1200px, 70vw"
+              style={coverPosition}
               alt=""
               loading="lazy"
             />
@@ -1639,4 +1642,15 @@
   @import './pageDialogs.css';
   @import './responsivePage.css';
   @import '../catalog/vehicleCard.css';
+
+  .contact-thumbnail > img,
+  .detail-band > img {
+    object-position: var(--photo-desktop, 50% 50%);
+  }
+  @media (max-width: 700px) {
+    .contact-thumbnail > img,
+    .detail-band > img {
+      object-position: var(--photo-mobile, 50% 50%);
+    }
+  }
 </style>
