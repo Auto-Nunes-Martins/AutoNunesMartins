@@ -60,6 +60,7 @@ it('saves confirmed characteristics in the initial create transaction without gr
 it('distinguishes clearing the odometer, recording zero, and leaving it unchanged', () => {
   const patch = vehicleUpdateSchema.omit({ id: true });
   expect(patch.parse({ mileage: '' })).toEqual({ mileage: null });
+  expect(patch.parse({ mileage: '  ' })).toEqual({ mileage: null });
   expect(patch.parse({ mileage: null })).toEqual({ mileage: null });
   expect(patch.parse({ mileage: '0' })).toEqual({ mileage: 0 });
   expect(patch.parse({})).toEqual({});

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { creationDetailsIssues, creationStatus, vehicleDetailsFromForm } from './creationFlow';
+import {
+  creationDetailsIssues,
+  creationStatus,
+  restoreDraftMileage,
+  vehicleDetailsFromForm,
+} from './creationFlow';
 const form = () => {
   const data = new FormData();
   for (const [key, value] of Object.entries({
@@ -19,6 +24,17 @@ const form = () => {
   return data;
 };
 describe('creation workflow intents and required data', () => {
+  it.each([
+    [undefined, null],
+    ['', null],
+    ['  ', null],
+    ['0', '0'],
+    ['84000', '84000'],
+    ['0x10', '0x10'],
+  ])('restores draft mileage %j as %j without coercing input', (recorded, expected) => {
+    expect(restoreDraftMileage(recorded)).toBe(expected);
+  });
+
   it('keeps a saved draft outside the definitive stock independently of the intended status', () => {
     expect(creationStatus('draft', 'RESERVED')).toBe('DRAFT');
     expect(creationStatus('crm', 'RESERVED')).toBe('RESERVED');

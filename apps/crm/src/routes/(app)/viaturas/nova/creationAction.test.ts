@@ -8,7 +8,7 @@ import { vehiclesApi } from '$lib/server/vehicles';
 import { actions } from './+page.server';
 describe('new vehicle draft creation', () => {
   beforeEach(() => vi.clearAllMocks());
-  it.each([['', null], ['0', 0]])('creates a draft with mileage %j and retains the intended status', async (mileage, storedMileage) => {
+  it.each([['', null], ['  ', null], ['0', 0]])('creates a draft with mileage %j and retains the intended status', async (mileage, storedMileage) => {
     vi.mocked(vehiclesApi.create).mockResolvedValue({ id: 'clabcdefghijklmnopqrstuvw' });
     const data = new FormData();
     for (const [key, value] of Object.entries({

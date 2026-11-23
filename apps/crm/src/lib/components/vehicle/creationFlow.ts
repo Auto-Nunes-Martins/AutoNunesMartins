@@ -41,6 +41,10 @@ export function vehicleDetailsFromForm(form: FormData) {
   };
 }
 
+export function restoreDraftMileage(value?: string | null) {
+  return value?.trim() || null;
+}
+
 export function creationDetailsIssues(data: ReturnType<typeof vehicleDetailsFromForm>) {
   const result = vehicleCreateSchema.safeParse({
     ...data,

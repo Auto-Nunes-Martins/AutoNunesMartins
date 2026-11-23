@@ -28,6 +28,7 @@
     creationDetailsIssues,
     creationStatus,
     internalVehicleFields,
+    restoreDraftMileage,
     vehicleDetailsFromForm,
     type CreationAction,
   } from './creationFlow';
@@ -219,7 +220,7 @@
             ...initial,
             ...details,
             year: details.year ? Number(details.year) : null,
-            mileage: details.mileage ? Number(details.mileage) : null,
+            mileage: restoreDraftMileage(details.mileage),
             fuel: details.fuel as typeof initial.fuel,
             status: details.status as typeof initial.status,
             licensePlate: details.licensePlate ?? '',

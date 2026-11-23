@@ -9,6 +9,7 @@
   import { toast } from 'svelte-sonner';
   import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
   import { rememberCreatedDraft } from './creationLifecycle';
+  import { restoreDraftMileage } from './creationFlow';
 
   let { draftOwner }: { draftOwner: string | null } = $props();
   const key = untrack(() => `vehicle:${draftOwner}:new`);
@@ -98,7 +99,7 @@
           initial = {
             ...saved,
             year: saved.year || null,
-            mileage: saved.mileage || null,
+            mileage: restoreDraftMileage(saved.mileage),
             fuel: saved.fuel as NonNullable<typeof initial>['fuel'],
             status: saved.status as NonNullable<typeof initial>['status'],
             pendingDocFlags: {
