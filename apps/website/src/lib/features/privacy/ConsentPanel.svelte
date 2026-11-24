@@ -24,7 +24,7 @@
   let noticeHeading = $state<HTMLHeadingElement>();
   let noticeOpener: HTMLElement | null = null;
   let opener: HTMLElement | null = null;
-  const acceptAll = { preferences: true, maps: true, ads: true };
+  const acceptAll = { preferences: true, maps: true, analytics: true, ads: true };
   let moreBelow = $state(false);
 
   function trackOverflow(node: HTMLElement, tab: Tab) {
@@ -50,8 +50,8 @@
 
   function open() {
     if (dialog.open) return;
-    const { preferences, maps, ads } = readSiteConsent() ?? essentialOnly;
-    draft = { preferences, maps, ads };
+    const { preferences, maps, ads, analytics } = readSiteConsent() ?? essentialOnly;
+    draft = { preferences, maps, ads, analytics };
     activeTab = 'Consentimento';
     opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (!panelMounted) flushSync(() => (panelMounted = true));
@@ -78,7 +78,7 @@
   }
 
   onMount(() => {
-    const stop = watchSiteConsent((choice) => (showNotice = !choice?.hasAdsDecision));
+    const stop = watchSiteConsent((choice) => (showNotice = !choice?.hasMeasurementDecisions));
     const stopOpening = watchConsentOpening(async (button) => {
       noticeOpener = button;
       showNotice = true;
@@ -110,8 +110,8 @@
           Cookies e privacidade
         </h2>
         <p>
-          Escolha se permite retomar a leitura, mostrar o mapa da Google e medir os resultados dos
-          nossos anúncios.
+          Escolha se permite retomar a leitura, mostrar o mapa da Google, medir visitas ao site e
+          medir os resultados dos nossos anúncios.
         </p>
         <a href="/politica-de-privacidade#preferencias">Política de Privacidade</a>
       </div>

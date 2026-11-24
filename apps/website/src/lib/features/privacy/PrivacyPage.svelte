@@ -119,6 +119,12 @@
       passando a aplicar-se também as condições desses serviços.
     </p>
     <p>
+      Ao autorizar «Estatísticas», o site carrega o Google Analytics para medir visitas e utilização
+      do site público. Esta escolha é independente da medição de publicidade. A Google pode receber
+      dados técnicos da ligação e da visita e utilizar cookies de estatísticas. Pode retirar a
+      autorização em «Cookies e preferências».
+    </p>
+    <p>
       O painel é fornecido pelo próprio site e guarda a escolha no navegador. Ao autorizar
       «Medição de publicidade», o site carrega o Google Tag Manager para executar as etiquetas de
       medição do Google Ads. A Google pode receber dados técnicos da ligação e da visita e

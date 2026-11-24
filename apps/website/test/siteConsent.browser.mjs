@@ -13,12 +13,20 @@ try {
   const page = await context.newPage();
   const thirdParty = [];
   const gtmRequests = () => thirdParty.filter((url) => url.includes('googletagmanager.com/gtm.js'));
+  const analyticsRequests = () =>
+    thirdParty.filter((url) => url.includes('googletagmanager.com/gtag/js?id=G-8R2S370Q2Z'));
   await context.route('https://**/*', (route) => {
     thirdParty.push(route.request().url());
     if (route.request().url().includes('googletagmanager.com/gtm.js')) {
       return route.fulfill({
         contentType: 'application/javascript',
         body: 'window.consentTestGtm = true;',
+      });
+    }
+    if (route.request().url().includes('googletagmanager.com/gtag/js')) {
+      return route.fulfill({
+        contentType: 'application/javascript',
+        body: 'window.consentTestAnalytics = true;',
       });
     }
     return route.abort();
@@ -118,7 +126,7 @@ try {
   await expect(map).toHaveCount(0);
   await notice.getByRole('button', { name: 'Personalizar' }).click();
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('switch')).toHaveCount(3);
+  await expect(dialog.getByRole('switch')).toHaveCount(4);
   await expect(dialog.getByText('Sempre disponível')).toHaveCount(0);
   if (process.env.CONSENT_SCREENSHOT)
     await page.screenshot({ path: process.env.CONSENT_SCREENSHOT });
@@ -223,6 +231,7 @@ try {
   await dialog.getByRole('button', { name: 'Guardar escolhas' }).click();
   await expect.poll(() => gtmRequests().length).toBe(1);
   await page.waitForFunction(() => window.consentTestGtm === true);
+  expect(analyticsRequests()).toHaveLength(0);
   const consent = await page.evaluate(() =>
     window.dataLayer.map((entry) => (typeof entry.length === 'number' ? Array.from(entry) : entry)),
   );
@@ -245,14 +254,48 @@ try {
   await expect(settings.getByRole('button', { name: 'Consentimento retirado' })).toBeDisabled();
   expect(gtmRequests()).toHaveLength(1);
   expect(thirdParty.filter((url) => /cookiebot|google-analytics/.test(url))).toEqual([]);
+
+  await reopenPreferences();
+  await dialog.getByRole('switch', { name: /Estatísticas/ }).check();
+  await dialog.getByRole('button', { name: 'Guardar escolhas' }).click();
+  await expect.poll(() => analyticsRequests().length).toBe(1);
+  await page.waitForFunction(() => window.consentTestAnalytics === true);
+  expect(gtmRequests()).toHaveLength(1);
+  const analyticsCommands = await page.evaluate(() =>
+    window.dataLayer.map((entry) => Array.from(entry)),
+  );
+  expect(analyticsCommands.at(-3)).toEqual([
+    'consent',
+    'update',
+    {
+      analytics_storage: 'granted',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+    },
+  ]);
+  expect(analyticsCommands.at(-1)).toEqual([
+    'config',
+    'G-8R2S370Q2Z',
+    { allow_google_signals: false, allow_ad_personalization_signals: false },
+  ]);
+  await Promise.all([
+    page.waitForEvent('load'),
+    page.getByRole('button', { name: 'Retirar consentimento' }).click(),
+  ]);
+  await expect(page.locator('script[src*="googletagmanager"]')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => window['ga-disable-G-8R2S370Q2Z'])).toBe(true);
+  expect(analyticsRequests()).toHaveLength(1);
+
   await page.evaluate(() => localStorage.removeItem('anm-site-consent-v1'));
   await page.reload();
   await notice.getByRole('button', { name: 'Aceitar tudo' }).click();
   await expect(settings.getByRole('status')).toContainText('Medição de publicidade');
   await reopenPreferences();
-  await expect(dialog.getByRole('switch')).toHaveCount(3);
+  await expect(dialog.getByRole('switch')).toHaveCount(4);
   for (const toggle of await dialog.getByRole('switch').all()) await expect(toggle).toBeChecked();
   await expect.poll(() => gtmRequests().length).toBe(2);
+  await expect.poll(() => analyticsRequests().length).toBe(2);
   console.log(
     'Consent banner, keyboard, refusal, optional features, expiry and withdrawal passed.',
   );

@@ -3,12 +3,17 @@ const CHANGE_EVENT = 'anm-site-consent-change';
 const OPEN_EVENT = 'anm-site-consent-open';
 const MAX_AGE = 180 * 24 * 60 * 60 * 1000;
 
-export type ConsentOptions = { preferences: boolean; maps: boolean; ads: boolean };
+export type ConsentOptions = { preferences: boolean; maps: boolean; ads: boolean; analytics: boolean };
 type Choice = ConsentOptions & { expires: number; withdrawn?: boolean };
-export const essentialOnly: ConsentOptions = { preferences: false, maps: false, ads: false };
+export const essentialOnly: ConsentOptions = {
+  preferences: false,
+  maps: false,
+  ads: false,
+  analytics: false,
+};
 let sessionChoice: Choice | null = null;
 
-export function readSiteConsent(): (Choice & { hasAdsDecision: boolean }) | null {
+export function readSiteConsent(): (Choice & { hasMeasurementDecisions: boolean }) | null {
   let value = sessionChoice;
   if (!value) {
     try {
@@ -22,7 +27,13 @@ export function readSiteConsent(): (Choice & { hasAdsDecision: boolean }) | null
     typeof value.maps === 'boolean' &&
     Number.isFinite(value.expires) &&
     value.expires > Date.now()
-    ? { ...value, ads: value.ads === true, hasAdsDecision: typeof value.ads === 'boolean' }
+    ? {
+        ...value,
+        ads: value.ads === true,
+        analytics: value.analytics === true,
+        hasMeasurementDecisions:
+          typeof value.ads === 'boolean' && typeof value.analytics === 'boolean',
+      }
     : null;
 }
 
@@ -36,7 +47,7 @@ export function saveSiteConsent(options: ConsentOptions | 'withdrawn') {
     sessionChoice = null;
   } catch {
     sessionChoice = choice;
-    if (!choice.ads) {
+    if (!choice.ads || !choice.analytics) {
       try {
         localStorage.removeItem(CONSENT_KEY);
       } catch {
