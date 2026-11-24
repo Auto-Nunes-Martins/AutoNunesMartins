@@ -802,11 +802,12 @@
   .design.site.site-home .car-grid {
     grid-template-rows: repeat(var(--home-result-rows), minmax(0, 1fr)) minmax(0, 0.5fr);
     /* Reserve the extra space taken by the final, half-height CTA row. */
-    padding-bottom: 60px;
+    --discover-extra-height: 84px;
+    padding-bottom: var(--discover-extra-height);
   }
   .design.site.site-home .car-grid > .discover {
     min-height: 0;
-    height: calc(100% + 60px);
+    height: calc(100% + var(--discover-extra-height));
     padding-top: 18px;
     padding-bottom: 76px;
   }

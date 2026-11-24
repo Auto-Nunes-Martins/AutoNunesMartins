@@ -84,6 +84,21 @@ try {
       const [accept, refuse, customize] = await Promise.all(buttons.map((b) => b.boundingBox()));
       expect(refuse.y).toBeGreaterThanOrEqual(accept.y + accept.height);
       expect(customize.y).toBeGreaterThanOrEqual(refuse.y + refuse.height);
+    } else {
+      const refuse = notice.getByRole('button', { name: 'Recusar', exact: true });
+      const accept = notice.getByRole('button', { name: 'Aceitar tudo' });
+      const customize = notice.getByRole('button', { name: 'Personalizar' });
+      const [left, right, below] = await Promise.all(
+        [refuse, accept, customize].map((button) => button.boundingBox()),
+      );
+      expect(left.x).toBeLessThan(right.x);
+      expect(left.y).toBeCloseTo(right.y, 0);
+      expect(below.y).toBeGreaterThanOrEqual(Math.max(left.y + left.height, right.y + right.height));
+      await notice.getByRole('link', { name: 'Política de Privacidade' }).focus();
+      for (const button of [refuse, accept, customize]) {
+        await page.keyboard.press('Tab');
+        await expect(button).toBeFocused();
+      }
     }
     await notice.getByRole('button', { name: 'Personalizar' }).click();
     await expect(dialog.getByRole('tab')).toHaveCount(3);

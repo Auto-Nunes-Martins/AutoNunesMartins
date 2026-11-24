@@ -92,6 +92,15 @@
   });
 </script>
 
+{#snippet noticeDecision(accept: boolean)}
+  <button
+    class={accept ? 'primary' : 'secondary'}
+    onclick={() => save(accept ? acceptAll : essentialOnly)}
+  >
+    {accept ? 'Aceitar tudo' : 'Recusar'}
+  </button>
+{/snippet}
+
 {#if showNotice}
   <section class="notice" aria-labelledby="consent-notice-title">
     <div class="notice-inner">
@@ -116,8 +125,14 @@
         <a href="/politica-de-privacidade#preferencias">Política de Privacidade</a>
       </div>
       <div class="notice-actions">
-        <button class="primary" onclick={() => save(acceptAll)}>Aceitar tudo</button>
-        <button class="secondary" onclick={() => save(essentialOnly)}>Recusar</button>
+        <div class="notice-decisions">
+          {@render noticeDecision(true)}
+          {@render noticeDecision(false)}
+        </div>
+        <div class="notice-decisions-mobile">
+          {@render noticeDecision(false)}
+          {@render noticeDecision(true)}
+        </div>
         <button class="secondary customize" onclick={open}>Personalizar</button>
       </div>
     </div>

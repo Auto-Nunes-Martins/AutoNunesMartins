@@ -104,6 +104,12 @@ a {
   display: grid;
   gap: 0.4rem;
 }
+.notice-decisions {
+  display: contents;
+}
+.notice-decisions-mobile {
+  display: none;
+}
 button {
   font: inherit;
   cursor: pointer;
@@ -325,6 +331,12 @@ footer {
   }
   .notice-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .notice-decisions {
+    display: none;
+  }
+  .notice-decisions-mobile {
+    display: contents;
   }
   .notice-actions .customize {
     grid-column: 1 / -1;
