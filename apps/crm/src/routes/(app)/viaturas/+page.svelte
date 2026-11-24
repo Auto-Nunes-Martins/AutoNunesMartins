@@ -15,6 +15,7 @@
   import ExportMenu from '$lib/components/common/ExportMenu.svelte';
   import VehicleFilters from '$lib/components/vehicle/VehicleFilters.svelte';
   import VehicleTable from '$lib/components/vehicle/VehicleTable.svelte';
+  import TradeInBadge from '$lib/components/vehicle/TradeInBadge.svelte';
   import DraftDeleteButton from '$lib/components/vehicle/DraftDeleteButton.svelte';
   import VehicleTableSkeleton from '$lib/components/vehicle/VehicleTableSkeleton.svelte';
   import { formatDate, formatDateLong, formatKm } from '$lib/utils/format';
@@ -174,6 +175,7 @@
                         há {age} dias
                       {/if}
                     </span>
+                    {#if v.isTradeIn}<TradeInBadge />{/if}
                   </div>
                 </div>
               </a>

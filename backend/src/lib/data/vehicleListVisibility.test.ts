@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 vi.mock('./appSettings.js', () => ({ appSettings: { stockAgingDays: async () => 60 } }));
 import { listVehicles } from './vehicle';
-it('selects the publication address, price and minimal sale identity required by list visibility', async () => {
+it('selects the publication fields, sale identity and trade-in origin for the inventory list', async () => {
   const findMany = vi.fn(async (_args: unknown) => []),
     count = vi.fn(async () => 0);
   await listVehicles({ vehicle: { findMany, count } } as never, {});
@@ -13,6 +13,7 @@ it('selects the publication address, price and minimal sale identity required by
         salePrice: true,
         soldDate: true,
         sale: { select: { id: true } },
+        sourceTradeIn: { select: { id: true } },
       }),
     }),
   );

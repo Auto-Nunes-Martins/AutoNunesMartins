@@ -241,13 +241,23 @@ before(async () => {
     if (url.pathname === '/api/vehicles') {
       const items =
         url.searchParams.get('status') === 'DRAFT'
-          ? [{ ...vehicle, id: draftId, status: 'DRAFT', webPublished: false, publicSlug: null }]
+          ? [
+              {
+                ...vehicle,
+                id: draftId,
+                status: 'DRAFT',
+                webPublished: false,
+                publicSlug: null,
+                isTradeIn: true,
+              },
+            ]
           : Array.from({ length: 25 }, (_, i) => ({
               ...vehicle,
               id: 'c' + String(i + 1).padStart(24, '0'),
               licensePlate: i === 2 || i === 3 ? null : vehicle.licensePlate,
               vin: i === 1 || i === 3 ? null : vehicle.vin,
               thumbnailUrl: i % 2 ? null : '/fixture-vehicle.svg',
+              isTradeIn: i === 0,
               status: i === 2 ? 'RESERVED' : i === 3 ? 'DOCS_PENDING' : 'AVAILABLE',
             }));
       return reply({ items, page: 1, total: items.length, pageSize: 25, totalPages: 1 });
@@ -1598,6 +1608,34 @@ for (const [width, reduced] of [
     }
   });
 }
+
+test('real CRM inventory puts the trade-in icon alongside the status', { timeout: 120000 }, async () => {
+  const context = await openSession(1366);
+  try {
+    const page = await context.newPage();
+    await page.goto(origin + '/viaturas?status=ALL');
+    const icon = { name: 'Retoma', exact: true };
+    const rows = page.locator('table.crm-table tbody tr');
+    const state = rows.first().getByRole('cell').nth(5);
+    await expect(state.getByRole('img', icon)).toBeVisible();
+    await expect(rows.first().getByRole('cell').first().getByRole('img', icon)).toHaveCount(0);
+    await expect(rows.nth(1).getByRole('img', icon)).toHaveCount(0);
+    await expect(page.locator('li.linked-row').getByRole('img', icon)).toBeVisible();
+
+    await page.setViewportSize({ width: 320, height: 850 });
+    const mobileRows = page.locator('.mobile-vehicle-link');
+    await expect(
+      mobileRows.first().locator('.mobile-vehicle-tags').getByRole('img', icon),
+    ).toBeVisible();
+    await expect(
+      mobileRows.first().locator('.mobile-vehicle-photo').getByRole('img', icon),
+    ).toHaveCount(0);
+    await expect(mobileRows.nth(1).getByRole('img', icon)).toHaveCount(0);
+    await expect(page.locator('li.linked-row').getByRole('img', icon)).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
 
 for (const width of [320, 390]) {
   test(

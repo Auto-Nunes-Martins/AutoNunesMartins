@@ -8,6 +8,7 @@
   import VehicleDeleteDialog from './VehicleDeleteDialog.svelte';
   import RowActions from '$lib/components/common/RowActions.svelte';
   import WebsiteStatus from './WebsiteStatus.svelte';
+  import TradeInBadge from './TradeInBadge.svelte';
   import StatusBadge from '$lib/components/brand/StatusBadge.svelte';
   import { formatDate, formatEUR, formatInt } from '$lib/utils/format';
   import type { VehicleListItem } from '$lib/server/vehicles';
@@ -110,8 +111,10 @@
           </span>
         </div>
         <div class="col-span-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-          <div class="mobile-vehicle-tags flex items-center gap-1.5">
-            <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
+          <div class="mobile-vehicle-tags flex flex-wrap items-center gap-1.5">
+            <StatusBadge status={v.status} />
+            {#if v.isTradeIn}<TradeInBadge />{/if}
+            <WebsiteStatus vehicle={v} compact liveOnly />
           </div>
           {#if v.salePrice}
             <span class="num-value ml-auto whitespace-nowrap text-[12px]" title="PVP">
@@ -236,7 +239,9 @@
           </td>
           <td class="px-4 py-3">
             <div class="flex flex-wrap items-center gap-2">
-              <StatusBadge status={v.status} /><WebsiteStatus vehicle={v} compact liveOnly />
+              <StatusBadge status={v.status} />
+              {#if v.isTradeIn}<TradeInBadge />{/if}
+              <WebsiteStatus vehicle={v} compact liveOnly />
             </div>
           </td>
           <td class="px-4 py-3 text-right">

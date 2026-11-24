@@ -105,6 +105,7 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
         webPublished: true,
         publicSlug: true,
         sale: { select: { id: true } },
+        sourceTradeIn: { select: { id: true } },
         pendingDocFlags: true,
         createdAt: true,
         updatedAt: true,

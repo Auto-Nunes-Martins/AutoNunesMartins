@@ -122,10 +122,11 @@ router.get(
 
       return {
         ...result,
-        items: result.items.map((v) => {
+        items: result.items.map(({ sourceTradeIn, ...v }) => {
           const primary = vehiclePrincipalPath(v);
           return {
             ...v,
+            isTradeIn: Boolean(sourceTradeIn),
             purchasePrice: v.purchasePrice.toString(),
             salePrice: v.salePrice?.toString() ?? null,
             thumbnailUrl: primary ? (signed.get(primary) ?? null) : null,
