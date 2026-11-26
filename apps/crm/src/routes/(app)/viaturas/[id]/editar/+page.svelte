@@ -31,6 +31,7 @@
     type EditIssue,
   } from '$lib/forms/vehicleEditErrors';
   import {
+    listingDetailsFromForm,
     publicDraftFromForm,
     publicEditKey,
     type EditPhoto,
@@ -90,7 +91,8 @@
   let editIssues = $state<EditIssue[]>([]);
   function editChanged(event: Event) {
     const field = event.target as HTMLInputElement;
-    if (field.name === 'salePrice') draftSalePrice = field.value;
+    const internal = forms().internal;
+    if (internal?.contains(field)) listingDetails = listingDetailsFromForm(new FormData(internal));
     const name = field?.name || field?.dataset?.errorField;
     if (name) {
       const hadErrors = editIssues.length > 0;
@@ -143,7 +145,7 @@
       url: data.signedPhotos.find((photo) => photo.path === path)?.url ?? '',
     }));
   }
-  let draftSalePrice = $state<string | undefined>();
+  let listingDetails = $state<ReturnType<typeof listingDetailsFromForm>>();
   function forms() {
     return {
       internal: root?.querySelector<HTMLFormElement>('form[data-edit-vehicle]'),
@@ -169,7 +171,7 @@
     await tick();
     await tick();
     const current = forms();
-    draftSalePrice = baseline.salePrice ?? '';
+    listingDetails = current.internal ? listingDetailsFromForm(new FormData(current.internal)) : undefined;
     if (current.publication) {
       initialPublicKey = publicEditKey(publicDraftFromForm(new FormData(current.publication)));
       markFormSaved(current.publication);
@@ -220,7 +222,7 @@
       vin: get('vin').toUpperCase(),
       licensePlate: get('licensePlate') || null,
       purchasePrice: get('purchasePrice'),
-      ...(get('salePrice') ? { salePrice: get('salePrice') } : {}),
+      salePrice: get('salePrice').trim() || null,
       status: get('status'),
       acquisitionDate: get('acquisitionDate'),
       description: get('description'),
@@ -533,8 +535,8 @@
   {#key revision}
     {@const values = initial(data.vehicle)}
     <WebPublicationPanel
-      salePrice={draftSalePrice ?? baseline.salePrice ?? ''}
-editorId={publicationEditorId}
+      {listingDetails}
+      editorId={publicationEditorId}
       unified
       managePhotos
       vehicle={data.vehicle}

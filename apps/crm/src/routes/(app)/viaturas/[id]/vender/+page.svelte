@@ -1068,7 +1068,7 @@
               {formatEUR(figures.profit)}
             </div>
             <details class="mt-3 text-[13px]">
-              <summary class="cursor-pointer">Ver cálculo</summary>
+              <summary class="crm-text-disclosure">Ver cálculo</summary>
               <dl class="mt-3 grid grid-cols-2 gap-2">
                 <dt>Margem após despesas</dt>
                 <dd>{formatEUR(figures.margin)}</dd>

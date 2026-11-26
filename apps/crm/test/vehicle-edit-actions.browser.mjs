@@ -156,6 +156,7 @@ test('failed or unconfirmed saves retain edits and never return', {timeout:12000
 for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct publication persisted on reload ${width}px ${theme}`,{timeout:120000},async()=>{
   const key=`publish-${width}-${theme}`,context=await browser.newContext({viewport:{width,height:950},extraHTTPHeaders:{'x-review-case':key},isMobile:width===390,hasTouch:width===390});
   const page=await context.newPage(),posts=[],errors=[];let saved=fixture(),failOnce=true;
+  saved.vehicle.galleryFraming={[photo]:{desktop:{x:72,y:25,zoom:1.2},mobile:{x:28,y:75,zoom:1.1}}};
   fixtureStates.set(key,saved);page.setDefaultTimeout(20000);page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',async route=>{
     const request=route.request(),url=new URL(request.url());if(url.origin!==origin)return route.abort();
@@ -164,14 +165,14 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
         const value=request.postDataJSON();posts.push(value);
         if(failOnce){failOnce=false;return route.fulfill({status:422,json:{issues:[{path:['data','salePrice'],message:'Preço de teste inválido.'}]}});}
         saved.vehicle={...saved.vehicle,...value.data,year:Number(value.data.year),mileage:Number(value.data.mileage),photos:value.photos,updatedAt:new Date(Date.parse(saved.vehicle.updatedAt)+1000).toISOString()};
-        if(value.publication)Object.assign(saved.vehicle,{webPublished:value.publication.published,publicPriceOnRequest:value.publication.priceOnRequest,publicSlug:'vehicle-aaaaaaaaaaaa',publicDescription:value.publication.description,publicTransmission:value.publication.transmission,publicSpecifications:value.publication.specifications});
+        if(value.publication)Object.assign(saved.vehicle,{webPublished:value.publication.published,publicSlug:'vehicle-aaaaaaaaaaaa',publicDescription:value.publication.description,publicTransmission:value.publication.transmission,publicSpecifications:value.publication.specifications});
         fixtureStates.set(key,structuredClone(saved));return route.fulfill({json:{ok:true}});
       }
       return route.fulfill({json:saved});
     }
     return route.continue();
   });
-  const load=async()=>{await page.goto(origin);await page.waitForFunction(()=>window.reviewReady);await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await page.waitForTimeout(450);};
+  const load=async()=>{await page.goto(origin,{waitUntil:'domcontentloaded',timeout:45000});await page.waitForFunction(()=>window.reviewReady,{},{timeout:45000});await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);await page.waitForTimeout(450);};
   const action=()=>page.locator('.publication-action'),save=()=>page.locator('.edit-save-top button.primary');
   try{
     await load();assert.equal(await page.locator('.publication-editor').isVisible(),true);assert.equal(await page.locator('.publish-toggle,input[type=checkbox][data-error-field=published],.publication-trigger').count(),0);assert.ok(!(await page.locator('.vehicle-edit-page').innerText()).includes('Todas as fotografias acompanham'));
@@ -185,17 +186,27 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
     assert.match(await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().getAttribute('rel'),/noopener/);
     assert.equal((await page.evaluate(()=>window.reviewNavigation)).href,`/viaturas/${id}`);
     await load();assert.match(await status.innerText(),/Publicado/);assert.equal(await action().innerText(),'Retirar do website');assert.equal(await page.locator('[name="model"]').inputValue(),'Rascunho mantido');
-    const priceOnRequest=page.getByRole('checkbox',{name:'Mostrar preço sob consulta'});
-    assert.equal(await priceOnRequest.isChecked(),false);
-    await priceOnRequest.check();
-    await page.getByText('Pré-visualizar o anúncio').click();
-    assert.equal(await page.locator('.preview-card strong').innerText(),'Preço sob consulta');
+    const priceInput=page.locator('[name="salePrice"]');
+    await priceInput.fill('');
+    assert.equal(await priceInput.getAttribute('placeholder'),'Sob consulta');
+    assert.equal(await page.locator('[name=priceOnRequest]').count(),0);
+    const preview=page.getByText('Pré-visualizar o anúncio',{exact:true});
+    if(width===1366){
+      await preview.hover();
+      assert.equal(await preview.evaluate((element)=>getComputedStyle(element).boxShadow),'none');
+      assert.equal(await preview.evaluate((element)=>getComputedStyle(element).textDecorationLine),'underline');
+    }
+    await preview.click();
+    assert.equal(await page.locator('.preview-price strong').innerText(),'Preço sob consulta');
+    const cover=page.locator('.preview-cover img');
+    assert.equal(await cover.evaluate((img)=>getComputedStyle(img).objectPosition),width===390?'28% 75%':'72% 25%');
+    assert.equal(await cover.evaluate((img)=>img.style.transform),width===390?'scale(1.1)':'scale(1.2)');
+    assert.equal(await cover.evaluate((img)=>getComputedStyle(img.parentElement).aspectRatio),width===390?'1.3 / 1':'1.5 / 1');
     await save().click();
     await page.waitForFunction(()=>document.querySelector('.edit-save-top button.primary')?.disabled);
-    assert.equal(posts.at(-1).publication.priceOnRequest,true);
+    assert.equal(posts.at(-1).data.salePrice,null);
     await load();
-    assert.equal(await priceOnRequest.isChecked(),true);
-    assert.equal(await page.locator('[name="salePrice"]').inputValue(),'18000');
+    assert.equal(await priceInput.inputValue(),'');
     await page.locator('[name="model"]').fill('Alteração e retirada');await action().click();await page.waitForFunction(()=>document.querySelector('.publication-action')?.textContent==='Publicar no website');assert.equal(posts.at(-1).publication.published,false);assert.equal(posts.at(-1).data.model,'Alteração e retirada');await page.waitForFunction(()=>!document.querySelector('.publication-action')?.disabled&&document.querySelector('.edit-save-top button.primary')?.disabled);
     await load();assert.match(await status.innerText(),/Não publicado/);assert.equal(await page.locator('[name="model"]').inputValue(),'Alteração e retirada');
     // Publish without a dirty form must also perform one real save request.
@@ -203,8 +214,8 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
     await load();await page.locator('.edit-save-top').screenshot({path:path.join(appRoot,`.svelte-kit/direct-publication-${width}-${theme}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.equal(await page.locator('form form').count(),0);
     await page.locator('[name="model"]').fill('Manter edição');await page.getByRole('button',{name:'Cancelar e voltar',exact:true}).click();await page.getByRole('button',{name:'Continuar a editar',exact:true}).click();assert.equal(await page.locator('[name="model"]').inputValue(),'Manter edição');await page.getByRole('button',{name:'Cancelar e voltar',exact:true}).click();await page.getByRole('button',{name:'Descartar alterações',exact:true}).click();await page.waitForURL('**/viaturas/'+id);
     saved=fixture('?blocked=1');fixtureStates.set(key,saved);await load();const blockedPosts=posts.length;await action().click();await page.waitForFunction(()=>!!document.querySelector('[data-edit-issue-key=published]'));assert.equal(posts.length,blockedPosts);assert.match(await status.innerText(),/Não publicado/);
-    saved=fixture('?empty=1');saved.vehicle.salePrice=null;fixtureStates.set(key,saved);await load();await priceOnRequest.check();await action().click();await page.getByRole('button',{name:'Continuar a editar',exact:true}).click();assert.equal(posts.length,blockedPosts);assert.equal(await page.locator('[name=published]').inputValue(),'false');
-    await action().click();await page.getByRole('button',{name:'Confirmar e guardar alterações',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.edit-save-top .website-status')?.textContent.includes('sem fotografias'));assert.equal(posts.at(-1).publication.published,true);assert.equal(posts.at(-1).publication.priceOnRequest,true);assert.equal('salePrice' in posts.at(-1).data,false);assert.deepEqual(posts.at(-1).photos,[]);
+    saved=fixture('?empty=1');saved.vehicle.salePrice=null;fixtureStates.set(key,saved);await load();await action().click();await page.getByRole('button',{name:'Continuar a editar',exact:true}).click();assert.equal(posts.length,blockedPosts);assert.equal(await page.locator('[name=published]').inputValue(),'false');
+    await action().click();await page.getByRole('button',{name:'Confirmar e guardar alterações',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.edit-save-top .website-status')?.textContent.includes('sem fotografias'));assert.equal(posts.at(-1).publication.published,true);assert.equal(posts.at(-1).data.salePrice,null);assert.deepEqual(posts.at(-1).photos,[]);
     assert.deepEqual(errors,[]);
   }finally{fixtureStates.delete(key);await context.close();}
 });

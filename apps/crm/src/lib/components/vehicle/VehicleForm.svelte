@@ -389,7 +389,7 @@
             onkeydown={submitNumberOnEnter}
             inputmode="decimal"
             bind:value={draft.salePrice}
-            placeholder="17950.00"
+            placeholder={saleRecorded ? '17950.00' : 'Sob consulta'}
             class="{inputClass()} tabular-nums"
             style="border-radius: var(--radius-btn);"
           />

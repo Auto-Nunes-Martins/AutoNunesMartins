@@ -22,9 +22,9 @@ export class VehicleStateConflict extends Error {
   }
 }
 
-function validatePrices(data: { purchasePrice?: string; salePrice?: string }): void {
+function validatePrices(data: { purchasePrice?: string; salePrice?: string | null }): void {
   for (const value of [data.purchasePrice, data.salePrice]) {
-    if (value === undefined) continue;
+    if (value == null) continue;
     let valid = false;
     try {
       const price = new Decimal(value);
@@ -152,11 +152,18 @@ export async function updateVehicleInTransaction(
     );
   }
   const currentSalePrice = existing.sale?.salePrice ?? existing.salePrice;
+  const salePriceChanged =
+    data.salePrice === null
+      ? currentSalePrice !== null
+      : data.salePrice !== undefined &&
+        (currentSalePrice === null || !new Decimal(data.salePrice).eq(currentSalePrice.toString()));
   const pricesChanged =
+    salePriceChanged ||
     (data.purchasePrice !== undefined &&
-      !new Decimal(data.purchasePrice).eq(existing.purchasePrice.toString())) ||
-    (data.salePrice !== undefined &&
-      (currentSalePrice === null || !new Decimal(data.salePrice).eq(currentSalePrice.toString())));
+      !new Decimal(data.purchasePrice).eq(existing.purchasePrice.toString()));
+  if (data.salePrice === null && existing.sale) {
+    throw new VehicleStateConflict('Indique o preço da venda registada.', 409, 'salePrice');
+  }
   if (pricesChanged && SOLD_STATUSES.has(existing.status) && !existing.sale) {
     throw new VehicleStateConflict(
       'Esta viatura está vendida mas não tem venda registada. Regularize a venda antes de corrigir preços.',
@@ -165,14 +172,14 @@ export async function updateVehicleInTransaction(
 
   const updateData: Prisma.VehicleUncheckedUpdateInput = {};
   if (data.salePrice !== undefined && !existing.sale) {
-    if (existing.webPublished && !new Decimal(data.salePrice).gt(0))
+    if (existing.webPublished && data.salePrice !== null && !new Decimal(data.salePrice).gt(0))
       throw new VehicleStateConflict(
         'Indique um preço de venda superior a zero para uma viatura publicada.',
         409,
         'salePrice',
       );
     try {
-      await assertCampaignBasePrice(tx, id, data.salePrice);
+      await assertCampaignBasePrice(tx, id, data.salePrice, data.salePrice === null);
     } catch (error) {
       if (error instanceof WebPublicationError)
         throw new VehicleStateConflict(error.message, error.status, 'salePrice');
@@ -192,6 +199,10 @@ export async function updateVehicleInTransaction(
   if (data.licensePlate !== undefined) updateData.licensePlate = data.licensePlate ?? null;
   if (data.purchasePrice !== undefined) updateData.purchasePrice = data.purchasePrice;
   if (data.salePrice !== undefined) updateData.salePrice = data.salePrice;
+  // Keep previously hidden prices private until the price is deliberately changed.
+  if (salePriceChanged && !existing.sale && existing.publicPriceOnRequest) {
+    updateData.publicPriceOnRequest = false;
+  }
   // After sale creation this field mirrors the recorded transaction price.
   if (pricesChanged && existing.sale)
     updateData.salePrice = data.salePrice ?? existing.sale.salePrice;
@@ -204,7 +215,7 @@ export async function updateVehicleInTransaction(
 
   const updated = await tx.vehicle.update({ where: { id }, data: updateData });
   if (pricesChanged && existing.sale) {
-    await recomputeSaleIfExists(tx, id, data.salePrice);
+    await recomputeSaleIfExists(tx, id, data.salePrice ?? undefined);
     await emitActivity(tx, {
       actorId: actor.actorId,
       type: 'SALE_UPDATED',

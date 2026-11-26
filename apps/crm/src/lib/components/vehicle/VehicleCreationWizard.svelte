@@ -23,7 +23,7 @@
   } from '$lib/forms/vehicleEditErrors';
   import type { VehicleDetailResponse } from '$lib/server/vehicles';
   import type { SignedVariantPhoto } from '$lib/photos/vehicleImage';
-  import { publicDraftFromForm, type EditPhoto } from './vehicleEditDraft';
+  import { listingDetailsFromForm, publicDraftFromForm, type EditPhoto } from './vehicleEditDraft';
   import {
     creationDetailsIssues,
     creationStatus,
@@ -137,7 +137,7 @@
     progress = $state(''),
     confirmNoPhoto = $state(false);
   const endpoint = crmPath(`/viaturas/${baseline.id}/editar/save`);
-  let draftSalePrice = $state<string | undefined>();
+  let listingDetails = $state<ReturnType<typeof listingDetailsFromForm>>();
   function forms() {
     return {
       internal: root?.querySelector<HTMLFormElement>('form[data-edit-vehicle]'),
@@ -147,8 +147,9 @@
   function snapshot(action: CreationAction) {
     const current = forms();
     if (!current.internal || !current.publication) return;
-    const details = vehicleDetailsFromForm(new FormData(current.internal));
-    draftSalePrice = details.salePrice;
+    const internal = new FormData(current.internal);
+    const details = vehicleDetailsFromForm(internal);
+    listingDetails = listingDetailsFromForm(internal);
     const publication = publicDraftFromForm(new FormData(current.publication));
     publication.published = action === 'publish';
     const principal = root.querySelector<HTMLElement>('.photo-card.is-cover')?.dataset.photoPath;
@@ -187,7 +188,6 @@
   }
   function changed(event: Event) {
     const field = event.target as HTMLInputElement;
-    if (field.name === 'salePrice') draftSalePrice = field.value;
     const key = field.name || field.dataset?.errorField;
     if (key) {
       clearEditIssueMarks(root, [key]);
@@ -464,7 +464,11 @@
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           expectedUpdatedAt: baseline.updatedAt,
-          data: { ...draft.details, status: creationStatus(action, draft.details.status) },
+          data: {
+            ...draft.details,
+            salePrice: draft.details.salePrice ?? null,
+            status: creationStatus(action, draft.details.status),
+          },
           photos: draft.paths.map(resolve),
           galleryFraming: Object.fromEntries(
             Object.entries(galleryFraming)
@@ -590,7 +594,7 @@
     <!-- Keep both panels mounted: File/blob references, selection and editor history survive back/next. -->
     <div class:step-one={step === 1} class:step-two={step === 2}>
       <WebPublicationPanel
-        salePrice={draftSalePrice ?? baseline.salePrice ?? ''}
+        {listingDetails}
         creation
         recoveredDraft={recoveredPublication}
         unified

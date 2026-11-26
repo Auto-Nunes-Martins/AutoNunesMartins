@@ -151,7 +151,7 @@
         Antes de gastos gerais e impostos sobre o rendimento.
       </p>
       <details>
-        <summary class="cursor-pointer">Ver cálculo</summary>
+        <summary class="crm-text-disclosure">Ver cálculo</summary>
         <dl class="grid grid-cols-2 gap-3 mt-4 text-[13px]">
           <dt>Venda</dt>
           <dd>{formatEUR(s.salePrice)}</dd>

@@ -208,6 +208,13 @@ for (const scenario of ['normal', 'pending', 'blocked'])
       await page.waitForFunction(() => window.reviewReady);
       await page.getByRole('button', { name: /Cliente teste/ }).click();
       const submit = page.getByRole('button', { name: 'Registar venda', exact: true });
+      if (scenario === 'normal') {
+        const calculation = page.getByText('Ver cálculo', { exact: true });
+        await calculation.hover();
+        assert.equal(await calculation.evaluate((element) => getComputedStyle(element).boxShadow), 'none');
+        await calculation.click();
+        assert.equal(await calculation.evaluate((element) => element.parentElement.open), true);
+      }
       await submit.click();
       if (scenario !== 'normal') {
         const dialog = page.getByRole('dialog', { name: 'Vender com documentos em falta?' });

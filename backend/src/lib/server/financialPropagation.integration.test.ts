@@ -128,6 +128,23 @@ describe('real financial services → isolated PostgreSQL → dashboard, lists, 
     await expect(updateVehicle('A', { salePrice: '0' }, actor)).rejects.toMatchObject({
       field: 'salePrice',
     });
+    await expect(updateVehicle('A', { salePrice: null }, actor)).rejects.toMatchObject({
+      field: 'salePrice',
+    });
+  });
+
+  it('clears a public sale price and preserves previous visibility until the price changes', async () => {
+    await db.query('UPDATE "Vehicle" SET "publicPriceOnRequest" = TRUE WHERE id = $1', ['A']);
+    const row = () => mocks.db.vehicle.findUnique({ where: { id: 'A' } });
+    await updateVehicle('A', { salePrice: (await row()).salePrice.toFixed(2) }, actor);
+    expect(publicVehicleDto(await row()).price).toBeNull();
+    await updateVehicle('A', { salePrice: '20500' }, actor);
+    expect(publicVehicleDto(await row()).price).toBe('20500.00');
+    await updateVehicle('A', { salePrice: null }, actor);
+    const cleared = await row();
+    expect(cleared.salePrice).toBeNull();
+    expect(cleared.webPublished).toBe(true);
+    expect(publicVehicleDto(cleared).price).toBeNull();
   });
   it('restores the recorded older customer contact after deleting an erroneous sale', async () => {
     const previous = new Date('2025-11-01');

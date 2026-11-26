@@ -688,3 +688,20 @@ textarea:not(:disabled) {
 [aria-invalid='true']:not([type='hidden']) {
   border-color: var(--color-red) !important;
 }
+
+/* Inline disclosure controls use text feedback instead of the global hover shadow. */
+.crm-text-disclosure {
+  width: fit-content;
+  max-width: 100%;
+  padding-block: 8px;
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+.crm-text-disclosure:is(:hover, :active) {
+  box-shadow: none;
+}
+@media (hover: hover) {
+  .crm-text-disclosure:hover {
+    text-decoration: underline;
+  }
+}

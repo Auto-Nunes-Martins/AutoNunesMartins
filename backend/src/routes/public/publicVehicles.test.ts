@@ -1080,14 +1080,8 @@ describe('explicit publication and stable unique slugs', () => {
     const update = mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data;
     expect(update).toHaveProperty('publicPriceOnRequest', true);
     expect(update).not.toHaveProperty('salePrice');
-    if (price === null) {
-      await expect(setWebPublication(db, id, { ...publication, priceOnRequest: false }, 'admin-id'))
-        .rejects.toThrow('preço de venda superior a zero');
-    } else {
-      await expect(setWebPublication(db, id, { ...publication, priceOnRequest: false }, 'admin-id'))
-        .resolves.toMatchObject({ published: true });
-      expect(mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data).toHaveProperty('publicPriceOnRequest', false);
-    }
+    await expect(setWebPublication(db, id, publication, 'admin-id'))
+      .resolves.toMatchObject({ published: true });
   });
 
   it('prepares legacy dimensions before entering the approval transaction', async () => {

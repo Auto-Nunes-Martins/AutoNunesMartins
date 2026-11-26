@@ -77,9 +77,9 @@ export async function applyWebPublication(
   });
   if (!vehicle) throw new WebPublicationError(404, 'Vehicle not found');
   if (input.published) {
-    const priceOnRequest = input.priceOnRequest ?? vehicle.publicPriceOnRequest;
     const salePrice = vehicle.salePrice;
-    if (!priceOnRequest && !salePrice?.gt(0)) {
+    const priceOnRequest = salePrice === null || (input.priceOnRequest ?? vehicle.publicPriceOnRequest);
+    if (!priceOnRequest && salePrice && !salePrice.gt(0)) {
       throw new WebPublicationError(
         409,
         'Indique um preço de venda superior a zero na ficha da viatura.',

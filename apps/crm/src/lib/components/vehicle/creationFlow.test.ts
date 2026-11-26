@@ -40,17 +40,17 @@ describe('creation workflow intents and required data', () => {
     expect(creationStatus('crm', 'RESERVED')).toBe('RESERVED');
     expect(creationStatus('publish', 'AVAILABLE')).toBe('AVAILABLE');
   });
-  it('requires plate and selling price but permits missing VIN', () => {
+  it('requires the plate and permits missing VIN and sale price', () => {
     expect(creationDetailsIssues(vehicleDetailsFromForm(form()))).toEqual([]);
     const missing = form();
     missing.delete('vin');
+    missing.delete('salePrice');
     expect(creationDetailsIssues(vehicleDetailsFromForm(missing))).toEqual([]);
     missing.delete('licensePlate');
-    missing.delete('salePrice');
     missing.delete('brand');
     expect(
       creationDetailsIssues(vehicleDetailsFromForm(missing)).map((issue) => issue.key),
-    ).toEqual(expect.arrayContaining(['licensePlate', 'salePrice', 'brand']));
+    ).toEqual(expect.arrayContaining(['licensePlate', 'brand']));
   });
   it('normalizes draft fields and retains the chosen status without implicitly publishing', () => {
     const data = form();

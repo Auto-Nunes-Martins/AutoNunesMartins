@@ -1,9 +1,9 @@
 <script lang="ts">
   import { normalizeDecimal } from '$lib/forms/numericField';
-  import { ArrowUpRight } from 'lucide-svelte';
+  import { ArrowUpRight, ImageOff } from 'lucide-svelte';
   import { reusablePhoto } from '$lib/photos/reusablePhoto';
   import { photoAttrs, type SignedVariantPhoto } from '$lib/photos/vehicleImage';
-  import type { GalleryPhotoFraming } from '@anm/types';
+  import { framingStyle, photoFraming, type GalleryPhotoFraming } from '@anm/types';
   import { sessionFetch } from '$lib/auth/session';
   import { invalidateAll } from '$app/navigation';
   import { PUBLIC_WEBSITE_URL } from '$env/static/public';
@@ -19,7 +19,7 @@
   import RichDescription from '../../../../../../shared/ui/RichDescription.svelte';
   import VehicleCharacteristics from './VehicleCharacteristics.svelte';
   import { descriptionText } from '@anm/types/richDescription';
-  import type { EditPhoto, publicDraftFromForm } from './vehicleEditDraft';
+  import type { EditPhoto, listingDetailsFromForm, publicDraftFromForm } from './vehicleEditDraft';
   import PhotoGallery from './PhotoGallery.svelte';
   import {
     formFeedback,
@@ -28,14 +28,14 @@
     showFormErrors,
   } from '$lib/forms/formFeedback';
   import PublicPhotoPicker from './PublicPhotoPicker.svelte';
-  import { formatEUR, formatKm } from '$lib/utils/format';
+  import { formatInt } from '$lib/utils/format';
   import { toast } from 'svelte-sonner';
   import { publicVehicleUrl, publishedVehicleUrl } from '$lib/utils/publicVehicleUrl';
   import { vehicleSavedFeedback } from './vehicleSaveFeedback';
   import type { VehicleDetailResponse } from '$lib/server/vehicles';
   let {
     vehicle,
-    salePrice = vehicle.salePrice ?? '',
+    listingDetails,
     photos = [],
     managePhotos = false,
     vehicleDetails,
@@ -51,7 +51,7 @@
     editorId,
   }: {
     vehicle: VehicleDetailResponse;
-    salePrice?: string;
+    listingDetails?: ReturnType<typeof listingDetailsFromForm>;
     photos?: SignedVariantPhoto[];
     managePhotos?: boolean;
     vehicleDetails?: Snippet<[Snippet]>;
@@ -66,7 +66,30 @@
     recoveredDraft?: ReturnType<typeof publicDraftFromForm>;
     editorId?: string;
   } = $props();
-  const price = $derived(salePrice);
+  const brand = $derived(listingDetails?.brand || vehicle.brand);
+  const model = $derived(listingDetails?.model || vehicle.model);
+  const year = $derived(listingDetails?.year || vehicle.year);
+  const mileage = $derived(listingDetails ? listingDetails.mileage || null : vehicle.mileage);
+  const fuel = $derived(listingDetails?.fuel || vehicle.fuel);
+  const price = $derived(normalizeDecimal(listingDetails?.salePrice ?? vehicle.salePrice ?? ''));
+  const numericPrice = $derived(Number(price));
+  const hiddenPrice = $derived(
+    vehicle.publicPriceOnRequest && numericPrice === Number(vehicle.salePrice),
+  );
+  const priceFormatter = new Intl.NumberFormat('pt-PT', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  const fuelLabels: Record<string, string> = {
+    GASOLINE: 'Gasolina',
+    DIESEL: 'Gasóleo',
+    HYBRID: 'Híbrido',
+    PLUGIN_HYBRID: 'Híbrido Plug-in',
+    ELECTRIC: 'Elétrico',
+    LPG: 'GPL',
+  };
   let description = $state('');
   let transmission = $state('');
   let selected = $state<string[]>([]);
@@ -100,7 +123,6 @@
   let loadedVehicle = '';
   let formValid = $state(false);
   let draftPublished = $state(false);
-  let priceOnRequest = $state(false);
   let specs = $state({
     version: '',
     powerHp: '',
@@ -159,7 +181,7 @@
   );
   const ready = $derived(
     eligible &&
-      (priceOnRequest || Number(normalizeDecimal(price)) > 0) &&
+      (!price || numericPrice > 0) &&
       descriptionText(description).length > 0,
   );
   function savedPublicationDraft() {
@@ -167,7 +189,6 @@
       const details = recoveredDraft.specifications as typeof recoveredDraft.specifications &
         Record<string, unknown>;
       return {
-        priceOnRequest: recoveredDraft.priceOnRequest ?? false,
         description: recoveredDraft.description,
         transmission: recoveredDraft.transmission ?? '',
         selected: allowedPhotos,
@@ -186,7 +207,6 @@
     }
     const details = vehicle.publicSpecifications;
     return {
-      priceOnRequest: vehicle.publicPriceOnRequest ?? false,
       description:
         vehicle.publicDescription ?? `${vehicle.brand} ${vehicle.model}, de ${vehicle.year}.`,
       transmission: vehicle.publicTransmission ?? '',
@@ -210,7 +230,6 @@
         ? (recoveredDraft.galleryFraming ?? {})
         : (vehicle.galleryFraming ?? {});
     const saved = savedPublicationDraft();
-    priceOnRequest = saved.priceOnRequest;
     description = saved.description;
     transmission = saved.transmission;
     specs = saved.specs;
@@ -219,7 +238,6 @@
   }
   const draftKey = $derived(
     publicationDraftKey({
-      priceOnRequest,
       description,
       transmission,
       selected,
@@ -450,11 +468,6 @@
             <input type="hidden" name="published" value={String(draftPublished)} />
           {/if}
           <h3 class="publication-group-title">Dados do anúncio</h3>
-          <input type="hidden" name="priceOnRequestPresent" value="true" />
-          <label class="price-on-request">
-            <input type="checkbox" name="priceOnRequest" bind:checked={priceOnRequest} />
-            Mostrar preço sob consulta
-          </label>
           <DescriptionEditor
             bind:value={description}
             disabled={disabled || pending}
@@ -498,36 +511,46 @@
             </p>
           </details>
           <details class="publication-preview">
-            <summary>Pré-visualizar o anúncio · {selected.length} fotografias</summary>
+            <summary class="crm-text-disclosure">Pré-visualizar o anúncio</summary>
             <div class="preview-card">
-              {#if cover}<img
-                  {...photoAttrs(cover, 800, '(max-width:700px) 80vw, 600px')}
-                  use:reusablePhoto={{ photo: cover }}
-                  alt="Foto principal do anúncio"
-                />{:else}<div class="preview-empty">Imagem indisponível</div>{/if}
-              <div>
-                <span class="preview-kicker"
-                  >Pré-visualização · só muda no site depois de guardar</span
-                >
-                <h3>{vehicle.brand} {vehicle.model}</h3>
-                <p>
-                  {vehicle.year}{vehicle.mileage == null ? '' : ` · ${formatKm(vehicle.mileage)}`}
-                </p>
-                <strong
-                  >{!priceOnRequest && price && Number(normalizeDecimal(price)) > 0
-                    ? formatEUR(normalizeDecimal(price))
-                    : 'Preço sob consulta'}</strong
-                >
-                <div class="preview-description"><RichDescription value={description} /></div>
+              <div class="preview-cover">
+                {#if cover}
+                  <img
+                    {...photoAttrs(cover, 800, '(max-width:700px) 90vw, 600px')}
+                    use:reusablePhoto={{ photo: cover }}
+                    style={framingStyle(framing[cover.path])}
+                    use:photoFraming={{ framing: framing[cover.path] }}
+                    loading="lazy"
+                    alt={`${brand} ${model} — fotografia principal`}
+                  />
+                {:else}
+                  <div class="preview-empty"><ImageOff size={24} aria-hidden="true" /> Imagem indisponível</div>
+                {/if}
               </div>
+              <div class="preview-overview">
+                <h3>{brand}<br />{model}</h3>
+                {#if specs.version}<p class="preview-version">{specs.version}</p>{/if}
+                <p class="preview-price">
+                  <span>Preço da viatura</span>
+                  <strong>{price && numericPrice > 0 && !hiddenPrice
+                    ? priceFormatter.format(numericPrice)
+                    : 'Preço sob consulta'}</strong>
+                </p>
+                <dl class="preview-specs">
+                  <div><dt>Ano</dt><dd>{year}</dd></div>
+                  <div><dt>Quilómetros</dt><dd>{mileage == null ? 'Sob consulta' : formatInt(mileage)}</dd></div>
+                  <div><dt>Combustível</dt><dd>{fuelLabels[fuel] ?? fuel}</dd></div>
+                </dl>
+              </div>
+              {#if descriptionText(description)}
+                <div class="preview-description"><RichDescription value={description} /></div>
+              {/if}
             </div>
           </details>
           <div class="requirements" aria-live="polite">
             {#if !eligible}<p>
                 Requer estado Disponível ou Reservado, sem venda registada.
-              </p>{/if}{#if !priceOnRequest && !price}<p>
-                Preencha o preço de venda na ficha da viatura para publicar.
-              </p>{:else if !priceOnRequest && !(Number(normalizeDecimal(price)) > 0)}<p>
+              </p>{/if}{#if price && !(numericPrice > 0)}<p>
                 O preço de venda deve ser superior a zero.
               </p>{/if}{#if !descriptionText(description)}<p>
                 Falta uma descrição pública.
@@ -620,15 +643,6 @@
     margin-left: auto;
     align-self: center;
     white-space: nowrap;
-  }
-  .price-on-request {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    margin-bottom: 12px;
-    font-size: 13px;
-    cursor: pointer;
   }
   .publication-group-title {
     font-size: 13px;
@@ -771,61 +785,117 @@
     padding: 0 5px;
   }
   .publication-preview {
-    margin: 20px 0;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-card);
-    padding: 14px;
+    margin-block: 20px;
+    border-block: 1px solid var(--color-border);
   }
-  .publication-preview summary {
-    cursor: pointer;
+  .publication-preview > summary {
     font-size: 13px;
-    font-weight: 600;
   }
   .preview-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    margin-top: 16px;
-    background: var(--color-bg-2);
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+    margin-block: 6px 14px;
+    padding: clamp(12px, 2.5vw, 24px);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
-    overflow: hidden;
+    background: var(--color-bg-0);
+    color: var(--color-text);
   }
-  .preview-card > img {
+  .preview-cover {
+    position: relative;
+    aspect-ratio: 1.5;
+    max-height: 570px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--color-bg-2);
+  }
+  .preview-cover img,
+  .preview-empty {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    max-height: 340px;
+  }
+  .preview-cover img {
+    display: block;
     object-fit: cover;
-  }
-  .preview-card > div {
-    padding: 20px;
-  }
-  .preview-card h3 {
-    font-family: var(--font-display);
-    font-size: 22px;
-    margin: 8px 0;
-  }
-  .preview-card p {
-    font-size: 13px;
-    color: var(--color-text-muted);
-    margin: 8px 0;
-  }
-  .preview-kicker {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-text-faint);
-  }
-  .preview-description {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
+    object-position: var(--photo-desktop, 50% 50%);
   }
   .preview-empty {
-    display: grid;
-    place-items: center;
-    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--color-text-muted);
+    font-size: 13px;
   }
-  @media (max-width: 600px) {
+  .preview-overview h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3.2vw, 42px);
+    font-weight: 800;
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+  .preview-version {
+    margin-top: 8px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+  .preview-price {
+    display: grid;
+    gap: 3px;
+    margin-top: 18px;
+  }
+  .preview-price span,
+  .preview-specs dt {
+    color: var(--color-text-muted);
+    font-size: 11px;
+  }
+  .preview-price strong {
+    font-family: var(--font-display);
+    font-size: clamp(21px, 2.6vw, 35px);
+    line-height: 1.2;
+  }
+  .preview-specs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+  }
+  .preview-specs > div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+    min-width: 0;
+  }
+  .preview-specs dd {
+    font-size: 13px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .preview-description {
+    grid-column: 1 / -1;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 700px) {
     .preview-card {
       grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .preview-cover {
+      aspect-ratio: 1.3;
+      max-height: 400px;
+    }
+    .preview-cover img {
+      object-position: var(--photo-mobile, 50% 50%);
     }
   }
   .requirements {

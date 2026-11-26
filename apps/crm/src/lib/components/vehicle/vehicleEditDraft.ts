@@ -10,11 +10,22 @@ export type EditPhoto = SignedVariantPhoto & {
   uploadedPath?: string;
 };
 
+export function listingDetailsFromForm(form: FormData) {
+  const get = (key: string) => String(form.get(key) ?? '').trim();
+  return {
+    brand: get('brand'),
+    model: get('model'),
+    year: get('year'),
+    mileage: get('mileage'),
+    fuel: get('fuel'),
+    salePrice: get('salePrice'),
+  };
+}
+
 export function publicDraftFromForm(form: FormData) {
   const get = (key: string) => String(form.get(key) ?? '');
   return {
     published: get('published') === 'true',
-    priceOnRequest: form.has('priceOnRequest'),
     galleryFraming: galleryFramingSchema.parse(JSON.parse(get('galleryFraming') || '{}')),
     description: get('publicDescription'),
     photoPaths: form.getAll('vehiclePhotoPaths').map(String),

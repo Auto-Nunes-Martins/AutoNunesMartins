@@ -78,7 +78,7 @@ export const vehicleCreateSchema = z.object({
   ),
   licensePlate: licensePlatePtSchema,
   purchasePrice: moneySchema,
-  salePrice: moneySchema,
+  salePrice: moneySchema.optional(),
   status: VehicleStatusEnum.exclude(['RETURNED']).default('AVAILABLE'),
   acquisitionDate: z.coerce.date(),
   description: z.string().max(2000).optional(),
@@ -99,6 +99,7 @@ export const vehicleUpdateSchema = vehicleCreateSchema
   .extend({
     id: z.string().min(1),
     status: VehicleStatusEnum.optional(),
+    salePrice: moneySchema.nullable().optional(),
   });
 export type VehicleUpdate = z.infer<typeof vehicleUpdateSchema>;
 
