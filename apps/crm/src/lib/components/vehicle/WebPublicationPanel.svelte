@@ -49,6 +49,7 @@
     creation = false,
     recoveredDraft,
     editorId,
+    hidePublication = false,
   }: {
     vehicle: VehicleDetailResponse;
     listingDetails?: ReturnType<typeof listingDetailsFromForm>;
@@ -65,6 +66,7 @@
     creation?: boolean;
     recoveredDraft?: ReturnType<typeof publicDraftFromForm>;
     editorId?: string;
+    hidePublication?: boolean;
   } = $props();
   const brand = $derived(listingDetails?.brand || vehicle.brand);
   const model = $derived(listingDetails?.model || vehicle.model);
@@ -404,7 +406,7 @@
     <section class="standalone-characteristics">{@render vehicleCharacteristics()}</section>
   {/if}
 
-  <div class="publication-editor" id={editorId}>
+  <div class="publication-editor" id={editorId} hidden={hidePublication}>
     <section class="web-publication" aria-labelledby="web-publication-title">
       <div class="heading">
         <div>
@@ -471,7 +473,7 @@
           <DescriptionEditor
             bind:value={description}
             disabled={disabled || pending}
-            required={!creation && (!unified || draftPublished)}
+            required={!hidePublication && !creation && (!unified || draftPublished)}
           />
           {#if creation}<p class="note">
               <span class="required-marker" style="color:var(--color-red)" aria-hidden="true"

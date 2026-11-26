@@ -338,3 +338,47 @@ test('save waits for local preparation, preserves appended queue and reuses stag
     assert.equal(saved.vehicle.photos.length,4);
   }finally{release();await context.close();}
 });
+
+test('sold vehicle keeps internal editing without showing publication controls', {timeout:120000}, async()=>{
+  const key='sold-public-history';
+  const context=await browser.newContext({
+    viewport:{width:390,height:900},
+    extraHTTPHeaders:{'x-review-case':key},
+  });
+  const page=await context.newPage();
+  const saved=fixture();
+  Object.assign(saved.vehicle,{
+    status:'SOLD',
+    soldDate:'2026-10-28T00:00:00.000Z',
+    sale:{id:'sale',salePrice:'17500'},
+    webPublished:true,
+    publicSlug:'vehicle-aaaaaaaaaaaa',
+  });
+  fixtureStates.set(key,saved);
+  const posts=[];
+  await page.route('**/editar/save',async(route)=>{
+    if(route.request().method()==='POST'){
+      const value=route.request().postDataJSON();
+      posts.push(value);
+      saved.vehicle.model=value.data.model;
+      return route.fulfill({json:{ok:true}});
+    }
+    return route.fulfill({json:saved});
+  });
+  try {
+    await page.goto(origin,{waitUntil:'domcontentloaded',timeout:45000});
+    await page.waitForFunction(()=>window.reviewReady,{},{timeout:45000});
+    assert.equal(await page.locator('.publication-action').count(),0);
+    assert.equal(await page.locator('.publication-editor').isVisible(),false);
+    assert.equal(await page.locator('[name="salePrice"]').inputValue(),'17500');
+    await page.locator('[name="model"]').fill('Modelo corrigido');
+    await page.locator('.edit-save-top button.primary').click();
+    await page.waitForFunction(()=>window.reviewNavigation?.href?.includes('/viaturas/'));
+    assert.equal(posts.length,1);
+    assert.equal(posts[0].data.model,'Modelo corrigido');
+    assert.equal('publication' in posts[0],false);
+  } finally {
+    fixtureStates.delete(key);
+    await context.close();
+  }
+});

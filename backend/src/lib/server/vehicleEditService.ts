@@ -52,7 +52,7 @@ export const vehicleEditSchema = z
       .default([]),
     publication: z
       .object({
-        published: z.boolean(),
+        published: z.boolean().optional(),
         priceOnRequest: z.boolean().optional(),
         description: z.string().trim().max(6000),
         photoPaths: z.array(z.string().max(160)).max(20).optional().default([]), // Legacy input ignored; photos is the source of truth.
@@ -111,7 +111,15 @@ export async function saveVehicleEdit(
           await lockVehicle(tx, id);
           const current = await tx.vehicle.findUnique({
             where: { id },
-            select: { updatedAt: true, photos: true, webPublished: true, galleryFraming: true },
+            select: {
+              updatedAt: true,
+              photos: true,
+              webPublished: true,
+              galleryFraming: true,
+              status: true,
+              soldDate: true,
+              sale: { select: { id: true } },
+            },
           });
           if (!current) throw new VehicleNotFound(id);
           if (current.updatedAt.toISOString() !== input.expectedUpdatedAt)
@@ -165,21 +173,34 @@ export async function saveVehicleEdit(
           });
           if (input.publication) {
             const publication = input.publication;
-            await applyWebPublication(
-              tx,
-              id,
-              publication.published
-                ? { ...publication, photoPaths: input.photos, published: true }
-                : { published: false },
-              actor.actorId,
-              suffixLength,
-            );
+            if (publication.published !== undefined) {
+              await applyWebPublication(
+                tx,
+                id,
+                publication.published
+                  ? { ...publication, photoPaths: input.photos, published: true }
+                  : { published: false },
+                actor.actorId,
+                suffixLength,
+              );
+            } else if (
+              !current.sale &&
+              !current.soldDate &&
+              current.status !== 'SOLD' &&
+              current.status !== 'DELIVERED'
+            ) {
+              throw new VehicleStateConflict('Indique o estado da publicação.', 409, 'published');
+            }
             if (!publication.published) {
               await tx.vehicle.update({
                 where: { id },
                 data: {
-                  publicPriceOnRequest: publication.priceOnRequest,
-                  publicDescription: publication.description,
+                  ...(publication.published === false
+                    ? {
+                        publicPriceOnRequest: publication.priceOnRequest,
+                        publicDescription: publication.description,
+                      }
+                    : {}),
                   publicPhotoPaths: input.photos,
                   publicTransmission: publication.transmission,
                   publicSpecifications: publication.specifications,

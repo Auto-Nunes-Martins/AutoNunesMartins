@@ -76,6 +76,9 @@
   let baseline = $state<VehicleDetailResponse>(
     untrack(() => JSON.parse(JSON.stringify(data.vehicle))),
   );
+  const saleClosed = $derived(
+    !!baseline.sale || !!baseline.soldDate || ['SOLD', 'DELIVERED'].includes(baseline.status),
+  );
   let photoDraft = $state<EditPhoto[]>(initialPhotos());
   let revision = $state(0),
     saving = $state(false),
@@ -204,6 +207,7 @@
     return (await response.json()) as Pick<PageData, 'vehicle' | 'signedPhotos'>;
   }
   async function saveAll(published?: boolean) {
+    if (saleClosed && published !== undefined) return;
     const changingPublication = published !== undefined && published !== baseline.webPublished;
     if (saving || deleting || needsReload || confirmationOpen || (!dirty && !changingPublication))
       return;
@@ -211,7 +215,8 @@
     if (!current.internal || !current.publication) return;
     const internal = new FormData(current.internal),
       publication = publicDraftFromForm(new FormData(current.publication));
-    if (published !== undefined) publication.published = published;
+    if (saleClosed) publication.published = false;
+    else if (published !== undefined) publication.published = published;
     const get = (key: string) => String(internal.get(key) ?? '');
     const details = {
       brand: get('brand'),
@@ -242,7 +247,7 @@
       details,
       publication,
       orderedPhotos,
-      !!baseline.sale || !!baseline.soldDate,
+      saleClosed,
     );
     markEditIssues(root, editIssues);
     if (editIssues.length) {
@@ -332,7 +337,12 @@
       }
       const resolvePath = (path: string) =>
         photoDraft.find((photo) => photo.path === path)?.uploadedPath ?? path;
-      const { photoPaths: _legacyPhotoPaths, galleryFraming, ...publicationData } = publication;
+      const {
+        photoPaths: _legacyPhotoPaths,
+        galleryFraming,
+        published: publishOnWebsite,
+        ...publicDetails
+      } = publication;
       savePhase = 3;
       progress = 'A guardar todas as alterações…';
       saveRequestStarted = true;
@@ -349,7 +359,13 @@
               .map(([path, value]) => [resolvePath(path), value]),
           ),
           uploadedPhotos: files.map((photo) => photo.uploadedPath!),
-          ...(publicDirty || changingPublication ? { publication: publicationData } : {}),
+          ...(publicDirty || changingPublication
+            ? {
+                publication: saleClosed
+                  ? publicDetails
+                  : { ...publicDetails, published: publishOnWebsite },
+              }
+            : {}),
         }),
       });
       saveResponseReceived = true;
@@ -480,13 +496,13 @@
       </p>
       {#if needsReload}<span class="publication-state publication-unknown"
           >Publicação por confirmar · recarregue a ficha.</span
-        >{:else}<WebsiteStatus vehicle={baseline} />{/if}
-      {#if websiteVisibility(baseline).state === 'blocked'}<span
+        >{:else if !saleClosed}<WebsiteStatus vehicle={baseline} />{/if}
+      {#if !saleClosed && websiteVisibility(baseline).state === 'blocked'}<span
           class="publication-state publication-warning">{websiteVisibility(baseline).detail}</span
         >{/if}
     </div>
     <div class="edit-actions">
-      <button
+      {#if !saleClosed}<button
         type="button"
         class="publication-action"
         data-error-field="published"
@@ -503,7 +519,7 @@
             : dirty
               ? 'Guardar e publicar no website'
               : 'Publicar no website'}</button
-      >
+      >{/if}
       <button type="button" disabled={saving || deleting} onclick={discard}
         >Cancelar e voltar</button
       >
@@ -537,6 +553,7 @@
     <WebPublicationPanel
       {listingDetails}
       editorId={publicationEditorId}
+      hidePublication={saleClosed}
       unified
       managePhotos
       vehicle={data.vehicle}

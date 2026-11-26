@@ -46,7 +46,7 @@ const EditPage = component(source('../../routes/(app)/viaturas/[id]/editar/+page
   ItalicHero: Empty,
   PhotoGallery: Empty,
   WebPublicationPanel: component(
-    '<script>let {vehicleDetails}=$props();</script>{@render vehicleDetails?.()}',
+    '<script>let {vehicleDetails,hidePublication}=$props();</script>{@render vehicleDetails?.()}{#if !hidePublication}<p>Publicação no website</p>{/if}',
   ),
   Trash2: Empty,
   VehicleDeletePanel: Empty,
@@ -80,6 +80,7 @@ describe('post-sale vehicle editing UI', () => {
         purchasePrice: '10000',
         salePrice: '19000',
         status,
+        webPublished: true,
         acquisitionDate: '2026-01-01',
         description: 'Notes',
         pendingDocFlags: { financing: true, imt: false, registration: false, docs: true },
@@ -104,6 +105,8 @@ describe('post-sale vehicle editing UI', () => {
       expect(html).not.toMatch(/<select[^>]*name="status"/);
       expect(html).toContain('href="/vendas/sale"');
       expect(html).toContain('Guardar alterações');
+      expect(html).not.toContain('Retirar do website');
+      expect(html).not.toContain('Publicação no website');
       expect(html).toContain('A viatura vendida não é apresentada no website');
     },
   );

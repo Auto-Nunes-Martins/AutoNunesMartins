@@ -196,6 +196,22 @@ describe('single vehicle edit transaction', () => {
     expect(mocked.update.mock.calls[0]?.[0]).toBe(tx);
     expect(mocked.publication.mock.calls[0]?.[0]).toBe(tx);
   });
+  it('saves a sold vehicle’s characteristics without removing its publication history', async () => {
+    row.webPublished = true;
+    tx.vehicle.findUnique.mockResolvedValue({ ...row, status: 'SOLD' });
+    const value = input();
+    value.publication!.published = undefined;
+
+    await saveVehicleEdit(id, value, actor);
+
+    expect(mocked.publication).not.toHaveBeenCalled();
+    expect(row.webPublished).toBe(true);
+    expect(tx.vehicle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ publicSpecifications: value.publication!.specifications }),
+      }),
+    );
+  });
   it('rolls back internal fields and order when public approval fails', async () => {
     mocked.publication.mockRejectedValueOnce(new Error('Publication rejected'));
     await expect(saveVehicleEdit(id, { ...input(), photos: [b] }, actor)).rejects.toThrow(
