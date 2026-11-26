@@ -72,11 +72,17 @@ export function appliedCampaign(item: SavedCampaign) {
 }
 
 export function eligibleCampaign(
-  row: { id: string; status: string; salePrice: Prisma.Decimal | null },
+  row: {
+    id: string;
+    status: string;
+    salePrice: Prisma.Decimal | null;
+    publicPriceOnRequest?: boolean;
+  },
   items: SavedCampaign[],
   now: number,
 ): SavedCampaign | undefined {
-  if (row.status !== 'AVAILABLE' || !row.salePrice?.gt(0)) return undefined;
+  if (row.publicPriceOnRequest || row.status !== 'AVAILABLE' || !row.salePrice?.gt(0))
+    return undefined;
   return items.find(
     (item) =>
       item.vehicleId === row.id &&

@@ -9,6 +9,7 @@ export function reconcilePhotoSelection(
 }
 
 type Draft = {
+  priceOnRequest?: boolean;
   galleryFraming?: Record<string, import('@anm/types').GalleryPhotoFraming>;
   description: string;
   transmission: string;

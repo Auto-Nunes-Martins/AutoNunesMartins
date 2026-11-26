@@ -383,7 +383,7 @@
           >
           <input
             name="salePrice"
-            required
+            required={saleRecorded}
             type="text"
             use:numericField={{ min: 0 }}
             onkeydown={submitNumberOnEnter}

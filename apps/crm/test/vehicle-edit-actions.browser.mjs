@@ -164,7 +164,7 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
         const value=request.postDataJSON();posts.push(value);
         if(failOnce){failOnce=false;return route.fulfill({status:422,json:{issues:[{path:['data','salePrice'],message:'Preço de teste inválido.'}]}});}
         saved.vehicle={...saved.vehicle,...value.data,year:Number(value.data.year),mileage:Number(value.data.mileage),photos:value.photos,updatedAt:new Date(Date.parse(saved.vehicle.updatedAt)+1000).toISOString()};
-        if(value.publication)Object.assign(saved.vehicle,{webPublished:value.publication.published,publicSlug:'vehicle-aaaaaaaaaaaa',publicDescription:value.publication.description,publicTransmission:value.publication.transmission,publicSpecifications:value.publication.specifications});
+        if(value.publication)Object.assign(saved.vehicle,{webPublished:value.publication.published,publicPriceOnRequest:value.publication.priceOnRequest,publicSlug:'vehicle-aaaaaaaaaaaa',publicDescription:value.publication.description,publicTransmission:value.publication.transmission,publicSpecifications:value.publication.specifications});
         fixtureStates.set(key,structuredClone(saved));return route.fulfill({json:{ok:true}});
       }
       return route.fulfill({json:saved});
@@ -185,6 +185,17 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
     assert.match(await page.getByRole('link',{name:'Ver online ↗',exact:true}).first().getAttribute('rel'),/noopener/);
     assert.equal((await page.evaluate(()=>window.reviewNavigation)).href,`/viaturas/${id}`);
     await load();assert.match(await status.innerText(),/Publicado/);assert.equal(await action().innerText(),'Retirar do website');assert.equal(await page.locator('[name="model"]').inputValue(),'Rascunho mantido');
+    const priceOnRequest=page.getByRole('checkbox',{name:'Mostrar preço sob consulta'});
+    assert.equal(await priceOnRequest.isChecked(),false);
+    await priceOnRequest.check();
+    await page.getByText('Pré-visualizar o anúncio').click();
+    assert.equal(await page.locator('.preview-card strong').innerText(),'Preço sob consulta');
+    await save().click();
+    await page.waitForFunction(()=>document.querySelector('.edit-save-top button.primary')?.disabled);
+    assert.equal(posts.at(-1).publication.priceOnRequest,true);
+    await load();
+    assert.equal(await priceOnRequest.isChecked(),true);
+    assert.equal(await page.locator('[name="salePrice"]').inputValue(),'18000');
     await page.locator('[name="model"]').fill('Alteração e retirada');await action().click();await page.waitForFunction(()=>document.querySelector('.publication-action')?.textContent==='Publicar no website');assert.equal(posts.at(-1).publication.published,false);assert.equal(posts.at(-1).data.model,'Alteração e retirada');await page.waitForFunction(()=>!document.querySelector('.publication-action')?.disabled&&document.querySelector('.edit-save-top button.primary')?.disabled);
     await load();assert.match(await status.innerText(),/Não publicado/);assert.equal(await page.locator('[name="model"]').inputValue(),'Alteração e retirada');
     // Publish without a dirty form must also perform one real save request.
@@ -192,8 +203,8 @@ for(const width of [1366,390])for(const theme of ['light','dark'])test(`direct p
     await load();await page.locator('.edit-save-top').screenshot({path:path.join(appRoot,`.svelte-kit/direct-publication-${width}-${theme}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.equal(await page.locator('form form').count(),0);
     await page.locator('[name="model"]').fill('Manter edição');await page.getByRole('button',{name:'Cancelar e voltar',exact:true}).click();await page.getByRole('button',{name:'Continuar a editar',exact:true}).click();assert.equal(await page.locator('[name="model"]').inputValue(),'Manter edição');await page.getByRole('button',{name:'Cancelar e voltar',exact:true}).click();await page.getByRole('button',{name:'Descartar alterações',exact:true}).click();await page.waitForURL('**/viaturas/'+id);
     saved=fixture('?blocked=1');fixtureStates.set(key,saved);await load();const blockedPosts=posts.length;await action().click();await page.waitForFunction(()=>!!document.querySelector('[data-edit-issue-key=published]'));assert.equal(posts.length,blockedPosts);assert.match(await status.innerText(),/Não publicado/);
-    saved=fixture('?empty=1');fixtureStates.set(key,saved);await load();await action().click();await page.getByRole('button',{name:'Continuar a editar',exact:true}).click();assert.equal(posts.length,blockedPosts);assert.equal(await page.locator('[name=published]').inputValue(),'false');
-    await action().click();await page.getByRole('button',{name:'Confirmar e guardar alterações',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.edit-save-top .website-status')?.textContent.includes('sem fotografias'));assert.equal(posts.at(-1).publication.published,true);assert.deepEqual(posts.at(-1).photos,[]);
+    saved=fixture('?empty=1');saved.vehicle.salePrice=null;fixtureStates.set(key,saved);await load();await priceOnRequest.check();await action().click();await page.getByRole('button',{name:'Continuar a editar',exact:true}).click();assert.equal(posts.length,blockedPosts);assert.equal(await page.locator('[name=published]').inputValue(),'false');
+    await action().click();await page.getByRole('button',{name:'Confirmar e guardar alterações',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.edit-save-top .website-status')?.textContent.includes('sem fotografias'));assert.equal(posts.at(-1).publication.published,true);assert.equal(posts.at(-1).publication.priceOnRequest,true);assert.equal('salePrice' in posts.at(-1).data,false);assert.deepEqual(posts.at(-1).photos,[]);
     assert.deepEqual(errors,[]);
   }finally{fixtureStates.delete(key);await context.close();}
 });

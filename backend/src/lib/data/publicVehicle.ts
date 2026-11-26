@@ -28,6 +28,7 @@ export const publicVehicleSelect = {
   webPublished: true,
   publicSlug: true,
   salePrice: true,
+  publicPriceOnRequest: true,
   publicDescription: true,
   publicTransmission: true,
   publicSpecifications: true,
@@ -56,6 +57,7 @@ export function publicVehicleWhere(query?: PublicVehicleQuery): Prisma.VehicleWh
     where.mileage = { gte: query.km_min, lte: query.km_max };
   }
   if (query.preco_min !== undefined || query.preco_max !== undefined) {
+    where.publicPriceOnRequest = false;
     where.salePrice = { gt: 0, gte: query.preco_min, lte: query.preco_max };
   }
   if (query.q) {
@@ -96,7 +98,9 @@ export function approvedPaths(row: Pick<PublicRow, 'id' | 'photos'>): string[] {
 
 /** Explicit JSON allowlist, even if a future query accidentally over-selects. */
 export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
-  const referencePrice = campaignComparisonPrice(row.salePrice, promotion);
+  const basePrice = row.publicPriceOnRequest ? null : row.salePrice;
+  const publicPromotion = row.publicPriceOnRequest ? undefined : promotion;
+  const referencePrice = campaignComparisonPrice(basePrice, publicPromotion);
   const framing = galleryFramingSchema.safeParse(row.galleryFraming).data ?? {};
   const paths = approvedPaths(row);
   const positions = paths.map((path) => framing[path] ?? null);
@@ -104,7 +108,7 @@ export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
   if (
     !row.webPublished ||
     !row.publicSlug ||
-    (row.salePrice !== null && !row.salePrice.gt(0)) ||
+    (basePrice !== null && !basePrice.gt(0)) ||
     (row.status !== 'AVAILABLE' && row.status !== 'RESERVED')
   ) {
     throw new Error('Invalid public vehicle projection');
@@ -120,14 +124,14 @@ export function publicVehicleDto(row: PublicRow, promotion?: SavedCampaign) {
     year: row.year,
     fuel: row.fuel,
     mileage: row.mileage,
-    price: promotion?.price ?? row.salePrice?.toFixed(2) ?? null,
-    ...(promotion?.applied && !referencePrice ? { priceValidUntil: promotion.endsAt } : {}),
-    ...(promotion && referencePrice
+    price: publicPromotion?.price ?? basePrice?.toFixed(2) ?? null,
+    ...(publicPromotion?.applied && !referencePrice ? { priceValidUntil: publicPromotion.endsAt } : {}),
+    ...(publicPromotion && referencePrice
       ? {
           promotion: {
             referencePrice,
-            startsAt: promotion.startsAt,
-            endsAt: promotion.endsAt,
+            startsAt: publicPromotion.startsAt,
+            endsAt: publicPromotion.endsAt,
           },
         }
       : {}),
@@ -153,6 +157,7 @@ async function activePrices(tx: Prisma.TransactionClient, now: number) {
     where: {
       ...publicVehicleWhere(),
       status: 'AVAILABLE',
+      publicPriceOnRequest: false,
       id: { in: live.map(({ vehicleId }) => vehicleId) },
     },
     select: { id: true, status: true, salePrice: true },
@@ -186,6 +191,7 @@ function pricedWhere(query: PublicVehicleQuery, prices: CampaignPrices): Prisma.
 }
 
 function priceFor(row: PublicRow, prices: CampaignPrices) {
+  if (row.publicPriceOnRequest) return null;
   const campaign = prices.get(row.id);
   return campaign ? new Prisma.Decimal(campaign.price) : row.salePrice;
 }
@@ -194,9 +200,10 @@ async function pricedPage(
   tx: Prisma.TransactionClient,
   query: PublicVehicleQuery,
   prices: CampaignPrices,
+  where: Prisma.VehicleWhereInput,
+  skip: number,
+  take: number,
 ) {
-  const where = pricedWhere(query, prices);
-  const skip = (query.pagina - 1) * query.pageSize;
   const orderBy = publicVehicleOrder(query.ordem);
   if (query.ordem === 'desconto_desc' && prices.size) {
     // Only the bounded campaign set is sorted in memory. Ordinary stock keeps its
@@ -210,14 +217,14 @@ async function pricedPage(
       const savingB = b.salePrice!.minus(prices.get(b.id)!.price);
       return savingB.comparedTo(savingA) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     });
-    const page = sorted.slice(skip, skip + query.pageSize);
-    if (page.length === query.pageSize) return page;
+    const page = sorted.slice(skip, skip + take);
+    if (page.length === take) return page;
     const ordinary = await tx.vehicle.findMany({
       where: { ...where, id: { notIn: [...prices.keys()] } },
       select: publicVehicleSelect,
       orderBy,
       skip: Math.max(0, skip - promoted.length),
-      take: query.pageSize - page.length,
+      take: take - page.length,
     });
     return [...page, ...ordinary];
   }
@@ -227,7 +234,7 @@ async function pricedPage(
       select: publicVehicleSelect,
       orderBy,
       skip,
-      take: query.pageSize,
+      take,
     });
   }
   // At most four insertions can move the boundary of the regular price page.
@@ -238,7 +245,7 @@ async function pricedPage(
       select: publicVehicleSelect,
       orderBy,
       skip: baseSkip,
-      take: query.pageSize + prices.size,
+      take: take + prices.size,
     }),
     tx.vehicle.findMany({
       where: { ...where, id: { in: [...prices.keys()] } },
@@ -254,7 +261,35 @@ async function pricedPage(
         left && right ? direction * left.comparedTo(right) : left ? -1 : right ? 1 : 0;
       return byPrice || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     })
-    .slice(skip - baseSkip, skip - baseSkip + query.pageSize);
+    .slice(skip - baseSkip, skip - baseSkip + take);
+}
+
+async function publicPage(
+  tx: Prisma.TransactionClient,
+  query: PublicVehicleQuery,
+  prices: CampaignPrices,
+  where: Prisma.VehicleWhereInput,
+) {
+  const skip = (query.pagina - 1) * query.pageSize;
+  const take = query.pageSize;
+  const priceOrder = query.ordem === 'preco_asc' || query.ordem === 'preco_desc';
+  if (!priceOrder || where.publicPriceOnRequest === false) {
+    return pricedPage(tx, query, prices, where, skip, take);
+  }
+
+  // A hidden price must not affect ordering, even across page boundaries.
+  const known = { ...where, publicPriceOnRequest: false, salePrice: { not: null } };
+  const knownCount = await tx.vehicle.count({ where: known });
+  const priced = skip < knownCount ? await pricedPage(tx, query, prices, known, skip, take) : [];
+  if (priced.length === take) return priced;
+  const onRequest = await tx.vehicle.findMany({
+    where: { ...where, AND: [{ OR: [{ publicPriceOnRequest: true }, { salePrice: null }] }] },
+    select: publicVehicleSelect,
+    orderBy: { id: 'asc' },
+    skip: Math.max(0, skip - knownCount),
+    take: take - priced.length,
+  });
+  return [...priced, ...onRequest];
 }
 
 async function effectivePriceRange(
@@ -264,14 +299,16 @@ async function effectivePriceRange(
 ) {
   const [base, matching] = await Promise.all([
     tx.vehicle.aggregate({
-      where: { ...where, id: { notIn: [...prices.keys()] } },
+      where: { ...where, publicPriceOnRequest: false, id: { notIn: [...prices.keys()] } },
       _min: { salePrice: true },
       _max: { salePrice: true },
     }),
-    tx.vehicle.findMany({
-      where: { ...where, id: { in: [...prices.keys()] } },
-      select: { id: true },
-    }),
+    prices.size
+      ? tx.vehicle.findMany({
+          where: { ...where, publicPriceOnRequest: false, id: { in: [...prices.keys()] } },
+          select: { id: true },
+        })
+      : [],
   ]);
   const values = matching.map(({ id }) => Number(prices.get(id)!.price));
   return {
@@ -302,7 +339,7 @@ export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQ
       const where = pricedWhere(query, prices);
       const [rows, total, brands, models, fuels, transmissions, ranges, priceRange] =
         await Promise.all([
-          pricedPage(tx, query, prices),
+          publicPage(tx, query, prices, where),
           tx.vehicle.count({ where }),
           tx.vehicle.groupBy({
             by: ['brand'],
@@ -332,10 +369,10 @@ export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQ
           }),
           tx.vehicle.aggregate({
             where,
-            _min: { year: true, mileage: true, salePrice: true },
-            _max: { year: true, mileage: true, salePrice: true },
+            _min: { year: true, mileage: true },
+            _max: { year: true, mileage: true },
           }),
-          prices.size ? effectivePriceRange(tx, where, prices) : undefined,
+          effectivePriceRange(tx, where, prices),
         ]);
       return {
         items: rows.map((row) => publicVehicleDto(row, prices.get(row.id))),
@@ -352,10 +389,7 @@ export async function listPublicVehicles(db: PrismaClient, query: PublicVehicleQ
             .map((v) => ({ value: v.publicTransmission, count: v._count._all })),
           year: { min: ranges._min.year, max: ranges._max.year },
           mileage: { min: ranges._min.mileage, max: ranges._max.mileage },
-          price: priceRange ?? {
-            min: ranges._min.salePrice?.toFixed(2) ?? null,
-            max: ranges._max.salePrice?.toFixed(2) ?? null,
-          },
+          price: priceRange,
         },
       };
     },
@@ -399,6 +433,7 @@ export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
       if (!price || !price.isFinite() || !price.gt(0)) return [];
       const where = {
         ...publicVehicleWhere(),
+        publicPriceOnRequest: false,
         id: { not: current.id, ...(prices.size ? { notIn: [...prices.keys()] } : {}) },
       };
       const [below, above, promoted] = await Promise.all([
@@ -416,7 +451,7 @@ export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
         }),
         prices.size
           ? tx.vehicle.findMany({
-              where: { ...publicVehicleWhere(), id: { not: current.id, in: [...prices.keys()] } },
+              where: { ...where, id: { not: current.id, in: [...prices.keys()] } },
               select: publicVehicleSelect,
             })
           : [],
@@ -425,7 +460,11 @@ export async function relatedPublicVehicles(db: PrismaClient, slug: string) {
         ...new Map(
           [...below, ...above, ...promoted]
             .filter(
-              (row) => row.id !== current.id && row.salePrice?.isFinite() && row.salePrice.gt(0),
+              (row) =>
+                row.id !== current.id &&
+                !row.publicPriceOnRequest &&
+                row.salePrice?.isFinite() &&
+                row.salePrice.gt(0),
             )
             .map((row) => [row.publicSlug, row]),
         ).values(),

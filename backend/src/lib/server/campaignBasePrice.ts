@@ -17,6 +17,7 @@ export async function assertCampaignBasePrice(
   tx: Pick<Prisma.TransactionClient, 'appSetting'>,
   id: string,
   price: string | null,
+  priceOnRequest = false,
 ) {
   const { items } = await readCampaigns(tx);
   const campaign = items.find(
@@ -25,8 +26,10 @@ export async function assertCampaignBasePrice(
   if (campaign && (price === null || new PrismaValue.Decimal(price).lte(campaign.price))) {
     throw new WebPublicationError(
       409,
-      'O preço base tem de ser superior ao preço de campanha. Altere ou remova primeiro a campanha.',
-      'salePrice',
+      priceOnRequest
+        ? 'Remova a campanha ativa para publicar o preço sob consulta.'
+        : 'O preço base tem de ser superior ao preço de campanha. Altere ou remova primeiro a campanha.',
+      priceOnRequest ? 'priceOnRequest' : 'salePrice',
     );
   }
 }

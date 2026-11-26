@@ -92,6 +92,7 @@ export const webPublicationSchema = z.discriminatedUnion('published', [
   z
     .object({
       published: z.literal(true),
+      priceOnRequest: z.boolean().optional(),
       description: z.string().trim().min(1).max(6000),
       photoPaths: z.array(z.string().max(160)).max(20).optional().default([]), // Deprecated compatibility input; never filters Vehicle.photos.
       transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),

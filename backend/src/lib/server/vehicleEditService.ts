@@ -53,6 +53,7 @@ export const vehicleEditSchema = z
     publication: z
       .object({
         published: z.boolean(),
+        priceOnRequest: z.boolean().optional(),
         description: z.string().trim().max(6000),
         photoPaths: z.array(z.string().max(160)).max(20).optional().default([]), // Legacy input ignored; photos is the source of truth.
         transmission: z.enum(['MANUAL', 'AUTOMATIC']).nullable(),
@@ -177,6 +178,7 @@ export async function saveVehicleEdit(
               await tx.vehicle.update({
                 where: { id },
                 data: {
+                  publicPriceOnRequest: publication.priceOnRequest,
                   publicDescription: publication.description,
                   publicPhotoPaths: input.photos,
                   publicTransmission: publication.transmission,

@@ -349,6 +349,48 @@ describe('public query validation and search boundary', () => {
 });
 
 describe('public HTTP responses never disclose private inventory', () => {
+  it('uses the on-request state for detail, price facets, filtering and price pagination', async () => {
+    const hidden = { ...fixture(), publicPriceOnRequest: true };
+    const read = async (suffix: string) => {
+      const response = await fetch(base + '/api/public/vehicles' + suffix);
+      expect(response.status).toBe(200);
+      return response.json();
+    };
+    mocks.db.vehicle.findFirst.mockResolvedValue(hidden);
+    expect(await read('/' + slug)).toMatchObject({ price: null });
+    expect(await read('/' + slug + '/related')).toEqual([]);
+
+    mocks.db.vehicle.aggregate.mockResolvedValue({
+      _min: { year: 2019, mileage: 75000, salePrice: null },
+      _max: { year: 2019, mileage: 75000, salePrice: null },
+    });
+    mocks.db.vehicle.count.mockImplementation(async ({ where }) =>
+      where.publicPriceOnRequest === false ? 0 : 1,
+    );
+    mocks.db.vehicle.findMany.mockImplementation(async ({ where }) =>
+      where.publicPriceOnRequest === false ? [] : [hidden],
+    );
+    const catalog = await read('?ordem=preco_asc&pageSize=1');
+    expect(catalog.items).toMatchObject([{ price: null }]);
+    expect(catalog.facets.price).toEqual({ min: null, max: null });
+    expect(JSON.stringify(catalog)).not.toContain(hidden.salePrice.toFixed(2));
+    expect(mocks.db.vehicle.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: [{ OR: [{ publicPriceOnRequest: true }, { salePrice: null }] }],
+        }),
+        orderBy: { id: 'asc' },
+      }),
+    );
+    expect(mocks.db.vehicle.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ publicPriceOnRequest: false }),
+        _min: { salePrice: true },
+      }),
+    );
+    expect(await read('?preco_max=25000')).toMatchObject({ total: 0, items: [] });
+  });
+
   it.each([1, 2, 3])('orders discounts in euros before ordinary stock across pages: %s', async (page) => {
     const rows = [fixture(), { ...fixture(), id: 'clabcdefghijklmnopqrstuvx', publicSlug: slug + 'a', salePrice: new Prisma.Decimal('30000.00') }];
     const ordinary = { ...fixture(), id: 'clabcdefghijklmnopqrstuvy', publicSlug: slug + 'b' };
@@ -1027,6 +1069,27 @@ describe('explicit publication and stable unique slugs', () => {
     });
     expect(mocks.db.activityLog.create).toHaveBeenCalled();
   });
+  it.each([null, '15000.00'])('publishes on request with internal price %s', async (price) => {
+    mocks.db.vehicle.findUnique.mockResolvedValue({
+      ...fixture(),
+      publicPriceOnRequest: false,
+      salePrice: price === null ? null : new Prisma.Decimal(price),
+    });
+    await expect(setWebPublication(db, id, { ...publication, priceOnRequest: true }, 'admin-id'))
+      .resolves.toMatchObject({ published: true });
+    const update = mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data;
+    expect(update).toHaveProperty('publicPriceOnRequest', true);
+    expect(update).not.toHaveProperty('salePrice');
+    if (price === null) {
+      await expect(setWebPublication(db, id, { ...publication, priceOnRequest: false }, 'admin-id'))
+        .rejects.toThrow('preço de venda superior a zero');
+    } else {
+      await expect(setWebPublication(db, id, { ...publication, priceOnRequest: false }, 'admin-id'))
+        .resolves.toMatchObject({ published: true });
+      expect(mocks.db.vehicle.update.mock.calls.at(-1)?.[0].data).toHaveProperty('publicPriceOnRequest', false);
+    }
+  });
+
   it('prepares legacy dimensions before entering the approval transaction', async () => {
     forgetPhotoVariants(photo);
     const manifest = {

@@ -100,6 +100,7 @@
   let loadedVehicle = '';
   let formValid = $state(false);
   let draftPublished = $state(false);
+  let priceOnRequest = $state(false);
   let specs = $state({
     version: '',
     powerHp: '',
@@ -158,7 +159,7 @@
   );
   const ready = $derived(
     eligible &&
-      Number(normalizeDecimal(price)) > 0 &&
+      (priceOnRequest || Number(normalizeDecimal(price)) > 0) &&
       descriptionText(description).length > 0,
   );
   function savedPublicationDraft() {
@@ -166,6 +167,7 @@
       const details = recoveredDraft.specifications as typeof recoveredDraft.specifications &
         Record<string, unknown>;
       return {
+        priceOnRequest: recoveredDraft.priceOnRequest ?? false,
         description: recoveredDraft.description,
         transmission: recoveredDraft.transmission ?? '',
         selected: allowedPhotos,
@@ -184,6 +186,7 @@
     }
     const details = vehicle.publicSpecifications;
     return {
+      priceOnRequest: vehicle.publicPriceOnRequest ?? false,
       description:
         vehicle.publicDescription ?? `${vehicle.brand} ${vehicle.model}, de ${vehicle.year}.`,
       transmission: vehicle.publicTransmission ?? '',
@@ -207,6 +210,7 @@
         ? (recoveredDraft.galleryFraming ?? {})
         : (vehicle.galleryFraming ?? {});
     const saved = savedPublicationDraft();
+    priceOnRequest = saved.priceOnRequest;
     description = saved.description;
     transmission = saved.transmission;
     specs = saved.specs;
@@ -215,6 +219,7 @@
   }
   const draftKey = $derived(
     publicationDraftKey({
+      priceOnRequest,
       description,
       transmission,
       selected,
@@ -445,6 +450,11 @@
             <input type="hidden" name="published" value={String(draftPublished)} />
           {/if}
           <h3 class="publication-group-title">Dados do anúncio</h3>
+          <input type="hidden" name="priceOnRequestPresent" value="true" />
+          <label class="price-on-request">
+            <input type="checkbox" name="priceOnRequest" bind:checked={priceOnRequest} />
+            Mostrar preço sob consulta
+          </label>
           <DescriptionEditor
             bind:value={description}
             disabled={disabled || pending}
@@ -457,9 +467,7 @@
               opcionais podem ficar vazias.
             </p>{/if}
           <p class="note">
-            Visível no website. Não inclua notas internas, matrícula, VIN ou dados pessoais. O preço
-            público é o preço base das campanhas e é independente do interno. Durante uma campanha,
-            tem de ser superior ao preço de desconto.
+            Visível no website. Não inclua notas internas, matrícula, VIN ou dados pessoais.
           </p>
           {#if !managePhotos}<fieldset>
               <legend>Fotografias da viatura</legend>
@@ -506,7 +514,7 @@
                   {vehicle.year}{vehicle.mileage == null ? '' : ` · ${formatKm(vehicle.mileage)}`}
                 </p>
                 <strong
-                  >{price && Number(normalizeDecimal(price)) > 0
+                  >{!priceOnRequest && price && Number(normalizeDecimal(price)) > 0
                     ? formatEUR(normalizeDecimal(price))
                     : 'Preço sob consulta'}</strong
                 >
@@ -517,9 +525,9 @@
           <div class="requirements" aria-live="polite">
             {#if !eligible}<p>
                 Requer estado Disponível ou Reservado, sem venda registada.
-              </p>{/if}{#if !price}<p>
+              </p>{/if}{#if !priceOnRequest && !price}<p>
                 Preencha o preço de venda na ficha da viatura para publicar.
-              </p>{:else if !(Number(normalizeDecimal(price)) > 0)}<p>
+              </p>{:else if !priceOnRequest && !(Number(normalizeDecimal(price)) > 0)}<p>
                 O preço de venda deve ser superior a zero.
               </p>{/if}{#if !descriptionText(description)}<p>
                 Falta uma descrição pública.
@@ -612,6 +620,15 @@
     margin-left: auto;
     align-self: center;
     white-space: nowrap;
+  }
+  .price-on-request {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    cursor: pointer;
   }
   .publication-group-title {
     font-size: 13px;

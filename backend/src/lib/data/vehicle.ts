@@ -103,6 +103,7 @@ export async function listVehicles(tx: TxClient, params: ListVehiclesParams) {
         soldDate: true,
         photos: true,
         webPublished: true,
+        publicPriceOnRequest: true,
         publicSlug: true,
         sale: { select: { id: true } },
         sourceTradeIn: { select: { id: true } },

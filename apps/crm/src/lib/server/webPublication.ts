@@ -5,6 +5,7 @@ import { publicSpecificationsSchema } from '@anm/types';
 import { vehiclesApi } from './vehicles';
 import { ApiError } from './api';
 const schema = z.object({
+  priceOnRequest: z.boolean().optional(),
   description: z
     .string()
     .trim()
@@ -25,6 +26,9 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
     });
   const remove = form.get('operation') === 'remove';
   const parsed = schema.safeParse({
+    ...(form.has('priceOnRequestPresent')
+      ? { priceOnRequest: form.has('priceOnRequest') }
+      : {}),
     description: form.get('publicDescription'),
     transmission: form.get('publicTransmission') || null,
     ...(form.has('specificationsPresent')
@@ -112,7 +116,9 @@ export async function webPublicationAction(event: RequestEvent, id: string) {
           err.status === 403
             ? 'Só um administrador pode alterar a publicação.'
             : err.status === 409
-              ? 'A viatura tem de estar disponível ou reservada, sem venda, e as fotografias têm de lhe pertencer. Guarde primeiro as alterações internas.'
+              ? feedback?.field === 'priceOnRequest' && feedback.error
+                ? feedback.error
+                : 'A viatura tem de estar disponível ou reservada, sem venda, e as fotografias têm de lhe pertencer. Guarde primeiro as alterações internas.'
               : err.status === 400
                 ? 'Confirme preço e descrição.'
                 : 'Não foi possível alterar a publicação. Tente novamente.',

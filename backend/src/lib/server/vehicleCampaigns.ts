@@ -84,7 +84,12 @@ export async function readCampaignEditor(db: PrismaClient) {
   const [campaigns, vehicles] = await Promise.all([
     readCampaigns(db),
     db.vehicle.findMany({
-      where: { ...publicVehicleWhere(), status: 'AVAILABLE', salePrice: { gt: 0 } },
+      where: {
+        ...publicVehicleWhere(),
+        publicPriceOnRequest: false,
+        status: 'AVAILABLE',
+        salePrice: { gt: 0 },
+      },
       select: {
         id: true,
         brand: true,
@@ -119,7 +124,12 @@ export async function addCampaign(db: PrismaClient, input: CampaignAddition, act
       throw new CampaignConflict('O limite de quatro campanhas guardadas foi atingido.');
     }
     const [candidate] = await tx.vehicle.findMany({
-      where: { ...publicVehicleWhere(), status: 'AVAILABLE', id: input.item.vehicleId },
+      where: {
+        ...publicVehicleWhere(),
+        publicPriceOnRequest: false,
+        status: 'AVAILABLE',
+        id: input.item.vehicleId,
+      },
       select: { brand: true, model: true, salePrice: true },
       take: 1,
     });
@@ -160,6 +170,7 @@ export async function saveCampaigns(db: PrismaClient, input: CampaignInput, acto
       ? await tx.vehicle.findMany({
           where: {
             ...publicVehicleWhere(),
+            publicPriceOnRequest: false,
             status: 'AVAILABLE',
             id: { in: input.items.map((item) => item.vehicleId) },
           },

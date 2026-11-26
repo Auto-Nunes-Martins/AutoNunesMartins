@@ -71,15 +71,27 @@ export async function applyWebPublication(
       photos: true,
       publicSlug: true,
       salePrice: true,
+      publicPriceOnRequest: true,
       sale: { select: { id: true } },
     },
   });
   if (!vehicle) throw new WebPublicationError(404, 'Vehicle not found');
   if (input.published) {
-    if (!vehicle.salePrice?.gt(0)) {
-      throw new WebPublicationError(409, 'Indique um preço de venda superior a zero na ficha da viatura.', 'salePrice');
+    const priceOnRequest = input.priceOnRequest ?? vehicle.publicPriceOnRequest;
+    const salePrice = vehicle.salePrice;
+    if (!priceOnRequest && !salePrice?.gt(0)) {
+      throw new WebPublicationError(
+        409,
+        'Indique um preço de venda superior a zero na ficha da viatura.',
+        'salePrice',
+      );
     }
-    await assertCampaignBasePrice(tx, id, vehicle.salePrice.toFixed(2));
+    await assertCampaignBasePrice(
+      tx,
+      id,
+      priceOnRequest ? null : (salePrice?.toFixed(2) ?? null),
+      priceOnRequest,
+    );
     if (!descriptionText(input.description ?? '').trim()) {
       throw new WebPublicationError(409, 'Uma descrição pública é obrigatória.');
     }
@@ -100,6 +112,7 @@ export async function applyWebPublication(
     data: input.published
       ? {
           webPublished: true,
+          publicPriceOnRequest: input.priceOnRequest,
           publicSlug: slug,
           publicDescription: input.description,
           publicPhotoPaths: orderedPublicPhotos(vehicle.photos),
